@@ -51,6 +51,10 @@ describe('Web Push settings, security and delivery', () => {
     expect(historyRows.size).toBe(3);
     await service.notifyFollowUpSchedule(followup,true);
     expect(historyRows.size).toBe(6);
+    const duePayloads = jobs.updateOne.mock.calls.filter(([filter]) => filter.eventId.startsWith('followup-due:'))
+      .map(([, update]) => JSON.parse(update.$setOnInsert.payload));
+    expect(duePayloads).toHaveLength(3);
+    expect(duePayloads.every(payload => payload.reminder === true)).toBe(true);
     expect([...historyRows.values()].filter(row=>row.title.includes('حان موعد المتابعة'))).toHaveLength(3);
     await service.notifyFollowUpSchedule(followup,true);
     expect(historyRows.size).toBe(6);

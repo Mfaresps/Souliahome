@@ -1,0 +1,7 @@
+{
+  "name": "soulia-premium-landing",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Standalone Soulia product landing page. No application or API dependencies.",
+  "scripts": { "start": "node server.cjs", "check": "node --check app.js && node --check server.cjs" }
+}

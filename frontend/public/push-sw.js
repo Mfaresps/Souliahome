@@ -10,6 +10,7 @@ self.addEventListener('push', event => {
     body: String(payload.body || '').slice(0, 160), icon: '/push-icon-192.png',
     tag: String(payload.tag || 'soulia').slice(0, 80),
     lang: payload.lang === 'en' ? 'en' : 'ar', dir: payload.lang === 'en' ? 'ltr' : 'rtl',
+    ...(payload.reminder === true ? { requireInteraction: true, renotify: true, vibrate: [200, 100, 200, 100, 400] } : {}),
     ...(Number.isFinite(payload.timestamp) ? { timestamp: payload.timestamp } : {}),
     data: { url: url.origin === self.location.origin ? url.pathname + url.search : '/' },
   }));

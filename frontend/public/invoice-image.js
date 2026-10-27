@@ -109,7 +109,12 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   divider();
   pair(label('إجمالي الأصناف', 'Items subtotal'), money((tx.items || []).reduce((sum, item) => sum + Number(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))), 0)));
   if (Number(tx.shipCost)) pair(label('الشحن', 'Shipping'), money(tx.shipCost));
-  if (Number(tx.discount)) pair(label('الخصم', 'Discount'), '−' + money(tx.discount));
+  if (Number(tx.discount) > 0) {
+    pair(label('الخصم', 'Discount'), '−' + money(tx.discount));
+    const codes = String(tx.discountCode || '').split('+').map(code => code.trim()).filter(Boolean);
+    if (codes.length) text(label('أكواد الخصم: ', 'Discount codes: ') + codes.join(' + '), 18);
+    if (Number(tx.manualDiscount) > 0) text(label('يشمل الخصم الإضافي', 'Includes the additional discount'), 18);
+  }
   pair(label('الإجمالي', 'Total'), money(tx.total), true);
   const remaining = Math.max(0, Number(tx.remaining) || 0);
   const purchase = tx.type === 'مشتريات';

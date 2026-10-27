@@ -93,7 +93,7 @@
     return '<time data-notification-time="' + escHtml(date.toISOString()) + '" datetime="' + escHtml(date.toISOString()) + '" title="' +
       escHtml(date.toLocaleString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn')) + '">' + window.souliaNotificationRelativeTime(iso) + '</time>';
   };
-  window.souliaNotificationTone = n => n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
+  window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
   window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
   window.souliaNotificationDescription = n => {
     const check = '<svg class="notification-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';

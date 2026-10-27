@@ -2,13 +2,13 @@
    Tints are semantic only (green = confirmed — with OR without a deposit —,
    blue = follow-up, red = cancelled); «received» and the rate stay neutral. Each tile derives its
    pale fill from its ink with color-mix, so dark mode only re-states the inks. */
-#sp-kpi{margin:2px 0 14px}
+#sp-kpi{margin:2px 0 10px}
 #sp-kpi:empty{display:none}
 #sp-kpi[hidden]{display:none}
 /* The header toggle: tinted while the strip is shown, plain once it is hidden. */
 #sp-kpi-toggle{color:var(--accent)}
 #sp-kpi-toggle.is-off{color:var(--text-muted,var(--muted))}
-.spk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.spk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
 .spk-actions{position:relative;margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px}
 /* Period picker — a calendar icon beside «Report», opening a small menu. */
 /* The menu anchors to the OUTER edge of the button group, not the icon — at 320px the
@@ -44,26 +44,26 @@
   transition:background .15s,border-color .15s}
 .spk-report-btn:hover{background:var(--bg-alt);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
 
-.spk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.spk-tile{--spk-c:#4b6356;position:relative;min-width:0;border-radius:14px;padding:12px 14px 12px;
+.spk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.spk-tile{--spk-c:#4b6356;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-content:start;gap:4px 10px;min-width:0;border-radius:10px;padding:9px 12px 11px;
   background:color-mix(in srgb,var(--spk-c) 8%,var(--bg));border:1px solid color-mix(in srgb,var(--spk-c) 16%,var(--border))}
 .spk-tile.is-received,.spk-tile.is-rate{--spk-c:#4b6356;background:var(--surface);border-color:var(--border)}
 .spk-tile.is-confirmed{--spk-c:#067647}
 .spk-tile.is-followup{--spk-c:#1d4ed8}
 .spk-tile.is-cancelled{--spk-c:#b42318}
-.spk-tile-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.spk-lbl{font-size:.74rem;font-weight:500;color:var(--text);opacity:.82;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.spk-ic{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
-  background:var(--bg);color:var(--spk-c);box-shadow:0 0 0 1px color-mix(in srgb,var(--spk-c) 14%,transparent)}
-.spk-val{margin-top:6px;font-size:1.55rem;font-weight:600;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.spk-tile-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.spk-lbl{font-size:.7rem;font-weight:500;color:var(--text);opacity:.82;line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spk-ic{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--spk-c)}
+.spk-ic svg{width:15px;height:15px}
+.spk-val{grid-column:1;grid-row:2;align-self:end;margin:0;font-size:2rem;font-weight:700;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-.025em}
 .spk-val bdi,.spk-sub bdi{unicode-bidi:isolate}
-.spk-sub{margin-top:4px;font-size:.7rem;color:var(--text-muted,var(--muted));line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spk-sub{grid-column:2;grid-row:2;align-self:end;min-width:0;margin:0 0 2px;font-size:.65rem;color:var(--text-muted,var(--muted));line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .spk-delta-n{font-weight:600;color:var(--text)}
-.spk-meter{margin-top:7px;height:4px;border-radius:99px;background:var(--primary-pale);overflow:hidden}
+.spk-meter{position:absolute;inset-inline:12px;bottom:5px;height:3px;border-radius:99px;background:var(--primary-pale);overflow:hidden}
 .spk-meter i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .35s ease}
 
 /* skeleton */
-.spk-tile.is-skel{background:var(--surface);border-color:var(--border);min-height:86px}
+.spk-tile.is-skel{display:block;background:var(--surface);border-color:var(--border);min-height:76px;box-sizing:border-box}
 .spk-tile.is-skel span{display:block;height:10px;width:55%;border-radius:6px;background:var(--bg-alt);animation:spkPulse 1.2s ease-in-out infinite}
 .spk-tile.is-skel span+span{margin-top:16px;height:20px;width:35%}
 @keyframes spkPulse{50%{opacity:.45}}
@@ -74,7 +74,6 @@ body.dark-mode .spk-tile.is-followup{--spk-c:#60a5fa}
 body.dark-mode .spk-tile.is-cancelled{--spk-c:#f87171}
 body.dark-mode .spk-tile{background:color-mix(in srgb,var(--spk-c) 9%,var(--surface))}
 body.dark-mode .spk-tile.is-received,body.dark-mode .spk-tile.is-rate{background:var(--surface)}
-body.dark-mode .spk-ic{background:var(--surface2)}
 body.dark-mode .spk-pmenu{background:var(--surface);box-shadow:0 10px 28px rgba(0,0,0,.45)}
 body.dark-mode .spk-warn{color:#fbbf24}
 
@@ -100,15 +99,17 @@ body.dark-mode .spk-warn{color:#fbbf24}
   .spk-open{order:4;width:100%}
   .spk-open::before{content:none}
   .spk-grid{gap:8px}
-  .spk-tile{padding:9px 10px;border-radius:12px}
-  .spk-ic{width:22px;height:22px}
+  .spk-tile{padding:8px;border-radius:9px;gap:4px 6px}
+  .spk-ic{width:15px;height:15px}
   .spk-ic svg{width:13px;height:13px}
   /* Labels wrap to two lines here — «الأوردرات الواردة» in a ~105px tile would otherwise
      ellipsise, and a cut label no longer names its number. */
-  .spk-lbl{font-size:.68rem;white-space:normal;overflow:visible;line-height:1.3;min-height:2.7em}
-  .spk-val{font-size:1.2rem;margin-top:4px}
+  .spk-lbl{font-size:.65rem;white-space:normal;overflow:visible;line-height:1.3;min-height:2.6em}
+  .spk-val{font-size:1.7rem;margin:0}
   .spk-sub{display:none}
   .spk-tile.is-rate .spk-sub{display:block}
+  .spk-tile.is-rate{padding-bottom:11px}
+  .spk-meter{inset-inline:8px;bottom:4px}
 }
 @media (prefers-reduced-motion:reduce){
   .spk-meter i{transition:none}

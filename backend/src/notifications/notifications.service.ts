@@ -365,6 +365,7 @@ export class NotificationsService implements OnModuleInit {
         if (event != null) target.set('pushEvent', String(event));
         const title = notificationTitle(type, recipientDetails, language, test);
         const payload = JSON.stringify({ title, body, timestamp: eventTimestamp, lang: language, dir: language === 'en' ? 'ltr' : 'rtl',
+          ...(type === 'followup' && details.actionKey === 'followup-due' ? { reminder: true } : {}),
           url: recordId ? '/?' + target.toString() : '/', tag: createHash('sha256').update(notificationEventId).digest('hex') });
         if (!test) {
           try {

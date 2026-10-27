@@ -23,9 +23,10 @@ function reminderFixture() {
   }
   return context;
 }
-it('places due follow-ups first across task tabs, excluding scheduled and resolved tasks', () => {
+it('keeps each task tab scoped while the global queue retains all due follow-ups', () => {
   const context = reminderFixture();
-  expect(context.myFollowUpPriorities().map((row: any) => row.f.id)).toEqual(['due', 'shipping']);
+  expect(context.myFollowUpPriorities().map((row: any) => row.f.id)).toEqual(['shipping']);
+  expect(context.myFollowUpPriorities(false).map((row: any) => row.f.id)).toEqual(['due', 'shipping']);
   context._myShowOtherTasks = true;
   expect(context.myFollowUpPriorities().map((row: any) => row.f.id)).toEqual(['due']);
 });
@@ -44,7 +45,7 @@ it('wakes up at the appointment without waiting for a refresh', () => {
     Object.assign(context, { clearTimeout, setTimeout, _myDueReminderTimer: null, isAdmin: () => false });
     context.scheduleMyDueFollowUpWakeup();
     jest.advanceTimersByTime(60051);
-    expect(context.myFollowUpPriorities()[0].due).toBe(true);
+    expect(context.myFollowUpPriorities(false)[0].due).toBe(true);
     expect(context.toast).toHaveBeenCalledWith(expect.stringContaining('#2 Customer (+1)'));
   } finally { jest.useRealTimers(); }
 });
@@ -111,14 +112,14 @@ it('renders icon-only phone and Vrobo links with accessible labels when requeste
   const index = html.indexOf('function renderMyFollowUpContacts(');
   const context: any = { currentLang: 'en', esc: String, escHtml: String,
     _fdWaPhone: (phone: string) => phone, _fdVroboUrl: (phone: string) => 'https://vrobo.test/' + phone,
-    _FDC_PHONE_ICON: '<svg class="phone-icon"></svg>', _SP_VROBO_ICON: '<span class="sp-vrobo-ic">V</span>',
+    _FDC_PHONE_ICON: '<svg class="phone-icon"></svg>', _FDC_CHAT_ICON: '<svg class="chat-icon"></svg>', _SP_VROBO_ICON: '<span class="sp-vrobo-ic">V</span>',
   };
   runInNewContext(html.slice(index, html.indexOf('\n}', index) + 2), context);
   const markup = context.renderMyFollowUpContacts({ clientPhone: '201000002307' }, true);
   expect(markup).toContain('href="tel:+201000002307"');
   expect(markup).toContain('aria-label="Call customer"');
-  expect(markup).toContain('aria-label="Contact via Vrobo"');
+  expect(markup).toContain('aria-label="Chat"');
   expect(markup).not.toContain('<span>Call</span>');
-  expect(markup).not.toContain('<span>Vrobo</span>');
-  expect(context.renderMyFollowUpContacts({ clientPhone: '201000002307' })).toContain('<span>Call</span>');
+  expect(markup).not.toContain('<span>Chat</span>');
+  expect(context.renderMyFollowUpContacts({ clientPhone: '201000002307' })).toContain('<span>Chat</span>');
 });

@@ -175,40 +175,85 @@ function _puDailyOrdersHtml(group) {
     ${order.bostaTrackingNumber ? `<a class="btn btn-outline btn-sm pu-daily-bosta" href="${esc(_bostaBizUrl(order))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Open in Bosta ↗</a>` : ''}</div>
     </div></article>`).join('')}</div>`;
 }
+// Reconcile these read-only shipping views in place. Socket/status syncs often
+// return identical data; replacing innerHTML resets details, focus and selection.
+function _puDailySyncContent(host, html) {
+  const next = document.createElement(host.tagName);
+  next.innerHTML = html;
+  const focus = document.activeElement;
+  const positions = [];
+  for (let el = host; el; el = el.parentElement) positions.push([el, el.scrollTop, el.scrollLeft]);
+  const key = node => {
+    if (node.nodeType !== 1) return '';
+    for (const name of ['data-daily-order', 'data-run-detail', 'data-run-ref']) {
+      if (node.hasAttribute(name)) return name + ':' + node.getAttribute(name);
+    }
+    return node.id ? 'id:' + node.id : '';
+  };
+  const compatible = (a, b) => a.nodeType === b.nodeType && a.nodeName === b.nodeName &&
+    (key(a) || key(b) ? key(a) === key(b) : a.classList?.[0] === b.classList?.[0]);
+  function sync(parent, source) {
+    const unused = new Set(parent.childNodes);
+    let cursor = parent.firstChild;
+    for (const fresh of [...source.childNodes]) {
+      const existing = [...unused].find(node => compatible(node, fresh));
+      if (!existing) { parent.insertBefore(fresh, cursor); continue; }
+      unused.delete(existing);
+      if (existing !== cursor) parent.insertBefore(existing, cursor);
+      if (existing.nodeType === 1) {
+        for (const attr of [...existing.attributes]) {
+          if (existing.tagName === 'DETAILS' && attr.name === 'open') continue;
+          if (!fresh.hasAttribute(attr.name)) existing.removeAttribute(attr.name);
+        }
+        for (const attr of fresh.attributes) {
+          if (attr.name === 'style' && existing.style.cssText === fresh.style.cssText) continue;
+          if (existing.getAttribute(attr.name) !== attr.value) existing.setAttribute(attr.name, attr.value);
+        }
+        sync(existing, fresh);
+      } else if (existing.nodeValue !== fresh.nodeValue) existing.nodeValue = fresh.nodeValue;
+      cursor = existing.nextSibling;
+    }
+    unused.forEach(node => node.remove());
+  }
+  sync(host, next);
+  if (focus?.isConnected && document.activeElement !== focus) focus.focus({ preventScroll: true });
+  positions.forEach(([el, top, left]) => { el.scrollTop = top; el.scrollLeft = left; });
+}
 function _puDailyBindInvoices(host) {
   host.querySelectorAll('[data-daily-awb]').forEach(button => {
-    button.addEventListener('click', event => { event.stopPropagation(); previewBostaAwb(button.dataset.dailyAwb); });
+    button.onclick = event => { event.stopPropagation(); previewBostaAwb(button.dataset.dailyAwb); };
   });
   host.querySelectorAll('[data-daily-invoice]').forEach(button => {
-    button.addEventListener('click', event => {
+    button.onclick = event => {
       event.stopPropagation();
       const groupModal = button.closest('[data-daily-dialog]');
       if (groupModal) pucoShowInvoice(button.dataset.dailyInvoice);
       else showInvoiceDetail(button.dataset.dailyInvoice);
-    });
+    };
   });
 }
 let _puDailyOpenGroup = null;
 let _puDailyOpenStage = 'all';
+function _puDailyDialogHtml(group) {
+  return `<div class="pu-daily-dialog-head"><div><h3>${esc(_puDailyDateLabel(group))}</h3><p><span>${esc(group.shipCo)}</span>${_puDailyCountHtml(group.orders.length)}</p></div><button type="button" class="btn btn-outline btn-sm" onclick="closeModal()" aria-label="${esc(_puDailyText('إغلاق', 'Close'))}">×</button></div>
+    <div class="pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}${_puDailyOrdersHtml(group)}`;
+}
 function openPuDailyShippingGroup(key, stage = 'all') {
   if (typeof _requirePageAccess === 'function' && !_requirePageAccess('pickup-orders')) return;
   const group = _puDailyShippingGroups(_pickupOrders, stage).find(g => g.key === key);
   if (!group) return;
   _puDailyOpenGroup = key;
   _puDailyOpenStage = stage;
-  openModal(`<div class="pu-daily-dialog" data-daily-dialog="${esc(key)}"><div class="pu-daily-dialog-head"><div><h3>${esc(_puDailyDateLabel(group))}</h3><p><span>${esc(group.shipCo)}</span>${_puDailyCountHtml(group.orders.length)}</p></div><button type="button" class="btn btn-outline btn-sm" onclick="closeModal()" aria-label="${esc(_puDailyText('إغلاق', 'Close'))}">×</button></div>
-    <div class="pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}${_puDailyOrdersHtml(group)}</div>`, 'width:min(1050px,96vw);max-width:1050px');
+  openModal(`<div class="pu-daily-dialog" data-daily-dialog="${esc(key)}">${_puDailyDialogHtml(group)}</div>`, 'width:min(1050px,96vw);max-width:1050px');
   _puDailyBindInvoices(qs('#modal-content'));
 }
 function _puDailyRefreshOpenGroup() {
   const host = qs('#modal-content [data-daily-dialog]');
   if (host && qs('#modal-overlay')?.classList.contains('active') && _puDailyOpenGroup === host.dataset.dailyDialog) {
-    if (!_puDailyShippingGroups(_pickupOrders, _puDailyOpenStage).some(g => g.key === _puDailyOpenGroup)) { closeModal(); return; }
-    const scroll = qs('#modal-content').scrollTop;
-    const expanded = [...host.querySelectorAll('[data-daily-order] details[open]')].map(details => details.closest('[data-daily-order]').dataset.dailyOrder);
-    openPuDailyShippingGroup(_puDailyOpenGroup, _puDailyOpenStage);
-    qs('#modal-content').querySelectorAll('[data-daily-order]').forEach(card => { if (expanded.includes(card.dataset.dailyOrder)) card.querySelector('details').open = true; });
-    qs('#modal-content').scrollTop = scroll;
+    const group = _puDailyShippingGroups(_pickupOrders, _puDailyOpenStage).find(g => g.key === _puDailyOpenGroup);
+    if (!group) { closeModal(); return; }
+    _puDailySyncContent(host, _puDailyDialogHtml(group));
+    _puDailyBindInvoices(host);
   }
 }
 function _puDailyRunRowHtml(group, index, open) {
@@ -223,5 +268,5 @@ function _puDailyRunRowHtml(group, index, open) {
     <td><span class="pu-ref-chip" dir="ltr" title="${esc(group.pickupRef)}">${esc(shortRef)}</span></td><td>${_puDailyTableDateHtml(group.pickupDate)}</td><td><span class="pu-daily-carrier">${esc(group.shipCo)}</span></td>
     <td><div class="pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}</td><td>${_puDailyCountHtml(group.orders.length)}</td>
     <td><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></td><td></td></tr>
-    <tr class="pu-detail-row" id="${rowKey}" style="display:${open ? 'table-row' : 'none'}"><td colspan="8"><div class="pu-detail-panel">${actions}${_puDailyOrdersHtml(group)}</div></td></tr>`;
+    <tr class="pu-detail-row" data-run-detail="${esc(group.key)}" id="${rowKey}" style="display:${open ? 'table-row' : 'none'}"><td colspan="8"><div class="pu-detail-panel">${actions}${_puDailyOrdersHtml(group)}</div></td></tr>`;
 }

@@ -857,16 +857,21 @@ export class FollowUpsService implements OnModuleInit {
     const now = new Date();
     try {
       const due = await this.model.find({ cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
+        orderOutcome: { $in: ['', null] },
         deferredUntil: { $ne: null, $lte: now }, deferReminderSent: { $ne: true } }).lean();
       for (const f of due) {
         const claimed = await this.model.findOneAndUpdate({ _id: f._id, deferredUntil: f.deferredUntil,
-          deferReminderSent: { $ne: true }, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } },
+          deferReminderSent: { $ne: true }, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, orderOutcome: { $in: ['', null] } },
           { $set: { deferReminderSent: true } }, { new: true }).lean();
         if (!claimed) continue;
         try {
-          const recipients = await this.notifications?.notifyFollowUpSchedule({ id: String(f._id), orderRef: f.orderRef,
-            responsibleId: f.responsibleId, until: new Date(f.deferredUntil!).toISOString(), reason: f.deferReason }, true);
-          for (const recipient of recipients || []) this.presence.emitToUser(recipient, 'followup:changed', { action: 'reminder', id: String(f._id) });
+          const reminder = { id: String(claimed._id), orderRef: claimed.orderRef, clientName: claimed.clientName,
+            responsibleId: claimed.responsibleId, deferredUntil: new Date(claimed.deferredUntil!).toISOString(), deferReason: claimed.deferReason };
+          const recipients = await this.notifications?.notifyFollowUpSchedule({ id: reminder.id, orderRef: reminder.orderRef,
+            responsibleId: reminder.responsibleId, until: reminder.deferredUntil, reason: reminder.deferReason }, true);
+          for (const recipient of new Set([reminder.responsibleId, ...(recipients || [])].filter(Boolean))) {
+            this.presence.emitToUser(recipient, 'followup:changed', { action: 'reminder', ...reminder });
+          }
         } catch (err) {
           await this.model.updateOne({ _id: f._id, deferredUntil: f.deferredUntil }, { $set: { deferReminderSent: false } }).exec();
           this.logger.warn(`Deferred reminder failed for ${f._id}`);

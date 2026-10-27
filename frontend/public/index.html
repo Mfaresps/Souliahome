@@ -7930,6 +7930,14 @@ body.dark-mode .fu-reason-banner{background:rgba(59,130,246,.12);border-color:rg
 .fu-timeline-time{font-size:.66rem;color:var(--muted);white-space:nowrap;cursor:default}
 .fu-timeline-edited{font-size:.62rem;color:var(--muted);font-style:italic}
 .fu-timeline-text{font-size:.82rem;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.fu-appointment-label{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 9px;margin:2px 3px;border:1px solid color-mix(in srgb,currentColor 22%,transparent);border-radius:7px;font-size:.75rem;font-weight:650;line-height:1.5;vertical-align:middle;white-space:normal;unicode-bidi:isolate;background:#eef5ff;color:#285cab}
+.fu-appointment-copy{min-width:0;text-wrap:balance}
+.fu-appointment-icon{flex-shrink:0;font-size:1rem;line-height:1}
+.fu-appointment-label.is-overdue{background:#fff5e5;color:#975612}
+.fu-appointment-label.is-due{background:#e5f5ec;color:#1b7047}
+.dark-mode .fu-appointment-label{background:#20334e;color:#a9ccff}
+.dark-mode .fu-appointment-label.is-overdue{background:#3e3021;color:#f4c17f}
+.dark-mode .fu-appointment-label.is-due{background:#203b30;color:#9cdebb}
 .fu-timeline-menu-btn{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1}
 .fu-timeline-menu-btn:hover{background:var(--surface2);color:var(--text)}
 .fu-timeline-item-highlight .fu-timeline-content{animation:fuCommentPulse 2.5s ease}
@@ -16610,7 +16618,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 </style>
 <link rel="stylesheet" href="/navigation-shell.css?v=20261024-permission-dock">
-<link rel="stylesheet" href="/employee-home.css?v=20261026-due-followup-notice">
+<link rel="stylesheet" href="/employee-home.css?v=20261027-task-clarity">
 <link rel="stylesheet" href="/admin-team-home.css?v=20261024-period">
 <link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
 <link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261024-review-images">
@@ -16622,7 +16630,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css?v=20261021-3">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/shopify-kpis.css?v=6">
+<link rel="stylesheet" href="/shopify-kpis.css?v=20261027-compact">
 <link rel="stylesheet" href="/settings-responsive.css?v=20261020-connection-status">
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
@@ -24884,7 +24892,7 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
   'suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns',
@@ -24893,6 +24901,7 @@ const PERMS = ['dashboard','transaction','inventory','movements','clients','prod
   'products-sku-manage','inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
   'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات',
+  'shopify-reassign':'شوبيفاي - إدارة إسناد الطلبات للموظفين (Assignee)',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
   vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
   'categories-view':'التصنيفات - عرض','categories-create':'التصنيفات - إضافة تصنيف/مجموعة','categories-edit':'التصنيفات - تعديل تصنيف/مجموعة','categories-delete':'التصنيفات - حذف تصنيف/مجموعة','categories-assign-products':'التصنيفات - ربط الأصناف بالمجموعات','categories-link-suppliers':'التصنيفات - ربط الموردين بالمجموعات',
@@ -24921,7 +24930,7 @@ const PERM_MODULES = [
   { key:'supplierAccount', label:'حساب المورد (الصلاحيات المالية)', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>', perms:['suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity','suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns'] },
   { key:'vault', label:'الخزنة والمصاريف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>', perms:['vault','expenses','carrier-import','carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse'] },
   { key:'reports', label:'التقارير', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>', perms:['reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export'] },
-  { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','shopify-prepare-ship','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
+  { key:'shopify', label:'Shopify ودليل خدمة العملاء', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 5h9L18 2"/><path d="M3.5 7h17l-1.2 13.2a2 2 0 01-2 1.8H6.7a2 2 0 01-2-1.8L3.5 7z"/></svg>', perms:['shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import'] },
   { key:'delivery', label:'التسليم', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>', perms:['delivery-manual-confirm','delivery-view-audit'] },
   { key:'settings', label:'المستخدمون والإعدادات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', perms:['users','settings'] },
 ];
@@ -29227,6 +29236,7 @@ const TRANSLATIONS = {
   spConvertToFollowup:{ar:'تحويل لمتابعة',en:'Convert to follow-up'},
   spAddFollowup:{ar:'إضافة متابعة',en:'Add follow-up'},
   spReassign:{ar:'إعادة إسناد',en:'Reassign'},
+  spReassignDenied:{ar:'ليس لديك صلاحية تغيير الموظف المسؤول عن الطلب',en:'You do not have permission to change the order assignee'},
   spCancelOrder:{ar:'إلغاء الطلب',en:'Cancel order'},
   spCancelShort:{ar:'إلغاء',en:'Cancel'},
   spRestore:{ar:'استرجاع',en:'Restore'},
@@ -32041,8 +32051,7 @@ function _rfzSyncLabels() {
   const txt = _rfzAgoText();
   document.querySelectorAll('.rfz-time').forEach(el => {
     const compact = el.id === 'rfz-time-dashboard' && !isAdmin();
-    const mins = _rfzLastAt ? Math.max(0, Math.floor((Date.now() - _rfzLastAt) / 60000)) : null;
-    el.textContent = compact ? (mins === null ? '—' : mins < 1 ? (currentLang === 'en' ? 'Now' : 'الآن') : mins < 60 ? `${fmtN(mins)}${currentLang === 'en' ? 'm' : 'د'}` : `${fmtN(Math.floor(mins / 60))}${currentLang === 'en' ? 'h' : 'س'}`) : txt;
+    el.textContent = compact ? (_rfzLastAt ? (currentLang === 'en' ? 'Updated ' : 'آخر تحديث ') + txt : (currentLang === 'en' ? 'Refresh data' : 'تحديث البيانات')) : txt;
     if (compact) el.closest('button')?.setAttribute('aria-label', t('rfzBtn') + ' ' + txt);
   });
 }
@@ -33886,6 +33895,7 @@ async function doLogout() {
   _mentionsCache = [];
   localStorage.removeItem('token'); localStorage.removeItem('user');
   currentUser = null;
+  window.souliaFollowUpReminder?.reset();
   _myWorkspace = null; _myWorkspaceRecipientId = '';
   window.hideAdminTeamWorkspace?.();
   renderMyHomeAdjustments();
@@ -34315,14 +34325,15 @@ function connectSocket() {
 
   socket.on('disconnect', () => { invalidateUsersPresence(); syncHeaderPresence(); });
   socket.on('connect_error', () => { invalidateUsersPresence(); syncHeaderPresence(); });
-  socket.on('connect', () => { syncHeaderPresence(); if (currentPage === 'pickup-orders' && _puOrdersLoaded) loadPickupOrders({ background: true }); });
+  socket.on('connect', () => { syncHeaderPresence(); window.souliaFollowUpReminder?.refresh(); if (currentPage === 'pickup-orders' && _puOrdersLoaded) loadPickupOrders({ background: true }); });
 
   // Shared pickup cache and one coalesced paint for all active views.
   socket.on('pickup:updated', _puApplyRealtimeEvent);
   socket.on('tx:deleted', payload => _puMergeLiveTransaction({ _id: payload?.id }, true));
 
   socket.on('followup:changed', async (payload) => {
-    try { followUps = await api('/followups'); _dashFuLoaded = true; } catch(_) {}
+    if (payload?.action === 'reminder') window.souliaFollowUpReminder?.notify(payload);
+    try { followUps = await api('/followups'); _dashFuLoaded = true; window.souliaFollowUpReminder?.sync(followUps); } catch(_) {}
     if (_spPeekId) _spPeekRefreshFu();
     if (currentPage === 'shopify-orders') renderShopifyOrders();
     if (fuCommentTargetId && qs('#fu-comment-popup')?.classList.contains('show')) {
@@ -40030,7 +40041,7 @@ function renderMyKpis() {
       label: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'Orders awaiting confirmation' : 'طلبات بانتظار التأكيد') : (currentLang === 'en' ? 'Your current tasks are complete' : 'اكتملت مهامك الحالية')) : (currentLang === 'en' ? 'Follow-ups needing action now' : 'متابعات تحتاج إجراء الآن'),
       icon: ico('<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'),
       val: noFollowUps ? (pendingOrders ? fmtN(pendingOrders) : '✓') : fmtN(myActionableFollowUpCount()),
-      sub: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'No open follow-ups. These orders still need confirmation.' : 'لا توجد متابعات مفتوحة. هذه الطلبات ما زالت تحتاج إلى تأكيد.') : (currentLang === 'en' ? 'You have completed your assigned follow-ups. No orders currently require confirmation or follow-up.' : 'أتممت المتابعات المسندة إليك. لا توجد طلبات تحتاج إلى تأكيد أو متابعة حاليًا.')) : (currentLang === 'en' ? 'Excludes scheduled follow-ups.' : 'لا تشمل المتابعات المؤجّلة.') + (pendingOrders ? (currentLang === 'en' ? ` Orders awaiting confirmation: ${fmtN(pendingOrders)}. An order may also have an open follow-up.` : ` طلبات بانتظار التأكيد: ${fmtN(pendingOrders)}. قد يكون للطلب نفسه متابعة مفتوحة أيضًا.`) : ''),
+      sub: noFollowUps ? (pendingOrders ? (currentLang === 'en' ? 'No open follow-ups. These orders still need confirmation.' : 'لا توجد متابعات مفتوحة. هذه الطلبات ما زالت تحتاج إلى تأكيد.') : (currentLang === 'en' ? 'You have completed your assigned follow-ups. No orders currently require confirmation or follow-up.' : 'أتممت المتابعات المسندة إليك. لا توجد طلبات تحتاج إلى تأكيد أو متابعة حاليًا.')) : '',
       extra: renderMyFollowUpPreview(),
     },
   ];
@@ -40048,7 +40059,7 @@ function renderMyKpis() {
       ${c.cls === 'is-followups' ? '<span id="employee-home-refresh"></span>' : ''}
       <span class="ds-me-kpi-value"><bdi>${c.val}</bdi></span>
       ${/* rawSub بيسمح بـ<span> الاتجاه؛ الباقي نص عادي بيتعمله esc. */''}
-      <span class="ds-me-kpi-sub">${c.rawSub ? c.sub : esc(c.sub || '')}</span>
+      ${c.sub ? `<span class="ds-me-kpi-sub">${c.rawSub ? c.sub : esc(c.sub)}</span>` : ''}
       ${c.cls === 'is-followups' ? `</div><div class="employee-task-body">${c.extra || ''}</div>` : c.extra || ''}
     </div>`).join('');
   if (refreshSlot) {
@@ -40064,10 +40075,10 @@ function renderMyHomeAdjustments() {
   host.style.display = canViewMyPointMessages() ? '' : 'none';
   if (!canViewMyPointMessages()) { host.replaceChildren(); return; }
   const w = _myWorkspace;
-  const rows = (Array.isArray(w.adjustments) ? w.adjustments : []).slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).slice(0, 3);
+  const rows = Array.isArray(w.adjustments) ? w.adjustments : [];
   const en = currentLang === 'en';
-  host.innerHTML = `<div class="employee-adjustments-head"><div><h3>${esc(en ? 'Points updates' : 'رسائل النقاط')}</h3><p>${esc(w.periodLabel || '')}</p></div>${rows.length ? `<button type="button" class="ds-me-adj-more" onclick="openMyAdjustments()">${esc(en ? 'View all' : 'عرض الكل')}</button>` : ''}</div>
-    ${rows.length ? rows.map(a => `<div class="employee-point-message ${a.points > 0 ? 'is-bonus' : 'is-penalty'}"><span class="employee-point-sign" aria-hidden="true">${a.points > 0 ? '+' : '−'}</span><div><strong>${esc(t(a.points > 0 ? 'dsMeBonus' : 'dsMePenalty'))}</strong><p dir="auto">${esc(a.reason || t('dsMeAdjNoReason'))}</p>${a.createdAt ? `<small>${esc(fmtDateTime(a.createdAt))}</small>` : ''}</div><bdi>${a.points > 0 ? '+' : '−'}${fmtN(Math.abs(a.points || 0))}</bdi></div>`).join('') : `<p class="employee-points-empty">${esc(en ? 'No bonuses or deductions this period.' : 'لا توجد زيادات أو خصومات في هذه الفترة.')}</p>`}`;
+  host.innerHTML = `<div class="employee-adjustments-head"><div><h3>${esc(en ? 'Points history' : 'سجل النقاط')}</h3><p>${esc(w.periodLabel || '')}</p></div></div>
+    ${rows.length ? `<button type="button" class="employee-points-history" onclick="openMyAdjustments()"><span>${esc(en ? 'View bonuses, deductions and reasons' : 'عرض الزيادات والخصومات وأسبابها')}</span><span aria-hidden="true">${en ? '→' : '←'}</span></button>` : `<p class="employee-points-empty">${esc(en ? 'No bonuses or deductions this period.' : 'لا توجد زيادات أو خصومات في هذه الفترة.')}</p>`}`;
 }
 
 // Activity comes from status changes and comment timestamps. Automatic
@@ -40138,7 +40149,7 @@ function myFollowUpPriorities(includeOtherView = true) {
     if (!duplicate) unique.push(row);
   }
   if (!includeOtherView) return unique;
-  return _myShowOtherTasks || !myDeliveryIssueCount() ? unique.filter(row => row.due || !row.shippingIssue) : unique.filter(row => row.due || row.shippingIssue);
+  return _myShowOtherTasks || !myDeliveryIssueCount() ? unique.filter(row => !row.shippingIssue) : unique.filter(row => row.shippingIssue);
 }
 function toggleMyOtherTasks() { _myShowOtherTasks = true; renderMyKpis(); }
 let _myPriorityCardsAnimating = false;
@@ -40200,11 +40211,12 @@ function showMyDeliveryIssues() {
 }
 function renderMyDeliveryIssuesButton() {
   const count = myDeliveryIssueCount(), en = currentLang === 'en', active = !!count && !_myShowOtherTasks;
-  return `<button type="button" id="employee-delivery-issues-tab" role="tab" aria-selected="${active}" aria-controls="employee-home-tasks-panel" tabindex="${active ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" class="employee-delivery-issues-button${count ? ' has-issues' : ''}" ${count ? 'onclick="showMyDeliveryIssues()"' : 'disabled'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 5h11v12H3zM14 9h4l3 4v4h-7M3 17h2m4 0h6m4 0h2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>${esc(count ? (en ? 'Show delivery issues' : 'عرض مشكلات التوصيل') : (en ? 'No delivery issues' : 'لا توجد مشكلات توصيل'))}</span>${count ? `<bdi class="employee-delivery-issue-count">${fmtN(count)}</bdi>` : ''}</button>`;
+  return `<button type="button" id="employee-delivery-issues-tab" role="tab" aria-selected="${active}" aria-controls="employee-home-tasks-panel" tabindex="${active ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" class="employee-delivery-issues-button${count ? ' has-issues' : ''}" ${count ? 'onclick="showMyDeliveryIssues()"' : 'disabled'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 5h11v12H3zM14 9h4l3 4v4h-7M3 17h2m4 0h6m4 0h2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>${esc(en ? 'Delivery issues' : 'مشكلات التوصيل')}</span><bdi class="employee-delivery-issue-count">${fmtN(count)}</bdi></button>`;
 }
 function renderMyTaskTabs() {
   const en = currentLang === 'en', other = _myShowOtherTasks || !myDeliveryIssueCount();
-  return `<div class="employee-task-switches employee-task-tabs" role="tablist" aria-label="${escHtml(en ? 'Task view' : 'عرض المهام')}">${renderMyDeliveryIssuesButton()}<button type="button" id="employee-other-tasks-tab" class="employee-other-tasks" role="tab" aria-selected="${other}" aria-controls="employee-home-tasks-panel" tabindex="${other ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" onclick="toggleMyOtherTasks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span>${esc(en ? 'Confirmation & follow-up' : 'التأكيد والمتابعة')}</span></button></div>`;
+  const count = myFollowUpPriorities(false).filter(row => !row.shippingIssue).length;
+  return `<div class="employee-task-switches employee-task-tabs" role="tablist" aria-label="${escHtml(en ? 'Task view' : 'عرض المهام')}">${renderMyDeliveryIssuesButton()}<button type="button" id="employee-other-tasks-tab" class="employee-other-tasks" role="tab" aria-selected="${other}" aria-controls="employee-home-tasks-panel" tabindex="${other ? '0' : '-1'}" onkeydown="myTaskTabKey(event)" onclick="toggleMyOtherTasks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span>${esc(en ? 'Confirmation & follow-up' : 'التأكيد والمتابعة')}</span><bdi class="employee-task-count">${fmtN(count)}</bdi></button></div>`;
 }
 function myDeferReasonLabel(reason) {
   const labels = currentLang === 'en'
@@ -40215,7 +40227,7 @@ function myDeferReasonLabel(reason) {
 function renderMyDeferredWork() {
   const waiting = myDeferredFollowUps(), count = myDeferredFollowUpCount(), en = currentLang === 'en';
   if (!count) return '';
-  return `<details class="employee-deferred-work"><summary>${esc(en ? `Waiting for scheduled follow-up (${count})` : `بانتظار موعد المتابعة (${fmtN(count)})`)}</summary><p>${esc(en ? 'Returns to your priorities when due.' : 'تعود إلى الأولوية تلقائيًا في موعد المتابعة.')}</p>${waiting.map(f => `<div class="employee-deferred-row"><div class="employee-deferred-heading"><bdi>#${esc(f.orderRef || f.ticketNo)}</bdi><span dir="auto">${esc(f.clientName || '')}</span></div><span class="employee-deferred-issue">${esc(en ? 'Scheduled' : 'متابعة مجدولة')}</span><span class="employee-deferred-reason">${esc(myDeferReasonLabel(f.deferReason))}</span>${renderMyDeferredTime(f.deferredUntil)}<button type="button" class="btn btn-outline" onclick="openMyFollowUpTrail('${escHtml(f.id)}','',this)">${esc(en ? 'View follow-up' : 'عرض المتابعة')}</button>${renderMyFollowUpComment(f.latestComment ? { ...f, latestComment: { ...f.latestComment, text: f.latestComment.text.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, value => new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(value))) } } : f)}</div>`).join('')}${count > waiting.length ? `<button type="button" class="btn btn-outline" onclick="navigateTo('followups')">${esc(en ? 'View all waiting requests' : 'عرض جميع الطلبات المنتظرة')}</button>` : ''}</details>`;
+  return `<details class="employee-deferred-work"><summary>${esc(en ? `Waiting for scheduled follow-up (${count})` : `بانتظار موعد المتابعة (${fmtN(count)})`)}</summary><p>${esc(en ? 'Returns to your priorities when due.' : 'تعود إلى الأولوية تلقائيًا في موعد المتابعة.')}</p>${waiting.map(f => `<div class="employee-deferred-row"><div class="employee-deferred-heading"><bdi>#${esc(f.orderRef || f.ticketNo)}</bdi><span dir="auto">${esc(f.clientName || '')}</span></div><span class="employee-deferred-issue">${esc(en ? 'Scheduled' : 'متابعة مجدولة')}</span><span class="employee-deferred-reason">${esc(myDeferReasonLabel(f.deferReason))}</span>${renderMyDeferredTime(f.deferredUntil)}<button type="button" class="btn btn-outline" onclick="openMyFollowUpTrail('${escHtml(f.id)}','',this)">${esc(en ? 'View follow-up' : 'عرض المتابعة')}</button>${renderMyFollowUpComment(f)}</div>`).join('')}${count > waiting.length ? `<button type="button" class="btn btn-outline" onclick="navigateTo('followups')">${esc(en ? 'View all waiting requests' : 'عرض جميع الطلبات المنتظرة')}</button>` : ''}</details>`;
 }
 function renderMyDeferredTime(value) {
   const due = new Date(value), en = currentLang === 'en';
@@ -40264,14 +40276,15 @@ function myDeliveryIssueLabel(f) {
   if (f.autoTrigger === 'RETURNED') return en ? 'Shipment returned' : 'الشحنة مرتجعة';
   return (f.reason || (en ? 'Delivery issue — contact the customer' : 'مشكلة توصيل — يُرجى التواصل مع العميل')).slice(0, 90);
 }
+const _FDC_CHAT_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 10h8M8 14h5"/></svg>';
 function renderMyFollowUpContacts(f, iconsOnly = false) {
   const en = currentLang === 'en', phone = _fdWaPhone(f.clientPhone || '');
   const valid = /^\d{7,15}$/.test(phone);
   const call = en ? 'Call customer' : 'اتصال بالعميل';
-  const chat = en ? 'Contact via Vrobo' : 'التواصل عبر Vrobo';
+  const chat = en ? 'Chat' : 'شات';
   const missing = en ? 'Customer phone unavailable' : 'رقم هاتف العميل غير متاح';
   return `<div class="employee-sample-contacts${iconsOnly ? ' employee-contact-icons' : ''}">${valid
-    ? `<a class="employee-contact-shortcut" href="tel:+${phone}" title="${escHtml(call)}" aria-label="${escHtml(call)}">${_FDC_PHONE_ICON}${iconsOnly ? '' : `<span>${esc(en ? 'Call' : 'اتصال')}</span>`}</a><a class="employee-contact-shortcut is-vrobo" href="${escHtml(_fdVroboUrl(phone))}" target="_blank" rel="noopener" title="${escHtml(chat)}" aria-label="${escHtml(chat)}">${_SP_VROBO_ICON}${iconsOnly ? '' : '<span>Vrobo</span>'}</a>`
+    ? `<a class="employee-contact-shortcut" href="tel:+${phone}" title="${escHtml(call)}" aria-label="${escHtml(call)}">${_FDC_PHONE_ICON}</a><a class="employee-contact-shortcut is-vrobo" href="${escHtml(_fdVroboUrl(phone))}" target="_blank" rel="noopener" title="${escHtml(chat)}" aria-label="${escHtml(chat)}">${_FDC_CHAT_ICON}${iconsOnly ? '' : `<span>${esc(chat)}</span>`}</a>`
     : `<span class="employee-contact-unavailable">${_FDC_PHONE_ICON}${esc(missing)}</span>`}</div>`;
 }
 let _myTrailOpenRequest = 0;
@@ -40292,18 +40305,159 @@ async function openMyFollowUpTrail(id, commentId = '', trigger = null) {
     trigger?.removeAttribute('aria-busy');
   }
 }
-function renderMyFollowUpComment(f) {
+// Format stored follow-up reminders at display time, including existing comments.
+function _fuCommentDisplayText(text, now = Date.now()) {
+  return String(text || '').replace(/(موعد المتابعة:\s*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g, (match, label, value) => {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return match;
+    const en = currentLang === 'en', locale = en ? 'en-GB' : 'ar-EG-u-nu-latn';
+    const formatted = new Intl.DateTimeFormat(locale, {
+      timeZone: 'Africa/Cairo', day: 'numeric', month: 'long', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+    }).format(date);
+    const delta = date.getTime() - now, distance = Math.abs(delta);
+    // Compare Cairo calendar days, including days when the UTC offset changes.
+    const dayNumber = value => {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(value);
+      const part = type => Number(parts.find(p => p.type === type).value);
+      return Date.UTC(part('year'), part('month') - 1, part('day')) / 86400000;
+    };
+    const days = dayNumber(date) - dayNumber(new Date(now));
+    const relativeTime = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
+    let relative;
+    if (distance < 60000) relative = en ? 'Due now' : 'حان الموعد';
+    else if (distance < 3600000) relative = relativeTime.format(Math.sign(delta) * Math.floor(distance / 60000), 'minute');
+    else if (days === 1) relative = en ? 'Tomorrow' : 'بكرة';
+    else if (days === -1) relative = en ? 'Yesterday' : 'أمس';
+    else if (days === 0) relative = relativeTime.format(Math.sign(delta) * Math.floor(distance / 3600000), 'hour');
+    else relative = relativeTime.format(days, 'day');
+    if (delta <= -60000) relative = (en ? 'Time passed: ' : 'فات الموعد: ') + relative;
+    return (en ? 'Follow-up time: ' : label) + '\u2068' + relative + ' — ' + formatted + '\u2069';
+  });
+}
+
+function _fuAppointmentPresentation(value, now = Date.now()) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const en = currentLang === 'en', locale = en ? 'en-GB' : 'ar-EG-u-nu-latn';
+  const format = (value, options) => new Intl.DateTimeFormat(locale, { timeZone: 'Africa/Cairo', ...options }).format(value);
+  const day = value => format(value, { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const delta = date.getTime() - now;
+  const tone = delta < -60000 ? 'overdue' : delta <= 60000 ? 'due' : 'upcoming';
+  const when = day(date) === day(now) ? (en ? 'Today' : 'اليوم')
+    : day(date) === day(now + 86400000) ? (en ? 'Tomorrow' : 'بكرة')
+    : day(date) === day(now - 86400000) ? (en ? 'Yesterday' : 'أمس')
+    : format(date, { day: 'numeric', month: 'short', ...(format(date, { year: 'numeric' }) !== format(now, { year: 'numeric' }) ? { year: 'numeric' } : {}) });
+  const clock = format(date, { hour: 'numeric', minute: '2-digit', hour12: true });
+  const label = tone === 'due' ? (en ? 'Due now' : 'حان الموعد')
+    : `${tone === 'overdue' ? (en ? 'Overdue · ' : 'متأخر · ') : ''}${when} · ${clock}`;
+  const title = _fuCommentDisplayText('موعد المتابعة: ' + value, now).replace(/[\u2068\u2069]/g, '');
+  return { label, title, tone };
+}
+function _fuCommentDisplayHtml(text, mentions = false, now = Date.now()) {
+  const render = value => mentions && typeof renderMentionText === 'function' ? renderMentionText(value) : esc(value);
+  const source = String(text || '');
+  const pattern = /موعد المتابعة:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g;
+  let html = '', offset = 0;
+  for (const match of source.matchAll(pattern)) {
+    const badge = _fuAppointmentPresentation(match[1], now);
+    if (!badge) continue;
+    html += render(source.slice(offset, match.index));
+    html += `<time class="fu-appointment-label is-${badge.tone}" datetime="${escHtml(match[1])}" data-fu-appointment title="${escHtml(badge.title)}" aria-label="${escHtml(badge.title)}" dir="${currentLang === 'en' ? 'ltr' : 'rtl'}"><span class="fu-appointment-icon" aria-hidden="true">◷</span><span class="fu-appointment-copy">${esc(badge.label)}</span></time>`;
+    offset = match.index + match[0].length;
+  }
+  return html + render(source.slice(offset));
+}
+function _fuCommentTimeAttrs(text, mentions = false) {
+  if (!/موعد المتابعة:\s*\d{4}-\d{2}-\d{2}T/.test(text || '')) return '';
+  return ` data-fu-timed-comment="${escHtml(text)}"${mentions ? ' data-fu-mentions="true"' : ''}`;
+}
+function _fuRefreshCommentTimes() {
+  if (document.hidden) return;
+  document.querySelectorAll('time[data-comment-relative]').forEach(time => {
+    const value = time.getAttribute('datetime');
+    if (!Number.isFinite(Date.parse(value))) return;
+    const label = _fuRelTime(value);
+    if (time.textContent !== label) time.textContent = label;
+  });
+  document.querySelectorAll('[data-fu-timed-comment]').forEach(element => {
+    element.querySelectorAll('[data-fu-appointment]').forEach(time => {
+      const badge = _fuAppointmentPresentation(time.getAttribute('datetime'));
+      if (!badge) return;
+      time.className = `fu-appointment-label is-${badge.tone}`;
+      time.title = badge.title;
+      time.setAttribute('aria-label', badge.title);
+      time.dir = currentLang === 'en' ? 'ltr' : 'rtl';
+      const copy = time.querySelector('.fu-appointment-copy');
+      if (copy.textContent !== badge.label) copy.textContent = badge.label;
+    });
+  });
+}
+
+function renderMyFollowUpComment(f, layout = 'bubble') {
   const comment = f.latestComment;
   if (!comment?.text?.trim()) return '';
   const en = currentLang === 'en';
   const author = [currentUser, ...(typeof users !== 'undefined' && Array.isArray(users) ? users : [])].find(user => user && ((comment.authorId && String(user._id) === String(comment.authorId)) || (comment.authorName && user.name === comment.authorName)));
   const profile = { ...(author || {}), name: comment.authorName || author?.name || '', avatar: comment.authorAvatar || author?.avatar || '' };
   const date = new Date(comment.at || '');
-  const timestamp = Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(date) : '';
+  const timestamp = Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(date) : '';
+  if (layout === 'card') {
+    const text = myPriorityCommentText(f);
+    return `<button type="button" class="employee-priority-comment" data-followup-id="${escHtml(f.id || f._id || '')}" data-comment-id="${escHtml(comment.id || '')}" onclick="event.stopPropagation();openMyFollowUpTrail(this.dataset.followupId,this.dataset.commentId,this)" ${!(f.id || f._id) || !_canAccessPage('followups') ? 'disabled' : ''} title="${escHtml(en ? 'Read the full conversation' : 'عرض المحادثة كاملة')}">
+      <span class="employee-priority-comment-label">${en ? 'Latest comment · Read conversation' : 'آخر تعليق · عرض المحادثة'}<span aria-hidden="true">${en ? '↗' : '↖'}</span></span>
+      <span class="employee-priority-comment-text" dir="auto"${_fuCommentTimeAttrs(text)}>${_fuCommentDisplayHtml(text)}</span>
+      <span class="employee-priority-comment-meta">${userAvatarHtml(profile, 20)}<span dir="auto">${esc(profile.name)}</span>${timestamp ? `<time datetime="${escHtml(comment.at)}" title="${escHtml(_fuRelTime(comment.at))}">${esc(timestamp)}</time>` : ''}</span>
+    </button>`;
+  }
   return `<button type="button" class="employee-sample-comment employee-comment-message" data-followup-id="${escHtml(f.id || f._id || '')}" data-comment-id="${escHtml(comment.id || '')}" onclick="event.stopPropagation();openMyFollowUpTrail(this.dataset.followupId,this.dataset.commentId,this)" ${!(f.id || f._id) || !_canAccessPage('followups') ? 'disabled' : ''} title="${escHtml(en ? 'Open follow-up trail' : 'فتح مسار المتابعة')}">
     <span class="employee-comment-avatar">${userAvatarHtml(profile, 26)}</span>
-    <span class="employee-comment-content"><span class="employee-comment-bubble" dir="auto">${esc(comment.text)}</span><span class="employee-comment-meta">${profile.name ? `<span dir="auto">${esc(profile.name)}</span>` : ''}${timestamp ? `<time datetime="${escHtml(comment.at)}" title="${escHtml(fmtDateTime(comment.at))}">${esc(timestamp)}</time>` : ''}</span></span>
+    <span class="employee-comment-content"><span class="employee-comment-bubble" dir="auto"${_fuCommentTimeAttrs(comment.text)}>${_fuCommentDisplayHtml(comment.text)}</span><span class="employee-comment-meta">${profile.name ? `<span dir="auto">${esc(profile.name)}</span>` : ''}${timestamp ? `<time datetime="${escHtml(comment.at)}" data-comment-relative title="${escHtml(timestamp)}">${esc(_fuRelTime(comment.at))}</time>` : ''}</span></span>
   </button>`;
+}
+function myPriorityCommentText(f) {
+  const text = f.latestComment?.text || '';
+  // The current appointment has its own row. Keep older appointments in the conversation text.
+  const scheduled = /^(.+?) — موعد المتابعة:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)(?:\s*—\s*([\s\S]*))?$/.exec(text);
+  if (scheduled && Date.parse(scheduled[2]) === Date.parse(f.deferredUntil || '')) return scheduled[3]?.trim() || scheduled[1];
+  return text;
+}
+function renderMyPrioritySchedule(f, now = Date.now()) {
+  const date = new Date(f.deferredUntil || '');
+  if (!Number.isFinite(date.getTime())) return '';
+  const en = currentLang === 'en', locale = en ? 'en-GB' : 'ar-EG-u-nu-latn';
+  const delta = date.getTime() - now, past = delta <= 0, minutes = Math.floor(Math.abs(delta) / 60000);
+  const unit = minutes < 60 ? 'minute' : minutes < 1440 ? 'hour' : 'day';
+  const amount = minutes < 60 ? minutes : minutes < 1440 ? Math.floor(minutes / 60) : Math.floor(minutes / 1440);
+  const relative = minutes < 1 ? (en ? 'Now' : 'الآن') : new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format((past ? -1 : 1) * amount, unit);
+  const exact = new Intl.DateTimeFormat(locale, { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', ...(date.getUTCFullYear() !== new Date(now).getUTCFullYear() ? { year: 'numeric' } : {}), hour: 'numeric', minute: '2-digit', hour12: true }).format(date);
+  return `<div class="employee-priority-schedule${past ? ' is-due' : ''}"><span class="employee-priority-schedule-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${esc(past ? (minutes < 1 ? (en ? 'Due now' : 'حان الموعد') : (en ? 'Overdue follow-up' : 'متأخر عن موعد المتابعة')) : (en ? 'Scheduled follow-up' : 'متابعة مجدولة'))}</span><span class="employee-priority-relative">${esc(relative)}</span><time datetime="${escHtml(date.toISOString())}"><span>${en ? 'Scheduled for' : 'الموعد المحدد'}</span><bdi>${esc(exact)}</bdi></time></div>`;
+}
+function renderMyFollowUpMore(f) {
+  const en = currentLang === 'en', phone = _fdWaPhone(f.clientPhone || ''), valid = /^\d{7,15}$/.test(phone);
+  return `<div class="actions-dd employee-priority-more"><button type="button" class="employee-priority-more-button" aria-haspopup="menu" aria-label="${escHtml((en ? 'More actions for order ' : 'المزيد من الإجراءات للطلب ') + (f.orderRef || f.ticketNo || ''))}" onclick="toggleMyFollowUpMore(event)"><span>${en ? 'More' : 'المزيد'}</span><span aria-hidden="true">⋯</span></button><div class="dd-menu">${valid ? `<a class="dd-item" role="menuitem" href="tel:+${phone}" title="${en ? 'Call customer' : 'اتصال بالعميل'}" aria-label="${en ? 'Call customer' : 'اتصال بالعميل'}">${_FDC_PHONE_ICON}</a><a class="dd-item" role="menuitem" href="${escHtml(_fdVroboUrl(phone))}" target="_blank" rel="noopener">${_FDC_CHAT_ICON}<span>${en ? 'Chat' : 'شات'}</span></a>` : `<span class="dd-item" role="menuitem" aria-disabled="true">${en ? 'Customer phone unavailable' : 'رقم هاتف العميل غير متاح'}</span>`}</div></div>`;
+}
+function toggleMyFollowUpMore(event) {
+  const trigger = event.currentTarget, closing = !!document.querySelector('.dd-menu-portal.show');
+  toggleActionMenu(event);
+  if (closing) return;
+  const menu = document.body.lastElementChild;
+  if (!menu?.classList.contains('dd-menu-portal')) return;
+  menu.classList.add('employee-priority-menu');
+  menu.tabIndex = -1;
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', currentLang === 'en' ? 'Contact customer' : 'التواصل مع العميل');
+  const items = [...menu.querySelectorAll('a')];
+  requestAnimationFrame(() => (items[0] || menu).focus({ preventScroll: true }));
+  menu.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); closeAllMenus(); trigger.focus({ preventScroll: true }); }
+    if (['ArrowDown', 'ArrowUp'].includes(e.key) && items.length) {
+      e.preventDefault();
+      const index = items.indexOf(document.activeElement);
+      items[(index + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    }
+    if (e.key === 'Tab') closeAllMenus();
+  });
 }
 function renderMyCompletedWork() {
   const w = _myWorkspace, en = currentLang === 'en';
@@ -40337,7 +40491,8 @@ function syncMyFollowUpWaitLabels() {
   }
   if (newlyDue.length) {
     const en = currentLang === 'en', first = newlyDue[0];
-    toast(en ? `Follow-up due: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${newlyDue.length - 1})` : ''}` : `حان موعد المتابعة: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${fmtN(newlyDue.length - 1)})` : ''}`);
+    if (window.souliaFollowUpReminder) window.souliaFollowUpReminder.refresh();
+    else toast(en ? `Follow-up due: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${newlyDue.length - 1})` : ''}` : `حان موعد المتابعة: #${first.orderRef || first.ticketNo} ${first.clientName || ''}${newlyDue.length > 1 ? ` (+${fmtN(newlyDue.length - 1)})` : ''}`);
     window.refreshMyFollowUpSession?.();
   }
   if ((_myWorkspace?.followUps || []).some(f => f.deferredUntil)) { renderMyKpis(); return; }
@@ -40361,17 +40516,22 @@ function renderMyFollowUpPreview() {
   const panelStart = `<div id="employee-home-tasks-panel" class="employee-task-panel" role="tabpanel" aria-labelledby="${hasDeliveryIssue?'employee-delivery-issues-tab':'employee-other-tasks-tab'}">`;
   if (!rows.length && myActionableFollowUpCount() === 0) return renderMyTaskTabs() + panelStart + renderMyCompletedWork() + renderMyDeferredWork() + '</div>';
   const remaining = Math.max(0, priorities.length - rows.length);
-  const preview = rows.length ? `<div class="employee-followup-preview"><p>${esc(priorities.some(row => row.due) ? (en ? 'Scheduled follow-ups due now come first' : 'ابدأ بالطلبات التي حان موعد متابعتها') : priorities.some(row => row.shippingIssue) ? (en ? 'Delivery issues take priority' : 'الأولوية لمشكلات التوصيل') : (en ? 'Start with the longest waiting' : 'ابدأ بالأطول انتظارًا'))}</p>
-    <div class="employee-order-stack${_myShowAllPriorities ? ' is-expanded' : ''}${hasDeliveryIssue?' employee-delivery-grid':''}">${rows.map(({ f, minutes, shippingIssue, due }, i) => `<article class="employee-followup-sample${shippingIssue ? ' is-delivery-issue' : ''}${due ? ' is-followup-due' : ''}${minutes !== null && minutes >= 30 ? ' is-late' : ''}"><div class="employee-sample-open">
-      <span class="employee-sample-top"><span class="employee-sample-status"><span aria-hidden="true">${shippingIssue ? '!' : '◷'}</span>${esc(shippingIssue ? (en ? 'Delivery issue' : 'مشكلة توصيل') : f.isConfirmation ? (en ? 'Awaiting confirmation' : 'بانتظار التأكيد') : _fuStatusLabel(f.status || ''))}</span>${due ? `<span class="employee-due-notice" role="status"><span aria-hidden="true">◷</span>${esc(en ? 'Follow-up due — contact the customer' : 'حان موعد المتابعة — تواصل مع العميل')}</span>` : `<span class="employee-sample-wait"${!myFollowUpWaitLabel(minutes) ? ' hidden' : ''}>${esc(myFollowUpWaitLabel(minutes))}</span>`}</span>
-      <span class="employee-sample-order"><bdi>#${esc(f.orderRef || f.ticketNo || '—')}</bdi>${f.clientName ? `<small dir="auto">${esc(f.clientName)}</small>` : ''}</span>
-      <span class="employee-sample-footer"><span class="employee-sample-reason" dir="auto">${esc(shippingIssue ? myDeliveryIssueLabel(f) : f.reason || '')}</span><button type="button" class="employee-sample-call" ${_canAccessPage(shippingIssue ? 'followups' : 'shopify-orders') ? `onclick="openMyHomeFollowUp(${i})"` : 'disabled'} aria-label="${escHtml((en ? 'View order #' : 'عرض الطلب #') + (f.orderRef || f.ticketNo || '—'))}">${esc(en ? 'View order' : 'عرض الطلب')} <span aria-hidden="true">${en ? '→' : '←'}</span></button></span>
-    </div>${renderMyFollowUpComment(f)}${renderMyFollowUpContacts(f)}${shippingIssue ? `${f.id && _canAccessPage('followups') ? renderMyFollowUpDeferralButton(i) : ''}<p class="employee-shipping-alert-end">${esc(en ? 'Schedule the next action while waiting. The issue stays open until successful delivery or final return handling. A comment alone does not close it.' : 'حدّد موعد المتابعة أثناء الانتظار. تظل المشكلة قائمة حتى التسليم أو إنهاء معالجة المرتجع. إضافة تعليق وحدها لا تُغلق المشكلة.')}</p>` : ''}</article>`).join('')}</div>
+  const preview = rows.length ? `<div class="employee-followup-preview"><p>${esc(priorities.some(row => row.due) ? (en ? 'Ordered by oldest follow-up time first' : 'مرتبة حسب موعد المتابعة: الأقدم أولًا') : priorities.some(row => row.shippingIssue) ? (en ? 'Delivery issues take priority' : 'الأولوية لمشكلات التوصيل') : (en ? 'Start with the longest waiting' : 'ابدأ بالأطول انتظارًا'))}</p>
+    <div class="employee-order-stack employee-priority-list${_myShowAllPriorities ? ' is-expanded' : ''}${hasDeliveryIssue?' employee-delivery-grid':''}">${rows.map(({ f, minutes, shippingIssue, due }, i) => `<article class="employee-followup-sample employee-priority-card${shippingIssue ? ' is-delivery-issue' : ''}${due ? ' is-followup-due' : ''}${minutes !== null && minutes >= 30 ? ' is-late' : ''}">
+      ${i === 0 ? `<div class="employee-priority-first">${esc(en ? 'Start here' : 'ابدأ هنا')}<span>${esc(due ? (en ? 'Oldest due time' : 'أقدم موعد مستحق') : shippingIssue ? (en ? 'Delivery needs attention' : 'التوصيل يحتاج متابعة') : (en ? 'Next in priority' : 'التالي حسب الأولوية'))}</span></div>` : ''}
+      <header class="employee-priority-heading"><div class="employee-priority-identity"><span class="employee-priority-order-label">${en ? 'Order' : 'الطلب'}</span><bdi class="employee-priority-ref" dir="ltr" title="${escHtml(String(f.orderRef || f.ticketNo || '—').replace(/^#+/, ''))}">#${esc(String(f.orderRef || f.ticketNo || '—').replace(/^#+/, ''))}</bdi></div><span class="employee-priority-status">${esc(shippingIssue ? (en ? 'Delivery issue' : 'مشكلة توصيل') : f.isConfirmation ? (en ? 'Awaiting confirmation' : 'بانتظار التأكيد') : _fuStatusLabel(f.status || ''))}</span></header>
+      <div class="employee-priority-customer"><strong><bdi>${esc(f.clientName || (en ? 'Customer name unavailable' : 'اسم العميل غير متاح'))}</bdi></strong><span>${esc(shippingIssue ? myDeliveryIssueLabel(f) : f.reason || '')}</span></div>
+      ${renderMyPrioritySchedule(f)}
+      ${renderMyFollowUpComment(f, 'card') || `<div class="employee-priority-no-comment">${en ? 'No comments yet' : 'لا توجد تعليقات بعد'}</div>`}
+      ${!due ? `<span class="employee-sample-wait employee-priority-wait"${!myFollowUpWaitLabel(minutes) ? ' hidden' : ''}>${esc(myFollowUpWaitLabel(minutes))}</span>` : ''}
+      ${shippingIssue && f.id && _canAccessPage('followups') ? `<div class="employee-priority-defer">${renderMyFollowUpDeferralButton(i)}</div>` : ''}
+      <footer class="employee-priority-footer">${f.id && !f.isConfirmation && _canAccessPage('followups') ? `<button type="button" class="employee-priority-record" data-followup-id="${escHtml(f.id)}" onclick="startMyFollowUpSession(this.dataset.followupId)" aria-label="${escHtml((en ? 'Record follow-up for order ' : 'سجّل متابعة الطلب ') + (f.orderRef || f.ticketNo || ''))}">${en ? 'Record follow-up' : 'سجّل المتابعة'}</button>` : ''}<button type="button" class="employee-priority-view" ${_canAccessPage(shippingIssue ? 'followups' : 'shopify-orders') ? `onclick="openMyHomeFollowUp(${i})"` : 'disabled'} aria-label="${escHtml((en ? 'View order #' : 'عرض الطلب #') + String(f.orderRef || f.ticketNo || '—').replace(/^#+/, ''))}">${esc(en ? 'View order' : 'عرض الطلب')}<span aria-hidden="true">${en ? '→' : '←'}</span></button>${renderMyFollowUpMore(f)}</footer>
+    </article>`).join('')}</div>
     ${priorities.length > previewLimit ? `<button type="button" class="employee-stack-more" onclick="toggleMyPriorityCards()" aria-expanded="${_myShowAllPriorities}" aria-label="${escHtml(_myShowAllPriorities ? (en ? 'Show fewer priority orders' : 'عرض عدد أقل من الطلبات') : (en ? `Show ${fmtN(remaining)} more priority orders` : `عرض ${fmtN(remaining)} طلبات أولوية أخرى`))}">${_myShowAllPriorities ? '' : `<bdi>+${fmtN(remaining)}</bdi>`}<span>${esc(_myShowAllPriorities ? (en ? 'Show less' : 'عرض أقل') : (en ? 'priority orders' : 'طلبات أولوية'))}</span></button>` : ''}</div>` : '';
   const empty = !rows.length ? `<p class="employee-task-view-empty">${esc(hasDeliveryIssue ? (en ? 'No delivery issues need action now. Review scheduled requests below.' : 'لا توجد مشكلات توصيل تتطلب إجراءً الآن. راجع الطلبات المنتظرة أدناه.') : (en ? 'No other urgent tasks. Delivery issues remain open.' : 'لا توجد مهام عاجلة أخرى. مشكلات التوصيل ما زالت قائمة.'))}</p>` : '';
   const sessionCount = myFollowUpPriorities(false).filter(row => row.f.id && !row.f.isConfirmation).length;
   const sessionAvailable = _canAccessPage('followups') && sessionCount > 0;
-  return renderMyTaskTabs() + (allowed || sessionAvailable ? `<div class="employee-followup-actions">${sessionAvailable ? `<button type="button" class="employee-session-start" onclick="startMyFollowUpSession()"><span class="employee-session-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 2 2 3-4M12 6h8M4 13l2 2 3-4M12 13h8M12 20h8"/></svg></span><span class="employee-session-start-label"><strong>${esc(en ? 'Start following up now' : 'ابدأ المتابعات الآن')}</strong><small><bdi>${fmtN(sessionCount)}</bdi> ${esc(en ? 'follow-ups due' : 'متابعة مستحقة')}</small></span><span class="employee-session-start-arrow" aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${allowed ? `<button type="button" class="employee-followup-go" onclick="openMyHomeTasks()">${esc(hasDeliveryIssue ? (en ? 'Customer service' : 'خدمة العملاء') : (en ? 'View related orders' : 'عرض الطلبات المرتبطة'))} <span aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${rows.length && !sessionAvailable ? `<button type="button" class="employee-coach-open" onclick="openMyFollowUpCoach()">${esc(en ? 'View follow-up priority' : 'عرض أولوية المتابعة')}</button>` : ''}</div>` : '') + panelStart + empty + preview + renderMyDeferredWork() + '</div>';
+  return renderMyTaskTabs() + (allowed || sessionAvailable ? `<div class="employee-followup-actions">${sessionAvailable ? `<button type="button" class="employee-session-start" onclick="startMyFollowUpSession()"><span class="employee-session-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 2 2 3-4M12 6h8M4 13l2 2 3-4M12 13h8M12 20h8"/></svg></span><span class="employee-session-start-label"><strong>${esc(en ? 'Start follow-up session' : 'ابدأ جلسة المتابعة')}</strong><small><bdi>${fmtN(sessionCount)}</bdi> ${esc(en ? 'follow-ups · record each outcome' : 'متابعة · سجّل النتيجة وانتقل للتالي')}</small></span><span class="employee-session-start-arrow" aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${allowed ? `<button type="button" class="employee-followup-go" onclick="openMyHomeTasks()">${esc(hasDeliveryIssue ? (en ? 'Customer service' : 'خدمة العملاء') : (en ? 'View related orders' : 'عرض الطلبات المرتبطة'))} <span aria-hidden="true">${en ? '→' : '←'}</span></button>` : ''}${rows.length && !sessionAvailable ? `<button type="button" class="employee-coach-open" onclick="openMyFollowUpCoach()">${esc(en ? 'View follow-up priority' : 'عرض أولوية المتابعة')}</button>` : ''}</div>` : '') + panelStart + empty + preview + renderMyDeferredWork() + '</div>';
 }
 function openMyHomeTasks() {
   if (!_myShowOtherTasks && myDeliveryIssueCount() > 0) return navigateTo('followups');
@@ -60177,12 +60337,23 @@ function invoiceUnitBarcodeButton(tx, item, isPurchase, isReturn) {
   return `<button type="button" class="invoice-unit-code" onclick="showInvoiceLineBarcodes(${esc(args)})" title="${label}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3H3v4m14-4h4v4M3 17v4h4m10 0h4v-4M7 8v8m3-8v8m4-8v8m3-8v8"/></svg><span>${label}</span></button>`;
 }
 
+function openInvoiceFromPreview(id, commentId) {
+  if (!_requirePageAccess('invoice-view')) return;
+  closeInvoiceDetail();
+  if (window._pucoInvoiceFromModal) {
+    closePuCardOrdersModal();
+    window._pucoInvoiceFromModal = false;
+  }
+  openOrderView(id);
+  if (commentId) requestAnimationFrame(() => highlightInvComment(commentId));
+}
 function showInvoiceDetail(id, highlightCommentId) {
   if (!_requirePageAccess('invoice-view')) return;
   const tx = transactions.find(t => t._id === id);
   if (!tx) return;
   if (tx.purchaseDetailsHidden) { showRestrictedPurchaseDetail(tx); return; }
-  window._highlightCommentId = highlightCommentId || null;
+  // Comments live on the full invoice, including links from notifications.
+  if (highlightCommentId) { openInvoiceFromPreview(id, highlightCommentId); return; }
   // Update URL with permalink (keeps user on index.html but adds readable ?sale/purchase/return param)
   const _txParamKey = tx.type === 'مشتريات' ? 'purchase' : tx.type === 'مرتجع' ? 'return' : 'sale';
   const _txPermaUrl = new URL(location.href);
@@ -60204,6 +60375,18 @@ function showInvoiceDetail(id, highlightCommentId) {
   // renderInvoiceViewPage's _creditUsed/_noCashMoved; keep the two in sync (two renderers).
   const _creditUsedM = isPurchase ? (Number(tx.creditApplied) || 0) : 0;
   const _noCashMovedM = _creditUsedM > 0 && _depositsTotal <= 0 && _paymentsTotal <= 0;
+  const _receiptRows = tx.depositReceipts || [];
+  const _receiptTotal = _receiptRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const _previewDepositTotal = _depositsTotal || _receiptTotal;
+  const _shownPaymentMethods = new Set([
+    ..._receiptRows.map(row => row.method),
+    ...(_depositsTotal > 0 ? [tx.depMethod] : []),
+    ...(_paymentsTotal > 0 ? [tx.collectMethod] : []),
+  ].filter(Boolean));
+  const _showRemainingMethod = (tx.remaining || 0) > 0 && tx.payment && !_shownPaymentMethods.has(tx.payment);
+  if (_showRemainingMethod) _shownPaymentMethods.add(tx.payment);
+  const _metaPaymentMethod = tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي');
+  const _showPaymentMeta = !_noCashMovedM && !_shownPaymentMethods.has(_metaPaymentMethod);
   const _totalCollected = Math.max(0, (tx.total || 0) - (tx.remaining || 0));
   const _paymentPercent = tx.total > 0 ? Math.min(100, Math.round((_totalCollected / tx.total) * 100)) : 0;
   const _clientInitials = (tx.client || '؟').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '؟';
@@ -60237,11 +60420,11 @@ function showInvoiceDetail(id, highlightCommentId) {
   } else if (isStatusCompleted(tx.payStatus)) {
     _statusText = isPurchase ? t('ivStatusPaidSupplier') : t('ivmStatusCollectedDone');
   } else if (isExchangeSalePendingCollect(tx)) {
-    _statusText = t('ivmStatusAwaitingExchangeAmt', { v: fmtJ(tx.remaining) });
+    _statusText = t('ivStatusAwaitingExchangeDiff');
   } else if (isPurchase) {
-    _statusText = t('ivmStatusOwedSupplierAmt', { v: fmtJ(tx.remaining || 0) });
+    _statusText = t('ivStatusOwedToSupplier');
   } else {
-    _statusText = t('ivmStatusAwaitingCollectionAmt', { v: fmtJ(tx.remaining || 0) });
+    _statusText = t('ivStatusAwaitingCollection');
   }
   const itemsRows = (tx.items || []).map((it, i) => `
     <tr>
@@ -60274,9 +60457,6 @@ function showInvoiceDetail(id, highlightCommentId) {
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>';
   const html = `
     <button class="inv-close" onclick="closeInvoiceDetail()" aria-label="${esc(t('ivmClose'))}">✕</button>
-    <button class="inv-open-tab" onclick="closeInvoiceDetail();openOrderView('${esc(id)}')" title="${esc(t('ivmOpenOrderPage'))}" aria-label="${esc(t('ivmOpenOrderPage'))}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 9h6"/></svg>
-    </button>
     <!-- Header — clean, pastel, centered icon -->
     <div class="inv-header${isPurchase ? ' is-purchase' : ''}${isReturn ? ' is-return' : ''}">
       <div class="inv-icon-circle">${_typeIconSvg}</div>
@@ -60358,7 +60538,6 @@ function showInvoiceDetail(id, highlightCommentId) {
             <tbody>${itemsRows}</tbody>
           </table>
           ${window.InvoiceUnitIdentities?.actions(tx) || ''}
-          ${window.AfterSales?.invoiceActions(tx) || ''}
         </div>
         <!-- Totals — split card -->
         <div class="inv-summary-section">
@@ -60373,25 +60552,37 @@ function showInvoiceDetail(id, highlightCommentId) {
               <div class="card-value">${fmtJ(tx.total || 0)}</div>
             </div>
           </div>
-          ${(tx.remaining || 0) > 0 || _depositsTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 ? `
+          ${(tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 ? `
           <div class="inv-breakdown">
-            ${_spInvoiceReceiptsHtml(tx)}
-            ${_depositsTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod && !(tx.depositReceipts||[]).length ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? t('ivDepositPaid') : t('ivPrepaidDeposit')}${tx.depMethod ? `<span style="font-size:.78rem;opacity:.7">· ${esc(_spInvoiceVaultLabel(tx))}</span>` : ''}</span><span class="amount">${fmtJ(_depositsTotal)}</span></div>` : ''}
+            ${_previewDepositTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? t('ivDepositPaid') : t('ivPrepaidDeposit')}${_spInvoiceVaultLabel(tx) ? `<span style="font-size:.78rem;opacity:.7">· ${esc(_spInvoiceVaultLabel(tx))}</span>` : ''}</span><span class="amount">${fmtJ(_previewDepositTotal)}</span></div>` : ''}
             ${_creditUsedM > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>${t('ivCreditSettled')}</span><span class="amount">${fmtJ(_creditUsedM)}</span></div>` : ''}
             ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? t('ivExtraPayments') : t('ivmCollectedFrom', { v: tx.shipCo || t('ivmShippingGeneric') })}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${esc(_payMethodLabel(tx.collectMethod))}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
-            ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label" style="display:flex;align-items:center;gap:5px">${isPurchase ? t('ivRemainingSupplier') : t('ivRemainingCollect')}${tx.payment ? `<span style="font-size:.75rem;opacity:.7;display:inline-flex;align-items:center;gap:3px">${payMethodIcon(tx.payment,12)}${esc(_payMethodLabel(tx.payment))}</span>` : ''}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
+            ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label" style="display:flex;align-items:center;gap:5px">${isPurchase ? t('ivRemainingSupplier') : t('ivRemainingCollect')}${_showRemainingMethod ? `<span style="font-size:.75rem;opacity:.7;display:inline-flex;align-items:center;gap:3px">${payMethodIcon(tx.payment,12)}${esc(_payMethodLabel(tx.payment))}</span>` : ''}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
           </div>` : ''}
         </div>
         <!-- Extra Meta — compact chips -->
         <div class="inv-meta-chips">
-          <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="v">${_noCashMovedM ? t('ivPaidFromCredit') : esc(_payMethodLabel(tx.depMethod || tx.payment || (isPurchase ? 'تحويل بنكي' : 'نقدي')))}</span></span>
+          ${_showPaymentMeta ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="v">${esc(_payMethodLabel(_metaPaymentMethod))}</span></span>` : ''}
           <span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="v">${esc(tx.employee || '-')}</span></span>
           ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="v">${_puStatusBadge(tx.pickupStatus || 'Pending', tx)}</span></span>${tx.pickupDate ? `<span class="meta-chip"><span class="k meta-chip-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span class="v">${esc(tx.pickupDate)}</span></span>` : ''}` : ''}
-          ${!isPurchase && !isReturn ? `<span class="meta-chip"><span class="k">Bosta</span><span class="v" style="display:flex;align-items:center;gap:6px">${_bostaStatusBadge(tx)}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted)">${new Date(tx.bostaLastSync).toLocaleTimeString(_dtLocale,{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></span>` : ''}
+          ${!isPurchase && !isReturn && (tx.bostaOrderId || tx.bostaStatus || tx.bostaLastSync) ? `<span class="meta-chip"><span class="k">Bosta</span><span class="v" style="display:flex;align-items:center;gap:6px">${_bostaStatusBadge(tx, { hideStatus: true, showTrackingNumber: true })}${tx.bostaLastSync ? `<span style="font-size:.7rem;color:var(--muted)">${new Date(tx.bostaLastSync).toLocaleTimeString(_dtLocale,{hour:'2-digit',minute:'2-digit'})}</span>` : ''}</span></span>` : ''}
           ${(()=>{
             if (!tx.notes) return '';
             const _np = parseNoteAsPayment(tx.notes);
-            if (_np) {
+            const _noteMethodText = tx.notes.replace(/[0-9٠-٩][0-9٠-٩,.]*/, '').replace(/egp|جنيه|ج\.م/gi, '').replace(/[^\p{L}]/gu, '').toLowerCase();
+            const _methodText = method => String(method || '').replace(/[^\p{L}]/gu, '').toLowerCase();
+            const _paymentOnly = _np && (tx.notes.match(/[0-9٠-٩][0-9٠-٩,.]*/g) || []).length === 1 && [_np.method, _payMethodLabel(_np.method)].some(method => _methodText(method) === _noteMethodText);
+            if (_paymentOnly) {
+              // Older orders also store the deposit as a note. Only hide an exact
+              // amount/method duplicate; preserve other payments and free text.
+              const _recordedPayments = [
+                ..._receiptRows,
+                ..._depositsArr.map(row => ({ amount: row.amount, method: row.method || tx.depMethod })),
+                ..._paymentsArr.map(row => ({ amount: row.amount || row.collectAmount, method: row.method || tx.collectMethod })),
+                { amount: _depositsTotal, method: tx.depMethod },
+                { amount: _paymentsTotal, method: tx.collectMethod },
+              ];
+              if (_recordedPayments.some(row => Number(row.amount) === _np.amount && _methodText(row.method) === _methodText(_np.method))) return '';
               return `<span class="meta-chip note payment-note" style="display:inline-flex;align-items:center;gap:5px">${payMethodIcon(_np.method)}<span class="amt-num" style="font-weight:700">${fmtN(_np.amount)}</span><span style="opacity:.65;font-size:.78rem">· ${esc(_np.method)}</span></span>`;
             }
             const _escaped = esc(tx.notes);
@@ -60399,7 +60590,6 @@ function showInvoiceDetail(id, highlightCommentId) {
             return `<span class="meta-chip note" ${_needsPopup ? `onclick="this.classList.toggle('popup-open')"` : ''}><span class="k">${t('ivmNote')}</span><span class="v">${_escaped}</span>${_needsPopup ? `<span class="note-popup">${_escaped}</span>` : ''}</span>`;
           })()}
         </div>
-        ${!isPurchase && !isReturn ? (() => { const c = csInvoiceCardHtml(tx); return c ? `<div style="margin-top:10px">${c}</div>` : ''; })() : ''}
         ${tx.cancelReason ? `<div class="inv-notes cancel-reason"><div class="inv-notes-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>سبب الإلغاء</div><div class="inv-notes-text">${esc(tx.cancelReason)}</div></div>` : ''}
         ${!isPurchase && !isReturn && tx.deliverySource === 'MANUAL' ? `<div class="inv-notes" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #3b82f6;border-radius:10px;padding:12px 14px;margin-top:10px"><div class="inv-notes-label" style="display:flex;align-items:center;gap:6px;color:#1e40af;font-weight:700;font-size:.82rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 6L9 17l-5-5"/></svg>${t('ivDeliveredManually')}</div><div class="inv-notes-text" style="color:#1e40af;font-size:.82rem;line-height:1.6">${t('ivmManualSource')} · ${t('ivDeliveredBy')}: ${esc(tx.deliveredBy||'—')} · ${t('ivDeliveredOn')}: ${tx.deliveredAt ? new Date(tx.deliveredAt).toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '—'}${hasPerm('delivery-view-audit') && Array.isArray(tx.deliveryAuditLog) && tx.deliveryAuditLog.length ? (()=>{ const _last = tx.deliveryAuditLog[tx.deliveryAuditLog.length-1]; return `<br><span style="font-size:.8rem;opacity:.85">${t('ivDeliveryReason')}: ${esc(_last.reason||'')}${_last.note ? ` — ${esc(_last.note)}` : ''}</span>`; })() : ''}</div></div>` : ''}
         <!-- Supplier Attachments -->
@@ -60420,40 +60610,18 @@ function showInvoiceDetail(id, highlightCommentId) {
             </div>
           </div>`;
         })()}
-        <!-- Order Timeline (Shopify → Bosta) -->
-        ${buildOrderTimelineSection(tx)}
-        <!-- Payment Timeline -->
-        ${buildPaymentTimelineSection(tx)}
-        <!-- Comments Section -->
-        ${buildInvCommentsSection(tx)}
-        <!-- Edit History Section -->
-        ${buildInvEditHistorySection(tx)}
       </div>
     </div>
     <!-- Footer Actions -->
     <div class="inv-footer">
       <button class="btn btn-outline btn-icon" title="${esc(t('ivPrint'))}" onclick="closeInvoiceDetail();printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-      ${!isPurchase && !isReturn && !tx.cancelled && (['Preparing','Ready','Picked-Up'].includes(tx.pickupStatus||'') || !!tx.bostaOrderId) ? (['VALIDATION_ERROR','DELETED',''].includes(tx.bostaStatus||'')
-        ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();sendToBosta('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px">${_BOSTA_ICON} <span style="font-size:.85rem">${tx.bostaStatus==='VALIDATION_ERROR'?'Resend to Bosta':tx.bostaStatus==='DELETED'?'Resend to Bosta':'Send to Bosta'}</span></button>`
-        : `<button class="btn btn-outline" onclick="closeInvoiceDetail();syncBostaStatus('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>${_BOSTA_ICON} <span style="font-size:.85rem">Update Bosta</span></button>`
-      ) : ''}
-      ${!isPurchase && !isReturn && !tx.cancelled && tx.bostaOrderId && !['DELIVERED','RETURNED','CANCELLED','DELETED'].includes(tx.bostaStatus||'') ? (_awbWarm(), '') + `<button class="btn btn-outline" onpointerenter="_awbPrepareSoon('${esc(tx._id)}')" onclick="closeInvoiceDetail();printBostaAwb('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg><span style="font-size:.85rem">${currentLang === 'en' ? 'Print Bosta AWB' : 'طباعة بوليصة Bosta'}</span></button>` : ''}
-      ${isExchangeSalePendingCollect(tx) ? `<button class="btn btn-primary" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</button>` : ''}
-      ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) ? `<button class="btn ${isPurchase ? 'btn-danger' : 'btn-primary'}" onclick="closeInvoiceDetail();openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</button>` : ''}
-      ${isPurchase && (tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && isAdmin() ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();openWriteOffModal('${esc(tx._id)}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:.85rem">${t('supWriteOffBtn')}</span></button>` : ''}
-      ${!isPurchase && !isReturn && !tx.cancelled && tx.bostaStatus !== 'DELIVERED' && hasPerm('delivery-manual-confirm') ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();openManualDeliveryModal('${esc(String(tx._id))}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:.85rem">${t('ivConfirmManualDelivery')}</span></button>` : ''}
-      ${!isPurchase && !isReturn && !tx.cancelled && tx.deliverySource === 'MANUAL' && hasPerm('delivery-manual-confirm') ? `<button class="btn btn-outline" onclick="closeInvoiceDetail();undoManualDelivery('${esc(String(tx._id))}')" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><span style="font-size:.85rem">${t('ivUndoManualDelivery')}</span></button>` : ''}
+      <button type="button" class="btn btn-primary inv-open-invoice" onclick="openInvoiceFromPreview('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>${esc(t('openInvoice'))}</button>
     </div>`;
   const _invEl = qs('#inv-detail-content');
   _invEl.classList.toggle('is-purchase', isPurchase);
   _invEl.innerHTML = _spInvoiceEditMark(tx) + html;
   qs('#inv-detail-overlay').classList.add('active');
   window._currentInvoiceTxId = String(tx._id || id || '');
-  if (window._highlightCommentId) {
-    const cid = window._highlightCommentId;
-    window._highlightCommentId = null;
-    setTimeout(() => highlightInvComment(cid), 200);
-  }
   if (window._highlightDiscount) {
     window._highlightDiscount = false;
     setTimeout(() => highlightInvDiscount(), 280);
@@ -89650,7 +89818,10 @@ function handleSearchKeydown(e) {
 }
 
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.header-search') && !e.target.closest('#m-search-toggle') && !e.target.closest('#mnav-search')) {
+  // A history click replaces its row with loading content before bubbling here.
+  // Use the original event path: the detached target no longer has search ancestors.
+  const insideSearch = e.composedPath().some(node => node instanceof Element && node.matches('.header-search, #m-search-toggle, #mnav-search'));
+  if (!insideSearch) {
     closeSearchDropdown();
     if (window.innerWidth <= 768) closeMobileSearch();
   }
@@ -92466,24 +92637,68 @@ function _fuUpdateBadges() { const count = _fuUnseenCount(); const b = qs('#fu-t
 
 async function loadFollowUps() {
   followUps = await fetchOr('followups', api('/followups'), []);
+  window.souliaFollowUpReminder?.sync(followUps);
   _fuPage = 1;
-  renderFuKpi();
   _fuPopulateStatusFilter();
-  renderFollowUps();
   populateFuUserFilter();
+  renderFollowUps();
   _fuUpdateBadges();
 }
 
-function renderFuKpi() {
-  const newToday = followUps.filter(f => (f.createdAt||'').slice(0,10) === today()).length;
+// Use the same business day for the date filters and the "new today" KPI,
+// regardless of the browser's timezone or the UTC date in API timestamps.
+const _fuDayFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+});
+function _fuDayKey(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  const parts = _fuDayFormatter.formatToParts(date);
+  const part = type => parts.find(p => p.type === type).value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function _fuFilteredRows() {
+  const search = (qs('#fu-search')?.value || '').trim().toLowerCase();
+  const statusF = qs('#fu-status-filter')?.value || '';
+  const userF = qs('#fu-user-filter')?.value || '';
+  const fromF = qs('#fu-from')?.value || '';
+  const toF = qs('#fu-to')?.value || '';
+  return followUps.filter(f => {
+    if (statusF && f.status !== statusF) return false;
+    if (userF && f.responsibleName !== userF) return false;
+    if (fromF || toF) {
+      const day = _fuDayKey(f.createdAt);
+      if (!day || (fromF && day < fromF) || (toF && day > toF)) return false;
+    }
+    if (search) {
+      const hay = [f.ticketNo, f.orderRef, f.clientName, f.reason, f.responsibleName].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function _fuKpiCounts(rows, now = new Date()) {
+  const day = _fuDayKey(now);
+  const newToday = rows.filter(f => _fuDayKey(f.createdAt) === day).length;
+  // Cancellation preserves the old status for history; it must not inflate
+  // pending, return or successful-resolution counts.
+  const eligible = rows.filter(f => !f.cancelled);
   // Intentionally narrower than FU_SETTLED_STATUSES: a cancelled order is
   // settled (it sinks) but is not a *success*, so it isn't counted here.
-  const solved   = followUps.filter(f => f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة' || f.status === 'تمت عملية التأكيد').length;
-  const waiting  = followUps.filter(f => [
-    'في انتظار المتابعة', 'قيد المتابعة', 'بانتظار العميل',
+  const solved   = eligible.filter(f => f.status === 'تم حل المشكلة' || f.status === 'تمت المتابعة' || f.status === 'تمت عملية التأكيد').length;
+  const waiting  = eligible.filter(f => [
+    'في انتظار العميل', 'في انتظار المتابعة', 'قيد المتابعة', 'بانتظار العميل',
     'في انتظار المتابعة مع العميل', 'العميل لم يرد', 'العميل مازال متردد', 'العميل أجل الطلب',
   ].includes(f.status)).length;
-  const returns  = followUps.filter(f => f.status === 'سيتم ارتجاع الشحنة').length;
+  const returns  = eligible.filter(f => f.status === 'سيتم ارتجاع الشحنة').length;
+  return { newToday, waiting, returns, solved };
+}
+
+function renderFuKpi(rows = _fuFilteredRows()) {
+  const { newToday, waiting, returns, solved } = _fuKpiCounts(rows);
   const kpiEl = qs('#fu-kpi');
   if (!kpiEl) return;
   // Neutral by design — see the .cmp-stats-grid note in CSS. Only the
@@ -92776,24 +92991,8 @@ function renderFollowUps() {
   initFilterSelects();
   fselSyncAll(qs('#fu-orders-section') || document);
 
-  const search = (qs('#fu-search')?.value || '').toLowerCase();
-  const statusF = qs('#fu-status-filter')?.value || '';
-  const userF = qs('#fu-user-filter')?.value || '';
-  const fromF = qs('#fu-from')?.value || '';
-  const toF = qs('#fu-to')?.value || '';
-
-  let data = followUps.filter(f => {
-    if (statusF && f.status !== statusF) return false;
-    if (userF && f.responsibleName !== userF) return false;
-    const d = (f.createdAt||'').slice(0,10);
-    if (fromF && d < fromF) return false;
-    if (toF && d > toF) return false;
-    if (search) {
-      const hay = [f.ticketNo, f.orderRef, f.clientName, f.reason, f.responsibleName].join(' ').toLowerCase();
-      if (!hay.includes(search)) return false;
-    }
-    return true;
-  });
+  let data = _fuFilteredRows();
+  renderFuKpi(data);
 
   // Completed/cancelled go to bottom, rest sorted newest first
   const active = data.filter(f => !_fuIsSettled(f)).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
@@ -94233,7 +94432,7 @@ function _fuRenderCommentThread() {
           <time class="fu-timeline-time" datetime="${escHtml(c.createdAt || '')}" title="${esc(fmtDateTime(c.createdAt))}">${esc(_fuRelTime(c.createdAt))}</time>
           ${menuBtn}
         </div>
-        ${isCall ? callBadge : `<div class="fu-timeline-text" dir="auto">${esc(c.text)}</div>`}
+        ${isCall ? callBadge : `<div class="fu-timeline-text" dir="auto"${_fuCommentTimeAttrs(c.text)}>${_fuCommentDisplayHtml(c.text)}</div>`}
       </div>
     </div>`;
   }).join('')}${decisionHtml}</div>`;
@@ -100150,7 +100349,7 @@ function renderPickupRuns() {
     if (empty) empty.style.display = 'block';
   } else {
     if (empty) empty.style.display = 'none';
-    tbody.innerHTML = slice.map((run, i) => {
+    const runsHtml = slice.map((run, i) => {
       if (run.isDailyShipping || run.isReadyRun) return _puDailyRunRowHtml(run, i, _puExpandedRunRef === run.key);
       const totalAmt   = run.orders.reduce((s, o) => s + (o.total||0), 0);
       const shipcos    = [...new Set(run.orders.map(o => o.shipCo).filter(Boolean))];
@@ -100204,7 +100403,7 @@ function renderPickupRuns() {
             <button class="btn btn-outline btn-sm" style="padding:5px 9px;font-size:.8rem;border-radius:6px;line-height:1" onclick="event.stopPropagation();toggleRunMenu(event,'${esc(run.pickupRef)}')">⋮</button>
           </td>
         </tr>
-        <tr class="pu-detail-row" id="${runKey}" style="display:${runOpen ? 'table-row' : 'none'}">
+        <tr class="pu-detail-row" data-run-detail="${escHtml(String(run.key || run.pickupRef))}" id="${runKey}" style="display:${runOpen ? 'table-row' : 'none'}">
           <td colspan="8">
             <div class="pu-detail-panel">
 
@@ -100267,6 +100466,7 @@ function renderPickupRuns() {
           </td>
         </tr>`;
     }).join('');
+    _puDailySyncContent(tbody, runsHtml);
   }
 
   _puDailyBindInvoices(tbody);
@@ -100904,7 +101104,6 @@ async function _loadPickupOrders({ background = false } = {}) {
     state.textContent = t('loading');
     state.dataset.state = 'loading';
   }
-  if (_puOrdersLoaded && currentPage === 'pickup-orders') _puPaintCurrentView();
   try {
     const rows = await api('/transactions/pickup-orders', { background });
     const byId = new Map(rows.map(row => [String(row._id), row]));
@@ -102389,6 +102588,7 @@ async function saveManualBonus(employeeId) {
 }
 
 function openReassignOrderModal(orderId) {
+  if (!_spRequireReassign()) return;
   /* ⚠ One assign UI: the ⋮ menu, the Staff cell and the selection bar all open
      openSpAssignModal. The old single-order form below is unreachable. */
   if (typeof openSpAssignModal === 'function') { openSpAssignModal([orderId]); return; }
@@ -102419,6 +102619,7 @@ function openReassignOrderModal(orderId) {
 }
 
 async function saveReassignOrder(orderId) {
+  if (!_spRequireReassign()) return;
   const newEmployeeId = qs('#reassign-new-user')?.value || '';
   if (!newEmployeeId) { toast(t('spReassignPick'), true); return; }
   try {
@@ -103773,6 +103974,8 @@ function _spRefreshOrderTimes() {
 }
 setInterval(_spRefreshOrderTimes, 60000);
 document.addEventListener('visibilitychange', _spRefreshOrderTimes);
+setInterval(_fuRefreshCommentTimes, 60000);
+document.addEventListener('visibilitychange', _fuRefreshCommentTimes);
 
 /**
  * Egyptian number → international digits for wa.me / Vrobo.
@@ -103947,7 +104150,7 @@ function _spPeekFuHtml(o) {
     const outcome = c.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد');
     const body = isCall
       ? `<span class="sp-pk-call ${c.callOutcome === 'answered' ? 'is-ok' : 'is-bad'}">${isEn ? `Call attempt ${fmtN(c.callAttemptNo || 0)}` : `محاولة اتصال ${fmtN(c.callAttemptNo || 0)}`} — ${outcome}</span>${c.text ? `<div class="sp-pk-txt">${esc(c.text)}</div>` : ''}`
-      : `<div class="sp-pk-txt">${typeof renderMentionText === 'function' ? renderMentionText(c.text || '') : esc(c.text || '')}</div>`;
+      : `<div class="sp-pk-txt" dir="auto"${_fuCommentTimeAttrs(c.text, true)}>${_fuCommentDisplayHtml(c.text, true)}</div>`;
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
@@ -104281,8 +104484,15 @@ function _spPeekPrintTx(o) {
   const payment = _d.primaryMethod;
   const total = Number(o.total) || 0;
   const remaining = Math.max(0, total - (deposit || 0));
+  // Shopify stores three separate discounts; a transaction's discount already
+  // includes them all. Normalize previews to that same invoice contract.
+  const itemsTotal = Number(o.itemsTotal) || (o.items || []).reduce((sum, item) =>
+    sum + Number(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))), 0);
+  const discount = Math.min(Math.max(0, (Number(o.discount) || 0)
+    + (Number(o.codesDiscount) || 0) + (Number(o.manualDiscount) || 0)), Math.max(0, itemsTotal));
   return {
     ...o,
+    discount,
     _invoicePreview: true,
     type: 'مبيعات',
     ref: (currentLang === 'en' ? 'PREVIEW-' : 'معاينة-') + String(o.ref || '').replace(/^#+/, ''),
@@ -104564,15 +104774,21 @@ function _spPeekOpenTrail(fuId) {
      route would have to copy all three.
    ⚠ The endpoint answers 200 with `{success:false,error}` for a business
      refusal, so a resolved promise is NOT success — each reply is checked.
-   ⚠ Admin-only, exactly like the route. A non-admin sees the name or «—».
+   ⚠ Requires shopify-reassign, like the route. Other users see the name or «—».
 ─────────────────────────────────────────────────────────────────── */
 
 function _spStaffList() {
-  return (Array.isArray(users) ? users : []).filter(u => u.role === 'staff' && u.isActive !== false);
+  return (Array.isArray(users) ? users : []).filter(u => u.role === 'staff' && u.isActive !== false && u.active !== false);
+}
+
+function _spRequireReassign() {
+  if (hasPerm('shopify-reassign')) return true;
+  toast(t('spReassignDenied'), true);
+  return false;
 }
 
 function openSpAssignModal(ids) {
-  if (!isAdmin()) { toast(currentLang === 'en' ? 'Only an admin can assign orders' : 'الإسناد للأدمن فقط', true); return; }
+  if (!_spRequireReassign()) return;
   const list = (ids || []).map(id => _spOrderById(id)).filter(Boolean);
   if (!list.length) { toast(t('spOrderNotFound'), true); return; }
   const isEn = currentLang === 'en';
@@ -104641,6 +104857,7 @@ function _spAsgPicked() {
 }
 
 async function saveSpAssign(ids) {
+  if (!_spRequireReassign()) return;
   const checked = qs('input[name="sp-asg-user"]:checked');
   if (!checked) { toast(t('spReassignPick'), true); return; }
   const uid = checked.value || '';
@@ -104688,11 +104905,11 @@ function _spStaffCellHtml(o) {
     /* ⚠ Name only — no avatar. The column compresses to ~65px and an avatar there
        left «..h» of the name, which is the one thing the cell exists to say. */
     const inner = `<span>${esc(o.assignedToName)}</span>`;
-    return isAdmin()
+    return hasPerm('shopify-reassign')
       ? `<button type="button" class="sp-staff-chip" title="${escHtml(isEn ? 'Reassign' : 'إعادة إسناد')}" onclick="event.stopPropagation();openSpAssignModal(['${id}'])">${inner}</button>`
       : `<span class="sp-staff-chip is-static">${inner}</span>`;
   }
-  if (!isAdmin() || o.cancelled || o.status !== 'pending') return '<span style="color:var(--text-muted);font-size:.8rem">—</span>';
+  if (!hasPerm('shopify-reassign') || o.cancelled || o.status !== 'pending') return '<span style="color:var(--text-muted);font-size:.8rem">—</span>';
   return `<button type="button" class="sp-assign-link" onclick="event.stopPropagation();openSpAssignModal(['${id}'])">
     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
     ${isEn ? 'Assign' : 'إسناد'}</button>`;
@@ -105452,7 +105669,7 @@ function renderShopifyOrders() {
           ${SP_CONFIRM_ICON}
           ${_shopifySelectedIds.size === 1 ? t('spSendToTransactionsLong') : t('spBulkConfirm')}
         </button>` : ''}
-        ${isAdmin() ? `<button class="sp-bulk-btn is-outline" onclick="openSpAssignModal([..._shopifySelectedIds])">
+        ${hasPerm('shopify-reassign') ? `<button class="sp-bulk-btn is-outline" onclick="openSpAssignModal([..._shopifySelectedIds])">
           <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
           ${currentLang === 'en' ? 'Assign' : 'إسناد'}
         </button>` : ''}
@@ -105622,7 +105839,7 @@ function renderShopifyOrders() {
                       <div class="dd-item sp-order-menu-desktop-only" onclick="openShopifyCommentsModal('${o._id}')">${commentIconSvg(null, 1.5)} ${t('spTabComments')}${(o.comments||[]).length ? ` (${o.comments.length})` : ''}</div>
                       <div class="dd-item sp-order-menu-desktop-only" onclick="_spToggleStar('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.6 22 9.6 17 14.5 18.2 21.4 12 18.1 5.8 21.4 7 14.5 2 9.6 8.9 8.6 12 2"/></svg> ${o.starred ? t('spStarRemove') : t('spStarAdd')}</div>
                       ${hasPerm('complaints') ? `<div class="dd-item" onclick="convertShopifyOrderToFollowUp('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
-                      ${isAdmin() ? `<div class="dd-item" onclick="openReassignOrderModal('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${t('spReassign')}</div>` : ''}
+                      ${hasPerm('shopify-reassign') ? `<div class="dd-item" onclick="openReassignOrderModal('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${t('spReassign')}</div>` : ''}
                       ${canActOnShopifyCancel() ? `<div class="dd-divider"></div><div class="dd-item danger" title="${esc(shopifyCancelMenuLabel())}" onclick="cancelShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ${esc(shopifyCancelMenuLabel())}</div>` : ''}
                     </div>
                   </div>
@@ -105744,7 +105961,7 @@ function renderShopifyOrders() {
               <div class="dd-item sp-order-menu-desktop-only" onclick="openShopifyCommentsModal('${o._id}')">${commentIconSvg(null, 1.5)} ${t('spTabComments')}${(o.comments||[]).length ? ` (${o.comments.length})` : ''}</div>
               <div class="dd-item sp-order-menu-desktop-only" onclick="_spToggleStar('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.1 8.6 22 9.6 17 14.5 18.2 21.4 12 18.1 5.8 21.4 7 14.5 2 9.6 8.9 8.6 12 2"/></svg> ${o.starred ? t('spStarRemove') : t('spStarAdd')}</div>
               ${hasPerm('complaints') ? `<div class="dd-item" onclick="convertShopifyOrderToFollowUp('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
-              ${isAdmin() ? `<div class="dd-item" onclick="openReassignOrderModal('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${t('spReassign')}</div>` : ''}
+              ${hasPerm('shopify-reassign') ? `<div class="dd-item" onclick="openReassignOrderModal('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${t('spReassign')}</div>` : ''}
               ${canActOnShopifyCancel() ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="cancelShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ${esc(shopifyCancelMenuLabel())}</div>` : ''}
             </div>
           </div>` : '';
@@ -110157,13 +110374,15 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js?v=20261024-add-orders"></script>
-<script src="/pickup-daily-shipping.js?v=20261024-run-table"></script>
+<script src="/pickup-daily-shipping.js?v=20261027-stable-refresh"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261024-new-group"></script>
 <script src="/notification-settings.js?v=20261021-3"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
-<script src="/notification-feed.js?v=20261025-stable-1"></script>
+<script src="/notification-feed.js?v=20261027-followup-reminder"></script>
+<link rel="stylesheet" href="/followup-reminders.css?v=20261027-1">
+<script src="/followup-reminders.js?v=20261027-1"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>
 <script src="/order-audit-insights.js?v=20261021-6"></script>
 <script src="/order-audit-marketing.js?v=20261021-7"></script>
@@ -110197,7 +110416,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/otp-audit.css?v=20261026-mobile-filters-time-labels">
 <link rel="stylesheet" href="/transaction-mobile-card.css?v=20261026-white-cards">
 <link rel="stylesheet" href="/employee-followup-session.css?v=20261026-ten-minute-reminder">
-<script src="/employee-followup-session.js?v=20261026-ten-minute-reminder"></script>
+<script src="/employee-followup-session.js?v=task-clarity-20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/employee-followup-tour.css?v=20261026-visible-help-color">
 <script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/design-system.css?v=20261025-1">

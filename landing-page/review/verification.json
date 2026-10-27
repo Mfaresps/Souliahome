@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "report": [
+    {
+      "width": 1440,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 1024,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 768,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 600,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 390,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 360,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 320,
+      "noHorizontalOverflow": true
+    },
+    {
+      "scrollStages": "all four stages verified"
+    },
+    {
+      "dialog": "open, tabs, RTL keyboard navigation, Escape, focus restoration passed"
+    },
+    {
+      "mobile": "navigation, sticky journey visibility, modal passed"
+    },
+    {
+      "reducedMotion": "no pinned scroll, content visible, manual stages work"
+    }
+  ],
+  "browserErrors": [],
+  "failedRequests": [],
+  "externalRequests": 0
+}

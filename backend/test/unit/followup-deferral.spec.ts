@@ -59,10 +59,22 @@ it('reminds the employee and management when due and claims a reminder only once
   await service.scheduledDeferredScan();
   expect(service.notifications.notifyFollowUpSchedule).toHaveBeenCalledWith(expect.objectContaining({id:'ticket', responsibleId:'employee', reason:'awaiting_return'}), true);
   expect(service.presence.emitToUser.mock.calls.map((call: any[]) => call[0])).toEqual(['employee','admin','manager']);
+  expect(service.presence.emitToUser).toHaveBeenCalledWith('employee', 'followup:changed', expect.objectContaining({
+    action: 'reminder', id: 'ticket', responsibleId: 'employee', deferredUntil: expect.any(String), deferReason: 'awaiting_return',
+  }));
   expect(service.model.findOneAndUpdate.mock.calls[0][0]).toMatchObject({ deferReminderSent: { $ne: true }, status: { $nin: DONE_STATUSES } });
   service.model.findOneAndUpdate.mockReturnValue({ lean: async () => null });
   await service.scheduledDeferredScan();
   expect(service.notifications.notifyFollowUpSchedule).toHaveBeenCalledTimes(1);
+});
+it('uses the claimed assignee and still delivers the live reminder without push support', async () => {
+  const { service, row } = fixture();
+  service.model.findOneAndUpdate.mockReturnValue({ lean: async () => ({ ...row, responsibleId: 'new-employee' }) });
+  service.notifications = undefined;
+  await service.scheduledDeferredScan();
+  expect(service.presence.emitToUser).toHaveBeenCalledTimes(1);
+  expect(service.presence.emitToUser).toHaveBeenCalledWith('new-employee', 'followup:changed', expect.objectContaining({ responsibleId: 'new-employee' }));
+  expect(service.model.findOneAndUpdate.mock.calls[0][0]).toMatchObject({ orderOutcome: { $in: ['', null] } });
 });
 it('retries a failed reminder and suppresses escalation while deferred', async () => {
   const { service, row } = fixture();

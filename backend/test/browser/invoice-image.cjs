@@ -200,6 +200,59 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
     assert.ok(result.slowMs<2600, 'slow image does not block receipt generation');
     assert.equal(result.fallbackPng,true);
     // Shopify Mongo IDs must never be queried as persisted sales transaction IDs.
+    // Both export actions must include every discount source, without adding
+    // manualDiscount again to an already-normalized transaction discount.
+    const discountExports = await page.evaluate(async () => {
+      const savedOrder = order, savedTransactions = transactions;
+      const originalText = CanvasRenderingContext2D.prototype.fillText;
+      const rendered = [];
+      CanvasRenderingContext2D.prototype.fillText = function(value, ...args) {
+        rendered.push(String(value)); return originalText.call(this, value, ...args);
+      };
+      navigator.clipboard.write = async items => {
+        const blob = await items[0].data['image/png'];
+        if (blob.type !== 'image/png' || !blob.size) throw new Error('Missing PNG');
+      };
+      const results = [];
+      try {
+        for (const lang of ['ar', 'en']) for (const action of ['copy', 'download']) {
+          currentLang = lang;
+          for (const data of [
+            {name:'manual',discount:0,codesDiscount:0,manualDiscount:75,total:975},
+            {name:'codes',discount:0,codesDiscount:125,manualDiscount:0,discountCode:'SAVE+VIP',total:925},
+            {name:'combined',discount:100,codesDiscount:125,manualDiscount:75,discountCode:'SAVE+VIP',total:750},
+            {name:'capped',discount:900,codesDiscount:125,manualDiscount:75,total:50},
+            {name:'none',discount:0,codesDiscount:0,manualDiscount:0,total:1050},
+          ]) {
+            order = {...data,_id:'discount-order',ref:'discount',itemsTotal:1000,shipCost:50,
+              items:[{name:'Product',qty:2,price:500,total:1000}],approvedDeposit:100};
+            const sourceBefore = JSON.stringify(order);
+            rendered.length = 0;
+            const success = await exportInvoiceImage('shopify',order._id,action);
+            results.push({name:data.name,lang,action,success,text:rendered.slice(),unchanged:sourceBefore===JSON.stringify(order)});
+          }
+          transactions = [{...order,_id:'discount-tx',discount:300,manualDiscount:75,discountCode:'SAVE+VIP',total:750,remaining:650,deposit:100}];
+          rendered.length = 0;
+          const success = await exportInvoiceImage('transaction','discount-tx',action);
+          results.push({name:'transaction',lang,action,success,text:rendered.slice(),unchanged:true});
+        }
+      } finally {
+        order = savedOrder; transactions = savedTransactions;
+        CanvasRenderingContext2D.prototype.fillText = originalText;
+      }
+      return results;
+    });
+    for (const row of discountExports) {
+      assert.equal(row.success,true,JSON.stringify(row));
+      assert.equal(row.unchanged,true);
+      const amount = {manual:75,codes:125,combined:300,capped:1000,transaction:300,none:0}[row.name];
+      const expected = '−' + amount.toLocaleString('en-US') + ' EGP';
+      if (amount) assert.equal(row.text.filter(text=>text===expected).length,1,JSON.stringify(row));
+      else assert.ok(!row.text.includes(row.lang==='en'?'Discount':'الخصم'));
+      if (['codes','combined','transaction'].includes(row.name)) assert.ok(row.text.some(text=>text.includes('SAVE + VIP')));
+      const total = {manual:975,codes:925,combined:750,capped:50,transaction:750,none:1050}[row.name];
+      assert.ok(row.text.includes(total.toLocaleString('en-US')+' EGP'));
+    }
     await page.addScriptTag({content: fs.readFileSync(path.join(root, 'frontend/public/invoice-unit-identities.js'), 'utf8')});
     const identities = await page.evaluate(async () => {
       window.currentUser = {_id:'507f1f77bcf86cd799439030'};

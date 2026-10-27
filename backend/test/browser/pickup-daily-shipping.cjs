@@ -5,9 +5,64 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
 const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '../../..'), publicDir = path.join(root, 'frontend/public');
 const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
-const output = path.join(root, 'artifacts/pickup-stage-colors');
+const output = path.join(root, 'artifacts/pickup-refresh-stability');
 fs.mkdirSync(output, { recursive: true });
 const settle = () => new Promise(resolve => setTimeout(resolve, 350));
+async function assertStableRefresh(page, selector, table = false) {
+  const result = await page.evaluate(async ({ selector, table }) => {
+    const host = qs(selector), card = host.querySelector('[data-daily-order="b"]');
+    const details = card.querySelector('details'), button = card.querySelector('[data-daily-invoice]');
+    details.open = true;
+    button.focus();
+    const scroll = [];
+    for (let el = host; el; el = el.parentElement) {
+      if (el.scrollHeight > el.clientHeight) el.scrollTop = Math.min(120, el.scrollHeight - el.clientHeight);
+      scroll.push([el, el.scrollTop]);
+    }
+    const observer = new MutationObserver(() => {});
+    observer.observe(host, { childList: true, subtree: true, attributes: true, characterData: true });
+    for (let i = 0; i < 5; i++) _puPaintCurrentView();
+    const unchangedMutations = observer.takeRecords().length;
+    observer.disconnect();
+    if (table) {
+      // Exercise the snapshot refresh separately from the carrier-sync fixture.
+      const secondaryAt = _puSecondaryAt;
+      _puSecondaryAt = Date.now();
+      try { await loadPickupOrders({ background: true }); }
+      finally { _puSecondaryAt = secondaryAt; }
+    }
+    const stableSnapshot = card.isConnected && details.open && document.activeElement === button &&
+      scroll.every(([el, top]) => el.scrollTop === top);
+    const original = structuredClone(_pickupOrders.find(o => o._id === 'b'));
+    _puMergeLiveTransaction({ ...original, total: 4321, client: 'Live updated customer', bostaStatus: 'DELIVERED' });
+    await new Promise(resolve => setTimeout(resolve, 120));
+    const liveUpdated = card.isConnected && details.open && document.activeElement === button &&
+      card.textContent.includes('Live updated customer') && /4,321|4٬321|4321/.test(card.textContent);
+    if (table) {
+      _pickupOrders.unshift({ ...original, _id: 'live-new-day', pickupRef: 'NEW-DAY',
+        shipmentEvents: [{ type: 'sent', at: '2026-10-26T08:00:00Z' }] });
+      _pickupOrders.reverse();
+      _puPaintCurrentView();
+    }
+    const stableReorder = card.isConnected && details.open && document.activeElement === button &&
+      (!table || card.closest('.pu-detail-row').style.display !== 'none');
+    // Rebinding after each paint must still invoke an action exactly once.
+    const saved = table ? showInvoiceDetail : pucoShowInvoice;
+    let calls = 0;
+    if (table) showInvoiceDetail = () => calls++;
+    else pucoShowInvoice = () => calls++;
+    button.click();
+    if (table) showInvoiceDetail = saved;
+    else pucoShowInvoice = saved;
+    _pickupOrders = _pickupOrders.filter(o => o._id !== 'live-new-day');
+    if (table) _pickupOrders.reverse();
+    _puMergeLiveTransaction(original);
+    await new Promise(resolve => setTimeout(resolve, 120));
+    return { unchangedMutations, stableSnapshot, liveUpdated, stableReorder, calls };
+  }, { selector, table });
+  assert.deepEqual(result, { unchangedMutations: 0, stableSnapshot: true, liveUpdated: true, stableReorder: true, calls: 1 },
+    'Refresh preserves DOM, expanded products, focus and scroll while applying live changes: ' + selector);
+}
 (async () => {
   const browser = await puppeteer.launch({ headless: true, pipe: true });
   try {
@@ -411,6 +466,7 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 350));
         _puPaintCurrentView();
       });
       assert.equal(await page.$eval('#modal-content [data-daily-order="b"] details', el => el.open), true);
+      await assertStableRefresh(page, '#modal-content [data-daily-dialog]');
       await page.evaluate(() => { _pickupOrders.find(o => o._id === 'a').bostaStatus = 'PICKED_UP'; _puPaintCurrentView(); });
       assert.equal(await page.$eval('#modal-overlay', el => el.classList.contains('active')), true);
       assert.equal(await page.$$eval('#pu-ready-col .pu-group[data-group-key="OLD-a"]', rows => rows.length), 0);
@@ -439,6 +495,7 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 350));
         if (qs('#' + id).style.display === 'none') toggleRunExpand(id);
       }, group.key);
       assert.equal(await page.$$eval('#pu-runs-body .pu-detail-row', rows => rows.filter(row => row.style.display !== 'none')[0].querySelectorAll('.pu-daily-order').length), 3);
+      await assertStableRefresh(page, '#pu-runs-body', true);
       await page.screenshot({ path: path.join(output, `table-${width}.png`) });
       const filters = await page.evaluate(() => {
         const input = qs('#pu-board-search'), from = qs('#pu-board-date-from'), to = qs('#pu-board-date-to');
@@ -483,6 +540,6 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 350));
     }
     assert.deepEqual(await page.evaluate(() => writes), []);
     assert.equal(await page.evaluate(() => _pickupOrders.find(o => o._id === 'a').pickupStatus), 'Ready');
-    console.log('PASS: daily carrier groups, registered/waiting and delivered orders, real pickup coverage, mobile/desktop cards, table expansion and live updates without changing shipment stages. Screenshots: artifacts/pickup-daily-shipping.');
+    console.log('PASS: daily groups, pickup coverage, mobile/desktop cards, stable table/modal refresh, live updates, focus, expanded products and scroll. Screenshots: artifacts/pickup-refresh-stability.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -295,18 +295,18 @@ export class ShopifyController {
     res.send(body);
   }
 
-  // إعادة إسناد أوردر لموظف آخر (أدمن فقط) — لا يؤثر على reviewedBy أو الإيداع أو سجل الأداء
+  // إسناد الطلبات للأدمن أو لمن مُنحت له صلاحية إدارة الإسناد، مع حفظ هوية منفّذ التغيير.
   @Patch('orders/:id/reassign')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-reassign')
   async reassign(
     @Param('id') id: string,
     @Body('newEmployeeId') newEmployeeId: string,
     @Body('reason') reason: string,
     @Request() req: any,
   ) {
-    const changedBy = req.user?.name || req.user?.username || 'admin';
-    const changedById = String(req.user?.userId || req.user?._id || '');
+    const changedBy = req.user?.name || req.user?.username || '';
+    const changedById = String(req.user?.userId || req.user?.sub || req.user?._id || '');
     return this.shopifyService.reassignOrder(id, newEmployeeId, reason || '', changedBy, changedById);
   }
 

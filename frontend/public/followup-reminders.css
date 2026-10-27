@@ -1,0 +1,18 @@
+.fu-reminder{position:fixed;inset-inline-end:20px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:100100;width:370px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 110px);overflow:auto;box-sizing:border-box;padding:20px;background:var(--surface,#fff);color:var(--text,#1f2937);border:1px solid #f59e0b;border-top:4px solid #f59e0b;border-radius:18px;box-shadow:0 12px 48px #0003;font-family:inherit;animation:fu-reminder-enter .25s ease-out}
+.fu-reminder-heading{display:flex;align-items:center;gap:12px}
+.fu-reminder-heading strong{display:block;font-size:17px;line-height:1.6}
+.fu-reminder-heading small{display:block;color:var(--text-muted,#64748b);font-size:12px}
+.fu-reminder-heading>button{margin-inline-start:auto;align-self:flex-start;background:transparent;border:0;color:inherit;font-size:24px;cursor:pointer;min-width:34px;min-height:34px;border-radius:8px}
+.fu-reminder-bell{display:grid;place-items:center;flex-shrink:0;width:46px;height:46px;border-radius:14px;background:#f59e0b24;font-size:26px}
+.fu-reminder-order{font-size:17px;font-weight:700;margin:16px 0 6px;overflow-wrap:anywhere}
+.fu-reminder-reason{font-size:13px;margin:0 0 6px;line-height:1.7}
+.fu-reminder-time{font-size:12px;color:var(--text-muted,#64748b);margin:0 0 16px}
+.fu-reminder-count{background:#f59e0b1a;padding:8px 12px;border-radius:8px;font-size:12px}
+.fu-reminder-actions{display:flex;gap:8px;flex-wrap:wrap}
+.fu-reminder-actions button{min-height:42px;flex:1;font:inherit;font-size:13px}
+.fu-reminder button:focus-visible{outline:2px solid #d97706;outline-offset:3px}
+.notif-item.notification-followup-due,#nc-overlay .nc-item.notification-followup-due{border-inline-start:3px solid #f59e0b;background:color-mix(in srgb,#f59e0b 10%,var(--surface))}
+.notification-followup-due .notif-title,.notification-followup-due .nc-item-title{color:var(--text);font-weight:700}
+@keyframes fu-reminder-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.fu-reminder{inset-inline-end:12px;bottom:calc(82px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);padding:16px}}
+@media(prefers-reduced-motion:reduce){.fu-reminder{animation:none}}

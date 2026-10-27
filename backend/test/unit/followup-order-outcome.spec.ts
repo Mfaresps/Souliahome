@@ -164,6 +164,8 @@ describe('Order outcomes close follow-up trails', () => {
     const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
     const start = html.indexOf('function _fuRenderCommentThread()');
     const end = html.indexOf('const FU_CALL_PHONE_ICON', start);
+    const formatterStart = html.indexOf('function _fuCommentDisplayText(');
+    const formatterEnd = html.indexOf('function renderMyFollowUpComment(', formatterStart);
     const element = { innerHTML: '', scrollTop: 0, scrollHeight: 100 };
     const context = {
       qs: () => element, followUps: [{ _id: 'f1', orderOutcome: outcome,
@@ -173,7 +175,7 @@ describe('Order outcomes close follow-up trails', () => {
       esc: (value: any) => String(value || ''), escHtml: (value: any) => String(value || ''),
       fmtDateTime: () => '', _fuRelTime: () => '', t: (value: string) => value,
     };
-    runInNewContext(html.slice(start, end) + '\n_fuRenderCommentThread();', context);
+    runInNewContext(html.slice(formatterStart, formatterEnd) + html.slice(start, end) + '\n_fuRenderCommentThread();', context);
     expect(element.innerHTML).toContain('Final outcome');
     expect(element.innerHTML).toContain(outcome === 'confirmed' ? '#16a34a' : '#dc2626');
     expect(element.innerHTML).not.toContain('fu-timeline-menu-btn');

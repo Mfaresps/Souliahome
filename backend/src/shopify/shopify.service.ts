@@ -381,7 +381,7 @@ export class ShopifyService {
   }
 
   /**
-   * Admin-only manual reassignment. Changes ONLY routing metadata (assignedTo/
+   * Permission-controlled manual reassignment. Changes ONLY routing metadata (assignedTo/
    * assignedToName/assignedAt/assignmentReason) and appends to assignmentHistory —
    * never touches reviewedBy/reviewedAt or deposit fields, so historical
    * scoring/attribution is unaffected by a REASSIGNMENT to someone else.

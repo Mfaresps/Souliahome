@@ -33,8 +33,19 @@ const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1
       function closeModal(){document.querySelector('#modal-overlay').classList.remove('active')}
       async function api(path,options){const data=JSON.parse(options.body);requests.push({path,...data});if(failNext){failNext=false;throw Error('Temporary failure')}deferred.add(path.split('/')[2]);return {}}
       async function loadMyWorkspace(){window.refreshMyFollowUpSession?.()}
-    ` + fn('myDeferReasonLabel') + '\n' + fn('renderMyFollowUpComment') });
+    ` + ['myDeferReasonLabel', '_fuRelTime', '_fuCommentTimeAttrs', '_fuCommentDisplayText', '_fuAppointmentPresentation', '_fuCommentDisplayHtml', 'renderMyFollowUpComment'].map(fn).join('\n') });
     await page.addScriptTag({ path: root + '/frontend/public/employee-followup-session.js' });
+    await page.evaluate(() => startMyFollowUpSession('customer'));
+    assert.match(await page.$eval('.employee-session-order', e => e.textContent), /#13/);
+    await page.type('textarea', 'Selected order draft');
+    await page.evaluate(() => { closeModal(); startMyFollowUpSession('shipping'); });
+    assert.match(await page.$eval('.employee-session-order', e => e.textContent), /#12/);
+    await page.evaluate(() => { closeModal(); startMyFollowUpSession('customer'); });
+    assert.equal(await page.$eval('textarea', e => e.value), 'Selected order draft');
+    await page.$eval('textarea', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.evaluate(() => { closeModal(); startMyFollowUpSession('shipping'); startMyFollowUpSession('missing'); });
+    assert.match(await page.$eval('.employee-session-order', e => e.textContent), /#12/);
+    assert.equal(await page.evaluate(() => requests.length), 0);
     await page.addScriptTag({ path: root + '/frontend/public/employee-followup-tour.js' });
     await page.evaluate(() => startMyFollowUpSession());
     const channelChoice = '.employee-session-fields label:last-child .employee-session-choice-toggle';

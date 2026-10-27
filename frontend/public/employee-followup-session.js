@@ -123,10 +123,19 @@
       : `<p>${esc(label('لا يوجد تواصل مسجّل بعد', 'No contact recorded yet'))}</p>`}</section>`;
   }
 
-  root.startMyFollowUpSession = function () {
+  root.startMyFollowUpSession = function (followUpId) {
     if (isAdmin() || !_requirePageAccess('followups') || !owner()) return;
+    if (session?.busy) return;
+    const selected = followUpId == null ? '' : String(followUpId);
+    if (selected && !queue().some(row => String(row.f.id) === selected)) return;
     if (!session || session.owner !== owner() || !remaining().length) {
       session = { owner: owner(), ids: queue().map(row => String(row.f.id)), saved: new Set(), skipped: new Set(), drafts: new Map(), busy: false, currentId: '', lastSaved: '' };
+    }
+    if (selected) {
+      if (session.saved.has(selected)) return;
+      session.ids = [selected, ...session.ids.filter(id => id !== selected)];
+      session.skipped.delete(selected);
+      session.lastSaved = '';
     }
     render();
   };
