@@ -253,6 +253,74 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       const total = {manual:975,codes:925,combined:750,capped:50,transaction:750,none:1050}[row.name];
       assert.ok(row.text.includes(total.toLocaleString('en-US')+' EGP'));
     }
+    const pendingExports = await page.evaluate(async () => {
+      const savedOrder = order, savedTransactions = transactions;
+      const originalText = CanvasRenderingContext2D.prototype.fillText;
+      const rendered = [], results = [];
+      CanvasRenderingContext2D.prototype.fillText = function(value, ...args) {
+        rendered.push({text:String(value), font:this.font, color:this.fillStyle});
+        return originalText.call(this, value, ...args);
+      };
+      try {
+        for (const lang of ['ar', 'en']) for (const action of ['copy', 'download']) {
+          currentLang = lang;
+          const originalItems = [
+            {code:'A',name:'Changed product',qty:1,price:200,total:200},
+            {code:'B',name:'Unchanged product',qty:1,price:100,total:100},
+            {code:'C',name:'Removed product',qty:1,price:100,total:100},
+          ];
+          const patchItems = [{...originalItems[0],qty:2,total:400},originalItems[1],
+            {code:'D',name:'Added product',qty:1,price:150,total:150}];
+          order = {_id:'pending-order',shopifyId:'123',ref:'pending',items:originalItems,
+            itemsTotal:400,total:450,shipCost:50,approvedDeposit:100,
+            depositReceipts:[{id:'approved',status:'معتمد',amount:100},{id:'pending',status:'معلق',amount:80},
+              {id:'pending2',status:'معلق',amount:20},{id:'rejected',status:'مرفوض',amount:900},
+              {id:'draft',status:'مسودة',amount:900},{id:'withdrawn',status:'مسحوب',amount:900}],
+            editRequest:{status:'معلق',before:{items:originalItems},patch:{items:patchItems,itemsTotal:650,total:700}}};
+          transactions = [{...order,_id:'pending-tx',shopifyOrderId:'123',type:'مبيعات',deposit:100,remaining:350}];
+          window._shopifyOrders = [order];
+          for (const source of ['shopify','transaction']) {
+            if (source === 'transaction') {
+              order.editRequest.transactionId = 'pending-tx';
+              order.editRequest.patch.remaining = 600;
+            }
+            const before = JSON.stringify([order,transactions]);
+            rendered.length = 0;
+            const success = await exportInvoiceImage(source,source === 'shopify' ? order._id : 'pending-tx',action);
+            results.push({lang,action,source,success,unchanged:before===JSON.stringify([order,transactions]),text:rendered.slice()});
+          }
+          // Rejected/approved requests do not overlay their old proposal.
+          for (const status of ['مرفوض','معتمد']) {
+            order.editRequest.status = status;
+            const prepared = prepareCustomerInvoiceImage(transactions[0],order);
+            if (prepared.total !== 450 || prepared.items[0].qty !== 1 || prepared._invoicePendingEdit) throw new Error('Inactive edit was applied');
+          }
+          order.editRequest.status = 'قيد التنفيذ';
+          if (!prepareCustomerInvoiceImage(transactions[0],order)._invoicePendingEdit) throw new Error('Processing edit missing');
+          const booked = prepareCustomerInvoiceImage({...transactions[0],deposits:[{receiptId:'pending',amount:80}]},order);
+          if (booked.pendingDepositAmount !== 20) throw new Error('Booked receipt counted twice');
+          // Fully covered invoices must never show a negative amount due.
+          rendered.length = 0;
+          await buildCompactInvoiceCanvas({...transactions[0],remaining:50,pendingDepositAmount:100});
+          if (!rendered.some(row=>row.text==='0 EGP')) throw new Error('Negative remaining');
+        }
+      } finally {
+        order = savedOrder; transactions = savedTransactions; window._shopifyOrders = [];
+        CanvasRenderingContext2D.prototype.fillText = originalText;
+      }
+      return results;
+    });
+    for (const row of pendingExports) {
+      assert.equal(row.success,true);
+      assert.equal(row.unchanged,true,'Export must not approve or mutate source records');
+      const texts = row.text.map(entry=>entry.text);
+      for (const expected of ['700 EGP','200 EGP','500 EGP','Added product','Unchanged product']) assert.ok(texts.includes(expected),JSON.stringify(row));
+      assert.ok(texts.some(text=>text.includes('Removed product')));
+      assert.ok(row.text.some(entry=>entry.text.includes(row.lang==='en'?'Qty: 2':'الكمية: 2') && /bold|700/.test(entry.font) && entry.color==='#a16207'),JSON.stringify(row));
+      const markers = row.text.filter(entry=>entry.text.includes(row.lang==='en'?'Pending — under review':'معلق — تحت المراجعة'));
+      assert.equal(markers.length,5,'Only changed/added/removed items, total, and deposit need review markers');
+      assert.ok(markers.every(entry=>entry.font.includes('14px')));
+    }
     await page.addScriptTag({content: fs.readFileSync(path.join(root, 'frontend/public/invoice-unit-identities.js'), 'utf8')});
     const identities = await page.evaluate(async () => {
       window.currentUser = {_id:'507f1f77bcf86cd799439030'};
@@ -333,6 +401,6 @@ const script = fs.readFileSync(path.join(root, 'frontend/public/invoice-image.js
       }
     }
     assert.equal(errors.length, 0, errors.join('\n'));
-    console.log('PASS: real PNG clipboard write/read, legacy clipboard fallbacks, permission/render errors, menu clicks, totals, photos, landscape grids, and shipped HTML syntax');
+    console.log('PASS: real PNG clipboard write/read, pending deposits and item edits in both export actions/languages, legacy clipboard fallbacks, permission/render errors, menu clicks, totals, photos, landscape grids, and shipped HTML syntax');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

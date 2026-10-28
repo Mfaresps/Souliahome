@@ -1,4 +1,5 @@
 import { projectAfterSalesShipment } from '../after-sales/after-sales-shipment';
+import { carrierTrackingUpdate, carrierExceptionHistory, postponementNotificationKey } from './bosta-tracking.util';
 import { recordComplaintExecution } from '../complaints/complaint-workflow';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
@@ -37,6 +38,7 @@ const BOSTA_STATUS_LABELS: Record<string, string> = {
   RETURNED:          'مرتجع',
   CANCELLED:         'ملغي',
   FAILED_ATTEMPT:    'محاولة فاشلة',
+  CUSTOMER_POSTPONED: 'العميل أجّل الاستلام',
   DELETED:           'محذوف من Bosta',
   VALIDATION_ERROR:  'خطأ في البيانات',
   UNKNOWN:           'غير معروف',
@@ -104,6 +106,7 @@ const BOSTA_TEXT_STATUS_MAP: Record<string, string> = {
   terminated:               'CANCELLED',
   archived:                 'CANCELLED',
   failedattempt:            'FAILED_ATTEMPT',
+  customerpostponed:        'CUSTOMER_POSTPONED',
   exception:                'FAILED_ATTEMPT',
   lost:                     'FAILED_ATTEMPT',
   damaged:                  'FAILED_ATTEMPT',
@@ -147,7 +150,51 @@ const BOSTA_TO_SHIPPING_STATUS: Record<string, string> = {
   RETURNED:          'Returned',
   CANCELLED:         'Cancelled',
   FAILED_ATTEMPT:    'InTransit',  // stays in transit on failed attempt
+  CUSTOMER_POSTPONED: 'InTransit',
 };
+
+/** REST keeps exception history inside state; webhooks carry flat exception fields. */
+function bostaExceptionDetails(d: any): { code: number | null; reason: string; scheduledAt: string; at: string } | null {
+  const history = Array.isArray(d?.state?.exception) ? d.state.exception : [];
+  const latest = history.filter((e: any) => e && typeof e === 'object').sort((a: any, b: any) =>
+    (Date.parse(b.time) || 0) - (Date.parse(a.time) || 0))[0];
+  const detail = d?.exception || (!Array.isArray(d?.state?.exception) ? d?.state?.exception : latest) || {};
+  const rawCode = d?.exceptionCode ?? d?.state?.lastExceptionCode ?? d?.state?.exceptionCode ?? detail.code;
+  const code = rawCode === undefined || rawCode === null || rawCode === '' ? null : Number(rawCode);
+  const reason = d?.exceptionReason ?? detail.reason;
+  if (code === null && typeof reason !== 'string') return null;
+  return { code: Number.isFinite(code) ? code : null, reason: typeof reason === 'string' ? reason : '',
+    scheduledAt: typeof detail.scheduledAt === 'string' ? detail.scheduledAt : '',
+    at: typeof detail.time === 'string' ? detail.time : '' };
+}
+
+function onlyPostponedDeliveryAttempts(d: any): boolean {
+  const attempts = d?.attempts;
+  const count = Number(d?.deliveryAttemptsLength ?? d?.numberOfAttempts ?? d?.attemptsCount);
+  // Require complete history, so a partial webhook cannot erase a real issue.
+  return Array.isArray(attempts) && attempts.length > 0 && Number.isFinite(count)
+    && attempts.length === count && attempts.every(a => a.type === 'delivery' && Number(a.exception?.code) === 3);
+}
+
+/** Exception 3 is customer postponement; return-to-business postponement is 21.
+ * https://docs.bosta.co/docs/how-to/get-delivery-status-via-webhook/
+ * Only exception state 47 is reclassified; later movement stays authoritative.
+ */
+function classifyBostaException(status: string, d: any, state: unknown): string {
+  if (status !== 'FAILED_ATTEMPT') return status;
+  const key = String(state ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Lost/damaged/investigation must not inherit stale exception metadata.
+  if (!['47', 'exception', 'failedattempt'].includes(key)) return status;
+  const exception = bostaExceptionDetails(d);
+  if (exception?.code !== null && exception?.code !== undefined) {
+    return exception.code === 3 ? 'CUSTOMER_POSTPONED' : status;
+  }
+  const reason = exception?.reason;
+  if (typeof reason === 'string' && /^postponed\s*[-–—:]?\s*(the\s+)?customer\s+requested\s+postponement\b/i.test(reason.trim())) {
+    return 'CUSTOMER_POSTPONED';
+  }
+  return status;
+}
 
 
 /**
@@ -181,7 +228,7 @@ function resolveBostaStatus(d: any, res: any): string {
     // Skip objects — their inner .code/.value are already listed above
     if (typeof c === 'object') continue;
     const resolved = normalizeBostaStatus(c);
-    if (resolved) return resolved;
+    if (resolved) return classifyBostaException(resolved, d, c);
   }
 
   return 'UNKNOWN';
@@ -215,7 +262,7 @@ function resolveWebhookStatus(payload: any): string {
   for (const c of candidates) {
     if (c === null || c === undefined || typeof c === 'object') continue;
     const resolved = normalizeBostaStatus(c);
-    if (resolved) return resolved;
+    if (resolved) return classifyBostaException(resolved, payload, c);
   }
 
   return 'UNKNOWN';
@@ -234,6 +281,7 @@ const BOSTA_STATUS_RANK: Record<string, number> = {
   IN_TRANSIT:        3,
   OUT_FOR_DELIVERY:  4,
   FAILED_ATTEMPT:    4,
+  CUSTOMER_POSTPONED: 4,
   DELIVERED:         5,
   RETURNED:          5,
   CANCELLED:         5,
@@ -1118,6 +1166,8 @@ export class BostaService {
         ...(hasCod ? { bostaOriginalCod: tx.remaining } : {}),
         bostaLastSync: new Date().toISOString(),
         bostaRawResponse: res,
+        bostaDeliveryException: null,
+        bostaLastTrackingUpdate: null,
         // تجميد العنوان الذي شُحنت عليه الشحنة فعلاً — هذه القيم هي ما استلمته Bosta،
         // ولا تتغير بعدها أبداً. بدونها لا يمكن اكتشاف أن شوبيفاي عدّلت العنوان لاحقاً.
         bostaShippedAddress: {
@@ -1470,6 +1520,13 @@ export class BostaService {
 
     const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
     const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
+    const trackingUpdate = carrierTrackingUpdate(d, statusCode, statusLabel, tx.bostaOrderId || String(d._id || ''),
+      bostaExceptionDetails(d), source, now, tx.bostaLastTrackingUpdate);
+    const trackingChanged = trackingUpdate.key !== tx.bostaLastTrackingUpdate?.key;
+    const savedTrackingKeys = new Set((tx.bostaTrackingEvents || []).map((event: any) => event.key));
+    const historicalUpdates = carrierExceptionHistory(d, trackingUpdate.shipmentId);
+    const trackingEvents = historicalUpdates.filter(event => !savedTrackingKeys.has(event.key));
+    if (trackingChanged) trackingEvents.push(trackingUpdate);
 
     // Compute the new codCollectionStatus — only advance, never regress
     const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
@@ -1477,7 +1534,7 @@ export class BostaService {
     // Creating the Bosta order leaves pickupStatus 'Ready' (registered, not collected). The
     // courier picking it up is what makes it genuinely shipped, so promote it here — and only
     // from 'Ready', so a later 'Delivered' is never dragged back to 'Shipped'.
-    const courierCollected = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode) && tx.pickupStatus === 'Ready';
+    const courierCollected = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(statusCode) && tx.pickupStatus === 'Ready';
     // Once the courier has the parcel, move it out of its preparation ticket and
     // into one deterministic shipping ticket per carrier and calendar day. This
     // keeps orders received in separate ready tickets together after refresh.
@@ -1503,11 +1560,14 @@ export class BostaService {
         bostaShippingStatus: shippingStatus,
         bostaLastSync: now,
         bostaRawResponse: res,
+        bostaDeliveryException: bostaExceptionDetails(d),
+        bostaLastTrackingUpdate: trackingUpdate,
         // Stamp delivery provenance so DELIVERED orders are attributable
         ...(statusCode === 'DELIVERED' ? { deliverySource: 'BOSTA', deliveredAt: tx.deliveredAt || now } : {}),
         ...pickupUpdate,
         ...codUpdate,
       },
+      ...(trackingEvents.length ? { $addToSet: { bostaTrackingEvents: { $each: trackingEvents } } } : {}),
       ...(regressed ? {
         $push: {
           deliveryAuditLog: {
@@ -1530,6 +1590,32 @@ export class BostaService {
 
     this.emit('tx:updated', { _id: txId });
 
+    // Repair an alert created by the old exception-only mapping, but only when
+    // saved metadata or complete delivery history proves it was postponement.
+    // A genuine earlier failure remains open until delivery or human resolution.
+    const previousRaw = tx.bostaRawResponse?.data || tx.bostaRawResponse;
+    if (['CUSTOMER_POSTPONED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode)
+      && ['open', 'awaiting'].includes(tx.shipIssueState)
+      && tx.shipIssueTrigger === 'FAILED_ATTEMPT'
+      && !tx.failedDelivery
+      && ((currentStatus === 'FAILED_ATTEMPT'
+          && resolveBostaStatus(previousRaw, previousRaw) === 'CUSTOMER_POSTPONED'
+          && (!Array.isArray(previousRaw?.attempts) || onlyPostponedDeliveryAttempts(previousRaw)))
+        || onlyPostponedDeliveryAttempts(d))) {
+      await this.txModel.findByIdAndUpdate(txId, {
+        $set: { shipIssueState: '', shipIssueTrigger: '', shipIssueOpenedAt: null },
+        $push: { deliveryAuditLog: {
+          action: 'BOSTA_POSTPONEMENT_CORRECTION', previousStatus: currentStatus,
+          newStatus: statusCode, reason: 'تصحيح تصنيف بوسطة: العميل أجّل الاستلام',
+          note: '', by: `bosta:${source}`, at: now,
+        } },
+      });
+      await this.followUpsService?.closeShippingIssueFollowUp?.(
+        txId, 'تصحيح التصنيف: العميل أجّل الاستلام، وليس محاولة تسليم فاشلة', `bosta:${source}`,
+      );
+      this.emit('tx:updated', { _id: txId });
+    }
+
     if (currentStatus !== 'DELIVERED' && statusCode === 'DELIVERED' && tx.shopifyOrderId) {
       const updatedTx = await this.txModel.findById(txId).lean();
       if (updatedTx) {
@@ -1547,8 +1633,8 @@ export class BostaService {
     //      changes RETURNED once it settles and a derived card could never empty.
     //   2. A follow-up ticket opens so somebody actually calls the customer.
     //
-    // Only on the *transition* — a repeated webhook carrying the same failed
-    // status must not re-fire.
+    // Track changes to the reason, attempt and schedule even if status is unchanged.
+    // Ticket event keys suppress duplicates and let a failed ticket write retry.
     //
     // ⚠ A shipment that was DELIVERED and only afterwards came back is NOT a
     // failed delivery — it is a customer return, and it belongs to the returns
@@ -1556,7 +1642,9 @@ export class BostaService {
     // would refund nothing and cancel a sale the customer actually completed.
     // The test is delivery, not money: with cash-on-delivery the two coincide,
     // but a prepaid order can be paid and never delivered.
-    if (currentStatus !== statusCode && FollowUpsService.isShippingIssueStatus(statusCode)) {
+    const issueChanged = currentStatus !== statusCode || (trackingChanged && !!tx.bostaLastTrackingUpdate);
+    if (FollowUpsService.isShippingIssueStatus(statusCode)
+      && (issueChanged || !['closed', 'reshipped'].includes(tx.shipIssueState))) {
       const wasDelivered = !!tx.deliveredAt || currentStatus === 'DELIVERED';
       if (wasDelivered) {
         this.logger.log(
@@ -1565,7 +1653,7 @@ export class BostaService {
       } else {
         // Reopens a previously closed issue too: a re-shipped order that fails
         // again is a live problem, and its old closing decision no longer holds.
-        await this.txModel.findByIdAndUpdate(txId, {
+        if (trackingChanged || currentStatus !== statusCode || !tx.shipIssueState) await this.txModel.findByIdAndUpdate(txId, {
           $set: {
             shipIssueState: 'open',
             shipIssueTrigger: statusCode,
@@ -1573,18 +1661,40 @@ export class BostaService {
             ...(tx.shipIssueState === 'closed' ? { failedDelivery: null } : {}),
           },
         });
-        if (tx.shipIssueState !== 'open' && tx.shipIssueState !== 'awaiting') await this.notifications?.enqueue('deliveryProblem', 'problem:' + txId + ':' + (tx.bostaOrderId || '') + ':' + (tx.failedDelivery?.closedAt || 'initial') + ':' + (tx.shipmentAttempts?.length || 0), tx.ref, 'tx:' + txId, undefined, statusCode);
+        if ((trackingChanged || !tx.shipIssueState) && tx.shipIssueState !== 'open' && tx.shipIssueState !== 'awaiting') await this.notifications?.enqueue('deliveryProblem', 'problem:' + txId + ':' + trackingUpdate.key, tx.ref, 'tx:' + txId, undefined, statusCode,
+          { deliveryReason: trackingUpdate.reasonScope === 'last-exception' ? `آخر سبب مسجل: ${trackingUpdate.reasonAr}` : trackingUpdate.reasonAr,
+            deliveryReasonOriginal: trackingUpdate.reasonScope === 'last-exception' ? `Last reported exception: ${trackingUpdate.reason}` : trackingUpdate.reason });
         this.emit('tx:updated', { _id: txId });
 
-        // Fire-and-forget: status ingestion never waits on, or fails because
-        // of, follow-up creation.
-        this.followUpsService
-          .openShippingIssueFollowUp(tx as any, statusCode)
+        // Complete ticket creation before appending the same event to its thread.
+        await this.followUpsService
+          .openShippingIssueFollowUp(tx as any, statusCode, trackingUpdate)
           .catch((err) =>
             this.logger.error(`Auto follow-up failed for tx ${txId}: ${(err as Error).message}`),
           );
       }
     }
+
+    if (!tx.deliveredAt && !tx.cancelled && (statusCode === 'CUSTOMER_POSTPONED'
+      || (['IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode) && trackingUpdate.reasonCode === 3))) {
+      await this.followUpsService?.openShippingIssueFollowUp(tx as any, 'CUSTOMER_POSTPONED', trackingUpdate);
+      // A separate notification category and stable agreement identity. Retrying
+      // the sync repairs a missing enqueue without duplicating inbox or push jobs.
+      await this.notifications?.enqueue('deliveryPostponed', `postponed:${txId}:${postponementNotificationKey(trackingUpdate)}`,
+        tx.ref, 'tx:' + txId, undefined, 'CUSTOMER_POSTPONED', { postponedUntil: trackingUpdate.scheduledAt });
+      if (onlyPostponedDeliveryAttempts(d)) {
+        await this.notifications?.correctPostponementNotifications?.(txId, trackingUpdate.shipmentId, tx.ref, trackingUpdate.scheduledAt, d.createdAt)
+          .catch(() => this.logger.warn(`Postponement notification correction will retry — tx=${txId}`));
+      }
+    }
+
+    // Also append movement, postponement and completion to the existing ticket.
+    // The ticket deduplicates by carrier event key, allowing retry after a DB failure.
+    for (const event of historicalUpdates) {
+      if (event.exceptionAt === trackingUpdate.exceptionAt && event.reasonCode === trackingUpdate.reasonCode) continue;
+      await this.followUpsService?.recordCarrierUpdate?.(txId, event, true);
+    }
+    await this.followUpsService?.recordCarrierUpdate?.(txId, trackingUpdate);
 
     // ── The courier resolved the problem itself ──────────────────────────────
     //
@@ -1633,7 +1743,7 @@ export class BostaService {
       }
       // A closed transaction must not leave an open employee alert behind.
       // Also reconcile repeated syncs for issues closed before this link existed.
-      if (openState || tx.shipIssueTrigger || tx.failedDelivery) {
+      {
         await this.followUpsService?.closeShippingIssueFollowUp?.(
           txId,
           statusCode === 'DELIVERED' ? 'تم تسليم الطلب للعميل' : `استؤنفت حركة الشحنة: ${statusLabel}`,
@@ -1707,6 +1817,32 @@ export class BostaService {
     }
 
     this.logger.log(`Bosta webhook received — tx=${tx._id} bostaOrderId=${bostaOrderId} tracking=${trackingNumber} state=${d.state}`);
+    if (resolveWebhookStatus(d) === 'FAILED_ATTEMPT' && !bostaExceptionDetails(d)
+      && [47, '47', 'Exception', 'FAILED_ATTEMPT'].includes(d.state?.code ?? d.state ?? d.status)) {
+      // A sparse webhook is not evidence of a particular failure reason. Ask
+      // Bosta for its full current record before opening an unspecified ticket.
+      try {
+        const verified = await this.fetchDelivery(tx.bostaOrderId || bostaOrderId);
+        const full = verified?.data || verified;
+        const verifiedStatus = resolveBostaStatus(full, verified);
+        if (['DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED_ATTEMPT', 'CUSTOMER_POSTPONED'].includes(verifiedStatus)) {
+          return this.applyDeliveryUpdate(String(tx._id), tx, verified, 'sync');
+        }
+        const detail = bostaExceptionDetails(full);
+        const webhookAt = new Date(d.timeStamp ?? d.timestamp ?? '').getTime();
+        if (detail && Number.isFinite(webhookAt) && Math.abs(webhookAt - Date.parse(detail.at)) < 120000) {
+          // The parcel may already be back at the hub. Verify the exception's
+          // timestamp before associating its reason with this particular attempt.
+          await this.applyDeliveryUpdate(String(tx._id), tx, { ...d, exceptionCode: detail.code,
+            exceptionReason: detail.reason, exception: { ...detail, time: detail.at },
+            numberOfAttempts: full.numberOfAttempts ?? full.deliveryAttemptsLength }, 'webhook');
+          const refreshed = await this.txModel.findById(tx._id).lean();
+          return this.applyDeliveryUpdate(String(tx._id), refreshed || tx, verified, 'sync');
+        }
+      } catch {
+        this.logger.warn(`Bosta reason verification unavailable — tx=${tx._id}; reason remains unspecified`);
+      }
+    }
     return this.applyDeliveryUpdate(String(tx._id), tx, d, 'webhook');
   }
 

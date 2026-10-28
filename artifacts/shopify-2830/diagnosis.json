@@ -1,0 +1,356 @@
+{
+  "local": {
+    "_id": "6ae0a3f56c8ef6018c1d333f",
+    "ref": "2830",
+    "shopifyOrderId": "7213632618797",
+    "type": "مبيعات",
+    "total": 3410,
+    "discount": 120,
+    "manualDiscount": 0,
+    "discountCode": "",
+    "deposit": 1500,
+    "remaining": 1910,
+    "carrierCode": "bosta",
+    "bostaStatus": "DELIVERED",
+    "bostaTrackingNumber": "3165888119",
+    "deliverySource": "BOSTA",
+    "deliveredAt": "2026-10-28T07:29:47.960Z",
+    "items": [
+      {
+        "productId": "69ebc179c7524ff8f691c894",
+        "code": "Code 17",
+        "name": "Luma Organize Set",
+        "qty": 1,
+        "price": 890,
+        "total": 890,
+        "imageUrl": "https://soulia.store/cdn/shop/files/hf_20260330_133210_58d8ecac-d764-4928-ad0e-8b7355472b20.png?v=1775858419&width=1600",
+        "shopifyName": "Luma Organize Set",
+        "shopifyPrice": 890,
+        "lineId": "7bc13f81-57fb-41ee-8d7f-3383e3a852d3"
+      },
+      {
+        "productId": "69ebc17ac7524ff8f691c8d0",
+        "code": "Code 37",
+        "name": "Loop Runner",
+        "qty": 1,
+        "price": 750,
+        "total": 750,
+        "imageUrl": "https://soulia.store/cdn/shop/files/hf_20260419_030040_52edd659-f398-4208-9872-469d44c39416.png?v=1776568005&width=1600",
+        "shopifyName": "Loop Runner",
+        "shopifyPrice": 750,
+        "lineId": "cd4d7e61-028b-402e-8321-48c328092f82"
+      },
+      {
+        "productId": "69ebc17ac7524ff8f691c8bb",
+        "code": "Code 30",
+        "name": "Cotton Tissue Beige",
+        "qty": 1,
+        "price": 450,
+        "total": 450,
+        "imageUrl": "",
+        "shopifyName": "",
+        "lineId": "0fb70d1a-dfe5-4ba3-83c4-2de50765373b"
+      },
+      {
+        "productId": "69ebc17ac7524ff8f691c8df",
+        "code": "Code 42",
+        "name": "Bow dining coaster",
+        "qty": 6,
+        "price": 220,
+        "total": 1320,
+        "imageUrl": "",
+        "shopifyName": "",
+        "lineId": "2eeb9bb3-789d-458b-9d79-be2e0e1b006b"
+      }
+    ]
+  },
+  "original": {
+    "total_price": "3820.00",
+    "current_total_price": "3820.00",
+    "subtotal_price": "3820.00",
+    "total_discounts": "120.00",
+    "total_shipping_price_set": {
+      "shop_money": {
+        "amount": "120.00",
+        "currency_code": "EGP"
+      },
+      "presentment_money": {
+        "amount": "120.00",
+        "currency_code": "EGP"
+      }
+    },
+    "currency": "EGP",
+    "line_items": [
+      {
+        "id": 17186584035629,
+        "admin_graphql_api_id": "gid://shopify/LineItem/17186584035629",
+        "attributed_staffs": [],
+        "current_quantity": 1,
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 0,
+        "name": "Oriva Dining Set (15 pieces) - off white & beige",
+        "price": "2180.00",
+        "price_set": {
+          "shop_money": {
+            "amount": "2180.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "2180.00",
+            "currency_code": "EGP"
+          }
+        },
+        "product_exists": true,
+        "product_id": 10266489487661,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sales_line_item_group_id": null,
+        "selling_plan_id": null,
+        "sku": "Code 33",
+        "taxable": true,
+        "title": "Oriva Dining Set (15 pieces)",
+        "total_discount": "0.00",
+        "total_discount_set": {
+          "shop_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          }
+        },
+        "variant_id": 67627819204909,
+        "variant_inventory_management": "shopify",
+        "variant_title": "off white & beige",
+        "vendor": "Soulia",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      },
+      {
+        "id": 17186584068397,
+        "admin_graphql_api_id": "gid://shopify/LineItem/17186584068397",
+        "attributed_staffs": [],
+        "current_quantity": 1,
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 0,
+        "name": "Luma Organize Set",
+        "price": "890.00",
+        "price_set": {
+          "shop_money": {
+            "amount": "890.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "890.00",
+            "currency_code": "EGP"
+          }
+        },
+        "product_exists": true,
+        "product_id": 10243829760301,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sales_line_item_group_id": null,
+        "selling_plan_id": null,
+        "sku": "Code 17",
+        "taxable": true,
+        "title": "Luma Organize Set",
+        "total_discount": "0.00",
+        "total_discount_set": {
+          "shop_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          }
+        },
+        "variant_id": 51952186327341,
+        "variant_inventory_management": "shopify",
+        "variant_title": null,
+        "vendor": "Soulia",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      },
+      {
+        "id": 17186584101165,
+        "admin_graphql_api_id": "gid://shopify/LineItem/17186584101165",
+        "attributed_staffs": [],
+        "current_quantity": 1,
+        "fulfillable_quantity": 1,
+        "fulfillment_service": "manual",
+        "fulfillment_status": null,
+        "gift_card": false,
+        "grams": 0,
+        "name": "Loop Runner",
+        "price": "750.00",
+        "price_set": {
+          "shop_money": {
+            "amount": "750.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "750.00",
+            "currency_code": "EGP"
+          }
+        },
+        "product_exists": true,
+        "product_id": 10260154843437,
+        "properties": [],
+        "quantity": 1,
+        "requires_shipping": true,
+        "sales_line_item_group_id": null,
+        "selling_plan_id": null,
+        "sku": "Code 37",
+        "taxable": true,
+        "title": "Loop Runner",
+        "total_discount": "0.00",
+        "total_discount_set": {
+          "shop_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          },
+          "presentment_money": {
+            "amount": "0.00",
+            "currency_code": "EGP"
+          }
+        },
+        "variant_id": 51999658606893,
+        "variant_inventory_management": "shopify",
+        "variant_title": null,
+        "vendor": "Soulia",
+        "tax_lines": [],
+        "duties": [],
+        "discount_allocations": []
+      }
+    ]
+  },
+  "remote": {
+    "id": "gid://shopify/Order/7213632618797",
+    "name": "#2830",
+    "createdAt": "2026-10-15T14:46:21Z",
+    "cancelledAt": null,
+    "displayFinancialStatus": "PENDING",
+    "displayFulfillmentStatus": "UNFULFILLED",
+    "canMarkAsPaid": true,
+    "currentTotalPriceSet": {
+      "shopMoney": {
+        "amount": "3820.0",
+        "currencyCode": "EGP"
+      }
+    },
+    "totalOutstandingSet": {
+      "shopMoney": {
+        "amount": "3820.0",
+        "currencyCode": "EGP"
+      }
+    },
+    "totalRefundedSet": {
+      "shopMoney": {
+        "amount": "0.0",
+        "currencyCode": "EGP"
+      }
+    },
+    "transactions": [
+      {
+        "id": "gid://shopify/OrderTransaction/8815655584045",
+        "kind": "SALE",
+        "status": "PENDING"
+      }
+    ],
+    "erpStatus": null,
+    "lineItems": {
+      "nodes": [
+        {
+          "id": "gid://shopify/LineItem/17186584035629",
+          "currentQuantity": 1
+        },
+        {
+          "id": "gid://shopify/LineItem/17186584068397",
+          "currentQuantity": 1
+        },
+        {
+          "id": "gid://shopify/LineItem/17186584101165",
+          "currentQuantity": 1
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    },
+    "fulfillments": [],
+    "fulfillmentOrders": {
+      "nodes": [
+        {
+          "id": "gid://shopify/FulfillmentOrder/8361030123821",
+          "status": "OPEN",
+          "supportedActions": [
+            {
+              "action": "CREATE_FULFILLMENT"
+            },
+            {
+              "action": "REPORT_PROGRESS"
+            },
+            {
+              "action": "HOLD"
+            },
+            {
+              "action": "SPLIT"
+            }
+          ],
+          "lineItems": {
+            "nodes": [
+              {
+                "id": "gid://shopify/FulfillmentOrderLineItem/17351464943917",
+                "remainingQuantity": 1,
+                "lineItem": {
+                  "id": "gid://shopify/LineItem/17186584035629"
+                }
+              },
+              {
+                "id": "gid://shopify/FulfillmentOrderLineItem/17351464976685",
+                "remainingQuantity": 1,
+                "lineItem": {
+                  "id": "gid://shopify/LineItem/17186584068397"
+                }
+              },
+              {
+                "id": "gid://shopify/FulfillmentOrderLineItem/17351465009453",
+                "remainingQuantity": 1,
+                "lineItem": {
+                  "id": "gid://shopify/LineItem/17186584101165"
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasNextPage": false
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    }
+  },
+  "plan": {
+    "actions": [],
+    "issues": [
+      "إجمالي الطلب أو العملة مختلف بين النظام وShopify."
+    ],
+    "warnings": [],
+    "sourceHash": "c9918a94bd9b1684ea7386744e098795adece6c27d08dc80dc26af23d6d4061c",
+    "remoteHash": "29ae75d673da95d4cfc9f797169a960d295bfbe6c0e29474a9bd8b4d286f48cd"
+  }
+}

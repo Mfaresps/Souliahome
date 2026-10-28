@@ -1,0 +1,27 @@
+{
+  "state": 24,
+  "stateLabel": "Received at warehouse",
+  "lastExceptionCode": 3,
+  "exceptions": [
+    {
+      "code": 3,
+      "reason": "Postponed - the customer requested postponement for another day.",
+      "time": "2026-10-28T08:46:38.320Z",
+      "scheduledAt": "2026-10-29T03:00:00.000Z"
+    }
+  ],
+  "deliveryAttemptsLength": 1,
+  "attempts": [
+    {
+      "type": "delivery",
+      "attemptDate": "2026-10-28T06:31:37.405Z",
+      "exception": {
+        "code": 3,
+        "reason": "Postponed - the customer requested postponement for another day.",
+        "time": "2026-10-28T08:46:38.320Z",
+        "scheduledAt": "2026-10-29T03:00:00.000Z"
+      }
+    }
+  ],
+  "issueOpenedAt": "2026-10-28T08:50:01.264Z"
+}

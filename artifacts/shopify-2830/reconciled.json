@@ -1,0 +1,61 @@
+{
+  "ref": "2830",
+  "committed": true,
+  "oldTotal": 3820,
+  "newTotal": 3410,
+  "payment": "PENDING",
+  "financialTransactionsUnchanged": true,
+  "unitMappings": [
+    {
+      "lineId": "17228302844205",
+      "sku": "Code 42",
+      "localQty": 6,
+      "remoteQty": 1,
+      "localUnitPrice": 22000,
+      "remoteUnitPrice": 132000
+    }
+  ],
+  "fulfillmentOrders": [
+    {
+      "id": "gid://shopify/FulfillmentOrder/8361030123821",
+      "status": "OPEN",
+      "lines": [
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17351464943917",
+          "remainingQuantity": 0,
+          "lineItem": {
+            "id": "gid://shopify/LineItem/17186584035629"
+          }
+        },
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17351464976685",
+          "remainingQuantity": 1,
+          "lineItem": {
+            "id": "gid://shopify/LineItem/17186584068397"
+          }
+        },
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17351465009453",
+          "remainingQuantity": 1,
+          "lineItem": {
+            "id": "gid://shopify/LineItem/17186584101165"
+          }
+        },
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17393347133741",
+          "remainingQuantity": 1,
+          "lineItem": {
+            "id": "gid://shopify/LineItem/17228302811437"
+          }
+        },
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17393347166509",
+          "remainingQuantity": 1,
+          "lineItem": {
+            "id": "gid://shopify/LineItem/17228302844205"
+          }
+        }
+      ]
+    }
+  ]
+}

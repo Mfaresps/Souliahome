@@ -1,0 +1,30 @@
+{
+  "ref": "2883",
+  "bostaStatus": "IN_TRANSIT",
+  "bostaStatusLabel": "في الطريق",
+  "shipIssueState": "",
+  "shipIssueTrigger": "",
+  "bostaDeliveryException": {
+    "code": 3,
+    "reason": "Postponed - the customer requested postponement for another day.",
+    "scheduledAt": "2026-10-29T03:00:00.000Z",
+    "at": "2026-10-28T08:46:38.320Z"
+  },
+  "financial": {
+    "total": 1950,
+    "remaining": 1450,
+    "payStatus": "معلق",
+    "codCollectionStatus": "PendingPayment"
+  },
+  "followups": [
+    {
+      "id": "6ae1b73c17d76ae19082d5e8",
+      "ticketNo": "FU-261028-2883",
+      "status": "في انتظار المتابعة",
+      "source": "shipping-followup",
+      "reason": "أجل الاستلام",
+      "reminder": "2026-10-29T03:00:00.000Z",
+      "resolution": ""
+    }
+  ]
+}

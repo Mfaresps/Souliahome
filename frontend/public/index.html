@@ -21166,6 +21166,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <details id="sp-tools-menu" class="sp-header-menu">
       <summary data-i18n-aria-label="spMoreActions" aria-label="المزيد" title="المزيد"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></summary>
       <div class="sp-tools-panel">
+        <button class="btn btn-sm sp-icon-btn" type="button" id="sp-sync-old" hidden onclick="openShopifySync()">مزامنة الطلبات القديمة</button>
         <button class="btn btn-sm sp-icon-btn" onclick="openImportOldOrdersModal()" data-i18n-title="spImportOld" title="استيراد أوردر قديم">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span data-i18n="spImportOld">استيراد أوردر قديم</span></button>
@@ -23609,14 +23610,14 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/shopify-kpis.js?v=20261028-content-loading"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261028-complaint-navigation">
-<script src="/after-sales.js?v=20261028-complaint-navigation"></script>
-<link rel="stylesheet" href="/complaint-flow.css?v=20261028-6">
-<script src="/complaint-flow.js?v=20261028-7"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261029-receipt-layout">
+<script src="/after-sales.js?v=20261029-label-config"></script>
+<link rel="stylesheet" href="/complaint-flow.css?v=20261029-6">
+<script src="/complaint-flow.js?v=20261029-6"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
-<script src="/invoice-image.js?v=20261022-preview-identity"></script>
+<script src="/invoice-image.js?v=20261029-pending-customer-values"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -24034,11 +24035,13 @@ let currentPage = 'dashboard';
 let movFilter = 'all';
 let movStatusFilter = '';
 const _BOSTA_STATUS_LABELS = {
+  CUSTOMER_POSTPONED: 'العميل أجّل الاستلام',
   CREATED: 'تم الإنشاء', PICKED_UP: 'تم الاستلام بواسطة شركة الشحن', IN_TRANSIT: 'في الطريق', OUT_FOR_DELIVERY: 'خارج للتسليم',
   DELIVERED: 'تم التسليم', RETURNED: 'مرتجع', FAILED_ATTEMPT: 'محاولة تسليم فاشلة', DELIVERY_FAILED: 'فشل التسليم',
   CANCELLED: 'ملغي', DELETED: 'محذوف من Bosta', VALIDATION_ERROR: 'خطأ في البيانات',
 };
 const _BOSTA_STATUS_LABELS_EN = {
+  CUSTOMER_POSTPONED: 'Postponed by customer',
   CREATED: 'Created', PICKED_UP: 'Picked up', IN_TRANSIT: 'In transit', OUT_FOR_DELIVERY: 'Out for delivery',
   DELIVERED: 'Delivered', RETURNED: 'Returned', FAILED_ATTEMPT: 'Failed attempt', DELIVERY_FAILED: 'Delivery failed',
   CANCELLED: 'Cancelled', DELETED: 'Deleted from Bosta', VALIDATION_ERROR: 'Validation error',
@@ -24136,13 +24139,14 @@ const _PU_FILTER_OPTIONS = [
   { val: 'Preparing', labelKey: 'puFltPreparing', cls: 'pu-badge-prep'     },
   { val: 'Ready',     labelKey: 'puFltReady',     cls: 'pu-badge-pickedup' },
   { val: 'Shipped',   labelKey: 'puFltShipped',   cls: 'pu-badge-shipped'  },
-  ...['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY']
+  ...['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED']
     .map(val => ({ val, labelKey: '', cls: '' })),
   { val: 'Delivered', labelKey: 'puFltDelivered', cls: 'pu-badge-delivered'},
   ...['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED', 'CANCELLED']
     .map(val => ({ val, labelKey: '', cls: '' })),
 ];
 const _BOSTA_BADGE_CLS = {
+  CUSTOMER_POSTPONED: 'bosta-badge-transit',
   CREATED:          'bosta-badge-created',
   PICKED_UP:        'bosta-badge-transit',
   IN_TRANSIT:       'bosta-badge-transit',
@@ -25599,6 +25603,7 @@ const TRANSLATIONS = {
   bsToastDelivered:{ar:'تم تسليم الطلب {ref} للعميل بنجاح ✓',en:'Order {ref} was delivered successfully ✓'},
   bsToastOutForDelivery:{ar:'الطلب {ref} خرج للتسليم — مع المندوب الآن',en:'Order {ref} is out for delivery — with the courier now'},
   bsToastInTransit:{ar:'الطلب {ref} في الطريق إلى العميل',en:'Order {ref} is on its way to the customer'},
+  bsToastPostponed:{ar:'العميل أجّل استلام الطلب {ref}',en:'The customer postponed delivery of order {ref}'},
   bsToastPickedUp:{ar:'تم استلام الطلب {ref} من المخزن',en:'Order {ref} was picked up from the warehouse'},
   bsToastCreated:{ar:'تم تسجيل الطلب {ref} لدى شركة الشحن',en:'Order {ref} is registered with the courier'},
   bsToastReturned:{ar:'الطلب {ref} رجع ولم يُسلَّم — يحتاج معالجة',en:'Order {ref} came back undelivered — needs handling'},
@@ -27224,6 +27229,7 @@ const TRANSLATIONS = {
   bostaStatusPickedUp:{ar:'تم الاستلام بواسطة شركة الشحن',en:'Picked Up'},
   bostaStatusInTransit:{ar:'في الطريق',en:'In Transit'},
   bostaStatusOutForDelivery:{ar:'خارج للتسليم',en:'Out for Delivery'},
+  bostaStatusPostponed:{ar:'العميل أجّل الاستلام',en:'Postponed by Customer'},
   bostaStatusDelivered:{ar:'تم التسليم',en:'Delivered'},
   bostaStatusReturned:{ar:'مرتجع',en:'Returned'},
   bostaStatusFailedAttempt:{ar:'محاولة تسليم فاشلة',en:'Failed Attempt'},
@@ -40238,6 +40244,9 @@ async function saveMyFollowUpDeferral(id, form) {
 }
 function myDeliveryIssueLabel(f) {
   const en = currentLang === 'en';
+  const carrierReason = en ? f.carrierUpdate?.reason || f.carrierUpdate?.reasonAr : f.carrierUpdate?.reasonAr || f.carrierUpdate?.reason;
+  if (carrierReason) return carrierReason.slice(0, 180);
+  if (f.autoTrigger === 'CUSTOMER_POSTPONED') return en ? 'Customer postponed delivery' : 'العميل أجّل الاستلام';
   if (f.autoTrigger === 'FAILED_ATTEMPT') return en ? 'Delivery attempt unsuccessful' : 'تعذّر تسليم الشحنة';
   if (f.autoTrigger === 'RETURNED') return en ? 'Shipment returned' : 'الشحنة مرتجعة';
   return (f.reason || (en ? 'Delivery issue — contact the customer' : 'مشكلة توصيل — يُرجى التواصل مع العميل')).slice(0, 90);
@@ -41525,13 +41534,15 @@ function _dashShipStatus(tx) {
     CREATED:          { cls: 'ds-ship-created',   labelKey: 'bostaStatusCreated',        rank: 1 },
     PICKED_UP:        { cls: 'ds-ship-pickedup',  labelKey: 'bostaStatusPickedUp',       rank: 2 },
     IN_TRANSIT:       { cls: 'ds-ship-transit',   labelKey: 'bostaStatusInTransit',      rank: 3 },
+    CUSTOMER_POSTPONED: { cls: 'ds-ship-transit', labelKey: 'bostaStatusPostponed', rank: 3 },
     OUT_FOR_DELIVERY: { cls: 'ds-ship-out',       labelKey: 'bostaStatusOutForDelivery', rank: 4, pulse: true },
     DELIVERED:        { cls: 'ds-ship-delivered', labelKey: 'bostaStatusDelivered',      rank: 5 },
     RETURNED:         { cls: 'ds-ship-issue',     labelKey: 'bostaStatusReturned',       rank: 0, pulse: true },
     FAILED_ATTEMPT:   { cls: 'ds-ship-issue',     labelKey: 'bostaStatusFailedAttempt',  rank: 0, pulse: true },
     DELIVERY_FAILED:  { cls: 'ds-ship-issue',     labelKey: 'bostaStatusDeliveryFailed', rank: 0, pulse: true },
   };
-  const pick = (key) => ({ key, ...STAGES[key], label: t(STAGES[key].labelKey) });
+  const pick = (key) => ({ key, ...STAGES[key], label: key === 'IN_TRANSIT' && tx.bostaDeliveryException?.code === 3
+    ? `${t(STAGES[key].labelKey)} · ${t('bostaStatusPostponed')}` : t(STAGES[key].labelKey) });
   const bosta = tx.bostaStatus || '';
   if (bosta && STAGES[bosta]) return pick(bosta);
   if (tx.deliverySource === 'MANUAL') return pick('PICKED_UP');
@@ -42168,7 +42179,7 @@ function txFulfillmentStage(tx) {
   const pickup = String(tx.pickupStatus || '').trim();
 
   if (bosta === 'DELIVERED' || pickup === 'Delivered' || pickup === 'Picked-Up') return 'closed';
-  if (['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(bosta)) return 'transit';
+  if (['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(bosta)) return 'transit';
   if (pickup === 'Shipped' || tx.deliverySource === 'MANUAL') return 'transit';
   return 'none';
 }
@@ -42235,7 +42246,7 @@ function movPriorityScore(tx) {
   const pickup = tx.pickupStatus || 'Pending';
   // Still in an active shipping stage? Stays near the top regardless of payment status —
   // a paid-in-full sale whose shipment was just Created must not sink to the bottom.
-  const isShippingActive = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(bosta)
+  const isShippingActive = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(bosta)
     || ['Ready', 'Pending', 'Preparing', 'Shipped'].includes(pickup);
 
   const isCompleted = isStatusCompleted(tx.payStatus) && !isShippingActive;
@@ -56010,6 +56021,7 @@ async function bulkSendToBosta() {
    دلوقتي: الرسالة بتتغيّر بالحالة، بتبدأ بالمرجع، والفشل بيتبعت كـerror
    (أحمر + بيفضل ٥ ثواني بدل ٣) فالنتيجة السلبية ما بتعديش كأنها نجاح. */
 const _BOSTA_TOAST = {
+  CUSTOMER_POSTPONED: { key: 'bsToastPostponed', err: false },
   DELIVERED:        { key: 'bsToastDelivered', err: false },
   OUT_FOR_DELIVERY: { key: 'bsToastOutForDelivery', err: false },
   IN_TRANSIT:       { key: 'bsToastInTransit', err: false },
@@ -56079,7 +56091,7 @@ function _puShippingReceivedRef(shipCo, date) {
 function _applyBostaToPickup(tx, bostaStatus) {
   // Courier has physically collected it — only now is it really shipped. Sending to Bosta just
   // registers the shipment ('CREATED'), which leaves the order in 'Ready' (Ready to Ship).
-  const PICKED_UP_ONWARD = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'];
+  const PICKED_UP_ONWARD = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'];
   if (PICKED_UP_ONWARD.includes(bostaStatus) && tx.pickupStatus === 'Ready') {
     tx.pickupStatus = 'Shipped';
     tx.shippedAt = tx.shippedAt || new Date().toISOString();
@@ -61993,6 +62005,7 @@ function renderInvoiceViewPage() {
     </div>`;
   wrap.dataset.receiptInvoice = String(id);
   if (receiptsExpanded) wrap.querySelector('.spdep-payment-details')?.setAttribute('open','');
+  if (typeof mountShopifyOrderSync === 'function') mountShopifyOrderSync(tx, wrap);
 }
 function _movementsNavLabel() {
   const nav = NAV_ITEMS.find(n => n.id === 'movements');
@@ -62304,13 +62317,34 @@ function buildOrderTimelineSection(tx) {
   const _TL_KEYS = { new: 'tlTr_new', picked_up: 'tlTr_picked_up', in_transit: 'tlTr_in_transit', out_for_delivery: 'tlTr_out_for_delivery',
     delivered: 'tlTr_delivered', returned: 'tlTr_returned', returned_to_business: 'tlTr_returned', exception: 'tlTr_exception', canceled: 'tlTr_cancelled', cancelled: 'tlTr_cancelled' };
   const bostaEvents = [];
+  const carrierHistory = Array.isArray(tx.bostaTrackingEvents) ? tx.bostaTrackingEvents : [];
+  const postponements = SouliaOrderStatus.postponements(tx);
+  const stepPostponements = postponements.map((event, index) => {
+    const en = currentLang === 'en';
+    const active = index === postponements.length - 1 && !tx.cancelled && !tx.deliveredAt
+      && event.shipmentId === (tx.bostaOrderId || '')
+      && ['CUSTOMER_POSTPONED', 'IN_TRANSIT'].includes(tx.bostaStatus)
+      && (tx.bostaStatus === 'CUSTOMER_POSTPONED' || tx.bostaDeliveryException?.code === 3);
+    const schedule = event.scheduledAt
+      ? `${en ? 'New delivery time' : 'موعد الاستلام الجديد'}: ${_fmtTs(event.scheduledAt) || event.scheduledAt}`
+      : (en ? 'Awaiting the new delivery date from Bosta' : 'بانتظار تحديد الموعد الجديد من بوسطة');
+    return _stepHtml(
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M12 14v4m0-4 3 2"/></svg>',
+      en ? 'Delivery postponed by customer' : 'تأجيل الاستلام بطلب العميل',
+      en ? 'The customer requested delivery postponement' : 'طلب العميل تأجيل الاستلام',
+      active ? 'active' : 'completed', event.at || null,
+      `<div class="ord-tl-postponement" data-shipment="${esc(event.shipmentId)}"><div>${esc(schedule)}</div>${event.reason ? `<div dir="auto">${esc(event.reason)}</div>` : ''}</div>`,
+      false, active ? (en ? 'Awaiting another attempt' : 'بانتظار إعادة المحاولة') : (en ? 'Postponement recorded' : 'تأجيل مسجّل'));
+  });
   if (rawTimeline.some(e => e && e.done && e.date)) {
     rawTimeline.filter(e => e && e.done && e.date).forEach(e => {
       const v = String(e.value || '').toLowerCase();
-      const key = _TL_KEYS[v];
+      const postponed = v === 'exception' && tx.bostaDeliveryException?.code === 3
+        && Date.parse(e.date) === Date.parse(tx.bostaDeliveryException.at);
+      const key = postponed ? 'bostaStatusPostponed' : _TL_KEYS[v];
       const att = /(\d+)\s*\/\s*(\d+)/.exec(String(e.desc || ''));
       const label = (key ? t(key) : v.replace(/_/g, ' ')) + (att ? ' · ' + t('tlTrAttempt', { a: att[1], b: att[2] }) : '');
-      bostaEvents.push({ label, time: e.date, dotClass: ['returned', 'exception', 'canceled', 'cancelled'].includes(v) ? 'failed' : 'done' });
+      bostaEvents.push({ label, time: e.date, dotClass: !postponed && ['returned', 'exception', 'canceled', 'cancelled'].includes(v) ? 'failed' : 'done' });
     });
   } else if (Array.isArray(rawTransit) && rawTransit.length) {
     const labelMap = {'created':'Received by Bosta','picked_up':'Picked Up from Sender','in_transit':'In Transit to Destination','out_for_delivery':'Out for Delivery','delivered':'Delivered','returned':'Returned','failed_attempt':'Failed Delivery Attempt','delivery_failed':'Delivery Failed','cancelled':'Cancelled'};
@@ -62329,6 +62363,16 @@ function buildOrderTimelineSection(tx) {
       if (idx <= curIdx) bostaEvents.push({label: lm[s]||s, time: s === 'DELIVERED' ? (tx.deliveredAt || null) : null, dotClass: idx<curIdx?'done':'active'});
     });
   }
+  carrierHistory.forEach(event => {
+    const status = _bostaStatusLabel(event.status) || event.statusLabel;
+    const reason = currentLang === 'en' ? event.reason || event.reasonAr : event.reasonAr || event.reason;
+    const schedule = event.scheduledAt ? ` · ${t('bsdRescheduled', { t: _fmtTs(event.scheduledAt) || event.scheduledAt })}` : '';
+    const row = { label: `${status}${reason ? ' · ' + reason : ''}${schedule}`,
+      time: event.at, dotClass: ['FAILED_ATTEMPT', 'RETURNED', 'CANCELLED'].includes(event.status) ? 'failed' : 'done' };
+    const existing = bostaEvents.findIndex(e => e.time && Date.parse(e.time) === Date.parse(event.at));
+    if (existing >= 0) bostaEvents[existing] = row; else bostaEvents.push(row);
+  });
+  bostaEvents.sort((a, b) => (Date.parse(a.time) || 0) - (Date.parse(b.time) || 0));
   if (tx.deliverySource === 'MANUAL' && tx.bostaStatus === 'DELIVERED') {
     bostaEvents.push({label: tf('ivTlManuallyDeliveredBy', { v: tx.deliveredBy || '—' }), time: tx.deliveredAt, dotClass: 'done'});
   }
@@ -62524,7 +62568,7 @@ function buildOrderTimelineSection(tx) {
      used to jump above the order's own creation. Steps that have not happened keep their logical
      order at the end. «تم الإرسال للشحن» is dropped once the shipment log exists: it repeated that
      log's first line. */
-  const _specs = [step1, step1b, step2, (stepAwb && isShipped) ? null : step3, stepAwb, ...stepReship, step4,
+  const _specs = [step1, step1b, step2, (stepAwb && isShipped) ? null : step3, stepAwb, ...stepReship, ...stepPostponements, step4,
     stepDeposit, stepSettle, _settleReplacesCod ? null : step5, stepFd, stepCancel]
     .filter(s => s && typeof s === 'object');
   const _isDateOnly = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '').trim());
@@ -84071,9 +84115,14 @@ function _smShiftsFor(userId, day) {
 
 /** Every staff member who should appear — scheduled ones first, then unscheduled. */
 function _smEmployees() {
+  const disabledIds = new Set((users || [])
+    .filter(u => u.isActive === false || u.active === false)
+    .map(u => u._id));
   const scheduled = new Map();
-  employeeShifts.forEach(s => { if (!scheduled.has(s.userId)) scheduled.set(s.userId, s.name); });
-  const staff = (users || []).filter(u => u.role === 'staff');
+  employeeShifts.forEach(s => {
+    if (!disabledIds.has(s.userId) && !scheduled.has(s.userId)) scheduled.set(s.userId, s.name);
+  });
+  const staff = (users || []).filter(u => u.role === 'staff' && !disabledIds.has(u._id));
   const rows = [];
   staff.forEach(u => {
     if (scheduled.has(u._id)) rows.push({ userId: u._id, name: u.name || u.username, scheduled: true });
@@ -84092,6 +84141,11 @@ function renderEmployeeShiftsTable() {
   const host = qs('#emp-shifts-table-body');
   if (!host) return;
   const emps = _smEmployees();
+  const visibleIds = new Set(emps.map(e => e.userId));
+  for (const key of _smSel) {
+    if (!visibleIds.has(key.split('|')[0])) _smSel.delete(key);
+  }
+  if (_smAnchor && !visibleIds.has(_smAnchor.userId)) _smAnchor = null;
   if (!emps.length) {
     host.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted)">${esc(t('smNoStaff'))}</div>`;
     _smSyncBar();
@@ -84104,7 +84158,7 @@ function renderEmployeeShiftsTable() {
   // A day with no on-call employee is a day where an out-of-hours order goes to nobody —
   // worth flagging in the header, since that is invisible from the shift windows alone.
   const hasOnCall = WEEKDAYS.map(w =>
-    employeeShifts.some(s => s.isOnCall && s.isActive && (s.daysOfWeek?.length ? s.daysOfWeek : [0,1,2,3,4,5,6]).includes(w.d)));
+    employeeShifts.some(s => visibleIds.has(s.userId) && s.isOnCall && s.isActive && (s.daysOfWeek?.length ? s.daysOfWeek : [0,1,2,3,4,5,6]).includes(w.d)));
 
   host.innerHTML = `
     <table class="sm-tbl">
@@ -92355,7 +92409,8 @@ function copySurveyLink(slugOrToken) {
 }
 
 async function deleteComplaint(id) {
-  if (window.ComplaintFlow) return window.ComplaintFlow.form(id, 'archive');
+  if (!isAdmin()) return;
+  if (window.ComplaintFlow) return window.ComplaintFlow.form(id, 'delete');
   if (!await showConfirm(t('cmpDeleteConfirm'), { title: t('cmpDeleteTitle'), icon: 'danger', danger: true })) return;
   try {
     await api(`/complaints/${id}`, { method: 'DELETE' });
@@ -92905,7 +92960,7 @@ function fselToggle(selectEl) {
   if (withSearch) {
     const inp = panel.querySelector('.fsel-search input');
     inp.addEventListener('input', () => paint(inp.value));
-    setTimeout(() => inp.focus(), 30);
+    setTimeout(() => { if (panel.isConnected && btn.classList.contains('is-open')) inp.focus({ preventScroll: true }); }, 30);
   }
 
   // Position like .dd-menu-portal: below when it fits, above otherwise, and
@@ -93074,11 +93129,11 @@ function renderFollowUps() {
        matters when reading the thread: the first comment is signed "النظام", not
        a person. A bolt glyph, no text — the reason chip beside it already says
        what happened, and the tooltip carries the assignment detail. */
-    const _autoTip = f.autoSource === 'shipping-issue'
+    const _autoTip = ['shipping-issue', 'shipping-followup'].includes(f.autoSource)
       ? t(f.assignSource === 'on-call-fallback' ? 'fuAutoOpenedOnCall' : 'fuAutoOpenedShift',
           { name: f.responsibleName || '—' })
       : '';
-    const autoHtml = f.autoSource === 'shipping-issue'
+    const autoHtml = ['shipping-issue', 'shipping-followup'].includes(f.autoSource)
       ? `<span class="fu-auto-chip" title="${esc(_autoTip)}" aria-label="${esc(t('fuAutoOpenedTitle'))}">`
         + `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
         + `</span>`
@@ -110408,6 +110463,8 @@ function _spRenderHistoryTab() {
 <script src="/order-audit-periods.js?v=20261021-2"></script>
 <script src="/notification-history.js?v=20261025-dedup-1"></script>
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
+<link rel="stylesheet" href="/shopify-sync.css?v=20261029-1">
+<script src="/shopify-sync.js?v=20261029-2"></script>
 <link rel="stylesheet" href="/inventory-units.css?v=20261024-compact-registry">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
@@ -110421,7 +110478,7 @@ function _spRenderHistoryTab() {
 <script src="/global-search-scanner.js?v=20261025-order-state"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261026-mobile-compact">
 <script src="/warehouses.js?v=20261019-5"></script>
-<script src="/inventory-units.js?v=20261024-compact-registry"></script>
+<script src="/inventory-units.js?v=20261029-label-config"></script>
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
 <script src="/inventory-packs.js?v=20261020-pack-print-coverage"></script>
 <script src="/legacy-stock-labels.js?v=20261020-2"></script>

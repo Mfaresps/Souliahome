@@ -35,6 +35,7 @@ function renderShopifySettings() {
     </div>
     <p class="text-xs text-muted" style="margin-top:12px">${esc(text('بعد الحفظ، استخدم Send test في Shopify للتأكد من وصول الطلب الفعلي.', 'After saving, use Send test in Shopify to verify actual delivery.'))}</p>
     <p id="shopify-connection-status" role="status" class="text-xs"></p>`;
+  if (typeof renderShopifySyncSettings === 'function') renderShopifySyncSettings();
 }
 
 async function saveShopifySettings() {

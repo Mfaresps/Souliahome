@@ -1,0 +1,19 @@
+{
+  "notifyCustomer": false,
+  "trackingInfo": {
+    "company": "Bosta",
+    "number": "3167547571",
+    "url": "https://bosta.co/tracking/3167547571"
+  },
+  "lineItemsByFulfillmentOrder": [
+    {
+      "fulfillmentOrderId": "gid://shopify/FulfillmentOrder/8367101149485",
+      "fulfillmentOrderLineItems": [
+        {
+          "id": "gid://shopify/FulfillmentOrderLineItem/17363393413421",
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}

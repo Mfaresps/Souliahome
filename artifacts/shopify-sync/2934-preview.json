@@ -1,0 +1,18 @@
+{
+  "testedAt": "2026-10-28T22:25:27.219Z",
+  "automaticSync": false,
+  "domain": "tscxpn-ze.myshopify.com",
+  "ref": "2934",
+  "preview": [
+    {
+      "actions": [
+        "تسجيل تنفيذ الطلب المسلّم يدويًا بدون رقم تتبع",
+        "تحديث التوصيل: DELIVERED"
+      ],
+      "issues": [],
+      "warnings": [],
+      "matched": false
+    }
+  ],
+  "shopifyMutationsSent": 0
+}

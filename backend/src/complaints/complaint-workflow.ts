@@ -8,6 +8,7 @@ export function complaintFlow(row: any): any {
   if (row.workflow?.version === 2) return structuredClone(row.workflow);
   return { version: 2, revision: 0, cycle: 1, stage: 'review', ownerId: row.submittedById || '', owner: row.submittedBy || '',
     solution: '', caseId: '', history: [], operations: [], legacy: true,
+    ...(row.workflow?.deletingAt ? { deletingAt: row.workflow.deletingAt } : {}),
     legacyDecision: row.status === 'معلق' ? '' : row.status, legacyAction: row.managerAction || '' };
 }
 export function workflowEvent(w: any, action: string, actor: any, note = '', detail: any = {}) {
@@ -74,6 +75,7 @@ export async function linkComplaintCase(connection: any, complaintId: string, li
   const collection = connection.collection('complaints'), row = await collection.findOne({ _id: new Types.ObjectId(complaintId) }, { session });
   if (!row) throw new BadRequestException('الشكوى غير موجودة');
   const w = complaintFlow(row);
+  if (w.deletingAt) throw new ConflictException('جارٍ حذف المشكلة نهائيًا');
   if (w.stage === 'closed' || w.archivedAt) throw new ConflictException('أعد فتح الشكوى قبل بدء تنفيذ جديد');
   if (w.revision !== expectedRevision) throw new ConflictException('تغيرت الشكوى؛ حدّث الملف قبل المتابعة');
   if (w.caseId && w.caseId !== String(linked._id)) throw new ConflictException('يوجد طلب مرتبط؛ راجع تنفيذه قبل استبداله');

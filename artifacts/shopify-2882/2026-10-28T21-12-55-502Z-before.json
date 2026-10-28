@@ -1,0 +1,77 @@
+{
+  "local": {
+    "_id": "6adb53bef1184f0ce7009007",
+    "ref": "2882",
+    "items": [
+      {
+        "code": "Code 40",
+        "qty": 1
+      }
+    ],
+    "cancelled": false,
+    "shopifyOrderId": "7219642466605",
+    "bostaTrackingNumber": "6417585352",
+    "bostaStatus": "DELIVERED",
+    "deliveredAt": "2026-10-25T10:00:11.340Z"
+  },
+  "remote": {
+    "id": "gid://shopify/Order/7219642466605",
+    "name": "#2882",
+    "cancelledAt": null,
+    "displayFinancialStatus": "PENDING",
+    "displayFulfillmentStatus": "UNFULFILLED",
+    "lineItems": {
+      "nodes": [
+        {
+          "id": "gid://shopify/LineItem/17198752956717",
+          "name": "Infinity runner",
+          "quantity": 1,
+          "currentQuantity": 1,
+          "unfulfilledQuantity": 1
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    },
+    "fulfillments": [],
+    "fulfillmentOrders": {
+      "nodes": [
+        {
+          "id": "gid://shopify/FulfillmentOrder/8367221670189",
+          "status": "OPEN",
+          "supportedActions": [
+            {
+              "action": "CREATE_FULFILLMENT"
+            },
+            {
+              "action": "REPORT_PROGRESS"
+            },
+            {
+              "action": "HOLD"
+            }
+          ],
+          "lineItems": {
+            "nodes": [
+              {
+                "id": "gid://shopify/FulfillmentOrderLineItem/17363645792557",
+                "remainingQuantity": 1,
+                "totalQuantity": 1,
+                "lineItem": {
+                  "id": "gid://shopify/LineItem/17198752956717"
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasNextPage": false
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    }
+  },
+  "apply": true
+}

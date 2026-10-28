@@ -1,4 +1,40 @@
 /* Compact receipts rendered directly to PNG; no print window or remote renderer. */
+// Customer exports show submitted values without changing the approved records.
+function prepareCustomerInvoiceImage(tx, order, shopifyPreview = false) {
+  const request = order?.editRequest || tx.editRequest;
+  const pending = ['معلق', 'قيد التنفيذ'].includes(request?.status);
+  const patch = pending ? request.patch || {} : {};
+  const before = request?.before || tx;
+  let result;
+  if (shopifyPreview && !request?.transactionId) {
+    result = _spPeekPrintTx({ ...order, ...patch });
+  } else {
+    result = { ...tx, ...patch };
+    // A preview of an already confirmed invoice uses transaction discount semantics.
+    if (shopifyPreview && pending && request.transactionId) result = { ...tx, ...before, ...patch, _invoicePreview: true };
+  }
+  result = { ...result, _invoicePendingEdit: pending, _invoiceRemovedItems: [] };
+  const unmatched = [...(before.items || [])];
+  const itemKey = item => String(item.productId || item.code || item.sku || item.name || '');
+  result.items = (result.items || []).map(item => {
+    if (!pending || !Array.isArray(patch.items)) return { ...item };
+    const index = unmatched.findIndex(old => itemKey(old) === itemKey(item));
+    const previous = index < 0 ? null : unmatched.splice(index, 1)[0];
+    const changed = !previous || ['qty', 'price'].some(key => Number(previous[key]) !== Number(item[key]))
+      || String(previous.name || '') !== String(item.name || '');
+    return { ...item, _invoiceChanged: changed,
+      _invoiceQtyChanged: !!previous && Number(previous.qty) !== Number(item.qty) };
+  });
+  if (pending && Array.isArray(patch.items)) result._invoiceRemovedItems = unmatched;
+  // Receipt snapshots on confirmed invoices can already be booked. Never count
+  // one again merely because a cached order still marks it pending.
+  const booked = new Set((tx.deposits || []).filter(d => !d.reversed && d.receiptId).map(d => String(d.receiptId)));
+  const receipts = order?.depositReceipts || tx.depositReceipts || [];
+  result.pendingDepositAmount = Math.round(receipts.filter(r => r.status === 'معلق' && !booked.has(String(r.id)))
+    .reduce((sum, r) => sum + Math.max(0, Number(r.amount) || 0), 0) * 100) / 100;
+  return result;
+}
+
 async function loadInvoiceThumbnails(items) {
   const loads = new Map();
   return Promise.all(items.map(item => {
@@ -46,6 +82,7 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   const en = currentLang === 'en';
   const label = (ar, english) => en ? english : ar;
   const money = value => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(Number(value) || 0) + ' EGP';
+  const pendingLabel = label('معلق — تحت المراجعة', 'Pending — under review');
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const landscape = items.length >= 6;
@@ -97,15 +134,19 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   const cards = items.map((item, index) => {
     const textWidth = cellWidth - 144;
     const name = wrap(item.name || item.code || '—', textWidth, 20, true);
-    const details = wrap(`${label('الكمية', 'Qty')}: ${Number(item.qty) || 0} × ${money(item.price)}`, textWidth, 18);
-    const identities = (preview ? [] : window.InvoiceUnitIdentities?.imageLines(tx, item) || []).flatMap(line => wrap(line, textWidth, 14));
-    return { name, details, identities, thumbnail: thumbnails[index],
+    const details = wrap(`${label('الكمية', 'Qty')}: ${Number(item.qty) || 0} × ${money(item.price)}`, textWidth, 18, item._invoiceQtyChanged);
+    const identities = (preview || item._invoiceChanged ? [] : window.InvoiceUnitIdentities?.imageLines(tx, item) || []).flatMap(line => wrap(line, textWidth, 14));
+    return { name, details, identities, changed: item._invoiceChanged, qtyChanged: item._invoiceQtyChanged, thumbnail: thumbnails[index],
       total: money(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))),
-      height: Math.max(96, name.length * 32 + details.length * 30 + 32 + identities.length * 22) + 24 };
+      height: Math.max(96, name.length * 32 + details.length * 30 + 32 + identities.length * 22 + (item._invoiceChanged ? 24 : 0)) + 24 };
   });
   const grid = { kind: 'items', height: 0, bands: [] };
   if (cards.length) rows.push(grid);
   else text(label('لا توجد أصناف مسجلة', 'No items recorded'), 18);
+  for (const item of tx._invoiceRemovedItems || []) {
+    text(label('حذف صنف: ', 'Removed item: ') + (item.name || item.code) + ' × ' + item.qty, 16, false, '#a16207');
+    text(pendingLabel, 14, false, '#a16207');
+  }
   divider();
   pair(label('إجمالي الأصناف', 'Items subtotal'), money((tx.items || []).reduce((sum, item) => sum + Number(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))), 0)));
   if (Number(tx.shipCost)) pair(label('الشحن', 'Shipping'), money(tx.shipCost));
@@ -116,17 +157,19 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
     if (Number(tx.manualDiscount) > 0) text(label('يشمل الخصم الإضافي', 'Includes the additional discount'), 18);
   }
   pair(label('الإجمالي', 'Total'), money(tx.total), true);
-  const remaining = Math.max(0, Number(tx.remaining) || 0);
+  if (tx._invoicePendingEdit) text(pendingLabel, 14, false, '#a16207');
   const purchase = tx.type === 'مشتريات';
   const returned = ['مرتجع', 'مرتجع مبيعات', 'مرتجع مشتريات'].includes(tx.type);
-  const pendingDeposit = Math.max(0, Number(tx.pendingDepositAmount) || 0);
-  if (pendingDeposit > 0) pair(label('\u0639\u0631\u0628\u0648\u0646 \u0642\u064a\u062f \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629', 'Deposit awaiting review'), money(pendingDeposit), true);
+  const exchange = typeof isMovExchangeSale === 'function' && isMovExchangeSale(tx);
+  const pendingDeposit = purchase || returned ? 0 : Math.max(0, Number(tx.pendingDepositAmount) || 0);
+  const remaining = Math.max(0, (Number(tx.remaining) || 0) - pendingDeposit);
   if (returned) {
     pair(label('نوع المستند', 'Document type'), tx.type);
   } else {
     const paid = purchase ? Math.max(0, (Number(tx.total) || 0) - remaining)
-      : (typeof isMovExchangeSale === 'function' && isMovExchangeSale(tx) && remaining > 0 ? remaining : Math.max(0, Number(tx.deposit) || 0));
-    pair(label('المدفوع', 'Paid'), money(paid));
+      : (exchange && remaining > 0 ? remaining : Math.max(0, Number(tx.deposit) || 0) + pendingDeposit);
+    pair(purchase || exchange ? label('المدفوع', 'Paid') : label('الديبوزت', 'Deposit'), money(paid));
+    if (pendingDeposit > 0) text(pendingLabel + ' · ' + money(pendingDeposit), 14, false, '#a16207');
     if (!tx.cancelled && !(typeof isStatusCancelled === 'function' && isStatusCancelled(tx.payStatus))) {
       pair(label('المتبقي', 'Remaining'), money(remaining), true);
     }
@@ -157,7 +200,7 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   ctx.textBaseline = 'top';
   let y = margin;
   function drawCard(card, x, top) {
-    ctx.fillStyle = '#f5f8f6';
+    ctx.fillStyle = card.changed ? '#fff7e6' : '#f5f8f6';
     ctx.fillRect(x, top, cellWidth, card.height);
     const imageX = en ? x + 12 : x + cellWidth - 108;
     ctx.fillStyle = '#e5ece7';
@@ -175,13 +218,18 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
     ctx.font = font(20, true);
     let lineY = top + 12;
     card.name.forEach(line => { ctx.fillText(line, textX, lineY); lineY += 32; });
-    ctx.font = font(18, false);
+    ctx.font = font(18, card.qtyChanged);
+    if (card.qtyChanged) ctx.fillStyle = '#a16207';
     card.details.forEach(line => { ctx.fillText(line, textX, lineY); lineY += 30; });
     ctx.font = font(20, true);
     ctx.fillStyle = '#00633c';
     ctx.fillText(card.total, textX, lineY, cellWidth - 144);
     lineY += 30; ctx.font = font(14, false); ctx.fillStyle = '#53685b';
     card.identities.forEach(line => { ctx.fillText(line, textX, lineY); lineY += 22; });
+    if (card.changed) {
+      ctx.font = font(14, false); ctx.fillStyle = '#a16207';
+      ctx.fillText(pendingLabel, textX, lineY, cellWidth - 144);
+    }
   }
   for (const row of rows) {
     if (row.kind === 'items') {
@@ -215,25 +263,22 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
 async function exportInvoiceImage(source, id, action) {
   const en = currentLang === 'en';
   const fail = message => { toast(message, true); return null; };
-  let tx;
+  let tx, order;
   if (source === 'shopify') {
-    const order = _spOrderById(id);
+    order = _spOrderById(id);
     if (!order) return fail(t('spOrderNotFound'));
     tx = _spPeekPrintTx(order);
-    const pendingReceipts = (order.depositReceipts || []).filter(receipt => receipt.status === '\u0645\u0639\u0644\u0642');
-    tx.pendingDepositAmount = pendingReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
-    tx.ref = order.ref;
-    tx.cancelled = order.cancelled;
   } else {
     tx = transactions.find(entry => String(entry._id) === String(id));
     if (!tx) return fail(en ? 'Invoice not found' : 'الفاتورة غير موجودة');
   }
   if (tx.purchaseDetailsHidden) return fail(en ? 'Purchase details are restricted to admins' : 'تفاصيل الشراء متاحة للمدير فقط');
   if (source !== 'shopify' && tx.shopifyOrderId) {
-    const order = (_shopifyOrders || []).find(item => String(item.shopifyId || '') === String(tx.shopifyOrderId));
-    const pendingReceipts = (order?.depositReceipts || []).filter(receipt => receipt.status === '\u0645\u0639\u0644\u0642');
-    tx = { ...tx, pendingDepositAmount: pendingReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0) };
+    order = (typeof _shopifyOrders === 'undefined' ? [] : _shopifyOrders).find(item =>
+      item.editRequest?.transactionId === tx._id || String(item.shopifyId || '') === String(tx.shopifyOrderId));
   }
+  tx = prepareCustomerInvoiceImage(tx, order, source === 'shopify');
+  if (source === 'shopify') { tx.ref = order.ref; tx.cancelled = order.cancelled; }
   const copy = action === 'copy';
   if (copy && (!window.isSecureContext || !navigator.clipboard?.write || !window.ClipboardItem)) {
     return fail(en ? 'Image copying is unavailable here. Use Download invoice image.' : 'نسخ الصور غير متاح هنا. استخدم تحميل صورة الفاتورة.');

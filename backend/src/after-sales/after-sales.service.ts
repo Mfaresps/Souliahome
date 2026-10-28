@@ -90,17 +90,29 @@ export class AfterSalesService {
   async get(id: string) {
     const row: any = await this.cases.findOne({ _id: this.id(id), 'workflow.version': 2 }).lean();
     if (!row) throw new NotFoundException('طلب خدمة ما بعد البيع غير موجود');
-    const originalAddress = await this.connection.collection('transactions').findOne({ _id: this.id(row.originalTransactionId) }, { projection: { shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1 } });
+    // Fetch both invoices in one round trip, without their items, carrier payloads
+    // or event histories. Reuse this fresh replacement state for rollback checks.
+    const invoiceIds = [row.originalTransactionId, row.workflow.replacementTxId].filter(Boolean).map(value => this.id(String(value)));
+    const invoices = await this.connection.collection('transactions').find({ _id: { $in: invoiceIds } }, { projection: {
+      shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1,
+      ...this.rollbackReplacementProjection,
+    } }).toArray();
+    const originalAddress = invoices.find(tx => String(tx._id) === String(row.originalTransactionId));
+    const replacement = invoices.find(tx => String(tx._id) === String(row.workflow.replacementTxId)) || null;
     row.addressHint = { firstLine: originalAddress?.shippingAddress || '', city: originalAddress?.shippingBostaCity || originalAddress?.shippingGov || '', phone: originalAddress?.phone || row.phone || '', customerName: originalAddress?.client || row.client || '' };
     if (row.workflow.replacementTxId) {
-      const replacement = await this.connection.collection('transactions').findOne({ _id: this.id(row.workflow.replacementTxId) }, { projection: { pickupStatus: 1, prepChecked: 1 } });
       row.workflow.replacementPickupStatus = replacement?.pickupStatus || 'Pending';
       row.workflow.replacementPrepared = replacement?.prepChecked === true;
     }
-    row.rollback = await this.rollbackOption(row);
+    row.rollback = await this.rollbackOption(row, undefined, replacement);
     return row;
   }
-  private async rollbackOption(row: any, session?: any) {
+  private readonly rollbackReplacementProjection = {
+    pickupStatus: 1, prepChecked: 1, cancelled: 1, archived: 1,
+    'afterSales.caseId': 1, 'afterSales.role': 1, 'afterSales.shipmentPending': 1,
+    bostaOrderId: 1, shippedAt: 1, deliveredAt: 1, bostaStatus: 1, unitTrackingRevision: 1,
+  };
+  private async rollbackOption(row: any, session?: any, loadedReplacement?: any) {
     const w = row.workflow;
     const blocked = (reason: string) => ({ available: false as const, reason });
     if (['closed', 'cancelled'].includes(w.stage)) return blocked('الطلب مغلق؛ لا توجد خطوة تنفيذ مفتوحة للتراجع');
@@ -109,7 +121,9 @@ export class AfterSalesService {
     if (w.shipment) return blocked('يوجد طلب شحن؛ يلزم إلغاء البوليصة أو مطابقتها مع بوسطة أولًا');
     let replacement: any = null, pieces: any[] = [];
     if (w.replacementTxId) {
-      replacement = await this.connection.collection('transactions').findOne({ _id: this.id(w.replacementTxId) }, { session });
+      // Mutations omit loadedReplacement and re-read inside their transaction.
+      replacement = loadedReplacement !== undefined ? loadedReplacement : await this.connection.collection('transactions').findOne(
+        { _id: this.id(w.replacementTxId) }, { session, projection: this.rollbackReplacementProjection });
       if (!replacement || replacement.cancelled || replacement.archived || replacement.afterSales?.caseId !== String(row._id) || replacement.afterSales?.role !== 'replacement') return blocked('فاتورة البديل غير فعالة أو غير مرتبطة بهذا الطلب');
       if (replacement.afterSales.shipmentPending || replacement.bostaOrderId || replacement.shippedAt || replacement.deliveredAt ||
         ['Shipped', 'Delivered'].includes(replacement.pickupStatus) || (replacement.bostaStatus && !['CREATED', 'VALIDATION_ERROR'].includes(replacement.bostaStatus))) return blocked('البديل دخل الشحن؛ راجع البوليصة قبل التراجع');
@@ -201,10 +215,14 @@ export class AfterSalesService {
         const product: any = await this.connection.collection('products').findOne({ _id: this.id(selected.productId), archived: { $ne: true } }, { session });
         const qty = Number(selected.qty);
         if (!product || product.isActive === false || !Number.isSafeInteger(qty) || qty < 1 || exchangeItems.some(i => i.productId === String(product._id))) throw new BadRequestException('البديل أو الكمية غير صالح');
-        const same = items.find(i => i.productId === String(product._id));
-        const price = body.reason !== 'customer-choice' && same && qty === same.qty ? same.price : Number(product.sellPrice);
+        // A like-for-like exchange keeps the paid value, including the original discount.
+        // Sum matching invoice lines so rounding or split lines cannot create a price difference.
+        const same = items.filter(i => i.productId === String(product._id));
+        const sameQuantity = same.reduce((n, i) => n + i.qty, 0) === qty;
+        const total = sameQuantity ? money(same.reduce((n, i) => n + i.total, 0)) : money(Number(product.sellPrice) * qty);
+        const price = sameQuantity ? money(total / qty) : Number(product.sellPrice);
         if (!Number.isFinite(price) || price < 0) throw new BadRequestException('سعر البديل غير مضبوط');
-        exchangeItems.push({ productId: String(product._id), code: product.code, name: product.name, imageUrl: product.imageUrl || product.images?.[0] || '', qty, price, total: money(price * qty), lineId: randomUUID() });
+        exchangeItems.push({ productId: String(product._id), code: product.code, name: product.name, imageUrl: product.imageUrl || product.images?.[0] || '', qty, price, total, lineId: randomUUID() });
       }
     }
     const replacement = money(exchangeItems.reduce((n, row) => n + row.total, 0));

@@ -93,8 +93,8 @@
     return '<time data-notification-time="' + escHtml(date.toISOString()) + '" datetime="' + escHtml(date.toISOString()) + '" title="' +
       escHtml(date.toLocaleString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn')) + '">' + window.souliaNotificationRelativeTime(iso) + '</time>';
   };
-  window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
-  window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
+  window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'deliveryPostponed' ? 'notification-delivery-postponed' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
+  window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem', 'deliveryPostponed'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
   window.souliaNotificationDescription = n => {
     const check = '<svg class="notification-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
     const description = !n.history && !n.mention && typeof _stripHtml === 'function' ? _stripHtml(n.desc || '') : n.desc || '';
@@ -107,7 +107,7 @@
       offset = match.index + match[0].length;
     }
     formatted += escHtml(String(description).slice(offset));
-    return n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + formatted + '</span>' : formatted;
+    return n.eventType === 'deliveryPostponed' ? 'notification-delivery-postponed' : n.eventType === 'delivered' ? '<span class="notification-delivered-copy">' + check + formatted + '</span>' : formatted;
   };
   window.souliaMarkNotificationsOpened = function (openedAt = Date.now()) {
     window.souliaSyncNotificationAccount();
@@ -191,6 +191,7 @@
   };
   const symbols = {
     delivered: '<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',
+    deliveryPostponed: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M12 14v4m0-4 3 2"/>',
     deliveryProblem: '<path d="m12 3 10 18H2Z"/><path d="M12 9v5m0 3h.01"/>',
     mention: '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
     comment: '<path d="M21 11a8 8 0 0 1-8 8H6l-4 3 1-7a8 8 0 1 1 18-4Z"/>',

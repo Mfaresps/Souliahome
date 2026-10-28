@@ -1,0 +1,186 @@
+{
+  "dateCairo": "2026-10-29",
+  "scope": "Local behavioral tests plus read-only Shopify audit; no live mutations in this audit",
+  "tests": {
+    "passed": 104,
+    "failed": 0,
+    "suitesPassed": 5
+  },
+  "localCoverage": {
+    "numericCarrierCodes": 23,
+    "paths": [
+      "webhook",
+      "sync"
+    ],
+    "cases": 46,
+    "observedShopifyCalls": 0
+  },
+  "matrix": [
+    {
+      "state": "CREATED",
+      "proposed": "Keep preparation separate from physical carrier pickup; CONFIRMED only when a fulfillment is intentionally created",
+      "automaticOutbound": false
+    },
+    {
+      "state": "PICKED_UP",
+      "proposed": "CARRIER_PICKED_UP for outbound customer delivery",
+      "automaticOutbound": false
+    },
+    {
+      "state": "IN_TRANSIT",
+      "proposed": "IN_TRANSIT; inspect raw code because local IN_TRANSIT also includes on-hold",
+      "automaticOutbound": false
+    },
+    {
+      "state": "OUT_FOR_DELIVERY",
+      "proposed": "OUT_FOR_DELIVERY for SEND; return/exchange directions require separate handling",
+      "automaticOutbound": false
+    },
+    {
+      "state": "FAILED_ATTEMPT",
+      "proposed": "ATTEMPTED_DELIVERY for a real attempted delivery; retain raw code/reason to distinguish delay, loss and damage",
+      "automaticOutbound": false
+    },
+    {
+      "state": "DELAYED / on-hold / investigation",
+      "proposed": "DELAYED where appropriate; local normalization currently merges these with other states",
+      "automaticOutbound": false
+    },
+    {
+      "state": "Lost / damaged",
+      "proposed": "Review FAILURE event semantics and preserve the raw carrier reason; never infer refund or order cancellation",
+      "automaticOutbound": false
+    },
+    {
+      "state": "DELIVERED",
+      "proposed": "DELIVERED with the actual carrier timestamp; shipping state must not automatically mark payment collected",
+      "automaticOutbound": false,
+      "manualLiveTests": [
+        "2881",
+        "2882"
+      ]
+    },
+    {
+      "state": "RETURNED",
+      "proposed": "Separate return workflow or explicit operational metadata; no RETURNED FulfillmentEventStatus exists",
+      "automaticOutbound": false
+    },
+    {
+      "state": "CANCELLED",
+      "proposed": "Separate shipment cancellation from order cancellation and refunds; no CANCELLED FulfillmentEventStatus exists",
+      "automaticOutbound": false
+    },
+    {
+      "state": "DELETED",
+      "proposed": "Review shipment identity/removal; do not cancel the order automatically",
+      "automaticOutbound": false
+    },
+    {
+      "state": "VALIDATION_ERROR / UNKNOWN",
+      "proposed": "Record error or preserve known state; never fabricate a shipping event",
+      "automaticOutbound": false
+    }
+  ],
+  "confirmedShopifyEventStatuses": [
+    "LABEL_PURCHASED",
+    "LABEL_PRINTED",
+    "READY_FOR_PICKUP",
+    "CONFIRMED",
+    "IN_TRANSIT",
+    "OUT_FOR_DELIVERY",
+    "ATTEMPTED_DELIVERY",
+    "DELAYED",
+    "DELIVERED",
+    "FAILURE",
+    "CARRIER_PICKED_UP"
+  ],
+  "findings": [
+    {
+      "severity": "blocking",
+      "finding": "No automatic Shopify shipping-event sender is invoked by applyDeliveryUpdate. Successful local-handler tests do not prove outbound synchronization.",
+      "source": "backend/src/bosta/bosta.service.ts:1392"
+    },
+    {
+      "severity": "blocking",
+      "finding": "Current order fulfillment is attempted at Bosta shipment registration; physical pickup is a separate event.",
+      "source": "backend/src/bosta/bosta.service.ts:1152"
+    },
+    {
+      "severity": "blocking",
+      "finding": "FAILED_ATTEMPT includes exception, lost, damaged, investigation and awaiting-action. A direct mapping would misrepresent some states.",
+      "source": "backend/src/bosta/bosta.service.ts:68"
+    },
+    {
+      "severity": "blocking",
+      "finding": "On-hold (105) is normalized to IN_TRANSIT; outbound classification needs the raw carrier status and reason.",
+      "source": "backend/src/bosta/bosta.service.ts:77"
+    },
+    {
+      "severity": "review",
+      "finding": "Current delivery timestamp defaults to processing time, and known backward transitions are applied. Outbound synchronization needs original timestamps and an explicit stale-event policy.",
+      "source": "backend/src/bosta/bosta.service.ts:1456"
+    },
+    {
+      "severity": "blocking",
+      "finding": "No durable shipping-event retry/idempotency queue is present in the current outbound path. Ad-hoc scripts for 2881/2882 are not production synchronization.",
+      "source": "backend/src/shopify/shopify-admin.service.ts"
+    },
+    {
+      "severity": "review",
+      "finding": "Payment synchronization is attached to manual COD confirmation, not all deposit or carrier-wallet flows. Do not infer payment from delivery.",
+      "source": "backend/src/bosta/bosta.service.ts:2079"
+    }
+  ],
+  "samples": [
+    {
+      "localStatus": "DELETED",
+      "count": 4,
+      "example": "2244",
+      "shopify": "Not accessible in this query; cause not established"
+    },
+    {
+      "localStatus": "DELIVERED",
+      "count": 558,
+      "example": "2934",
+      "shopify": {
+        "id": "gid://shopify/Order/7227495973165",
+        "name": "#2934",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      }
+    },
+    {
+      "localStatus": "IN_TRANSIT",
+      "count": 7,
+      "example": "2922",
+      "shopify": {
+        "id": "gid://shopify/Order/7225428738349",
+        "name": "#2922",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      }
+    },
+    {
+      "localStatus": "RETURNED",
+      "count": 17,
+      "example": "2760",
+      "shopify": {
+        "id": "gid://shopify/Order/7204184293677",
+        "name": "#2760",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      }
+    }
+  ],
+  "sources": [
+    "https://shopify.dev/docs/api/admin-graphql/latest/enums/FulfillmentEventStatus",
+    "https://shopify.dev/docs/api/admin-graphql/latest/enums/FulfillmentDisplayStatus",
+    "https://docs.bosta.co/docs/how-to/get-delivery-status-via-webhook/"
+  ]
+}

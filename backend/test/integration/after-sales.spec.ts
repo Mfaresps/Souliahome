@@ -131,6 +131,37 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     const view: any = await service.get(id);
     return op({ step: view.rollback.step, expectedToken: view.rollback.token, note: 'Correct accidental workflow action', confirmed: true });
   };
+  it('loads case invoices together and keeps rollback checks fresh after opening', async () => {
+    const row: any = await service.create(request('exchange'), actor), id = String(row._id);
+    const approved: any = await service.approve(id, op(), actor);
+    await Tx.updateOne({ _id: saleId }, { $set: { shippingAddress: 'Original customer address', phone: '01012345678' } });
+    const invoices = mongo.connection.collection('transactions');
+    const find = jest.spyOn(invoices, 'find'), findOne = jest.spyOn(invoices, 'findOne');
+    let view: any;
+    try {
+      view = await service.get(id);
+      expect(find).toHaveBeenCalledTimes(1);
+      expect(findOne).not.toHaveBeenCalled();
+      expect(view.addressHint).toMatchObject({ firstLine: 'Original customer address', phone: '01012345678' });
+      expect(view.workflow.replacementPickupStatus).toBe('Pending');
+      expect(view.rollback).toMatchObject({ available: true, step: 'approval' });
+    } finally { find.mockRestore(); findOne.mockRestore(); }
+    // A shipping change after the page opened must still block a stale undo.
+    await Tx.updateOne({ _id: approved.workflow.replacementTxId }, { $set: { bostaOrderId: 'new-waybill' } });
+    await expect(service.rollback(id, op({ step: view.rollback.step, expectedToken: view.rollback.token,
+      note: 'Attempt using old page', confirmed: true }), actor)).rejects.toThrow('الشحن');
+    expect((await service.get(id)).rollback.available).toBe(false);
+  });
+  it('blocks rollback when the replacement is missing and retains address fallbacks', async () => {
+    const row: any = await service.create(request('exchange'), actor), id = String(row._id);
+    await service.approve(id, op(), actor);
+    await Cases.updateOne({ _id: id }, { $set: { originalTransactionId: String(oid()), 'workflow.replacementTxId': String(oid()) } });
+    const view: any = await service.get(id);
+    expect(view.addressHint).toMatchObject({ firstLine: '', customerName: row.client });
+    expect(view.workflow.replacementPickupStatus).toBe('Pending');
+    expect(view.workflow.replacementPrepared).toBe(false);
+    expect(view.rollback.available).toBe(false);
+  });
   it('undoes approval once, restores replacement stock, and permits a fresh approval', async () => {
     const row: any = await service.create(request('exchange'), actor), id = String(row._id);
     const before = (await transactions.getInventory())[0].current;
@@ -255,6 +286,35 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     expect((await transactions.getInventory())[0].current).toBe(9);
     expect(await mongo.connection.collection('inventorymovements').findOne()).toMatchObject({ qtyDelta: 0, physicalQty: 1, quarantinedQty: 1, lifecycle: 'returned-damaged', afterSalesId: String(row._id), unitIds: [unitId] });
   });
+  it.each(['customer-choice', 'defect', 'wrong-item'])('keeps the discounted paid value for the same product (%s)', async reason => {
+    await Tx.updateOne({ _id: saleId }, { $set: { total: 726, discount: 24, 'items.0.price': 750, 'items.0.total': 750 } });
+    await mongo.connection.collection('products').updateOne({ _id: new Types.ObjectId(productId) }, { $set: { sellPrice: 750 } });
+    const row: any = await service.create({ ...request('exchange', reason), customerFee: 0 }, actor);
+    expect(row.workflow.quote).toMatchObject({ credit: 726, replacement: 726, creditApplied: 726, collectDue: 0, refundDue: 0 });
+    expect(row.exchangeItems[0]).toMatchObject({ price: 726, total: 726 });
+    const approved: any = await service.approve(String(row._id), op(), actor);
+    expect(await Tx.findById(approved.workflow.replacementTxId).lean()).toMatchObject({ total: 726, deposit: 726, remaining: 0 });
+    expect(await Vault.countDocuments()).toBe(0);
+  });
+  it('preserves the full credit across split lines and fractional unit prices', async () => {
+    await Tx.updateOne({ _id: saleId }, { $set: { total: 99.98, discount: .02, items: [
+      { lineId: 'line1', code: 'ITEM', name: 'Product', qty: 2, price: 25, total: 50 },
+      { lineId: 'line2', code: 'ITEM', name: 'Product', qty: 1, price: 50, total: 50 },
+    ] } });
+    const result = await service.quote({ ...request('exchange'), customerFee: 0,
+      items: [{ lineIndex: 0, qty: 2, unitIds: [unitId] }, { lineIndex: 1, qty: 1 }], exchangeItems: [{ productId, qty: 3 }] });
+    expect(result.quote).toMatchObject({ credit: 99.98, replacement: 99.98, collectDue: 0, refundDue: 0 });
+  });
+  it('still prices a different replacement at its catalog price', async () => {
+    const other = oid();
+    await mongo.connection.collection('products').insertOne({ _id: other, code: 'OTHER', name: 'Other', sellPrice: 750 });
+    const result = await service.quote({ ...request('exchange'), customerFee: 0, exchangeItems: [{ productId: String(other), qty: 1 }] });
+    expect(result.quote).toMatchObject({ credit: 500, replacement: 750, collectDue: 250 });
+  });
+  it('does not apply a one-for-one price to extra replacement units', async () => {
+    const result = await service.quote({ ...request('exchange'), customerFee: 0, exchangeItems: [{ productId, qty: 2 }] });
+    expect(result.quote).toMatchObject({ credit: 500, replacement: 1200, collectDue: 700 });
+  });
   it('creates a defect replacement at the original price without a fictitious cash deposit', async () => {
     const row: any = await service.create(request('exchange', 'defect'), actor);
     const approved: any = await service.approve(String(row._id), op(), actor);
@@ -287,11 +347,11 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     expect(await mongo.connection.collection('vaultentries').countDocuments()).toBe(0);
     const closed: any = await service.settle(String(row._id), settle('carrier', { actualCost: 70, includesCollection: true }), actor);
     expect(closed.workflow.stage).toBe('closed');
-    expect(await Vault.findOne().lean()).toMatchObject({ amount: 80, afterSalesId: String(row._id) });
-    expect(await Vault.findOne().lean()).toMatchObject({ afterSales: { grossCollection: 150, carrierCost: 70, net: 80, creditApplied: 500 } });
+    expect(await Vault.findOne().lean()).toMatchObject({ amount: -20, afterSalesId: String(row._id) });
+    expect(await Vault.findOne().lean()).toMatchObject({ afterSales: { grossCollection: 50, carrierCost: 70, net: -20, creditApplied: 500 } });
     expect(replacement.ref).toMatch(/^\d{4}8\d{6}$/);
     expect(await mongo.connection.collection('inventorymovements').findOne({ lifecycle: 'replacement-delivered' })).toMatchObject({ qtyDelta: 0, physicalQty: -1, unitIds: [String(newUnit._id)] });
-    expect(await Tx.findById(replacement._id).lean()).toMatchObject({ deposit: 650, remaining: 0, shipLoss: 20 });
+    expect(await Tx.findById(replacement._id).lean()).toMatchObject({ deposit: 550, remaining: 0, shipLoss: 20 });
     expect(await Unit.findById(newUnit._id).lean()).toMatchObject({ status: 'delivered', assignment: { transactionId: String(replacement._id) } });
     expect(await Unit.findById(unitId).lean()).toMatchObject({ status: 'available', assignment: null });
     expect((await transactions.getInventory())[0].current).toBe(9);

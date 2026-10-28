@@ -1,4 +1,5 @@
 import { NotificationsService } from '../notifications/notifications.service';
+import { CarrierTrackingUpdate, carrierUpdateText } from '../bosta/bosta-tracking.util';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import { Injectable, Logger, OnModuleInit, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -47,6 +48,7 @@ const SHIPPING_ISSUE_STATUSES = ['FAILED_ATTEMPT', 'RETURNED'];
 
 /** Arabic label per trigger, used in the auto-generated opening comment. */
 const TRIGGER_LABELS: Record<string, string> = {
+  CUSTOMER_POSTPONED: 'العميل أجّل الاستلام',
   FAILED_ATTEMPT: 'محاولة تسليم فاشلة',
   RETURNED: 'مرتجع',
 };
@@ -160,22 +162,45 @@ export class FollowUpsService implements OnModuleInit {
     client?: string;
     phone?: string;
     shopifyOrderId?: string;
-  }, trigger: string): Promise<FollowUpDocument | null> {
+  }, trigger: string, carrierUpdate?: CarrierTrackingUpdate): Promise<FollowUpDocument | null> {
     try {
       const transactionId = String(tx._id || '');
       if (!transactionId) return null;
-      const triggerLabelForThread = TRIGGER_LABELS[trigger] || trigger;
+      const triggerLabelForThread = carrierUpdate ? carrierUpdateText(carrierUpdate) : TRIGGER_LABELS[trigger] || trigger;
+      const requestKey = carrierUpdate ? `bosta:${carrierUpdate.key}` : undefined;
+      const postponed = trigger === 'CUSTOMER_POSTPONED';
+      const autoSource = postponed ? 'shipping-followup' : 'shipping-issue';
+      const reason = postponed ? 'أجل الاستلام' : SHIPPING_ISSUE_REASON;
+      const scheduled = carrierUpdate?.scheduledAt;
+      // A date-only promise has no agreed hour: retain it in the note, don't guess one.
+      const deferredUntil = postponed && scheduled?.includes('T') && Date.parse(scheduled) > Date.now()
+        ? new Date(scheduled) : null;
 
       // Any auto-ticket for this order — open, closed or cancelled. Newest first
       // so a legacy order carrying duplicates from before this rule converges on
       // one thread instead of resurrecting the oldest.
       const existing = await this.model
-        .findOne({ transactionId, autoSource: 'shipping-issue' })
+        .findOne({ transactionId, autoSource: { $in: ['shipping-issue', 'shipping-followup'] } })
         .sort({ createdAt: -1 })
         .exec();
 
       if (existing) {
+        if (requestKey && existing.autoTrigger === trigger
+          && existing.comments?.some(comment => comment.requestKey === requestKey)) return existing;
         const wasSettled = existing.cancelled || DONE_STATUSES.includes(existing.status);
+        const lastAction = existing.lastCarrierAction || existing.carrierUpdate;
+        const sameAttempt = carrierUpdate && lastAction
+          && existing.autoTrigger === trigger
+          && lastAction.reasonCode === carrierUpdate.reasonCode
+          && lastAction.reasonAr === carrierUpdate.reasonAr
+          && lastAction.reason === carrierUpdate.reason
+          && lastAction.exceptionAt === carrierUpdate.exceptionAt
+          && lastAction.attempts === carrierUpdate.attempts
+          && lastAction.scheduledAt === carrierUpdate.scheduledAt;
+        if (wasSettled && sameAttempt) {
+          await this.recordCarrierUpdate(transactionId, carrierUpdate);
+          return existing;
+        }
 
         if (wasSettled) {
           // Reopened: a new failure on an order somebody already signed off is a
@@ -194,16 +219,18 @@ export class FollowUpsService implements OnModuleInit {
             existing.assignSource = next.reason;
           }
           (existing.comments as any[]).push({
+            requestKey,
             authorId: 'system',
             authorName: 'النظام',
-            text: `أُعيد فتح المتابعة — مشكلة جديدة على نفس الطلب: ${triggerLabelForThread}`,
+            text: `أُعيد فتح المتابعة — تحديث جديد على نفس الطلب: ${triggerLabelForThread}`,
             edited: false,
             kind: 'note',
           });
-        } else if (existing.autoTrigger !== trigger) {
+        } else if (existing.autoTrigger !== trigger || carrierUpdate) {
           // Still open, new trigger (FAILED_ATTEMPT → RETURNED): record the
           // escalation on the thread rather than opening a second ticket.
           (existing.comments as any[]).push({
+            requestKey,
             authorId: 'system',
             authorName: 'النظام',
             text: `تحديث حالة الشحنة: ${triggerLabelForThread}`,
@@ -215,18 +242,26 @@ export class FollowUpsService implements OnModuleInit {
         }
 
         existing.autoTrigger = trigger;
-        existing.deferredUntil = null;
-        existing.deferReminderSent = false;
+        existing.autoSource = autoSource;
+        existing.reason = reason;
+        if (carrierUpdate) { existing.carrierUpdate = carrierUpdate; existing.lastCarrierAction = carrierUpdate; }
+        if (!sameAttempt || wasSettled) {
+          existing.deferredUntil = deferredUntil;
+          existing.deferReason = postponed ? 'customer_postponed' : '';
+          existing.deferReminderSent = false;
+        }
+        if (wasSettled) { existing.resolution = ''; existing.closedAt = undefined; }
         await existing.save();
         this.presence.emitEvent('followup:changed', { action: 'update', id: String(existing._id) });
-        if (wasSettled && existing.responsibleId) {
+        if ((wasSettled || (carrierUpdate && !sameAttempt)) && existing.responsibleId) {
           await this.notifyAssignee(
             String(existing.responsibleId),
             existing.responsibleName || '',
             String(existing._id),
             existing.orderRef || '',
             triggerLabelForThread,
-            true,
+            wasSettled,
+            postponed,
           );
         }
         return existing;
@@ -245,7 +280,7 @@ export class FollowUpsService implements OnModuleInit {
 
       const orderRef = String(tx.ref || transactionId);
       const ticketNo = await this.generateTicketNo(orderRef);
-      const triggerLabel = TRIGGER_LABELS[trigger] || trigger;
+      const triggerLabel = triggerLabelForThread;
 
       const doc = await this.model.create({
         ticketNo,
@@ -257,14 +292,18 @@ export class FollowUpsService implements OnModuleInit {
         responsibleId: assignee?.userId || '',
         responsibleUsername: assignee?.username || '',
         responsibleName: assignee?.name || '',
-        reason: SHIPPING_ISSUE_REASON,
+        reason,
         status: SHIPPING_ISSUE_STATUS,
-        autoSource: 'shipping-issue',
+        autoSource,
         autoTrigger: trigger,
+        deferredUntil,
+        deferReason: postponed ? 'customer_postponed' : '',
+        ...(carrierUpdate ? { carrierUpdate, lastCarrierAction: carrierUpdate } : {}),
         assignSource: assignee?.reason || 'unassigned',
         notified: true,
         comments: [
           {
+            requestKey,
             authorId: 'system',
             authorName: 'النظام',
             text: assignee?.userId
@@ -277,7 +316,7 @@ export class FollowUpsService implements OnModuleInit {
       });
 
       if (assignee?.userId) {
-        await this.notifyAssignee(assignee.userId, assignee.name, String(doc._id), orderRef, triggerLabel, false);
+        await this.notifyAssignee(assignee.userId, assignee.name, String(doc._id), orderRef, triggerLabel, false, postponed);
       }
 
       // Broadcast so every open client (dashboard shipping-issues card included)
@@ -295,6 +334,23 @@ export class FollowUpsService implements OnModuleInit {
     }
   }
 
+  /** Every meaningful carrier update stays on the same ticket, including recovery. */
+  async recordCarrierUpdate(transactionId: string, event: CarrierTrackingUpdate, historical = false): Promise<void> {
+    try {
+      const requestKey = `bosta:${event.key}`;
+      const result = await this.model.updateMany({ transactionId: String(transactionId),
+        autoSource: { $in: ['shipping-issue', 'shipping-followup'] }, 'comments.requestKey': { $ne: requestKey },
+      }, {
+        ...(!historical ? { $set: { carrierUpdate: event } } : {}),
+        $push: { comments: { requestKey, authorId: 'system', authorName: 'بوسطة',
+          text: carrierUpdateText(event), edited: false, kind: 'note', createdAt: new Date(), updatedAt: new Date() } },
+      }).exec();
+      if (result.modifiedCount) this.presence.emitEvent('followup:changed', { action: 'update', transactionId });
+    } catch (err: any) {
+      this.logger.error(`Carrier follow-up update failed for tx=${transactionId}: ${err.message}`);
+    }
+  }
+
   /**
    * Mention + socket ping for a shipping-issue assignment. Extracted because the
    * open and reopen paths both need it and were drifting apart.
@@ -307,8 +363,9 @@ export class FollowUpsService implements OnModuleInit {
     orderRef: string,
     triggerLabel: string,
     reopened: boolean,
+    postponed = false,
   ): Promise<void> {
-    const notifyText = reopened
+    const notifyText = postponed ? `متابعة تأجيل استلام الطلب #${orderRef} (${triggerLabel})` : reopened
       ? `مشكلة جديدة على طلب #${orderRef} (${triggerLabel}) — أُعيد فتح المتابعة`
       : `مشكلة في الاستلام — طلب #${orderRef} (${triggerLabel})`;
     try {
@@ -339,7 +396,7 @@ export class FollowUpsService implements OnModuleInit {
       this.presence.emitToUser(userId, 'followup:notify', {
         id: followUpId,
         orderRef,
-        reason: SHIPPING_ISSUE_REASON,
+        reason: postponed ? 'أجل الاستلام' : SHIPPING_ISSUE_REASON,
         fromName: 'متابعة تلقائية',
         auto: true,
       });
@@ -363,7 +420,7 @@ export class FollowUpsService implements OnModuleInit {
       // Close every open auto-ticket, including legacy duplicates. Repeated
       // courier updates must neither append duplicate notes nor reopen work.
       const result = await this.model.updateMany({
-        transactionId: String(transactionId), autoSource: 'shipping-issue',
+        transactionId: String(transactionId), autoSource: { $in: ['shipping-issue', 'shipping-followup'] },
         cancelled: { $ne: true }, status: { $nin: DONE_STATUSES },
       }, {
         $set: { status: 'تم حل المشكلة', resolution: outcomeLabel, closedAt: at,

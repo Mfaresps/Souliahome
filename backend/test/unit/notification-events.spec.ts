@@ -48,7 +48,7 @@ it('alerts only on verified delivery transition and ignores repeats', async () =
 });
 it('does not alert again for an unresolved delivery issue or a return after delivery', async () => {
   const tx = { _id: 't1', ref: '100', bostaStatus: 'IN_TRANSIT' }; const { service, enqueue } = bosta(tx);
-  await service.applyDeliveryUpdate('t1', tx, { status: 'FAILED_ATTEMPT' }, 'webhook'); expect(enqueue).toHaveBeenCalledWith('deliveryProblem', expect.any(String), '100', 'tx:t1', undefined, 'FAILED_ATTEMPT');
+  await service.applyDeliveryUpdate('t1', tx, { status: 'FAILED_ATTEMPT' }, 'webhook'); expect(enqueue).toHaveBeenCalledWith('deliveryProblem', expect.any(String), '100', 'tx:t1', undefined, 'FAILED_ATTEMPT', expect.objectContaining({ deliveryReason: expect.any(String) }));
   enqueue.mockClear(); await service.applyDeliveryUpdate('t1', { ...tx, shipIssueState: 'open', bostaStatus: 'FAILED_ATTEMPT' }, { status: 'RETURNED' }, 'webhook'); expect(enqueue).not.toHaveBeenCalled();
   await service.applyDeliveryUpdate('t1', { ...tx, deliveredAt: '2026-01-01', bostaStatus: 'DELIVERED' }, { status: 'RETURNED' }, 'webhook'); expect(enqueue).not.toHaveBeenCalled();
 });

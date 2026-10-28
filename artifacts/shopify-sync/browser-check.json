@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "default off",
+    "preview only",
+    "explicit selection",
+    "blocked rows",
+    "queue status",
+    "per-order entry",
+    "admin only",
+    "mobile and desktop"
+  ],
+  "externalWrites": 0
+}

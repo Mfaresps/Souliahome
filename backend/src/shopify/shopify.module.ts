@@ -6,6 +6,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ShopifyController } from './shopify.controller';
 import { ShopifyService } from './shopify.service';
 import { ShopifyAdminService } from './shopify-admin.service';
+import { ShopifySyncService } from './sync/sync.service';
+import { ShopifySyncApiService } from './sync/sync-api.service';
+import { ShopifySyncController } from './sync/sync.controller';
 import { OrderAuditController } from './order-audit.controller';
 import { OrderAuditService } from './order-audit.service';
 import { OrderAuditExportService } from './order-audit-export.service';
@@ -67,11 +70,13 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
     forwardRef(() => InventoryMovementsModule),
     forwardRef(() => TransactionsModule),
   ],
-  controllers: [ShopifyController, OrderAuditController],
+  controllers: [ShopifySyncController, ShopifyController, OrderAuditController],
   providers: [
     OrderAuditMarketingService,
     ShopifyService,
     ShopifyAdminService,
+    ShopifySyncApiService,
+    ShopifySyncService,
     OrderAuditService,
     OrderAuditExportService,
     // Deposit receipts: upload → OCR → manager approval → vault. Hosts the 04:30 cleanup cron.

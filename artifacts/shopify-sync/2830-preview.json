@@ -1,0 +1,21 @@
+{
+  "testedAt": "2026-10-28T22:40:17.982Z",
+  "automaticSync": false,
+  "domain": "tscxpn-ze.myshopify.com",
+  "ref": "2830",
+  "preview": [
+    {
+      "actions": [
+        "تسجيل الشحن ورقم التتبع (بدون إشعار إنشاء الشحنة)",
+        "تحديث التوصيل: DELIVERED",
+        "تحديث الحالة التشغيلية والعربون في بيانات الطلب"
+      ],
+      "issues": [],
+      "warnings": [
+        "مطابقة وحدة البيع المعتمدة للصنف Code 42: 6 قطعة في النظام = 1 وحدة بيع في Shopify."
+      ],
+      "matched": false
+    }
+  ],
+  "shopifyMutationsSent": 0
+}

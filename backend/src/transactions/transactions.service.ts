@@ -728,6 +728,7 @@ export class TransactionsService {
   private static readonly LIST_EXCLUDED_FIELDS = {
     bostaRawResponse: 0,
     bostaStatusIgnoredEvents: 0,
+    bostaTrackingEvents: 0,
   } as const;
 
   async findAll(page?: number, limit?: number): Promise<TransactionDocument[]> {
@@ -1401,7 +1402,7 @@ export class TransactionsService {
     }
 
     const inTransit =
-      ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(bosta) ||
+      ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(bosta) ||
       pickup === 'Shipped' ||
       tx.deliverySource === 'MANUAL';
     if (inTransit && callerRole !== 'admin') {

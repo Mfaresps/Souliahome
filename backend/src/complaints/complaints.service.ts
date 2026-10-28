@@ -330,8 +330,41 @@ export class ComplaintsService {
     return { success: true, surveyCompletedAt: complaint.surveyCompletedAt };
   }
 
-  async remove(id: string): Promise<void> {
-    throw new BadRequestException('سجل الشكوى محفوظ؛ استخدم الأرشفة بعد الإغلاق');
+  async remove(id: string, actor: any): Promise<void> {
+    // The application's manager role is stored as "admin". Check the current
+    // account as well as the authenticated role, including for direct callers.
+    if (actor?.role !== 'admin') throw new ForbiddenException('الحذف النهائي متاح للمدير والأدمن فقط');
+    const connection = this.complaintModel.db;
+    const operator = await connection.collection('users').findOne({_id:this.oid(actor.userId),role:'admin',active:{$ne:false},isActive:{$ne:false}});
+    if (!operator) throw new ForbiddenException('الحذف النهائي متاح للمدير والأدمن النشط فقط');
+    const objectId = this.oid(id), complaintId = String(objectId), evidence = connection.collection('complaintevidence');
+    const session = await connection.startSession();
+    try {
+      // Freeze additions and legacy migration before listing the objects to delete.
+      // Keep their references if R2 fails, so the same DELETE can finish on retry.
+      await session.withTransaction(async()=>{
+        const row = await this.complaintModel.findById(objectId).session(session);
+        if (row) await this.complaintModel.updateOne({_id:objectId},{$set:{workflow:{...complaintFlow(row),deletingAt:new Date().toISOString()}},$inc:{__v:1}},{session});
+        await evidence.updateMany({complaintId},{$set:{deleting:true}},{session});
+      });
+      const images = await evidence.find({complaintId}).toArray();
+      const cloudImages = images.filter(image=>image.imageKey);
+      if (cloudImages.some(image=>typeof image.imageKey !== 'string' || !image.imageKey.startsWith(COMPLAINT_EVIDENCE_PREFIX))) throw new BadRequestException('مسار صورة الشكوى غير صالح');
+      if (cloudImages.length) {
+        const cfg = await this.evidenceR2();
+        for (const image of cloudImages) {
+          const result = await r2DeleteObject(cfg,image.imageKey);
+          if (!result.ok) throw new ServiceUnavailableException('تعذّر حذف صور المشكلة من Cloudflare؛ أعد محاولة الحذف النهائي');
+        }
+      }
+      await session.withTransaction(async()=>{
+        // Keep execution and financial records; remove only their navigable case link.
+        await connection.collection('returnrequests').updateMany({'workflow.complaintIds':complaintId},{$pull:{'workflow.complaintIds':complaintId} as any,$inc:{__v:1}},{session});
+        await this.complaintModel.updateMany({'workflow.duplicateId':complaintId},{$unset:{'workflow.duplicateId':''},$inc:{__v:1}},{session});
+        await evidence.deleteMany({complaintId},{session});
+        await this.complaintModel.deleteOne({_id:objectId},{session});
+      });
+    } finally { await session.endSession(); }
   }
 
   async countComplaints(): Promise<number> {
@@ -410,6 +443,7 @@ export class ComplaintsService {
   async uploadEvidence(id: string, file: { buffer: Buffer; originalname: string }, actor: any) {
     if (!file?.buffer?.length || file.buffer.length > 5 * 1024 * 1024) throw new BadRequestException('اختر صورة بحد أقصى 5 ميجابايت');
     const initial = await this.findById(String(this.oid(id)));
+    if (initial.workflow?.deletingAt) throw new ConflictException('جارٍ حذف المشكلة نهائيًا؛ أعد محاولة الحذف لإكماله');
     let buffer: Buffer;
     try {
       buffer = await compressComplaintEvidence(file.buffer);
@@ -425,6 +459,7 @@ export class ComplaintsService {
         linked = false;
         const row = await this.complaintModel.findById(this.oid(id)).session(session);
         if (!row) throw new NotFoundException('الشكوى غير موجودة');
+        if (row.workflow?.deletingAt) throw new ConflictException('جارٍ حذف المشكلة نهائيًا؛ أعد محاولة الحذف لإكماله');
         if (row.attachments.some(a=>a.id===attachmentId)) return;
         if (row.attachments.length >= 10) throw new BadRequestException('الحد الأقصى 10 صور لكل شكوى');
         const at = new Date().toISOString(), name = String(file.originalname||'image').slice(0,150);
@@ -466,13 +501,47 @@ export class ComplaintsService {
     } catch { this.logger.warn('Could not verify or remove an unused complaint evidence upload'); }
   }
 
+  async removeEvidence(id: string, attachmentId: string, actor: any) {
+    const row = await this.findById(String(this.oid(id)));
+    if (!/^[a-f\d]{64}$/.test(attachmentId) || !row.attachments.some(a=>a.id===attachmentId)) throw new NotFoundException('الصورة غير موجودة');
+    const collection = this.complaintModel.db.collection('complaintevidence');
+    // Keep a durable reference until R2 confirms deletion. Failed requests can be retried,
+    // and legacy-image migration must not create a new cloud object during deletion.
+    const image = await collection.findOneAndUpdate(
+      {_id:attachmentId as any,complaintId:String(row._id)},
+      {$set:{deleting:true}}, {returnDocument:'after'},
+    );
+    if (!image) throw new NotFoundException('الصورة غير موجودة');
+    if (image.imageKey) {
+      if (!image.imageKey.startsWith(COMPLAINT_EVIDENCE_PREFIX)) throw new BadRequestException('مسار صورة الشكوى غير صالح');
+      const result = await r2DeleteObject(await this.evidenceR2(), image.imageKey);
+      if (!result.ok) throw new ServiceUnavailableException('تعذّر حذف الصورة من Cloudflare؛ أعد المحاولة');
+    }
+    const session = await this.complaintModel.db.startSession();
+    try {
+      await session.withTransaction(async()=>{
+        // Match the exact upload, so a late concurrent delete cannot remove a re-upload.
+        const removed = await collection.deleteOne({_id:image._id,complaintId:String(row._id),deleting:true,imageKey:image.imageKey ?? {$exists:false}}, {session});
+        if (!removed.deletedCount) return;
+        const current = await this.complaintModel.findById(row._id).session(session);
+        if (!current) return;
+        current.attachments = current.attachments.filter(a=>a.id!==attachmentId);
+        const w = complaintFlow(current);w.revision++;workflowEvent(w,'attachment_removed',actor,row.attachments.find(a=>a.id===attachmentId)?.name||'');
+        current.workflow=w;current.markModified('workflow');
+        await current.save({session});
+      });
+    } finally { await session.endSession(); }
+    return this.detail(id);
+  }
+
   async evidenceImage(id: string, attachmentId: string) {
     const row = await this.findById(id);
+    if (row.workflow?.deletingAt) throw new ConflictException('جارٍ حذف المشكلة نهائيًا');
     if (!/^[a-f\d]{64}$/.test(attachmentId) || !row.attachments.some(a=>a.id===attachmentId)) throw new NotFoundException();
     const collection = this.complaintModel.db.collection('complaintevidence');
     let image = await collection.findOne({ _id:attachmentId as any,complaintId:String(row._id) });
     if (!image) throw new NotFoundException();
-    if (!image.imageKey && image.data) {
+    if (!image.imageKey && image.data && !image.deleting) {
       // Migrate legacy images when read. Only discard the database bytes after a successful PUT.
       const legacyData = image.data;
       let uploadedKey: string | undefined;
@@ -480,7 +549,7 @@ export class ComplaintsService {
         const original = Buffer.from(image.data, 'base64'), compressed = await compressComplaintEvidence(original);
         const stored = await this.storeEvidenceImage(row, attachmentId, compressed, original.length);
         uploadedKey = stored.imageKey;
-        const moved = await collection.updateOne({_id:image._id,data:image.data,imageKey:{$exists:false}},{$set:{...stored,migratedAt:new Date()},$unset:{data:''}});
+        const moved = await collection.updateOne({_id:image._id,data:image.data,imageKey:{$exists:false},deleting:{$ne:true}},{$set:{...stored,migratedAt:new Date()},$unset:{data:''}});
         if (moved.modifiedCount) return {data:'data:image/jpeg;base64,'+compressed.toString('base64')};
         await this.deleteUnusedEvidence(stored.imageKey);
         image = await collection.findOne({_id:image._id,complaintId:String(row._id)});
@@ -519,6 +588,7 @@ export class ComplaintsService {
         const row = await this.complaintModel.findById(this.oid(id)).session(session);
         if (!row) throw new NotFoundException('الشكوى غير موجودة');
         const w = complaintFlow(row), previous = w.operations?.find((o: any) => o.key === body.operationKey);
+        if (w.deletingAt) throw new ConflictException('جارٍ حذف المشكلة نهائيًا؛ أعد محاولة الحذف لإكماله');
         if (previous) {
           if (previous.fingerprint !== fingerprint) throw new ConflictException('مفتاح الإجراء مستخدم لبيانات مختلفة');
           return;
@@ -531,7 +601,8 @@ export class ComplaintsService {
         if (adminActions.includes(body.action) && actor.role !== 'admin') throw new ForbiddenException('هذا الإجراء يحتاج اعتماد المسؤول');
         if (w.stage === 'closed' && !['reopen','archive','contact','comment'].includes(body.action)) throw new ConflictException('أعد فتح الشكوى قبل تعديل الحل');
         const note = String(body.note || '').trim();
-        if (!note && !['assign','review','resume','link','items'].includes(body.action)) throw new BadRequestException('اكتب سبب الإجراء أو مرجع الإثبات');
+        if (!note && body.action === 'close') throw new BadRequestException('اكتب سبب الإغلاق');
+        if (!note && body.action === 'comment') throw new BadRequestException('اكتب نص الملاحظة');
         const now = new Date().toISOString();
         let linked: any = w.caseId ? await connection.collection('returnrequests').findOne({ _id: this.oid(w.caseId) }, { session }) : null;
         const evidence = executionEvidence({ ...row.toObject(), workflow: w }, linked);

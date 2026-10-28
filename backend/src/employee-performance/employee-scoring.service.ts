@@ -1034,7 +1034,7 @@ export class EmployeeScoringService implements OnModuleInit {
           status: { $nin: DONE_STATUSES },
           ...cancellationExclusions.followUps,
         })
-        .select('ticketNo orderRef transactionId shopifyOrderId clientName clientPhone reason status autoSource autoTrigger updatedAt createdAt escalationBaseline escalationLevel comments._id comments.createdAt comments.updatedAt comments.text comments.authorId comments.authorName comments.kind comments.callOutcome comments.contactChannel deferredUntil deferReason deferNote')
+        .select('ticketNo orderRef transactionId shopifyOrderId clientName clientPhone reason status autoSource autoTrigger carrierUpdate updatedAt createdAt escalationBaseline escalationLevel comments._id comments.createdAt comments.updatedAt comments.text comments.authorId comments.authorName comments.kind comments.callOutcome comments.contactChannel deferredUntil deferReason deferNote')
         .sort({ deferredUntil: 1, autoSource: -1, escalationBaseline: 1, createdAt: 1 })
         .limit(MY_FOLLOWUPS_MAX)
         .lean()
@@ -1075,7 +1075,7 @@ export class EmployeeScoringService implements OnModuleInit {
       ? await this.txModel
           .find({ shopifyOrderId: { $in: shopifyIds }, cancelled: { $ne: true } })
           .select(
-            'ref client total type cancelled shopifyOrderId bostaStatus bostaStatusLabel ' +
+            'ref client total type cancelled shopifyOrderId bostaStatus bostaStatusLabel bostaDeliveryException bostaLastTrackingUpdate ' +
               'bostaTrackingNumber bostaLastSync pickupStatus pickupDate deliverySource ' +
               'deliveredAt shippedAt date shipIssueState failedDelivery shipmentAttempts',
           )
@@ -1158,6 +1158,7 @@ export class EmployeeScoringService implements OnModuleInit {
         } : null,
         latestContact: followUpLatestContact(f as Parameters<typeof followUpLatestContact>[0]),
         autoTrigger: f.autoTrigger || '',
+        carrierUpdate: f.carrierUpdate || null,
         escalationBaseline: f.escalationBaseline || null,
         lastActivityAt: followUpLastActivityAt(f as Parameters<typeof followUpLastActivityAt>[0]),
         escalationLevel: f.escalationLevel || 0,
@@ -1181,6 +1182,8 @@ export class EmployeeScoringService implements OnModuleInit {
         shopifyOrderId: t.shopifyOrderId || '',
         bostaStatus: t.bostaStatus || '',
         bostaStatusLabel: t.bostaStatusLabel || '',
+        bostaDeliveryException: t.bostaDeliveryException || null,
+        bostaLastTrackingUpdate: t.bostaLastTrackingUpdate || null,
         bostaTrackingNumber: t.bostaTrackingNumber || '',
         bostaLastSync: t.bostaLastSync || '',
         pickupStatus: t.pickupStatus || '',

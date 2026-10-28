@@ -8,13 +8,14 @@ import { Cron } from '@nestjs/schedule';
 import { Connection, Types } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
 
-export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
+export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
-export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, delivered: true, mention: true };
-const TITLES = { orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
-const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
+export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, deliveryPostponed: true, delivered: true, mention: true };
+const TITLES = { deliveryPostponed: 'تأجيل الاستلام بطلب العميل', orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
+const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', deliveryPostponed: 'Delivery Postponed by Customer', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
 export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
+export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
@@ -97,7 +98,20 @@ export function notificationBody(type: NotificationType, ref: string, details: N
     const items = Number.isInteger(count) && count! >= 0 ? language === 'en' ? `${count} ${count === 1 ? 'item' : 'items'}` : `عدد القطع: ${count}` : '';
     return `${orderLabel}${amount ? language === 'en' ? ` · EGP ${amount}` : ` · ${amount} ج.م.` : ''}${items ? ` · ${items}` : ''} · ${status}`;
   }
-  if (type === 'deliveryProblem') return `${orderLabel} · ${details.deliveryStatus === 'RETURNED' ? language === 'en' ? 'Returned Before Delivery' : 'مرتجع قبل التسليم' : language === 'en' ? 'Delivery Failed' : 'فشل التسليم'} · ${language === 'en' ? 'Action Required' : 'مطلوب إجراء'}`;
+  if (type === 'deliveryPostponed') {
+    const raw = cleanText(details.postponedUntil, 80);
+    const date = raw.includes('T') ? new Date(raw) : null;
+    const scheduled = date && Number.isFinite(date.getTime())
+      ? new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'ar-EG', { timeZone: 'Africa/Cairo', dateStyle: 'medium', timeStyle: 'short' }).format(date)
+      : raw;
+    return language === 'en'
+      ? `${orderLabel} · The customer requested delivery postponement${scheduled ? ` · New delivery time: ${scheduled}` : ' · Awaiting the new delivery date'} · Follow-up scheduled`
+      : `${orderLabel} · طلب العميل تأجيل الاستلام${scheduled ? ` · الموعد الجديد: ${scheduled}` : ' · بانتظار تحديد الموعد الجديد'} · متابعة تأجيل الاستلام`;
+  }
+  if (type === 'deliveryProblem') {
+    const reason = cleanText(language === 'en' ? details.deliveryReasonOriginal || details.deliveryReason : details.deliveryReason, 180);
+    return `${orderLabel} · ${details.deliveryStatus === 'RETURNED' ? language === 'en' ? 'Returned Before Delivery' : 'مرتجع قبل التسليم' : language === 'en' ? 'Delivery Failed' : 'فشل التسليم'}${reason ? ` · ${reason}` : ''} · ${language === 'en' ? 'Action Required' : 'مطلوب إجراء'}`;
+  }
   if (type === 'delivered') return `${orderLabel} · ${language === 'en' ? 'Successfully Delivered' : 'تم التسليم بنجاح'}`;
   if (language === 'en') {
     const order = reference ? `order #${reference}` : 'the order';
@@ -411,6 +425,35 @@ export class NotificationsService implements OnModuleInit {
     await this.enqueue('followup', eventId, followUp.orderRef, 'followup:' + followUp.id, recipients, undefined,
       { actionKey, followupAt: followUp.until, followupReason: followUp.reason, actorUserId, actorName });
     return recipients;
+  }
+
+  /** Only called with complete carrier history proving this shipment had postponements only. */
+  async correctPostponementNotifications(txId: string, shipmentId: string, ref: string, postponedUntil: string, shipmentCreatedAt?: string) {
+    const escaped = (`problem:${txId}:${shipmentId}:`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rows = await this.inbox.find({ recordId: 'tx:' + txId, type: 'deliveryProblem', eventId: { $regex: '^' + escaped } }).toArray();
+    for (const row of rows) {
+      const language = /Delivery/i.test(row.title || '') ? 'en' : 'ar';
+      const title = notificationTitle('deliveryPostponed', {}, language);
+      const body = notificationBody('deliveryPostponed', ref, { postponedUntil }, language);
+      const url = '/?' + new URLSearchParams({ pushRecord: 'tx:' + txId, pushType: 'deliveryPostponed', pushNotification: String(row._id) });
+      await this.inbox.updateOne({ _id: row._id, type: 'deliveryProblem' }, { $set: { type: 'deliveryPostponed', title, body, url,
+        correction: { previousType: row.type, previousTitle: row.title, previousBody: row.body, at: new Date() } } });
+      const jobs = await this.jobs.find({ eventId: row.eventId, userId: row.userId, type: 'deliveryProblem', done: false }).toArray();
+      for (const job of jobs) {
+        const payload = JSON.parse(job.payload);
+        await this.jobs.updateOne({ _id: job._id, done: false }, { $set: { type: 'deliveryPostponed',
+          payload: JSON.stringify({ ...payload, title, body, url }) } });
+      }
+    }
+    const tickets = await this.connection.collection('followups').find({ transactionId: txId,
+      autoSource: 'shipping-followup', autoTrigger: 'CUSTOMER_POSTPONED' }, { projection: { _id: 1 } }).toArray();
+    if (tickets.length && shipmentCreatedAt && Number.isFinite(Date.parse(shipmentCreatedAt))) await this.connection.collection('mentions').updateMany({
+      txId: { $in: tickets.map(ticket => String(ticket._id)) }, txRef: ref,
+      createdAt: { $gte: new Date(shipmentCreatedAt) },
+      fromUserId: 'system', fromName: 'متابعة تلقائية', commentText: { $regex: '^مشكلة (في الاستلام|جديدة)' },
+    }, [{ $set: { previousCommentText: '$commentText',
+      commentText: `متابعة تأجيل استلام الطلب #${ref} بطلب العميل${postponedUntil ? ` — الموعد الجديد حسب بوسطة: ${postponedUntil}` : ''}`,
+      postponementCorrectedAt: new Date() } }]);
   }
 
   async recordPointChange(eventId: string, employeeId: string, delta: number, reason: string, ref = '', previous?: any) {

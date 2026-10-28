@@ -10,6 +10,7 @@ const TITLES = {
   order: ['🛍️', 'طلب جديد', 'New Order'],
   orderEdit: ['✏️', 'قرار تعديل الطلب', 'Order Edit Decision'],
   deliveryProblem: ['🚨', 'مشكلة في التسليم', 'Delivery Issue'],
+  deliveryPostponed: ['🗓️', 'تأجيل الاستلام بطلب العميل', 'Delivery Postponed by Customer'],
   delivered: ['📦', 'تم تسليم الطلب', 'Order Delivered'],
   mention: ['💬', 'إشارة جديدة إليك', 'You Were Mentioned'],
   otp: ['🔐', 'مطلوب التحقق بكود OTP', 'OTP Verification Required'],

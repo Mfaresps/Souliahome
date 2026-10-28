@@ -538,10 +538,20 @@ export class Transaction {
   /**
    * Bosta shipment status — mirrors Bosta state codes:
    * CREATED | PICKED_UP | IN_TRANSIT | OUT_FOR_DELIVERY |
-   * DELIVERED | RETURNED | CANCELLED | FAILED_ATTEMPT
+   * DELIVERED | RETURNED | CANCELLED | FAILED_ATTEMPT | CUSTOMER_POSTPONED
    */
   @Prop({ default: '' })
   bostaStatus: string;
+
+  /** Latest carrier exception, distinct from the parcel's current movement. */
+  @Prop({ type: Object, default: null })
+  bostaDeliveryException: { code: number | null; reason: string; scheduledAt: string; at: string } | null;
+
+  @Prop({ type: Object, default: null })
+  bostaLastTrackingUpdate: import('../../bosta/bosta-tracking.util').CarrierTrackingUpdate | null;
+
+  @Prop({ type: [Object], default: [] })
+  bostaTrackingEvents: import('../../bosta/bosta-tracking.util').CarrierTrackingUpdate[];
 
   /** Human-readable Arabic label for bostaStatus */
   @Prop({ default: '' })

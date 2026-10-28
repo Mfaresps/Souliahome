@@ -1,0 +1,77 @@
+{
+  "local": {
+    "_id": "6adb53bff1184f0ce7009011",
+    "ref": "2881",
+    "items": [
+      {
+        "code": "MOCHA-BLANKET-BRN-S-001",
+        "qty": 1
+      }
+    ],
+    "cancelled": false,
+    "shopifyOrderId": "7219529384237",
+    "bostaTrackingNumber": "3167547571",
+    "bostaStatus": "DELIVERED",
+    "deliveredAt": "2026-10-26T11:50:02.567Z"
+  },
+  "remote": {
+    "id": "gid://shopify/Order/7219529384237",
+    "name": "#2881",
+    "cancelledAt": null,
+    "displayFinancialStatus": "PENDING",
+    "displayFulfillmentStatus": "UNFULFILLED",
+    "lineItems": {
+      "nodes": [
+        {
+          "id": "gid://shopify/LineItem/17198502215981",
+          "name": "Mocha Blanket throw",
+          "quantity": 1,
+          "currentQuantity": 1,
+          "unfulfilledQuantity": 1
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    },
+    "fulfillments": [],
+    "fulfillmentOrders": {
+      "nodes": [
+        {
+          "id": "gid://shopify/FulfillmentOrder/8367101149485",
+          "status": "OPEN",
+          "supportedActions": [
+            {
+              "action": "CREATE_FULFILLMENT"
+            },
+            {
+              "action": "REPORT_PROGRESS"
+            },
+            {
+              "action": "HOLD"
+            }
+          ],
+          "lineItems": {
+            "nodes": [
+              {
+                "id": "gid://shopify/FulfillmentOrderLineItem/17363393413421",
+                "remainingQuantity": 1,
+                "totalQuantity": 1,
+                "lineItem": {
+                  "id": "gid://shopify/LineItem/17198502215981"
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasNextPage": false
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    }
+  },
+  "apply": true
+}

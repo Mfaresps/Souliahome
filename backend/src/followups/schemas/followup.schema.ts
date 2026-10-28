@@ -85,10 +85,17 @@ export class FollowUp {
   // follow-ups leave both fields at their defaults, so `autoSource` doubles as
   // the "was this machine-created?" flag the UI uses to render the auto badge.
   @Prop({ default: '' })
-  autoSource: string; // '' | 'shipping-issue'
+  autoSource: string; // '' | 'shipping-issue' | 'shipping-followup' (customer postponement)
 
   @Prop({ default: '' })
   autoTrigger: string; // the Bosta status code that opened it, e.g. 'FAILED_ATTEMPT'
+
+  @Prop({ type: Object, default: null })
+  carrierUpdate: import('../../bosta/bosta-tracking.util').CarrierTrackingUpdate | null;
+
+  /** Last actionable exception; ordinary movement must not erase this identity. */
+  @Prop({ type: Object, default: null })
+  lastCarrierAction: import('../../bosta/bosta-tracking.util').CarrierTrackingUpdate | null;
 
   // How the assignee was picked — mirrors AssigneeResolution.reason from
   // EmployeeShiftService ('shift' | 'on-call-fallback' | 'unassigned'). Shown

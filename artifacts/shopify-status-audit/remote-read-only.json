@@ -1,0 +1,139 @@
+{
+  "at": "2026-10-28T21:16:32.953Z",
+  "mode": "read-only",
+  "localStatuses": [
+    {
+      "_id": "DELETED",
+      "count": 4,
+      "example": {
+        "ref": "2244",
+        "shopifyOrderId": "7011657220397",
+        "tracking": "2123379372"
+      }
+    },
+    {
+      "_id": "DELIVERED",
+      "count": 558,
+      "example": {
+        "ref": "2934",
+        "shopifyOrderId": "7227495973165",
+        "tracking": ""
+      }
+    },
+    {
+      "_id": "IN_TRANSIT",
+      "count": 7,
+      "example": {
+        "ref": "2922",
+        "shopifyOrderId": "7225428738349",
+        "tracking": "8672390227"
+      }
+    },
+    {
+      "_id": "RETURNED",
+      "count": 17,
+      "example": {
+        "ref": "2760",
+        "shopifyOrderId": "7204184293677",
+        "tracking": "9609808983"
+      }
+    }
+  ],
+  "shopify": {
+    "shop": {
+      "myshopifyDomain": "tscxpn-ze.myshopify.com"
+    },
+    "eventStatuses": {
+      "enumValues": [
+        {
+          "name": "LABEL_PURCHASED"
+        },
+        {
+          "name": "LABEL_PRINTED"
+        },
+        {
+          "name": "READY_FOR_PICKUP"
+        },
+        {
+          "name": "CONFIRMED"
+        },
+        {
+          "name": "IN_TRANSIT"
+        },
+        {
+          "name": "OUT_FOR_DELIVERY"
+        },
+        {
+          "name": "ATTEMPTED_DELIVERY"
+        },
+        {
+          "name": "DELAYED"
+        },
+        {
+          "name": "DELIVERED"
+        },
+        {
+          "name": "FAILURE"
+        },
+        {
+          "name": "CARRIER_PICKED_UP"
+        }
+      ]
+    },
+    "currentAppInstallation": {
+      "accessScopes": [
+        {
+          "handle": "read_orders"
+        },
+        {
+          "handle": "write_orders"
+        },
+        {
+          "handle": "write_merchant_managed_fulfillment_orders"
+        },
+        {
+          "handle": "write_fulfillments"
+        },
+        {
+          "handle": "write_order_edits"
+        },
+        {
+          "handle": "read_merchant_managed_fulfillment_orders"
+        },
+        {
+          "handle": "read_fulfillments"
+        },
+        {
+          "handle": "read_order_edits"
+        }
+      ]
+    },
+    "nodes": [
+      null,
+      {
+        "id": "gid://shopify/Order/7227495973165",
+        "name": "#2934",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      },
+      {
+        "id": "gid://shopify/Order/7225428738349",
+        "name": "#2922",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      },
+      {
+        "id": "gid://shopify/Order/7204184293677",
+        "name": "#2760",
+        "cancelledAt": null,
+        "displayFulfillmentStatus": "UNFULFILLED",
+        "displayFinancialStatus": "PENDING",
+        "fulfillments": []
+      }
+    ]
+  }
+}

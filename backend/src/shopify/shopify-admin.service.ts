@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as https from 'https';
 import { SettingsService } from '../settings/settings.service';
+import { ShopifySyncService } from './sync/sync.service';
 const { createShopifyTokenProvider } = require('../../scripts/shopify-token.cjs');
 
 export interface ShopifyAdminConfig {
@@ -15,7 +16,8 @@ export class ShopifyAdminService {
   private readonly logger = new Logger(ShopifyAdminService.name);
   private readonly tokenProvider = createShopifyTokenProvider();
 
-  constructor(@Optional() private readonly settingsService?: SettingsService) {}
+  constructor(@Optional() private readonly settingsService?: SettingsService,
+    @Optional() private readonly sync?: ShopifySyncService) {}
 
   private async getConfig(): Promise<ShopifyAdminConfig | null> {
     const stored = await this.settingsService?.getShopifyConfig();
@@ -101,55 +103,8 @@ export class ShopifyAdminService {
     trackingCompany = 'Bosta',
     trackingUrl = '',
   ): Promise<{ success: boolean; fulfillmentId?: string; error?: string }> {
-    const cfg = await this.getConfig();
-    if (!cfg) {
-      this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي Fulfillment');
-      return { success: false, error: 'Shopify Admin API غير مضبوط' };
-    }
-
-    try {
-      // Step 1: get fulfillment orders for this order
-      const foRes = await this.request<any>(
-        'GET',
-        `/orders/${shopifyOrderId}/fulfillment_orders.json`,
-        undefined,
-        cfg,
-      );
-
-      const fulfillmentOrders: any[] = foRes.fulfillment_orders || [];
-      // Filter only open (fulfillable) fulfillment orders
-      const openFOs = fulfillmentOrders.filter(
-        (fo: any) => fo.status === 'open' || fo.status === 'in_progress',
-      );
-
-      if (openFOs.length === 0) {
-        this.logger.warn(`Shopify fulfillOrder: no open fulfillment orders for order ${shopifyOrderId}`);
-        return { success: false, error: 'لا يوجد fulfillment order مفتوح لهذا الطلب' };
-      }
-
-      // Step 2: create fulfillment
-      const fulfillPayload: any = {
-        fulfillment: {
-          line_items_by_fulfillment_order: openFOs.map((fo: any) => ({
-            fulfillment_order_id: fo.id,
-          })),
-          tracking_info: {
-            number:  trackingNumber,
-            company: trackingCompany,
-            url:     trackingUrl || `https://bosta.co/tracking/${trackingNumber}`,
-          },
-          notify_customer: true,
-        },
-      };
-
-      const res = await this.request<any>('POST', '/fulfillments.json', fulfillPayload, cfg);
-      const fulfillmentId = String(res.fulfillment?.id || '');
-      this.logger.log(`Shopify fulfilled order ${shopifyOrderId} → fulfillmentId=${fulfillmentId} tracking=${trackingNumber}`);
-      return { success: true, fulfillmentId };
-    } catch (err: any) {
-      this.logger.error(`Shopify fulfillOrder failed for order ${shopifyOrderId}: ${err.message}`);
-      return { success: false, error: err.message };
-    }
+    // All automatic writes are governed by the persisted sync setting and queue.
+    return this.sync ? this.sync.legacyRequest() : { success: false, error: 'Shopify sync is not configured' };
   }
 
   // ── Cancel order ────────────────────────────────────────────────────────────
@@ -158,25 +113,8 @@ export class ShopifyAdminService {
     reason: 'customer' | 'fraud' | 'inventory' | 'declined' | 'other' = 'other',
     email = false,
   ): Promise<{ success: boolean; error?: string }> {
-    const cfg = await this.getConfig();
-    if (!cfg) {
-      this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي إلغاء الطلب');
-      return { success: false, error: 'Shopify Admin API غير مضبوط' };
-    }
-
-    try {
-      await this.request<any>(
-        'POST',
-        `/orders/${shopifyOrderId}/cancel.json`,
-        { reason, email },
-        cfg,
-      );
-      this.logger.log(`Shopify cancelled order ${shopifyOrderId}`);
-      return { success: true };
-    } catch (err: any) {
-      this.logger.error(`Shopify cancelOrder failed for ${shopifyOrderId}: ${err.message}`);
-      return { success: false, error: err.message };
-    }
+    // All automatic writes are governed by the persisted sync setting and queue.
+    return this.sync ? this.sync.legacyRequest() : { success: false, error: 'Shopify sync is not configured' };
   }
 
   // ── Update order note and tags ──────────────────────────────────────────────
@@ -212,33 +150,8 @@ export class ShopifyAdminService {
     amount: number,
     currency = 'EGP',
   ): Promise<{ success: boolean; error?: string }> {
-    const cfg = await this.getConfig();
-    if (!cfg) {
-      this.logger.warn('Shopify Admin API غير مضبوط — تم تخطي تحديث حالة الدفع');
-      return { success: false, error: 'Shopify Admin API غير مضبوط' };
-    }
-
-    try {
-      // Create a transaction record to mark as paid
-      await this.request<any>(
-        'POST',
-        `/orders/${shopifyOrderId}/transactions.json`,
-        {
-          transaction: {
-            kind:     'capture',
-            status:   'success',
-            amount:   amount.toFixed(2),
-            currency,
-          },
-        },
-        cfg,
-      );
-      this.logger.log(`Shopify marked order ${shopifyOrderId} as paid — amount=${amount}`);
-      return { success: true };
-    } catch (err: any) {
-      this.logger.error(`Shopify markOrderPaid failed for ${shopifyOrderId}: ${err.message}`);
-      return { success: false, error: err.message };
-    }
+    // All automatic writes are governed by the persisted sync setting and queue.
+    return this.sync ? this.sync.legacyRequest() : { success: false, error: 'Shopify sync is not configured' };
   }
 
   // ── List orders from Shopify (for importing old/historical orders) ─────────

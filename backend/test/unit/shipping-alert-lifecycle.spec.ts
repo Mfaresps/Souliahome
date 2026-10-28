@@ -16,7 +16,7 @@ describe('shipping alert completion', () => {
     const { service, exec } = followUpFixture();
     await service.closeShippingIssueFollowUp('tx1', 'تم التسليم', 'Bosta');
     const [query, update] = service.model.updateMany.mock.calls[0];
-    expect(query).toEqual({ transactionId: 'tx1', autoSource: 'shipping-issue', cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } });
+    expect(query).toEqual({ transactionId: 'tx1', autoSource: { $in: ['shipping-issue', 'shipping-followup'] }, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES } });
     expect(update.$set).toMatchObject({ status: 'تم حل المشكلة', resolution: 'تم التسليم', escalationLevel: 0 });
     expect(update.$set.closedAt).toBeInstanceOf(Date);
     expect(update.$push.comments.text).toContain('تم التسليم');

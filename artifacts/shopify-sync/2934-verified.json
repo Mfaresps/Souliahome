@@ -1,0 +1,28 @@
+{
+  "ref": "2934",
+  "orderId": "7227495973165",
+  "verifiedAt": "2026-10-28T22:25:35.542Z",
+  "before": {
+    "fulfillment": "UNFULFILLED",
+    "payment": "PENDING"
+  },
+  "after": {
+    "fulfillment": "FULFILLED",
+    "payment": "PENDING",
+    "shipments": [
+      {
+        "id": "gid://shopify/Fulfillment/6555035009325",
+        "status": "DELIVERED",
+        "tracking": [],
+        "events": [
+          {
+            "id": "gid://shopify/FulfillmentEvent/34094150910253",
+            "status": "DELIVERED",
+            "happenedAt": "2026-10-27T23:00:07Z"
+          }
+        ]
+      }
+    ]
+  },
+  "paymentUnchanged": true
+}

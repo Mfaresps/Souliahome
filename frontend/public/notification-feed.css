@@ -17,6 +17,9 @@
 .notification-delivery-issue :is(.notif-title,.notif-desc,.nc-item-title,.nc-item-desc),.nc-detail-title.notification-delivery-issue,.nc-detail-desc.notification-delivery-issue{color:#991b1b}
 .notification-delivered .notification-avatar{color:#15803d;background:#e8f5ec}
 .notification-delivery-issue .notification-avatar{color:#991b1b;background:#fbeaea}
+.notification-delivery-postponed :is(.notif-title,.notif-desc,.nc-item-title,.nc-item-desc),.nc-detail-title.notification-delivery-postponed,.nc-detail-desc.notification-delivery-postponed{color:#9a6700}
+.notification-delivery-postponed .notification-avatar{color:#9a6700;background:#fff7db}
+body.dark-mode .notification-delivery-postponed :is(.notif-title,.notif-desc,.nc-item-title,.nc-item-desc),body.dark-mode .nc-detail-title.notification-delivery-postponed,body.dark-mode .nc-detail-desc.notification-delivery-postponed{color:#fcd34d}
 .notification-delivered-copy{display:inline-flex;align-items:flex-start;gap:4px}
 .notification-check{flex:none;margin-top:2px}
 body.dark-mode .notification-delivered :is(.notif-title,.notif-desc,.nc-item-title,.nc-item-desc),body.dark-mode .nc-detail-title.notification-delivered,body.dark-mode .nc-detail-desc.notification-delivered{color:#86efac}

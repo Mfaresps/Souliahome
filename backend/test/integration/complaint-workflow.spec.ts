@@ -57,6 +57,21 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     await expect(create({...body,description:'changed'})).rejects.toThrow();
     expect(a.surveyToken).toBeUndefined();
   });
+  it('accepts omitted or blank action details while preserving required execution evidence',async()=>{
+    let row:any=await create();
+    const response=await fetch(`${base}/complaints/${row._id}/workflow`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operationKey:String(oid()),expectedRevision:row.workflow.revision,action:'plan',solution:'support',dueAt:dueAt()})});
+    expect(response.status).toBe(201);row=await response.json() as any;
+    expect(row.workflow.planNote).toBe('');
+    row=await step(row,'wait',{waitingFor:'customer',note:'   '});expect(row.workflow.waitReason).toBe('');
+    row=await step(row,'resume',{note:''});
+    row=await step(row,'contact',{channel:'phone',contactResult:'reached',note:''});
+    expect(row.workflow.contacts.at(-1).note).toBe('');
+    await expect(step(row,'fulfill',{confirmed:true,note:''})).rejects.toThrow('مرجع الإثبات');
+    row=await step(row,'fulfill',{reference:'SUPPORT-1',confirmed:true,note:''});
+    expect(row.workflow.fulfillment.note).toBe('');expect(row.execution.ready).toBe(true);
+    await expect(step(row,'close',{outcome:'resolved',customerConfirmed:true,note:''})).rejects.toThrow('سبب الإغلاق');
+    await expect(step(row,'comment',{note:'   '})).rejects.toThrow('نص الملاحظة');
+  });
   it('requires contact information without an invoice and validates line quantities', async () => {
     await expect(create({description:'No contact'})).rejects.toThrow();
     await expect(create({...createBody(),items:[{lineIndex:0,qty:5}]})).rejects.toThrow();
@@ -140,7 +155,7 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     row=await step(row,'wait',{waitingFor:'customer'});row=await step(row,'contact',{channel:'phone',contactResult:'no_answer'});
     await Model.updateOne({_id:row._id},{$set:{'workflow.contacts.0.at':new Date(Date.now()-25*3600000).toISOString()}});
     row=await step(row,'contact',{channel:'phone',contactResult:'no_answer'});row=await step(row,'close',{outcome:'unreachable'});expect(row.surveySlug).toBeUndefined();
-    row=await step(row,'archive');expect(row.workflow.archivedAt).toBeTruthy();await expect(service.remove(String(row._id))).rejects.toThrow();
+    row=await step(row,'archive');expect(row.workflow.archivedAt).toBeTruthy();await expect(service.remove(String(row._id),{...actor,role:'staff'})).rejects.toThrow();
     await expect(service.removeNote(String(row._id),row.notes[0].id,actor.userId,true)).rejects.toThrow();
   });
   it('enforces HTTP permissions and DTO validation, including on image evidence endpoints', async () => {
@@ -149,6 +164,82 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     const result=await fetch(`${base}/complaints/${row._id}/workflow`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({operationKey:'http-fixture',expectedRevision:0,action:'set-anything',note:'invalid'})});
     expect(result.status).toBe(400);
     expect((await fetch(`${base}/complaints/${row._id}/evidence/anything`,{headers:{'x-test-role':'viewer'}})).status).toBe(403);
+  });
+  it.each(['review','planned','execution','confirmation','waiting','blocked','closed','archived','legacy'])('allows an admin to permanently delete a complaint in %s',async stage=>{
+    const row=await create();
+    await Model.updateOne({_id:row._id},{$set:{'workflow.stage':stage==='archived'?'closed':stage,...(stage==='archived'?{'workflow.archivedAt':new Date().toISOString()}:{}),surveySlug:'deleted-survey'}});
+    if(stage==='legacy')await Model.updateOne({_id:row._id},{$set:{workflow:null}});
+    expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE'})).status).toBe(200);
+    expect(await Model.findById(row._id)).toBeNull();
+    await expect(service.publicSurvey('deleted-survey')).rejects.toThrow();
+    expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE'})).status).toBe(200);
+  });
+  it('rejects staff, viewers, and stale admin credentials when permanently deleting',async()=>{
+    const row=await create();
+    for(const role of ['staff','viewer']){
+      expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE',headers:{'x-test-role':role}})).status).toBe(403);
+      await expect(service.remove(String(row._id),{...actor,role,perms:['complaints','transaction']})).rejects.toThrow();
+    }
+    await mongo.connection.collection('users').updateOne({_id:new Types.ObjectId(actor.userId)},{$set:{role:'staff'}});
+    expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE'})).status).toBe(403);
+    await mongo.connection.collection('users').updateOne({_id:new Types.ObjectId(actor.userId)},{$set:{role:'admin',isActive:false}});
+    expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE'})).status).toBe(403);
+    expect(await Model.findById(row._id)).not.toBeNull();
+  });
+  it('removes complaint images and execution links while retaining financial and execution records',async()=>{
+    let row:any=await create();row=await step(row,'plan',{solution:'exchange'});
+    const linked=await execution(row);row=await step(row,'link',{caseId:String(linked._id)});
+    const other=await create({...createBody(),operationKey:String(oid())});
+    await mongo.connection.collection('returnrequests').updateOne({_id:linked._id},{$addToSet:{'workflow.complaintIds':String(other._id)}});
+    await Model.updateOne({_id:other._id},{$set:{'workflow.duplicateId':String(row._id)}});
+    await mongo.connection.collection('expenses').insertOne({complaintId:String(row._id),amount:50});
+    await mongo.connection.collection('vaultentries').insertOne({complaintId:String(row._id),amount:-50});
+    const buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    const legacyId='e'.repeat(64);
+    await mongo.connection.collection('complaintevidence').insertOne({_id:legacyId as any,complaintId:String(row._id),data:'legacy'});
+    await service.remove(String(row._id),actor);
+    expect(cloud.size).toBe(0);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    expect(await Model.findById(row._id)).toBeNull();
+    const retained=await mongo.connection.collection('returnrequests').findOne({_id:linked._id});
+    expect(retained?.workflow.complaintIds).toEqual([String(other._id)]);expect(retained?.workflow.stage).toBe('approved');
+    expect((await service.detail(String(other._id))).workflow.duplicateId).toBeUndefined();
+    expect(await mongo.connection.collection('expenses').countDocuments()).toBe(1);
+    expect(await mongo.connection.collection('vaultentries').countDocuments()).toBe(1);
+    expect(await mongo.connection.collection('transactions').findOne({_id:sale._id})).not.toBeNull();
+  });
+  it('keeps a failed permanent deletion retryable and blocks new images or workflow changes',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    (r2.r2DeleteObject as jest.Mock).mockResolvedValueOnce({ok:false,message:'unavailable'});
+    expect((await fetch(`${base}/complaints/${row._id}`,{method:'DELETE'})).status).toBe(503);
+    expect(await Model.findById(row._id)).not.toBeNull();expect(cloud.size).toBe(1);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
+    await expect(service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)).rejects.toThrow('حذف');
+    await expect(step(await service.detail(String(row._id)),'plan',{solution:'support'})).rejects.toThrow('حذف');
+    await service.remove(String(row._id),actor);
+    expect(await Model.findById(row._id)).toBeNull();expect(cloud.size).toBe(0);
+  });
+  it('cleans an in-flight image upload when its complaint is permanently deleted',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    let release!:()=>void,started!:()=>void;
+    const waiting=new Promise<void>(resolve=>{started=resolve;});
+    (r2.r2PutObject as jest.Mock).mockImplementationOnce(async(_cfg,key,bytes)=>{started();await new Promise<void>(resolve=>{release=resolve;});cloud.set(key,Buffer.from(bytes));return {ok:true,message:''};});
+    const uploading=service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    const rejected=expect(uploading).rejects.toThrow('غير موجودة');
+    await waiting;await service.remove(String(row._id),actor);release();await rejected;
+    expect(await Model.findById(row._id)).toBeNull();expect(cloud.size).toBe(0);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+  });
+  it('retries permanent deletion after database finalization fails',async()=>{
+    const row=await create(),buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    const remove=jest.spyOn(Model,'deleteOne').mockRejectedValueOnce(new Error('fixture database failure'));
+    try{await expect(service.remove(String(row._id),actor)).rejects.toThrow('fixture database failure');}finally{remove.mockRestore();}
+    expect(await Model.findById(row._id)).not.toBeNull();expect(cloud.size).toBe(0);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
+    await service.remove(String(row._id),actor);expect(await Model.findById(row._id)).toBeNull();
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
   });
   it('sanitizes and deduplicates uploaded evidence without exposing it in public surveys', async () => {
     const row=await create();const buffer=await sharp({create:{width:8,height:8,channels:3,background:'#119944'}}).png().toBuffer();
@@ -200,6 +291,68 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     expect(cloud.size).toBe(1);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
     await expect(service.uploadEvidence(String(row._id),{buffer:await sharp({create:{width:20,height:20,channels:3,background:'#1111cc'}}).png().toBuffer(),originalname:'extra.png'},actor)).rejects.toThrow('10');
     expect(cloud.size).toBe(1);
+  });
+  it('deletes evidence through the protected endpoint from both R2 and the database',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    const uploaded=await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor), attachmentId=uploaded.attachments[0].id;
+    const url=`${base}/complaints/${row._id}/evidence/${attachmentId}`;
+    expect((await fetch(url,{method:'DELETE',headers:{'x-test-role':'viewer'}})).status).toBe(403);
+    expect(cloud.size).toBe(1);
+    const other=await create({...createBody(),operationKey:String(oid())});
+    await expect(service.removeEvidence(String(other._id),attachmentId,actor)).rejects.toThrow();
+    expect(cloud.size).toBe(1);
+    const response=await fetch(url,{method:'DELETE'});expect(response.status).toBe(200);
+    const detail:any=await response.json();expect(detail.attachments).toHaveLength(0);
+    expect(detail.workflow.history.some((event:any)=>event.action==='attachment_removed')).toBe(true);
+    expect(cloud.size).toBe(0);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    expect((await fetch(url)).status).toBe(404);
+    const again=await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    expect(again.attachments).toHaveLength(1);expect(cloud.size).toBe(1);
+    expect((await service.evidenceImage(String(row._id),attachmentId)).data).toMatch(/^data:image\/jpeg;base64,/);
+  });
+  it('keeps evidence linked when cloud deletion fails and allows retry',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    const uploaded=await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor), attachmentId=uploaded.attachments[0].id;
+    (r2.r2DeleteObject as jest.Mock).mockResolvedValueOnce({ok:false,message:'unavailable'});
+    await expect(service.removeEvidence(String(row._id),attachmentId,actor)).rejects.toThrow('Cloudflare');
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(1);
+    expect(cloud.size).toBe(1);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
+    await service.removeEvidence(String(row._id),attachmentId,actor);
+    expect(cloud.size).toBe(0);expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+  });
+  it('retries database finalization after R2 deletion without losing the stored reference',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    const uploaded=await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor), attachmentId=uploaded.attachments[0].id;
+    const save=jest.spyOn(Model.prototype,'save').mockRejectedValueOnce(new Error('fixture database failure'));
+    try {await expect(service.removeEvidence(String(row._id),attachmentId,actor)).rejects.toThrow('fixture database failure');}
+    finally {save.mockRestore();}
+    expect(cloud.size).toBe(0);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(1);
+    await service.removeEvidence(String(row._id),attachmentId,actor);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+  });
+  it('does not let a delayed concurrent delete remove a new upload of the same image',async()=>{
+    const row=await create(), buffer=await sharp({create:{width:20,height:20,channels:3,background:'#ee3344'}}).png().toBuffer();
+    const uploaded=await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor), attachmentId=uploaded.attachments[0].id;
+    let release!:()=>void, started!:()=>void;
+    const waiting=new Promise<void>(resolve=>{started=resolve;});
+    (r2.r2DeleteObject as jest.Mock).mockImplementationOnce(async(_cfg,key)=>{started();await new Promise<void>(resolve=>{release=resolve;});cloud.delete(key);return {ok:true,message:''};});
+    const delayed=service.removeEvidence(String(row._id),attachmentId,actor);await waiting;
+    await service.removeEvidence(String(row._id),attachmentId,actor);
+    await service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor);
+    release();await delayed;
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(1);expect(cloud.size).toBe(1);
+    expect((await service.evidenceImage(String(row._id),attachmentId)).data).toMatch(/^data:image\/jpeg;base64,/);
+  });
+  it('deletes legacy database-only evidence without creating a cloud object',async()=>{
+    const row=await create(),attachmentId='b'.repeat(64);
+    await Model.updateOne({_id:row._id},{$push:{attachments:{id:attachmentId,name:'old.webp'}}});
+    await mongo.connection.collection('complaintevidence').insertOne({_id:attachmentId as any,complaintId:String(row._id),data:'legacy'});
+    await service.removeEvidence(String(row._id),attachmentId,actor);
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    expect(r2.r2PutObject).not.toHaveBeenCalled();expect(r2.r2DeleteObject).not.toHaveBeenCalled();
   });
   it('migrates legacy image bytes on read and preserves them if cloud upload fails',async()=>{
     const row=await create(),attachmentId='a'.repeat(64),buffer=await sharp({create:{width:300,height:200,channels:3,background:'#eeaa11'}}).webp().toBuffer();

@@ -1,0 +1,10 @@
+{
+  "fulfillmentEventCreate": {
+    "fulfillmentEvent": {
+      "id": "gid://shopify/FulfillmentEvent/34093752287533",
+      "status": "DELIVERED",
+      "happenedAt": "2026-10-26T11:50:02Z"
+    },
+    "userErrors": []
+  }
+}

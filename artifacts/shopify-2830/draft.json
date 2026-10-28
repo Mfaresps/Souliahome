@@ -1,0 +1,111 @@
+{
+  "shopId": "gid://shopify/Shop/94263443757",
+  "transactionId": "6ae0a3f56c8ef6018c1d333f",
+  "orderId": "7213632618797",
+  "localHash": "8222f44c0b3afac624cbee47d2be2272be19bd28af1543640d5ad84c2cd8acb3",
+  "remoteHash": "29ae75d673da95d4cfc9f797169a960d295bfbe6c0e29474a9bd8b4d286f48cd",
+  "calculatedId": "gid://shopify/CalculatedOrder/170576970029",
+  "startedAt": "2026-10-28T22:35:18.990Z",
+  "steps": [
+    "Removed unfulfilled Code 33, restock true",
+    {
+      "added": "Code 30",
+      "quantity": 1,
+      "price": 450
+    },
+    {
+      "added": "Code 42",
+      "quantity": 1,
+      "price": 1320
+    }
+  ],
+  "committed": true,
+  "verified": true,
+  "calculated": {
+    "id": "gid://shopify/CalculatedOrder/170576970029",
+    "originalOrder": {
+      "id": "gid://shopify/Order/7213632618797"
+    },
+    "totalPriceSet": {
+      "shopMoney": {
+        "amount": "3410.0",
+        "currencyCode": "EGP"
+      }
+    },
+    "lineItems": {
+      "nodes": [
+        {
+          "id": "gid://shopify/CalculatedLineItem/17186584035629",
+          "sku": "Code 33",
+          "title": "Oriva Dining Set (15 pieces)",
+          "quantity": 0,
+          "originalUnitPriceSet": {
+            "shopMoney": {
+              "amount": "2180.0",
+              "currencyCode": "EGP"
+            }
+          }
+        },
+        {
+          "id": "gid://shopify/CalculatedLineItem/17186584068397",
+          "sku": "Code 17",
+          "title": "Luma Organize Set",
+          "quantity": 1,
+          "originalUnitPriceSet": {
+            "shopMoney": {
+              "amount": "890.0",
+              "currencyCode": "EGP"
+            }
+          }
+        },
+        {
+          "id": "gid://shopify/CalculatedLineItem/17186584101165",
+          "sku": "Code 37",
+          "title": "Loop Runner",
+          "quantity": 1,
+          "originalUnitPriceSet": {
+            "shopMoney": {
+              "amount": "750.0",
+              "currencyCode": "EGP"
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    },
+    "addedLineItems": {
+      "nodes": [
+        {
+          "id": "gid://shopify/CalculatedLineItem/b6f3fac5-ac18-49c7-b4d3-19a11a82adb9",
+          "sku": "Code 30",
+          "title": "Cotton Tissue",
+          "quantity": 1,
+          "originalUnitPriceSet": {
+            "shopMoney": {
+              "amount": "450.0",
+              "currencyCode": "EGP"
+            }
+          }
+        },
+        {
+          "id": "gid://shopify/CalculatedLineItem/1e535879-368b-4fb7-9e7b-f5c47402bc9b",
+          "sku": "Code 42",
+          "title": "Bow Dining Coaster ( 6 pieces )",
+          "quantity": 1,
+          "originalUnitPriceSet": {
+            "shopMoney": {
+              "amount": "1320.0",
+              "currencyCode": "EGP"
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false
+      }
+    }
+  },
+  "commitStartedAt": "2026-10-28T22:37:48.059Z"
+}

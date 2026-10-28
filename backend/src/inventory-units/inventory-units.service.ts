@@ -230,7 +230,7 @@ export class InventoryUnitsService {
           pickupStatus: { $nin: ['Returned', 'Cancelled'] },
           bostaStatus: { $nin: ['RETURNED', 'RETURNED_TO_BUSINESS', 'CANCELLED'] },
           $or: [{ pickupStatus: { $in: ['Shipped', 'Delivered'] } },
-            { bostaStatus: { $in: ['DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'] } },
+            { bostaStatus: { $in: ['DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'] } },
             { shippedAt: { $exists: true, $nin: [null, ''] } }],
           $expr: { $and: [{ $eq: ['$_id', '$$saleId'] },
             { $in: ['$$lineId', { $map: { input: { $ifNull: ['$items', []] }, as: 'line', in: '$$line.lineId' } }] }] } } },

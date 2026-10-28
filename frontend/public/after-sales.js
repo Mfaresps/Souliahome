@@ -488,9 +488,14 @@
     if(busy)return;const popup=window.open('','_blank','width=850,height=750');if(!popup){message(tr('اسمح بفتح نافذة الطباعة.','Allow the print window to open.'));return;}
     setBusy(true);
     try{
+      const helpers=window.InventoryUnitLabels;
+      if(!helpers)throw new Error(tr('تعذر تحميل أدوات الطباعة. حدّث الصفحة وأعد المحاولة.','Print tools unavailable. Refresh the page and retry.'));
+      // Receipt printing can be opened before the barcode workspace has loaded its configuration.
+      const config=await api('/inventory-units/config');
+      if(!Array.isArray(config?.labelSizes)||config.symbology&&config.symbology!=='QR'||!config.labelSizes.some(size=>size.id===sizeId))throw new Error(tr('مقاس الملصق غير متاح. حدّث الصفحة وأعد المحاولة.','Label size unavailable. Refresh the page and retry.'));
       const unitId=label.dataset.asLabel,operationKey=label.dataset.printSize===sizeId&&label.dataset.printOperationKey||key();label.dataset.printOperationKey=operationKey;label.dataset.printSize=sizeId;
       const apiBody={unitIds:[unitId],sizeId,operationKey,allowReprint:true,reason:'After-sales physical receipt: reprint obscured identity'};
-      const helpers=window.InventoryUnitLabels,batch=helpers.validateBatch(await api('/inventory-units/labels/requests',{method:'POST',body:JSON.stringify(apiBody)}),[unitId],sizeId),s=batch.size;
+      const batch=helpers.validateBatch(await api('/inventory-units/labels/requests',{method:'POST',body:JSON.stringify(apiBody)}),[unitId],sizeId,config),s=batch.size;
       popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>SOULIA</title><link rel="stylesheet" href="${location.origin}/inventory-units.css"><style>@page{size:${s.widthMm}mm ${s.heightMm}mm;margin:0}html,body{margin:0;padding:0;width:${s.widthMm}mm;background:white}.iu-label{margin:0!important;transform:none!important}</style></head><body>${batch.labels.map(l=>helpers.labelHtml(l,s)).join('')}</body></html>`);popup.document.close();
       await new Promise((resolve,reject)=>{const css=popup.document.querySelector('link'),timer=setTimeout(()=>reject(new Error(tr('تعذر تحميل تنسيق الطباعة','Print stylesheet timed out'))),15000);const done=()=>{clearTimeout(timer);resolve();};if(css.sheet)done();else{css.onload=done;css.onerror=()=>{clearTimeout(timer);reject(new Error('Print stylesheet unavailable'));};}});
       await helpers.waitForLayout(popup.document);popup.focus();popup.print();message(tr('الصق الملصق ثم أكد الهوية في النموذج.','Attach the printed label and confirm it in the form.'),false);

@@ -1,0 +1,88 @@
+{
+  "id": "gid://shopify/Order/7219642466605",
+  "name": "#2882",
+  "cancelledAt": null,
+  "displayFinancialStatus": "PENDING",
+  "displayFulfillmentStatus": "FULFILLED",
+  "lineItems": {
+    "nodes": [
+      {
+        "id": "gid://shopify/LineItem/17198752956717",
+        "name": "Infinity runner",
+        "quantity": 1,
+        "currentQuantity": 1,
+        "unfulfilledQuantity": 0
+      }
+    ],
+    "pageInfo": {
+      "hasNextPage": false
+    }
+  },
+  "fulfillments": [
+    {
+      "id": "gid://shopify/Fulfillment/6554957218093",
+      "status": "SUCCESS",
+      "displayStatus": "DELIVERED",
+      "deliveredAt": "2026-10-25T10:00:11Z",
+      "trackingInfo": [
+        {
+          "company": "Bosta",
+          "number": "6417585352",
+          "url": "https://bosta.co/tracking/6417585352"
+        }
+      ],
+      "fulfillmentLineItems": {
+        "nodes": [
+          {
+            "quantity": 1,
+            "lineItem": {
+              "id": "gid://shopify/LineItem/17198752956717"
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      },
+      "events": {
+        "nodes": [
+          {
+            "id": "gid://shopify/FulfillmentEvent/34093777453357",
+            "status": "DELIVERED",
+            "happenedAt": "2026-10-25T10:00:11Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false
+        }
+      }
+    }
+  ],
+  "fulfillmentOrders": {
+    "nodes": [
+      {
+        "id": "gid://shopify/FulfillmentOrder/8367221670189",
+        "status": "CLOSED",
+        "supportedActions": [],
+        "lineItems": {
+          "nodes": [
+            {
+              "id": "gid://shopify/FulfillmentOrderLineItem/17363645792557",
+              "remainingQuantity": 0,
+              "totalQuantity": 1,
+              "lineItem": {
+                "id": "gid://shopify/LineItem/17198752956717"
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": false
+          }
+        }
+      }
+    ],
+    "pageInfo": {
+      "hasNextPage": false
+    }
+  }
+}

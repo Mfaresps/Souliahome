@@ -250,8 +250,9 @@
       <div class="iu-label-price">${label.isPack ? `<b class="iu-pack-piece-count">${label.quantity} PCS / ${label.quantity} &#1602;&#1591;&#1593;</b>` : html(price)}</div>
       <p class="iu-label-sku">SKU: ${html(label.sku)}</p>${invoiceDateText ? `<div class="iu-label-date iu-label-invoice-date" dir="ltr">Inv: ${html(invoiceDateText)}</div>` : ''}<p class="iu-label-id">${label.isPack ? "Pack" : "Unit"} code:<br><span>${label.manualCode ? html(label.manualCode) : groupedId}</span></p></div></div><p class="iu-label-value${label.manualCode && !label.isPack ? ' iu-short-code' : ''}">${html(label.manualCode || label.barcode)}</p></article>`;
   }
-  function validateBatch(batch, expectedIds, sizeId) {
-    if (!batch || batch.size?.id !== sizeId || !state.config.labelSizes.some(size => size.id === sizeId && size.widthMm === batch.size.widthMm && size.heightMm === batch.size.heightMm && size.qrMm === batch.size.qrMm)) throw new Error(tr('Unsupported label dimensions.', 'أبعاد الملصق غير مدعومة.'));
+  function validateBatch(batch, expectedIds, sizeId, config = state.config) {
+    if (!batch || batch.size?.id !== sizeId || !Array.isArray(config?.labelSizes) || !config.labelSizes.some(size => size.id === sizeId && size.widthMm === batch.size.widthMm && size.heightMm === batch.size.heightMm && size.qrMm === batch.size.qrMm)) throw new Error(tr('Unsupported label dimensions.', 'أبعاد الملصق غير مدعومة.'));
+    if (!Array.isArray(batch.labels)) throw new Error(tr('Invalid label response. Retry printing.', 'استجابة الملصقات غير صالحة. أعد محاولة الطباعة.'));
     const actual = batch.labels.map(label => String(label.unitId));
     if (actual.length !== expectedIds.length || new Set(actual).size !== actual.length || expectedIds.some(id => !actual.includes(id))) throw new Error(tr('Label selection mismatch or duplicates.', 'الملصقات لا تطابق التحديد أو تحتوي على تكرار.'));
     if (new Set(batch.labels.map(label => label.barcode)).size !== actual.length) throw new Error(tr('Duplicate barcodes in this batch. Refresh the selection.', 'توجد باركودات مكررة في الدفعة. حدّث التحديد.'));

@@ -78,6 +78,12 @@ export class ComplaintsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Delete(':id/evidence/:attachmentId')
+  removeEvidence(@Param('id') id: string, @Param('attachmentId') attachmentId: string, @Req() req: any) {
+    return this.complaintsService.removeEvidence(id,attachmentId,req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Post(':id/workflow')
   workflow(@Param('id') id: string, @Body() dto: ComplaintWorkflowDto, @Req() req: any) {
     return this.complaintsService.workflow(id, dto, req.user);
@@ -133,8 +139,8 @@ export class ComplaintsController {
   @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Roles('admin')
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.complaintsService.remove(id);
+  async remove(@Param('id') id: string, @Req() req: any) {
+    await this.complaintsService.remove(id,req.user);
     return { message: 'تم حذف الشكوى' };
   }
 

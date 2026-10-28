@@ -1,0 +1,17 @@
+{
+  "testedAt": "2026-10-28T21:49:43.706Z",
+  "automaticSync": false,
+  "domain": "tscxpn-ze.myshopify.com",
+  "ref": "2882",
+  "preview": [
+    {
+      "actions": [
+        "تحديث الحالة التشغيلية والعربون في بيانات الطلب"
+      ],
+      "issues": [],
+      "warnings": [],
+      "matched": false
+    }
+  ],
+  "shopifyMutationsSent": 0
+}

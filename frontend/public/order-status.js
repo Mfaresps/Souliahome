@@ -11,6 +11,7 @@
     PICKED_UP: ['تم الاستلام بواسطة شركة الشحن', 'Picked Up', 'shipping'],
     IN_TRANSIT: ['في الطريق', 'In Transit', 'shipping'],
     OUT_FOR_DELIVERY: ['خارج للتسليم', 'Out for Delivery', 'shipping'],
+    CUSTOMER_POSTPONED: ['العميل أجّل الاستلام', 'Postponed by Customer', 'waiting'],
     FAILED_ATTEMPT: ['محاولة تسليم فاشلة', 'Failed Attempt', 'issue'],
     DELIVERY_FAILED: ['فشل التسليم', 'Delivery Failed', 'issue'],
     RETURNED: ['مرتجع', 'Returned', 'issue'],
@@ -52,11 +53,16 @@
       label = en ? `Awaiting Shipment ${attempts + 1}` : `بانتظار الشحنة ${attempts + 1}`;
       tone = 'waiting';
     }
-    let carrier = !shopify && ['Ready', 'Shipped', 'DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'FAILED_ATTEMPT', 'DELIVERY_FAILED', 'RETURNED', 'CANCELLED'].includes(key)
+    let carrier = !shopify && ['Ready', 'Shipped', 'DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED', 'RETURNED', 'CANCELLED'].includes(key)
       ? String(o.shipCo || o.carrierName || (shipment ? 'Bosta' : o.carrierCode || '')).trim() : '';
     if (/^(bosta|بوسطة)$/i.test(carrier)) carrier = en ? 'Bosta' : 'بوسطة';
+    const postponed = o.bostaDeliveryException?.code === 3 && ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(code);
+    if (postponed && key === 'IN_TRANSIT') label = en ? 'In Transit · Customer Postponed' : 'في الطريق · العميل أجّل الاستلام';
+    const carrierReason = o.bostaLastTrackingUpdate?.status === code
+      ? (en ? o.bostaLastTrackingUpdate.reason || o.bostaLastTrackingUpdate.reasonAr : o.bostaLastTrackingUpdate.reasonAr || o.bostaLastTrackingUpdate.reason) : '';
     const note = code === 'DELETED' ? (en ? 'AWB Deleted at Bosta' : 'البوليصة محذوفة من بوسطة')
-      : code === 'VALIDATION_ERROR' ? (en ? 'AWB Validation Error' : 'خطأ في بيانات البوليصة') : '';
+      : code === 'VALIDATION_ERROR' ? (en ? 'AWB Validation Error' : 'خطأ في بيانات البوليصة')
+      : carrierReason || (postponed ? (en ? 'Last exception: postponed by customer' : 'آخر سبب للتأجيل: طلب العميل') : '');
     const shortLabels = {
       awaiting_confirmation: ['بانتظار التأكيد', 'Unconfirmed'],
       confirmed: ['مؤكّد', 'Confirmed'],
@@ -76,7 +82,24 @@
     const label = options.compact && meta.key === 'Ready' ? (/[\u0600-\u06ff]/.test(meta.label) ? 'جاهز للشحن' : 'Ready') : meta.shortLabel || meta.label;
     return `<span class="order-state${options.compact ? ' is-compact' : ''}" data-order-state="${escape(meta.key)}" data-tone="${escape(meta.tone)}" title="${escape(title)}" aria-label="${escape(title)}"><span class="order-state-dot" aria-hidden="true"></span><span class="order-state-label">${escape(label)}</span></span>`;
   }
-  const api = { resolve, badge, text };
+  function postponements(tx) {
+    const raw = tx.bostaRawResponse?.data || tx.bostaRawResponse || {};
+    const events = new Map();
+    const add = (event, shipmentId = tx.bostaOrderId || '') => {
+      if (!event || !(Number(event.reasonCode ?? event.code) === 3 || event.status === 'CUSTOMER_POSTPONED')) return;
+      const at = event.exceptionAt || event.time || event.at || '';
+      const scheduledAt = event.scheduledAt || '';
+      const key = JSON.stringify([shipmentId, at, scheduledAt]);
+      events.set(key, { at, scheduledAt, shipmentId, reason: event.reason || '', reasonAr: event.reasonAr || 'طلب العميل تأجيل الاستلام' });
+    };
+    (tx.bostaTrackingEvents || []).forEach(event => add(event, event.shipmentId || tx.bostaOrderId || ''));
+    (Array.isArray(raw.state?.exception) ? raw.state.exception : []).forEach(event => add(event));
+    (raw.attempts || []).forEach(attempt => add(attempt.exception));
+    add(tx.bostaDeliveryException);
+    if (!events.size && tx.bostaStatus === 'CUSTOMER_POSTPONED') add({ status: tx.bostaStatus });
+    return [...events.values()].sort((a, b) => (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0));
+  }
+  const api = { resolve, badge, text, postponements };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SouliaOrderStatus = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

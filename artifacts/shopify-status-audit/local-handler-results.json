@@ -1,0 +1,329 @@
+{
+  "testedAt": "2026-10-28T21:47:32.984Z",
+  "network": "blocked",
+  "observations": [
+    {
+      "source": "webhook",
+      "code": 10,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 11,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 20,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 21,
+      "localStatus": "PICKED_UP",
+      "localShippingStatus": "PickedUp",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 22,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 23,
+      "localStatus": "PICKED_UP",
+      "localShippingStatus": "PickedUp",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 24,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 25,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 30,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 40,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 41,
+      "localStatus": "OUT_FOR_DELIVERY",
+      "localShippingStatus": "OutForDelivery",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 45,
+      "localStatus": "DELIVERED",
+      "localShippingStatus": "Delivered",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 46,
+      "localStatus": "RETURNED",
+      "localShippingStatus": "Returned",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 47,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 48,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 49,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 60,
+      "localStatus": "RETURNED",
+      "localShippingStatus": "Returned",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 100,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 101,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 102,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 103,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 104,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "webhook",
+      "code": 105,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 10,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 11,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 20,
+      "localStatus": "CREATED",
+      "localShippingStatus": "Created",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 21,
+      "localStatus": "PICKED_UP",
+      "localShippingStatus": "PickedUp",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 22,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 23,
+      "localStatus": "PICKED_UP",
+      "localShippingStatus": "PickedUp",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 24,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 25,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 30,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 40,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 41,
+      "localStatus": "OUT_FOR_DELIVERY",
+      "localShippingStatus": "OutForDelivery",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 45,
+      "localStatus": "DELIVERED",
+      "localShippingStatus": "Delivered",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 46,
+      "localStatus": "RETURNED",
+      "localShippingStatus": "Returned",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 47,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 48,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 49,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 60,
+      "localStatus": "RETURNED",
+      "localShippingStatus": "Returned",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 100,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 101,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 102,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 103,
+      "localStatus": "FAILED_ATTEMPT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 104,
+      "localStatus": "CANCELLED",
+      "localShippingStatus": "Cancelled",
+      "outboundShopifyCalls": []
+    },
+    {
+      "source": "sync",
+      "code": 105,
+      "localStatus": "IN_TRANSIT",
+      "localShippingStatus": "InTransit",
+      "outboundShopifyCalls": []
+    }
+  ],
+  "note": "Local-handler coverage only. Outbound call counts are observations, not proof of Shopify event delivery."
+}

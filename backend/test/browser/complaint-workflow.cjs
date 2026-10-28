@@ -29,12 +29,29 @@ fs.mkdirSync(out,{recursive:true});
   const customerMessage=url=>{const params=new URL(url,'http://soulia.test').searchParams,language=params.get('lang')||'ar',kind=fixture.workflow.stage==='closed'?'resolved':fixture.execution.ready?'confirmation':params.get('event')==='registered'?'registered':'update';return {kind,language,text:messageConfig.templates[kind][language].replace('{customerName}',fixture.clientName).replace('{complaintNo}',fixture.complaintNo)};};
   api=async(url,options={})=>{
    apiCalls.push({url,method:options.method||'GET'});
-   const body=options.body?JSON.parse(options.body):{};
+   const body=options.body&&!(options.body instanceof FormData)?JSON.parse(options.body):{};
+   if(url===`/complaints/${fixture._id}`&&options.method==='DELETE'){
+    if(window.failComplaintDelete)throw new Error('Cloudflare deletion unavailable');
+    window.fixtureDeleted=true;return {message:'Deleted'};
+   }
+   if(url.includes('/evidence')){
+    if(options.method==='POST'){
+     window.evidenceAttempts=(window.evidenceAttempts||0)+1;
+     if(window.failEvidenceUploadAt===window.evidenceAttempts)throw new Error('Fixture image upload unavailable');
+     const file=options.body.get('file');window.evidenceUploads=(window.evidenceUploads||0)+1;
+     fixture.attachments=[...(fixture.attachments||[]),{id:'image-'+evidenceUploads,name:file.name}];return structuredClone(fixture);
+    }
+    if(options.method==='DELETE'){
+     if(window.failEvidenceDelete)throw new Error('Cloudflare unavailable');
+     fixture.attachments=fixture.attachments.filter(a=>a.id!==url.split('/').pop());return structuredClone(fixture);
+    }
+    return {data:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='};
+   }
    if(url==='/complaints/message-templates'){if(options.method==='PUT'){messageConfig.templates=body.templates;messageConfig.revision++;}return structuredClone(messageConfig);}
    if(url.includes('/customer-message?'))return customerMessage(url);
    if(url.includes('?view=workspace')){if(failWorkspace)throw new Error('Fixture connection unavailable');const row={...structuredClone(fixture),customerMessage:customerMessage(url)};return holdWorkspace?new Promise(resolve=>pendingWorkspace.push(()=>resolve(row))):row;}
    if(url==='/users')return [currentUser];if(url==='/complaints'){
-    if(options.method==='POST'){createWrites.push(body);return fixture;}return [fixture];
+    if(options.method==='POST'){createWrites.push(body);return fixture;}return window.fixtureDeleted?[]:[fixture];
    }
    if(url.startsWith('/complaints/')&&url.endsWith('/workflow')){
     writes.push(body);const w=fixture.workflow;
@@ -93,9 +110,43 @@ fs.mkdirSync(out,{recursive:true});
  await page.evaluate(()=>{document.querySelector('#cmp-emp-filter').value='';complaints=complaints.slice(0,3);renderComplaints();});
  for(const lang of ['ar','en'])for(const width of [1440,390]){
   await page.setViewport({width,height:1000});await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';renderComplaints();},lang);
+  await page.$eval('[data-cf-queue]',e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await page.$$eval('[data-cf-queue] .fsel-btn',els=>els.length),1);
+  assert(await page.$eval('[data-cf-queue]',e=>e.parentElement.matches(innerWidth<=768?'.cmp-mobile-bar':'.cmp-filter-bar')),'queue is beside the filters');
+  if(width===1440){
+   assert(await page.$eval('#cmp-search',e=>e.getBoundingClientRect().width<=191),'desktop search stays compact');
+   assert(await page.$eval('.cmp-filter-clear',e=>Math.abs(e.getBoundingClientRect().bottom-document.querySelector('#cmp-search').getBoundingClientRect().bottom)<2),'desktop filters share one row');
+  }
+  assert(await page.$eval(width===1440?'.cmp-filter-bar':'.cmp-mobile-bar',e=>e.scrollWidth<=e.clientWidth+1),'filter controls fit the toolbar');
+  assert(await page.$eval('#cf-queue',e=>e.getBoundingClientRect().width<=1&&e.tabIndex===-1));
+  assert(await page.$eval('#cf-queue-trigger',e=>e.getBoundingClientRect().width<=(innerWidth>650?301:innerWidth)));
+  await page.focus('#cf-queue-trigger');await page.keyboard.press('Enter');await page.waitForSelector('.fsel-panel-portal.show');
+  assert(await page.$eval('.fsel-panel-portal.show',e=>{const r=e.getBoundingClientRect();return r.width<=381&&r.height<=361&&r.left>=0&&r.right<=innerWidth;}));
+  assert(await page.$eval('.fsel-panel-portal.show .fsel-list',e=>e.scrollHeight>e.clientHeight));
+  await page.screenshot({path:path.join(out,`work-queue-${lang}-${width}.png`)});
+  await page.waitForFunction(()=>document.activeElement.matches('.fsel-search input'));
+  await page.keyboard.type(lang==='ar'?'مغلقة':'Closed');await page.keyboard.press('Tab');await page.keyboard.press('Enter');
+  assert.equal(await page.$eval('#cf-queue',e=>e.value),'closed');
+  assert.equal(await page.$$eval('#cmp-tbody tr[data-complaint-id]',els=>els.length),0);
+  await page.waitForFunction(()=>!document.querySelector('.fsel-panel-portal'));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.click('#cf-queue-trigger');await page.waitForSelector('.fsel-panel-portal.show');
+  await page.click('.fsel-panel-portal.show [data-val=active]');
+  assert.equal(await page.$eval('#cf-queue',e=>e.value),'active');
   if(width===1440){await page.$eval('#cmp-complaints-section',e=>e.scrollIntoView({block:'start'}));await page.screenshot({path:path.join(out,`table-${lang}.png`)});}
   else{await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);await page.waitForFunction(()=>{const s=getComputedStyle(document.querySelector('#main'));return s.marginRight==='0px'&&s.marginLeft==='0px';});await (await page.$('#cmp-cards .cf-list-card')).screenshot({path:path.join(out,`list-card-${lang}.png`)});assert(await page.$eval('#cmp-cards .cf-list-card',e=>{const r=e.getBoundingClientRect();return e.scrollWidth<=e.clientWidth+1&&r.left>=0&&r.right<=innerWidth;}));}
  }
+ // Resizing moves the existing control without losing the selected queue.
+ await page.select('#cf-queue','mine');
+ for(const width of [320,768,1024,1440]){
+  await page.setViewport({width,height:1000});
+  await page.waitForFunction(()=>document.querySelector('[data-cf-queue]').parentElement.matches(innerWidth<=768?'.cmp-mobile-bar':'.cmp-filter-bar'));
+  assert.equal(await page.$$eval('#cf-queue',els=>els.length),1);
+  assert.equal(await page.$eval('#cf-queue',e=>e.value),'mine');
+  assert(await page.$eval(width<=768?'.cmp-mobile-bar':'.cmp-filter-bar',e=>e.scrollWidth<=e.clientWidth+1));
+ }
+ await page.select('#cf-queue','active');
  await page.evaluate(()=>{complaints=originalComplaints;renderComplaints();});
  // Search against a crowded fixture, then verify the selected invoice and persisted form values.
  await page.evaluate(()=>{
@@ -188,6 +239,10 @@ fs.mkdirSync(out,{recursive:true});
   for(const action of ['assign','wait','contact','close','items']){
    await page.evaluate(action=>ComplaintFlow.form(fixture._id,action),action);
    assert(await page.$eval('.cf-body',e=>e.scrollWidth<=e.clientWidth+1),`${action} form overflow ${lang}`);
+   if(action!=='items'){
+    assert.equal(await page.$eval('[name=note]',e=>e.required),action==='close');
+    if(action!=='close')assert((await page.$eval('[name=note]',e=>e.closest('label').textContent)).includes(lang==='ar'?'اختياري':'Optional'));
+   }
    if(action==='close'){
     await page.select('[name=outcome]','withdrawn');
     assert(await page.$eval('[name=customerConfirmed]',e=>e.closest('.cf-check').hidden),'withdrawal does not ask for confirmation of a successful resolution');
@@ -223,6 +278,8 @@ fs.mkdirSync(out,{recursive:true});
  for(const lang of ['ar','en'])for(const width of [1440,390,320]){
   await page.setViewport({width,height:width===1440?1000:844});
   await page.evaluate(async lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';await ComplaintFlow.open(fixture._id);},lang);
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.waitForFunction(()=>Math.abs(document.querySelector('.cf-dialog').getBoundingClientRect().width-(innerWidth<=650?innerWidth:Math.min(1040,innerWidth-32)))<=2);
   const source=await page.$eval('.cf-dialog',e=>({width:e.getBoundingClientRect().width,left:e.getBoundingClientRect().left}));
   const scroll=await page.$eval('.cf-body',e=>{e.scrollTop=240;return e.scrollTop;});
   // Invoke the same table link handler without scrolling the source to the button.
@@ -302,6 +359,165 @@ fs.mkdirSync(out,{recursive:true});
  await page.evaluate(()=>{currentUser.role='staff';currentUser.perms=['complaints'];return ComplaintFlow.open(fixture._id);});
  assert.equal(await page.$('[data-cf-templates]'),null);
  assert.equal(await page.$('[data-cf-action=plan]'),null);assert.equal(await page.$('[data-cf-action=close]'),null);
+ assert.equal(await page.$('[data-cf-action=delete]'),null);
+ await page.evaluate(()=>ComplaintFlow.form(fixture._id,'delete'));assert.equal(await page.$('[data-cf-delete-form]'),null);
+ await page.evaluate(()=>ComplaintFlow.form(fixture._id,'contact'));
+ await page.click('[data-cf-form] button[type=submit]');
+ await page.waitForSelector('.cf-dialog[open] .cf-grid');
+ assert.equal(await page.evaluate(()=>writes.at(-1).action),'contact');
+ assert.equal(await page.evaluate(()=>writes.at(-1).note),'');
+ // Exercise the custom picker, validation, retry and deletion controls in both languages.
+ const uploadFixture=path.join(out,'evidence-fixture.png');
+ fs.writeFileSync(uploadFixture,Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64'));
+ for(const [language,width] of [['ar',390],['en',1440]]){
+  await page.setViewport({width,height:950});
+  await page.evaluate(async language=>{currentLang=language;fixture.attachments=[];await ComplaintFlow.open(fixture._id);},language);
+  assert.equal(await page.$eval('[data-cf-upload]',e=>getComputedStyle(e).display),'none');
+  const chooserPromise=page.waitForFileChooser();await page.click('[data-cf-choose-images]');const chooser=await chooserPromise;await chooser.accept([uploadFixture]);
+  await page.waitForSelector('[data-cf-remove-image]');
+  await page.waitForFunction(()=>!document.querySelector('[data-cf-choose-images]').disabled);
+  await page.$eval('.cf-evidence',e=>e.scrollIntoView({block:'center'}));
+  assert(await page.$eval('.cf-body',e=>e.scrollWidth<=e.clientWidth+1));
+  await page.screenshot({path:path.join(out,`evidence-${language}-${width}.png`)});
+  await page.evaluate(()=>{window.failEvidenceDelete=true;});await page.click('[data-cf-remove-image]');
+  await page.waitForFunction(()=>document.querySelector('[data-cf-error]').textContent.includes('Cloudflare'));
+  assert.equal(await page.$$eval('[data-cf-remove-image]',els=>els.length),1);
+  await page.evaluate(()=>{window.failEvidenceDelete=false;});await page.click('[data-cf-remove-image]');
+  await page.waitForFunction(()=>!document.querySelector('[data-cf-remove-image]'));
+  // Same file can be selected again after deletion.
+  const input=await page.$('[data-cf-upload]');await input.uploadFile(uploadFixture);
+  await page.waitForSelector('[data-cf-remove-image]');
+  await page.waitForFunction(()=>!document.querySelector('[data-cf-choose-images]').disabled);
+ }
+ const uploadCount=await page.evaluate(()=>window.evidenceUploads);
+ await page.$eval('[data-cf-upload]',input=>{const files=new DataTransfer();files.items.add(new File(['invalid'],'invalid.svg',{type:'image/svg+xml'}));input.files=files.files;input.dispatchEvent(new Event('change',{bubbles:true}));});
+ await page.waitForFunction(()=>document.querySelector('[data-cf-error]').textContent.includes('JPEG'));
+ assert.equal(await page.evaluate(()=>window.evidenceUploads),uploadCount);
+ assert.equal(await page.$eval('[data-cf-upload]',e=>e.value),'');
+ await page.evaluate(async()=>{fixture.attachments=Array.from({length:10},(_,i)=>({id:'cap-'+i,name:'photo.png'}));await ComplaintFlow.open(fixture._id);});
+ assert.equal(await page.$eval('[data-cf-choose-images]',e=>e.disabled),true);
+ await page.click('[data-cf-remove-image]');await page.waitForFunction(()=>!document.querySelector('[data-cf-choose-images]').disabled);
+ for(const [language,width] of [['ar',390],['en',1440]]){
+  await page.setViewport({width,height:950});
+  await page.evaluate(async language=>{currentLang=language;currentUser.role='admin';window.fixtureDeleted=false;fixture.workflow.stage='closed';fixture.workflow.archivedAt=new Date().toISOString();fixture.lifecycleStage='closed';complaints=[fixture];await ComplaintFlow.open(fixture._id);},language);
+  const deletes=await page.evaluate(()=>apiCalls.filter(c=>c.method==='DELETE'&&c.url===`/complaints/${fixture._id}`).length);
+  await page.click('[data-cf-action=delete]');await page.waitForSelector('[data-cf-delete-form]');
+  assert.equal(await page.evaluate(()=>document.activeElement.hasAttribute('data-cf-cancel-delete')),true);
+  assert(await page.$eval('.cf-body',e=>e.scrollWidth<=e.clientWidth+1));
+  await page.screenshot({path:path.join(out,`delete-confirm-${language}-${width}.png`)});
+  await page.click('[data-cf-cancel-delete]');await page.waitForSelector('.cf-grid');
+  assert.equal(await page.evaluate(()=>apiCalls.filter(c=>c.method==='DELETE'&&c.url===`/complaints/${fixture._id}`).length),deletes);
+  await page.evaluate(()=>deleteComplaint(fixture._id));await page.waitForSelector('[data-cf-delete-form]');
+  await page.evaluate(()=>{window.failComplaintDelete=true;});await page.click('[data-cf-delete-form] button[type=submit]');
+  await page.waitForFunction(()=>document.querySelector('[data-cf-error]').textContent.includes('Cloudflare'));
+  assert.equal(await page.evaluate(()=>complaints.length),1);
+  assert.equal(await page.$eval('.cf-dialog',e=>e.open),true);
+  await page.evaluate(()=>{window.failComplaintDelete=false;});await page.click('[data-cf-delete-form] button[type=submit]');
+  await page.waitForFunction(()=>!document.querySelector('.cf-dialog').open);
+  assert.equal(await page.evaluate(()=>complaints.length),0);
+ }
+ // New complaints use the same image picker, with previews, saved drafts and safe upload retries.
+ for(const [language,width] of [['ar',390],['en',1440]]){
+  await page.setViewport({width,height:950});
+  await page.evaluate(async language=>{
+   currentLang=language;window.fixtureDeleted=false;fixture.attachments=[];fixture.workflow.stage='review';delete fixture.workflow.archivedAt;fixture.lifecycleStage='review';
+   await ComplaintFlow.create(transactions[0]._id);
+  },language);
+  assert.equal(await page.$('[data-cf-create] [name=imageUrl]'),null);
+  assert.equal(await page.$eval('[data-cf-upload]',e=>getComputedStyle(e).display),'none');
+  const beforeCreates=await page.evaluate(()=>createWrites.length),beforeUploads=await page.evaluate(()=>evidenceUploads||0);
+  await page.$eval('[data-cf-upload]',input=>{const files=new DataTransfer();files.items.add(new File(['invalid'],'bad.svg',{type:'image/svg+xml'}));input.files=files.files;input.dispatchEvent(new Event('change',{bubbles:true}));});
+  await page.waitForFunction(()=>document.querySelector('[data-cf-error]').textContent.includes('JPEG'));
+  assert.equal(await page.$$eval('[data-cf-remove-draft-image]',els=>els.length),0);
+  const picker=page.waitForFileChooser();await page.click('[data-cf-choose-images]');await (await picker).accept([uploadFixture]);
+  await page.waitForFunction(()=>document.querySelectorAll('[data-cf-remove-draft-image]').length===1&&!document.querySelector('[data-cf-choose-images]').disabled);
+  await page.click('[data-cf-remove-draft-image]');await page.waitForFunction(()=>!document.querySelector('[data-cf-remove-draft-image]')&&!document.querySelector('[data-cf-choose-images]').disabled);
+  await page.$eval('[data-cf-upload]',input=>{
+   const files=new DataTransfer(),bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='),c=>c.charCodeAt(0));
+   files.items.add(new File([bytes],'first.png',{type:'image/png'}));files.items.add(new File([bytes],'second.png',{type:'image/png'}));input.files=files.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  await page.waitForFunction(()=>document.querySelectorAll('[data-cf-remove-draft-image]').length===2&&!document.querySelector('[data-cf-choose-images]').disabled);
+  await page.type('[data-cf-create] [name=description]','Issue with attached photos');
+  await page.click('[data-cf-back]');await page.evaluate(()=>ComplaintFlow.create());
+  assert.equal(await page.$$eval('[data-cf-remove-draft-image]',els=>els.length),2);
+  const stored=await page.evaluate(async()=>{
+   const key='complaint-draft:'+currentUser._id,draft=JSON.parse(sessionStorage.getItem(key));
+   return new Promise((resolve,reject)=>{const request=indexedDB.open('soulia-complaint-drafts',1);request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,read=db.transaction('images').objectStore('images').get(key+':'+draft.operationKey);read.onsuccess=()=>{db.close();resolve(read.result.map(item=>({name:item.file.name,size:item.file.size})));};};});
+  });
+  assert.equal(stored.length,2);assert.equal(stored[0].name,'first.png');assert(stored[0].size>0);
+  assert.equal(await page.evaluate(()=>createWrites.length),beforeCreates);assert.equal(await page.evaluate(()=>evidenceUploads),beforeUploads);
+  await page.$eval('.cf-evidence',e=>e.scrollIntoView({block:'center'}));
+  assert(await page.$eval('.cf-body',e=>e.scrollWidth<=e.clientWidth+1));
+  await page.screenshot({path:path.join(out,`create-images-${language}-${width}.png`)});
+  await page.evaluate(()=>{window.failEvidenceUploadAt=(window.evidenceAttempts||0)+2;});
+  await page.click('[data-cf-create] button[type=submit]');
+  await page.waitForFunction(()=>document.querySelector('[data-cf-error]').textContent.includes('Fixture image upload unavailable'));
+  assert.equal(await page.evaluate(()=>createWrites.length),beforeCreates+1);
+  assert.equal(await page.evaluate(()=>evidenceUploads),beforeUploads+1);
+  assert.equal(await page.$$eval('[data-cf-remove-draft-image]',els=>els.length),1);
+  assert.equal(await page.$eval('[data-cf-create-details]',e=>e.disabled),true);
+  await page.click('[data-cf-back]');await page.evaluate(()=>ComplaintFlow.create());
+  assert.equal(await page.$$eval('[data-cf-remove-draft-image]',els=>els.length),1);
+  await page.click('[data-cf-create] button[type=submit]');await page.waitForSelector('.cf-dialog[open] .cf-grid');
+  assert.equal(await page.evaluate(()=>createWrites.length),beforeCreates+1,'retry must not create another complaint');
+  assert.equal(await page.evaluate(()=>evidenceUploads),beforeUploads+2);
+  assert.equal(await page.evaluate(()=>createWrites.at(-1).imageUrl),undefined);
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('complaint-draft:'+currentUser._id)),null);
+ }
+ // The timeline explains actual events in chronological order; help never executes actions.
+ await page.evaluate(()=>{
+  currentUser.role='admin';fixture.createdAt='2026-10-29T08:00:00Z';
+  fixture.notes=[{id:'registered',kind:'system',text:'تم إنشاء الشكوى',author:'خدمة العملاء',createdAt:fixture.createdAt}];
+  fixture.workflow={version:2,revision:6,cycle:2,stage:'review',ownerId:currentUser._id,owner:'خدمة العملاء',solution:'',history:[
+   {action:'reopen',at:'2026-10-29T14:00:00Z',by:'المدير',cycle:2,note:'The customer requested another follow-up.'},
+   {action:'plan',at:'2026-10-29T09:00:00Z',by:'المدير',cycle:1,solution:'exchange',note:'Agreed to replace the damaged piece.'},
+   {action:'close',at:'2026-10-29T13:00:00Z',by:'المدير',cycle:1,outcome:'resolved',note:'The customer confirmed the solution.'},
+   {action:'future-internal-code',at:'2026-10-29T15:00:00Z',by:'خدمة العملاء',cycle:2,note:'<img src=x onerror=alert(1)> Keep the original details.'}
+  ],executionEvents:[{action:'replacement-delivered',at:'2026-10-29T12:00:00Z',by:'فريق التنفيذ',caseRef:'AS-0001'}]};
+  fixture.lifecycleStage='review';fixture.execution={ready:false,blockers:['evidence']};
+ });
+ for(const [language,width] of [['ar',390],['en',1440],['ar',320]]){
+  await page.setViewport({width,height:950});await page.evaluate(language=>{currentLang=language;return ComplaintFlow.open(fixture._id);},language);
+  assert.equal(await page.$$eval('.cf-timeline-step',rows=>rows.length),6);
+  const titles=await page.$$eval('.cf-timeline-heading>strong',els=>els.map(e=>e.textContent));
+  assert.equal(titles[0],language==='ar'?'تسجيل المشكلة':'Issue registered');
+  assert.equal(titles[1],language==='ar'?'اختيار الحل':'Solution chosen');
+  assert.equal(titles[4],language==='ar'?'إعادة فتح المشكلة':'Issue reopened');
+  assert.equal(await page.$$eval('.cf-timeline-latest',els=>els.length),1);
+  assert.equal(await page.$('.cf-timeline img'),null);
+  assert(!(await page.$eval('.cf-timeline',e=>e.textContent)).includes('future-internal-code'));
+  await page.$eval('.cf-timeline-step:last-child summary',e=>e.click());
+  assert((await page.$eval('.cf-timeline-step:last-child details p',e=>e.textContent)).includes('<img src=x onerror=alert(1)>'));
+  assert.equal(await page.$$eval('.cf-action-panel [data-cf-help]',els=>els.length),1);
+  assert.equal(await page.$('.cf-next [data-cf-help]'),null);
+  assert.equal(await page.$('.cf-action-help'),null);
+  assert(await page.$eval('.cf-action-panel',e=>e.getBoundingClientRect().height<330));
+  assert.equal(await page.$eval('.cf-action-list',e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2);
+  await page.$eval('.cf-action-panel',e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+  await page.screenshot({path:path.join(out,`actions-compact-${language}-${width}.png`)});
+  const calls=await page.evaluate(()=>apiCalls.length),writesBefore=await page.evaluate(()=>writes.length);
+  const help=await page.$('.cf-action-panel [data-cf-help]');await help.click();
+  assert.equal(await help.evaluate(e=>e.getAttribute('aria-expanded')),'true');
+  assert(await help.evaluate(e=>!document.getElementById(e.getAttribute('aria-controls')).hidden));
+  assert((await page.$$eval('.cf-action-guide dt',els=>els.length))>=(await page.$$eval('.cf-action-panel [data-cf-action]',els=>els.length)));
+  assert.equal(await page.evaluate(()=>apiCalls.length),calls);assert.equal(await page.evaluate(()=>writes.length),writesBefore);
+  await page.keyboard.press('Escape');assert.equal(await page.$eval('.cf-dialog',e=>e.open),true);
+  assert.equal(await help.evaluate(e=>e.getAttribute('aria-expanded')),'false');
+  await help.focus();await page.keyboard.press('Enter');
+  assert.equal(await help.evaluate(e=>e.getAttribute('aria-expanded')),'true');
+  assert(await page.$eval('.cf-body',e=>e.scrollWidth<=e.clientWidth+1));
+  await page.$eval('.cf-action-panel',e=>e.scrollIntoView({block:'start'}));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.screenshot({path:path.join(out,`actions-help-${language}-${width}.png`)});
+  await page.$eval('.cf-log',e=>e.scrollIntoView({block:'start'}));
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.screenshot({path:path.join(out,`timeline-${language}-${width}.png`)});
+ }
+ await page.evaluate(()=>{currentUser.role='staff';return ComplaintFlow.open(fixture._id);});
+ assert.equal(await page.$('.cf-action-panel [data-cf-action=delete]'),null);
+ assert.equal(await page.$('.cf-action-panel [data-cf-action=plan]'),null);
+ assert.equal(await page.$$eval('.cf-action-panel [data-cf-help]',els=>els.length),1);
+ assert(!(await page.$eval('.cf-action-guide',e=>e.textContent)).includes('حذف نهائي'));
  assert.deepEqual(errors,[],'no browser runtime errors');
  console.log('PASS: complaint/exchange/return navigation, back/close/Escape, scroll and execution draft recovery, delayed response guards; bounded invoice search, shipping, images, selects and workflow at 1440/390/320px in Arabic/English.');
  }finally{await browser.close()}
