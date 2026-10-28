@@ -5,9 +5,16 @@ import {
   IsNumber,
   Min,
   Max,
+  IsIn, IsArray, IsInt, IsBoolean, MaxLength,
 } from 'class-validator';
 
 export class CreateComplaintDto {
+  @IsOptional() @IsString()
+  ownerId?: string;
+  @IsOptional() @IsString() @MaxLength(120)
+  operationKey?: string;
+  @IsOptional() @IsArray()
+  items?: any[];
   @IsOptional()
   @IsString()
   transactionId?: string;
@@ -108,6 +115,7 @@ export class UpdateComplaintDto {
 export class ResolveComplaintDto {
   @IsNotEmpty()
   @IsString()
+  @IsIn(['مقبول', 'مرفوض'])
   status: string; // مقبول | مرفوض
 
   @IsOptional()
@@ -132,7 +140,32 @@ export class SurveyResponseDto {
 
 export class UpdateProgressStageDto {
   @IsString()
+  @IsIn(['', 'جاري المراجعة', 'جاري العمل على حل المشكلة', 'بانتظار رد العميل', 'تم حل المشكلة بنجاح'])
   progressStage: string;
+}
+
+export class ComplaintWorkflowDto {
+  @IsString() @IsNotEmpty() @MaxLength(120) operationKey: string;
+  @IsInt() @Min(0) expectedRevision: number;
+  @IsIn(['assign','review','wait','resume','plan','link','unlink','fulfill','payment','contact','close','reopen','archive','items','comment']) action: string;
+  @IsOptional() @IsString() @MaxLength(2000) note?: string;
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsString() dueAt?: string;
+  @IsOptional() @IsIn(['customer','warehouse','carrier','stock','manager','payment']) waitingFor?: string;
+  @IsOptional() @IsIn(['exchange','return','support','delivery','compensation','refund_without_return']) solution?: string;
+  @IsOptional() @IsString() caseId?: string;
+  @IsOptional() @IsIn(['resolved','rejected','withdrawn','duplicate','unreachable','partial_agreement']) outcome?: string;
+  @IsOptional() @IsString() duplicateId?: string;
+  @IsOptional() @IsBoolean() customerConfirmed?: boolean;
+  @IsOptional() @IsBoolean() confirmed?: boolean;
+  @IsOptional() @IsString() @MaxLength(500) customerMessage?: string;
+  @IsOptional() @IsString() reference?: string;
+  @IsOptional() @IsString() method?: string;
+  @IsOptional() @IsNumber() @Min(0.01) @Max(1000000) amount?: number;
+  @IsOptional() @IsIn(['phone','whatsapp','email','other']) channel?: string;
+  @IsOptional() @IsIn(['reached','no_answer','confirmed','disputed']) contactResult?: string;
+  @IsOptional() @IsArray() items?: any[];
+  @IsOptional() @IsString() transactionId?: string;
 }
 
 export class CreateNoteDto {

@@ -15,6 +15,8 @@ import { VaultEntrySchema } from '../../src/vault/schemas/vault-entry.schema';
 import { InventoryUnitOperationSchema } from '../../src/inventory-units/schemas/inventory-unit-operation.schema';
 import { migrateInventoryUnitIndexes } from '../../src/inventory-units/inventory-unit-index.migration';
 import { BostaService } from '../../src/bosta/bosta.service';
+import { ComplaintSchema } from '../../src/complaints/schemas/complaint.schema';
+import { ComplaintsService } from '../../src/complaints/complaints.service';
 
 describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
   let mongo: Awaited<ReturnType<typeof trackingMongo>>, Cases: any, Unit: any, Event: any, Tx: any, Vault: any, Operations: any, tracking: InventoryUnitsService, service: AfterSalesService;
@@ -65,11 +67,65 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     items: [{ lineIndex: 0, qty: 1, unitIds: [unitId] }], feeBasis: 'Eligible exception', ...(kind === 'exchange' ? { exchangeItems: [{ productId, qty: 1 }] } : {}) });
   const receive = () => op({ physicalPossessionConfirmed: true, items: [{ lineIndex: 0, condition: 'سليم' }], identities: [{ unitId, labelState: 'intact', labelAttached: true }] });
   const settle = (kind: string, extra: any = {}) => op({ kind, method: 'كاش', confirmed: true, reference: 'physical-payment-reference', ...extra });
+  it('runs a complaint-linked return through real stock receipt and payment before customer closure', async () => {
+    const Complaints = mongo.connection.models.Complaint || mongo.connection.model('Complaint',ComplaintSchema);
+    await Complaints.createCollection();
+    const complaints = new ComplaintsService(Complaints as any,vault);
+    let complaint:any=await complaints.create({transactionId:saleId,phone:'01000000000',description:'Defective piece',items:[{lineIndex:0,qty:1}],operationKey:String(oid())},'Test operator',actor.userId);
+    complaint=await complaints.workflow(String(complaint._id),{action:'plan',solution:'return',note:'Approved return',dueAt:new Date(Date.now()+86400000).toISOString(),operationKey:String(oid()),expectedRevision:0},actor);
+    const row=await service.create({...request('return','defect'),complaintId:String(complaint._id),expectedComplaintRevision:complaint.workflow.revision},actor);
+    expect(row.workflow.complaintIds).toContain(String(complaint._id));
+    complaint=await complaints.detail(String(complaint._id));expect(complaint.workflow.caseId).toBe(String(row._id));
+    const close=()=>complaints.workflow(String(complaint._id),{action:'close',outcome:'resolved',note:'Customer confirmed refund',customerConfirmed:true,operationKey:String(oid()),expectedRevision:complaint.workflow.revision},actor);
+    await expect(close()).rejects.toThrow();
+    await service.approve(String(row._id),op(),actor);await service.receive(String(row._id),receive(),actor);
+    await expect(close()).rejects.toThrow();
+    await service.settle(String(row._id),settle('refund'),actor);
+    complaint=await close();expect(complaint.workflow.stage).toBe('closed');expect(complaint.workflow.financialPending).toBe(true);
+    expect(complaint.workflow.executionEvents.map((e:any)=>e.action)).toEqual(expect.arrayContaining(['requested','approved','received-and-inspected','settlement:refund']));
+  });
   it('calculates exchange differences and keeps company errors free of shipping fees', () => {
     expect(afterSalesQuote('exchange', 'customer-choice', 500, 600, 50)).toMatchObject({ collectDue: 150, refundDue: 0, creditApplied: 500 });
     expect(afterSalesQuote('exchange', 'customer-choice', 500, 300, 50)).toMatchObject({ collectDue: 0, refundDue: 150, creditApplied: 350 });
     expect(afterSalesQuote('return', 'customer-choice', 500, 0, 50)).toMatchObject({ refundDue: 450 });
     expect(() => afterSalesQuote('exchange', 'defect', 500, 500, 50)).toThrow();
+  });
+  it('completes a direct return without a fictitious shipment or carrier settlement', async () => {
+    const row:any=await service.create({...request(),fulfillmentChannel:'direct'},actor);
+    expect(row.workflow.quote.customerFee).toBe(0);
+    await service.approve(String(row._id),op(),actor);
+    await expect(service.ship(String(row._id),op(),actor)).rejects.toThrow();
+    await service.receive(String(row._id),receive(),actor);
+    const closed:any=await service.settle(String(row._id),settle('refund'),actor);
+    expect(closed.workflow.stage).toBe('closed');expect(closed.workflow.shipment).toBeUndefined();expect(closed.workflow.carrierSettlement).toBeUndefined();
+    expect(carrier.createAfterSalesShipment).not.toHaveBeenCalled();
+  });
+  it('posts complaint compensation to the real vault and expense ledger once, blocking independent reversals', async () => {
+    const Complaints=mongo.connection.models.Complaint||mongo.connection.model('Complaint',ComplaintSchema);
+    const complaints=new ComplaintsService(Complaints as any,vault);
+    let c:any=await complaints.create({transactionId:saleId,phone:'01000000000',description:'Service compensation',operationKey:String(oid())},'Test operator',actor.userId);
+    c=await complaints.workflow(String(c._id),{action:'plan',solution:'compensation',amount:100,confirmed:true,note:'Agreed compensation',dueAt:new Date(Date.now()+86400000).toISOString(),operationKey:String(oid()),expectedRevision:0},actor);
+    const body:any={action:'payment',method:'كاش',reference:'PAY-100',confirmed:true,note:'Actual transfer',operationKey:String(oid()),expectedRevision:c.workflow.revision};
+    await complaints.workflow(String(c._id),body,actor);await complaints.workflow(String(c._id),body,actor);
+    const entries=await Vault.find({complaintId:String(c._id)}).lean();expect(entries).toHaveLength(1);expect(entries[0].amount).toBe(-100);
+    expect((await mongo.connection.collection('settings').findOne({}))?.vaultCash).toBe(9900);
+    expect(await mongo.connection.collection('expenses').findOne({complaintId:String(c._id)})).toMatchObject({amount:100,status:'معتمد'});
+    await expect(vault.freezeEntry(String(entries[0]._id),'incorrect','operator')).rejects.toThrow();
+  });
+  it('requires preparation and proves physical delivery for a direct exchange', async () => {
+    const row:any=await service.create({...request('exchange','defect'),fulfillmentChannel:'direct'},actor);
+    const approved:any=await service.approve(String(row._id),op(),actor);
+    await expect(service.delivery(String(row._id),op({confirmed:true,note:'Direct handover'}),actor)).rejects.toThrow();
+    const replacement:any=await Tx.findById(approved.workflow.replacementTxId).lean();
+    const piece=await Unit.create({productId,status:'prepared',warehouseCode:'MAIN',assignment:{transactionId:String(replacement._id),lineId:replacement.items[0].lineId},origin:{kind:'legacy-unknown',reconciliationRef:'direct-fixture'},registeredByUserId:actor.userId,registeredBy:'Test operator'});
+    await Tx.updateOne({_id:replacement._id},{$set:{prepChecked:true}});
+    await service.receive(String(row._id),receive(),actor);
+    const closed:any=await service.delivery(String(row._id),op({confirmed:true,note:'Signed handover receipt'}),actor);
+    expect(closed.workflow.stage).toBe('closed');expect((await Unit.findById(piece._id)).status).toBe('delivered');expect(carrier.createAfterSalesShipment).not.toHaveBeenCalled();
+  });
+  it('deducts prior no-return complaint refunds from after-sales credit eligibility', async () => {
+    await Tx.updateOne({_id:saleId},{$set:{afterSales:{complaintRefunded:100}}});
+    await expect(service.create(request('return','defect'),actor)).rejects.toThrow();
   });
   const undo = async (id: string) => {
     const view: any = await service.get(id);

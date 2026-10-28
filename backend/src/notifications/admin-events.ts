@@ -1,8 +1,8 @@
 import { createHash } from 'crypto';
 import type { NotificationsService, NotificationDetails } from './notifications.service';
 
-export async function notifyApproval(push: NotificationsService | undefined, eventId: string, ref: string, record: string, details: NotificationDetails) {
-  try { await push?.enqueue('approval', eventId, ref, record, undefined, undefined, details); }
+export async function notifyApproval(push: NotificationsService | undefined, eventId: string, ref: string, record: string, details: NotificationDetails, onlyUser?: string) {
+  try { await push?.enqueue('approval', eventId, ref, record, onlyUser, undefined, details); }
   catch { /* Business state is committed; push is best effort. */ }
 }
 

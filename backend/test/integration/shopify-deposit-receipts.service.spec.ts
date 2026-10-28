@@ -679,6 +679,19 @@ describe('employee side — upload and submit', () => {
 });
 
 describe('manager side — the vault moves on approval, exactly once', () => {
+  it.each(['approve', 'reject'])('%s notifies the receipt submitter even after the order is reassigned', async decision => {
+    const { receipts } = setup();
+    const o = await newOrder();
+    const id = await addPending(receipts, String(o._id), 500, W, STAFF);
+    await orderModel.updateOne({ _id: o._id }, { $set: { assignedTo: OTHER.id } });
+    receipts.notifications = { enqueue: jest.fn(async () => {}) };
+    await receipts[decision](String(o._id), id, ADMIN);
+    const status = decision === 'approve' ? 'approved' : 'rejected';
+    expect(receipts.notifications.enqueue).toHaveBeenCalledTimes(1);
+    expect(receipts.notifications.enqueue).toHaveBeenCalledWith('approval', `approval:receipt:${id}:${status}`, o.ref,
+      'shopify:' + o._id, STAFF.id, undefined, { actorName: STAFF.name, actionKey: 'deposit', status, receiptId: id });
+  });
+
   it('approval books the amount into the receipt’s vault, attributed to the UPLOADER', async () => {
     const { receipts, vault, scoring } = setup();
     const o = await newOrder();

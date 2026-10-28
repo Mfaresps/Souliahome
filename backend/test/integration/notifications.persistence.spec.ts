@@ -203,3 +203,45 @@ it('routes mentions only to the referenced staff member while keeping finance ad
   expect(jobs).toHaveLength(1); expect(jobs[0].userId).toBe(staff.userId);
   const send = (service as any).push.sendNotification; send.mockClear(); await service.dispatch(); expect(send).toHaveBeenCalledTimes(1);
 });
+
+it.each(['approved', 'rejected'] as const)('persists and delivers deposit %s only to the submitter, with staff pagination and read state', async status => {
+  const staff = { userId: new Types.ObjectId().toString(), role: 'staff', isActive: true };
+  const other = { ...staff, userId: new Types.ObjectId().toString() };
+  for (const recipient of [staff, other]) {
+    await connection.collection('users').insertOne({ _id: new Types.ObjectId(recipient.userId), role: recipient.role, isActive: true });
+  }
+  for (const [index, recipient] of [user, staff, other].entries()) {
+    await service.preferences(recipient, { enabled: true });
+    await service.subscribe(recipient, { ...sub, endpoint: sub.endpoint + '/receipt-' + index });
+  }
+  const details = { actionKey: 'deposit', status, receiptId: 'r1' };
+  const eventId = `approval:receipt:r1:${status}`;
+  await service.enqueue('approval', eventId, '2906', 'shopify:order1', staff.userId, undefined, details);
+  await service.enqueue('approval', eventId, '2906', 'shopify:order1', staff.userId, undefined, details);
+  const rows = await connection.collection('notificationinbox').find({}).toArray();
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ userId: staff.userId, receiptRecipientId: staff.userId, type: 'approval' });
+  expect((await service.history(user)).items).toHaveLength(0);
+  expect((await service.history(other)).items).toHaveLength(0);
+  const restarted = new NotificationsService(connection);
+  const page = await restarted.history(staff);
+  expect(page.items).toHaveLength(1); expect(page.unread).toBe(1);
+  expect((await restarted.history(staff, String(rows[0]._id))).items).toHaveLength(0);
+  const jobs = await connection.collection('notificationjobs').find({}).toArray();
+  expect(jobs).toHaveLength(1); expect(jobs[0].userId).toBe(staff.userId);
+  const send = (service as any).push.sendNotification; send.mockClear();
+  await service.dispatch(); await service.dispatch(); expect(send).toHaveBeenCalledTimes(1);
+  // A legacy administrator alert in this account must remain hidden on every page.
+  await connection.collection('notificationinbox').insertOne({ _id: 'b'.repeat(64) as any, userId: staff.userId, type: 'security', createdAt: new Date(0), readAt: null });
+  expect((await restarted.history(staff, String(rows[0]._id))).items).toHaveLength(0);
+  await restarted.markAllRead(staff, { before: new Date().toISOString(), ids: [] });
+  expect((await restarted.history(staff)).unread).toBe(0);
+  expect((await restarted.history(staff)).items[0].readAt).toBeInstanceOf(Date);
+  // Preferences and account activity are rechecked when delivery actually runs.
+  await service.enqueue('approval', `approval:receipt:r2:${status}`, '2906', 'shopify:order1', staff.userId, undefined, { ...details, receiptId: 'r2' });
+  await service.preferences(staff, { enabled: false });
+  send.mockClear(); await service.dispatch(); expect(send).not.toHaveBeenCalled();
+  await connection.collection('users').updateOne({ _id: new Types.ObjectId(staff.userId) }, { $set: { isActive: false } });
+  await service.enqueue('approval', `approval:receipt:r3:${status}`, '2906', 'shopify:order1', staff.userId, undefined, { ...details, receiptId: 'r3' });
+  expect(await connection.collection('notificationinbox').countDocuments({ eventId: `approval:receipt:r3:${status}` })).toBe(0);
+});

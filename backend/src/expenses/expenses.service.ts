@@ -145,6 +145,7 @@ export class ExpensesService {
     if (!expense) {
       throw new NotFoundException('المصروف غير موجود');
     }
+    if (expense.complaintId) throw new BadRequestException('هذا المصروف إثبات دفع لشكوى؛ لا يمكن إلغاؤه بمعزل عن ملف العميل');
     if (expense.status === 'معتمد') {
       if (!isAdmin) {
         throw new BadRequestException('لا يمكن حذف مصروف معتمد — يحتاج صلاحية أدمن');

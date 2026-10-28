@@ -11,12 +11,41 @@ function fixture() {
     esc: value => String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])),
     fmtJT: value => 'EGP ' + value,
   };
-  runInNewContext(grab('_puShippingReceivedRef') + '\n' + grab('_puDisplayStatus') + '\n' + source + '\n' + grab('_buildPickupRuns'), context);
+  runInNewContext(grab('_puCanViewShipmentTotals') + '\n' + grab('_puShippingReceivedRef') + '\n' + grab('_puDisplayStatus') + '\n' + source + '\n' + grab('_buildPickupRuns'), context);
   return context;
 }
 const order = (id: string, extra: any = {}) => ({ _id: id, shipCo: 'Bosta', pickupStatus: 'Ready',
   bostaOrderId: 'b-' + id, bostaStatus: 'CREATED', total: 500,
   shipmentEvents: [{ type: 'sent', at: '2026-10-21T08:00:00Z', bostaOrderId: 'b-' + id }], ...extra });
+
+it.each(['admin', 'manager', 'staff', 'viewer', 'unknown', undefined])('restricts shipment aggregates for role %s', role => {
+  const c = fixture();
+  c.currentUser = role ? { role, perms: ['movements', 'reports'] } : null;
+  c.document.createElement = () => ({ dataset: {}, addEventListener() {}, innerHTML: '' });
+  const allowed = role === 'admin' || role === 'manager';
+  const group = c._puDailyShippingGroups([order('a'), order('b')])[0];
+  const card = c._puDailyGroupCard(group);
+  const row = c._puDailyRunRowHtml(group, 0, false).split('</tr>')[0];
+  expect(c._puCanViewShipmentTotals()).toBe(allowed);
+  expect(card.innerHTML.includes('EGP 1000')).toBe(allowed);
+  expect(card.innerHTML.includes('Group total')).toBe(allowed);
+  expect(row.includes('EGP 1000')).toBe(allowed);
+  expect(row.includes('<td hidden></td>')).toBe(!allowed);
+});
+
+it('clears a previously rendered aggregate when switching to a restricted role', () => {
+  const c = fixture();
+  const element = { hidden: false, textContent: '' };
+  c.qs = () => element;
+  runInNewContext(grab('_puSetShipmentTotal'), c);
+  for (const role of ['admin', 'staff', 'manager', 'viewer']) {
+    c.currentUser = { role };
+    c._puSetShipmentTotal('pu-shipped-col-amt', 1000);
+    const allowed = role === 'admin' || role === 'manager';
+    expect(element.hidden).toBe(!allowed);
+    expect(element.textContent).toBe(allowed ? 'EGP 1000' : '');
+  }
+});
 
 it('combines the same carrier and Cairo dispatch day across original preparation references and stages', () => {
   const c = fixture();

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Schema as MongoSchema } from 'mongoose';
 
 export type ComplaintDocument = HydratedDocument<Complaint>;
 
@@ -28,8 +28,22 @@ export class ComplaintNote {
 }
 export const ComplaintNoteSchema = SchemaFactory.createForClass(ComplaintNote);
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, optimisticConcurrency: true })
 export class Complaint {
+  @Prop({ type: MongoSchema.Types.Mixed })
+  workflow: any;
+
+  @Prop({ type: [MongoSchema.Types.Mixed], default: [] })
+  items: any[];
+
+  @Prop({ type: [MongoSchema.Types.Mixed], default: [] })
+  attachments: any[];
+
+  @Prop()
+  createKey: string;
+
+  @Prop()
+  createFingerprint: string;
   @Prop({ required: true, unique: true })
   complaintNo: string;
 
@@ -134,3 +148,4 @@ export class Complaint {
 }
 
 export const ComplaintSchema = SchemaFactory.createForClass(Complaint);
+ComplaintSchema.index({ submittedById: 1, createKey: 1 }, { unique: true, partialFilterExpression: { createKey: { $type: 'string' } } });

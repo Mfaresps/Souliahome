@@ -129,6 +129,35 @@ async function assertStableRefresh(page, selector, table = false) {
       });
       await settle();
       const stageSelectors={preparing:'#pu-prep-col .pu-stage-preparing',ready:'#pu-ready-col .pu-stage-ready',shipped:'#pu-shipped-col .pu-stage-shipped'};
+      for (const role of ['admin', 'staff', 'manager', 'viewer', 'staff', 'admin']) {
+        const allowed = role === 'admin' || role === 'manager';
+        const visibility = await page.evaluate(role => {
+          currentUser = { ...currentUser, role };
+          puSwitchView('board'); renderPickupBoard();
+          const cards = ['#pu-prep-col', '#pu-ready-col', '#pu-shipped-col'].map(selector =>
+            !!qs(selector + ' .pu-group-total'));
+          const amounts = ['pu-pending-col-amt', 'pu-prep-col-amt', 'pu-ready-col-amt', 'pu-shipped-col-amt',
+            'bkpi-pending-amt', 'bkpi-prep-amt', 'bkpi-ready-amt', 'bkpi-delivered-amt'].map(id => {
+              const el = qs('#' + id);
+              return { hidden: el.hidden, empty: el.textContent === '' };
+            });
+          _puShowQuickTip(qs('#pu-prep-col .pu-group-header'), _puPrepGroups[0]);
+          const tipTotal = _puTipEl.textContent.includes(t('puQuickTipValue'));
+          _puHideQuickTip();
+          puSwitchView('table'); renderPickupRuns();
+          const headerHidden = qs('#pu-runs-table thead [data-i18n="total"]').hidden;
+          const totals = qsa('#pu-runs-body > .pu-run-row').map(row => ({
+            hidden: row.cells[6].hidden, empty: row.cells[6].textContent === '',
+          }));
+          puSwitchView('board'); renderPickupBoard();
+          return { cards, amounts, tipTotal, headerHidden, totals };
+        }, role);
+        assert.ok(visibility.cards.every(value => value === allowed), role + ': group cards');
+        assert.ok(visibility.amounts.every(value => value.hidden === !allowed && value.empty === !allowed), role + ': column and KPI totals');
+        assert.equal(visibility.tipTotal, allowed, role + ': tooltip total');
+        assert.equal(visibility.headerHidden, !allowed, role + ': table header');
+        assert.ok(visibility.totals.length > 0 && visibility.totals.every(value => value.hidden === !allowed && value.empty === !allowed), role + ': table totals');
+      }
       await page.focus('#pu-actions-trigger'); await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(()=>document.activeElement===qs('#pu-actions-menu button')),true,'ArrowDown opens Actions and focuses the first option');
       const actionBounds=await page.$eval('.pu-actions-options',menu=>{
@@ -349,7 +378,7 @@ async function assertStableRefresh(page, selector, table = false) {
       });
       assert.equal(consistentReady.boardCount, 30); assert.equal(consistentReady.boardVisible, true);
       assert.equal(consistentReady.rows, 1); assert.equal(consistentReady.ref, '105-22OCT');
-      assert.match(consistentReady.count, /30/); assert.match(consistentReady.total, /54,298/);
+      assert.match(consistentReady.count, /30/); assert.equal(consistentReady.total, '', 'Staff cannot see the run total');
       assert.equal(consistentReady.cards, 30); assert.equal(consistentReady.edit, true); assert.equal(consistentReady.returnToPrep, true);
       await page.evaluate(() => { _pickupOrders.find(o => o._id === 'a').bostaStatus = 'CREATED'; puSwitchView('board'); renderPickupBoard(); });
       await settle();

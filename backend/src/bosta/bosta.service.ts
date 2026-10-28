@@ -1,4 +1,5 @@
 import { projectAfterSalesShipment } from '../after-sales/after-sales-shipment';
+import { recordComplaintExecution } from '../complaints/complaint-workflow';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
@@ -462,6 +463,7 @@ export class BostaService {
         if (!changed) return;
         const updated = await collection.findOne({ _id: row._id }, { session });
         await projectAfterSalesShipment(this.txModel.db, updated, session);
+        await recordComplaintExecution(this.txModel.db, updated, event, session);
         const ids = [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean).map(value => new Types.ObjectId(value));
         await this.txModel.db.collection('transactions').updateMany({ _id: { $in: ids }, 'afterSalesEvents.eventId': { $ne: event.eventId } },
           { $push: { afterSalesEvents: event } } as any, { session });

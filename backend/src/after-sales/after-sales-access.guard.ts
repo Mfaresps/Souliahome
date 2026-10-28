@@ -8,6 +8,7 @@ export class AfterSalesAccessGuard implements CanActivate {
     if (user.role === 'admin') return true;
     const handler = context.getHandler().name;
     const perms: string[] = user.perms || [];
+    if (handler === 'get' && perms.includes('complaints')) return true;
     if (handler === 'get' && perms.includes('pickup-orders')) return true;
     if (handler === 'report') return perms.includes('reports');
     if (['quote', 'create'].includes(handler)) return perms.includes('transaction');

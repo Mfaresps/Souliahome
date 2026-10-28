@@ -5,6 +5,14 @@ export type ExpenseDocument = HydratedDocument<Expense>;
 
 @Schema({ timestamps: true })
 export class Expense {
+  @Prop()
+  complaintId?: string;
+
+  @Prop()
+  complaintCycle?: number;
+
+  @Prop()
+  vaultEntryId?: string;
   @Prop({ required: true })
   date: string;
 

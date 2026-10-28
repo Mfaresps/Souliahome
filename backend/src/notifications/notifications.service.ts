@@ -139,8 +139,15 @@ export function validatePreferences(value: any) {
 // preference, so `PATCH /notifications/preferences {announcement:false}` is rejected as an
 // unknown key, and any value stored before this rule is ignored here.
 export const MANDATORY_TYPES = ['announcement'] as const;
-export function eligible(user: any, preferences: any, type: NotificationType) {
-  return ['admin', 'staff', 'viewer'].includes(user?.role) && (!(ADMIN_TYPES as readonly string[]).includes(type) || user.role === 'admin') && user.isActive !== false && preferences?.enabled === true && ((MANDATORY_TYPES as readonly string[]).includes(type) || preferences[type] === true);
+export function eligible(user: any, preferences: any, type: NotificationType, receiptRecipientId?: string) {
+  const ownReceiptDecision = type === 'approval' && !!receiptRecipientId && receiptRecipientId === String(user?._id || user?.userId || '');
+  return ['admin', 'staff', 'viewer'].includes(user?.role) && (!(ADMIN_TYPES as readonly string[]).includes(type) || user.role === 'admin' || ownReceiptDecision) && user.isActive !== false && preferences?.enabled === true && ((MANDATORY_TYPES as readonly string[]).includes(type) || preferences[type] === true);
+}
+
+function historyScope(userId: string, role: string) {
+  return { userId, ...(role !== 'admin' ? { $and: [{ $or: [
+    { type: { $nin: [...ADMIN_TYPES] } }, { type: 'approval', receiptRecipientId: userId },
+  ] }] } : {}) };
 }
 
 @Injectable()
@@ -257,7 +264,7 @@ export class NotificationsService implements OnModuleInit {
   // Safe to await after business commit: failures cannot change the business result.
   async history(user: any, before = '') {
     const userId = String(user.userId || user.sub || user._id || '');
-    const scope: any = { userId, ...(user.role !== 'admin' ? { type: { $nin: [...ADMIN_TYPES] } } : {}) };
+    const scope = historyScope(userId, user.role);
     const query: any = { ...scope };
     if (before) {
       if (!/^[a-f0-9]{64}$/.test(before)) throw new BadRequestException('Invalid notification cursor');
@@ -301,7 +308,7 @@ export class NotificationsService implements OnModuleInit {
     if (!Number.isFinite(timestamp) || !Array.isArray(ids) || ids.length > 10000 || ids.some((id: unknown) => typeof id !== 'string' || !id.trim() || id.length > 160 || /[\p{Cc}\p{Cf}]/u.test(id))) throw new BadRequestException('Invalid notification read state');
     const before = new Date(Math.min(timestamp, Date.now()));
     const userId = String(user.userId || user.sub || user._id || '');
-    const scope = { userId, ...(user.role !== 'admin' ? { type: { $nin: [...ADMIN_TYPES] } } : {}) };
+    const scope = historyScope(userId, user.role);
     if (ids.length) await this.connection.collection('notificationreadstates').bulkWrite([...new Set<string>(ids)].map(notificationId => ({ updateOne: {
       filter: { userId, notificationId }, update: { $setOnInsert: { userId, notificationId, readAt: new Date() } }, upsert: true,
     } })));
@@ -327,13 +334,17 @@ export class NotificationsService implements OnModuleInit {
     try {
       // The new-deposit notification already tells admins that review is required.
       if (type === 'approval' && details.actionKey === 'deposit' && details.status === 'pending') return;
+      const receiptDecision = type === 'approval' && details.actionKey === 'deposit' && ['approved', 'rejected'].includes(details.status || '');
+      // Receipt decisions belong to the submitter, never the administrators' broadcast.
+      if (receiptDecision && (typeof onlyUser !== 'string' || !onlyUser.trim())) return;
+      const receiptRecipientId = receiptDecision ? onlyUser as string : undefined;
       if (['mention', 'performance', 'orderEdit'].includes(type) && !onlyUser) return;
       // Point changes are private to one employee, never an administrator broadcast.
       if (type === 'performance' && (typeof onlyUser !== 'string' || !onlyUser.trim() || recordId !== 'performance:' + onlyUser)) return;
       if (type === 'performance' && !details.weekly && (!Number.isFinite(details.pointDelta) || details.pointDelta === 0)) return;
       const employeeLanguage = await this.employeeLanguage();
       if (type === 'otp' && (!/^otp:[a-f0-9]{24}$/.test(recordId) || !(Date.parse(details.expiresAt || '') > Date.now()))) return;
-      const users = await this.connection.collection('users').find({ role: { $in: (ADMIN_TYPES as readonly string[]).includes(type) ? ['admin'] : ['admin', 'staff', 'viewer'] }, isActive: { $ne: false } }).toArray();
+      const users = await this.connection.collection('users').find({ role: { $in: (ADMIN_TYPES as readonly string[]).includes(type) && !receiptDecision ? ['admin'] : ['admin', 'staff', 'viewer'] }, isActive: { $ne: false } }).toArray();
       const eventTimestamp = Date.now();
       const queued = await Promise.allSettled(users.map(async user => {
         const userId = String(user._id);
@@ -356,7 +367,6 @@ export class NotificationsService implements OnModuleInit {
         const body = test ? (language === 'en' ? 'Notifications are working.' : 'تم تفعيل الإشعارات بنجاح.') : notificationBody(type, reference, recipientDetails, language) || (reference ? '#' + reference : titles[type]);
         const target = new URLSearchParams({ pushRecord: recordId, pushType: type });
         // A receipt submission and its decision share one inbox card and browser notification.
-        const receiptDecision = type === 'approval' && details.actionKey === 'deposit' && ['approved', 'rejected'].includes(details.status || '');
         const receiptId = details.receiptId || (receiptDecision ? /^approval:receipt:(.+):(approved|rejected)$/.exec(eventId)?.[1] : '');
         const notificationEventId = receiptId && (type === 'deposit' || receiptDecision) ? 'deposit:receipt:' + receiptId : eventId;
         const inboxId = createHash('sha256').update(JSON.stringify([userId, notificationEventId])).digest('hex');
@@ -373,16 +383,17 @@ export class NotificationsService implements OnModuleInit {
             if (existing?.eventId !== eventId) {
               await this.inbox.updateOne({ _id: inboxId as any, userId }, { [receiptDecision ? '$set' : '$setOnInsert']: {
                 eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
+                ...(receiptRecipientId ? { receiptRecipientId } : {}),
                 actorUserId: details.actorUserId || '', actorName: details.actorName || '', commentText: details.commentText || '',
                 url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
               } }, { upsert: true });
             }
           } catch { this.logger.warn('Notification history could not be recorded'); }
         }
-        if (!this.configured || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [type]: true } : {}) }, type)) return;
+        if (!this.configured || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [type]: true } : {}) }, type, receiptRecipientId)) return;
         for (const subscription of account?.subscriptions || []) {
           await this.jobs.updateOne({ eventId, userId, endpoint: subscription.endpoint }, { $setOnInsert: {
-            eventId, userId, endpoint: subscription.endpoint, type, payload, ...(type === 'otp' ? { otpId: recordId.slice(4) } : {}), attempts: 0, done: false,
+            eventId, userId, endpoint: subscription.endpoint, type, payload, ...(receiptRecipientId ? { receiptRecipientId } : {}), ...(type === 'otp' ? { otpId: recordId.slice(4) } : {}), attempts: 0, done: false,
             nextAt: new Date(eventTimestamp), expiresAt: type === 'otp' ? new Date(details.expiresAt!) : new Date(eventTimestamp + 30 * 86400000),
           } }, { upsert: true });
         }
@@ -480,6 +491,10 @@ export class NotificationsService implements OnModuleInit {
         if (job.type === 'approval' && /^approval:receipt:.+:pending$/.test(job.eventId || '')) {
           await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
         }
+        // Do not deliver administrator broadcasts left in the queue by older versions.
+        if (job.type === 'approval' && /^approval:receipt:.+:(approved|rejected)$/.test(job.eventId || '') && job.receiptRecipientId !== job.userId) {
+          await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
+        }
         const user = await this.connection.collection('users').findOne({ _id: new (require('mongoose').Types.ObjectId)(job.userId) });
         if (job.type === 'performance') {
           let recipientRecord = '';
@@ -491,7 +506,7 @@ export class NotificationsService implements OnModuleInit {
         const account: any = await this.accounts.findOne({ userId: job.userId });
         const subscription = account?.subscriptions?.find((s: any) => s.endpoint === job.endpoint);
         const test = job.eventId?.startsWith('test:');
-        if (!subscription || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [job.type]: true } : {}) }, job.type)) {
+        if (!subscription || !eligible(user, { ...DEFAULTS, ...account?.preferences, ...(test ? { [job.type]: true } : {}) }, job.type, job.receiptRecipientId)) {
           await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
         }
         try {

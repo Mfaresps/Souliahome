@@ -21168,13 +21168,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <span data-i18n="spTabOrders">الأوردرات</span>
     </button>
     <!-- Deposit receipts awaiting a manager. Admin-only: approving books money into the vault. -->
-    <button type="button" class="mov-main-tab" id="sp-subnav-deposits" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-deposits-tab-content" onclick="switchShopifySubnav('deposits')" style="display:none" data-i18n-title="spDepTabHint" title="عربونات قيد المراجعة">
+    <button type="button" class="mov-main-tab" id="sp-subnav-deposits" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-deposits-tab-content" onclick="switchShopifySubnav('deposits')" hidden style="display:none" data-i18n-title="spDepTabHint" title="عربونات قيد المراجعة">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>
       <span data-i18n="spDepTab">العربونات</span>
       <span class="spdep-tab-count" id="sp-subnav-deposits-n" hidden></span>
     </button>
-    <button type="button" class="mov-main-tab" id="sp-subnav-deposit-log" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-deposit-log-content" onclick="switchShopifySubnav('deposit-log')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span data-i18n="spDepHistory">سجل العربون</span></button>
-    <button type="button" class="mov-main-tab" id="sp-subnav-perf" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-perf-dashboard-content" onclick="switchShopifySubnav('perf')" style="display:none">
+    <button type="button" class="mov-main-tab" id="sp-subnav-deposit-log" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-deposit-log-content" onclick="switchShopifySubnav('deposit-log')" hidden style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span data-i18n="spDepHistory">سجل العربون</span></button>
+    <button type="button" class="mov-main-tab" id="sp-subnav-perf" role="tab" aria-selected="false" tabindex="-1" aria-controls="sp-perf-dashboard-content" onclick="switchShopifySubnav('perf')" hidden style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       <span data-i18n="spTabPerformance">الأداء</span>
     </button>
@@ -23631,7 +23631,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
 <link rel="stylesheet" href="/after-sales.css?v=20261024-operation-icons-10">
-<script src="/after-sales.js?v=20261025-approval-actions"></script>
+<script src="/after-sales.js?v=20261028-complaint-link"></script>
+<link rel="stylesheet" href="/complaint-flow.css?v=20261028-2">
+<script src="/complaint-flow.js?v=20261028-2"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
@@ -34246,7 +34248,7 @@ function connectSocket() {
     }
   });
   socket.on('inventory:unit-identities-changed', payload => { window.InvoiceUnitIdentities?.changed(payload?.transactionId); });
-  socket.on('after-sales:updated', payload => { window.AfterSales?.changed(payload?.id); });
+  socket.on('after-sales:updated', payload => { window.AfterSales?.changed(payload?.id); window.ComplaintFlow?.changed(); });
   socket.on('inventory:changed', async (payload) => {
     // One authoritative inventory refresh follows a local Shopify batch, rather
     // than recalculating all stock again for every successful order in that batch.
@@ -61449,7 +61451,7 @@ function renderInvoiceViewPage() {
   const notesHtml = tx.notes ? `
     <div style="padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:.84rem">
       <div style="font-size:.72rem;color:var(--muted);font-weight:700;margin-bottom:5px">${t('ivNotes')}</div>
-      <div>${esc(tx.notes)}</div>
+      <div>${window.AfterSales?.invoiceNotes(tx) ?? esc(tx.notes)}</div>
     </div>` : '';
 
   // Edit lock — single source of truth is txEditGate() (fulfillment stage, NOT payment status),
@@ -63016,7 +63018,8 @@ async function viewRelatedTicket(kind, id) {
   navigateTo('movements');
 }
 
-function openAddTicketModal(txId) {
+function openAddTicketModal(txId, legacyMode = false) {
+  if (!legacyMode && window.ComplaintFlow) return window.ComplaintFlow.chooseTicket(txId);
   const tx = transactions.find(t => t._id === txId);
   if (!tx) { toast(t('tktErrTxNotFound'), true); return; }
   window._tktCurrentTx = tx;
@@ -63252,19 +63255,17 @@ async function saveAddTicket(txId) {
       if (variantDetail) body.variantDetail = variantDetail;
       if (imageUrl && /^https?:\/\//i.test(imageUrl)) body.imageUrl = imageUrl;
       const selectedItems = (categoryGroup === 'مشكلة في المنتج') ? (window._tktSelectedItems || []) : [];
-      const itemList = selectedItems.length ? selectedItems : [null];
-      const results = [];
-      for (const it of itemList) {
-        const itemBody = { ...body };
-        if (it) {
-          itemBody.productId = it.productId || '';
-          itemBody.productCode = it.code || '';
-          itemBody.productName = it.name || '';
-          itemBody.productImageUrl = it.imageUrl || '';
-          itemBody.productQty = it.qty || 0;
-        }
-        results.push(await api('/complaints', { method: 'POST', body: JSON.stringify(itemBody) }));
-      }
+      body.ownerId = responsibleId;
+      body.items = selectedItems.map(it => ({ lineIndex: tx.items.findIndex(line => it.lineId ? line.lineId === it.lineId : line.code === it.code && line.name === it.name), qty: it.qty }));
+      const retryKey = 'complaint-ticket:' + (currentUser?._id || '') + ':' + txId;
+      let pendingBody;
+      try { pendingBody = JSON.parse(sessionStorage.getItem(retryKey) || 'null'); } catch {}
+      if (!pendingBody) { pendingBody = { ...body, operationKey: crypto.randomUUID() }; sessionStorage.setItem(retryKey, JSON.stringify(pendingBody)); }
+      let doc;
+      try { doc = await api('/complaints', { method: 'POST', body: JSON.stringify(pendingBody) }); }
+      catch (error) { if (error.status >= 400 && error.status < 500 && ![408,429].includes(error.status)) sessionStorage.removeItem(retryKey); throw error; }
+      sessionStorage.removeItem(retryKey);
+      const results = [doc];
       results.forEach(doc => complaints.unshift(doc));
       window._tktNewIds = results.map(doc => String(doc._id || ''));
       toast(results.length > 1 ? t('tktSavedMany', { n: fmtN(results.length) }) : t('tktSavedOne', { no: results[0].complaintNo }));
@@ -91196,9 +91197,6 @@ function cmpStatusIcon(c) {
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>';
   return `<span class="cmp-status-icon ${cls}" title="${title}">${icon}</span>`;
 }
-// A complaint is "settled" once a decision has been made on it — the
-// complaints analogue of _fuIsSettled. Only معلق still needs action.
-function _cmpIsSettled(c) { return c.status === 'مقبول' || c.status === 'مرفوض'; }
 function cmpPriorityBadge(c) {
   const p = c.priority || 'متوسطة';
   const cls = p === 'عالية' ? 'pr-high' : p === 'منخفضة' ? 'pr-low' : 'pr-medium';
@@ -91224,6 +91222,7 @@ function cmpProgressMeta(stage) {
    .dd-menu-portal popover pattern instead, so text stays at the intended size
    on every platform. */
 function cmpProgressSelect(c) {
+  if (window.ComplaintFlow) return window.ComplaintFlow.badge(c);
   const meta = cmpProgressMeta(c.progressStage);
   return `<button type="button" class="cmp-progress-select ${meta.cls}" data-complaint-id="${c._id}" onclick="event.stopPropagation();cmpOpenProgressMenu(event,'${c._id}')">
     <span class="cmp-progress-select-label">${esc(meta.label)}</span>
@@ -91469,6 +91468,7 @@ function shareComplaint(id, btnEl) {
   }).catch(() => toast(t('csCopyFailed'), true));
 }
 function renderComplaints() {
+  window.ComplaintFlow?.mount();
   // populate employee filter
   const empSel = qs('#cmp-emp-filter');
   const empSet = new Set(complaints.map(c => c.submittedBy).filter(Boolean));
@@ -91490,6 +91490,7 @@ function renderComplaints() {
 
   const cmpSortOrder = qs('#cmp-sort-order')?.value || 'desc';
   let data = complaints.filter(c => {
+    if (window.ComplaintFlow && !window.ComplaintFlow.matches(c)) return false;
     if (cmpTabFilter === 'followup') { if (!c.inFollowUp) return false; }
     else if (statusF) { if (c.status !== statusF) return false; }
     if (empF && c.submittedBy !== empF) return false;
@@ -91506,14 +91507,6 @@ function renderComplaints() {
   data.sort((a, b) => cmpSortOrder === 'asc'
     ? (a.createdAt||'').localeCompare(b.createdAt||'')
     : (b.createdAt||'').localeCompare(a.createdAt||''));
-  // Settled complaints sink below open ones (same rule the follow-ups table
-  // already applies via _fuIsSettled), so the rows still needing action stay
-  // at the top regardless of date. Changing a status back to معلق floats it up.
-  {
-    const openRows = data.filter(c => !_cmpIsSettled(c));
-    const doneRows = data.filter(_cmpIsSettled);
-    data = [...openRows, ...doneRows];
-  }
 
   // Stat cards
   const total = complaints.length;
@@ -91713,6 +91706,7 @@ function cmpOpenLinkedOrder(id) {
 }
 
 function cmpActionsMenu(c) {
+  if (window.ComplaintFlow) return window.ComplaintFlow.menu(c);
   const resolveItem = isAdmin() && c.status === 'معلق'
     ? `<div class="dd-item" onclick="openResolveModal('${c._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> ${t('cmpMakeDecision')}</div>` : '';
   const surveyItem = (c.surveySlug || c.surveyToken) && !c.surveyCompletedAt
@@ -91775,6 +91769,7 @@ const CMP_CATEGORY_PRIORITY = {
 let _cmpWizard = { tx: null, items: null };
 
 function openComplaintModal() {
+  if (window.ComplaintFlow) return window.ComplaintFlow.create();
   _cmpWizard = { tx: null, items: null };
   renderCmpWizard();
 }
@@ -92191,6 +92186,7 @@ async function saveEditComplaint(id) {
 }
 
 function openResolveModal(id) {
+  if (window.ComplaintFlow) return window.ComplaintFlow.form(id, 'plan');
   const c = complaints.find(x => x._id === id);
   if (!c) return;
   openModal(`<h3 style="margin-bottom:4px">${t('cmpManagementDecision')}</h3>
@@ -92259,6 +92255,7 @@ async function resolveComplaint(id) {
 }
 
 function viewComplaint(id) {
+  if (window.ComplaintFlow) return window.ComplaintFlow.open(id);
   const c = complaints.find(x => x._id === id);
   if (!c) return;
   const statusBadge = cmpStatusBadge(c);
@@ -92358,6 +92355,7 @@ function copySurveyLink(slugOrToken) {
 }
 
 async function deleteComplaint(id) {
+  if (window.ComplaintFlow) return window.ComplaintFlow.form(id, 'archive');
   if (!await showConfirm(t('cmpDeleteConfirm'), { title: t('cmpDeleteTitle'), icon: 'danger', danger: true })) return;
   try {
     await api(`/complaints/${id}`, { method: 'DELETE' });
@@ -96015,6 +96013,16 @@ let _puTipTarget = null, _puTipFrame = null;
 const _puTipObserver = new MutationObserver(() => {
   if (_puTipTarget && (!_puTipTarget.isConnected || !_puTipTarget.getClientRects().length)) _puHideQuickTip();
 });
+function _puCanViewShipmentTotals() {
+  return typeof currentUser !== 'undefined' && ['admin', 'manager'].includes(currentUser?.role);
+}
+function _puSetShipmentTotal(id, amount) {
+  const el = qs('#' + id);
+  if (!el) return;
+  const allowed = _puCanViewShipmentTotals();
+  el.hidden = !allowed;
+  el.textContent = allowed ? fmtJT(amount) : '';
+}
 function _puShowQuickTip(target, grp) {
   _puHideQuickTip();
   if (!target.isConnected) return;
@@ -96034,7 +96042,7 @@ function _puShowQuickTip(target, grp) {
   const topItems = Object.entries(itemCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
   _puTipEl.innerHTML = `
     <div class="pu-quick-tip-row"><span class="k">${t('puQuickTipOrders')}</span><span class="v">${fmtN(grp.orders.length)}</span></div>
-    <div class="pu-quick-tip-row"><span class="k">${t('puQuickTipValue')}</span><span class="v">${fmtJT(totalAmt)}</span></div>
+    ${_puCanViewShipmentTotals() ? `<div class="pu-quick-tip-row"><span class="k">${t('puQuickTipValue')}</span><span class="v">${fmtJT(totalAmt)}</span></div>` : ''}
     ${topItems.length ? `<div class="pu-quick-tip-items">${t('puQuickTipTopItems')}<br>${topItems.map(([n,q])=>`<b>${esc(n)}</b> ×${fmtN(q)}`).join(' · ')}</div>` : ''}
   `;
   const r = target.getBoundingClientRect();
@@ -96268,10 +96276,10 @@ function _puBuildPrepGroupCard(grp) {
         <span class="pu-prep-order-count">${_puGroupCountContent(totalCount)}</span>
       </div>
       ${_puGroupDatePreview(grp.createdAtIso, 'created')}
-      <div class="pu-prep-amount">
+      ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount">
         <span>${t('puGroupTotalLabel')}</span>
         <strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong>
-      </div>
+      </div>` : ''}
       ${prepShipcos.length || (isAdmin() && employeeName) ? `<div class="pu-prep-meta">
         ${prepShipcos.map(company => `<span>${S.truck}<bdi>${esc(company)}</bdi></span>`).join('')}
         ${isAdmin() && employeeName ? `<span class="pu-prep-owner">${esc(employeeName)}</span>` : ''}
@@ -96392,18 +96400,18 @@ function renderPickupBoard() {
   if (el('pu-ready-pickup-count')) el('pu-ready-pickup-count').textContent = t('puOrdersCount', {n: fmtN(readyOrders.length)});
   if (el('pu-shipped-count')) el('pu-shipped-count').textContent = fmtN(shippedGroups.length);
   // Column subtitle amounts
-  if (el('pu-pending-col-amt')) el('pu-pending-col-amt').textContent = fmtJT(sumAmt(pendingOrders));
-  if (el('pu-prep-col-amt'))    el('pu-prep-col-amt').textContent    = fmtJT(sumAmt(_puPrepGroups.flatMap(g=>g.orders)));
-  if (el('pu-ready-col-amt'))   el('pu-ready-col-amt').textContent   = fmtJT(sumAmt(readyOrders));
-  if (el('pu-shipped-col-amt')) el('pu-shipped-col-amt').textContent = fmtJT(sumAmt(shippedOrders));
+  _puSetShipmentTotal('pu-pending-col-amt', sumAmt(pendingOrders));
+  _puSetShipmentTotal('pu-prep-col-amt', sumAmt(_puPrepGroups.flatMap(g=>g.orders)));
+  _puSetShipmentTotal('pu-ready-col-amt', sumAmt(readyOrders));
+  _puSetShipmentTotal('pu-shipped-col-amt', sumAmt(shippedOrders));
   if (el('bkpi-pending'))         el('bkpi-pending').textContent         = fmtN(pendingGroups.length);
-  if (el('bkpi-pending-amt'))     el('bkpi-pending-amt').textContent     = fmtJT(sumAmt(pendingOrders));
+  _puSetShipmentTotal('bkpi-pending-amt', sumAmt(pendingOrders));
   if (el('bkpi-prep'))            el('bkpi-prep').textContent            = fmtN(_puPrepGroups.length);
-  if (el('bkpi-prep-amt'))        el('bkpi-prep-amt').textContent        = fmtJT(sumAmt(_puPrepGroups.flatMap(g=>g.orders)));
+  _puSetShipmentTotal('bkpi-prep-amt', sumAmt(_puPrepGroups.flatMap(g=>g.orders)));
   if (el('bkpi-ready'))           el('bkpi-ready').textContent           = fmtN(readyGroups.length);
-  if (el('bkpi-ready-amt'))       el('bkpi-ready-amt').textContent       = fmtJT(sumAmt(readyOrders));
+  _puSetShipmentTotal('bkpi-ready-amt', sumAmt(readyOrders));
   if (el('bkpi-delivered'))       el('bkpi-delivered').textContent       = fmtN(deliveredAll.length);
-  if (el('bkpi-delivered-amt'))   el('bkpi-delivered-amt').textContent   = fmtJT(sumAmt(deliveredAll));
+  _puSetShipmentTotal('bkpi-delivered-amt', sumAmt(deliveredAll));
   const _totalOrders = allNonArchived.length;
   const _delivRate   = _totalOrders > 0 ? Math.round(deliveredAll.length / _totalOrders * 100) : 0;
   if (el('bkpi-delivery-rate'))   el('bkpi-delivery-rate').textContent   = `${_delivRate}%`;
@@ -96870,7 +96878,7 @@ function _puBuildGroupCard(group, colType) {
           <span class="pu-prep-order-count">${_puGroupCountContent(group.orders.length)}</span>
         </div>
         ${_puGroupDatePreview(group.pickupDate, 'ready')}
-        <div class="pu-prep-amount"><span>${t('puGroupTotalLabel')}</span><strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong></div>
+        ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${t('puGroupTotalLabel')}</span><strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong></div>` : ''}
         <div class="pu-prep-meta">
           ${shipcos.map(company => `<span>${S.truck}<bdi>${esc(company)}</bdi></span>`).join('')}
           ${isAdmin() && readyEmployees.length ? `<span class="pu-prep-owner">${esc(readyEmployees.join(', '))}</span>` : ''}
@@ -96895,7 +96903,7 @@ function _puBuildGroupCard(group, colType) {
           <span class="pu-group-chip">${S.pkg} ${t('puOrdersItemsChip',{orders:fmtN(group.orders.length),items:fmtN(totalItems)})}</span>
           ${shipcos.map(s=>`<span class="pu-group-chip">${S.truck} ${esc(s)}</span>`).join('')}
           ${colType==='pending' && latestDate ? _puGroupDatePreview(latestDate, 'order') : ''}
-          <span class="pu-group-total">${fmtJT(totalAmt)}</span>
+          ${_puCanViewShipmentTotals() ? `<span class="pu-group-total">${fmtJT(totalAmt)}</span>` : ''}
           <span style="font-size:.67rem;color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--primary) 18%,transparent);padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px">
             <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             ${t('puViewOrders')}
@@ -99943,7 +99951,9 @@ function renderReadyToShipTable() {
   }).sort((a, b) => (_puWaitingDays(b) ?? 0) - (_puWaitingDays(a) ?? 0)); // longest-waiting first
 
   const cnt = qs('#pu-ready-tbl-count');
-  if (cnt) cnt.textContent = t('puRdyCount', { n: fmtN(rows.length), v: fmtJT(rows.reduce((s,o)=>s+(o.total||0),0)) });
+  if (cnt) cnt.textContent = _puCanViewShipmentTotals()
+    ? t('puRdyCount', { n: fmtN(rows.length), v: fmtJT(rows.reduce((s,o)=>s+(o.total||0),0)) })
+    : t('puOrdersCount', { n: fmtN(rows.length) });
 
   if (!rows.length) {
     body.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:34px 12px;color:var(--muted);font-size:.85rem">${esc(t('puRdyEmpty'))}</td></tr>`;
@@ -100011,12 +100021,11 @@ function _puRenderKPIs() {
   const totalRuns = _pickupRuns.length;
 
   const setText = (id, val) => { const el = qs('#' + id); if (el) el.textContent = val; };
-  const setHtml = (id, val) => { const el = qs('#' + id); if (el) el.innerHTML  = val; };
   setText('pu-kpi-total',         fmtN(totalRuns));
   setText('pu-kpi-delivered',     fmtN(delivered.length));
-  setHtml('pu-kpi-delivered-amt', fmtJ(delivered.reduce((s,o)=>s+(o.total||0),0)));
+  _puSetShipmentTotal('pu-kpi-delivered-amt', delivered.reduce((s,o)=>s+(o.total||0),0));
   setText('pu-kpi-pickedup',      fmtN(pickedUp.length));
-  setHtml('pu-kpi-pickedup-amt',  fmtJ(pickedUp.reduce((s,o)=>s+(o.total||0),0)));
+  _puSetShipmentTotal('pu-kpi-pickedup-amt', pickedUp.reduce((s,o)=>s+(o.total||0),0));
 }
 
 // ── Group orders into "runs" by pickupRef ──────────────────────
@@ -100333,6 +100342,8 @@ function _puPayBadge(ps) {
 // ── Main render — Runs table ───────────────────────────────────
 let _puExpandedRunRef = null;
 function renderPickupRuns() {
+  const totalHeader = qs('#pu-runs-body')?.closest('table')?.querySelector('thead [data-i18n="total"]');
+  if (totalHeader) totalHeader.hidden = !_puCanViewShipmentTotals();
   _pickupRuns = _buildPickupRuns(_pickupOrders);
   _puRenderKPIs();
   const filtered   = _puFilterRuns();
@@ -100398,13 +100409,13 @@ function renderPickupRuns() {
           <td>
             <span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:6px;background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary);font-weight:700;font-size:.78rem">${fmtN(run.orders.length)}</span>
           </td>
-          <td style="font-weight:700;font-size:.86rem;white-space:nowrap">${fmtJ(totalAmt)}</td>
+          ${_puCanViewShipmentTotals() ? `<td style="font-weight:700;font-size:.86rem;white-space:nowrap">${fmtJ(totalAmt)}</td>` : '<td hidden></td>'}
           <td style="padding-inline-start:8px;padding-inline-end:6px">
             <button class="btn btn-outline btn-sm" style="padding:5px 9px;font-size:.8rem;border-radius:6px;line-height:1" onclick="event.stopPropagation();toggleRunMenu(event,'${esc(run.pickupRef)}')">⋮</button>
           </td>
         </tr>
         <tr class="pu-detail-row" data-run-detail="${escHtml(String(run.key || run.pickupRef))}" id="${runKey}" style="display:${runOpen ? 'table-row' : 'none'}">
-          <td colspan="8">
+          <td colspan="${_puCanViewShipmentTotals() ? 8 : 7}">
             <div class="pu-detail-panel">
 
               <!-- Panel header bar -->
@@ -100419,7 +100430,7 @@ function renderPickupRuns() {
                   ${delivered ? `<span class="pu-panel-tag tag-green">${svgCheck} ${t('puDeliveredChip',{n:fmtN(delivered)})}</span>` : ''}
                   ${onTheWay  ? `<span class="pu-panel-tag tag-blue">${svgTruck} ${t('puShippedChip',{n:fmtN(onTheWay)})}</span>` : ''}
                   ${pickedUp  ? `<span class="pu-panel-tag tag-amber">${svgTruck} ${t('puReadyChip',{n:fmtN(pickedUp)})}</span>` : ''}
-                  <span class="pu-panel-tag tag-blue" style="font-weight:700">${fmtJ(totalAmt)}</span>
+                  ${_puCanViewShipmentTotals() ? `<span class="pu-panel-tag tag-blue" style="font-weight:700">${fmtJ(totalAmt)}</span>` : ''}
                   <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.78rem;border-radius:6px" onclick="event.stopPropagation();openPuEditModal('${esc(run.pickupRef)}')">
                     <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     ${t('edit')}
@@ -100828,7 +100839,7 @@ function _renderPuEditTargetList() {
           <span style="font-size:.76rem;color:var(--muted)">${esc(run.pickupDate||'—')}</span>
           ${run.shipCo ? `<span style="font-size:.68rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--muted)">${esc(run.shipCo)}</span>` : ''}
         </div>
-        <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${esc(t('puTicketSummary',{n:fmtN(readyCount),total:totalText}))}</div>
+        <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${esc(_puCanViewShipmentTotals() ? t('puTicketSummary',{n:fmtN(readyCount),total:totalText}) : t('puOrdersCount',{n:fmtN(readyCount)}))}</div>
       </div>
       <button class="pu-edit-order-action" ${disabled?`disabled title="${esc(t('puSelectForMove'))}"`:''} onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')">${esc(t('puMoveSelectedToTicket'))}</button>
     </div>`;
@@ -101559,11 +101570,12 @@ function clearPickupFilters() {
 function exportPickupExcel() {
   if (!_pickupRuns.length) return toast(t('puNoDataToExport'), true);
   const doExport = () => {
-    const rows = [[t('puXlPickupRef'),t('puXlPickupDate'),t('puXlShipCo'),t('puXlOrdersCount'),t('puXlTotal'),t('puXlEmployee')]];
+    const showTotals = _puCanViewShipmentTotals();
+    const rows = [[t('puXlPickupRef'),t('puXlPickupDate'),t('puXlShipCo'),t('puXlOrdersCount'),...(showTotals ? [t('puXlTotal')] : []),t('puXlEmployee')]];
     _pickupRuns.forEach(run => {
       const total = run.orders.reduce((s,o)=>s+(o.total||0),0);
       const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
-      rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, total, run.pickupBy]);
+      rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, ...(showTotals ? [total] : []), run.pickupBy]);
     });
     // `exportToExcel` was never defined anywhere in this file — this button threw a
     // ReferenceError for every user until Aug 2026. Written directly, like exportPickupRun.
@@ -101772,7 +101784,7 @@ function _shopifyDatePopoverOutsideClick(e) {
 
 // ─── Customer Service Performance Dashboard sub-tab ────────────────────────
 function _spVisibleSubnavTabs() {
-  return Array.from(document.querySelectorAll('#sp-subnav [role="tab"]')).filter(el => el.style.display !== 'none');
+  return Array.from(document.querySelectorAll('#sp-subnav [role="tab"]')).filter(el => !el.hidden && el.style.display !== 'none');
 }
 
 function _spRevealSubnavTab(el) {
@@ -101814,12 +101826,12 @@ function _spStepSubnav(delta) {
 }
 
 function _initShopifySubnav() {
-  const btn = qs('#sp-subnav-perf');
-  if (btn) btn.style.display = isAdmin() ? '' : 'none';
-  const dep = qs('#sp-subnav-deposits');
-  if (dep) dep.style.display = isAdmin() ? '' : 'none';
-  const log = qs('#sp-subnav-deposit-log');
-  if (log) log.style.display = isAdmin() ? '' : 'none';
+  for (const tab of ['perf', 'deposits', 'deposit-log']) {
+    const button = qs('#sp-subnav-' + tab);
+    if (!button) continue;
+    button.hidden = !isAdmin();
+    button.style.display = button.hidden ? 'none' : '';
+  }
   const bar = qs('#sp-subnav');
   if (bar && !bar._spNavigationReady) {
     bar._spNavigationReady = true;

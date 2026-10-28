@@ -95,13 +95,13 @@ describe('Web Push settings, security and delivery', () => {
     expect(historyRows.size).toBe(1);
     expect(JSON.parse(stored.get('deposit:receipt-1').payload).title).toBe('💰 عربون جديد');
   });
-  it.each(['approved', 'rejected'] as const)('updates the same receipt card and push tag on %s, without overwriting it on submission retries', async status => {
+  it.each(['approved', 'rejected'] as const)('updates an admin submitter’s own receipt card and push tag on %s, without overwriting it on submission retries', async status => {
     const { service, stored, historyRows } = setup();
     const details = { receiptId: 'receipt-1', actorName: 'Malak', pendingApproval: true, amount: 500 };
     await service.enqueue('deposit', 'deposit:receipt:receipt-1', '2950', 'shopify:order1', undefined, undefined, details);
     const original = [...historyRows.values()][0];
     original.readAt = new Date();
-    await service.enqueue('approval', 'approval:receipt:receipt-1:' + status, '2950', 'shopify:order1', undefined, undefined,
+    await service.enqueue('approval', 'approval:receipt:receipt-1:' + status, '2950', 'shopify:order1', admin.userId, undefined,
       { actionKey: 'deposit', status, receiptId: 'receipt-1' });
     expect(historyRows.size).toBe(1);
     expect(original.type).toBe('approval');
@@ -116,7 +116,7 @@ describe('Web Push settings, security and delivery', () => {
   });
   it('discards a pending receipt push when its decision has already updated the card', async () => {
     const { service, push, jobs } = setup();
-    await service.enqueue('approval', 'approval:receipt:r1:approved', '2950', 'shopify:o1', undefined, undefined,
+    await service.enqueue('approval', 'approval:receipt:r1:approved', '2950', 'shopify:o1', admin.userId, undefined,
       { actionKey: 'deposit', status: 'approved', receiptId: 'r1' });
     jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'old-deposit', type: 'deposit', userId: admin.userId, eventId: 'deposit:receipt:r1' } as never);
     await service.dispatch();
@@ -130,11 +130,35 @@ describe('Web Push settings, security and delivery', () => {
     expect(push.sendNotification).not.toHaveBeenCalled();
     expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'job' }, { $set: { done: true } });
   });
-  it.each(['approved', 'rejected'] as const)('preserves the deposit decision notification: %s', async status => {
+  it.each(['approved', 'rejected'] as const)('sends the deposit decision only to its staff submitter: %s', async status => {
+    const { service, users, jobs, historyRows, stored, push } = setup('staff');
+    users.find.mockReturnValue({ toArray: async () => [
+      { _id: admin.userId, role: 'staff' },
+      { _id: '507f1f77bcf86cd799439012', role: 'admin' },
+      { _id: '507f1f77bcf86cd799439013', role: 'staff', jobTitle: 'Operations Manager' },
+      { _id: '507f1f77bcf86cd799439014', role: 'staff' },
+    ] } as any);
+    const eventId = 'approval:receipt:receipt-1:' + status;
+    await service.enqueue('approval', eventId, '2906', 'shopify:order1', admin.userId, undefined, { actionKey: 'deposit', status });
+    expect([...historyRows.values()].map(row => row.userId)).toEqual([admin.userId]);
+    expect(jobs.updateOne).toHaveBeenCalledTimes(1);
+    expect(stored.get(eventId).receiptRecipientId).toBe(admin.userId);
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'decision-job', ...stored.get(eventId) } as never);
+    await service.dispatch();
+    expect(push.sendNotification).toHaveBeenCalledTimes(1);
+  });
+  it.each([undefined, '', ' ', [admin.userId]])('never broadcasts deposit decisions with an invalid recipient: %p', async recipient => {
     const { service, stored, historyRows } = setup();
-    await service.enqueue('approval', 'approval:receipt:receipt-1:' + status, '2906', 'shopify:' + admin.userId, undefined, undefined, { actionKey: 'deposit', status });
-    expect(stored.size).toBe(1);
-    expect(historyRows.size).toBe(1);
+    await service.enqueue('approval', 'approval:receipt:r1:approved', '2906', 'shopify:order1', recipient, undefined, { actionKey: 'deposit', status: 'approved' });
+    expect(stored.size).toBe(0);
+    expect(historyRows.size).toBe(0);
+  });
+  it.each(['approved', 'rejected'])('discards legacy deposit %s broadcasts still waiting for delivery', async status => {
+    const { service, jobs, push } = setup();
+    jobs.findOneAndUpdate.mockResolvedValueOnce({ _id: 'legacy', type: 'approval', userId: admin.userId, eventId: 'approval:receipt:r1:' + status } as never);
+    await service.dispatch();
+    expect(push.sendNotification).not.toHaveBeenCalled();
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'legacy' }, { $set: { done: true } });
   });
   it.each(['ar', 'en'] as const)('hides internal record IDs in admin notification text (%s)', language => {
     const details = { actorName: 'Hassan Ammar', actionKey: 'export-excel', status: 'pending' as const };

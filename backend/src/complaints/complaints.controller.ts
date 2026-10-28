@@ -6,8 +6,10 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
+  UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { ComplaintsService } from './complaints.service';
 import {
@@ -18,10 +20,13 @@ import {
   UpdateProgressStageDto,
   CreateNoteDto,
   UpdateNoteDto,
+  ComplaintWorkflowDto,
 } from './dto/complaint.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { ComplaintsAccessGuard } from './complaints-access.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('complaints')
 export class ComplaintsController {
@@ -30,7 +35,7 @@ export class ComplaintsController {
   /* Public survey endpoint — no auth */
   @Get('survey/:token')
   async getSurvey(@Param('token') token: string) {
-    return this.complaintsService.findBySurveyToken(token);
+    return this.complaintsService.publicSurvey(token);
   }
 
   @Post('survey/:token')
@@ -42,19 +47,55 @@ export class ComplaintsController {
   }
 
   /* Protected endpoints */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Get('message-templates')
+  messageTemplates() { return this.complaintsService.messageTemplates(); }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Roles('admin')
+  @Put('message-templates')
+  saveMessageTemplates(@Body() body: any, @Req() req: any) {
+    return this.complaintsService.saveMessageTemplates(body, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Get(':id/customer-message')
+  customerMessage(@Param('id') id: string, @Query('lang') lang: string, @Query('event') event: string) {
+    return this.complaintsService.customerMessage(id, lang, event);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Post(':id/evidence')
+  @UseInterceptors(FileInterceptor('file', { limits:{fileSize:5*1024*1024,files:1,fields:0} }))
+  uploadEvidence(@Param('id') id: string, @UploadedFile() file: any, @Req() req: any) {
+    return this.complaintsService.uploadEvidence(id,file,req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Get(':id/evidence/:attachmentId')
+  evidence(@Param('id') id: string, @Param('attachmentId') attachmentId: string) {
+    return this.complaintsService.evidenceImage(id,attachmentId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
+  @Post(':id/workflow')
+  workflow(@Param('id') id: string, @Body() dto: ComplaintWorkflowDto, @Req() req: any) {
+    return this.complaintsService.workflow(id, dto, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Get()
   async findAll() {
     return this.complaintsService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.complaintsService.findById(id);
+    return this.complaintsService.detail(id);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Post()
   async create(
     @Body() dto: CreateComplaintDto,
@@ -65,7 +106,7 @@ export class ComplaintsController {
     return this.complaintsService.create(dto, submittedBy, submittedById);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Roles('admin')
   @Put(':id')
   async update(
@@ -77,7 +118,7 @@ export class ComplaintsController {
     return this.complaintsService.update(id, dto, author);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Roles('admin')
   @Post(':id/resolve')
   async resolve(
@@ -89,7 +130,7 @@ export class ComplaintsController {
     return this.complaintsService.resolve(id, dto, resolvedBy);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Roles('admin')
   @Delete(':id')
   async remove(@Param('id') id: string) {
@@ -97,7 +138,7 @@ export class ComplaintsController {
     return { message: 'تم حذف الشكوى' };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Post(':id/progress-stage')
   async updateProgressStage(
     @Param('id') id: string,
@@ -112,7 +153,7 @@ export class ComplaintsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Post(':id/notes')
   async addNote(
     @Param('id') id: string,
@@ -123,7 +164,7 @@ export class ComplaintsController {
     return this.complaintsService.addNote(id, dto, author, req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Post(':id/notes/:noteId')
   async updateNote(
     @Param('id') id: string,
@@ -140,7 +181,7 @@ export class ComplaintsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Delete(':id/notes/:noteId')
   async removeNote(
     @Param('id') id: string,

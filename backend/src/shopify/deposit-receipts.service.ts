@@ -666,7 +666,7 @@ export class DepositReceiptsService {
     await this.refreshDerived(String(claimed._id));
     await this.followUpsService?.closeConfirmationForDeposit(claimed, admin.name || admin.username);
     this.emit(orderId, receiptId, 'معتمد');
-    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId });
+    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId }, r.submittedById);
     return { success: true, vaultTxNo: entry?.txNo || '' };
   }
 
@@ -694,7 +694,7 @@ export class DepositReceiptsService {
       ).exec();
     }
     this.emit(orderId, receiptId, 'مرفوض');
-    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':rejected', saved.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'rejected', receiptId });
+    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':rejected', saved.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'rejected', receiptId }, r.submittedById);
     return { success: true };
   }
 

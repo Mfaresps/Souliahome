@@ -14,6 +14,7 @@ import { DEFAULT_AFTER_SALES_POLICY, afterSalesQuote, money, requireOperation } 
 import { identityOperationKey } from '../inventory-units/failed-delivery-identities';
 import { NotificationsService } from '../notifications/notifications.service';
 import { projectAfterSalesShipment } from './after-sales-shipment';
+import { linkComplaintCase, recordComplaintExecution } from '../complaints/complaint-workflow';
 
 @Injectable()
 export class AfterSalesService {
@@ -41,6 +42,7 @@ export class AfterSalesService {
     const event = { ...last, action, by, eventId: `${row._id}:${key}`, caseId: String(row._id), caseRef: w.ref,
       stage: w.stage, kind: row.requestKind, originalRef: row.originalRef, replacementRef: w.replacementRef || '', returnRef: row.returnTxRef || '',
       settlement: action.startsWith('settlement:') ? (action === 'settlement:refund' ? w.refund : action === 'settlement:collection' ? w.collection : w.carrierSettlement) : undefined };
+    await recordComplaintExecution(this.connection, row, event, ctx.session);
     const ids = [row.originalTransactionId, w.replacementTxId, row.returnTxId].filter(Boolean).map(id => this.id(String(id)));
     await this.connection.collection('transactions').updateMany({ _id: { $in: ids }, 'afterSalesEvents.eventId': { $ne: event.eventId } },
       { $push: { afterSalesEvents: event } } as any, { session: ctx.session });
@@ -159,6 +161,7 @@ export class AfterSalesService {
       available: Number(inventory.find(i => i.code === p.code)?.warehouseBalances?.[tx.warehouseCode || 'MAIN'] || 0) })), prior };
   }
   async quote(body: any, session?: any) {
+    if (body.fulfillmentChannel && !['bosta','direct'].includes(body.fulfillmentChannel)) throw new BadRequestException('طريقة التنفيذ غير صالحة');
     const original: any = await this.connection.collection('transactions').findOne({ _id: this.id(body.originalTransactionId), type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } }, { session });
     if (!original || !(original.deliveredAt || original.bostaStatus === 'DELIVERED' || original.pickupStatus === 'Delivered')) throw new BadRequestException('الطلب يجب أن يكون مسلّمًا للعميل؛ فشل التوصيل له مسار مستقل');
     if (original.afterSales?.caseId && !await this.cases.exists({ _id: this.id(original.afterSales.caseId), 'workflow.stage': 'closed' }).session(session || null)) throw new ConflictException('أكمل تسوية الاستبدال السابق قبل فتح طلب جديد على البديل');
@@ -190,7 +193,7 @@ export class AfterSalesService {
     // Customer payment held by the courier is a receivable, not cash in our vault.
     const carrierHeld = original.deliverySource === 'BOSTA' && original.codCollectionStatus === 'CODWaitingCollection' ? Math.min(Number(original.remaining || 0), Number(original.bostaOriginalCod || 0)) : 0;
     const paid = Number(original.total || 0) - Number(original.remaining || 0) + carrierHeld;
-    if (credit > money(paid - prior.reduce((n, r) => n + Number(r.total || 0), 0)) + .01) throw new BadRequestException('قيمة المرتجع تتجاوز المبلغ المثبت دفعه؛ راجع تحصيل العميل أولًا');
+    if (credit > money(paid - prior.reduce((n, r) => n + Number(r.total || 0), 0) - Number(original.afterSales?.complaintRefunded || 0)) + .01) throw new BadRequestException('قيمة المرتجع تتجاوز الرصيد المتبقي بعد المبالغ المدفوعة والمرتجعات السابقة');
     const exchangeItems: any[] = [];
     if (body.kind === 'exchange') {
       if (!Array.isArray(body.exchangeItems) || !body.exchangeItems.length || body.exchangeItems.length > 100) throw new BadRequestException('اختر المنتج البديل');
@@ -206,7 +209,7 @@ export class AfterSalesService {
     }
     const replacement = money(exchangeItems.reduce((n, row) => n + row.total, 0));
     if (body.kind === 'exchange' && body.reason !== 'customer-choice' && replacement > credit && body.upgradeAccepted !== true) throw new BadRequestException('البديل أغلى؛ يلزم موافقة العميل على فرق الترقية أو اختيار بديل بلا تكلفة');
-    const fee = body.reason === 'customer-choice' && policy.customerFeesEnabled ? Number(body.customerFee ?? (body.kind === 'exchange' ? policy.exchangeFee : policy.returnFee)) : 0;
+    const fee = body.fulfillmentChannel !== 'direct' && body.reason === 'customer-choice' && policy.customerFeesEnabled ? Number(body.customerFee ?? (body.kind === 'exchange' ? policy.exchangeFee : policy.returnFee)) : 0;
     if (fee > 0 && !String(body.feeBasis || '').trim()) throw new BadRequestException('حدد سبب انطباق رسوم العميل وفق السياسة');
     const quote = afterSalesQuote(body.kind, body.reason, credit, replacement, fee);
     const deliveredAt = original.deliveredAt;
@@ -258,7 +261,7 @@ export class AfterSalesService {
   private closeIfComplete(row: any) {
     const w = row.workflow;
     if (w.receivedAt && (row.requestKind === 'return' || w.replacementDeliveredAt) &&
-      (!w.shipment || w.shipment.status === 'created') && (!w.quote.refundDue || w.refund) && (!w.quote.collectDue || w.collection) && w.carrierSettlement && !w.exception) w.stage = 'closed';
+      (!w.shipment || w.shipment.status === 'created') && (!w.quote.refundDue || w.refund) && (!w.quote.collectDue || w.collection) && (w.fulfillmentChannel === 'direct' || w.carrierSettlement) && !w.exception) w.stage = 'closed';
   }
   async create(body: any, actor: any) {
     this.permit(actor, 'transaction'); requireOperation(body);
@@ -278,10 +281,14 @@ export class AfterSalesService {
         priceDifference: money(data.quote.collectDue - data.quote.refundDue), reason: body.reason, reasonDetails: String(body.note || '').slice(0, 1000),
         requestedBy: by, status: 'معلق', maxRefundable: data.quote.credit,
         workflow: { version: 2, ref: await this.nextReference('AS', ctx), createKey: body.operationKey, createFingerprint: fingerprint,
-          stage: 'requested', quote: data.quote, policy: data.policy, requiresReview: data.requiresReview, days: data.days, allowedDays: data.allowedDays,
+          stage: 'requested', fulfillmentChannel:body.fulfillmentChannel || 'bosta', quote: data.quote, policy: data.policy, requiresReview: data.requiresReview, days: data.days, allowedDays: data.allowedDays,
           selectedUnits: data.items.flatMap(i => i.unitIds), selectedLines: data.items, warehouseCode: data.original.warehouseCode || 'MAIN',
           feeBasis: String(body.feeBasis || '').slice(0, 1000), upgradeAccepted: body.upgradeAccepted === true,
           operations: [], history: [{ action: 'requested', at: new Date().toISOString(), by }] } });
+      if (body.complaintId) {
+        await linkComplaintCase(this.connection, body.complaintId, row, { ...actor, name: by }, body.expectedComplaintRevision, ctx.session);
+        row.markModified('workflow');
+      }
       await row.save({ session: ctx.session });
       await this.publishEvent(row, 'requested', by, fingerprint, ctx);
       ctx.afterCommit.push(() => this.transactions.notifyUnitIdentitiesChanged(originalId));
@@ -299,8 +306,8 @@ export class AfterSalesService {
         const doc: any = { date: new Date().toISOString(), type: 'مبيعات', ref, client: row.client, phone: row.phone, items: row.exchangeItems,
           itemsTotal: q.replacement, total: money(q.replacement + q.customerFee), deposit: q.creditApplied, remaining: q.collectDue,
           payStatus: q.collectDue ? 'معلق' : 'مكتمل', shipCost: q.customerFee, discount: 0, payment: 'تسوية استبدال', employee: by,
-          warehouseCode: row.workflow.warehouseCode, pickupStatus: 'Pending', prepChecked: false, shipCo: original.shipCo || 'Bosta',
-          prepNote: `استبدال فاتورة #${row.originalRef}`, prepShipCo: 'Bosta',
+          warehouseCode: row.workflow.warehouseCode, pickupStatus: 'Pending', prepChecked: false, shipCo: row.workflow.fulfillmentChannel === 'direct' ? 'استلام مباشر' : original.shipCo || 'Bosta',
+          prepNote: `استبدال فاتورة #${row.originalRef}`, prepShipCo: row.workflow.fulfillmentChannel === 'direct' ? 'استلام مباشر' : 'Bosta',
           shippingAddress: original.shippingAddress, shippingCity: original.shippingCity, shippingGov: original.shippingGov, shippingBostaCity: original.shippingBostaCity,
           notes: `بديل مرتبط بطلب ${row.workflow.ref} وفاتورة #${row.originalRef}`,
           afterSales: { caseId: String(row._id), caseRef: row.workflow.ref, kind: row.requestKind, originalRef: row.originalRef, originalTransactionId: row.originalTransactionId, role: 'replacement', returnedQty: row.items.reduce((n: number, i: any) => n + Number(i.qty), 0), replacementQty: row.exchangeItems.reduce((n: number, i: any) => n + Number(i.qty), 0), creditApplied: q.creditApplied } };
@@ -329,6 +336,7 @@ export class AfterSalesService {
   async ship(id: string, body: any, actor: any) {
     this.permit(actor, 'shopify-prepare-ship');
     const reserved: any = await this.mutate(id, 'shipment-requested', body, actor, async (row, ctx) => {
+      if (row.workflow.fulfillmentChannel === 'direct') throw new ConflictException('طلب استلام وتسليم مباشر؛ لا يحتاج إنشاء بوليصة');
       if (!row.workflow.approvedAt || row.workflow.shipment || row.workflow.receivedAt && row.requestKind !== 'exchange') throw new ConflictException('الشحنة موجودة أو الطلب غير معتمد أو المرتجع مستلم بالفعل');
       if (row.requestKind === 'exchange') {
         const replacement: any = await this.connection.collection('transactions').findOne({ _id: this.id(row.workflow.replacementTxId), cancelled: { $ne: true } }, { session: ctx.session });
@@ -448,7 +456,13 @@ export class AfterSalesService {
   }
   delivery(id: string, body: any, actor: any) {
     return this.mutate(id, 'replacement-delivered', body, actor, async (row, ctx, by) => {
-      if (row.requestKind !== 'exchange' || !row.workflow.shipment?.deliveryId || body.confirmed !== true || !String(body.note || '').trim()) throw new BadRequestException('أكد تسليم البديل مع مرجع إثبات التسليم');
+      if (row.requestKind !== 'exchange' || row.workflow.fulfillmentChannel !== 'direct' && !row.workflow.shipment?.deliveryId || !row.workflow.approvedAt || body.confirmed !== true || !String(body.note || '').trim()) throw new BadRequestException('أكد تسليم البديل المعتمد مع مرجع إثبات التسليم');
+      if (row.workflow.fulfillmentChannel === 'direct') {
+        const replacement: any = await this.connection.collection('transactions').findOne({_id:this.id(row.workflow.replacementTxId)},{session:ctx.session});
+        if (!replacement?.prepChecked) throw new ConflictException('أكمل تجهيز وفحص البديل قبل التسليم المباشر');
+        const summary=await this.tracking.pickingSummary(row.workflow.replacementTxId);
+        if (summary.lines.some((line:any)=>line.units.length+line.skippedCount<line.qty||line.units.some((u:any)=>u.status!=='prepared'))) throw new ConflictException('هويات البديل غير مكتملة للتسليم');
+      }
       if (row.workflow.replacementDeliveredAt) throw new ConflictException('تم تأكيد تسليم البديل');
       row.workflow.replacementDeliveredAt = new Date().toISOString(); row.workflow.deliveryEvidence = body.note;
       const txId = row.workflow.replacementTxId;
@@ -478,6 +492,7 @@ export class AfterSalesService {
         if (!w.replacementDeliveredAt || w.collection || !q.collectDue) throw new ConflictException('التحصيل غير مستحق أو تم تنفيذه');
         amount = q.collectDue;
       } else if (body.kind === 'carrier') {
+        if (w.fulfillmentChannel === 'direct') throw new BadRequestException('التنفيذ المباشر لا توجد له تسوية ناقل');
         if (!w.receivedAt || row.requestKind === 'exchange' && !w.replacementDeliveredAt || w.carrierSettlement) throw new ConflictException('تسوية الناقل بعد اكتمال الشحنة والاستلام ولمرة واحدة');
         const cost = Number(body.actualCost);
         if (!Number.isFinite(cost) || cost < 0) throw new BadRequestException('تكلفة بوسطة غير صالحة');

@@ -154,7 +154,7 @@ function _puDailyGroupCard(group) {
   card.type = 'button'; card.className = 'pu-daily-group pu-stage-card pu-stage-shipped'; card.dataset.dailyGroup = group.key;
   card.innerHTML = `<div class="pu-group-accent"></div><div class="pu-group-header"><div class="pu-prep-content">
     <div class="pu-prep-heading"><span class="pu-shipped-heading">${_puGroupDatePreview(group.pickupDate) || `<span class="pu-ref-hero">${esc(group.pickupRef)}</span>`}<span class="pu-shipped-carrier">${esc(group.shipCo)}</span></span>${_puDailyCountHtml(group.orders.length)}</div>
-    <div class="pu-prep-amount"><span>${esc(_puDailyText('إجمالي المجموعة', 'Group total'))}</span><strong class="pu-group-total"><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></strong></div>
+    ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${esc(_puDailyText('إجمالي المجموعة', 'Group total'))}</span><strong class="pu-group-total"><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></strong></div>` : ''}
     <div class="pu-shipped-progress" role="progressbar" aria-label="${esc(_puDailyText('نسبة التسليم', 'Delivery progress'))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${deliveryPercent}" title="${delivered}/${group.orders.length}"><span style="width:${deliveryPercent}%"></span></div>
     <div class="pu-stage-detail pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}
     </div></div><div class="pu-group-footer"><span class="pu-card-btn pu-prep-open">${esc(_puDailyText('عرض الطلبات وحالاتها', 'View orders and statuses'))} ‹</span></div>`;
@@ -267,6 +267,6 @@ function _puDailyRunRowHtml(group, index, open) {
     <td><button type="button" class="pu-chevron" aria-expanded="${open}" aria-controls="${rowKey}" aria-label="${esc(_puDailyText('عرض أوردرات اليوم', 'View daily orders'))}">›</button></td>
     <td><span class="pu-ref-chip" dir="ltr" title="${esc(group.pickupRef)}">${esc(shortRef)}</span></td><td>${_puDailyTableDateHtml(group.pickupDate)}</td><td><span class="pu-daily-carrier">${esc(group.shipCo)}</span></td>
     <td><div class="pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}</td><td>${_puDailyCountHtml(group.orders.length)}</td>
-    <td><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></td><td></td></tr>
-    <tr class="pu-detail-row" data-run-detail="${esc(group.key)}" id="${rowKey}" style="display:${open ? 'table-row' : 'none'}"><td colspan="8"><div class="pu-detail-panel">${actions}${_puDailyOrdersHtml(group)}</div></td></tr>`;
+    ${_puCanViewShipmentTotals() ? `<td><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></td>` : '<td hidden></td>'}<td></td></tr>
+    <tr class="pu-detail-row" data-run-detail="${esc(group.key)}" id="${rowKey}" style="display:${open ? 'table-row' : 'none'}"><td colspan="${_puCanViewShipmentTotals() ? 8 : 7}"><div class="pu-detail-panel">${actions}${_puDailyOrdersHtml(group)}</div></td></tr>`;
 }

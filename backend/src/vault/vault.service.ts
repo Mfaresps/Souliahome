@@ -326,6 +326,7 @@ export class VaultService {
         date,
         desc: finalDesc,
         ...(typeof meta?.afterSalesId === 'string' ? { afterSalesId: meta.afterSalesId } : {}),
+        ...(typeof meta?.complaintId === 'string' ? { complaintId: meta.complaintId } : {}),
         ...(meta?.afterSales ? { afterSales: meta.afterSales } : {}),
         amount,
         seg,
@@ -424,6 +425,7 @@ export class VaultService {
   }
 
   private assertReceiptEntryLocked(entry: VaultEntryDocument): void {
+    if (entry.complaintId) throw new BadRequestException('حركة دفع مرتبطة بشكوى؛ لا يمكن تعديلها أو إلغاؤها من الخزنة منفردة');
     if (entry.afterSalesId) throw new BadRequestException('حركة مرتبطة بتسوية استرجاع أو استبدال؛ راجع ملف الطلب بدل تعديل الخزنة منفردة');
     if (entry.idempotencyKey?.startsWith('receipt:')) {
       throw new BadRequestException('حركة عربون مرتبطة بإيصال — استخدم إجراءات العربون في الطلب لضمان عدم تكرار الأموال');
