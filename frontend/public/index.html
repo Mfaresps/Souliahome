@@ -7068,32 +7068,11 @@ body.dark-mode .adb-search-wrap input,body.dark-mode .adb-range{background:var(-
 .ss-skeleton-cell{height:14px;flex:1}
 .ss-skeleton-cell--narrow{flex:0 0 60px}
 .ss-skeleton-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-/* ══ هيكل مؤشرات اللوحة (KPI) ══════════════════════════════════════════════
-   ⚠ الهيكل ده لازم يطابق `renderDashKpis` بالظبط: تلات كروت كبيرة في
-   `.ds-kpi-primary` وتحتها شريط `.ds-kpi-secondary`. الهيكل العام
-   (`renderSkeleton variant:'cards'`) كان بيحط كروت متساوية في `.ds-kpi-grid`
-   اللي هي `flex-direction:column`، فكانت بتطلع **شرايط بعرض الصفحة** مالهاش أي
-   علاقة بالشكل النهائي — والصفحة كانت بتنطّ لما الأرقام توصل.
-   بيستعمل نفس الـgrid ونفس المقاسات، فالمكان اللي بياخده الهيكل هو نفسه اللي
-   هتقعد فيه الكروت. */
-.ss-kpi-card{
-  background:var(--ds-surface);border:1px solid var(--ds-border);border-radius:12px;
-  padding:16px 18px;display:flex;flex-direction:column;gap:8px;
-}
-/* نفس ارتفاعات النص الحقيقي: العنوان 11px، الرقم 28px، السطر الفرعي 11.5px.
-   بنحجز ارتفاع الرقم كامل عشان الكارت مايقصرش وقت التحميل ويطول بعده. */
-.ss-kpi-card .ss-kpi-lbl{height:11px;width:42%}
-.ss-kpi-card .ss-kpi-val{height:28px;width:62%;border-radius:6px}
-.ss-kpi-card .ss-kpi-sub{height:11px;width:52%}
-@media(max-width:1100px){.ss-kpi-card .ss-kpi-val{height:24px}}
-@media(max-width:600px){.ss-kpi-card .ss-kpi-val{height:22px}}
-/* الشريط الثانوي — الفواصل بتيجي من الـgap فوق أرضية الحدود، نفس `.ds-kpi-secondary` */
-.ss-kpi2-cell{
-  background:var(--ds-surface);padding:10px 12px;
-  display:flex;flex-direction:column;align-items:flex-start;gap:5px;
-}
-.ss-kpi2-cell .ss-kpi-lbl{height:10.5px;width:58%}
-.ss-kpi2-cell .ss-kpi-val{height:13.5px;width:40%;border-radius:5px}
+/* Loading uses the real KPI cards; only unresolved values are placeholders. */
+.dashboard-v2 .ds-kpi.is-loading,.dashboard-v2 .ds-kpi2.is-loading{cursor:default}
+.dashboard-v2 .ds-loading-value{display:inline-block;width:4.5em;max-width:90%;height:.82em;vertical-align:baseline;border-radius:5px}
+.dashboard-v2 .ds-kpi2-val:has(.ds-loading-value){width:100%}
+@media(prefers-reduced-motion:reduce){.ss-skeleton{animation:none}}
 .ss-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.65);z-index:50;border-radius:inherit}
 body.dark-mode .ss-overlay{background:rgba(15,20,16,.65)}
 .ss-overlay-host{position:relative;min-height:80px}
@@ -16618,8 +16597,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 </style>
 <link rel="stylesheet" href="/navigation-shell.css?v=20261024-permission-dock">
-<link rel="stylesheet" href="/employee-home.css?v=20261027-task-clarity">
-<link rel="stylesheet" href="/admin-team-home.css?v=20261024-period">
+<link rel="stylesheet" href="/employee-home.css?v=20261028-staff-presence">
+<link rel="stylesheet" href="/admin-team-home.css?v=20261028-content-loading">
 <link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
 <link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261024-review-images">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
@@ -16630,7 +16609,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css?v=20261021-3">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/shopify-kpis.css?v=20261027-compact">
+<link rel="stylesheet" href="/shopify-kpis.css?v=20261028-content-loading">
 <link rel="stylesheet" href="/settings-responsive.css?v=20261020-connection-status">
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
@@ -16638,7 +16617,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
 <link rel="stylesheet" href="/shopify-order-peek.css?v=20261022-history">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261026-white-cards">
-<link rel="stylesheet" href="/shopify-responsive.css?v=20261022-pagination">
+<link rel="stylesheet" href="/shopify-responsive.css?v=20261028-content-loading">
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261022">
 <link rel="stylesheet" href="/inventory-responsive.css?v=20261020-1">
@@ -21269,10 +21248,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- /.sp-sticky-head -->
 
   <div id="sp-orders-tab-content" data-layout="cards">
-  <div id="sp-orders-loading" role="status" aria-live="polite" hidden></div>
   <!-- Period KPIs (اليوم / أمس / آخر 7 أيام) + report image — shopify-kpis.js.
        Its own period, independent of the table's search/date/filters. -->
   <section id="sp-kpi" aria-live="polite"></section>
+  <div id="sp-orders-loading" role="status" aria-live="polite" hidden></div>
   <!-- Table (desktop) + Cards (mobile) -->
   <div id="shopify-orders-table-wrap">
     <div id="shopify-orders-table-body"></div>
@@ -23627,13 +23606,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <script src="/deposit-history.js?v=20261019"></script>
-<script src="/shopify-kpis.js?v=20261025-order-state"></script>
+<script src="/shopify-kpis.js?v=20261028-content-loading"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261024-operation-icons-10">
-<script src="/after-sales.js?v=20261028-complaint-link"></script>
-<link rel="stylesheet" href="/complaint-flow.css?v=20261028-2">
-<script src="/complaint-flow.js?v=20261028-2"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261028-complaint-navigation">
+<script src="/after-sales.js?v=20261028-complaint-navigation"></script>
+<link rel="stylesheet" href="/complaint-flow.css?v=20261028-6">
+<script src="/complaint-flow.js?v=20261028-7"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
@@ -39548,18 +39527,19 @@ const DS_EYE_OFF  = '<svg class="ds-kpi-eye" viewBox="0 0 24 24" fill="none" str
 /* كارت المؤشر الرئيسي — رقم كبير + سطر فرعي. الأيقونة والمصدر باقيين بس بوزن
    أخف: الرقم هو اللي المفروض يتقرا الأول. */
 function _dsKpiPrimaryHtml(s) {
+  const loading = s.loading === true;
   const isRevealed = revealedStats[s.id] !== false;
   return `
-    <div class="ds-kpi is-primary" data-color="${s.color || ''}" onclick="revealDashboardStat('${s.id}')">
+    <div class="ds-kpi is-primary${loading?' is-loading':''}" data-color="${s.color || ''}" ${loading?'':`onclick="revealDashboardStat('${s.id}')"`}>
       ${s.alert ? '<span class="ds-kpi-alert" aria-hidden="true"></span>' : ''}
       <div class="ds-kpi-head">
         <span class="ds-kpi-label">${s.icon}<span>${esc(s.label)}</span></span>
         <div class="ds-kpi-tools">
           <button class="ds-kpi-info-btn" title="${esc(t('dsFieldDetails'))}" onclick="event.stopPropagation();openDsExplain('${s.id}')">i</button>
-          ${isRevealed ? DS_EYE_OPEN : DS_EYE_OFF}
+          ${loading ? '' : isRevealed ? DS_EYE_OPEN : DS_EYE_OFF}
         </div>
       </div>
-      <div class="ds-kpi-value${isRevealed ? '' : ' is-hidden'}">${isRevealed ? s.val : esc('••••••')}</div>
+      <div class="ds-kpi-value${isRevealed ? '' : ' is-hidden'}">${loading ? '<span class="ss-skeleton ds-loading-value" aria-hidden="true"></span>' : isRevealed ? s.val : esc('••••••')}</div>
       ${/* ⚠ مش esc() — الأسطر الفرعية بتتبني بـ t() جوّاها ناتج fmtJ()، واللي هو
              HTML (<span class="amt-cur">EGP</span>…). تغليفها بـesc كان بيطبع
              الوسوم كنص ظاهر على الكارت. المدخلات كلها أرقام من الباك عدّت على
@@ -39571,11 +39551,12 @@ function _dsKpiPrimaryHtml(s) {
 /* المؤشر الثانوي — سطر واحد: اسم على اليمين ورقم على اليسار. نفس الـonclick
    ونفس زرار الـ«i»، فمافيش وظيفة اتفقدت؛ الحجم بس هو اللي اتصغّر. */
 function _dsKpiSecondaryHtml(s) {
+  const loading = s.loading === true;
   const isRevealed = revealedStats[s.id] !== false;
   return `
-    <div class="ds-kpi2${s.alert ? ' has-alert' : ''}" onclick="revealDashboardStat('${s.id}')" title="${escHtml(s.label)}">
+    <div class="ds-kpi2${s.alert ? ' has-alert' : ''}${loading?' is-loading':''}" ${loading?'':`onclick="revealDashboardStat('${s.id}')"`} title="${escHtml(s.label)}">
       <span class="ds-kpi2-label">${s.icon}<span>${esc(s.label)}</span></span>
-      <span class="ds-kpi2-val${isRevealed ? '' : ' is-hidden'}">${isRevealed ? s.val : esc('••••')}</span>
+      <span class="ds-kpi2-val${isRevealed ? '' : ' is-hidden'}">${loading ? '<span class="ss-skeleton ds-loading-value" aria-hidden="true"></span>' : isRevealed ? s.val : esc('••••')}</span>
       <button class="ds-kpi-info-btn ds-kpi2-i" title="${esc(t('dsFieldDetails'))}" onclick="event.stopPropagation();openDsExplain('${s.id}')">i</button>
     </div>`;
 }
@@ -39589,41 +39570,24 @@ function _dsKpiSecondaryHtml(s) {
    يفضل غلط من غير ما حاجة تبان. */
 function renderDashKpiSkeleton() {
   const el = qs('#dash-stats');
-  if (!el) return;
-  let primary = 3, secondary = 7;
-  try {
-    const kpis = buildDashKpis({});
-    primary   = kpis.filter(k => k.tier === 1).length || primary;
-    secondary = kpis.filter(k => k.tier !== 1).length || secondary;
-  } catch (_) {}
+  if (!el || !isAdmin()) return;
+  const kpis = buildDashKpis({}).map(k=>({...k,loading:true}));
   el.style.display = '';
-  el.innerHTML =
-    `<div class="ds-kpi-primary">${
-      Array.from({ length: primary }, () => `<div class="ss-kpi-card">
-        <div class="ss-skeleton ss-kpi-lbl"></div>
-        <div class="ss-skeleton ss-kpi-val"></div>
-        <div class="ss-skeleton ss-kpi-sub"></div>
-      </div>`).join('')
-    }</div>` +
-    (secondary ? `<div class="ds-kpi-secondary">${
-      Array.from({ length: secondary }, () => `<div class="ss-kpi2-cell">
-        <div class="ss-skeleton ss-kpi-lbl"></div>
-        <div class="ss-skeleton ss-kpi-val"></div>
-      </div>`).join('')
-    }</div>` : '');
+  el.innerHTML = `<div class="ds-kpi-primary">${kpis.filter(k=>k.tier===1).map(_dsKpiPrimaryHtml).join('')}</div><div class="ds-kpi-secondary">${kpis.filter(k=>k.tier!==1).map(_dsKpiSecondaryHtml).join('')}</div>`;
 }
 
-/* آخر ردّ من /transactions/dashboard. لوحة «يحتاج انتباهك» بتقرا منه
-   `lowStockCount` بدل ما تحسب المخزون من تاني في الفرونت — عشان الرقمين اللي على
-   نفس الشاشة مايختلفوش. بيتحدّث في renderDashKpis اللي بيتنادى بعد كل fetch. */
 let _dashLastStats = {};
+let _dashStatsOwner = '', _dashStatsLoaded = false, _dashLoadRun = 0;
+const _dashIdentity = () => String(currentUser?._id || currentUser?.userId || currentUser?.id || '');
 
 function renderDashKpis(d) {
   _dashLastStats = d || {};
   if (!isAdmin()) {
+    _dashStatsLoaded = false; _dashStatsOwner = '';
     qs('#dash-stats').style.display = 'none';
     return;
   }
+  _dashStatsOwner = _dashIdentity(); _dashStatsLoaded = true;
   qs('#dash-stats').style.display = '';
   const kpis = buildDashKpis(d);
   const primary   = kpis.filter(k => k.tier === 1);
@@ -41928,6 +41892,7 @@ function renderDashWelcome(isEntry) {
 }
 
 async function loadDashboard(isEntry) {
+  const run = ++_dashLoadRun, account = _dashIdentity();
   renderDashWelcome(isEntry === true);
   renderDashRefreshBtn();
   if (!isAdmin()) {
@@ -41952,11 +41917,18 @@ async function loadDashboard(isEntry) {
   /* ⚠ الهيكل ده بشكل المؤشرات نفسها، مش كروت عامة — شوف `renderDashKpiSkeleton`.
      وبيتحط بعد حارس `isAdmin()` فوق: غير الأدمن بيتخبّى عنده `#dash-stats` أصلاً،
      فرسم هيكل فيه معناه وميض لشبكة عمرها ما هتتملى. */
-  renderDashKpiSkeleton();
-  renderTableSkeleton(qs('#dash-top-sellers tbody'), 3);
-  renderTableSkeleton(qs('#dash-low-sellers tbody'), 3);
+  const hasStats = _dashStatsLoaded && _dashStatsOwner === account;
+  const statsHost = qs('#dash-stats');
+  statsHost.querySelector('.dash-refresh-error')?.remove();
+  statsHost.setAttribute('aria-busy','true');
+  if (!hasStats) {
+    renderDashKpiSkeleton();
+    renderTableSkeleton(qs('#dash-top-sellers tbody'), 3);
+    renderTableSkeleton(qs('#dash-low-sellers tbody'), 3);
+  }
   try {
     const d = await api('/transactions/dashboard');
+    if (run !== _dashLoadRun || account !== _dashIdentity() || !isAdmin()) return;
     renderDashKpis(d);
     renderDashTable('#dash-top-sellers tbody', (d.topSellers || []).slice(0, 10), r =>
       `<td>${esc(r.name || r._id)}</td><td class="ds-num">${fmtN(r.qty || r.totalQty)}</td><td class="ds-num">${fmtJ(r.total || r.totalRevenue)}</td>`);
@@ -41971,9 +41943,15 @@ async function loadDashboard(isEntry) {
     /* ⚠ «فشل التحميل» غير «مافيش بيانات» — قاعدة الحالات التلاتة. الرسالة
        الجافة القديمة كانت بتمسح الشبكة وتسيب المستخدم من غير طريق رجوع؛ دي
        بتدّي زرار إعادة محاولة. */
-    qs('#dash-stats').innerHTML = loadErrorState('dashboard', 'loadDashboard()');
-    renderDashTable('#dash-top-sellers tbody', [], () => '');
-    renderDashTable('#dash-low-sellers tbody', [], () => '');
+    if (run !== _dashLoadRun || account !== _dashIdentity() || !isAdmin()) return;
+    if (hasStats) statsHost.insertAdjacentHTML('beforeend', `<div class="dash-refresh-error" role="alert">${loadErrorState('dashboard', 'loadDashboard()')}</div>`);
+    else {
+      statsHost.innerHTML = loadErrorState('dashboard', 'loadDashboard()');
+      renderDashTable('#dash-top-sellers tbody', [], () => '');
+      renderDashTable('#dash-low-sellers tbody', [], () => '');
+    }
+  } finally {
+    if (run === _dashLoadRun) statsHost.setAttribute('aria-busy','false');
   }
   loadDashboardTreasury();
   _renderStaffDashboard(true);
@@ -65039,6 +65017,7 @@ function _pmCopyName(name) {
 
 /** مرجع القائمة المفتوحة حالياً: { sel, wrap, panel, btn, onDoc, onKey, cleanup }. */
 let _pmSelOpen = null;
+let _pmSelSequence = 0;
 
 /** يحوّل كل <select> داخل مودال الصنف إلى قائمة مصممة (يتخطى ما حُوّل سابقاً). */
 function _pmEnhanceSelects(root) {
@@ -65064,6 +65043,7 @@ function _pmEnhanceSelects(root) {
     btn.setAttribute('aria-expanded', 'false');
     const label = wrap.parentElement?.querySelector('label');
     if (label) btn.setAttribute('aria-label', label.textContent.trim());
+    if (sel.hasAttribute('aria-labelledby')) btn.setAttribute('aria-labelledby', sel.getAttribute('aria-labelledby'));
     btn.innerHTML = '<span class="pm-sel-txt"></span>'
       + '<svg class="pm-sel-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
@@ -65136,6 +65116,17 @@ function _pmSelOpen1(wrap) {
   const panel = document.createElement('div');
   panel.className = 'pm-sel-panel';
   panel.setAttribute('role', 'listbox');
+  panel.id = `pm-select-options-${++_pmSelSequence}`;
+  btn.setAttribute('aria-controls', panel.id);
+  if (btn.hasAttribute('aria-labelledby')) panel.setAttribute('aria-labelledby', btn.getAttribute('aria-labelledby'));
+  const dialogHost = wrap.closest('dialog[open]');
+  if (dialogHost) {
+    panel.dir = dialogHost.dir || document.documentElement.dir;
+    if (dialogHost.classList.contains('cf-dialog')) panel.classList.add('cf-select-panel');
+    // A body portal sits behind a modal dialog. A popover inside the dialog
+    // stays interactive in the top layer and escapes its scrolling/clipping.
+    if (typeof panel.showPopover === 'function') panel.setAttribute('popover', 'manual');
+  }
   // عجلة الفأرة فوق اللوحة تُمرّر القائمة فقط ولا تصل للمودال خلفها — وإلا تحرّك
   // المودال تحتها فابتعد الزر عن اللوحة (overscroll-behavior وحده لا يكفي في كل المتصفحات).
   panel.addEventListener('wheel', e => e.stopPropagation(), { passive: true });
@@ -65168,6 +65159,7 @@ function _pmSelOpen1(wrap) {
       b.textContent = optLabel;
     }
     b.dataset.idx = String(i);
+    b.id = `${panel.id}-${i}`;
     b.disabled = o.disabled || !!o.parentElement?.disabled;
     b.setAttribute('role', 'option');
     b.setAttribute('aria-selected', String(i === sel.selectedIndex));
@@ -65178,7 +65170,8 @@ function _pmSelOpen1(wrap) {
     list.appendChild(b);
   });
   panel.appendChild(list);
-  document.body.appendChild(panel);
+  (dialogHost || document.body).appendChild(panel);
+  if (panel.hasAttribute('popover')) panel.showPopover();
 
   _pmSelPosition(panel, btn);
   wrap.classList.add('is-open');
@@ -65214,6 +65207,7 @@ function _pmSelOpen1(wrap) {
   if (sea) sea.focus();
   const cur = list.querySelector('.is-selected');
   if (cur && !cur.disabled) { cur.classList.add('is-active'); cur.scrollIntoView({ block: 'nearest' }); }
+  if (!sea) (cur && !cur.disabled ? cur : list.querySelector('button:not(:disabled)'))?.focus({preventScroll:true});
 }
 
 /** يضع اللوحة تحت الزر، أو فوقه إن ضاقت المساحة أسفل الشاشة. */
@@ -65268,7 +65262,7 @@ function _pmSelFilter(panel, q) {
 
 /** تنقل بالكيبورد: أسهم/Enter/Escape داخل اللوحة المفتوحة. */
 function _pmSelKeyNav(e, panel, sel, wrap) {
-  if (e.key === 'Tab') { _pmSelClose(); return; }
+  if (e.key === 'Tab') { _pmSelClose(); wrap.querySelector('.pm-sel-btn')?.focus(); return; }
   if (e.key === 'Escape') { e.preventDefault(); _pmSelClose(); wrap.querySelector('.pm-sel-btn')?.focus(); return; }
   const opts = qsa('.pm-sel-opt', panel).filter(o => o.style.display !== 'none' && !o.disabled);
   if (!opts.length) return;
@@ -65281,6 +65275,7 @@ function _pmSelKeyNav(e, panel, sel, wrap) {
     opts.forEach(o => o.classList.remove('is-active'));
     opts[next].classList.add('is-active');
     opts[next].scrollIntoView({ block: 'nearest' });
+    if (!panel.querySelector('.pm-sel-search')) opts[next].focus({preventScroll:true});
   } else if (e.key === 'Enter') {
     e.preventDefault();
     const pick = cur >= 0 ? opts[cur] : opts[0];
@@ -65296,8 +65291,10 @@ function _pmSelClose() {
   cleanup();
   wrap.classList.remove('is-open');
   wrap.querySelector('.pm-sel-btn')?.setAttribute('aria-expanded', 'false');
+  wrap.querySelector('.pm-sel-btn')?.removeAttribute('aria-controls');
   panel.classList.remove('show');
-  setTimeout(() => panel.remove(), 180);
+  if (panel.hasAttribute('popover')) { panel.hidePopover(); panel.remove(); }
+  else setTimeout(() => panel.remove(), 180);
 }
 
 /** Renders the extra-images gallery (thumbnails + a "+" tile) in the product modal's image panel. */
@@ -91471,7 +91468,7 @@ function renderComplaints() {
   window.ComplaintFlow?.mount();
   // populate employee filter
   const empSel = qs('#cmp-emp-filter');
-  const empSet = new Set(complaints.map(c => c.submittedBy).filter(Boolean));
+  const empSet = new Set(complaints.map(c => window.ComplaintFlow ? ComplaintFlow.owner(c) : c.submittedBy).filter(Boolean));
   const empVal = empSel.value;
   empSel.innerHTML = `<option value="">${esc(t('cmpAllEmployees'))}</option>` + [...empSet].map(e => `<option value="${esc(e)}"${empVal===e?' selected':''}>${esc(e)}</option>`).join('');
 
@@ -91493,13 +91490,13 @@ function renderComplaints() {
     if (window.ComplaintFlow && !window.ComplaintFlow.matches(c)) return false;
     if (cmpTabFilter === 'followup') { if (!c.inFollowUp) return false; }
     else if (statusF) { if (c.status !== statusF) return false; }
-    if (empF && c.submittedBy !== empF) return false;
+    if (empF && (window.ComplaintFlow ? ComplaintFlow.owner(c) : c.submittedBy) !== empF) return false;
     if (priorityF && (c.priority || 'متوسطة') !== priorityF) return false;
     const dStr = (c.createdAt || '').slice(0, 10);
     if (fromF && dStr < fromF) return false;
     if (toF && dStr > toF) return false;
     if (search) {
-      const haystack = [c.complaintNo, c.clientName, c.submittedBy, c.description, c.transactionRef].join(' ').toLowerCase();
+      const haystack = window.ComplaintFlow ? ComplaintFlow.searchText(c) : [c.complaintNo, c.clientName, c.submittedBy, c.description, c.transactionRef].join(' ').toLowerCase();
       if (!haystack.includes(search)) return false;
     }
     return true;
@@ -91546,6 +91543,7 @@ function renderComplaints() {
 
   const tbody = qs('#cmp-tbody');
   const cardsBox = qs('#cmp-cards');
+  const visibleRows = window.ComplaintFlow ? ComplaintFlow.pageRows(data) : data;
   if (!data.length) {
     // ثلاث حالات: فشل تحميل / لا نتائج للفلتر / لا شكاوى أصلاً. النص القديم
     // «ستظهر شكاوى العملاء الجديدة هنا تلقائياً» كان يُعرض حتى تحت فلتر نشط،
@@ -91562,11 +91560,12 @@ function renderComplaints() {
       <div class="cmp-empty-title">${t('cmpEmptyTitle')}</div>
       <div class="cmp-empty-sub">${t('cmpEmptySub')}</div>
     </div>`;
-    tbody.innerHTML = `<tr><td colspan="9">${_cmpEmptyHtml}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${window.ComplaintFlow?10:9}">${_cmpEmptyHtml}</td></tr>`;
     cardsBox.innerHTML = _cmpEmptyHtml;
     return;
   }
-  tbody.innerHTML = data.map((c, _cmpIdx) => {
+  tbody.innerHTML = visibleRows.map((c, _cmpIdx) => {
+    if (window.ComplaintFlow) return ComplaintFlow.tableRow(c);
     const elapsedHtml = c.createdAt ? `<span style="font-size:.7rem;color:var(--muted)">${fmtElapsed(c.createdAt)}</span>` : '—';
     return `<tr data-complaint-id="${c._id}" style="animation-delay:${Math.min(_cmpIdx,20)*18}ms" onclick="viewComplaint('${c._id}')">
       <td>${cmpNoBadge(c)}</td>
@@ -91581,10 +91580,11 @@ function renderComplaints() {
     </tr>`;
   }).join('');
 
-  cardsBox.innerHTML = data.map((c, _cmpCardIdx) => cmpRenderListCard(c, _cmpCardIdx)).join('');
+  cardsBox.innerHTML = visibleRows.map((c, _cmpCardIdx) => cmpRenderListCard(c, _cmpCardIdx)).join('');
 }
 
 function cmpRenderListCard(c, _cmpCardIdx) {
+  if (window.ComplaintFlow) return ComplaintFlow.listCard(c);
   const elapsedHtml = c.createdAt ? fmtElapsed(c.createdAt) : '—';
   const desc = (c.description || '').trim();
   const descId = 'cmp-desc-' + c._id;
@@ -102696,11 +102696,17 @@ function _spEnsureOrdersLayout() {
 function _spShowOrdersLoading() {
   const loading = qs('#sp-orders-loading');
   if (!loading) return;
-  const line = '<div class="sp-orders-loading-line"><i></i><i></i></div>';
   const hidden = _getHiddenSpCols();
-  const sizes = [SP_COL_W_FIXED, ...Object.keys(SP_COL_W).filter(id => !hidden.has(id)).map(id => SP_COL_W[id])];
-  const row = '<div style="grid-template-columns:' + sizes.map(size => size + 'px').join(' ') + '">' + sizes.map(() => '<i></i>').join('') + '</div>';
-  loading.innerHTML = '<div class="sp-orders-loading-cards" aria-hidden="true">' + Array.from({length:3}, () => '<div class="sp-orders-loading-card">' + line.repeat(3) + '</div>').join('') + '</div><div class="sp-orders-loading-table" aria-hidden="true">' + row.repeat(5) + '</div>';
+  const cols = SP_COLS.filter(col => SP_COL_W[col.id] && !hidden.has(col.id));
+  const bar = (kind='') => `<i class="ss-skeleton sp-loading-bar ${kind}"></i>`;
+  const cells = cols.map(col => {
+    const photo = col.id === 'items' && !hidden.has('thumbs');
+    const stacked = ['ref','items','deposit','assigned'].includes(col.id) || col.id === 'client' && !hidden.has('phone');
+    return `<td data-loading-col="${col.id}">${photo?bar('is-photo'):''}<div class="sp-loading-cell">${bar()}${stacked?bar('is-short'):''}</div></td>`;
+  }).join('');
+  const total = SP_COL_W_FIXED + cols.reduce((sum,col)=>sum+SP_COL_W[col.id],0);
+  const card = `<article class="sp-orders-loading-card"><div class="sp-loading-card-head"><div>${bar('is-ref')}${bar('is-name')}${bar('is-short')}</div><div>${bar('is-amount')}${bar('is-short')}</div></div><div class="sp-loading-card-items">${bar('is-photo')}<div>${bar()}${bar('is-short')}</div></div><div class="sp-loading-card-foot">${bar('is-button')}${bar('is-button')}</div></article>`;
+  loading.innerHTML = `<div class="sp-orders-loading-cards" aria-hidden="true">${card.repeat(3)}</div><div class="sp-orders-loading-table" aria-hidden="true"><div class="sp-loading-table-scroll"><table style="min-width:${total}px"><colgroup><col style="width:${SP_COL_W_FIXED}px">${cols.map(col=>`<col style="width:${SP_COL_W[col.id]}px">`).join('')}</colgroup><thead><tr><th>${bar('is-check')}</th>${cols.map(col=>`<th data-loading-col="${col.id}">${esc(currentLang==='en'?col.en:col.ar)}</th>`).join('')}</tr></thead><tbody><tr class="sp-loading-day"><td colspan="${cols.length+1}">${bar('is-short')}</td></tr>${`<tr><td>${bar('is-check')}</td>${cells}</tr>`.repeat(4)}</tbody></table></div></div>`;
   loading.setAttribute('aria-label', t('spOrdersLoading'));
   loading.dataset.state = 'loading';
   loading.hidden = false;
@@ -103397,6 +103403,7 @@ function _spVisibleColCount() {
 
 function applyShopifyColsVisibility() {
   const hidden = _getHiddenSpCols();
+  if (qs('#sp-orders-loading:not([hidden])[data-state="loading"]')) _spShowOrdersLoading();
   SP_COLS.forEach(c => {
     const show = !hidden.has(c.id);
     qsa(`#shopify-orders-table-body [data-col="${c.id}"]`).forEach(el => { el.style.display = show ? '' : 'none'; });
@@ -110381,7 +110388,7 @@ function _spRenderHistoryTab() {
 // ===================== End Shopify Orders =====================
 </script>
 <script src="/navigation-shell.js?v=20261024-stable-sidebar"></script>
-<script src="/admin-team-home.js?v=20261026-confirmation"></script>
+<script src="/admin-team-home.js?v=20261028-content-loading"></script>
 <script src="/shopify-edit-approvals.js?v=20261024-review-images"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">

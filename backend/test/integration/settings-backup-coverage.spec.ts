@@ -85,7 +85,7 @@ describe('SettingsService backup coverage', () => {
       'inventoryunits', 'inventoryunitevents',
       'vaultbalances',
       'carrierimports', 'carrierpayouts', 'orderaudits',
-      'depositreceiptidentities',
+      'depositreceiptidentities', 'complaintevidence',
     ]) {
       expect(BACKUP).toContain(col);
       expect(sectionCols).toContain(col);

@@ -60,3 +60,23 @@
 }
 
 .ath-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.ath-controls label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#526171}.ath-controls input{font:inherit;min-height:40px;box-sizing:border-box;max-width:100%;padding:6px 10px;border:1px solid #d8e1e9;border-radius:9px;background:#fff;color:#17212d}.ath-controls input:focus-visible{outline:2px solid #236443;outline-offset:2px}.ath-period-help,.ath-totals small{font-size:11px;color:#526171;line-height:1.6}.ath-period-help{margin:10px 0 0}
+
+/* Placeholders follow the actual totals, employee list and task cards. */
+.ath-skeleton-line{display:inline-block;vertical-align:middle;width:140px;max-width:100%;height:12px;border-radius:5px}
+.ath-skeleton-line.is-short{width:80px;height:9px}
+.ath-skeleton-line.is-ref{width:110px;height:18px}
+.ath-skeleton-line.is-value{width:2em;height:.8em}
+.ath-skeleton-line.is-button{width:90px;height:32px;border-radius:7px;flex-shrink:0}
+.admin-team-home .ath-loading .ath-person{display:grid;gap:10px;min-height:72px;cursor:default;background:var(--bg,#fff);border:1px solid var(--border,#d8e1e9);border-radius:9px}
+.ath-loading-tasks .ath-task{min-height:106px}
+.ath-loading-tasks .ath-task-main>div{display:grid;gap:12px;min-width:0}
+.ath-loading .ath-person-header{min-height:32px}
+.ath-loading .ath-totals small{min-height:17px}
+@media(prefers-reduced-motion:reduce){.admin-team-home .ss-skeleton{animation:none}}
+body.dark-mode .admin-team-home{background:var(--surface);border-color:var(--border);color:var(--text)}
+body.dark-mode .admin-team-home :is(.ath-totals>div,.ath-workspace,.ath-task,.ath-person-metrics>span,.ath-controls input,button){background:var(--bg);border-color:var(--border);color:var(--text)}
+body.dark-mode .admin-team-home :is(.ath-employees,.ath-performance>span){background:var(--surface2);border-color:var(--border)}
+body.dark-mode .admin-team-home :is(h3,h4,bdi,.ath-person-name,.ath-note p,.ath-schedule time){color:var(--text)}
+body.dark-mode .admin-team-home :is(.ath-header p,.ath-period-help,.ath-totals span,.ath-totals small,.ath-person-header small,.ath-person-header>span,.ath-performance,.ath-person-metrics>span,.ath-task-main p,.ath-preview-note,.ath-empty,.ath-controls label){color:var(--muted)}
+body.dark-mode .admin-team-home .ath-filters button[aria-pressed=true]{background:var(--accent);color:var(--bg)}
+body.dark-mode .admin-team-home :is(.ath-totals .is-issue,.ath-error){background:color-mix(in srgb,#ef4444 12%,var(--bg));border-color:color-mix(in srgb,#ef4444 30%,var(--border));color:#fca5a5}

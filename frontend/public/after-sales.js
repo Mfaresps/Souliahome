@@ -82,18 +82,52 @@
   const reasonLabel = v => ({ 'customer-choice':tr('رغبة العميل','Customer preference'),defect:tr('عيب في المنتج','Product defect'),'wrong-item':tr('خطأ في المنتج المرسل','Wrong item sent') }[v]||v);
   const actionLabel = v => ({'step-rolled-back':tr('التراجع عن خطوة','Step undone'),'shipment-created':tr('إنشاء بوليصة بوسطة','Bosta waybill created'),'carrier-status':tr('تحديث حالة بوسطة','Bosta status updated'),requested:tr('تسجيل الطلب','Request submitted'),approved:tr('اعتماد الطلب','Request approved'),cancelled:tr('إلغاء الطلب','Case cancelled'),'shipment-requested':tr('طلب شحنة بوسطة','Bosta shipment requested'),'shipment-linked':tr('مطابقة البوليصة','Shipment reconciled'),'received-and-inspected':tr('استلام وفحص المرتجع','Return received and inspected'),'replacement-delivered':tr('تأكيد تسليم البديل','Replacement delivered'),'settlement:refund':tr('رد المبلغ للعميل','Customer refunded'),'settlement:collection':tr('تحصيل فرق العميل','Customer difference collected'),'settlement:carrier':tr('تسوية بوسطة','Carrier settled'),exception:tr('تسجيل مشكلة','Issue recorded'),'exception-resolved':tr('معالجة المشكلة','Issue resolved')}[v]||v);
   let dialog, serial = 0, busy = false, activeCase, activeInvoice, quoteSerial = 0, caseReturn = null;
+  let complaintOrigin=null,suspendedView=null,activeCaseOwner='';
+  const navigationOwner=()=>String(currentUser?._id||currentUser?.userId||'');
+  const originKey=origin=>`${origin.complaintId}:`+(origin.caseId?`case:${origin.caseId}`:`create:${origin.invoiceId}:${origin.kind}:${origin.expectedComplaintRevision}`);
+  function showComplaintNavigation(){
+    if(complaintOrigin?.owner!==navigationOwner()){complaintOrigin=null;suspendedView=null;}
+    dialog?.toggleAttribute('data-as-from-complaint',!!complaintOrigin);
+    const head=el('.as-head');if(!head)return;
+    head.querySelector('[data-as-complaint-nav]')?.remove();
+    if(!complaintOrigin)return;
+    el('.as-close')?.setAttribute('aria-label',tr('رجوع لملف الشكوى','Back to complaint'));
+    const nav=document.createElement('div');nav.className='as-complaint-nav';nav.dataset.asComplaintNav='';
+    nav.innerHTML=`<button type="button" class="btn btn-outline" data-as-back-complaint><span aria-hidden="true">${tr('→','←')}</span> ${tr('رجوع لملف الشكوى','Back to complaint')}</button><span><bdi>${esc(complaintOrigin.complaintNo||'')}</bdi><small>${tr('الشكوى / الاستبدال والاسترجاع','Complaint / returns and exchanges')}</small></span>`;
+    nav.querySelector('button').onclick=backToComplaint;head.appendChild(nav);
+  }
+  function backToComplaint(){
+    if(busy||!complaintOrigin)return;
+    const origin=complaintOrigin;
+    suspendedView={key:originKey(origin),owner:navigationOwner(),serial,top:el('.as-body')?.scrollTop||0};
+    // Open the destination before closing this dialog: the backdrop stays continuous.
+    const task=window.ComplaintFlow?.resume(origin.complaintId);
+    if(document.querySelector('.cf-dialog[open]')){serial++;suspendedView.serial=serial;dialog.close();}
+    return task;
+  }
+  function fromComplaint(origin){
+    if(busy)return;
+    const next={...origin,owner:navigationOwner()},key=originKey(next);
+    const resume=suspendedView&&suspendedView.owner===next.owner&&suspendedView.key===key&&suspendedView.serial===serial&&dialog?.querySelector('form');
+    complaintOrigin=next;
+    if(resume){const top=suspendedView.top;suspendedView=null;showComplaintNavigation();dialog.showModal();el('.as-body').scrollTop=top;el('[data-as-back-complaint]')?.focus({preventScroll:true});return;}
+    if(suspendedView?.key===key)caseReturn={id:String(origin.caseId),top:suspendedView.top};
+    suspendedView=null;
+    return origin.caseId?open(origin.caseId,true):create(origin.invoiceId,origin.kind,origin);
+  }
   function show(title, subtitle, html) {
     serial++;
-    if (!dialog) { dialog = document.createElement('dialog'); dialog.className = 'as-dialog'; document.body.appendChild(dialog); dialog.addEventListener('cancel', e => { if (busy) e.preventDefault(); }); }
+    if (!dialog) { dialog = document.createElement('dialog'); dialog.className = 'as-dialog'; document.body.appendChild(dialog); dialog.addEventListener('cancel', e => { if (busy||complaintOrigin){e.preventDefault();if(!busy)backToComplaint();} }); }
     const wasOpen = dialog.open;
     dialog.dir = tr('rtl','ltr'); dialog.setAttribute('aria-labelledby','as-title');
     dialog.innerHTML = `<header class="as-head"><div><h2 id="as-title">${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button type="button" class="as-close" aria-label="${tr('إغلاق','Close')}">×</button></header><div class="as-body"><div data-as-message role="status"></div>${html}</div>`;
     dialog.classList.toggle('as-compact', !!dialog.querySelector('form') && !dialog.querySelector('.as-grid'));
-    dialog.querySelector('.as-close').onclick = () => { if (!busy) dialog.close(); };
+    dialog.querySelector('.as-close').onclick = () => { if (!busy){if(complaintOrigin)backToComplaint();else dialog.close();} };
+    showComplaintNavigation();
     if (!dialog.open) dialog.showModal();
     if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      const target = wasOpen ? dialog.querySelector('.as-body') : dialog;
-      target.animate?.([{ opacity: 0, transform: wasOpen ? 'translateY(4px)' : 'scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: wasOpen ? 140 : 200, easing: 'ease-out' });
+      const inside=wasOpen||!!complaintOrigin,target=inside?dialog.querySelector('.as-body'):dialog;
+      target.animate?.([{ opacity: complaintOrigin ? .65 : 0, transform: inside ? 'translateY(4px)' : 'scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: inside ? 140 : 200, easing: 'ease-out' });
     }
     return serial;
   }
@@ -271,6 +305,7 @@
   }
   async function create(invoiceId, kind = 'return', complaint = null) {
     if (!allowed('transaction')) return;
+    if(!complaint||complaintOrigin?.complaintId!==complaint.complaintId){complaintOrigin=complaint?{...complaint,invoiceId,kind,owner:navigationOwner()}:null;suspendedView=null;}
     const version = show(tr('طلب استرجاع أو استبدال','Return or exchange request'), '', tr('جارٍ تحميل الفاتورة…','Loading invoice…'));
     try {
       const data = await api('/after-sales/invoice/' + encodeURIComponent(invoiceId));
@@ -353,7 +388,7 @@
       }
       let timer; form.oninput = () => { clearTimeout(timer); timer=setTimeout(calculate,250); };
       form.onchange = event => { clearTimeout(timer); if(['kind','reason','fulfillmentChannel'].includes(event.target.name)) field('customerFee').value=field('fulfillmentChannel').value!=='direct'&&field('reason').value==='customer-choice'?Number(data.policy[field('kind').value==='exchange'?'exchangeFee':'returnFee']||0):0; void calculate(); };
-      form.onsubmit = async event => { event.preventDefault(); if(busy)return; setBusy(true); try { const result=await post('', '', payload()); await refresh(); if (complaint) void window.ComplaintFlow?.changed(); await open(result._id); message(tr('تم تسجيل الطلب وإرساله للمراجعة.','The request was submitted for review.'),false); } catch(error){message(error.message);} finally{setBusy(false);} };
+      form.onsubmit = async event => { event.preventDefault(); if(busy)return; setBusy(true); try { const result=await post('', '', payload()); if(complaintOrigin)complaintOrigin.caseId=result._id; await refresh(); if (complaint) void window.ComplaintFlow?.changed(); await open(result._id); message(tr('تم تسجيل الطلب وإرساله للمراجعة.','The request was submitted for review.'),false); } catch(error){message(error.message);} finally{setBusy(false);} };
       await calculate();
     } catch(error) { message(error.message); }
   }
@@ -363,11 +398,16 @@
       { id:row.workflow.replacementTxId,label:tr('فاتورة البديل','Replacement invoice')+' #'+(row.workflow.replacementRef||'') },
       { id:row.returnTxId,label:tr('فاتورة المرتجع','Return invoice')+' #'+(row.returnTxRef||'') }].filter(x=>x.id).map(x=>`<button class="as-link" type="button" data-as-invoice="${esc(x.id)}">${esc(x.label)}</button>`).join('');
   }
-  function bindLinks() { dialog.querySelectorAll('[data-as-complaint]').forEach(button=>button.onclick=()=>{dialog.close();window.ComplaintFlow?.open(button.dataset.asComplaint);}); dialog.querySelectorAll('[data-as-invoice]').forEach(button=>button.onclick=()=>{dialog.close();showInvoiceDetail(button.dataset.asInvoice);}); }
+  function bindLinks() { dialog.querySelectorAll('[data-as-complaint]').forEach(button=>button.onclick=()=>{if(complaintOrigin?.complaintId===button.dataset.asComplaint)return backToComplaint();const task=window.ComplaintFlow?.resume(button.dataset.asComplaint);if(document.querySelector('.cf-dialog[open]')){serial++;dialog.close();}return task;}); dialog.querySelectorAll('[data-as-invoice]').forEach(button=>button.onclick=()=>{complaintOrigin=null;suspendedView=null;dialog.close();showInvoiceDetail(button.dataset.asInvoice);}); }
   async function open(id, restorePosition = false) {
-    const version = show(tr('ملف خدمة ما بعد البيع','After-sales case'),'',tr('جارٍ التحميل…','Loading…'));
+    if(complaintOrigin&&String(complaintOrigin.caseId)!==String(id)){complaintOrigin=null;suspendedView=null;}
+    const owner=navigationOwner();
+    const cached=activeCaseOwner===owner&&String(activeCase?._id)===String(id)&&el('[data-as-print]');
+    const version = cached?++serial:show(tr('ملف خدمة ما بعد البيع','After-sales case'),'',tr('جارٍ التحميل…','Loading…'));
+    if(cached){showComplaintNavigation();if(!dialog.open)dialog.showModal();if(restorePosition&&caseReturn?.id===String(id))el('.as-body').scrollTop=caseReturn.top;}
     try {
-      const row=await api('/after-sales/'+encodeURIComponent(id)); if(version!==serial||!dialog.open)return; activeCase=row;
+      const row=await api('/after-sales/'+encodeURIComponent(id)); if(version!==serial||!dialog.open||owner!==navigationOwner())return; activeCase=row;activeCaseOwner=owner;
+      if(!complaintOrigin&&row.workflow?.complaintIds?.length===1){const complaintId=row.workflow.complaintIds[0],source=(typeof complaints!=='undefined'?complaints:[]).find(c=>c._id===complaintId);complaintOrigin={complaintId,complaintNo:source?.complaintNo||'',caseId:id,owner:navigationOwner()};}
       const w=row.workflow, closed=['closed','cancelled'].includes(w.stage), actions=[];
       if(!closed){
         if(admin()&&row.rollback?.available)actions.push(['rollback',tr('رجوع للخطوة السابقة','Undo previous step')]);
@@ -397,7 +437,7 @@
         action(row,button.dataset.asAction);
       });
       el('[data-as-print]').onclick=()=>printCase(row);
-    } catch(error){message(error.message);}
+    } catch(error){if(version===serial&&dialog?.open)message(error.message);}
   }
   function rollback(row) {
     if(!admin()||!row.rollback?.available)return;
@@ -478,6 +518,7 @@
     form.onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);try{await post('settle',row._id,{kind:form.elements.kind.value,method:form.elements.method.value,reference:form.elements.reference.value,actualCost:Number(form.elements.actualCost.value),includesCollection:form.elements.includesCollection?.checked===true,confirmed:true});await refresh();await open(row._id);message(tr('تم تسجيل التسوية المالية وربط قيد الخزنة بالطلب.','Settlement recorded and the vault entry linked to this case.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
   }
   async function list(invoiceId) {
+    complaintOrigin=null;suspendedView=null;
     const version=show(tr('الاسترجاع والاستبدال','Returns and exchanges'),'',tr('جارٍ التحميل…','Loading…'));
     try{const rows=await api('/after-sales'+(invoiceId?'?invoiceId='+encodeURIComponent(invoiceId):''));if(version!==serial||!dialog.open)return;
       show(tr('الاسترجاع والاستبدال','Returns and exchanges'),tr('ملفات الطلبات والشحن والتسوية','Requests, shipments and settlements'),`<div class="as-actions" style="margin-bottom:14px"><button type="button" class="btn btn-outline" data-as-report>${tr('تقرير خدمة ما بعد البيع','After-sales report')}</button>${admin()?`<button type="button" class="btn btn-outline" data-as-policy>${tr('إعداد السياسة','Policy settings')}</button>`:''}</div><label class="as-field">${tr('بحث بالعميل أو الفاتورة أو البوليصة','Search customer, invoice or tracking number')}<input type="search" data-as-search></label><div data-as-list></div>`);
@@ -485,12 +526,14 @@
     }catch(error){message(error.message);}
   }
   async function report() {
+    complaintOrigin=null;suspendedView=null;
     show(tr('تقرير خدمة ما بعد البيع','After-sales report'),'',`<form class="as-two"><label class="as-field">${tr('من تاريخ','From')}<input type="date" name="from"></label><label class="as-field">${tr('إلى تاريخ','To')}<input type="date" name="to"></label><button class="btn btn-primary" type="submit">${tr('عرض التقرير','Run report')}</button><button class="btn btn-outline" type="button" data-as-export>${tr('تصدير CSV','Export CSV')}</button></form><div data-as-report-results style="margin-top:18px"></div>`);
     const form=el('form');let data;
     async function run(){try{const params=new URLSearchParams();if(form.elements.from.value)params.set('from',form.elements.from.value);if(form.elements.to.value)params.set('to',form.elements.to.value);data=await api('/after-sales/report?'+params);const s=data.summary;el('[data-as-report-results]').innerHTML=`<div class="as-kpis">${[[tr('طلبات مفتوحة','Open cases'),s.open],[tr('مكتملة','Completed'),s.closed],[tr('مبالغ رُدت','Refunded'),amount(s.refunded)],[tr('تكلفة الناقل','Carrier cost'),amount(s.carrierCost)],[tr('مستحق للعميل','Pending refunds'),amount(s.refundPending)],[tr('متبقي للتحصيل','Pending collection'),amount(s.collectPending)],[tr('قيمة التالف','Damaged value'),amount(s.damagedValue)],[tr('استبدال / استرجاع','Exchange / return'),s.exchanges+' / '+s.returns]].map(([label,value])=>`<div class="as-kpi"><span>${label}</span><b>${value}</b></div>`).join('')}</div><div class="as-table-wrap"><table class="as-table"><thead><tr><th>${tr('الفاتورة','Invoice')}</th><th>${tr('العميل','Customer')}</th><th>${tr('الحالة','Status')}</th><th>${tr('رصيد المرتجع','Return credit')}</th><th>${tr('رد فعلي','Refund paid')}</th><th>${tr('تكلفة الناقل','Carrier cost')}</th></tr></thead><tbody>${data.rows.map(r=>`<tr><td><button class="as-link" data-as-open="${esc(r._id)}">${esc(r.originalRef)}</button></td><td>${esc(r.client)}</td><td>${stage(r.workflow.stage,r.requestKind)}<div>${shippingBadges({afterSales:{shipments:{current:{caseId:r._id,kind:r.requestKind,...r.workflow.shipment,status:r.workflow.shipment?.carrierStatus||'CREATED'}}}})}</div></td><td>${amount(r.total)}</td><td>${amount(r.workflow.refund?.amount)}</td><td>${amount(r.workflow.carrierSettlement?.cost)}</td></tr>`).join('')}</tbody></table></div>`;dialog.querySelectorAll('[data-as-open]').forEach(b=>b.onclick=()=>open(b.dataset.asOpen));}catch(error){message(error.message);}}
     form.onsubmit=e=>{e.preventDefault();void run();};el('[data-as-export]').onclick=()=>{if(!data)return;const cell=value=>'"'+String(value??'').replace(/"/g,'""').replace(/^[=+@-]/,"'")+'"';const rows=[['Case','Invoice','Customer','Kind','Stage','Tracking number','Shipping status','Return credit','Replacement','Customer fee','Refund paid','Collected','Carrier cost'],...data.rows.map(r=>[r.workflow.ref,r.originalRef,r.client,r.requestKind,r.workflow.stage,r.workflow.shipment?.trackingNumber||'',r.workflow.shipment?.carrierStatus||'',r.total,r.exchangeTotal,r.workflow.quote.customerFee,r.workflow.refund?.amount||0,r.workflow.collection?.amount||0,r.workflow.carrierSettlement?.cost||0])];const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='after-sales.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};await run();
   }
   async function policy() {
+    complaintOrigin=null;suspendedView=null;
     try{const p=await api('/after-sales/policy');show(tr('سياسة الاسترجاع والاستبدال','Returns and exchange policy'),tr('تُحفظ نسخة السياسة مع كل طلب','Each case keeps its policy version'),`<form><div class="as-two">${[['normalDays',tr('مهلة رغبة العميل بالأيام','Customer preference window, days')],['defectDays',tr('مهلة العيوب بالأيام','Defect window, days')],['exchangeFee',tr('رسم الاستبدال','Exchange fee')],['returnFee',tr('رسم الإرجاع','Return fee')]].map(([name,label])=>`<label class="as-field">${label}<input type="number" min="0" name="${name}" value="${p[name]}" required></label>`).join('')}</div><label class="as-check"><input type="checkbox" name="customerFeesEnabled" ${p.customerFeesEnabled?'checked':''}>${tr('تفعيل رسوم العميل في الحالات المسموح بها في السياسة','Enable customer fees in cases allowed by the policy')}</label><label class="as-field">${tr('الحالات التي تسمح برسوم العميل','Cases where customer fees apply')}<textarea name="feePolicyNote" rows="3" maxlength="1000">${esc(p.feePolicyNote)}</textarea></label><label class="as-field">${tr('معرّف موقع العودة لدى بوسطة','Bosta return business location ID')}<input name="businessLocationId" value="${esc(p.businessLocationId)}"></label><div class="as-banner">${tr('الديفوه وخطأ الشركة بدون رسوم على العميل. المهلة تبدأ من تاريخ الاستلام، وتُراجع حالات الرسوم وفق السياسة المطبقة.','Defects and company errors have no customer fee. Eligibility begins at delivery; fees must follow the applicable policy.')}</div><footer class="as-foot"><button class="btn btn-primary" type="submit">${tr('حفظ السياسة','Save policy')}</button></footer></form>`);el('form').onsubmit=async event=>{event.preventDefault();setBusy(true);try{const f=event.target.elements,body={};for(const name of ['normalDays','defectDays','exchangeFee','returnFee'])body[name]=Number(f[name].value);Object.assign(body,{customerFeesEnabled:f.customerFeesEnabled.checked,feePolicyNote:f.feePolicyNote.value,businessLocationId:f.businessLocationId.value});await api('/after-sales/policy',{method:'POST',body:JSON.stringify(body)});message(tr('تم حفظ السياسة.','Policy saved.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};}catch(error){message(error.message);}
   }
   async function printCase(row, printWindow) {
@@ -565,6 +608,6 @@
     try { returnRequests=await api('/returns'); if(typeof buildNotifications==='function')buildNotifications(); if(currentPage==='approvals')renderApprovals(); } catch {}
     if(!busy&&dialog?.open&&activeCase?._id===id&&el('[data-as-print]'))void open(id);
   }
-  window.AfterSales={create,open,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,printOrderCase,shippingBadges,changed};
+  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,printOrderCase,shippingBadges,changed};
   document.addEventListener('DOMContentLoaded',()=>{mountLaunchers();let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mountLaunchers();});}).observe(document.getElementById('main')||document.body,{childList:true,subtree:true});});
 })();

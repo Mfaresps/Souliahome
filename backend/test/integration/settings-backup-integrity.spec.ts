@@ -35,6 +35,8 @@ describe('complete backups and receipt data independent of image storage', () =>
     source.carrierimports = [{ importNo: 'IMP-1' }];
     source.carrierpayouts = [{ amount: 200 }];
     source.orderaudits = [{ fromOrder: 123 }];
+    source.complaints = [{ _id:'507f1f77bcf86cd799439012',attachments:[{id:'e'.repeat(64),name:'evidence.jpg'}] }];
+    source.complaintevidence = [{_id:'e'.repeat(64),complaintId:'507f1f77bcf86cd799439012',imageKey:'complaint-evidence/2026-10/CMP-1/evidence.jpg',contentType:'image/jpeg',imageBytes:4096}];
     inserted = {}; deleted = []; failedCollection = '';
     config = { r2ReceiptsMax: 500, r2Keep: 3, performanceConfig: { depositFullPoints: 8 },
       vaultCash: 0, vaultVodafone: 0, vaultInstapay: 750, vaultBank: 0,
@@ -85,6 +87,7 @@ describe('complete backups and receipt data independent of image storage', () =>
     expect(backup.data.transactions[0].deposit).toBe(750);
     expect(backup.data.transactions[0].deposits).toEqual(source.transactions[0].deposits);
     expect(backup.data.newfeaturedata).toEqual(source.newfeaturedata);
+    expect(backup.data.complaintevidence).toEqual(source.complaintevidence);
     for (const name of ['carrierimports', 'carrierpayouts', 'orderaudits']) expect(backup.data[name]).toEqual(source[name]);
     expect(backup.configuration).toMatchObject({ r2ReceiptsMax: 500, r2Keep: 3, performanceConfig: { depositFullPoints: 8 } });
     for (const secret of ['vaultPass', 'bostaApiKey', 'bostaWebhookSecret', 'shopifyWebhookSecret', 'shopifyAccessToken', 'shopifyClientSecret', 'r2SecretAccessKey']) expect(backup.configuration[secret]).toBeUndefined();
@@ -135,6 +138,8 @@ describe('complete backups and receipt data independent of image storage', () =>
     expect(inserted.transactions[0].depositRefunds).toEqual(source.transactions[0].depositRefunds);
     expect(inserted.transactions[0].remaining).toBe(250);
     expect(inserted.newfeaturedata).toEqual(source.newfeaturedata);
+    expect(inserted.complaintevidence).toEqual(source.complaintevidence);
+    expect(inserted.complaints[0].attachments).toEqual(source.complaints[0].attachments);
     expect(config.r2ReceiptsMax).toBe(500);
     expect(config.r2Bucket).toBe('current-bucket');
     expect(config.r2SecretAccessKey).toBe('test-storage-secret');

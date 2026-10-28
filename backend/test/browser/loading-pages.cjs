@@ -1,0 +1,113 @@
+/* Shipped page markup with delayed/failed fixture APIs; no live requests or writes. */
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),vm=require('node:vm');
+const assert=require('node:assert/strict'),puppeteer=require('puppeteer');
+const pub=path.resolve(__dirname,'../../../frontend/public');
+const html=fs.readFileSync(path.join(pub,'index.html'),'utf8');
+const out=process.env.LOADING_SCREENSHOT_DIR||path.join(os.tmpdir(),'soulia-content-loading');
+fs.mkdirSync(out,{recursive:true});
+for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))if(match[1].trim())new vm.Script(match[1]);
+(async()=>{
+ const browser=await puppeteer.launch({headless:true,pipe:true});
+ try{
+  const page=await browser.newPage(),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.setRequestInterception(true);
+  page.on('request',req=>{
+   const u=new URL(req.url()),local=path.join(pub,u.pathname.slice(1));
+   if(u.origin==='http://soulia.test'&&u.pathname==='/')return req.respond({status:200,contentType:'text/html',body:html});
+   if(u.origin==='http://soulia.test'&&(u.pathname.endsWith('.css')||['/admin-team-home.js','/shopify-kpis.js','/shopify-edit-approvals.js','/navigation-shell.js','/order-status.js'].includes(u.pathname))&&fs.existsSync(local))return req.respond({status:200,contentType:u.pathname.endsWith('.css')?'text/css':'text/javascript',body:fs.readFileSync(local)});
+   if(req.resourceType()==='script')return req.respond({status:200,contentType:'text/javascript',body:'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});'});
+   return req.respond({status:200,contentType:'application/json',body:'[]'});
+  });
+  await page.goto('http://soulia.test/',{waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>{
+   currentUser={_id:'loading-admin',name:'Admin',role:'admin',perms:[]};currentPage='dashboard';
+   localStorage.setItem(_colsPrefKey(SPK_HIDDEN_KEY),'0');
+   qs('#app').style.display='';qs('#login-page').style.display='none';qs('#splash-screen')?.remove();
+   buildSidebar=()=>{};buildNotifications=()=>{};loadDashboardTreasury=()=>{};_renderStaffDashboard=()=>{};
+   window.pending={};window.hold=true;window.fail=false;
+   window.stats={totalSales:12000,netProfit:3000,totalPurchases:5000,totalDeposit:8000,lowStockCount:2,topSellers:[],lowSellers:[]};
+   window.teamData={periodLabel:'October 2026',totals:{pending:14,followUps:17,issues:3},employees:[{id:'employee-a',name:'Malak Abbas',active:true,pending:14,followUps:17,issues:3,points:104,delivered:0}]};
+   window.detailData={orders:[{id:'order-a',ref:'2929',client:'Mona',status:'pending',assignedAt:new Date().toISOString()}],followUps:[]};
+   window.orderData=[{_id:'order-a',ref:'2929',client:'Mona',phone:'01000000000',status:'pending',total:500,items:[{name:'Product',qty:1,price:500}],createdAt:new Date().toISOString()}];
+   api=async url=>{
+    const key=url.split('?')[0];let value;
+    if(key==='/transactions/dashboard')value=stats;
+    else if(key==='/employee-performance/team-workspace')value=teamData;
+    else if(key.startsWith('/employee-performance/team-workspace/'))value=detailData;
+    else if(key==='/shopify/orders')value=orderData;
+    else return [];
+    if(fail)throw new Error('Fixture network unavailable');
+    return hold?new Promise((resolve,reject)=>{(pending[key]||=[]).push({resolve:()=>resolve(structuredClone(value)),reject});}):structuredClone(value);
+   };
+   window.release=key=>{(pending[key]||[]).splice(0).forEach(p=>p.resolve());};
+   window.showPage=name=>{currentPage=name;qsa('.page').forEach(e=>e.classList.toggle('active',e.id==='page-'+name));};
+  });
+  for(const lang of ['ar','en'])for(const width of [1980,1440,390,320]){
+   await page.setViewport({width,height:1000});
+   await new Promise(resolve=>setTimeout(resolve,300));
+   await page.evaluate(({lang,width})=>{
+    currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.classList.toggle('dark-mode',width===320);
+    showPage('dashboard');hideAdminTeamWorkspace();_dashStatsLoaded=false;hold=true;fail=false;
+    window.dashboardTask=loadDashboard();
+   },{lang,width});
+   assert.equal(await page.$$eval('#dash-stats .is-primary',e=>e.length),3);
+   assert.equal(await page.$$eval('#dash-stats .ds-kpi2',e=>e.length),7);
+   assert.equal(await page.$$eval('#dash-stats .ds-loading-value',e=>e.length),10);
+   assert(await page.$('#dash-admin-team .ath-loading .ath-layout'),'first load reserves employee and task layout');
+   assert(await page.$eval('#page-dashboard',e=>e.scrollWidth<=e.clientWidth+1),`home overflow ${lang}/${width}`);
+   const before=await page.$eval('#dash-stats',e=>({height:e.getBoundingClientRect().height,labels:[...e.querySelectorAll('.ds-kpi-label,.ds-kpi2-label')].map(n=>n.textContent)}));
+   await page.screenshot({path:path.join(out,`home-loading-${lang}-${width}.png`)});
+   await page.evaluate(()=>{release('/transactions/dashboard');release('/employee-performance/team-workspace');});
+   await page.waitForSelector('.ath-loading-tasks');
+   await page.waitForFunction(()=>pending['/employee-performance/team-workspace/employee-a']?.length);
+   await page.evaluate(async()=>{release('/employee-performance/team-workspace/employee-a');await dashboardTask;});
+   await page.waitForFunction(()=>document.querySelector('#dash-admin-team').getAttribute('aria-busy')==='false');
+   const after=await page.$eval('#dash-stats',e=>({height:e.getBoundingClientRect().height,labels:[...e.querySelectorAll('.ds-kpi-label,.ds-kpi2-label')].map(n=>n.textContent)}));
+   assert.deepEqual(after.labels,before.labels,'loading labels match actual metrics');
+   assert(Math.abs(after.height-before.height)<12,`KPI layout shift ${lang}/${width}: ${JSON.stringify({before:before.height,after:after.height})}`);
+   await page.evaluate(()=>{window.dashboardTask=loadDashboard();});
+   assert.equal(await page.$$eval('#dash-stats .ds-loading-value',e=>e.length),0,'refresh preserves dashboard values');
+   assert((await page.$eval('.ath-workspace',e=>e.textContent)).includes('2929'),'refresh preserves employee tasks');
+   await page.evaluate(()=>release('/employee-performance/team-workspace'));
+   await page.waitForFunction(()=>pending['/employee-performance/team-workspace/employee-a']?.length);
+   assert.equal(await page.$('.ath-loading-tasks'),null,'same employee detail refresh retains content');
+   await page.evaluate(async()=>{release('/transactions/dashboard');release('/employee-performance/team-workspace/employee-a');await dashboardTask;});
+   await page.waitForFunction(()=>document.querySelector('#dash-admin-team').getAttribute('aria-busy')==='false');
+   await page.evaluate(()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;_spkState='ready';_spkFilter='';window.shopTask=loadShopifyOrders();});
+   await page.waitForSelector('#sp-orders-loading:not([hidden])');
+   assert(await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top>=document.getElementById('sp-kpi').getBoundingClientRect().bottom),'summary stays above orders while loading');
+   assert.equal(await page.$$eval('#sp-kpi .spk-lbl',els=>els.length),5);
+   assert.equal(await page.$$eval('#sp-kpi .spk-tile:disabled',els=>els.length),5,'unknown metrics cannot apply filters');
+   assert(await page.$eval('#page-shopify-orders',e=>e.scrollWidth<=e.clientWidth+1),`Shopify overflow ${lang}/${width}`);
+   const loadingTop=await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top);
+   await page.screenshot({path:path.join(out,`shopify-loading-${lang}-${width}.png`)});
+   await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
+   assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
+   const realTop=await page.evaluate(()=>{const table=qs('#sp-orders-tab-content').dataset.layout==='table';return qs(table?'#shopify-orders-table-wrap':'#sp-mobile-list').getBoundingClientRect().top;});
+   assert(Math.abs(realTop-loadingTop)<45,`orders stay below summary ${lang}/${width}: ${loadingTop}/${realTop}`);
+   await page.evaluate(()=>{window.shopTask=loadShopifyOrders();});
+   assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true,'Shopify refresh retains loaded orders');
+   await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
+  }
+  await page.evaluate(async()=>{showPage('dashboard');hold=false;fail=true;await loadDashboard();});
+  assert(await page.$('.dash-refresh-error'),'failed refresh exposes retry');
+  assert.equal(await page.$$eval('#dash-stats .is-primary',e=>e.length),3,'failed refresh retains known metrics');
+  await page.evaluate(async()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;await loadShopifyOrders();});
+  assert(await page.$('#sp-orders-loading[data-state=error] button'),'first-load failure offers retry');
+  await page.evaluate(async()=>{fail=false;await loadShopifyOrders();});
+  assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
+  await page.evaluate(()=>{_setHiddenSpCols(new Set(['client','items']));_spShowOrdersLoading();});
+  assert.equal(await page.$('.sp-orders-loading-table th[data-loading-col=client]'),null,'loading follows hidden columns');
+  await page.evaluate(()=>toggleSpCol('client'));
+  assert(await page.$('.sp-orders-loading-table th[data-loading-col=client]'),'column changes also update an in-flight placeholder');
+  await page.evaluate(()=>{localStorage.setItem(_colsPrefKey(SPK_HIDDEN_KEY),'1');_spkRender('loading');});
+  assert.equal(await page.$eval('#sp-kpi',e=>e.hidden),true,'loading respects hidden summary preference');
+  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+  assert.equal(await page.$eval('.sp-loading-bar',e=>getComputedStyle(e).animationName),'none');
+  await page.evaluate(async()=>{showPage('dashboard');currentUser={_id:'staff',role:'staff',perms:['dashboard']};renderDashKpis({});renderDashKpiSkeleton();hideAdminTeamWorkspace();});
+  assert.equal(await page.$eval('#dash-stats',e=>getComputedStyle(e).display),'none','staff never sees admin placeholders');
+  assert.deepEqual(errors,[],'no runtime errors');
+  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, matching KPI geometry, team tasks, Shopify order, retained refresh content, failures/retry, hidden columns and reduced motion.');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1);});

@@ -8,12 +8,19 @@ import { ValidationPipe } from '@nestjs/common';
 import { ComplaintsController } from '../../src/complaints/complaints.controller';
 import { JwtAuthGuard } from '../../src/core/guards/jwt-auth.guard';
 import sharp from 'sharp';
+import * as r2 from '../../src/shared/r2-uploader.util';
+import { MAX_COMPLAINT_EVIDENCE_BYTES } from '../../src/complaints/complaint-evidence.util';
 
 describe('Complaint lifecycle with isolated transactional storage', () => {
   let mongo: Awaited<ReturnType<typeof trackingMongo>>, Model: any, service: ComplaintsService, actor: any, sale: any;
   let app: any, base: string;
+  const cloud = new Map<string, Buffer>();
+  const storageSettings:any = { getR2Config: jest.fn(async()=>({accountId:'test',accessKeyId:'test',secretAccessKey:'test',bucket:'test'})) };
   const oid = () => new Types.ObjectId();
   beforeAll(async () => {
+    jest.spyOn(r2,'r2PutObject').mockImplementation(async(_cfg,key,buffer)=>{cloud.set(key,Buffer.from(buffer));return {ok:true,message:'stored'};});
+    jest.spyOn(r2,'r2GetObjectBuffer').mockImplementation(async(_cfg,key)=>({ok:cloud.has(key),body:cloud.get(key)||Buffer.alloc(0),status:cloud.has(key)?200:404,message:''}));
+    jest.spyOn(r2,'r2DeleteObject').mockImplementation(async(_cfg,key)=>{cloud.delete(key);return {ok:true,message:'deleted'};});
     mongo = await trackingMongo(); Model = mongo.connection.model('Complaint', ComplaintSchema);
     await Model.createCollection(); await Model.syncIndexes();
     for (const name of ['users','transactions','returnrequests','vaultentries','expenses']) await mongo.connection.createCollection(name);
@@ -21,13 +28,14 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
       const doc = { _id: oid(), amount, method, ref, ...meta };
       await mongo.connection.collection('vaultentries').insertOne(doc, { session: context.session }); return doc;
     } };
-    service = new ComplaintsService(Model, vault);
+    service = new ComplaintsService(Model, vault, undefined, storageSettings);
     const module = await Test.createTestingModule({controllers:[ComplaintsController],providers:[{provide:ComplaintsService,useValue:service}]}).overrideGuard(JwtAuthGuard).useValue({canActivate(context:any){const req=context.switchToHttp().getRequest();req.user={...actor,role:req.headers['x-test-role']||'admin',perms:[]};return true;}}).compile();
     app=module.createNestApplication({logger:false});app.useGlobalPipes(new ValidationPipe({whitelist:true,transform:true}));await app.listen(0,'127.0.0.1');base=await app.getUrl();
   }, 40000);
-  afterAll(async () => {await app?.close();await mongo?.close();});
+  afterAll(async () => {await app?.close();await mongo?.close();jest.restoreAllMocks();});
   beforeEach(async () => {
-    for (const name of ['complaints','users','transactions','returnrequests','vaultentries','expenses','complaintmessageconfigs']) await mongo.connection.collection(name).deleteMany({});
+    cloud.clear();jest.clearAllMocks();
+    for (const name of ['complaints','complaintevidence','users','transactions','returnrequests','vaultentries','expenses','complaintmessageconfigs']) await mongo.connection.collection(name).deleteMany({});
     actor = { userId: String(oid()), role: 'admin', name: 'Owner' };
     await mongo.connection.collection('users').insertOne({ _id: new Types.ObjectId(actor.userId), name: 'Owner', role: 'admin' });
     sale = { _id: oid(), ref: '2790', client: 'Customer', phone: '01000000000', type: 'مبيعات', total:500,remaining:0,deliveredAt: new Date().toISOString(), items: [{ lineId:'line-a', code:'A', name:'Product A', qty:3 }, { lineId:'line-b', code:'B', name:'Product B', qty:2 }] };
@@ -57,6 +65,31 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     await mongo.connection.collection('transactions').updateOne({_id:sale._id},{$unset:{phone:''}});
     const linked=await step(row,'items',{transactionId:String(sale._id),items:[{lineIndex:0,qty:1}]});
     expect(linked.phone).toBe('01000000000');
+  });
+  it('returns a compact list and a complete workspace with one detail read', async () => {
+    let row:any=await create();
+    row=await step(row,'plan',{solution:'exchange'});
+    const linked=await execution(row);
+    row=await step(row,'link',{caseId:String(linked._id)});
+    const rows=await service.findAll();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).not.toHaveProperty('notes');
+    expect(rows[0].workflow).not.toHaveProperty('history');
+    expect(rows[0].workflow).not.toHaveProperty('operations');
+    expect(rows[0].execution).toEqual(row.execution);
+    expect(rows[0].lifecycleStage).toBe(row.lifecycleStage);
+    const read=jest.spyOn(service,'detail');
+    try {
+      const response=await fetch(`${base}/complaints/${row._id}?view=workspace&lang=en`);
+      expect(response.status).toBe(200);
+      const workspace:any=await response.json();
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(workspace.workflow.history.length).toBeGreaterThan(0);
+      expect(workspace.notes.length).toBeGreaterThan(0);
+      expect(workspace.customerMessage.language).toBe('en');
+      expect(workspace.customerMessage.text).toContain(row.complaintNo);
+      expect(workspace.execution).toEqual(row.execution);
+    } finally { read.mockRestore(); }
   });
   it('refuses manual success and legacy decision bypasses', async () => {
     const row=await create();await expect(step(row,'close',{outcome:'resolved',customerConfirmed:true})).rejects.toThrow();
@@ -122,8 +155,66 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     const uploaded:any=await service.uploadEvidence(String(row._id),{buffer,originalname:'customer-photo.png'},actor);
     await service.uploadEvidence(String(row._id),{buffer,originalname:'customer-photo.png'},actor);
     const detail=await service.detail(String(row._id));expect(detail.attachments).toHaveLength(1);
-    expect((await service.evidenceImage(String(row._id),uploaded.attachments[0].id)).data).toMatch(/^data:image\/webp;base64,/);
+    expect((await service.evidenceImage(String(row._id),uploaded.attachments[0].id)).data).toMatch(/^data:image\/jpeg;base64,/);
+    const stored=await mongo.connection.collection('complaintevidence').findOne({complaintId:String(row._id)});
+    expect(stored?.imageKey).toMatch(/^complaint-evidence\/\d{4}-\d{2}\//);
+    expect(stored).not.toHaveProperty('data');
+    expect(stored?.imageBytes).toBeLessThanOrEqual(MAX_COMPLAINT_EVIDENCE_BYTES);
+    expect(cloud.size).toBe(1);expect(r2.r2PutObject).toHaveBeenCalledTimes(1);
+    const metadata=await sharp(cloud.get(stored!.imageKey)!).metadata();
+    expect(metadata.format).toBe('jpeg');expect(metadata.exif).toBeUndefined();
     await expect(service.uploadEvidence(String(row._id),{buffer:Buffer.from('<svg/>'),originalname:'unsafe.svg'},actor)).rejects.toThrow();
+  });
+  it('does not attach an image or fall back to database bytes when R2 fails', async()=>{
+    const row=await create(),buffer=await sharp({create:{width:30,height:20,channels:3,background:'#aaff11'}}).png().toBuffer();
+    (r2.r2PutObject as jest.Mock).mockResolvedValueOnce({ok:false,message:'unavailable'});
+    await expect(service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)).rejects.toThrow('التخزين السحابي');
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    storageSettings.getR2Config.mockResolvedValueOnce(null);
+    await expect(service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)).rejects.toThrow('إعدادات Cloudflare R2');
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+  });
+  it('deduplicates concurrent uploads and removes only the unused cloud object',async()=>{
+    const row=await create(),buffer=await sharp({create:{width:30,height:20,channels:3,background:'#aa4411'}}).png().toBuffer();
+    await Promise.all([1,2].map(()=>service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)));
+    const detail=await service.detail(String(row._id));expect(detail.attachments).toHaveLength(1);
+    expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);expect(cloud.size).toBe(1);
+    expect((await service.evidenceImage(String(row._id),detail.attachments[0].id)).data).toMatch(/^data:image\/jpeg;base64,/);
+  });
+  it('removes an unused cloud upload after a database rollback',async()=>{
+    const row=await create(),buffer=await sharp({create:{width:30,height:20,channels:3,background:'#cc4411'}}).png().toBuffer();
+    const save=jest.spyOn(Model.prototype,'save').mockRejectedValueOnce(new Error('fixture database failure'));
+    try {await expect(service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)).rejects.toThrow('fixture database failure');}
+    finally {save.mockRestore();}
+    expect(cloud.size).toBe(0);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(0);
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(0);
+  });
+  it('enforces the ten-image cap under concurrent uploads without leaking the rejected image',async()=>{
+    const row=await create();
+    await Model.updateOne({_id:row._id},{$set:{attachments:Array.from({length:9},(_,i)=>({id:`existing-${i}`}))}});
+    const buffers=await Promise.all(['#cc1111','#11cc11'].map(background=>sharp({create:{width:30,height:20,channels:3,background}}).png().toBuffer()));
+    const results=await Promise.allSettled(buffers.map(buffer=>service.uploadEvidence(String(row._id),{buffer,originalname:'photo.png'},actor)));
+    expect(results.filter(result=>result.status==='fulfilled')).toHaveLength(1);
+    expect((await service.detail(String(row._id))).attachments).toHaveLength(10);
+    expect(cloud.size).toBe(1);expect(await mongo.connection.collection('complaintevidence').countDocuments()).toBe(1);
+    await expect(service.uploadEvidence(String(row._id),{buffer:await sharp({create:{width:20,height:20,channels:3,background:'#1111cc'}}).png().toBuffer(),originalname:'extra.png'},actor)).rejects.toThrow('10');
+    expect(cloud.size).toBe(1);
+  });
+  it('migrates legacy image bytes on read and preserves them if cloud upload fails',async()=>{
+    const row=await create(),attachmentId='a'.repeat(64),buffer=await sharp({create:{width:300,height:200,channels:3,background:'#eeaa11'}}).webp().toBuffer();
+    await Model.updateOne({_id:row._id},{$push:{attachments:{id:attachmentId,name:'old.webp'}}});
+    const collection=mongo.connection.collection('complaintevidence');
+    await collection.insertOne({_id:attachmentId as any,complaintId:String(row._id),data:buffer.toString('base64'),createdAt:new Date()});
+    (r2.r2PutObject as jest.Mock).mockResolvedValueOnce({ok:false,message:'unavailable'});
+    expect((await service.evidenceImage(String(row._id),attachmentId)).data).toBe('data:image/webp;base64,'+buffer.toString('base64'));
+    expect((await collection.findOne({_id:attachmentId as any}))?.data).toBeTruthy();
+    expect((await service.evidenceImage(String(row._id),attachmentId)).data).toMatch(/^data:image\/jpeg;base64,/);
+    const migrated=await collection.findOne({_id:attachmentId as any});
+    expect(migrated).not.toHaveProperty('data');expect(migrated?.imageKey).toMatch(/^complaint-evidence\//);
+    const puts=(r2.r2PutObject as jest.Mock).mock.calls.length;
+    await service.evidenceImage(String(row._id),attachmentId);
+    expect(r2.r2PutObject).toHaveBeenCalledTimes(puts);
   });
   it('caps no-return refunds by remaining paid credit across separate complaints', async () => {
     await mongo.connection.collection('transactions').updateOne({_id:sale._id},{$set:{afterSales:null}});

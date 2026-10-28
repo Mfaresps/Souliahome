@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException, Optional, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomBytes, randomUUID, createHash } from 'crypto';
-import sharp from 'sharp';
+import { SettingsService } from '../settings/settings.service';
+import { r2PutObject, r2GetObjectBuffer, r2DeleteObject } from '../shared/r2-uploader.util';
+import { complaintEvidenceKey, compressComplaintEvidence, COMPLAINT_EVIDENCE_PREFIX } from './complaint-evidence.util';
 import { Cron } from '@nestjs/schedule';
 import { NotificationsService } from '../notifications/notifications.service';
 import { VaultService } from '../vault/vault.service';
@@ -22,11 +24,13 @@ import {
 
 @Injectable()
 export class ComplaintsService {
+  private readonly logger = new Logger(ComplaintsService.name);
   constructor(
     @InjectModel(Complaint.name)
     private readonly complaintModel: Model<ComplaintDocument>,
     @Optional() private readonly vault?: VaultService,
     @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly settings?: SettingsService,
   ) {}
 
   async messageTemplates() {
@@ -52,7 +56,17 @@ export class ComplaintsService {
   }
 
   async customerMessage(id: string, language: string, event?: string) {
-    const row = await this.detail(id), w = row.workflow, en = language === 'en', lang = en ? 'en' : 'ar';
+    const [row, config] = await Promise.all([this.detail(id), this.messageTemplates()]);
+    return this.renderCustomerMessage(row, config, language, event);
+  }
+
+  async workspace(id: string, language: string, event?: string) {
+    const [row, config] = await Promise.all([this.detail(id), this.messageTemplates()]);
+    return { ...row, customerMessage: this.renderCustomerMessage(row, config, language, event) };
+  }
+
+  private renderCustomerMessage(row: any, config: any, language: string, event?: string) {
+    const w = row.workflow, en = language === 'en', lang = en ? 'en' : 'ar';
     const successful = ['resolved','partial_agreement'].includes(w.outcome);
     const kind = w.stage === 'closed' ? successful ? 'resolved' : 'closed' : row.execution.ready ? 'confirmation' : event === 'registered' && w.stage === 'review' && w.cycle === 1 ? 'registered' : 'update';
     const labels: any = en ? { exchange:'Exchange',return:'Return and refund',support:'Customer support',delivery:'Delivery issue addressed',compensation:'Compensation',refund_without_return:'Refund without return',partial_agreement:'Agreed partial resolution',rejected:'Request declined',withdrawn:'Withdrawn by customer',duplicate:'Linked to the primary complaint',unreachable:'Unable to reach customer' } : { exchange:'استبدال',return:'استرجاع ورد المستحق',support:'حل بالدعم والتوضيح',delivery:'معالجة مشكلة التوصيل',compensation:'تعويض مالي',refund_without_return:'رد مبلغ دون استلام منتج',partial_agreement:'حل جزئي متفق عليه',rejected:'رفض الطلب',withdrawn:'سحب الشكوى بطلب العميل',duplicate:'متابعة المشكلة ضمن الشكوى الأساسية',unreachable:'تعذر التواصل' };
@@ -60,19 +74,20 @@ export class ComplaintsService {
       invoiceRef: row.transactionRef ? '#'+row.transactionRef : (en ? 'not linked' : 'غير مرتبطة'),
       resolution: labels[w.outcome === 'partial_agreement' || !successful && w.stage === 'closed' ? w.outcome : w.solution] || (en ? 'Customer care follow-up' : 'متابعة خدمة العملاء'),
       customerMessage: w.stage === 'closed' ? w.customerMessage || '' : '' };
-    const config = await this.messageTemplates();
     return { kind, language: lang, text: renderComplaintMessage(config.templates[kind][lang], values), templateRevision: config.revision };
   }
 
   async findAll(): Promise<any[]> {
-    const rows = await this.complaintModel.find().sort({ createdAt: -1 }).lean();
-    const ids = rows.map(r => r.workflow?.caseId).filter(id => Types.ObjectId.isValid(id));
+    const rows = await this.complaintModel.find().select('-notes -workflow.history -workflow.cycles -workflow.operations -workflow.executionEvents -createKey -createFingerprint').sort({ createdAt: -1 }).lean();
+    const ids = [...new Set(rows.map(r => r.workflow?.caseId).filter(id => Types.ObjectId.isValid(id)))];
     const cases = ids.length ? await this.complaintModel.db.collection('returnrequests').find({ _id: { $in: ids.map(id => new Types.ObjectId(id)) } }).toArray() : [];
-    return rows.map(row => complaintView(row, cases.find(c => String(c._id) === row.workflow?.caseId)));
+    const byId = new Map(cases.map(c => [String(c._id), c]));
+    return rows.map(row => complaintView(row, byId.get(row.workflow?.caseId)));
   }
 
   async detail(id: string) {
-    const row = await this.findById(id);
+    const row = await this.complaintModel.findById(this.oid(id)).lean().exec();
+    if (!row) throw new NotFoundException('الشكوى غير موجودة');
     const linked = row.workflow?.caseId ? await this.complaintModel.db.collection('returnrequests').findOne({ _id: this.oid(row.workflow.caseId) }) : null;
     return complaintView(row, linked);
   }
@@ -394,35 +409,91 @@ export class ComplaintsService {
   }
   async uploadEvidence(id: string, file: { buffer: Buffer; originalname: string }, actor: any) {
     if (!file?.buffer?.length || file.buffer.length > 5 * 1024 * 1024) throw new BadRequestException('اختر صورة بحد أقصى 5 ميجابايت');
+    const initial = await this.findById(String(this.oid(id)));
     let buffer: Buffer;
     try {
-      const image = sharp(file.buffer, { limitInputPixels: 25000000, animated: false });
-      const meta = await image.metadata();
-      if (!['jpeg','png','webp'].includes(meta.format || '')) throw new Error('format');
-      buffer = await image.rotate().resize({ width:1600,height:1600,fit:'inside',withoutEnlargement:true }).webp({quality:82}).toBuffer();
-    } catch { throw new BadRequestException('الصورة غير صالحة؛ استخدم JPEG أو PNG أو WebP'); }
-    const attachmentId = createHash('sha256').update(id).update(buffer).digest('hex'), session = await this.complaintModel.db.startSession();
+      buffer = await compressComplaintEvidence(file.buffer);
+    } catch { throw new BadRequestException('استخدم صورة JPEG أو PNG أو WebP ثابتة وواضحة يمكن ضغطها إلى 180 كيلوبايت'); }
+    const attachmentId = createHash('sha256').update(String(initial._id)).update(buffer).digest('hex');
+    if (initial.attachments.some(a=>a.id===attachmentId)) return this.detail(id);
+    if (initial.attachments.length >= 10) throw new BadRequestException('الحد الأقصى 10 صور لكل شكوى');
+    const stored = await this.storeEvidenceImage(initial, attachmentId, buffer, file.buffer.length);
+    let committed = false, linked = false;
+    const session = await this.complaintModel.db.startSession().catch(async error=>{await this.deleteUnusedEvidence(stored.imageKey);throw error;});
     try {
       await session.withTransaction(async()=>{
+        linked = false;
         const row = await this.complaintModel.findById(this.oid(id)).session(session);
         if (!row) throw new NotFoundException('الشكوى غير موجودة');
         if (row.attachments.some(a=>a.id===attachmentId)) return;
         if (row.attachments.length >= 10) throw new BadRequestException('الحد الأقصى 10 صور لكل شكوى');
         const at = new Date().toISOString(), name = String(file.originalname||'image').slice(0,150);
-        await this.complaintModel.db.collection('complaintevidence').updateOne({ _id:attachmentId as any }, { $setOnInsert:{ complaintId:id,data:buffer.toString('base64'),createdAt:new Date() } }, { session,upsert:true });
-        row.attachments.push({id:attachmentId,name,at,by:actor.name||actor.username});
+        await this.complaintModel.db.collection('complaintevidence').updateOne({ _id:attachmentId as any }, { $setOnInsert:{ complaintId:String(row._id),...stored,createdAt:new Date() } }, { session,upsert:true });
+        row.attachments.push({id:attachmentId,name,at,by:actor.name||actor.username,imageBytes:buffer.length});
         const w=complaintFlow(row);w.revision++;workflowEvent(w,'attachment',actor,name);row.workflow=w;row.markModified('workflow');
         await row.save({session});
+        linked = true;
       });
+      committed = true;
+      if (!linked) await this.deleteUnusedEvidence(stored.imageKey);
       return this.detail(id);
+    } catch (error) {
+      // Unknown commit outcomes may already reference the uploaded image. Keep that object.
+      if (!committed && !error.hasErrorLabel?.('UnknownTransactionCommitResult')) await this.deleteUnusedEvidence(stored.imageKey);
+      throw error;
     } finally { await session.endSession(); }
   }
+
+  private async evidenceR2() {
+    const cfg = await this.settings?.getR2Config();
+    if (!cfg) throw new ServiceUnavailableException('إعدادات Cloudflare R2 غير مكتملة — لا يمكن حفظ صورة الشكوى');
+    return cfg;
+  }
+
+  private async storeEvidenceImage(row: any, attachmentId: string, buffer: Buffer, originalBytes: number) {
+    const cfg = await this.evidenceR2(), imageKey = complaintEvidenceKey(row, attachmentId);
+    const result = await r2PutObject(cfg, imageKey, buffer, 'image/jpeg', 30000);
+    if (!result.ok) throw new ServiceUnavailableException('تعذّر حفظ صورة الشكوى على التخزين السحابي؛ أعد المحاولة');
+    return { imageKey, contentType:'image/jpeg', imageBytes:buffer.length, originalBytes };
+  }
+
+  private async deleteUnusedEvidence(imageKey: string) {
+    try {
+      if (!imageKey.startsWith(COMPLAINT_EVIDENCE_PREFIX)) return;
+      if (await this.complaintModel.db.collection('complaintevidence').findOne({imageKey})) return;
+      const result = await r2DeleteObject(await this.evidenceR2(), imageKey);
+      if (!result.ok) this.logger.warn('Could not remove an unused complaint evidence upload');
+    } catch { this.logger.warn('Could not verify or remove an unused complaint evidence upload'); }
+  }
+
   async evidenceImage(id: string, attachmentId: string) {
     const row = await this.findById(id);
     if (!/^[a-f\d]{64}$/.test(attachmentId) || !row.attachments.some(a=>a.id===attachmentId)) throw new NotFoundException();
-    const image = await this.complaintModel.db.collection('complaintevidence').findOne({ _id:attachmentId as any,complaintId:id });
+    const collection = this.complaintModel.db.collection('complaintevidence');
+    let image = await collection.findOne({ _id:attachmentId as any,complaintId:String(row._id) });
     if (!image) throw new NotFoundException();
-    return { data:'data:image/webp;base64,'+image.data };
+    if (!image.imageKey && image.data) {
+      // Migrate legacy images when read. Only discard the database bytes after a successful PUT.
+      const legacyData = image.data;
+      let uploadedKey: string | undefined;
+      try {
+        const original = Buffer.from(image.data, 'base64'), compressed = await compressComplaintEvidence(original);
+        const stored = await this.storeEvidenceImage(row, attachmentId, compressed, original.length);
+        uploadedKey = stored.imageKey;
+        const moved = await collection.updateOne({_id:image._id,data:image.data,imageKey:{$exists:false}},{$set:{...stored,migratedAt:new Date()},$unset:{data:''}});
+        if (moved.modifiedCount) return {data:'data:image/jpeg;base64,'+compressed.toString('base64')};
+        await this.deleteUnusedEvidence(stored.imageKey);
+        image = await collection.findOne({_id:image._id,complaintId:String(row._id)});
+      } catch {
+        if (uploadedKey) await this.deleteUnusedEvidence(uploadedKey);
+        this.logger.warn(`Legacy complaint image migration deferred for ${attachmentId}`);
+        return {data:'data:image/webp;base64,'+legacyData};
+      }
+    }
+    if (!image?.imageKey?.startsWith(COMPLAINT_EVIDENCE_PREFIX)) throw new NotFoundException();
+    const result = await r2GetObjectBuffer(await this.evidenceR2(), image.imageKey);
+    if (!result.ok) throw new ServiceUnavailableException('تعذّر تحميل صورة الشكوى من التخزين السحابي');
+    return { data:'data:image/jpeg;base64,'+result.body.toString('base64') };
   }
   private validateItems(items: any[], tx: any) {
     if (!Array.isArray(items) || items.length > 100) throw new BadRequestException('بنود الشكوى غير صالحة');

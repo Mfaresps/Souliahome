@@ -62,10 +62,11 @@
 .spk-meter{position:absolute;inset-inline:12px;bottom:5px;height:3px;border-radius:99px;background:var(--primary-pale);overflow:hidden}
 .spk-meter i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .35s ease}
 
-/* skeleton */
-.spk-tile.is-skel{display:block;background:var(--surface);border-color:var(--border);min-height:76px;box-sizing:border-box}
-.spk-tile.is-skel span{display:block;height:10px;width:55%;border-radius:6px;background:var(--bg-alt);animation:spkPulse 1.2s ease-in-out infinite}
-.spk-tile.is-skel span+span{margin-top:16px;height:20px;width:35%}
+/* Keep the real labels, icons and grid while values are loading. */
+.spk-tile.is-loading:disabled{opacity:1;cursor:default}
+.spk-loading-value{display:inline-block;width:1.8em;height:.8em;vertical-align:baseline}
+.spk-loading-sub{display:inline-block;width:6em;max-width:100%;height:1em}
+.spk-report-btn:disabled{opacity:.5;cursor:default}
 @keyframes spkPulse{50%{opacity:.45}}
 
 body.dark-mode .spk-tile.is-received,body.dark-mode .spk-tile.is-rate{--spk-c:#9fb8aa}

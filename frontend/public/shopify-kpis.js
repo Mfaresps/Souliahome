@@ -240,11 +240,8 @@ function _spkRender(state) {
   if (hidden) { host.innerHTML = ''; return; }
   const seg = _spkPeriodHtml();
 
-  if (_spkState === 'loading' && !(_shopifyOrders || []).length) {
-    host.innerHTML = `<div class="spk-head"><div class="spk-actions">${seg}</div></div>
-      <div class="spk-grid" aria-busy="true">${['received','confirmed','followup','cancelled','rate'].map(key => `<div class="spk-tile is-skel is-${key}"><span></span><span></span></div>`).join('')}</div>`;
-    return;
-  }
+  const loading = _spkState === 'loading' && !(_shopifyOrders || []).length;
+  host.setAttribute('aria-busy', String(loading));
   if (_spkState === 'error' && !(_shopifyOrders || []).length) {
     host.innerHTML = `<div class="spk-head"><span class="spk-warn">${_spkEsc(_spkT('loadFail'))}</span>
       <div class="spk-actions">${seg}</div></div>`;
@@ -253,10 +250,10 @@ function _spkRender(state) {
 
   const s = _spkStats(_spkPeriod);
   const tile = (key, value, sub, attrs, inner) => `
-    <button type="button" class="spk-tile is-${key}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" onclick="_spkSetFilter('${key}')"${attrs || ''}>
+    <button type="button" class="spk-tile is-${key}${loading?' is-loading':''}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" ${loading?'disabled':`onclick="_spkSetFilter('${key}')"`}${attrs || ''}>
       <div class="spk-tile-top"><span class="spk-lbl">${_spkEsc(_spkT(key))}</span><span class="spk-ic">${_spkIco(key)}</span></div>
-      <div class="spk-val"><bdi>${value}</bdi></div>
-      ${sub ? `<div class="spk-sub">${sub}</div>` : ''}${inner || ''}
+      <div class="spk-val"><bdi>${loading?'<span class="ss-skeleton spk-loading-value" aria-hidden="true"></span>':value}</bdi></div>
+      ${loading?'<div class="spk-sub"><span class="ss-skeleton spk-loading-sub" aria-hidden="true"></span></div>':sub ? `<div class="spk-sub">${sub}</div>` : ''}${loading?'':inner || ''}
     </button>`;
   const rateVal = s.rate == null ? '—' : `${s.rate}%`;
   const rateSub = s.received
@@ -273,7 +270,7 @@ function _spkRender(state) {
       ${openNote}${fuWarn}
       <div class="spk-actions">
         ${seg}
-        <button type="button" class="spk-report-btn" onclick="_spkOpenReport()" title="${_spkEsc(_spkT('reportTitle'))}">
+        <button type="button" class="spk-report-btn" onclick="_spkOpenReport()" ${loading?'disabled':''} title="${_spkEsc(_spkT('reportTitle'))}">
           ${_spkIco('report', 14)}<span>${_spkEsc(_spkT('report'))}</span>
         </button>
       </div>

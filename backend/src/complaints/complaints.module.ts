@@ -4,10 +4,12 @@ import { Complaint, ComplaintSchema } from './schemas/complaint.schema';
 import { ComplaintsService } from './complaints.service';
 import { ComplaintsController } from './complaints.controller';
 import { VaultModule } from '../vault/vault.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
     VaultModule,
+    SettingsModule,
     MongooseModule.forFeature([
       { name: Complaint.name, schema: ComplaintSchema },
     ]),

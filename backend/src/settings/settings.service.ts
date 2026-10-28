@@ -966,6 +966,7 @@ export class SettingsService {
     'returnrequests',
     'expenses',
     'complaints',
+    'complaintevidence',
     'shopifyorders',
     'depositreceiptidentities',
     'followups',
@@ -1665,7 +1666,7 @@ export class SettingsService {
         const fixedDocs = (docs as any[]).map((doc: any) => {
           const fixed: any = { ...doc };
           // Convert _id string → ObjectId
-          if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations', 'inventoryunitcodecounters'].includes(collectionName)) {
+          if (fixed._id && !['complaintevidence', 'depositreceiptidentities', 'inventoryunitoperations', 'inventoryunitcodecounters'].includes(collectionName)) {
             const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
             if (rawId) {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
@@ -1877,7 +1878,7 @@ export class SettingsService {
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
-    other:          ['brandlogos', 'complaints', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',
+    other:          ['brandlogos', 'complaints', 'complaintevidence', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',
                      'drafts', 'discountotps', 'securityauditlogs', 'employeeshifts',
                      'employeeleaves', 'employeeperformancelogs', 'demandanalysislogs', 'users',
                      'knowledgefolders', 'knowledgecards', 'knowledgeauditlogs', 'knowledgeimportlogs'],
@@ -1892,6 +1893,7 @@ export class SettingsService {
     expenses:       'date',
     vaultentries:   'date',
     complaints:     'createdAt',
+    complaintevidence: 'createdAt',
     followups:      'createdAt',
   };
 
@@ -2259,7 +2261,7 @@ export class SettingsService {
           if (docs.length > 0) {
             const fixedDocs = docs.map((doc: any) => {
               const fixed: any = { ...doc };
-              if (fixed._id && !['depositreceiptidentities', 'inventoryunitoperations'].includes(col)) {
+              if (fixed._id && !['complaintevidence', 'depositreceiptidentities', 'inventoryunitoperations'].includes(col)) {
                 const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
                 if (rawId) { try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; } }
               }

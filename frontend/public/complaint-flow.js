@@ -13,28 +13,82 @@
   const blockers=()=>({case_required:tr('إنشاء أو ربط طلب التنفيذ','Create or link an execution case'),case_cancelled:tr('الطلب المرتبط ملغى؛ راجع خطة الحل','Linked case cancelled; review the plan'),receipt:tr('استلام وفحص القطع الراجعة','Receive and inspect returned items'),delivery:tr('إثبات تسليم البديل','Verify replacement delivery'),refund:tr('رد مستحق العميل','Pay customer refund'),collection:tr('تحصيل الفرق','Collect the difference'),exception:tr('معالجة تعثر التنفيذ','Resolve the execution issue'),payment:tr('تسجيل الدفع الفعلي','Record actual payment'),evidence:tr('توثيق تنفيذ الحل','Document the resolution')});
   const actionNames=()=>({assign:tr('تحديد المسؤول','Owner assigned'),review:tr('بدء المراجعة','Review started'),plan:tr('تحديد خطة الحل','Resolution planned'),case_linked:tr('ربط طلب التنفيذ','Execution linked'),link:tr('ربط طلب التنفيذ','Execution linked'),unlink:tr('مراجعة طلب ملغى','Cancelled case reviewed'),wait:tr('تحديد انتظار ومتابعة','Follow-up scheduled'),resume:tr('استئناف المعالجة','Processing resumed'),fulfill:tr('توثيق تنفيذ الحل','Resolution documented'),payment:tr('دفع مستحق العميل','Customer payment recorded'),contact:tr('تواصل مع العميل','Customer contact'),close:tr('إغلاق الشكوى','Complaint closed'),reopen:tr('إعادة فتح الشكوى','Complaint reopened'),archive:tr('أرشفة الشكوى','Complaint archived'),items:tr('تحديد البنود والكميات','Items selected'),negative_rating:tr('تقييم يحتاج مراجعة','Rating needs review')});
   let dialog,active,serial=0,busy=false,queue='active',lastFocus,createDraft=null,draftOwner='';
+  const details=new Map(),reads=new Map(),images=new Map(),positions=new Map();
+  let cacheOwner='',imageObserver,changeTimer,changeTask;
+  function checkOwner(){if(cacheOwner!==me()){cacheOwner=me();details.clear();reads.clear();images.clear();positions.clear();}}
+  function remember(row){checkOwner();details.set(String(row._id),{row,at:Date.now()});if(details.size>50)details.delete(details.keys().next().value);return row;}
+  function readDetail(id,fresh=false,event=''){
+    checkOwner();const key=String(id),cached=details.get(key),owner=me(),lang=tr('ar','en'),readKey=key+':'+lang+':'+event;
+    if(!fresh&&cached&&Date.now()-cached.at<15000)return Promise.resolve(cached.row);
+    if(reads.has(readKey))return reads.get(readKey);
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+    const task=api(`/complaints/${encodeURIComponent(id)}?view=workspace&lang=${lang}&event=${encodeURIComponent(event)}`,{background:true,signal:controller.signal}).then(row=>{
+      if(me()===owner&&reads.get(readKey)===task)remember(row);return row;
+    }).catch(e=>{if(e.name==='AbortError')throw new Error(tr('استغرق تحميل الملف وقتًا أطول من المتوقع. أعد المحاولة.','Loading took longer than expected. Please retry.'));throw e;}).finally(()=>{clearTimeout(timer);if(reads.get(readKey)===task)reads.delete(readKey);});
+    reads.set(readKey,task);return task;
+  }
   const el=s=>dialog?.querySelector(s);
   function show(title,subtitle,html){
-    if(!dialog){dialog=document.createElement('dialog');dialog.className='cf-dialog';document.body.appendChild(dialog);dialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});dialog.addEventListener('close',()=>lastFocus?.isConnected&&lastFocus.focus());}
-    if(!dialog.open)lastFocus=document.activeElement;
+    if(!dialog){dialog=document.createElement('dialog');dialog.className='cf-dialog';document.body.appendChild(dialog);dialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});dialog.addEventListener('close',()=>{if(dialog.open)return;closeSelect();imageObserver?.disconnect();if(!document.querySelector('.as-dialog[open]')&&lastFocus?.isConnected)lastFocus.focus();});}
+    closeSelect();
+    imageObserver?.disconnect();
+    delete dialog.dataset.cfFormAction;
+    if(!dialog.open&&!document.activeElement?.closest('.as-dialog'))lastFocus=document.activeElement;
     dialog.dir=tr('rtl','ltr');dialog.setAttribute('aria-labelledby','cf-title');
     dialog.innerHTML=`<div class="cf-shell"><header class="cf-head"><div><small>${esc(subtitle)}</small><h2 id="cf-title">${esc(title)}</h2></div><button type="button" class="btn btn-outline" data-cf-dismiss aria-label="${tr('إغلاق','Close')}">×</button></header><div class="cf-body"><div class="cf-error" role="alert" data-cf-error></div>${html}</div></div>`;
-    el('[data-cf-dismiss]').onclick=()=>{if(!busy)dialog.close();};if(!dialog.open)dialog.showModal();return ++serial;
+    el('[data-cf-dismiss]').onclick=()=>{if(!busy)dialog.close();};if(!dialog.open)dialog.showModal();
+    if(typeof _pmEnhanceSelects==='function')_pmEnhanceSelects(dialog);
+    return ++serial;
+  }
+  function closeSelect(){if(typeof _pmSelOpen!=='undefined'&&_pmSelOpen?.wrap.closest('.cf-dialog')===dialog)_pmSelClose();}
+  function visitExecution(row,caseId=''){
+    if(busy)return;
+    checkOwner();
+    if(dialog?.open&&active?._id===row._id){
+      positions.set(String(row._id),el('.cf-body').scrollTop);
+      if(positions.size>50)positions.delete(positions.keys().next().value);
+    }
+    const task=AfterSales.fromComplaint({complaintId:row._id,complaintNo:row.complaintNo,invoiceId:row.transactionId,kind:row.workflow?.solution,expectedComplaintRevision:row.workflow?.revision,items:row.items,caseId});
+    if(document.querySelector('.as-dialog[open]')){closeSelect();serial++;dialog?.close();}
+    return task;
+  }
+  function execution(id){const row=details.get(String(id))?.row||(complaints||[]).find(c=>String(c._id)===String(id));if(row)return visitExecution(row,row.workflow?.caseId);}
+  function resume(id){
+    checkOwner();
+    const task=open(id);
+    const body=el('.cf-body');if(body)body.scrollTop=positions.get(String(id))||0;
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)body?.animate?.([{opacity:.65},{opacity:1}],{duration:140,easing:'ease-out'});
+    return task;
   }
   const error=e=>{if(el('[data-cf-error]')){el('[data-cf-error]').textContent=e.message||String(e);el('[data-cf-error]').scrollIntoView({block:'nearest'});}else toast(e.message||String(e),true);};
   function buttonsDisabled(value){busy=value;dialog?.querySelectorAll('button').forEach(b=>{if(value){b.dataset.wasDisabled=String(b.disabled);b.disabled=true;}else{b.disabled=b.dataset.wasDisabled==='true';delete b.dataset.wasDisabled;}});}
-  async function refresh(){if(typeof loadComplaints==='function')await loadComplaints();if(typeof buildNotifications==='function')buildNotifications();if(typeof buildSidebar==='function')buildSidebar();}
+  async function refresh(row){
+    if(row){remember(row);const index=(complaints||[]).findIndex(c=>String(c._id)===String(row._id));if(index<0)complaints.unshift(row);else complaints[index]=row;if(typeof renderComplaints==='function')renderComplaints();if(typeof renderCmpNegAlert==='function')renderCmpNegAlert();}
+    else if(typeof loadComplaints==='function')await loadComplaints();
+    if(typeof buildNotifications==='function')buildNotifications();if(typeof buildSidebar==='function')buildSidebar();
+  }
   async function mutate(row,action,fields){
     const storage=`complaint-operation:${me()}:${row._id}:${action}`;
     let pending;try{pending=JSON.parse(sessionStorage.getItem(storage)||'null');}catch{}
     if(!pending){pending={action,...fields,expectedRevision:row.workflow?.revision||0,operationKey:uid()};sessionStorage.setItem(storage,JSON.stringify(pending));}
-    try{const result=await api(`/complaints/${row._id}/workflow`,{method:'POST',body:JSON.stringify(pending)});sessionStorage.removeItem(storage);return result;}
+    details.delete(String(row._id));reads.clear();
+    try{const result=await api(`/complaints/${row._id}/workflow`,{method:'POST',body:JSON.stringify(pending)});sessionStorage.removeItem(storage);remember(result);return result;}
     catch(e){if(e.status>=400&&e.status<500&&![408,429].includes(e.status))sessionStorage.removeItem(storage);throw e;}
   }
   const field=(name,label,type='text',value='',extra='')=>`<label class="cf-field">${esc(label)}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
-  const select=(name,label,values,value='')=>`<label class="cf-field">${esc(label)}<select name="${name}">${Object.entries(values).map(([key,text])=>`<option value="${esc(key)}" ${key===value?'selected':''}>${esc(text)}</option>`).join('')}</select></label>`;
+  const select=(name,label,values,value='')=>`<div class="cf-field"><span id="cf-label-${name}">${esc(label)}</span><span class="cf-select"><select name="${name}" aria-labelledby="cf-label-${name}">${Object.entries(values).map(([key,text])=>`<option value="${esc(key)}" ${key===value?'selected':''}>${esc(text)}</option>`).join('')}</select></span></div>`;
+  function shippingStatus(tx){
+    if(!window.SouliaOrderStatus)return '';
+    const meta=SouliaOrderStatus.resolve(tx,'transaction',tr('ar','en'));
+    return `<span class="cf-shipping">${SouliaOrderStatus.badge(meta)}${meta.carrier?`<small>${esc(meta.carrier)}</small>`:''}${meta.note?`<small>${esc(meta.note)}</small>`:''}</span>`;
+  }
+  function productImage(item){
+    const catalog=typeof products!=='undefined'&&Array.isArray(products)?products.find(p=>(item.productId&&p._id===item.productId)||(item.code&&p.code===item.code)):null;
+    const url=[item.imageUrl,catalog?.imageUrl,catalog?.images?.[0]].find(v=>typeof v==='string'&&/^(https?:\/\/|\/(?!\/)|data:image\/(png|jpeg|webp|gif);base64,)/i.test(v));
+    return `<span class="cf-product-image"><span aria-hidden="true">▧</span>${url?`<img src="${esc(url)}" alt="${esc(item.name||catalog?.name||item.code||tr('منتج','Product'))}" loading="lazy" onerror="this.hidden=true">`:''}</span>`;
+  }
   const note=(label=tr('التفاصيل وسبب الإجراء','Details and reason'))=>`<label class="cf-field">${esc(label)}<textarea name="note" required maxlength="2000"></textarea></label>`;
-  const confirm=(name,label)=>`<label class="cf-check"><input name="${name}" type="checkbox">${esc(label)}</label>`;
+  const confirm=(name,label)=>`<label class="cf-check"><input name="${name}" type="checkbox"><span>${esc(label)}</span></label>`;
   function cairoInput(date){const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;}
   function cairoDate(value){let guess=Date.parse(value+'Z');for(let i=0;i<3;i++)guess+=Date.parse(value+'Z')-Date.parse(cairoInput(new Date(guess))+'Z');if(cairoInput(new Date(guess))!==value)throw new Error(tr('موعد غير صالح بتوقيت القاهرة','Invalid Cairo date/time'));return new Date(guess).toISOString();}
   const nextDay=()=>cairoInput(new Date(Date.now()+86400000));
@@ -61,9 +115,20 @@
     if(w.solution)return ['fulfill',tr('توثيق الحل المنفذ','Document resolution')];
     return [admin()?'plan':'contact',admin()?tr('اختيار خطة الحل','Choose resolution plan'):tr('تسجيل تواصل العميل','Record customer contact')];
   }
-  async function open(id,messageEvent=''){
-    const version=show(tr('ملف الشكوى','Complaint workspace'),'',`<p>${tr('جارٍ تحميل الملف…','Loading complaint…')}</p>`);
-    try{const row=await api('/complaints/'+encodeURIComponent(id));if(version!==serial||!dialog.open)return;active=row;render(row);await loadCustomerMessage(row,messageEvent);}catch(e){error(e);}
+  async function open(id,messageEvent='',savedRow=null){
+    checkOwner();
+    const cached=savedRow||details.get(String(id))?.row||(complaints||[]).find(c=>String(c._id)===String(id));
+    if(cached){active=cached;render(cached);}
+    else show(tr('ملف الشكوى','Complaint workspace'),'',`<p role="status">${tr('جارٍ تحميل الملف…','Loading complaint…')}</p>`);
+    const version=serial;
+    if(savedRow?.execution){void loadCustomerMessage(savedRow,messageEvent);return;}
+    const body=el('.cf-body');body.setAttribute('aria-busy','true');
+    const status=document.createElement('div');status.className='cf-refresh-status';status.setAttribute('role','status');status.textContent=tr('جارٍ تحديث بيانات الملف…','Updating case details…');el('.cf-head>div').appendChild(status);
+    try{
+      const row=await readDetail(id,true,messageEvent);if(version!==serial||!dialog.open)return;
+      const scrollTop=body.scrollTop;active=row;render(row);el('.cf-body').scrollTop=scrollTop;void loadCustomerMessage(row,messageEvent);
+    }catch(e){if(version===serial&&dialog.open){error(e);const box=el('[data-cf-error]');const retry=document.createElement('button');retry.type='button';retry.className='btn btn-outline';retry.textContent=tr('إعادة المحاولة','Retry');retry.onclick=()=>open(id,messageEvent);box.appendChild(retry);}}
+    finally{if(body.isConnected)body.removeAttribute('aria-busy');status.remove();}
   }
   const messageKinds=()=>({registered:tr('تأكيد تسجيل الشكوى','Complaint registered'),update:tr('تحديث متابعة المشكلة','Progress update'),confirmation:tr('طلب تأكيد انتهاء المشكلة','Request resolution confirmation'),resolved:tr('تأكيد حل المشكلة','Resolution completed'),closed:tr('إبلاغ بنتيجة الإغلاق','Closure outcome')});
   async function loadCustomerMessage(row,event=''){
@@ -73,7 +138,7 @@
     copy.onclick=async()=>{try{await navigator.clipboard.writeText(area.value);toast(tr('تم النسخ؛ الرسالة جاهزة لإرسالها للعميل','Copied; ready to send to the customer'));}catch{area.focus();area.select();toast(tr('تعذر النسخ التلقائي؛ النص محدد لتنسخه يدويًا','Clipboard unavailable; select and copy the highlighted text'),true);}};
     card.querySelector('[data-cf-templates]')?.addEventListener('click',()=>editMessageTemplates(row._id,event));
     try{
-      const result=await api(`/complaints/${row._id}/customer-message?lang=${tr('ar','en')}&event=${encodeURIComponent(event)}`);
+      const result=row.customerMessage?.language===tr('ar','en')?row.customerMessage:await api(`/complaints/${row._id}/customer-message?lang=${tr('ar','en')}&event=${encodeURIComponent(event)}`,{background:true});
       if(!card.isConnected)return;
       area.value=result.text;card.querySelector('[data-cf-message-title]').textContent=messageKinds()[result.kind];copy.disabled=false;copy.dataset.wasDisabled='false';
     }catch(e){if(card.isConnected){area.value=tr('تعذر تحميل الرسالة. أعد فتح الملف للمحاولة مجددًا.','Could not load the message. Reopen the case to retry.');error(e);}}
@@ -120,21 +185,30 @@
       ${row.surveySlug&&closed?`<section class="cf-card"><h3>${tr('تقييم العميل','Customer feedback')}</h3>${row.surveyRating?`<p>${row.surveyRating} / 5</p><p>${esc(row.surveyComment)}</p>`:`<button class="btn btn-outline" data-cf-copy>${tr('نسخ رابط التقييم','Copy feedback link')}</button>`}</section>`:''}
       <section class="cf-card"><h3>${tr('الإجراءات','Actions')}</h3><div class="cf-actions">${actions}${button('comment',tr('ملاحظة داخلية','Internal note'))}</div></section></aside></div>`);
     dialog.querySelectorAll('[data-cf-action]').forEach(b=>b.onclick=()=>act(row,b.dataset.cfAction));
-    dialog.querySelectorAll('[data-cf-previous]').forEach(b=>b.onclick=()=>{dialog.close();AfterSales.open(b.dataset.cfPrevious);});
+    dialog.querySelectorAll('[data-cf-previous]').forEach(b=>b.onclick=()=>visitExecution(row,b.dataset.cfPrevious));
     el('[data-cf-invoice]')?.addEventListener('click',()=>{dialog.close();showInvoiceDetail(row.transactionId);});
     el('[data-cf-copy]')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.origin+'/s/'+row.surveySlug);toast(tr('تم نسخ الرابط','Link copied'));}catch(e){error(e);}});
-    dialog.querySelectorAll('[data-cf-image]').forEach(async button=>{try{const result=await api(`/complaints/${row._id}/evidence/${button.dataset.cfImage}`);if(!button.isConnected)return;button.querySelector('img').src=result.data;button.onclick=()=>{show(tr('إثبات الشكوى','Complaint evidence'),row.complaintNo,`<img src="${esc(result.data)}" style="max-width:100%;display:block;margin:auto" alt="${esc(button.title)}"><div class="cf-foot"><button class="btn btn-outline" data-cf-back>${tr('رجوع','Back')}</button></div>`);el('[data-cf-back]').onclick=()=>open(row._id);};}catch{button.textContent=tr('تعذر تحميل الصورة','Image unavailable');}});
-    el('[data-cf-upload]').onchange=async event=>{if(busy)return;const files=[...event.target.files];if(!files.length)return;buttonsDisabled(true);try{for(const file of files){if(file.size>5*1024*1024)throw new Error(tr('الصورة أكبر من 5 ميجابايت','Image exceeds 5 MB'));const data=new FormData();data.append('file',file);await api(`/complaints/${row._id}/evidence`,{method:'POST',body:data});}await open(row._id);await refresh();}catch(e){await open(row._id);error(e);}finally{buttonsDisabled(false);}};
+    async function loadImage(button){
+      const key=`${me()}:${row._id}:${button.dataset.cfImage}`;
+      try{
+        if(!images.has(key)){images.set(key,api(`/complaints/${row._id}/evidence/${button.dataset.cfImage}`,{background:true}));if(images.size>30)images.delete(images.keys().next().value);}
+        const result=await images.get(key);if(!button.isConnected)return;
+        button.querySelector('img').src=result.data;button.onclick=()=>{show(tr('إثبات الشكوى','Complaint evidence'),row.complaintNo,`<img src="${esc(result.data)}" style="max-width:100%;display:block;margin:auto" alt="${esc(button.title)}"><div class="cf-foot"><button class="btn btn-outline" data-cf-back>${tr('رجوع','Back')}</button></div>`);el('[data-cf-back]').onclick=()=>open(row._id);};
+      }catch{images.delete(key);if(button.isConnected)button.textContent=tr('تعذر تحميل الصورة','Image unavailable');}
+    }
+    imageObserver=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){imageObserver.unobserve(entry.target);void loadImage(entry.target);}},{root:el('.cf-body'),rootMargin:'100px'});
+    dialog.querySelectorAll('[data-cf-image]').forEach(button=>imageObserver.observe(button));
+    el('[data-cf-upload]').onchange=async event=>{if(busy)return;const files=[...event.target.files];if(!files.length)return;buttonsDisabled(true);try{let result;for(const file of files){if(file.size>5*1024*1024)throw new Error(tr('الصورة أكبر من 5 ميجابايت','Image exceeds 5 MB'));const data=new FormData();data.append('file',file);result=await api(`/complaints/${row._id}/evidence`,{method:'POST',body:data});}await refresh(result);await open(row._id,'',result);}catch(e){await open(row._id);error(e);}finally{buttonsDisabled(false);}};
   }
   async function act(row,action){
-    if(action==='case'){dialog.close();return AfterSales.open(row.workflow.caseId);}
-    if(action==='create-case'){dialog.close();return AfterSales.create(row.transactionId,row.workflow.solution,{complaintId:row._id,expectedComplaintRevision:row.workflow.revision,items:row.items,complaintNo:row.complaintNo});}
+    if(action==='case')return visitExecution(row,row.workflow.caseId);
+    if(action==='create-case')return visitExecution(row);
     return form(row._id,action);
   }
   async function form(id,action){
     const version=show(tr('إجراء على الشكوى','Complaint action'),'',tr('جارٍ التحميل…','Loading…'));
     try{
-      const row=await api('/complaints/'+encodeURIComponent(id));if(version!==serial||!dialog.open)return;active=row;
+      const row=await readDetail(id);if(version!==serial||!dialog.open)return;active=row;
       if(action==='items')return create(row.transactionId,{edit:row});
       let fields='',extraNotice='';
       if(action==='plan')fields=select('solution',tr('الحل المقترح','Proposed solution'),solutions(),row.workflow?.solution||'support')+`<div data-cf-money>${field('amount',tr('المبلغ المعتمد','Approved amount'),'number',row.workflow?.amount||'','min="0.01" step="0.01"')}${confirm('confirmed',tr('أعتمد هذا المبلغ المستحق للعميل','I approve this customer payment'))}</div>`+deadline();
@@ -160,11 +234,20 @@
         extraNotice=row.execution?.ready?tr('سيحفظ الإغلاق الأدلة ويتيح التقييم. تسوية الناقل الداخلية تبقى مستقلة.','Closure keeps the evidence and enables feedback. Carrier settlement stays separate.'):tr('إغلاق ناجح غير متاح قبل اكتمال التنفيذ. الالتزامات المفتوحة تمنع الإغلاق.','Successful closure requires completed execution. Open obligations prevent closure.');
       }
       let pending;try{pending=JSON.parse(sessionStorage.getItem(`complaint-operation:${me()}:${row._id}:${action}`)||'null');}catch{}
-      show(actionNames()[action]||(action==='comment'?tr('ملاحظة داخلية','Internal note'):tr('إجراء الشكوى','Complaint action')),row.complaintNo,`${pending?`<div class="cf-notice">${tr('هناك محاولة لم يتأكد حفظها. إعادة المحاولة تستخدم نفس البيانات لمنع التكرار.','An earlier attempt is unconfirmed. Retrying uses the same data to avoid duplication.')}</div>`:''}${extraNotice?`<div class="cf-notice">${esc(extraNotice)}</div>`:''}<form data-cf-form>${fields}${note()}<div class="cf-foot"><button type="button" class="btn btn-outline" data-cf-back>${tr('رجوع','Back')}</button><button class="btn btn-primary" type="submit">${tr('حفظ الإجراء','Save action')}</button></div></form>`);
+      show(actionNames()[action]||(action==='comment'?tr('ملاحظة داخلية','Internal note'):tr('إجراء الشكوى','Complaint action')),row.complaintNo,`${pending?`<div class="cf-notice">${tr('هناك محاولة لم يتأكد حفظها. إعادة المحاولة تستخدم نفس البيانات لمنع التكرار.','An earlier attempt is unconfirmed. Retrying uses the same data to avoid duplication.')}</div>`:''}${extraNotice?`<div class="cf-notice">${esc(extraNotice)}</div>`:''}<form data-cf-form>${fields}${action==='close'?note(tr('سبب الإغلاق والتفاصيل','Closure reason and details')):note()}<div class="cf-foot"><button type="button" class="btn btn-outline" data-cf-back>${tr('رجوع','Back')}</button><button class="btn btn-primary" type="submit">${action==='close'?tr('إغلاق الشكوى','Close complaint'):tr('حفظ الإجراء','Save action')}</button></div></form>`);
+      dialog.dataset.cfFormAction=action;
       const f=el('form');el('[data-cf-back]').onclick=()=>open(id);
-      function dynamic(){if(el('[data-cf-money]'))el('[data-cf-money]').hidden=!['compensation','refund_without_return'].includes(f.elements.solution.value);if(el('[data-cf-duplicate]'))el('[data-cf-duplicate]').hidden=f.elements.outcome.value!=='duplicate';}f.onchange=dynamic;dynamic();
+      function dynamic(){
+        if(el('[data-cf-money]'))el('[data-cf-money]').hidden=!['compensation','refund_without_return'].includes(f.elements.solution.value);
+        if(el('[data-cf-duplicate]'))el('[data-cf-duplicate]').hidden=f.elements.outcome.value!=='duplicate';
+        if(action==='close'){
+          const success=['resolved','partial_agreement'].includes(f.elements.outcome.value);
+          f.elements.customerConfirmed.closest('.cf-check').hidden=!success;
+          if(!success)f.elements.customerConfirmed.checked=false;
+        }
+      }f.onchange=dynamic;dynamic();
       if(pending){for(const [name,value] of Object.entries(pending)){const input=f.elements.namedItem(name);if(!input)continue;if(input.type==='checkbox')input.checked=value===true;else input.value=name==='dueAt'?cairoInput(new Date(value)):value;input.disabled=true;}dynamic();}
-      f.onsubmit=async event=>{event.preventDefault();if(busy)return;buttonsDisabled(true);try{const values=Object.fromEntries(new FormData(f));for(const name of ['confirmed','customerConfirmed'])if(f.elements[name])values[name]=f.elements[name].checked;if(values.amount)values.amount=Number(values.amount);else delete values.amount;if(values.dueAt)values.dueAt=cairoDate(values.dueAt);await mutate(row,action,values);await refresh();await open(id);}catch(e){error(e);}finally{buttonsDisabled(false);}};
+      f.onsubmit=async event=>{event.preventDefault();if(busy)return;buttonsDisabled(true);const view=serial;try{const values=Object.fromEntries(new FormData(f));for(const name of ['confirmed','customerConfirmed'])if(f.elements[name])values[name]=f.elements[name].checked;if(values.amount)values.amount=Number(values.amount);else delete values.amount;if(values.dueAt)values.dueAt=cairoDate(values.dueAt);const result=await mutate(row,action,values);await refresh(result);if(view===serial&&dialog.open)await open(id,'',result);}catch(e){if(view===serial)error(e);}finally{buttonsDisabled(false);}};
     }catch(e){error(e);}
   }
   function draftKey(){return 'complaint-draft:'+me();}
@@ -178,23 +261,34 @@
     if(!tx&&draft.transactionId){try{tx=await api('/transactions/'+encodeURIComponent(draft.transactionId));}catch(e){toast(e.message,true);}}
     const edit=options.edit;
     show(edit?tr('الفاتورة والقطع المتضررة','Invoice and affected items'):tr('شكوى جديدة','New complaint'),tr('ملف واحد لكل مشكلة · متابعة حتى الإغلاق','One issue, one case · tracked through closure'),`<form data-cf-create>
-      <section class="cf-card"><h3>${tr('الفاتورة','Invoice')}</h3><input class="cf-search" name="orderSearch" placeholder="${tr('ابحث برقم الفاتورة أو الاسم أو الهاتف','Search invoice, name or phone')}" autocomplete="off"><div data-cf-results></div><div data-cf-selected></div><div data-cf-items></div><div data-cf-duplicates></div></section>
+      <section class="cf-card"><h3>${tr('الفاتورة','Invoice')}</h3><div class="cf-order-search"><label class="cf-search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input class="cf-search" name="orderSearch" aria-label="${tr('البحث عن فاتورة','Search invoices')}" aria-controls="cf-search-results" placeholder="${tr('ابحث برقم الفاتورة أو الاسم أو الهاتف','Search invoice, name or phone')}" autocomplete="off"></label><div class="cf-search-results" id="cf-search-results" data-cf-results hidden></div><small class="cf-search-hint" data-cf-search-hint role="status"></small></div><div data-cf-selected></div><div data-cf-items></div><div data-cf-duplicates></div></section>
       ${!edit?`<div class="cf-two">${field('clientName',tr('اسم العميل','Customer name'),'text',draft.clientName||'','required')}${field('phone',tr('رقم التواصل','Phone'),'tel',draft.phone||'','required')}</div><div class="cf-two">${select('categoryGroup',tr('نوع المشكلة','Issue category'),{'':tr('اختر','Choose'),...Object.fromEntries(Object.keys(CMP_CATEGORIES).map(k=>[k,_cmpCategoryLabel(k)]))},draft.categoryGroup)}${select('priority',tr('الأولوية','Priority'),{'متوسطة':tr('متوسطة','Medium'),'عالية':tr('عالية','High'),'منخفضة':tr('منخفضة','Low')},draft.priority||'متوسطة')}</div><label class="cf-field">${tr('وصف المشكلة والنتيجة المطلوبة','Issue and desired outcome')}<textarea name="description" required maxlength="5000">${esc(draft.description||'')}</textarea></label>${field('imageUrl',tr('رابط صورة المشكلة — اختياري','Issue image URL — optional'),'url',draft.imageUrl||'')}`:''}
       <div class="cf-foot"><button type="button" class="btn btn-outline" data-cf-back>${edit?tr('رجوع','Back'):tr('حفظ مسودة وإغلاق','Save draft & close')}</button>${!edit?`<button type="button" class="btn btn-outline" data-cf-discard>${tr('مسح المسودة','Discard draft')}</button>`:''}<button type="submit" class="btn btn-primary">${edit?tr('حفظ البنود','Save items'):tr('تسجيل الشكوى','Create complaint')}</button></div></form>`);
     const f=el('form');let selected=tx;
     function saveDraft(){if(edit)return;const values=Object.fromEntries(new FormData(f));delete values.orderSearch;Object.assign(draft,values);draft.items=readItems();draft.transactionId=selected?._id||'';sessionStorage.setItem(draftKey(),JSON.stringify(draft));}
     function readItems(){return [...f.querySelectorAll('[data-cf-line]')].filter(r=>r.querySelector('[type=checkbox]').checked).map(r=>({lineIndex:Number(r.dataset.cfLine),qty:Number(r.querySelector('[type=number]').value)}));}
     function draw(){
-      el('[data-cf-selected]').innerHTML=selected?`<p><bdi>#${esc(selected.ref)}</bdi> · ${esc(selected.client)} ${!edit?`<button type="button" class="cf-link" data-cf-clear>${tr('تغيير','Change')}</button>`:''}</p>`:`<p class="cf-muted">${tr('يمكن تسجيل الشكوى بدون فاتورة مع بيانات التواصل.','You can register without an invoice using customer contact details.')}</p>`;
+      el('.cf-order-search').hidden=!!selected;
+      el('[data-cf-selected]').innerHTML=selected?`<div class="cf-selected-order"><div class="cf-order-info"><strong><bdi>#${esc(selected.ref)}</bdi> · ${esc(selected.client)}</strong>${selected.phone?`<small><bdi>${esc(selected.phone)}</bdi></small>`:''}${shippingStatus(selected)}</div>${!edit?`<button type="button" class="btn btn-outline cf-change-order" data-cf-clear>${tr('تغيير الفاتورة','Change invoice')}</button>`:''}</div>`:`<p class="cf-muted">${tr('يمكن تسجيل الشكوى بدون فاتورة مع بيانات التواصل.','You can register without an invoice using customer contact details.')}</p>`;
       if(!edit){f.elements.clientName.readOnly=!!selected?.client;f.elements.phone.readOnly=!!selected?.phone;if(selected){f.elements.clientName.value=selected.client||draft.clientName||'';f.elements.phone.value=selected.phone||draft.phone||'';}}
-      el('[data-cf-items]').innerHTML=(selected?.items||[]).map((i,index)=>{const picked=draft.items?.find(v=>v.lineIndex===index);return `<label class="cf-item" data-cf-line="${index}"><input type="checkbox" ${picked?'checked':''}><span>${esc(i.name||i.code)}<small>${tr('الكمية بالفاتورة','Invoice quantity')}: ${i.qty}</small></span><input type="number" min="1" max="${i.qty}" step="1" value="${picked?.qty||1}" aria-label="${tr('الكمية المتضررة','Affected quantity')} ${esc(i.name||i.code)}"></label>`;}).join('');
+      el('[data-cf-items]').innerHTML=(selected?.items||[]).map((i,index)=>{const picked=draft.items?.find(v=>v.lineIndex===index);return `<div class="cf-item cf-product-item" data-cf-line="${index}"><label class="cf-product-choice"><input type="checkbox" ${picked?'checked':''}>${productImage(i)}<span class="cf-product-info"><strong>${esc(i.name||i.code)}</strong>${i.code?`<small><bdi>${esc(i.code)}</bdi></small>`:''}<small>${tr('الكمية بالفاتورة','Invoice quantity')}: ${esc(i.qty)}</small></span></label><label class="cf-item-quantity"><span>${tr('الكمية المتضررة','Affected quantity')}</span><input type="number" min="1" max="${esc(i.qty)}" step="1" value="${esc(picked?.qty||1)}" aria-label="${tr('الكمية المتضررة','Affected quantity')} ${esc(i.name||i.code)}"></label></div>`;}).join('');
       const similar=(complaints||[]).filter(c=>c._id!==edit?._id&&c.workflow?.stage!=='closed'&&(selected?c.transactionId===selected._id:draft.phone&&c.phone===draft.phone));
       el('[data-cf-duplicates]').innerHTML=similar.length?`<div class="cf-notice">${tr('توجد شكاوى مفتوحة؛ راجعها قبل إنشاء أخرى:','Open complaints found; review before creating another:')} ${similar.map(c=>`<button type="button" class="cf-link" data-cf-existing="${esc(c._id)}">${esc(c.complaintNo)}</button>`).join(' · ')}</div>`:'';
       f.querySelectorAll('[data-cf-existing]').forEach(b=>b.onclick=()=>{saveDraft();open(b.dataset.cfExisting);});
-      el('[data-cf-clear]')?.addEventListener('click',()=>{selected=null;draft.items=[];draw();saveDraft();});
+      el('[data-cf-clear]')?.addEventListener('click',()=>{selected=null;draft.items=[];draw();saveDraft();f.elements.orderSearch.focus();});
     }
     draw();
-    f.elements.orderSearch.oninput=()=>{const q=f.elements.orderSearch.value.trim().toLowerCase();const rows=q?(transactions||[]).filter(t=>t.type==='مبيعات'&&[t.ref,t.client,t.phone].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,20):[];el('[data-cf-results]').innerHTML=rows.map(t=>`<button class="cf-result" type="button" data-cf-pick="${esc(t._id)}"><bdi>#${esc(t.ref)}</bdi> · ${esc(t.client)} · <bdi>${esc(t.phone||'')}</bdi></button>`).join('');f.querySelectorAll('[data-cf-pick]').forEach(b=>b.onclick=()=>{selected=rows.find(t=>t._id===b.dataset.cfPick);draft.items=[];f.elements.orderSearch.value='';el('[data-cf-results]').innerHTML='';draw();saveDraft();});};
+    f.elements.orderSearch.oninput=()=>{
+      const normalize=v=>String(v??'').toLowerCase().replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632)).trim();
+      const q=normalize(f.elements.orderSearch.value).replace(/^#/,'');
+      const matches=q?(transactions||[]).filter(t=>t.type==='مبيعات'&&[t.ref,t.client,t.phone].some(v=>normalize(v).includes(q))):[];
+      matches.sort((a,b)=>Number(normalize(b.ref)===q)-Number(normalize(a.ref)===q));
+      const rows=matches.slice(0,5),results=el('[data-cf-results]'),hint=el('[data-cf-search-hint]');
+      results.hidden=!rows.length;
+      results.innerHTML=rows.map(t=>`<button class="cf-result" type="button" data-cf-pick="${esc(t._id)}"><span class="cf-order-info"><strong><bdi>#${esc(t.ref)}</bdi> · ${esc(t.client)}</strong><small><bdi>${esc(t.phone||'')}</bdi></small></span>${shippingStatus(t)}</button>`).join('');
+      hint.textContent=!q?'':!rows.length?tr('لا توجد فواتير مطابقة. جرّب رقم الفاتورة أو الهاتف.','No matching invoices. Try an invoice number or phone.'):matches.length>5?tr(`عرض 5 من ${matches.length} نتيجة — اكتب تفاصيل أكثر لتحديد الفاتورة.`,`Showing 5 of ${matches.length} results — refine your search to find the invoice.`):tr(`${rows.length} نتيجة بحث`,`${rows.length} search result(s)`);
+      f.querySelectorAll('[data-cf-pick]').forEach(b=>b.onclick=()=>{selected=rows.find(t=>t._id===b.dataset.cfPick);draft.items=[];f.elements.orderSearch.value='';results.innerHTML='';results.hidden=true;hint.textContent='';draw();saveDraft();});
+    };
     f.addEventListener('input',saveDraft);f.addEventListener('change',saveDraft);
     el('[data-cf-back]').onclick=()=>{saveDraft();edit?open(edit._id):dialog.close();};
     el('[data-cf-discard]')?.addEventListener('click',()=>{sessionStorage.removeItem(draftKey());createDraft=null;dialog.close();});
@@ -202,18 +296,61 @@
       let result;
       if(edit)result=await mutate(edit,'items',{transactionId:selected?._id,items:readItems()});
       else{const body={...draft,items:readItems()};delete body.orderSearch;if(!body.transactionId)delete body.transactionId;result=await api('/complaints',{method:'POST',body:JSON.stringify(body)});sessionStorage.removeItem(draftKey());createDraft=null;}
-      await refresh();await open(result._id,edit?'':'registered');
+      await refresh(result);await open(result._id,edit?'':'registered',result);
     }catch(e){error(e);}finally{buttonsDisabled(false);}};
   }
   function matches(c){const w=c.workflow||{},stage=c.lifecycleStage||w.stage||'review';if(queue==='attention')return !!w.reviewRequired||stage==='blocked';if(queue==='archived')return !!w.archivedAt;if(w.archivedAt)return false;if(queue==='all')return true;if(queue==='active')return stage!=='closed';if(queue==='mine')return stage!=='closed'&&(w.ownerId||c.submittedById)===me();if(queue==='overdue')return !!c.overdue;return stage===queue;}
+  let invoiceIndex=new Map();
+  let listPage=0,listSignature='';
+  function pageRows(rows){
+    const signature=rows.map(c=>c._id).join('|');if(signature!==listSignature){listSignature=signature;listPage=0;}
+    const size=30,pages=Math.ceil(rows.length/size);listPage=Math.min(listPage,Math.max(0,pages-1));
+    const host=document.getElementById('cmp-complaints-section');let foot=host?.querySelector('[data-cf-pagination]');
+    if(host&&!foot){foot=document.createElement('div');foot.className='cf-pagination';foot.dataset.cfPagination='';host.appendChild(foot);}
+    if(foot){foot.hidden=!rows.length;foot.innerHTML=`<span role="status">${tr('عرض','Showing')} ${listPage*size+1}–${Math.min((listPage+1)*size,rows.length)} ${tr('من','of')} ${rows.length}</span><div><button type="button" class="btn btn-outline" data-cf-prev ${listPage===0?'disabled':''}>${tr('السابق','Previous')}</button><button type="button" class="btn btn-outline" data-cf-next ${listPage>=pages-1?'disabled':''}>${tr('التالي','Next')}</button></div>`;foot.querySelector('[data-cf-prev]').onclick=()=>{listPage--;renderComplaints();};foot.querySelector('[data-cf-next]').onclick=()=>{listPage++;renderComplaints();};}
+    return rows.slice(listPage*size,(listPage+1)*size);
+  }
+  const owner=c=>c.workflow?.owner||c.submittedBy||'';
+  const stageOf=c=>c.lifecycleStage||c.workflow?.stage||'review';
+  function searchText(c){return [c.complaintNo,c.clientName,c.phone,c.transactionRef,c.description,c.categoryGroup,c.category,owner(c),c.submittedBy,c.workflow?.caseRef,solutions()[c.workflow?.solution],stages()[stageOf(c)],...(c.items||[]).flatMap(i=>[i.name,i.code])].join(' ').toLowerCase();}
+  function tableHead(){return [tr('ملف الشكوى','Complaint'),tr('العميل والتواصل','Customer / phone'),tr('الفاتورة والشحن','Invoice / shipping'),tr('المشكلة والمنتجات','Issue / products'),tr('مرحلة المعالجة','Workflow stage'),tr('الحل والتنفيذ','Resolution / execution'),tr('الأولوية','Priority'),tr('المسؤول الحالي','Current owner'),tr('موعد المتابعة','Follow-up due'),tr('الإجراءات','Actions')].map(label=>`<th scope="col">${esc(label)}</th>`).join('');}
+  function issueSummary(c){
+    const items=c.items?.length?c.items:c.productName?[{name:c.productName,qty:c.productQty||1}]:[];
+    const category=typeof _cmpCategoryLabel==='function'?_cmpCategoryLabel(c.categoryGroup):c.categoryGroup;
+    return `<div class="cf-cell-stack"><strong>${esc(category||tr('غير محدد','Unspecified'))}</strong><span class="cf-cell-clamp" title="${esc(c.description)}">${esc(c.description||'—')}</span>${items.length?`<small class="cf-cell-clamp" title="${esc(items.map(i=>`${i.name||i.code} × ${i.qty}`).join(' · '))}">${esc(items.map(i=>`${i.name||i.code} × ${i.qty}`).join(' · '))}</small>`:''}${c.attachments?.length?`<small>${tr('صور الإثبات','Evidence images')}: ${c.attachments.length}</small>`:''}</div>`;
+  }
+  function stageCell(c){const w=c.workflow||{},e=c.execution||{};return `<div class="cf-cell-stack">${badge(c)}${w.reviewRequired?`<small class="cf-due-overdue">${tr('تحتاج مراجعة المسؤول','Owner review needed')}</small>`:''}${w.stage!=='closed'&&w.stage!=='waiting'&&w.solution&&e.blockers?.length?`<small class="cf-cell-clamp">${esc(e.blockers.map(b=>blockers()[b]||b).join(' · '))}</small>`:''}${w.stage==='waiting'&&w.waitReason?`<small class="cf-cell-clamp" title="${esc(w.waitReason)}">${esc(w.waitReason)}</small>`:''}</div>`;}
+  function solutionCell(c){const w=c.workflow||{};return `<div class="cf-cell-stack"><span>${esc(solutions()[w.solution]||tr('لم يُحدد الحل','Not planned'))}</span>${w.caseId?`<button type="button" class="cf-link" data-id="${esc(c._id)}" onclick="event.stopPropagation();ComplaintFlow.execution(this.dataset.id)"><bdi>${esc(w.caseRef||c.execution?.caseRef||tr('طلب التنفيذ','Execution case'))}</bdi></button>`:''}${w.stage==='closed'?`<small>${esc(outcomes()[w.outcome]||'')}</small>`:''}</div>`;}
+  function dueCell(c){const w=c.workflow||{};return w.stage==='closed'?`<div class="cf-cell-stack"><span>${tr('أُغلقت','Closed')}</span><small>${esc(time(w.closedAt||c.resolvedAt))}</small></div>`:`<div class="cf-cell-stack ${c.overdue?'cf-due-overdue':''}"><span>${esc(w.dueAt?time(w.dueAt):tr('غير محدد','Not scheduled'))}</span>${c.overdue?`<small>${tr('متأخرة','Overdue')}</small>`:''}</div>`;}
+  function invoiceCell(c){const tx=invoiceIndex.get(String(c.transactionId));return `<div class="cf-cell-stack">${cmpOrderRefCell(c)}${tx?shippingStatus(tx):`<small>${tr(c.transactionId?'حالة الشحن غير متاحة':'بدون فاتورة',c.transactionId?'Shipping status unavailable':'No invoice')}</small>`}</div>`;}
+  function tableRow(c){return `<tr data-complaint-id="${esc(c._id)}" data-id="${esc(c._id)}" onclick="ComplaintFlow.open(this.dataset.id)">
+    <td><div class="cf-cell-stack">${cmpNoBadge(c)}<small>${esc(time(c.createdAt))}</small></div></td>
+    <td><div class="cf-cell-stack"><strong>${esc(c.clientName||'—')}</strong><small><bdi>${esc(c.phone||'—')}</bdi></small></div></td>
+    <td>${invoiceCell(c)}</td><td>${issueSummary(c)}</td><td>${stageCell(c)}</td><td>${solutionCell(c)}</td><td>${cmpPriorityBadge(c)}</td>
+    <td><div class="cf-cell-stack"><span>${esc(owner(c)||tr('غير معيّن','Unassigned'))}</span>${c.submittedBy&&c.submittedBy!==owner(c)?`<small>${tr('أنشأها','Created by')}: ${esc(c.submittedBy)}</small>`:''}</div></td><td>${dueCell(c)}</td><td>${menu(c)}</td></tr>`;}
+  function listCard(c){return `<article class="cmp-list-card cf-list-card" data-complaint-id="${esc(c._id)}">
+    <div class="cf-list-heading">${cmpNoBadge(c)}${cmpPriorityBadge(c)}</div>
+    <div class="cf-cell-stack"><strong>${esc(c.clientName||'—')}</strong><small><bdi>${esc(c.phone||'—')}</bdi> · ${esc(time(c.createdAt))}</small></div>
+    ${stageCell(c)}${issueSummary(c)}
+    <dl class="cf-list-facts"><dt>${tr('الفاتورة والشحن','Invoice / shipping')}</dt><dd>${invoiceCell(c)}</dd><dt>${tr('المسؤول','Owner')}</dt><dd>${esc(owner(c)||'—')}</dd><dt>${tr('الحل والتنفيذ','Resolution / execution')}</dt><dd>${solutionCell(c)}</dd><dt>${tr('المتابعة','Follow-up')}</dt><dd>${dueCell(c)}</dd></dl>${menu(c)}</article>`;}
   function mount(){
     const host=document.getElementById('cmp-complaints-section');if(!host)return;
+    invoiceIndex=new Map((transactions||[]).map(tx=>[String(tx._id),tx]));
+    const table=host.querySelector('#cmp-table');if(table){table.dataset.cfTable='';table.querySelector('thead tr').innerHTML=tableHead();}
+    const ownerLabel=document.querySelector('#cmp-emp-filter')?.closest('.cmp-filter-field')?.querySelector('label');if(ownerLabel){ownerLabel.removeAttribute('data-i18n');ownerLabel.textContent=tr('المسؤول الحالي','Current owner');}
     let box=host.querySelector('[data-cf-queue]');
     if(!box){box=document.createElement('div');box.className='cf-queue';box.dataset.cfQueue='';host.prepend(box);}
     if(box.dataset.lang!==currentLang){box.dataset.lang=currentLang;box.innerHTML=`<label for="cf-queue">${tr('قائمة العمل','Work queue')}</label><select id="cf-queue">${Object.entries({active:tr('الشكاوى المفتوحة','Open complaints'),mine:tr('مسؤول عنها','Assigned to me'),overdue:tr('متأخرة','Overdue'),attention:tr('تحتاج مراجعة','Needs attention'),...stages(),all:tr('الكل','All'),archived:tr('الأرشيف','Archived')}).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}</select><span class="cf-muted" data-cf-counts aria-live="polite"></span>`;box.querySelector('select').value=queue;box.querySelector('select').onchange=e=>{queue=e.target.value;renderComplaints();};}
     const rows=complaints||[],open=rows.filter(c=>c.workflow?.stage!=='closed'),due=rows.filter(c=>c.overdue),ready=rows.filter(c=>c.execution?.ready&&c.workflow?.stage!=='closed');
     box.querySelector('[data-cf-counts]').textContent=tr(`مفتوحة ${open.length} · متأخرة ${due.length} · بانتظار التأكيد ${ready.length}`,`Open ${open.length} · Overdue ${due.length} · Awaiting confirmation ${ready.length}`);
   }
-  async function changed(){if(busy||!admin()&&typeof hasPerm==='function'&&!hasPerm('complaints')&&!hasPerm('transaction'))return;try{await refresh();if(dialog?.open&&active&&el('.cf-grid'))await open(active._id);}catch{}}
-  window.ComplaintFlow={open,form,create,chooseTicket,badge,menu,matches,mount,changed};
+  function changed(){
+    clearTimeout(changeTimer);changeTimer=setTimeout(async()=>{
+      if(busy||changeTask){changed();return;}
+      if(!admin()&&typeof hasPerm==='function'&&!hasPerm('complaints')&&!hasPerm('transaction'))return;
+      details.clear();reads.clear();const view=serial,id=dialog?.open&&el('.cf-grid')?active?._id:null;
+      changeTask=(async()=>{try{await refresh();if(id&&view===serial&&dialog?.open)await open(id);}catch{}finally{changeTask=null;}})();await changeTask;
+    },200);
+  }
+  window.ComplaintFlow={open,resume,execution,form,create,chooseTicket,badge,menu,matches,mount,changed,tableRow,listCard,searchText,owner,pageRows};
 })();

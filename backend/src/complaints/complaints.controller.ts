@@ -91,8 +91,8 @@ export class ComplaintsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.complaintsService.detail(id);
+  async findOne(@Param('id') id: string, @Query('view') view?: string, @Query('lang') lang?: string, @Query('event') event?: string) {
+    return view === 'workspace' ? this.complaintsService.workspace(id, lang || 'ar', event) : this.complaintsService.detail(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, ComplaintsAccessGuard)
