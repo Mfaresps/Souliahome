@@ -1,0 +1,72 @@
+[
+  {
+    "label": "after-movements-en-1920",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "name": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "12px",
+      "weight": "400",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "12px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "14px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "label": "after-movements-en-1920-hidden-columns",
+    "clientWidth": 200,
+    "tableWidth": 1342
+  },
+  {
+    "label": "after-movements-ar-390",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": null,
+    "name": null,
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": null,
+    "badge": null,
+    "amount": null,
+    "moneyClipped": [],
+    "rows": 0,
+    "inter": true
+  }
+]

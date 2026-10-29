@@ -194,6 +194,39 @@ function _spkStats(period) {
   return Object.assign(s, { period, from: r.from, to: r.to, days: r.days, prevReceived: prev.received });
 }
 
+/* Sparklines use the same creation-time window and current-state buckets as
+   the totals. No placeholder trends or future buckets in today's chart. */
+function _spkTrends(stats) {
+  const from = stats.from.getTime(), to = Math.min(stats.to.getTime(), Date.now());
+  const count = stats.days === 1 ? Math.max(1, Math.min(24, Math.ceil((to - from) / 3600000))) : Math.min(30, stats.days);
+  const bins = Array.from({length:count}, () => ({received:0,confirmed:0,followup:0,cancelled:0}));
+  if (to <= from) return bins.map(bin => ({...bin,rate:null}));
+  for (const order of (Array.isArray(_shopifyOrders) ? _shopifyOrders : [])) {
+    const ms = _spkOrderMs(order);
+    if (!(ms >= from && ms < to)) continue;
+    const bin = bins[Math.min(count - 1, Math.floor((ms - from) / (to - from) * count))];
+    const bucket = _spkBucket(order);
+    bin.received++;
+    if (bucket === 'deposit' || bucket === 'nodep') bin.confirmed++;
+    else if (bucket === 'followup' || bucket === 'cancelled') bin[bucket]++;
+  }
+  return bins.map(bin => ({...bin,rate:bin.received ? bin.confirmed / bin.received * 100 : null}));
+}
+function _spkTrendHtml(bins, key) {
+  const values = bins.map(bin => bin[key]), valid = values.filter(value => value != null);
+  if (!valid.length) return '';
+  const max = Math.max(1, ...valid), points = values.map((value, i) => value == null ? null : [values.length === 1 ? 50 : 2 + i / (values.length - 1) * 96, 22 - value / max * 19]);
+  let path = '', connected = false;
+  for (const point of points) {
+    if (!point) { connected = false; continue; }
+    path += `${connected ? 'L' : 'M'}${point[0].toFixed(2)},${point[1].toFixed(2)} `;
+    connected = true;
+  }
+  const dots = points.filter((point, i) => point && !points[i - 1] && !points[i + 1])
+    .map(point => `<circle cx="${point[0].toFixed(2)}" cy="${point[1].toFixed(2)}" r="1.5"/>`).join('');
+  return `<svg class="spk-trend" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="${path}"/>${dots}</svg>`;
+}
+
 /* ── Formatting ── */
 function _spkLoc() { return currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn'; }
 function _spkRangeLabel(s) {
@@ -249,10 +282,12 @@ function _spkRender(state) {
   }
 
   const s = _spkStats(_spkPeriod);
+  const trends = loading ? [] : _spkTrends(s);
   const tile = (key, value, sub, attrs, inner) => `
     <button type="button" class="spk-tile is-${key}${loading?' is-loading':''}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" ${loading?'disabled':`onclick="_spkSetFilter('${key}')"`}${attrs || ''}>
       <div class="spk-tile-top"><span class="spk-lbl">${_spkEsc(_spkT(key))}</span><span class="spk-ic">${_spkIco(key)}</span></div>
       <div class="spk-val"><bdi>${loading?'<span class="ss-skeleton spk-loading-value" aria-hidden="true"></span>':value}</bdi></div>
+      ${loading ? '' : _spkTrendHtml(trends, key)}
       ${loading?'<div class="spk-sub"><span class="ss-skeleton spk-loading-sub" aria-hidden="true"></span></div>':sub ? `<div class="spk-sub">${sub}</div>` : ''}${loading?'':inner || ''}
     </button>`;
   const rateVal = s.rate == null ? '—' : `${s.rate}%`;

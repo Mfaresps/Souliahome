@@ -1,14 +1,24 @@
-.order-state{--state-ink:#64748b;--state-fill:#f1f5f9;display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:1px 6px;border:1px solid color-mix(in srgb,var(--state-ink) 18%,transparent);border-radius:5px;background:var(--state-fill);color:var(--state-ink);font-size:10px;font-weight:500;line-height:18px;vertical-align:middle;text-align:start;white-space:nowrap;overflow:hidden;flex-shrink:1;min-width:0;box-sizing:border-box;font-family:inherit}
-.order-state[data-tone=confirmed],.order-state[data-tone=delivered]{--state-ink:#047857;--state-fill:#ecfdf5}
-.order-state[data-tone=preparing]{--state-ink:#1e40af;--state-fill:#dbeafe}
-.order-state[data-tone=ready]{--state-ink:#713f12;--state-fill:#fef3c7}
-.order-state[data-tone=shipping]{--state-ink:#5b21b6;--state-fill:#ede9fe}
-.order-state[data-tone=issue]{--state-ink:#c2410c;--state-fill:#fff7ed}
-.order-state[data-tone=cancelled]{--state-ink:#b91c1c;--state-fill:#fef2f2}
-.order-state-dot{flex:0 0 4px;width:4px;height:4px;border-radius:50%;background:currentColor}
-.order-state-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Shared delivery badges: soft solid fills, rounded corners and a small status
+   mark. Shipping/failure colours follow the supplied visual references. */
+.order-state{--state-ink:#4a4a4a;--state-fill:#ebebeb;display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:1px 6px;border:1px solid transparent;border-radius:8px;background:var(--state-fill);color:var(--state-ink);font-size:10px;font-weight:400;line-height:18px;vertical-align:middle;text-align:start;white-space:nowrap;overflow:hidden;flex-shrink:1;min-width:0;box-sizing:border-box;font-family:inherit}
+.order-state[data-tone=confirmed],.order-state[data-tone=delivered]{--state-ink:#145b37;--state-fill:#c7f0d8}
+.order-state[data-tone=preparing]{--state-ink:#214b8b;--state-fill:#d5e5ff}
+.order-state[data-tone=ready]{--state-ink:#634900;--state-fill:#ffeb78}
+.order-state[data-tone=shipping]{--state-ink:#00566b;--state-fill:#8ce3f5}
+.order-state[data-tone=issue]{--state-ink:#970f00;--state-fill:#ffcecb}
+.order-state[data-tone=cancelled]{--state-ink:#970f00;--state-fill:#ffcecb}
+/* Progress marks stay upright in both directions: empty → quarter → half →
+   three quarters → solid. Exception states use their own symbol. */
+.order-state-dot{position:relative;display:inline-block;flex:0 0 10px;width:10px;height:10px;box-sizing:border-box;border:1.5px solid currentColor;border-radius:50%;background:none}
+.order-state:is([data-tone=confirmed],[data-tone=preparing]) .order-state-dot{background:conic-gradient(currentColor 0 25%,transparent 25% 100%)}
+.order-state[data-tone=ready] .order-state-dot{background:conic-gradient(currentColor 0 50%,transparent 50% 100%)}
+.order-state[data-tone=shipping] .order-state-dot{background:conic-gradient(currentColor 0 75%,transparent 75% 100%)}
+.order-state[data-tone=delivered] .order-state-dot{background:currentColor}
+.order-state[data-tone=issue] .order-state-dot::after{content:'!';position:absolute;inset:0;display:grid;place-items:center;font:700 8px/1 Arial,sans-serif}
+.order-state[data-tone=cancelled] .order-state-dot::after{content:'';position:absolute;top:50%;left:0;right:0;height:1.5px;background:currentColor;transform:translateY(-50%) rotate(45deg)}
+.order-state-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .order-state-carrier{flex:0 1 auto;min-width:0;padding-inline-start:5px;border-inline-start:1px solid color-mix(in srgb,currentColor 24%,transparent);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
-body.dark-mode .order-state{background:color-mix(in srgb,var(--state-ink) 16%,#111827);color:color-mix(in srgb,var(--state-ink) 40%,white);border-color:color-mix(in srgb,var(--state-ink) 40%,transparent)}
+body.dark-mode .order-state{background:var(--state-fill);color:var(--state-ink);border-color:transparent}
 .inv-order-state{display:flex;justify-content:center;padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
 .sp-card-order-state{padding:0 12px 9px}.sp-ref-line>.order-state{margin-block:3px}.sp-ref-line{flex-wrap:wrap}
 .inv-order-state-heading{margin-block-start:7px}.ds-shc-trk>.order-state{margin-block-end:7px}

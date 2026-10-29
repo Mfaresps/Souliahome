@@ -1,0 +1,217 @@
+[
+  {
+    "label": "after-movements-en-1920",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "name": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "12px",
+      "weight": "400",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "12px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "14px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "label": "after-movements-en-1920-hidden-columns",
+    "clientWidth": 133.75,
+    "tableWidth": 1066.875
+  },
+  {
+    "label": "after-movements-ar-1920",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "name": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "12px",
+      "weight": "400",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "12px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "14px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "label": "after-movements-ar-1920-hidden-columns",
+    "clientWidth": 118.125,
+    "tableWidth": 1018.078125
+  },
+  {
+    "label": "after-movements-en-1440",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "name": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "12px",
+      "weight": "400",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "12px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "14px",
+      "weight": "500",
+      "color": "rgb(32, 34, 35)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "label": "after-movements-ar-390",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": null,
+    "name": null,
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(97, 97, 97)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": null,
+    "badge": null,
+    "amount": null,
+    "moneyClipped": [],
+    "rows": 0,
+    "inter": true
+  },
+  {
+    "label": "after-movements-en-1920-dark",
+    "faded": [],
+    "pickup": null,
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(232, 245, 238)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "name": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(232, 245, 238)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(176, 189, 181)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "12px",
+      "weight": "400",
+      "color": "rgb(176, 189, 181)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "12px",
+      "weight": "500",
+      "color": "rgb(232, 245, 238)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "14px",
+      "weight": "500",
+      "color": "rgb(232, 245, 238)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "label": "after-movements-en-1920-dark-hidden-columns",
+    "clientWidth": 133.75,
+    "tableWidth": 1066.875
+  }
+]

@@ -39,7 +39,7 @@
 </script>
 <script src="/config.js"></script>
 <script src="/order-status.js?v=20261026-customer-cancellation"></script>
-<link rel="stylesheet" href="/order-status.css?v=20261025-confirm-icons">
+<link rel="stylesheet" href="/order-status.css?v=20261029-status-progress">
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
@@ -4683,17 +4683,16 @@ body.dark-mode .sp-cr-waiting{color:#fbbf24;background:#f59e0b26}
      يبتلع القوائم المنسدلة (.dd-menu) وpopups العناوين فتُقصّ داخل الصف.
    ⚠ عمود الإجراء مستثنى صراحةً — «استرجاع» هو المخرج الوحيد من هذه الحالة،
      وتبهيته يجعل الفعل الوحيد المتاح أصعب شيء في الصف قراءةً. يبقى بتباين كامل.
-   ⚠ الشطب على رقم الأوردر وحده، لا على الصف كله: الشطب على مبلغ أو تاريخ
-     يجعلهما غير مقروءين، والغرض وسمُ الهوية لا إخفاء البيانات. */
+   الشطب يشمل بيانات الأوردر في design-system.css، مع استثناء عمود الإجراءات. */
 #shopify-orders-table-body tr.sp-row-cancelled > td{opacity:.52;transition:opacity .15s}
 #shopify-orders-table-body tr.sp-row-cancelled:hover > td{opacity:.78}
 #shopify-orders-table-body tr.sp-row-cancelled > td[data-col="action"],
 #shopify-orders-table-body tr.sp-row-cancelled > td[data-col="status"]{opacity:1}
-#shopify-orders-table-body tr.sp-row-cancelled td[data-col="ref"] b{text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:#ef4444aa}
+#shopify-orders-table-body tr.sp-row-cancelled td[data-col="ref"] b{text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
 /* الكارت في الموبايل: نفس القاعدة — المحتوى يبهت والأزرار لا. */
 .sp-card.sp-card-cancelled{opacity:1}
 .sp-card.sp-card-cancelled > *:not(.sp-card-actions){opacity:.55}
-.sp-card.sp-card-cancelled .sp-card-ref{text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:#ef4444aa}
+.sp-card.sp-card-cancelled .sp-card-ref{text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
 /* زر الاسترجاع: مرفوع التباين عمداً — حدّ ونصّ كاملان لا رمادي باهت، لأنه
    الإجراء الوحيد المتاح على صف كل ما حوله خافت. */
 .sp-restore-btn{
@@ -5284,7 +5283,7 @@ body.dark-mode .ship-together-row.is-self .stp-num{background:#60a5fa;color:#0b1
    name + number (~94px), which fits down to 1280. The client column took 44px of the
    88 the removed Time column freed (132→176, SP_COL_W and th.sp-c-client together).
    Below that the icons step aside — they stay in the order quick view.
-   ⚠ The stack carries data-col="phone" itself, so hiding the phone line hides it too.
+   The WhatsApp link follows the phone preference; Vrobo's status stays visible.
    Container on a wrapper, never the <td> (size containment does not apply to cells). */
 .sp-client-cq{container-type:inline-size;min-width:0;display:flex;align-items:center;gap:3px}
 .sp-client-txt{flex:1;min-width:0}
@@ -16609,15 +16608,15 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="apple-touch-icon" href="/push-icon-192.png">
 <link rel="stylesheet" href="/notification-settings.css?v=20261021-3">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/shopify-kpis.css?v=20261028-content-loading">
+<link rel="stylesheet" href="/shopify-kpis.css?v=20261029-metric-strip">
 <link rel="stylesheet" href="/settings-responsive.css?v=20261020-connection-status">
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
 <link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
-<link rel="stylesheet" href="/shopify-order-peek.css?v=20261022-history">
+<link rel="stylesheet" href="/shopify-order-peek.css?v=20261029-header-note">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261026-white-cards">
-<link rel="stylesheet" href="/shopify-responsive.css?v=20261028-content-loading">
+<link rel="stylesheet" href="/shopify-responsive.css?v=20261029-aligned-loading">
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261022">
 <link rel="stylesheet" href="/inventory-responsive.css?v=20261020-1">
@@ -21182,6 +21181,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </details>
   </div>
 
+  <!-- Period summary stays above search; its date range is independent of table filters. -->
+  <section id="sp-kpi" aria-live="polite"></section>
+
   <!-- Search + Filters (table toolbar) — lives inside .sp-sticky-head (not inside
        #shopify-orders-table-wrap) so the title/subnav/filters stick together as ONE
        block. Two independent `position:sticky` elements anchored at the same `top`
@@ -21249,9 +21251,6 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- /.sp-sticky-head -->
 
   <div id="sp-orders-tab-content" data-layout="cards">
-  <!-- Period KPIs (اليوم / أمس / آخر 7 أيام) + report image — shopify-kpis.js.
-       Its own period, independent of the table's search/date/filters. -->
-  <section id="sp-kpi" aria-live="polite"></section>
   <div id="sp-orders-loading" role="status" aria-live="polite" hidden></div>
   <!-- Table (desktop) + Cards (mobile) -->
   <div id="shopify-orders-table-wrap">
@@ -23607,7 +23606,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <script src="/deposit-history.js?v=20261019"></script>
-<script src="/shopify-kpis.js?v=20261028-content-loading"></script>
+<script src="/shopify-kpis.js?v=20261029-metric-strip"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
 <link rel="stylesheet" href="/after-sales.css?v=20261029-receipt-layout">
@@ -24885,7 +24884,7 @@ const PERMS = ['dashboard','transaction','inventory','movements','clients','prod
   'carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse',
   'products-sku-manage','inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
-  'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات',
+  'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات (Prep & Ship)',
   'shopify-reassign':'شوبيفاي - إدارة إسناد الطلبات للموظفين (Assignee)',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
   vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
@@ -24957,7 +24956,7 @@ const JOB_TEMPLATES = {
   warehouse: { ar: 'أمين مخزن', role: 'staff', perms: [
     'dashboard','inventory','products','movements','categories-view','categories-assign-products'] },
   fulfillment: { ar: 'تجهيز وشحن', role: 'staff', perms: [
-    'dashboard','movements','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','shopify-orders','shopify-deposit-upload'] },
+    'dashboard','movements','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','shopify-orders','shopify-prepare-ship','shopify-deposit-upload'] },
   accountant: { ar: 'محاسب', role: 'staff', perms: [
     'dashboard','movements','expenses','vault','clients','suppliers',
     'reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export',
@@ -29107,7 +29106,7 @@ const TRANSLATIONS = {
   spShipWithoutDeposit:{ar:'شحن بدون عربون',en:'Ship without deposit'},
   spShipWithoutDepositOnConfirm:{ar:'تأكيد شحن الطلب بدون عربون؟',en:'Ship this order without a deposit?'},
   spShipWithoutDepositOffConfirm:{ar:'إيقاف شحن بدون عربون وإعادة خيار إضافة العربون لهذا الطلب؟',en:'Turn off shipping without a deposit and restore the add deposit option for this order?'},
-  spColDeposit:{ar:'العربون والخزنة',en:'Deposit / vault'},
+  spColDeposit:{ar:'العربون',en:'Deposit'},
   spDepView:{ar:'عرض الإيصال',en:'View receipt'},
   spDepClose:{ar:'إغلاق',en:'Close'},
   spDepNone:{ar:'لا يوجد إيصال — لم يُسجّل عربون معتمد',en:'No receipt — no approved deposit recorded'},
@@ -42082,6 +42081,20 @@ function movementDisplayRef(tx) {
   const isPlainReturn = /(-RET)$/i.test(r) && !isMovExchangeReturn(tx);
   return isPlainReturn ? r : (movementBaseRef(r) || r);
 }
+// Display-only: retain the document type and full year, omit sequence padding.
+// Stored references, invoice/export identifiers and order navigation stay canonical.
+function compactMovementRef(ref, tx) {
+  const raw = String(ref || '').trim();
+  const match = /^(#?RT-\d{4}-)(\d+)$/i.exec(raw);
+  if (match) return match[1] + match[2].replace(/^0+(?=\d)/, '');
+  // After-sales replacement sales use YYYY + 8 + a six-or-more-digit sequence.
+  // Require exchange metadata so an unrelated numeric order is never relabelled.
+  const exchange = /^(#?)(\d{4})8(\d{6,})$/.exec(raw);
+  if (exchange && tx && isMovExchangeSale(tx)) {
+    return `${exchange[1]}EX-${exchange[2]}-${exchange[3].replace(/^0+(?=\d)/, '')}`;
+  }
+  return raw;
+}
 /** Shared hover title for every element in a Movements row that opens the order page
  *  (ref cell, client name, grid/mobile card ref). Keep all of them on this helper —
  *  the same click must not describe itself two different ways. Follows currentLang;
@@ -42098,24 +42111,24 @@ function movementRefCell(tx) {
   let tag = '';
   if (/(-RET)$/i.test(r)) tag = isMovExchangeReturn(tx) ? t('movTagExchangeReturn') : '';
   else if (/(-EXC)$/i.test(r)) tag = t('movTagExchangeSale');
-  const refLabel = movementDisplayRef(tx);
+  const refLabel = compactMovementRef(movementDisplayRef(tx), tx);
   // شارة إعادة الشحن — الطلب اللي اتشحن ورجع بيبان في الجدول زي أي طلب عادي،
   // فالموظف مش هيعرف إن ده مش أول شحن إلا لو فتح الفاتورة.
   const _att = Array.isArray(tx.shipmentAttempts) ? tx.shipmentAttempts.length : 0;
   const reshipTag = _att > 0
     ? `<span class="mov-reship-tag" title="${escHtml(t('fdReshipRowTip', { v: fmtN(_att) }))}">${esc(t('fdReshipRowTag', { v: fmtN(_att + 1) }))}</span>`
     : '';
-  return `<div><a href="#" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" style="color:var(--text);font-weight:700;text-decoration:none;cursor:pointer" title="${escHtml(movOpenOrderTitle(tx))}">${esc(fmtRef(refLabel))}</a>${tag ? `<span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${esc(tag)}</span>` : ''}${reshipTag}</div>`;
+  return `<div><a href="#" dir="ltr" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')" style="color:var(--text);font-weight:700;text-decoration:none;cursor:pointer" title="${escHtml(movOpenOrderTitle(tx))}">${esc(fmtRef(refLabel))}</a>${tag ? `<span class="badge" style="font-size:.58rem;vertical-align:middle;background:var(--primary-pale);color:var(--primary)">${esc(tag)}</span>` : ''}${reshipTag}</div>`;
 }
 function movementKindBadgeCompact(tx) {
   const en = currentLang === 'en';
-  if (isMovExchangeReturn(tx)) return `<span class="badge badge-type-exchange" style="font-size:.65rem">${en?'Exchange':'استبدال'}</span>`;
+  if (isMovExchangeReturn(tx)) return `<span class="badge badge-type-exchange">${en?'Exchange':'استبدال'}</span>`;
   if (isMovExchangeSale(tx)) {
     return isExchangeSalePendingCollect(tx)
-      ? `<span class="badge badge-type-exchange" style="font-size:.65rem">${en?'Exchange':'استبدال'}</span> <span class="badge badge-status-wait" style="font-size:.6rem">${en?'Wait':'انتظار'}</span>`
-      : `<span class="badge badge-type-exchange" style="font-size:.65rem">${en?'Exchange':'استبدال'}</span>`;
+      ? `<span class="badge badge-type-exchange">${en?'Exchange':'استبدال'}</span> <span class="badge badge-status-wait">${en?'Wait':'انتظار'}</span>`
+      : `<span class="badge badge-type-exchange">${en?'Exchange':'استبدال'}</span>`;
   }
-  if (tx.type === 'مرتجع') return `<span class="badge badge-type-return" style="font-size:.65rem">${en?'Return':'استرجاع'}</span>`;
+  if (tx.type === 'مرتجع') return `<span class="badge badge-type-return">${en?'Return':'استرجاع'}</span>`;
   return typeBadge(tx.type);
 }
 
@@ -49880,8 +49893,9 @@ function returnRequestMovementsKindHtml(r) {
       ? 'لم يُنفَّذ — مرفوض من المدير'
       : 'سجل الطلب — التنفيذ المحاسبي في معاملات أخرى';
   const en = currentLang === 'en';
-  const label = en ? (isEx ? 'Exchange request' : 'Return request') : `طلب ${isEx ? 'استبدال' : 'استرجاع'}`;
-  return `<span class="badge ${isEx ? 'badge-type-exchange' : 'badge-type-return'}" title="${esc(sub)}">${label}</span>`;
+  const fullLabel = en ? (isEx ? 'Exchange request' : 'Return request') : `طلب ${isEx ? 'استبدال' : 'استرجاع'}`;
+  const label = en ? (isEx ? 'Exch. req.' : 'Return req.') : fullLabel;
+  return `<span class="badge ${isEx ? 'badge-type-exchange' : 'badge-type-return'}" title="${esc(fullLabel + ' — ' + sub)}" aria-label="${esc(fullLabel)}">${label}</span>`;
 }
 function returnRequestMovementsStatusHtml(r) {
   const en = currentLang === 'en';
@@ -50036,7 +50050,7 @@ function renderMovCompactCard(tx, grid = false) {
   return `<div class="${grid ? 'mov-grid-card' : 'mov-card'} mov-compact-card${isCancelled ? ' is-cancelled mov-card-cancelled' : ''}${flash}" onclick="openOrderView('${esc(tx._id)}')">
     <div class="mov-compact-header">
       <div class="mov-compact-identity">
-        <div class="mov-compact-title"><a href="#" class="mov-compact-ref" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')">#${esc(tx.ref || '—')}</a><span class="mov-compact-name" title="${esc(tx.client || t('noName'))}">${esc(tx.client || t('noName'))}</span></div>
+        <div class="mov-compact-title"><a href="#" class="mov-compact-ref" dir="ltr" title="${escHtml(fmtRef(tx.ref || '—'))}" onclick="event.preventDefault();event.stopPropagation();openOrderView('${esc(tx._id)}')">${esc(fmtRef(compactMovementRef(tx.ref || '—', tx)))}</a><span class="mov-compact-name" title="${esc(tx.client || t('noName'))}">${esc(tx.client || t('noName'))}</span></div>
         <div class="mov-compact-date">${_fmtShopifyDate(tx.date, tx.createdAt || tx.date)}</div>
         <div class="mov-compact-markers"${discountHtml || existingTagsHtml ? '' : ' hidden'} onclick="event.stopPropagation()">${discountHtml ? `<span class="mov-compact-discount">${discountHtml}</span>` : ''}<span class="mov-compact-tags" data-tag-cell="${esc(tx._id)}" data-tag-existing-only>${existingTagsHtml}</span></div>
       </div>
@@ -50897,7 +50911,9 @@ function _mkBindOnce() {
 
 /* ── Reveal toggle: figures back inline, permanently ── */
 const MOV_KPI_REVEAL_KEY = 'mov_kpi_reveal';
-function movKpiRevealOn() { try { return localStorage.getItem(MOV_KPI_REVEAL_KEY) === '1'; } catch(_) { return false; } }
+// Show values with their trends by default; preserve an explicit hide preference.
+// The global privacy mask still applies to the amounts through .amt-num.
+function movKpiRevealOn() { try { return localStorage.getItem(MOV_KPI_REVEAL_KEY) !== '0'; } catch(_) { return true; } }
 function toggleMovKpiReveal() {
   try { localStorage.setItem(MOV_KPI_REVEAL_KEY, movKpiRevealOn() ? '0' : '1'); } catch(_) {}
   _mkSyncReveal();
@@ -51002,12 +51018,12 @@ function renderMovements() {
     if (multiRefTokens.length) {
       // Include ref without leading # so "1845" matches "#1845" stored value
       const refRaw = (tx.ref || '').replace(/^#/, '');
-      const refBlob = normalizeUiSearch([tx.ref, refRaw, movementBaseRef(tx.ref || '')].join(' '));
+      const refBlob = normalizeUiSearch([tx.ref, refRaw, movementBaseRef(tx.ref || ''), compactMovementRef(tx.ref, tx)].join(' '));
       if (!multiRefTokens.some(t => refBlob.includes(t))) return false;
     }
     // Regular AND text search
     if (tokens.length) {
-      const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), tx.phone, tx.notes, tx.type, tx.employee, tx.bostaTrackingNumber, ...Object.values(tx.afterSales?.shipments || {}).flatMap(s => [s.caseRef, s.trackingNumber, s.status, s.label])].join(' '));
+      const blob = normalizeUiSearch([tx.client, tx.ref, movementBaseRef(tx.ref || ''), compactMovementRef(tx.ref, tx), tx.phone, tx.notes, tx.type, tx.employee, tx.bostaTrackingNumber, ...Object.values(tx.afterSales?.shipments || {}).flatMap(s => [s.caseRef, s.trackingNumber, s.status, s.label])].join(' '));
       if (!tokens.every(t => blob.includes(t))) return false;
     }
     // Inline #tag filter from search bar
@@ -80644,70 +80660,8 @@ const MOV_COLS = [
   { id:'employee',  i18n:'colEmployee',       ar:'تم الإنشاء بواسطة', en:'Created By' },
   { id:'bosta',     i18n:null,                ar:'Bosta',          en:'Bosta' },
 ];
-// Distribute the visible movement columns across the actual table viewport.
-// Below the readable minimum, keep the horizontal scrollbar instead of hiding invoice numbers or amounts.
-const MOV_COL_FIT = {
-  ref:[132,140,1], date:[112,132,0], type:[132,142,0], client:[112,180,5],
-  invoice:[72,84,0], paid:[76,94,0], remaining:[76,94,0], ship:[54,74,0],
-  items:[70,104,1], status:[82,100,1], discount:[48,64,0], pickup:[90,118,1],
-  bosta:[90,118,1], tag:[90,168,3], employee:[44,44,0],
-};
-let _movFitObserver = null;
-let _movFitFrame = 0;
-function fitMovTableColumns() {
-  const table = qs('#mov-table'), scroll = qs('#mov-table-wrap .ent-table-scroll');
-  if (!table || !scroll || !scroll.clientWidth) return;
-  const hidden = _getHiddenMovCols();
-  const invoiceContentWidth = [...table.querySelectorAll('tbody td[data-col="invoice"] .mov-col-total')]
-    .reduce((width, amount) => Math.max(width, Math.ceil(amount.scrollWidth) + 14), 0);
-  const visible = Object.entries(MOV_COL_FIT).filter(([id]) => !hidden.has(id)).map(([id, [min, base, grow]]) => {
-    if (id === 'invoice') min = Math.max(min, invoiceContentWidth);
-    return [id, [min, Math.max(base, min), grow]];
-  });
-  const fixed = 88; // Selection and actions columns.
-  const minimum = fixed + visible.reduce((sum, [, spec]) => sum + spec[0], 0);
-  const normal = fixed + visible.reduce((sum, [, spec]) => sum + spec[1], 0);
-  const target = Math.max(scroll.clientWidth, minimum);
-  const towardsNormal = Math.min(target - minimum, normal - minimum);
-  const baseRoom = normal - minimum;
-  const remaining = Math.max(0, target - normal);
-  const growWeight = visible.reduce((sum, [, spec]) => sum + spec[2], 0) || 1;
-  // Round the cumulative allocation, not each column independently: individual
-  // rounding can add several pixels and repeatedly toggle scrollbars at zoom.
-  let allocated = 0, cumulative = 0;
-  const setSize = (name, value) => {
-    if (table.style.getPropertyValue(name) !== value) table.style.setProperty(name, value);
-  };
-  for (const [id, [min, base, grow]] of visible) {
-    const width = min + (baseRoom ? towardsNormal * (base - min) / baseRoom : 0) + remaining * grow / growWeight;
-    cumulative += width;
-    const edge = Math.round(cumulative);
-    setSize('--mov-col-' + id, (edge - allocated) + 'px');
-    allocated = edge;
-  }
-  for (const id of Object.keys(MOV_COL_FIT)) if (hidden.has(id)) {
-    setSize('--mov-col-' + id, '0px');
-  }
-  setSize('min-width', minimum + 'px');
-  setSize('width', target + 'px');
-}
-function watchMovTableFit() {
-  if (_movFitObserver || !window.ResizeObserver) return;
-  const scroll = qs('#mov-table-wrap .ent-table-scroll');
-  if (!scroll) return;
-  let lastWidth = -1;
-  _movFitObserver = new ResizeObserver(() => {
-    const width = scroll.clientWidth;
-    if (width === lastWidth) return;
-    lastWidth = width;
-    cancelAnimationFrame(_movFitFrame);
-    _movFitFrame = requestAnimationFrame(() => {
-      _movFitFrame = 0;
-      fitMovTableColumns();
-    });
-  });
-  _movFitObserver.observe(scroll);
-}
+// Column widths follow visible content through the native table layout in
+// design-system.css; spare viewport width is shared by the visible columns.
 function _getHiddenMovCols() { return _readColsPref(MOV_COLS_KEY); }
 function _setHiddenMovCols(set) { _writeColsPref(MOV_COLS_KEY, set); }
 function applyMovColsVisibility() {
@@ -80716,8 +80670,6 @@ function applyMovColsVisibility() {
     const show = !hidden.has(c.id);
     qsa(`#mov-table [data-col="${c.id}"]`).forEach(el => { el.style.display = show ? '' : 'none'; });
   });
-  fitMovTableColumns();
-  watchMovTableFit();
 }
 function toggleMovCol(colId) {
   const hidden = _getHiddenMovCols();
@@ -83722,9 +83674,19 @@ function togglePermModuleAll(masterCb) {
   refreshPermModules();
 }
 function onPermCbChange(cb) {
+  // Removing order access also removes the action that depends on it.
+  if (cb.value === 'shopify-orders' && !cb.checked) {
+    const prepareShip = qs('.perm-cb[value="shopify-prepare-ship"]');
+    if (prepareShip) prepareShip.checked = false;
+  }
   refreshPermModules();
 }
 function refreshPermModules() {
+  // Granting Prep & Ship must also let the user reach the orders screen.
+  if (qs('.perm-cb[value="shopify-prepare-ship"]')?.checked) {
+    const orders = qs('.perm-cb[value="shopify-orders"]');
+    if (orders) orders.checked = true;
+  }
   qsa('.perm-module').forEach(mod => {
     const cbs = qsa('.perm-cb', mod);
     const checked = cbs.filter(c => c.checked).length;
@@ -83784,6 +83746,7 @@ function applyJobTemplate(key) {
   toast(`تم تطبيق قالب «${tpl.ar}» — ${fmtN(qsa('.perm-cb:checked').length)} صلاحية`);
 }
 async function saveUser(id) {
+  refreshPermModules();
   const perms = qsa('.perm-cb:checked').map(cb => cb.value);
   const jtSel = qs('#um-jobtitle-select').value;
   const jobTitle = jtSel === '__custom__' ? qs('#um-jobtitle-custom').value.trim() : jtSel;
@@ -101937,6 +101900,8 @@ function switchShopifySubnav(tab, skipHash) {
   // so title/subnav/filters stick together — only relevant on the "orders" tab.
   const filtersBar = qs('#shopify-filters-bar');
   if (filtersBar) filtersBar.style.display = tab === 'orders' ? '' : 'none';
+  const kpiStrip = qs('#sp-kpi');
+  if (kpiStrip) kpiStrip.style.display = tab === 'orders' ? '' : 'none';
   if (tab === 'perf') renderPerformanceDashboard();
   if (tab === 'deposits') renderSpDepositReview();
   if (tab === 'deposit-log') renderSpDepositHistory(!!skipHash);
@@ -102716,7 +102681,6 @@ let _spOrdersLoaded = false;
 let _spOrdersReveal = false;
 let _spOrdersLayoutObserver = null;
 let _spOrdersLayoutRaf = 0;
-const SP_ORDERS_TABLE_MIN_SPACE = 1280;
 
 function _spEnsureOrdersLayout() {
   const host = qs('#sp-orders-tab-content');
@@ -102724,9 +102688,8 @@ function _spEnsureOrdersLayout() {
   const update = () => {
     const available = host.clientWidth;
     if (!available) return false;
-    // A small hysteresis band avoids flipping when the page scrollbar appears.
-    const threshold = host.dataset.layout === 'table' ? SP_ORDERS_TABLE_MIN_SPACE - 32 : SP_ORDERS_TABLE_MIN_SPACE;
-    const mode = available >= threshold ? 'table' : 'cards';
+    // Match Transactions: desktop tables scroll internally; mobile uses cards.
+    const mode = window.matchMedia('(min-width:769px)').matches ? 'table' : 'cards';
     const changed = host.dataset.layout !== mode;
     host.dataset.layout = mode;
     return changed;
@@ -102754,14 +102717,22 @@ function _spShowOrdersLoading() {
   const hidden = _getHiddenSpCols();
   const cols = SP_COLS.filter(col => SP_COL_W[col.id] && !hidden.has(col.id));
   const bar = (kind='') => `<i class="ss-skeleton sp-loading-bar ${kind}"></i>`;
+  const headerKeys = {ref:'spColRef',client:'spColClient',items:'spColItems',ship:'spColShip',discount:'spColDiscount',total:'spColTotal',deposit:'spColDeposit',notes:'spColNotes',assigned:'spColAssigned',action:'spColAction',address:'spColAddress',source:'spColSource',tracking:'spColTracking'};
   const cells = cols.map(col => {
-    const photo = col.id === 'items' && !hidden.has('thumbs');
-    const stacked = ['ref','items','deposit','assigned'].includes(col.id) || col.id === 'client' && !hidden.has('phone');
-    return `<td data-loading-col="${col.id}">${photo?bar('is-photo'):''}<div class="sp-loading-cell">${bar()}${stacked?bar('is-short'):''}</div></td>`;
+    let content;
+    if (col.id === 'ref') content = `<div class="sp-loading-cell">${bar('is-order-ref')}${bar('is-date')}</div>`;
+    else if (col.id === 'client') content = `<div class="sp-loading-inline"><div class="sp-loading-cell">${bar('is-client-name')}${hidden.has('phone')?'':bar('is-phone')}</div>${bar('is-contact')}</div>`;
+    else if (col.id === 'items') content = `<div class="sp-loading-inline">${hidden.has('thumbs')?'':bar('is-item-photo')}${bar('is-items')}</div>`;
+    else if (col.id === 'assigned') content = bar('is-staff');
+    else if (col.id === 'deposit') content = bar('is-deposit');
+    else if (col.id === 'action') content = `<div class="sp-loading-inline">${bar('is-action')}${hasPerm('shopify-prepare-ship')?bar('is-prepare'):''}${bar('is-action')}</div>`;
+    else if (['ship','discount','total'].includes(col.id)) content = bar(col.id === 'total' ? 'is-total' : 'is-number');
+    else if (['address','source','tracking'].includes(col.id)) content = bar('is-action');
+    else content = bar('is-text');
+    return `<td data-col="${col.id}">${content}</td>`;
   }).join('');
-  const total = SP_COL_W_FIXED + cols.reduce((sum,col)=>sum+SP_COL_W[col.id],0);
   const card = `<article class="sp-orders-loading-card"><div class="sp-loading-card-head"><div>${bar('is-ref')}${bar('is-name')}${bar('is-short')}</div><div>${bar('is-amount')}${bar('is-short')}</div></div><div class="sp-loading-card-items">${bar('is-photo')}<div>${bar()}${bar('is-short')}</div></div><div class="sp-loading-card-foot">${bar('is-button')}${bar('is-button')}</div></article>`;
-  loading.innerHTML = `<div class="sp-orders-loading-cards" aria-hidden="true">${card.repeat(3)}</div><div class="sp-orders-loading-table" aria-hidden="true"><div class="sp-loading-table-scroll"><table style="min-width:${total}px"><colgroup><col style="width:${SP_COL_W_FIXED}px">${cols.map(col=>`<col style="width:${SP_COL_W[col.id]}px">`).join('')}</colgroup><thead><tr><th>${bar('is-check')}</th>${cols.map(col=>`<th data-loading-col="${col.id}">${esc(currentLang==='en'?col.en:col.ar)}</th>`).join('')}</tr></thead><tbody><tr class="sp-loading-day"><td colspan="${cols.length+1}">${bar('is-short')}</td></tr>${`<tr><td>${bar('is-check')}</td>${cells}</tr>`.repeat(4)}</tbody></table></div></div>`;
+  loading.innerHTML = `<div class="sp-orders-loading-cards" aria-hidden="true">${card.repeat(3)}</div><div class="sp-orders-loading-table" aria-hidden="true"><div class="sp-loading-table-scroll"><table><thead><tr><th>${bar('is-check')}</th>${cols.map(col=>`<th data-col="${col.id}">${esc(headerKeys[col.id] ? t(headerKeys[col.id]) : (currentLang==='en'?col.en:col.ar))}</th>`).join('')}</tr></thead><tbody><tr class="sp-loading-day"><td colspan="${cols.length+1}">${bar('is-short')}</td></tr>${`<tr><td>${bar('is-check')}</td>${cells}</tr>`.repeat(6)}</tbody></table></div></div>`;
   loading.setAttribute('aria-label', t('spOrdersLoading'));
   loading.dataset.state = 'loading';
   loading.hidden = false;
@@ -103362,7 +103333,8 @@ function _renderShopifyDepositSummary(data) {
    in the "Movements columns visibility menu" section) — same localStorage
    pattern, same .mov-cols-menu/.mcm-* markup and CSS, just scoped to
    #shopify-orders-table-body's data-col cells instead of #mov-table's. */
-const SP_COLS_KEY = 'soulia_sp_cols_hidden';
+const SP_COLS_KEY = 'soulia_sp_cols_hidden_v3';
+const SP_COLS_DEFAULT_HIDDEN = ['notes', 'tags', 'source', 'tracking', 'address', 'phone', 'thumbs'];
 const SP_COLS = [
   { id:'ref',      ar:'رقم الطلب',        en:'Order #' },
   { id:'client',   ar:'العميل',             en:'Client' },
@@ -103376,22 +103348,40 @@ const SP_COLS = [
   { id:'ship',     ar:'الشحن',              en:'Shipping' },
   { id:'discount', ar:'الخصم',              en:'Discount' },
   { id:'total',    ar:'الإجمالي',           en:'Total' },
-  { id:'deposit',  ar:'العربون والخزنة',    en:'Deposit / vault' },
+  { id:'deposit',  ar:'العربون',            en:'Deposit' },
   { id:'notes',    ar:'ملاحظات',            en:'Notes' },
   { id:'tags',     ar:'Tags',               en:'Tags' },
-  { id:'assigned', ar:'الموظف المسؤول',     en:'Assigned To' },
   { id:'action',   ar:'الإجراء',            en:'Action' },
   { id:'address',  ar:'عنوان',              en:'Address' },
   { id:'source',   ar:'المصدر',             en:'Source' },
   { id:'tracking', ar:'تتبع العميل',        en:'Tracking' },
+  { id:'assigned', ar:'الموظف المسؤول',     en:'Assigned To' },
 ];
-function _getHiddenSpCols() { const hidden=_readColsPref(SP_COLS_KEY);hidden.delete('status');return hidden; }
+function _getHiddenSpCols() {
+  // Only read this user's preference, never another user's legacy browser-wide key.
+  // Seed the new defaults once, preserving any other previously hidden columns.
+  try {
+    const saved = localStorage.getItem(_colsPrefKey(SP_COLS_KEY));
+    if (saved !== null) {
+      const values = JSON.parse(saved);
+      if (Array.isArray(values)) {
+        const hidden = new Set(values);
+        hidden.delete('status');
+        return hidden;
+      }
+    }
+    const previous = localStorage.getItem(_colsPrefKey('soulia_sp_cols_hidden_v2'));
+    const legacy = previous ?? localStorage.getItem(_colsPrefKey('soulia_sp_cols_hidden'));
+    const values = legacy ? JSON.parse(legacy) : [];
+    // Keep earlier explicit choices for Notes/Tags/etc; only add the two new defaults.
+    const defaults = previous !== null ? ['phone', 'thumbs'] : SP_COLS_DEFAULT_HIDDEN;
+    const hidden = new Set([...defaults, ...(Array.isArray(values) ? values : [])]);
+    hidden.delete('status');
+    _writeColsPref(SP_COLS_KEY, hidden);
+    return hidden;
+  } catch (_) { return new Set(SP_COLS_DEFAULT_HIDDEN); }
+}
 function _setHiddenSpCols(set) { const hidden=new Set(set);hidden.delete('status');_writeColsPref(SP_COLS_KEY,hidden); }
-/* Declared width of each column, keyed by data-col — the single source the CSS
-   widths and the table's min-width are both derived from.
-   ⚠ These MUST equal the `width:` in the .sp-c-* rules. They are re-totalled at
-   runtime rather than hardcoded because hiding a column has to shrink the table:
-   see _syncSpTableMinWidth. */
 /* ── The «تأكيد الطلب» icon ──
    A paper plane says "sent somewhere"; the action here is an approval, so the mark is
    a check. ⚠ It is a bare check in a circle deliberately: a richer document-plus-check
@@ -103413,34 +103403,25 @@ function _spConfirmBtnHTML(){
   return `${SP_CONFIRM_ICON} ${t('spSendToTransactionsLong')}`;
 }
 
+// Loading skeleton estimates and actual column IDs; loaded rows size to content.
 const SP_COL_W = {
   /* ⚠ No `time` column (Oct 5): the hour sits under the order number and the day
      separators already name the day — the column printed «أمس at 01:47» beside a
      «أمس» header, and its 88px went back to the rest of the table. */
-  ref:132, client:200, items:164, ship:90, discount:104, total:128, deposit:210,
-  notes:210, tags:170, assigned:128, action:246,
-  address:48, source:48, tracking:48,
+  ref:148, client:200, items:164, ship:100, discount:104, total:156, deposit:210,
+  notes:210, tags:170, action:246,
+  address:48, source:48, tracking:48, assigned:128,
 };
 const SP_COL_W_FIXED = 34; /* the checkbox column, which is never hideable */
 
-/* Preserve readable widths for visible columns; overflow belongs inside the table. */
+/* CSS sizes columns from their content, as in Transactions. Measure the actual
+   overflow only; writing header widths here would defeat intrinsic sizing. */
 function _syncSpTableMinWidth() {
   const table = qs('#shopify-orders-table-body .data-table');
   if (!table) return;
-  const hidden = _getHiddenSpCols();
-  let total = SP_COL_W_FIXED;
-  for (const id in SP_COL_W) {
-    const header = table.querySelector('thead th[data-col="' + id + '"]');
-    if (header) header.style.width = SP_COL_W[id] + 'px';
-    if (!hidden.has(id)) total += SP_COL_W[id];
-  }
-  const checkbox = table.querySelector('th.sp-c-check');
-  if (checkbox) checkbox.style.width = SP_COL_W_FIXED + 'px';
-  table.style.minWidth = total + 'px';
-  table.style.setProperty('--sp-cw', '1');
-  table.style.setProperty('--sp-deposit-width', SP_COL_W.deposit + 'px');
+  const scroll = table.closest('.sp-table-scroll');
   const wrapper = qs('#shopify-orders-table-wrap');
-  if (wrapper) wrapper.dataset.scrollable = String(total > wrapper.clientWidth);
+  if (wrapper && scroll) wrapper.dataset.scrollable = String(scroll.scrollWidth > scroll.clientWidth + 1);
 }
 
 /* Number of columns actually drawn = the checkbox (never hideable) + every
@@ -103481,7 +103462,7 @@ function toggleSpCol(colId) {
   _renderSpColsMenu();
 }
 function resetSpCols() {
-  _clearColsPref(SP_COLS_KEY);
+  _setHiddenSpCols(new Set(SP_COLS_DEFAULT_HIDDEN));
   applyShopifyColsVisibility();
   _renderSpColsMenu();
   toast(t('spColsReset'));
@@ -104109,7 +104090,7 @@ function _spContactLinksHtml(o, mode) {
   </span>` : '';
   const _vbTitle = _ctTagMeta ? `Vrobo — ${_ctTagMeta.label} — ${raw}` : ('Vrobo ' + raw);
   return `<span class="sp-ct-icons">`
-    + `<a class="sp-ct-ic" href="${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(isEn ? 'WhatsApp ' + raw : 'واتساب ' + raw)}" aria-label="${escHtml(isEn ? 'Open WhatsApp chat' : 'فتح محادثة واتساب')}">${_WA_ICON_SVG}</a>`
+    + `<a class="sp-ct-ic" data-col="phone" href="${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(isEn ? 'WhatsApp ' + raw : 'واتساب ' + raw)}" aria-label="${escHtml(isEn ? 'Open WhatsApp chat' : 'فتح محادثة واتساب')}">${_WA_ICON_SVG}</a>`
     + `<a class="sp-ct-ic${_ctTagMeta ? ' sp-ct-ic-wrap' : ''}" href="${vb}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${escHtml(_vbTitle)}" aria-label="${escHtml(_vbTitle)}">${_SP_VROBO_ICON}${_ctTagBadge}</a>`
     + `</span>`;
 }
@@ -104433,26 +104414,19 @@ function _spPeekHtml(o) {
   /* ── Customer ── the name is isolated with <bdi> rather than dir="auto" on its
      block: dir="auto" on a block also flips its ALIGNMENT, which threw an Arabic
      name to the far edge of an English panel, away from its own phone number. */
-  /* ⚠ Oct 13, 2026 — compact layout: WHO lives in the header (name, phone,
-     contact buttons) so the body can lead with the follow-up and the comments —
-     the two threads the operator reads first. Address + note follow them. */
+  // Customer and delivery address share the header; the body prioritizes follow-up.
   const custTopHtml = `
       <div class="sp-pk-cust-top">
         <span class="sp-pk-av" aria-hidden="true">${_spPeekInitials(o.client)}</span>
         <div class="sp-pk-cust-id">
-          <div class="sp-pk-client"><bdi>${esc(o.client || '—')}</bdi>${repeat > 1 ? `<span class="sp-repeat-badge" title="${escHtml(tf('spRepeatCustomerHint', { n: repeat }))}">${esc(_spRepeatCountLabel(repeat))}</span>` : ''}</div>
+          <div class="sp-pk-customer-line"><div class="sp-pk-client"><bdi>${esc(o.client || '—')}</bdi>${repeat > 1 ? `<span class="sp-repeat-badge" title="${escHtml(tf('spRepeatCustomerHint', { n: repeat }))}">${esc(_spRepeatCountLabel(repeat))}</span>` : ''}</div>
+          ${addr ? `<span class="sp-pk-address" title="${escHtml(isEn ? 'Delivery address' : 'عنوان التسليم')}">${_SP_PK_ICO.pin}<bdi>${esc(addr)}</bdi></span>` : ''}</div>
           ${phone ? `<div class="sp-pk-phone-row"><a class="sp-pk-phone" href="tel:${escHtml(phone.replace(/[^\d+]/g, ''))}">${esc(_spPhoneDisplay(phone))}</a>
             <button type="button" class="sp-pk-copy" onclick="_spPeekCopyPhone('${escHtml(phone.replace(/[^\d+]/g, ''))}')" title="${escHtml(isEn ? 'Copy number' : 'نسخ الرقم')}" aria-label="${escHtml(isEn ? 'Copy number' : 'نسخ الرقم')}">${_SP_PK_ICO.copy}</button></div>` : ''}
         </div>
         ${phone ? _spContactLinksHtml(o, 'compact') : ''}
       </div>`;
-  const custFactsHtml = addr || note ? `<details class="sp-pk-sec sp-pk-cust sp-pk-disclosure" data-pk-section="delivery">
-      <summary>${_SP_PK_ICO.pin}<span class="sp-pk-disclosure-label"><b>${isEn ? 'Delivery details' : 'تفاصيل التسليم'}</b><small title="${escHtml(addr || note)}"><bdi>${esc(addr || note)}</bdi></small></span><svg class="sp-pk-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary>
-      <div class="sp-pk-facts">
-        ${addr ? `<div class="sp-pk-fact">${_SP_PK_ICO.pin}<div><small>${isEn ? 'Delivery address' : 'عنوان التسليم'}</small><bdi>${esc(addr)}</bdi></div></div>` : ''}
-        ${note ? `<div class="sp-pk-fact is-note">${_SP_PK_ICO.note}<div><small>${isEn ? 'Customer note' : 'ملاحظة العميل'}</small><span class="sp-pk-note-txt sp-pk-txt">${esc(note)}</span></div></div>` : ''}
-      </div>
-    </details>` : '';
+  const customerNoteHtml = note ? `<div class="sp-pk-header-note">${_SP_PK_ICO.note}<span><strong>${isEn ? 'Customer note' : 'ملاحظة العميل'}:</strong> <bdi>${esc(note)}</bdi></span></div>` : '';
 
   /* ── Payment ── the total is the lead figure; the meter states how much of it is
      already in hand (single hue — a share of one total, the vault-strip rule);
@@ -104513,6 +104487,7 @@ function _spPeekHtml(o) {
       </div>
       </div>
       ${custTopHtml}
+      ${customerNoteHtml}
       ${_spOrderEditMark(o)}
     </header>
     <div class="sp-pk-body">
@@ -104520,7 +104495,6 @@ function _spPeekHtml(o) {
       <div class="sp-pk-column">
       <section class="sp-pk-sec sp-pk-fu" id="sp-pk-fu" aria-live="polite">${_spPeekFuHtml(o)}</section>
       ${_spPeekCommentsHtml(o)}
-      ${custFactsHtml}
       ${_spPeekTogetherHtml(o, canConfirm)}
       </div><div class="sp-pk-column">
       ${items.length ? `<details class="sp-pk-sec sp-pk-disclosure sp-pk-items-section" data-pk-section="items" open><summary>${_SP_PK_ICO.bag}<b>${isEn ? 'Items' : 'الأصناف'}</b><span class="sp-pk-count">${fmtN(_spItemsCount(o))}</span><svg class="sp-pk-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary><ul class="sp-pk-items">${itemsHtml}</ul></details>` : ''}
@@ -104613,24 +104587,9 @@ function _spPeekCommentsHtml(o) {
   const list = Array.isArray(o.comments) ? o.comments : [];
   const isEn = currentLang === 'en';
   const oid = esc(String(o._id));
-  /* ⚠ Oct 13, 2026 — always drawn, even empty: the footer «Comments» button was
-     removed (it duplicated this section), so this is now the only way in. */
-  const rows = list.map(c => {
-    const u = (typeof _pwFindUser === 'function' && _pwFindUser(c.employee)) || { name: c.employee || '؟' };
-    return `<li class="sp-pk-tl">
-      <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
-      <div class="sp-pk-tl-b">
-        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(c.employee || '؟')}</b>${cmtJobTitleHtml(c.employee)}</span><time>${_cmtTimeHtml(c)}</time></div>
-        <div class="sp-pk-txt">${renderMentionText(c.text || '')}</div>
-      </div>
-    </li>`;
-  }).join('');
+  // Keep the full conversation in its existing modal; the drawer needs one entry point.
   return `<section class="sp-pk-sec sp-pk-cmt-sec">
-    <div class="sp-pk-sec-h">${_SP_PK_ICO.chat}<span>${isEn ? 'Comments' : 'التعليقات'}</span>${list.length ? `<span class="sp-pk-count">${fmtN(list.length)}</span>` : ''}
-      <button type="button" class="sp-pk-link" onclick="openShopifyCommentsModal('${oid}')">${_SP_PK_ICO.notePlus}${isEn ? (list.length ? 'Reply' : 'Add comment') : (list.length ? 'رد' : 'إضافة تعليق')}</button></div>
-    ${list.length
-      ? _spPeekHistoryHtml(rows, 'sp-pk-cmts', isEn ? 'Comments' : 'التعليقات')
-      : `<div class="sp-pk-none">${isEn ? 'No comments on this order yet.' : 'لا توجد تعليقات على هذا الأوردر بعد.'}</div>`}
+    <button type="button" class="sp-pk-add-comment" onclick="openShopifyCommentsModal('${oid}')">${_SP_PK_ICO.notePlus}<span>${isEn ? 'Add comment' : 'أضف تعليق'}</span>${list.length ? `<span class="sp-pk-comment-count">${fmtN(list.length)} ${isEn ? (list.length === 1 ? 'comment' : 'comments') : 'تعليقات'}</span>` : ''}</button>
   </section>`;
 }
 
@@ -104713,7 +104672,7 @@ function _spPeekAttachDrag(ov) {
     if (window.matchMedia('(min-width:601px)').matches) return;
     if (drag) { reset(); return; }
     if (!e.isPrimary || e.button !== 0 || ov._closing || !ov.classList.contains('is-open')) return;
-    if (!e.target.closest('.sp-pk-grip,.sp-pk-head') || e.target.closest('button,a,input,textarea,select,[contenteditable]')) return;
+    if (!e.target.closest('.sp-pk-grip,.sp-pk-head') || e.target.closest('button,a,input,textarea,select,[contenteditable],.sp-pk-header-note')) return;
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY, time: performance.now(), distance: 0 };
     try { panel.setPointerCapture(e.pointerId); } catch (_) {}
   });
@@ -104975,13 +104934,14 @@ async function saveSpAssign(ids) {
 function _spStaffCellHtml(o) {
   const isEn = currentLang === 'en';
   const id = esc(String(o._id));
-  if (o.assignedToName) {
-    /* ⚠ Name only — no avatar. The column compresses to ~65px and an avatar there
-       left «..h» of the name, which is the one thing the cell exists to say. */
-    const inner = `<span>${esc(o.assignedToName)}</span>`;
+  const fullName = String(o.assignedToName || '').trim();
+  if (fullName) {
+    const firstName = fullName.split(/\s+/)[0];
+    const inner = `<span dir="auto">${esc(firstName)}</span>`;
+    const reassignLabel = `${isEn ? 'Reassign' : 'إعادة إسناد'} — ${fullName}`;
     return hasPerm('shopify-reassign')
-      ? `<button type="button" class="sp-staff-chip" title="${escHtml(isEn ? 'Reassign' : 'إعادة إسناد')}" onclick="event.stopPropagation();openSpAssignModal(['${id}'])">${inner}</button>`
-      : `<span class="sp-staff-chip is-static">${inner}</span>`;
+      ? `<button type="button" class="sp-staff-chip" title="${escHtml(reassignLabel)}" aria-label="${escHtml(reassignLabel)}" onclick="event.stopPropagation();openSpAssignModal(['${id}'])">${inner}</button>`
+      : `<span class="sp-staff-chip is-static" title="${escHtml(fullName)}" aria-label="${escHtml(fullName)}">${inner}</span>`;
   }
   if (!hasPerm('shopify-reassign') || o.cancelled || o.status !== 'pending') return '<span style="color:var(--text-muted);font-size:.8rem">—</span>';
   return `<button type="button" class="sp-assign-link" onclick="event.stopPropagation();openSpAssignModal(['${id}'])">
@@ -105769,11 +105729,11 @@ function renderShopifyOrders() {
         <th class="sp-c-deposit" data-col="deposit">${t('spColDeposit')}</th>
         <th class="sp-c-notes" data-col="notes">${t('spColNotes')}</th>
         <th class="sp-c-tags sp-th-latin" data-col="tags">Tags</th>
-        <th class="sp-c-assigned" data-col="assigned">${t('spColAssigned')}</th>
         <th class="sp-c-action" data-col="action">${t('spColAction')}</th>
         <th class="sp-c-icon" data-col="address" title="${t('spColAddress')}" aria-label="${t('spColAddress')}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></th>
         <th class="sp-c-icon" data-col="source" title="${t('spColSource')}" aria-label="${t('spColSource')}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></th>
         <th class="sp-c-icon" data-col="tracking" title="${t('spColTracking')}" aria-label="${t('spColTracking')}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></th>
+        <th class="sp-c-assigned" data-col="assigned">${t('spColAssigned')}</th>
       </tr></thead>
       <tbody>
         ${(() => { _spTblLastDayKey = null; _spTblSeenDayKeys = new Set(); return ''; })()}
@@ -105806,11 +105766,8 @@ function renderShopifyOrders() {
           const _oAgeMs = Date.now() - new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime();
           const _isNewToday = _oAgeMs < 24 * 60 * 60 * 1000;
           const _oNewBadge = _isNewToday ? `<span class="sp-new-badge" title="${escHtml(t('spNewBadge'))}">${t('spNewBadge')}</span>` : '';
-          const _newRowStyle = _isNewToday ? `background:linear-gradient(90deg,rgba(16,185,129,.07) 0%,transparent 100%);border-right:3px solid #10b981;` : '';
           const _spRowSelected = _shopifySelectedIds.has(o._id);
-          const _selectedRowStyle = _spRowSelected ? `border-right:3px solid var(--accent);` : '';
-          /* ⚠ يسبق _newRowStyle: أوردر وصل اليوم قد يحمل طلب إلغاء، والطلب هو
-             الحالة التي تُغيّر ما يفعله الموظف، لا كونه جديداً. */
+          // Cancellation requests keep their semantic cell highlight.
           const _spCrState = _spCancelReqState(o);
           const _spCrClass = _spCrState === 'req' ? ' sp-cancel-req' : _spCrState === 'rej' ? ' sp-cancel-rej' : '';
 
@@ -105869,12 +105826,12 @@ function renderShopifyOrders() {
 
           const _spSelectable = o.status === 'pending' && !o.cancelled;
           return `${_daySepHtml}
-          <tr class="${_spRowSelected ? 'sp-row-selected' : ''}${_spCrClass}${o.cancelled ? ' sp-row-cancelled' : ''}${_spMyFollowUpScope ? ' sp-my-followup-match' : ''}" style="${_selectedRowStyle || (_spCrClass ? '' : _newRowStyle)}animation-delay:${Math.min(_spRowIdx,20)*18}ms">
+          <tr class="${_spRowSelected ? 'sp-row-selected' : ''}${_spCrClass}${o.cancelled ? ' sp-row-cancelled' : o.status !== 'pending' ? ' sp-row-completed' : ''}${_isNewToday && !_spCrClass ? ' sp-row-new' : ''}${_spMyFollowUpScope ? ' sp-my-followup-match' : ''}" style="animation-delay:${Math.min(_spRowIdx,20)*18}ms">
             <td class="sp-c-check">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap" data-col="ref"><div class="sp-ref-line">${_spStarHtml(o)}${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
               : '<b>-</b>'}${_spOrderConfirmationMark(o)}${_spOrderEditMark(o)}${_oNewBadge}${(!o.editRequest && o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div>${_spRefTimeHtml(o)}</td>
-            <td style="font-size:.85rem" data-col="client"><div class="sp-client-cq"><div class="sp-client-txt"><div class="sp-client-nameline"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spCustOrdersChipHtml(o, _spCtx.cust, _spCtx.unshipped)}</div>${_spPhone(o) ? `<div class="sp-client-phone" data-col="phone"><a class="sp-client-tel" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient') + ' ' + _spPhone(o))}">${esc(_spPhoneDisplay(_spPhone(o)))}</a></div>` : ''}</div>${_spPhone(o) ? `<span class="sp-ct-stack" data-col="phone">${_spContactLinksHtml(o, 'icons')}</span>` : ''}</div></td>
+            <td style="font-size:.85rem" data-col="client"><div class="sp-client-cq"><div class="sp-client-txt"><div class="sp-client-nameline"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spCustOrdersChipHtml(o, _spCtx.cust, _spCtx.unshipped)}</div>${_spPhone(o) ? `<div class="sp-client-phone" data-col="phone"><a class="sp-client-tel" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient') + ' ' + _spPhone(o))}">${esc(_spPhoneDisplay(_spPhone(o)))}</a></div>` : ''}</div>${_spPhone(o) ? `<span class="sp-ct-stack">${_spContactLinksHtml(o, 'icons')}</span>` : ''}</div></td>
             <td style="text-align:center" data-col="items"><div class="sp-items-cq">${_spItemsCell(o, _spCtx.inv)}</div></td>
             <!-- ⚠ NO inline text-align here. The stylesheet end-aligns الشحن / الخصم /
                  الإجمالي together (a column of figures read against a ragged edge cannot
@@ -105888,7 +105845,6 @@ function renderShopifyOrders() {
             <td data-col="deposit">${_spDepositCellHtml(o)}</td>
             <td data-col="notes">${noteCell}</td>
             <td data-col="tags">${tagsCell}</td>
-            <td data-col="assigned">${_spStaffCellHtml(o)}</td>
             <td data-col="action">
               <!-- ⚠ زر التعليقات خارج التفرع أدناه عمداً: قائمة ⋮ تُرسم للأوردر المعلق
                    غير الملغى فقط، فوضعه داخلها كان يخفي التعليقات عن المؤكد والملغى —
@@ -105961,6 +105917,7 @@ function renderShopifyOrders() {
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </a>`;
             })()}</td>
+            <td data-col="assigned">${_spStaffCellHtml(o)}</td>
           </tr>
         `;}).join('')}
       </tbody>
@@ -106293,7 +106250,7 @@ function _spDepositAddButtonHtml(o, labelled = false) {
 }
 
 const _spShippingSwitchBusy = new Set();
-function _spShippingSwitchHtml(o, editable = true, compact = false) {
+function _spShippingSwitchHtml(o, editable = true, compact = true) {
   if (_spHasDepositRecorded(o)) return '';
   const on = _spShipsWithoutDeposit(o);
   const canEdit = editable && _spCanChooseShipping(o);
@@ -110495,6 +110452,7 @@ function _spRenderHistoryTab() {
 <script src="/employee-followup-session.js?v=task-clarity-20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/employee-followup-tour.css?v=20261026-visible-help-color">
 <script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
-<link rel="stylesheet" href="/design-system.css?v=20261025-1">
+<link rel="stylesheet" href="/design-system.css?v=20261029-deposit-center">
+<link rel="stylesheet" href="/metrics-strip.css?v=20261029-above-search">
 </body>
 </html>

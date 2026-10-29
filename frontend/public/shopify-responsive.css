@@ -64,14 +64,35 @@
 .sp-loading-card-foot{display:flex;justify-content:space-between;gap:14px;border-top:1px solid var(--border);padding-top:8px}
 .sp-loading-bar.is-button{width:36%;height:32px;border-radius:7px}
 .sp-orders-loading-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg)}
-.sp-loading-table-scroll{overflow-x:auto;overscroll-behavior-inline:contain}
-.sp-orders-loading-table table{width:100%;table-layout:fixed;border-collapse:collapse;text-align:start}
-.sp-orders-loading-table th{height:40px;padding:10px 12px;text-align:start;font-size:.74rem;font-weight:600;background:var(--surface);color:var(--muted);white-space:nowrap}
-.sp-orders-loading-table td{height:76px;padding:12px;border-top:1px solid var(--border);vertical-align:middle}
-.sp-orders-loading-table td:has(.is-photo)>.is-photo{display:inline-block;vertical-align:middle;margin-inline-end:8px}
-.sp-orders-loading-table td:has(.is-photo)>.sp-loading-cell{display:inline-grid;width:calc(100% - 48px);vertical-align:middle}
-.sp-loading-cell{display:grid;gap:9px;min-width:0}
-.sp-orders-loading-table .sp-loading-day td{height:32px;padding:10px 12px;background:var(--surface)}
+.sp-loading-table-scroll{overflow:auto;overscroll-behavior-inline:contain;scrollbar-gutter:stable;max-height:calc(100vh - 340px);min-height:280px}
+.sp-orders-loading-table table{width:max-content;min-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0;text-align:start;font-family:var(--font-app)}
+#main .sp-orders-loading-table th{position:sticky;top:0;z-index:1;padding:12px clamp(4px,.45vw,10px);text-align:start;font-size:13px;font-weight:600;line-height:1.5;background:var(--surface);color:var(--muted);white-space:nowrap;border-bottom:1px solid #e9eceb}
+#main .sp-orders-loading-table td{height:62px;padding:9px clamp(4px,.45vw,10px);border-bottom:1px solid #e9eceb;vertical-align:middle;background:#fafbfc;box-sizing:border-box}
+#main .sp-orders-loading-table :is(th,td):first-child{width:36px;padding-inline:6px}
+.sp-orders-loading-table .sp-loading-cell{display:grid;gap:3px;min-width:0}
+.sp-orders-loading-table .sp-loading-inline{display:flex;align-items:center;gap:8px;width:max-content;max-width:100%}
+.sp-orders-loading-table .sp-loading-bar{flex-shrink:0;max-width:none}
+.sp-orders-loading-table .is-order-ref{width:96px;height:22px}
+.sp-orders-loading-table .is-date{width:144px;height:18px}
+.sp-orders-loading-table .is-client-name{width:124px;height:16px}
+.sp-orders-loading-table .is-phone{width:100px;height:15px}
+.sp-orders-loading-table .is-contact{width:24px;height:24px;border-radius:6px}
+.sp-orders-loading-table .is-item-photo{width:26px;height:26px;border-radius:5px}
+.sp-orders-loading-table .is-items{width:82px;height:32px;border-radius:6px}
+.sp-orders-loading-table .is-staff{width:58px;height:28px;border-radius:999px}
+.sp-orders-loading-table .is-deposit{width:116px;height:32px;border-radius:8px}
+.sp-orders-loading-table .is-action{width:30px;height:30px;border-radius:6px}
+.sp-orders-loading-table .is-prepare{width:112px;height:32px;border-radius:6px}
+.sp-orders-loading-table .is-number{width:54px;height:16px}
+.sp-orders-loading-table .is-total{width:88px;height:16px}
+.sp-orders-loading-table .is-text{width:100px;height:16px}
+.sp-orders-loading-table :is([data-col="items"],[data-col="action"])>.sp-loading-inline{margin-inline:auto}
+.sp-orders-loading-table :is([data-col="tags"],[data-col="assigned"],[data-col="address"],[data-col="source"],[data-col="tracking"])>.sp-loading-bar{margin-inline:auto}
+.sp-orders-loading-table :is([data-col="ship"],[data-col="discount"],[data-col="total"])>.sp-loading-bar{margin-inline-start:auto}
+#main .sp-orders-loading-table .sp-loading-day td{height:25px;padding:3px 12px;background:var(--bg-alt)}
+body.dark-mode #main .sp-orders-loading-table :is(th,td){border-bottom-color:var(--border)}
+body.dark-mode #main .sp-orders-loading-table tbody td{background:rgba(255,255,255,.02)}
+body.dark-mode #main .sp-orders-loading-table .sp-loading-day td{background:rgba(148,163,184,.06)}
 .sp-loading-day .sp-loading-bar{width:90px}
 #sp-orders-tab-content[data-layout="cards"] .sp-orders-loading-table,#sp-orders-tab-content[data-layout="table"] .sp-orders-loading-cards{display:none}
 .sp-orders-error{text-align:center;padding:32px 16px;border:1px solid var(--border);border-radius:12px;color:var(--muted)}

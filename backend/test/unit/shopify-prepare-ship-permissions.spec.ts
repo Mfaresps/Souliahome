@@ -11,6 +11,12 @@ import { PERMS_KEY } from '../../src/core/decorators/perms.decorator';
 
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
 
+function extract(fn: string) {
+  const match = html.match(new RegExp('(?:async )?function ' + fn + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}'));
+  if (!match) throw new Error('Missing function: ' + fn);
+  return match[0];
+}
+
 describe('Prepare and ship permission', () => {
   const guard = new PermsGuard(new Reflector());
   const canApprove = (user: any) => guard.canActivate({
@@ -27,9 +33,40 @@ describe('Prepare and ship permission', () => {
   it('allows admins automatically and employees only with an explicit grant', () => {
     expect(canApprove({ role: 'admin', perms: [] })).toBe(true);
     expect(canApprove({ role: 'staff', perms: ['shopify-prepare-ship'] })).toBe(true);
+    expect(canApprove({ role: 'viewer', perms: ['shopify-prepare-ship'] })).toBe(true);
+    expect(canApprove({ role: 'viewer', perms: ['shopify-orders'] })).toBe(false);
     expect(canApprove({ role: 'staff', perms: ['shopify-orders', 'settings', 'inventory-units-allocate'] })).toBe(false);
     expect(canApprove({ role: 'staff' })).toBe(false);
     expect(canApprove(undefined)).toBe(false);
+  });
+
+  it('grants preparation and order access through the fulfillment job preset', () => {
+    const templates = html.match(/const JOB_TEMPLATES = \{[\s\S]*?\n\};/);
+    expect(templates).not.toBeNull();
+    const perms = runInNewContext(templates![0] + '\nJOB_TEMPLATES.fulfillment.perms');
+    expect(perms).toEqual(expect.arrayContaining(['shopify-orders', 'shopify-prepare-ship']));
+    expect(canApprove({ role: 'staff', perms })).toBe(true);
+  });
+
+  it('includes order access when granting Prep & Ship and revokes the action when order access is removed', () => {
+    const orders = { value: 'shopify-orders', checked: false };
+    const prepareShip = { value: 'shopify-prepare-ship', checked: true };
+    const env: any = {
+      qs: (selector: string) => selector === '.perm-cb[value="shopify-orders"]' ? orders
+        : selector === '.perm-cb[value="shopify-prepare-ship"]' ? prepareShip : null,
+      qsa: () => [],
+    };
+    runInNewContext(extract('onPermCbChange') + '\n' + extract('refreshPermModules'), env);
+    env.onPermCbChange(prepareShip);
+    expect(orders.checked).toBe(true);
+    expect(prepareShip.checked).toBe(true);
+    orders.checked = false;
+    env.onPermCbChange(orders);
+    expect(orders.checked).toBe(false);
+    expect(prepareShip.checked).toBe(false);
+    orders.checked = true;
+    env.onPermCbChange(orders);
+    expect(prepareShip.checked).toBe(false);
   });
 
   it('keeps every inline frontend script syntactically valid', () => {
@@ -42,11 +79,6 @@ describe('Prepare and ship permission', () => {
   it.each(['approveShopifyOrder', '_confirmApproveShopify', 'bulkSendShopifyOrders',
     '_confirmBulkSendShopify', '_dpBulkSendReadyOrders', '_spPeekConfirmBoth'])(
     'blocks %s before opening a dialog or sending requests when permission is absent', async name => {
-      const extract = (fn: string) => {
-        const match = html.match(new RegExp('(?:async )?function ' + fn + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}'));
-        if (!match) throw new Error('Missing function: ' + fn);
-        return match[0];
-      };
       const env: any = { hasPerm: jest.fn(() => false), toast: jest.fn(), t: (key: string) => key };
       runInNewContext(extract('_spRequirePrepareShip') + '\n' + extract(name), env);
       await env[name]('order-id');

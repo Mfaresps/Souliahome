@@ -20,9 +20,12 @@
   #header .header-search input::placeholder {font-size:13px!important}
   #main {padding:var(--ui-page-gap);min-width:0}
   #main > .page {min-width:0;padding:var(--ui-page-gap)}
-  /* Reserve the vertical scrollbar so row wrapping/zoom cannot feed back into
-     the movement table's measured width. Horizontal overflow remains usable. */
-  #mov-table-wrap .ent-table-scroll {scrollbar-gutter:stable;overflow-x:auto}
+  /* Size columns from their content, then share any spare width across the table.
+     Long content can still scroll instead of being clipped or shrinking the font. */
+  :is(#mov-table-wrap .ent-table-scroll,#shopify-orders-table-wrap .sp-table-scroll) {scrollbar-gutter:stable;overflow-x:auto;max-width:100%}
+  :is(#mov-table-wrap,#shopify-orders-table-wrap) {width:100%;max-width:100%}
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) {table-layout:auto;width:max-content;min-width:100%;max-width:none;border-collapse:separate;border-spacing:0}
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) :is(th,td)[data-col] {width:auto}
   #main > #page-pickup-orders {
     margin:0;border:1px solid var(--border);border-radius:var(--ui-card-radius);
     background:var(--bg);box-shadow:var(--shadow-xs);
@@ -140,6 +143,106 @@
   :where(#main .page) :is(th,td) {text-align:start}
   #main .page thead th {font-size:var(--fs-th);font-weight:var(--fw-th);line-height:1.5;letter-spacing:0;text-transform:none;padding-block:12px;vertical-align:middle}
   #main .page tbody td {font-size:var(--fs-td);line-height:1.5;vertical-align:middle}
+  /* Order/transaction tables: rem-based child labels used to fall to 9–12px
+     on the 14px root, bypassing the shared td size. Keep an explicit reading
+     scale, including nested controls; column fitting must preserve this scale. */
+  :is(#page-movements,#page-shopify-orders) {
+    --text:#202223;--muted:#616161;--text-muted:var(--muted);
+  }
+  body.dark-mode :is(#page-movements,#page-shopify-orders) {
+    --text:#e8f5ee;--muted:#b0bdb5;
+  }
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) {
+    font-family:var(--font-app);font-size:14px;letter-spacing:0;color:var(--text);
+  }
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) thead th {
+    font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0;text-transform:none;
+  }
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) tbody td {
+    font-size:14px;font-weight:400;line-height:1.5;
+  }
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) tbody tr:not(.sp-day-sep) > td {height:44px;padding-block:9px}
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) {--mov-row-divider:#e9eceb}
+  body.dark-mode #main :is(#mov-table,#shopify-orders-table-wrap .data-table) {--mov-row-divider:var(--border)}
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) thead th,
+  #main :is(#mov-table,#shopify-orders-table-wrap .data-table) tbody tr:not(:last-child) > td {border-bottom:1px solid var(--mov-row-divider)}
+  /* Orders use the transaction table's scroll, density and interaction rules.
+     Intrinsic sizing must see the contents of the old size-query wrappers. */
+  #main #shopify-orders-table-wrap {box-shadow:0 1px 2px rgba(15,31,22,.04)}
+  #main #shopify-orders-table-wrap .sp-table-scroll {max-height:calc(100vh - 340px);min-height:280px;overflow-y:auto}
+  #main #shopify-orders-table-wrap .data-table :is(th,td) {padding-inline:clamp(4px,.45vw,10px);border-inline-start:0}
+  #main #shopify-orders-table-wrap .data-table thead th {position:sticky;top:0;z-index:4;padding-block:12px;background:var(--surface);overflow:visible}
+  #main #shopify-orders-table-wrap .data-table :is(th,td)[data-col="action"] {inset-inline-end:auto;box-shadow:none}
+  #main #shopify-orders-table-wrap .data-table tbody td[data-col="action"] {position:relative;z-index:auto;background:transparent}
+  #main #shopify-orders-table-wrap .data-table .sp-c-check {width:36px;padding-inline:6px;text-align:center}
+  #main #shopify-orders-table-wrap :is(.sp-client-cq,.sp-items-cq) {container-type:normal;width:auto}
+  #main #shopify-orders-table-wrap .sp-client-cq {justify-content:flex-start;gap:8px}
+  #main #shopify-orders-table-wrap .sp-client-txt {flex:0 1 auto}
+  #main #shopify-orders-table-wrap td[data-col="deposit"] :is(.spdep-table-deposit,.spdep-empty) {justify-content:center;align-items:center;gap:6px;padding-block:0}
+  #main #shopify-orders-table-wrap .sp-ct-stack {display:flex;align-self:center}
+  #main #shopify-orders-table-wrap .sp-ct-stack .sp-ct-ic {width:24px;height:24px;font-size:18px}
+  #main #shopify-orders-table-wrap .sp-ct-ic-tag {width:11px;height:11px;inset-inline-end:-1px;bottom:0}
+  #main #shopify-orders-table-wrap .sp-ct-ic-tag svg {filter:none;opacity:1}
+  #main :is(#shopify-orders-table-wrap .data-table,.sp-orders-loading-table table) :is(th,td):is([data-col="items"],[data-col="deposit"]) {text-align:center}
+  #main .sp-orders-loading-table td[data-col="deposit"] > .sp-loading-bar {margin-inline:auto}
+  #main :is(#shopify-orders-table-wrap .data-table,.sp-orders-loading-table table) :is(th,td):is([data-col="ref"],[data-col="client"],[data-col="notes"]) {text-align:start}
+  #main :is(#shopify-orders-table-wrap .data-table,.sp-orders-loading-table table) :is(th,td):is([data-col="ship"],[data-col="discount"],[data-col="total"]) {text-align:end}
+  #main :is(#shopify-orders-table-wrap .data-table,.sp-orders-loading-table table) :is(th,td):is([data-col="tags"],[data-col="assigned"],[data-col="action"],[data-col="address"],[data-col="source"],[data-col="tracking"]) {text-align:center}
+  #main #shopify-orders-table-wrap :is(.sp-ref-line,.sp-client-nameline) {flex-wrap:nowrap}
+  #main #shopify-orders-table-wrap .data-table td[data-col="notes"] {max-width:260px}
+  #main #shopify-orders-table-wrap .data-table td[data-col="tags"] {max-width:240px}
+  #main #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep) {background:#fafbfc}
+  #main #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep):hover {background:#f3f4f6}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed {background:rgba(148,163,184,.10)}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed:hover {background:rgba(148,163,184,.16)}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-cancelled {background:rgba(148,163,184,.04)}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-new > td:first-child {border-right:3px solid #95bf47}
+  #main #shopify-orders-table-wrap .data-table tbody tr:hover > td {box-shadow:none;z-index:auto}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected {background:var(--primary-pale)!important}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected > td {background:transparent}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected > td:first-child {box-shadow:inset 3px 0 0 var(--primary)}
+  #main #shopify-orders-table-wrap .sp-row-check {opacity:1}
+  /* Cancelled data stays readable, with the same strike as the order number.
+     Target nested text too: inline-flex badges do not receive a cell's decoration. */
+  #main #shopify-orders-table-wrap tr.sp-row-cancelled > td[data-col]:not([data-col="action"]),
+  #main #shopify-orders-table-wrap tr.sp-row-cancelled > td[data-col]:not([data-col="action"]) :is(div,a,span,b,strong,small,p,time,button,label),
+  #main #sp-mobile-list .sp-card-cancelled :is(.sp-card-ref,.sp-card-client,.sp-card-heading-time,.sp-card-money,.sp-card-products-toggle),
+  #main #sp-mobile-list .sp-card-cancelled :is(.sp-card-ref,.sp-card-client,.sp-card-heading-time,.sp-card-money,.sp-card-products-toggle) :is(a,span,b,strong,small,time) {
+    text-decoration-line:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--muted);
+  }
+  body.dark-mode #main #shopify-orders-table-wrap {box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  body.dark-mode #main #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep) {background:rgba(255,255,255,.02)}
+  body.dark-mode #main #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep):hover {background:rgba(255,255,255,.04)}
+  body.dark-mode #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed {background:rgba(0,0,0,.18)}
+  body.dark-mode #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed:hover {background:rgba(0,0,0,.24)}
+  #main #mov-table :is(.mov-client-name,.mov-col-total,.mov-col-paid,.mov-col-remaining-pos,.mov-col-remaining-zero,.mov-ship-billed),
+  #main #shopify-orders-table-wrap :is(.sp-client-name,.mov-ship-billed,.sp-total-neutral) {font-size:14px}
+  #main #mov-table :is(.mov-client-name,.mov-col-total,.mov-col-paid,.mov-col-remaining-pos,.mov-col-remaining-zero),
+  #main #shopify-orders-table-wrap .sp-client-name {font-weight:400}
+  #main #mov-table :is(.col-ref a,.mov-col-ref a),
+  #main #shopify-orders-table-wrap .sp-ref-line b {font-size:14px;font-weight:600}
+  /* Existing order totals have an inline size and accent colour. A neutral
+     total stays distinct from payment/remaining amounts, which retain status. */
+  #main #shopify-orders-table-wrap td[data-col="total"] > b {
+    font-size:14px!important;font-weight:600;color:var(--text)!important;
+  }
+  #main #shopify-orders-table-wrap td[data-col="total"] .amt-num {font-weight:600}
+  #main #mov-table .mov-date-shopify .ds-day {font-size:13px;font-weight:400}
+  #main #mov-table :is(.mov-date-main,.mov-date-sub,.mov-date-shopify .ds-time),
+  #main #shopify-orders-table-wrap :is(.sp-ref-time,.sp-client-tel,.sp-note-txt) {font-size:12px;line-height:1.5}
+  #main :is(#mov-table,#shopify-orders-table-wrap) .amt-cur {font-size:11px;opacity:1;letter-spacing:0}
+  #main :is(#mov-table,#shopify-orders-table-wrap) :is(.mov-items-btn,.sp-staff-chip,.sp-assign-link,.spdep-shipping-switch,.sp-deposit-chip) {
+    font-size:13px;font-weight:500;line-height:1.5;
+  }
+  #main :is(#mov-table,#shopify-orders-table-wrap) :is(.badge,.order-state,.pu-badge,.bosta-badge,.sp-status-badge,.sp-tag,.sp-tags-more-btn,.tx-tag,.tx-tag-summary,.tx-tag-add,.disc-badge,.sp-items-badge) {
+    font-size:12px;font-weight:500;line-height:1.5;letter-spacing:0;
+  }
+  #main #shopify-orders-table-wrap .sp-confirm-btn {font-size:13px;min-height:32px}
+  #main #shopify-orders-table-wrap :is(.sp-new-badge,.sp-repeat-badge,.sp-day-sep-label) {font-size:12px;font-weight:600}
+  #main #mov-table tr:not(.mov-row-cancelled) .mov-col-remaining-zero {color:var(--muted)!important}
+  /* Employee metadata previously combined translucent colour with .65 opacity. */
+  #main #mov-table .mov-col-employee {color:var(--muted)!important;font-size:12px!important;font-weight:400!important;opacity:1}
+  #main #mov-table :is(.mov-emp-name,.mov-emp-initials,.mov-emp-initials-sm) {font-size:12px;color:var(--muted)}
   #main .page :is(th,td):is(.num,.sl-num,[data-align=number]) {text-align:end;font-variant-numeric:tabular-nums}
   #main .page :is(th,td)[data-align=center] {text-align:center}
   #main #prod-table :is(th,td):nth-child(n+8):nth-child(-n+11) {text-align:end;font-variant-numeric:tabular-nums}

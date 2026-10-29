@@ -1,0 +1,93 @@
+[
+  {
+    "name": {
+      "size": "12.18px",
+      "weight": "400",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "overflow": false,
+    "body": {
+      "size": "14px",
+      "weight": "400",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(107, 140, 120)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "9.8px",
+      "weight": "400",
+      "color": "rgb(107, 140, 120)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "9.8px",
+      "weight": "500",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "12.04px",
+      "weight": "500",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [
+      {
+        "col": "invoice",
+        "text": "EGP 123,457",
+        "width": 89,
+        "scroll": 104
+      }
+    ],
+    "rows": 8,
+    "inter": true
+  },
+  {
+    "name": {
+      "size": "11.9px",
+      "weight": "400",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "overflow": false,
+    "body": {
+      "size": "11.9px",
+      "weight": "400",
+      "color": "rgb(15, 31, 22)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "header": {
+      "size": "13px",
+      "weight": "600",
+      "color": "rgb(107, 140, 120)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "date": {
+      "size": "10.08px",
+      "weight": "400",
+      "color": "rgb(107, 140, 120)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "badge": {
+      "size": "9.52px",
+      "weight": "600",
+      "color": "rgb(4, 120, 87)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "amount": {
+      "size": "11.48px",
+      "weight": "500",
+      "color": "rgb(107, 140, 120)",
+      "font": "Inter, Cairo, sans-serif"
+    },
+    "moneyClipped": [],
+    "rows": 10,
+    "inter": true
+  }
+]
