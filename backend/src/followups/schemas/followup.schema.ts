@@ -1,3 +1,4 @@
+import { CommentReaction } from '../../shared/comment-reactions';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
@@ -39,6 +40,9 @@ export const FollowUpCommentSchema = SchemaFactory.createForClass(FollowUpCommen
 
 @Schema({ timestamps: true })
 export class FollowUp {
+  @Prop({ type: [Object], default: [] })
+  commentReactions: CommentReaction[];
+
   // Human-facing ticket id, unique per follow-up: FU-YYMMDD-{orderRef}, with a
   // -2/-3 suffix when the same order gets more than one follow-up the same day.
   // Mirrors the Complaint.complaintNo scheme (CMP-YYMMDD-REF) so both

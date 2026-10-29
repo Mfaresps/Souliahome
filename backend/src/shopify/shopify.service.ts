@@ -1,3 +1,4 @@
+import { setCommentReaction } from '../shared/comment-reactions';
 import { notifyApproval } from '../notifications/admin-events';
 import { shopifyChangeEvent } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -68,6 +69,12 @@ import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 export class ShopifyService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
+
+  async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
+    const result = await setCommentReaction(this.shopifyOrderModel, id, commentId, false, userId, userName, reaction);
+    try { this.presence?.emitEvent('comment:reaction', { kind: 'shopify', id, ...result }); } catch { /* best effort */ }
+    return result;
+  }
 
   private readonly logger = new Logger(ShopifyService.name);
 
@@ -1102,6 +1109,7 @@ export class ShopifyService {
       // التعليقات تنتقل مع الأوردر إلى حركته فتبقى مقروءة بعد التحوّل لفاتورة، ومربوطة
       // برقم الأوردر عبر shopifyOrderId/ref أدناه.
       comments: order.comments || [],
+      commentReactions: order.commentReactions || [],
       payStatus,
       employee,
       source: 'shopify',

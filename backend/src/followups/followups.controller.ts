@@ -70,6 +70,15 @@ export class FollowUpsController {
     return this.service.defer(id, dto, String(req.user?.userId || req.user?.sub || ''), req.user?.role || '', req.user?.name || req.user?.username || '');
   }
 
+  @Patch(':id/comments/:commentId/reaction')
+  @UseGuards(JwtAuthGuard)
+  async reactToComment(@Param('id') id: string, @Param('commentId') commentId: string,
+    @Body() body: { reaction: unknown }, @Req() req: AuthRequest) {
+    return this.service.reactToComment(id, commentId,
+      String(req.user?.userId || req.user?.sub || ''),
+      req.user?.name || req.user?.username || '', body?.reaction);
+  }
+
   @Post(':id/comments')
   async addComment(@Param('id') id: string, @Body() body: { text: string; requestId?: string }, @Req() req: AuthRequest) {
     const authorId = String(req.user?.userId || req.user?.sub || '');

@@ -38,7 +38,7 @@
 })();
 </script>
 <script src="/config.js"></script>
-<script src="/order-status.js?v=20261029-group-previews"></script>
+<script src="/order-status.js?v=20261029-delivered-note"></script>
 <script defer src="/order-status-preview.js?v=20261029-group-previews"></script>
 <link rel="stylesheet" href="/order-status-preview.css?v=20261029-group-previews">
 <link rel="stylesheet" href="/order-status.css?v=20261029-dashboard-status">
@@ -16642,6 +16642,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
+<link rel="stylesheet" href="/comment-reactions.css?v=20261029">
+<script src="/comment-reactions.js?v=20261029"></script>
 <link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
 <link rel="stylesheet" href="/shopify-order-peek.css?v=20261029-header-note">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261026-white-cards">
@@ -34357,6 +34359,7 @@ function connectSocket() {
   socket.on('pickup:updated', _puApplyRealtimeEvent);
   socket.on('tx:deleted', payload => _puMergeLiveTransaction({ _id: payload?.id }, true));
 
+  socket.on('comment:reaction', applyCommentReactionUpdate);
   socket.on('followup:changed', async (payload) => {
     if (payload?.action === 'reminder') window.souliaFollowUpReminder?.notify(payload);
     try { followUps = await api('/followups'); _dashFuLoaded = true; window.souliaFollowUpReminder?.sync(followUps); } catch(_) {}
@@ -62680,6 +62683,7 @@ function buildInvCommentsSection(tx) {
       <div class="tx-cmt-body">
         <div class="tx-cmt-meta"><span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
         <div class="tx-cmt-text" data-comment-id="${c.id}">${renderMentionText(c.text)}</div>
+        ${commentReactionsHtml('transaction', tx, c.id)}
       </div>
       ${actions}
     </div>`;
@@ -94488,6 +94492,7 @@ function _fuRenderCommentThread() {
           ${menuBtn}
         </div>
         ${isCall ? callBadge : `<div class="fu-timeline-text" dir="auto"${_fuCommentTimeAttrs(c.text)}>${_fuCommentDisplayHtml(c.text)}</div>`}
+        ${commentReactionsHtml('followup', f, c._id)}
       </div>
     </div>`;
   }).join('')}${decisionHtml}</div>`;
@@ -98688,6 +98693,7 @@ function _pwNotesHtml(o) {
       <div class="pw-cmt-b">
         <div class="pw-cmt-who">${esc(who || t('puUnknownAuthor'))}</div>${cmtJobTitleHtml(who)}
         <div class="pw-note-t" dir="auto">${renderMentionText(c.text || '')}</div>
+        ${commentReactionsHtml('transaction', o, c.id)}
         ${when ? `<div class="pw-cmt-when"${full ? ` title="${escHtml(full)}"` : ''}>${esc(when)}</div>` : ''}
       </div>
     </li>`;
@@ -109972,6 +109978,7 @@ function _spRenderCommentsTab() {
           <div class="tx-cmt-body">
             <div class="tx-cmt-meta"><span class="cmt-who"><span class="tx-cmt-author">${esc(c.employee || '؟')}</span>${cmtJobTitleHtml(c.employee)}</span><span class="tx-cmt-time">${_cmtTimeHtml(c)}</span></div>
             <div class="tx-cmt-text" data-comment-id="${Number(c.id)}" dir="auto">${renderMentionText(c.text)}</div>
+            ${commentReactionsHtml('shopify', order, c.id)}
           </div>
           ${actions}
         </div>`;

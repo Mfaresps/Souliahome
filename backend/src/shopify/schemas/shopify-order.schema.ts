@@ -1,3 +1,4 @@
+import { CommentReaction } from '../../shared/comment-reactions';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
@@ -72,6 +73,9 @@ export interface DepositReceipt {
 
 @Schema({ timestamps: true })
 export class ShopifyOrder {
+  @Prop({ type: [Object], default: [] })
+  commentReactions: CommentReaction[];
+
   @Prop({ required: true, unique: true })
   shopifyId: string;
 

@@ -1,3 +1,4 @@
+import { setCommentReaction } from '../shared/comment-reactions';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CarrierTrackingUpdate, carrierUpdateText } from '../bosta/bosta-tracking.util';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
@@ -59,6 +60,12 @@ const ESCALATION_HOURS = [12, 24, 48, 72, 96, 120, 144, 168];
 @Injectable()
 export class FollowUpsService implements OnModuleInit {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
+  async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
+    const result = await setCommentReaction(this.model, id, commentId, true, userId, userName, reaction);
+    try { this.presence?.emitEvent('comment:reaction', { kind: 'followup', id, ...result }); } catch { /* best effort */ }
+    return result;
+  }
 
   private readonly logger = new Logger(FollowUpsService.name);
 

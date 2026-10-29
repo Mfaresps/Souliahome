@@ -1,3 +1,4 @@
+import { setCommentReaction } from '../shared/comment-reactions';
 import { notifyApproval } from '../notifications/admin-events';
 import { pickingExceptions } from '../inventory-units/picking-exceptions';
 import { resetPickupPreparation } from '../inventory-units/pickup-preparation-reset';
@@ -149,6 +150,12 @@ export interface DashboardData {
 @Injectable()
 export class TransactionsService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+
+  async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
+    const result = await setCommentReaction(this.transactionModel, id, commentId, false, userId, userName, reaction);
+    try { this.presence?.emitEvent('comment:reaction', { kind: 'transaction', id, ...result }); } catch { /* best effort */ }
+    return result;
+  }
 
   private readonly logger = new Logger(TransactionsService.name);
 

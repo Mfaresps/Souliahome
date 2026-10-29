@@ -433,6 +433,15 @@ export class ShopifyController {
    *   قيمة ولا مخزوناً، ومنعه بعد التأكيد يلغي فائدته الأساسية (التواصل على أوردر شغّال).
    * ⚠ لا يسجّل شيئاً في editHistory — نفس قاعدة TransactionsService.addComments.
    */
+  @Patch('orders/:id/comments/:commentId/reaction')
+  @UseGuards(JwtAuthGuard)
+  async reactToComment(@Param('id') id: string, @Param('commentId') commentId: string,
+    @Body() body: { reaction: unknown }, @Req() req: any) {
+    return this.shopifyService.reactToComment(id, commentId,
+      String(req.user?.userId || req.user?.sub || ''),
+      req.user?.name || req.user?.username || '', body?.reaction);
+  }
+
   @Post('orders/:id/comments')
   @UseGuards(JwtAuthGuard)
   async addComment(

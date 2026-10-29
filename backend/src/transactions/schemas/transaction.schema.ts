@@ -1,3 +1,4 @@
+import { CommentReaction } from '../../shared/comment-reactions';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { restrictInventoryParentDeletion } from '../../inventory-units/inventory-unit-integrity';
@@ -38,6 +39,9 @@ export class TransactionItem {
 
 @Schema({ timestamps: true })
 export class Transaction {
+  @Prop({ type: [Object], default: [] })
+  commentReactions: CommentReaction[];
+
   @Prop({ type: [Object], default: [] })
   afterSalesEvents?: Array<Record<string, any>>;
   @Prop({ type: Object, default: null })

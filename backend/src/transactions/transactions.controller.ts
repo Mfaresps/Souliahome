@@ -737,6 +737,15 @@ export class TransactionsController {
     }
   }
 
+  @Patch(':id/comments/:commentId/reaction')
+  @UseGuards(JwtAuthGuard)
+  async reactToComment(@Param('id') id: string, @Param('commentId') commentId: string,
+    @Body() body: { reaction: unknown }, @Req() req: any) {
+    return this.transactionsService.reactToComment(id, commentId,
+      String(req.user?.userId || req.user?.sub || ''),
+      req.user?.name || req.user?.username || '', body?.reaction);
+  }
+
   @Post(':id/comments')
   async addComments(
     @Param('id') id: string,

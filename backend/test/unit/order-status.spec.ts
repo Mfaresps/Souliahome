@@ -48,6 +48,27 @@ describe('Order lifecycle vocabulary and precedence', () => {
   it('preserves new carrier status codes without making up a known stage', () => {
     expect(orderStates.resolve({ hasShipment: true, bostaStatus: 'NEW_CARRIER_STATUS' }, 'transaction', 'en').label).toBe('NEW_CARRIER_STATUS');
   });
+  it.each(['ar', 'en'])('hides old delivery exceptions after successful delivery in %s', lang => {
+    const reason = 'Postponed - the customer requested postponement for another day.';
+    const row = { bostaOrderId: 'b1', bostaTrackingNumber: '519265', bostaStatus: 'DELIVERED',
+      bostaDeliveryException: { code: 3, reason, at: '2026-10-28T12:00:00Z' },
+      bostaLastTrackingUpdate: { status: 'DELIVERED', reason, reasonAr: 'طلب العميل تأجيل الاستلام' } };
+    expect(orderStates.resolve(row, 'transaction', lang)).toMatchObject({ key: 'DELIVERED', note: '' });
+    // Exercise the actual row renderer: remove the warning icon, keep the tracking link.
+    const source = require('fs').readFileSync(require('path').resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+    const start = source.indexOf('function _bostaPrimaryStatusBadge(');
+    const end = source.indexOf('\n/**', start);
+    const render = new Function('_orderStateMeta', 'SouliaOrderStatus', 'escHtml', 'esc',
+      source.slice(start, end) + '\nreturn _bostaPrimaryStatusBadge;')(
+      tx => orderStates.resolve(tx, 'transaction', lang), orderStates, String, String);
+    const html = render(row, { hideStatus: true });
+    expect(html).not.toContain('order-state-info');
+    expect(html).not.toContain(reason);
+    expect(html).toContain('shipment-number=519265');
+    expect(orderStates.postponements(row)).toHaveLength(1);
+    const waiting = { ...row, bostaStatus: 'IN_TRANSIT', bostaLastTrackingUpdate: { ...row.bostaLastTrackingUpdate, status: 'IN_TRANSIT' } };
+    expect(render(waiting, { hideStatus: true })).toContain('order-state-info');
+  });
   it('escapes labels and notes and omits the carrier from the badge', () => {
     const badge = orderStates.badge({ key: 'x', tone: 'shipping', label: '<img src=x onerror=alert(1)>', carrier: 'A&B', note: '"test"' });
     expect(badge).not.toContain('<img');

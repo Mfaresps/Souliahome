@@ -48,10 +48,55 @@ const enabled = /^mongodb:\/\/(127\.0\.0\.1|localhost):\d+\//.test(uri);
     const row = { store:connection.store,appKey:'other-app',transactionId:id,orderId:syncFixture().tx.shopifyOrderId,
       unitMappings:[{lineId:'123',sku:'B-1',localQty:6,remoteQty:1,localUnitPrice:14500,remoteUnitPrice:87000}] };
     await db.collection('shopifysyncreconciliations').insertOne(row);
-    expect((await service.preview([id],false,'admin')).results[0].issues.length).toBeGreaterThan(0);
+    const unmatched = (await service.preview([id],false,'admin')).results[0];
+    expect(unmatched.issues).toEqual([]);
+    expect(unmatched.warnings.join(' ')).toContain('الأصناف أو الكميات المحلية مختلفة');
+    expect(unmatched.warnings.join(' ')).not.toContain('مطابقة وحدة البيع المعتمدة');
     await db.collection('shopifysyncreconciliations').updateOne({transactionId:id},{$set:{appKey:connection.appKey}});
+    expect((await service.preview([id],false,'admin')).results[0].warnings.join(' ')).toContain('مطابقة وحدة البيع المعتمدة');
     await queue(); await service.tick(); expect((await job())?.status).toBe('synced');
     expect(remote.fulfillments[0].fulfillmentLineItems.nodes[0].quantity).toBe(1);
+  });
+  it.each([false, true])('verifies delivery after local quantity, SKU and discount edits with payments enabled (existing fulfillment: %s)', async existing => {
+    if (existing) { await queue(); await service.tick(); remote.fulfillments[0].events.nodes = []; calls.length = 0; }
+    await tx.updateOne({ _id: id }, { $set: { 'items.0.qty': 2, 'items.0.code': 'REPLACEMENT', total: 700, deposit: 700, remaining: 0 } });
+    const preview = await service.preview([id], true, 'admin');
+    expect(preview.results[0].issues).toEqual([]);
+    expect(preview.results[0].warnings.join(' ')).toContain('لم تتم مزامنة السداد');
+    expect((await service.execute([preview.results[0].token], 'admin')).results[0].status).toBe('pending');
+    await service.tick();
+    expect((await job())?.status).toBe('synced');
+    expect((await job())?.known.fulfillmentId).toBe(remote.fulfillments[0].id);
+    expect((await job())?.warnings.join(' ')).toContain('لم تتم مزامنة السداد');
+    expect(calls).toEqual(existing ? ['event', 'metadata'] : ['fulfill', 'event', 'metadata']);
+    expect(remote.fulfillments[0].events.nodes).toHaveLength(1);
+    expect(remote.fulfillments[0].events.nodes[0].status).toBe('DELIVERED');
+    expect(remote.fulfillments[0].fulfillmentLineItems.nodes[0].quantity).toBe(1);
+    expect(remote.currentTotalPriceSet.shopMoney.amount).toBe('870.00');
+    expect(remote.displayFinancialStatus).toBe('PENDING');
+    const count = calls.length;
+    await new ShopifySyncService(tx, orders, api).tick();
+    expect(calls).toHaveLength(count);
+    expect((await service.preview([id], true, 'admin')).results[0].matched).toBe(true);
+  });
+  it('automatically syncs edited delivered orders while skipping mismatched payments', async () => {
+    await service.configure(true, true, 'admin');
+    await tx.updateOne({ _id: id }, { $set: { total: 700, deposit: 700, remaining: 0, 'items.0.qty': 2 } });
+    await service.tick();
+    expect((await job())?.status).toBe('synced');
+    expect(calls).toEqual(['fulfill', 'event', 'metadata']);
+    expect(remote.displayFinancialStatus).toBe('PENDING');
+  });
+  it('retries an old total-mismatch review without requiring another local edit', async () => {
+    await tx.updateOne({ _id: id }, { $set: { total: 700, remaining: 300 } });
+    await queue();
+    await db.collection('shopifysyncjobs').updateOne({ transactionId: id }, { $set: {
+      status: 'review', error: 'إجمالي النظام مختلف عن Shopify', nextAttemptAt: null,
+    } });
+    await service.retry(String((await job())?._id), 'admin');
+    await service.tick();
+    expect((await job())?.status).toBe('synced');
+    expect(calls).toEqual(['fulfill', 'event', 'metadata']);
   });
   it('verifies manual fulfillment and delivery without tracking and does not repeat them after restart', async () => {
     await tx.updateOne({ _id: id }, { $set: { type: 'مبيعات', deliverySource: 'MANUAL', bostaTrackingNumber: '', bostaRawResponse: null,

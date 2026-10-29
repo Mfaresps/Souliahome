@@ -103,26 +103,38 @@ export function planSync(s: any, remote: any, includePayments: boolean, known: a
   if (remote.currentTotalPriceSet.shopMoney.currencyCode !== 'EGP') {
     stop(`عملة Shopify هي ${remote.currentTotalPriceSet.shopMoney.currencyCode} بينما النظام بالجنيه المصري؛ يلزم مراجعة العملة.`); return plan;
   }
-  if (cents(remote.currentTotalPriceSet.shopMoney.amount) !== s.total) {
-    stop(`إجمالي النظام ${(s.total / 100).toFixed(2)} جنيه، وShopify ${Number(remote.currentTotalPriceSet.shopMoney.amount).toFixed(2)} جنيه. طابق تعديلات الأصناف والأسعار أولًا ثم أعد معاينة الشحن.`); return plan;
+  const event = shippingEvent(s);
+  // Confirmed delivery describes the linked shipment, even when staff edited the local sale.
+  // Keep Shopify's own lines for fulfillment; these differences never authorize a payment.
+  const delivered = event === 'DELIVERED';
+  const totalMatches = cents(remote.currentTotalPriceSet.shopMoney.amount) === s.total;
+  if (!totalMatches) {
+    const difference = `إجمالي النظام ${(s.total / 100).toFixed(2)} جنيه، وShopify ${Number(remote.currentTotalPriceSet.shopMoney.amount).toFixed(2)} جنيه.`;
+    if (!delivered) { stop(`${difference} طابق تعديلات الأصناف والأسعار أولًا ثم أعد معاينة الشحن.`); return plan; }
+    plan.warnings.push(`${difference} ستتم مزامنة التسليم فقط مع البيانات التشغيلية؛ لن يتم تعديل إجمالي Shopify أو تسجيل السداد حتى تسوية الفرق.`);
   }
   const lines = remote.lineItems.nodes.filter((l: any) => l.currentQuantity > 0);
   if (remote.lineItems.pageInfo.hasNextPage || remote.fulfillmentOrders.pageInfo.hasNextPage || !s.original.length) {
     stop('بيانات الأصناف الأصلية غير مكتملة؛ يلزم مطابقة الطلب.'); return plan;
   }
   const used = new Set<string>();
+  let itemsMatch = true;
   for (const item of s.items) {
     const matches = s.original.filter((o: any) => (o.sku && o.sku === item.sku) || (!o.sku && o.name === item.name));
-    if (matches.length !== 1 || used.has(matches[0].id) || (matches[0].localQty ?? matches[0].qty) !== item.qty) { stop('الأصناف المحلية أو وحدات بيعها لا تطابق سطور Shopify الأصلية بشكل مؤكد.'); break; }
+    if (matches.length !== 1 || used.has(matches[0].id) || (matches[0].localQty ?? matches[0].qty) !== item.qty) { itemsMatch = false; break; }
     used.add(matches[0].id);
     if (matches[0].localQty !== undefined && matches[0].localQty !== matches[0].qty)
       plan.warnings.push(`مطابقة وحدة البيع المعتمدة للصنف ${item.sku}: ${item.qty} قطعة في النظام = ${matches[0].qty} وحدة بيع في Shopify.`);
   }
-  if (used.size !== s.original.length || lines.length !== s.original.length || s.original.some((o: any) =>
+  itemsMatch = itemsMatch && used.size === s.original.length;
+  if (!itemsMatch) {
+    if (delivered) plan.warnings.push('الأصناف أو الكميات المحلية مختلفة عن Shopify. ستتم مزامنة التسليم باستخدام سطور Shopify الحالية؛ لن يتم نقل تعديلات الأصناف أو الكميات أو تسجيل السداد قبل المطابقة.');
+    else stop('الأصناف المحلية أو وحدات بيعها لا تطابق سطور Shopify الأصلية بشكل مؤكد.');
+  }
+  if (lines.length !== s.original.length || s.original.some((o: any) =>
     !lines.some((l: any) => l.id === `gid://shopify/LineItem/${o.id}` && l.currentQuantity === o.qty))) stop('كميات أو أصناف Shopify تغيرت؛ أعد المطابقة قبل الشحن.');
   if (plan.issues.length) return plan;
 
-  const event = shippingEvent(s);
   if (!event && ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED_ATTEMPT', 'CUSTOMER_POSTPONED'].includes(s.state)
     && s.shipmentType === 'UNKNOWN') {
     stop('حالة الشحن لم تُزامَن: بيانات الشحنة ناقصة، ولا يوجد تأكيد تسليم يدوي موثّق. راجع بيانات الشحن ثم أعد المعاينة.');
@@ -133,7 +145,7 @@ export function planSync(s: any, remote: any, includePayments: boolean, known: a
   if (event) {
     const withoutTracking = s.shipmentType === 'MANUAL_SEND' && s.manualDelivery && !s.tracking;
     if (!s.tracking && !withoutTracking) stop('لا يوجد رقم تتبع مؤكد للشحنة.');
-    if (!s.eventAt || Date.parse(s.eventAt) > Date.now() + 300000 || Date.parse(s.eventAt) < Date.parse(remote.createdAt)) stop('وقت حدث الشحن غير متاح أو غير صالح؛ لا يمكن اختلاق تاريخ للشحنة.');
+    if (!s.eventAt || !Number.isFinite(Date.parse(s.eventAt)) || Date.parse(s.eventAt) > Date.now() + 300000 || Date.parse(s.eventAt) < Date.parse(remote.createdAt)) stop('وقت حدث الشحن غير متاح أو غير صالح؛ لا يمكن اختلاق تاريخ للشحنة.');
     if (active.length > 1) stop('الطلب يحتوي عدة شحنات؛ يلزم تحديد الشحنة والكميات يدويًا.');
     fulfillment = active[0];
     if (fulfillment) {
@@ -171,7 +183,9 @@ export function planSync(s: any, remote: any, includePayments: boolean, known: a
     ? 'نوع الشحنة غير مؤكد؛ سيتم تحديث البيانات التشغيلية فقط لحين مراجعة بيانات شركة الشحن.'
     : 'هذه الحالة تُحفظ في بيانات الطلب التشغيلية؛ لا تنشئ إلغاءً أو استردادًا ماليًا.');
 
-  if (includePayments && fullPaymentEvidence(s) && remote.displayFinancialStatus !== 'PAID') {
+  if (includePayments && (!totalMatches || !itemsMatch) && remote.displayFinancialStatus !== 'PAID') {
+    plan.warnings.push('لم تتم مزامنة السداد: يلزم مطابقة إجمالي وأصناف الطلب مع Shopify أولًا، حتى لو كان التحصيل المحلي مكتملًا.');
+  } else if (includePayments && fullPaymentEvidence(s) && remote.displayFinancialStatus !== 'PAID') {
     const outstanding = cents(remote.totalOutstandingSet.shopMoney.amount);
     if (!remote.canMarkAsPaid || outstanding !== s.total || remote.transactions.length >= 100 || remote.transactions.some((t: any) =>
       (t.kind === 'AUTHORIZATION' && !['FAILURE', 'ERROR'].includes(t.status)) || (t.status === 'SUCCESS' && ['CAPTURE', 'SALE'].includes(t.kind)))) {

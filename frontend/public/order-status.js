@@ -82,7 +82,8 @@
     if (postponed && key === 'IN_TRANSIT') label = en ? 'In Transit · Customer Postponed' : 'في الطريق · العميل أجّل الاستلام';
     const carrierReason = o.bostaLastTrackingUpdate?.status === code
       ? (en ? o.bostaLastTrackingUpdate.reason || o.bostaLastTrackingUpdate.reasonAr : o.bostaLastTrackingUpdate.reasonAr || o.bostaLastTrackingUpdate.reason) : '';
-    const note = code === 'DELETED' ? (en ? 'AWB Deleted at Bosta' : 'البوليصة محذوفة من بوسطة')
+    const note = key === 'DELIVERED' ? ''
+      : code === 'DELETED' ? (en ? 'AWB Deleted at Bosta' : 'البوليصة محذوفة من بوسطة')
       : code === 'VALIDATION_ERROR' ? (en ? 'AWB Validation Error' : 'خطأ في بيانات البوليصة')
       : carrierReason || (postponed ? (en ? 'Last exception: postponed by customer' : 'آخر سبب للتأجيل: طلب العميل') : '');
     const shortLabels = {
