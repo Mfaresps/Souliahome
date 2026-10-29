@@ -20,6 +20,31 @@ export {};
 
 const INDEX_HTML = path.resolve(__dirname, '../../../frontend/public/index.html');
 
+it('renders transferred Shopify changes without attributing confirmation fields to the employee', () => {
+  const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
+  const render = new Function('tx', `
+    const t=String, tf=(key,args)=>key+JSON.stringify(args), esc=String, fmtJ=String;
+    const _statusLabel=String, _payMethodLabel=String, formatEditDateTime=String;
+    const diffItems=()=>[], ehRowFromText=line=>'saved:'+line;
+    const ehChangeRow=(label)=>'unexpected:'+label, ehNoteRow=String;
+    const ehEntryHtml=entry=>JSON.stringify(entry);
+    ${extractFn(src, 'buildInvEditHistorySection')}
+    return buildInvEditHistorySection(tx);
+  `);
+  const html = render({ client: 'Customer', payment: 'كاش', deposit: 500, remaining: 900,
+    discount: 100, shipCo: 'Bosta', total: 1400, editHistory: [{
+      source: 'shopify', editedAt: '2026-10-29T09:00:00Z', editedBy: 'Staff', approvedBy: 'Manager',
+      before: { total: 1500, discount: 0 }, after: { total: 1400, manualDiscount: 100 },
+      changes: ['خصم يدوي: 0 ← 100', 'الإجمالي: 1500 ← 1400'],
+    }] });
+  expect(html).toContain('saved:خصم يدوي: 0 ← 100');
+  expect(html).toContain('saved:الإجمالي: 1500 ← 1400');
+  expect(html).toContain('Staff');
+  expect(html).toContain('Manager');
+  expect(html).toContain('2026-10-29T09:00:00Z');
+  expect(html).not.toContain('unexpected:');
+});
+
 /** يقتطع دالة بالاسم من الملف المشحون موازنةً للأقواس. */
 function extractFn(src: string, name: string): string {
   const re = new RegExp('\\n(?:async )?function ' + name + '\\s*\\(', 'g');

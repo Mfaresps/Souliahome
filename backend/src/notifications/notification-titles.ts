@@ -1,4 +1,5 @@
 import type { NotificationDetails, NotificationType } from './notifications.service';
+import { COMMENT_REACTION_LABELS } from '../shared/comment-reactions';
 
 // A shared mapping keeps the same event recognizable in both notification languages.
 const TITLES = {
@@ -48,6 +49,7 @@ export function notificationTitle(type: NotificationType, details: NotificationD
   else if (type === 'orderEdit') title = details.status === 'approved' ? ['✅', 'تم قبول تعديل الطلب', 'Order Edit Approved'] : ['🚫', 'تم رفض تعديل الطلب', 'Order Edit Rejected'];
   else if (type === 'followup' && details.actionKey === 'followup-scheduled') title = ['🗓️', 'تم تحديد موعد المتابعة', 'Follow-up Scheduled'];
   else if (type === 'followup' && details.actionKey === 'followup-due') title = ['⏰', 'حان موعد المتابعة', 'Follow-up Due'];
+  else if (type === 'comment' && details.reaction && COMMENT_REACTION_LABELS[details.reaction]) title = [COMMENT_REACTION_LABELS[details.reaction][0], 'تفاعل جديد على تعليقك', 'New reaction to your comment'];
   else if (type === 'comment' && details.followupComment) title = ['📌', 'تعليق متابعة جديد', 'New Follow-up'];
   else if (type === 'security' && details.actionKey === 'failed_login') title = ['❌', 'محاولة تسجيل دخول فاشلة', 'Failed Login Attempt'];
   else if (type === 'approval') {

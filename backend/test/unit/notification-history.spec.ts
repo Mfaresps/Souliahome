@@ -4,6 +4,18 @@ import { runInNewContext } from 'vm';
 
 const source = readFileSync(resolve(__dirname, '../../../frontend/public/notification-history.js'), 'utf8');
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+it('shows the reaction message and retains the exact comment destination in history', async () => {
+  const row = { _id: 'c'.repeat(64), recordId: 'tx:transaction1', type: 'comment', event: '123', reaction: 'applause',
+    title: '👏 New reaction to your comment', actorName: 'Mona', commentText: 'Order confirmed',
+    body: 'Mona reacted 👏 Applause to your comment on Order #2966: «Order confirmed»', createdAt: '2026-10-29T12:00:00Z' };
+  const context: any = { currentUser: null, ICON: () => '', setInterval: jest.fn(), qs: () => null,
+    buildNotifications: jest.fn(), api: jest.fn(async () => ({ items: [row], unread: 1 })) };
+  context.window = context; runInNewContext(source, context);
+  context.currentUser = { _id: 'author' };
+  await context.souliaRefreshNotificationHistory();
+  expect(context.souliaHistoryNotifs()[0]).toMatchObject({ reaction: 'applause', desc: row.body, event: '123', recordId: row.recordId });
+  expect(context.souliaHistoryUnread()).toBe(1);
+});
 it('loads durable notifications, retains older pages, marks reads and opens the exact stored destination', async () => {
   const row = { _id: 'a'.repeat(64), recordId: 'followup:507f1f77bcf86cd799439011', type: 'comment', title: 'New comment', actorName: 'Mona', commentText: 'Full comment\nSecond line', ref: '100', createdAt: '2026-10-13T10:00:00Z', url: '/?pushRecord=followup:507f1f77bcf86cd799439011&pushType=comment&pushEvent=507f1f77bcf86cd799439012' };
   Object.assign(row, { eventId: 'comment:followup:fu1:c1' });

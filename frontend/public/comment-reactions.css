@@ -3,7 +3,8 @@
 .cmt-reactions button{font:inherit;cursor:pointer;touch-action:manipulation}
 .cmt-reaction-chip,.cmt-reaction-add{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:30px;padding:3px 9px;border:1px solid var(--border);border-radius:18px;background:var(--surface);color:var(--muted);font-size:12px!important}
 .cmt-reaction-chip span:first-child{font-size:16px}
-.cmt-reaction-add{background:transparent;border-color:transparent}
+.cmt-reaction-add{width:32px;min-width:32px;padding:4px;background:transparent;border-color:transparent;color:var(--muted)}
+.cmt-reaction-add svg{display:block;width:22px;height:22px;flex:none}
 .cmt-reaction-add:hover,.cmt-reaction-chip:hover,.cmt-reaction-chip.is-mine{border-color:#6aa58b;background:rgba(40,145,100,.1);color:var(--text)}
 .cmt-reaction-chip.is-mine{box-shadow:inset 0 0 0 1px rgba(40,145,100,.18)}
 .cmt-reaction-picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:8px;padding:6px;width:100%;max-width:360px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.06)}
@@ -13,9 +14,16 @@
 .cmt-reaction-picker button small{font-size:10px;white-space:nowrap}
 .cmt-reaction-picker button:hover,.cmt-reaction-picker button[aria-pressed=true]{background:rgba(40,145,100,.12);color:var(--text)}
 .cmt-reaction-picker button:hover span{transform:translateY(-2px) scale(1.12)}
+.cmt-reaction-popover{position:fixed;z-index:2147483000;margin:0;width:min(304px,calc(100vw - 16px));animation:cmt-reaction-enter .18s cubic-bezier(.2,.75,.25,1) both;transform-origin:center bottom}
+.cmt-reaction-popover .cmt-reaction-picker{grid-template-columns:repeat(7,minmax(0,1fr));width:100%;max-width:none;margin:0;padding:5px;gap:2px;border-radius:14px;box-shadow:0 6px 22px rgba(0,0,0,.12)}
+.cmt-reaction-popover .cmt-reaction-picker button{min-height:44px;padding:5px 1px;gap:3px;border-radius:9px}
+.cmt-reaction-popover .cmt-reaction-picker button span{font-size:21px}
+.cmt-reaction-popover .cmt-reaction-picker button small{font-size:9px}
+.cmt-reaction-chip[data-reaction=angry].is-mine,.cmt-reaction-picker button[data-reaction=angry][aria-pressed=true]{background:rgba(220,70,50,.1);color:var(--text);border-color:#d8897c}
+@keyframes cmt-reaction-enter{from{opacity:0;transform:translateY(5px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .cmt-reactions button:focus-visible{outline:2px solid #38966d;outline-offset:2px}
 .cmt-reactions button:disabled{cursor:wait;opacity:.55}
 @media(pointer:coarse){.cmt-reaction-chip,.cmt-reaction-add{min-height:36px}}
 @media(max-width:600px){.cmt-reaction-picker{grid-template-columns:repeat(3,minmax(0,1fr));max-width:240px}}
-@media(prefers-reduced-motion:reduce){.cmt-reaction-picker button span{transition:none}}
+@media(prefers-reduced-motion:reduce){.cmt-reaction-picker button span{transition:none}.cmt-reaction-popover{animation:none}}
 @media print{.cmt-reactions{display:none}}

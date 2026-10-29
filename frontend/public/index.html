@@ -16642,9 +16642,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/branding.css?v=20261020-green-contour">
 <link rel="stylesheet" href="/login-space.css?v=20261020-1">
 <link rel="stylesheet" href="/shopify-tabs.css?v=20261019-1">
-<link rel="stylesheet" href="/comment-reactions.css?v=20261029">
-<script src="/comment-reactions.js?v=20261029"></script>
-<link rel="stylesheet" href="/followup-trail.css?v=20261025-cancelled-outcome">
+<link rel="stylesheet" href="/comment-reactions.css?v=20261029-smile-plus">
+<script src="/comment-reactions.js?v=20261029-smile-plus"></script>
+<link rel="stylesheet" href="/followup-trail.css?v=20261029-compact-frame">
 <link rel="stylesheet" href="/shopify-order-peek.css?v=20261029-header-note">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261026-white-cards">
 <link rel="stylesheet" href="/shopify-responsive.css?v=20261029-aligned-loading">
@@ -34360,6 +34360,7 @@ function connectSocket() {
   socket.on('tx:deleted', payload => _puMergeLiveTransaction({ _id: payload?.id }, true));
 
   socket.on('comment:reaction', applyCommentReactionUpdate);
+  socket.on('notification:new', () => window.souliaRefreshNotificationHistory?.());
   socket.on('followup:changed', async (payload) => {
     if (payload?.action === 'reminder') window.souliaFollowUpReminder?.notify(payload);
     try { followUps = await api('/followups'); _dashFuLoaded = true; window.souliaFollowUpReminder?.sync(followUps); } catch(_) {}
@@ -40325,6 +40326,8 @@ async function openMyFollowUpTrail(id, commentId = '', trigger = null) {
 }
 // Format stored follow-up reminders at display time, including existing comments.
 function _fuCommentDisplayText(text, now = Date.now()) {
+  const carrier = _fuCarrierCommentPresentation(text);
+  if (carrier) return [carrier.title, carrier.reason, carrier.appointment].filter(Boolean).join('\n');
   return String(text || '').replace(/(موعد المتابعة:\s*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g, (match, label, value) => {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return match;
@@ -40354,6 +40357,46 @@ function _fuCommentDisplayText(text, now = Date.now()) {
   });
 }
 
+// Simplify old carrier audit notes at display time while preserving the stored record.
+function _fuCarrierCommentPresentation(text) {
+  const source = String(text || ''), status = /تحديث بوسطة:\s*([^\n]+)/.exec(source)?.[1]?.trim();
+  if (!status || !/\n(?:كود السبب|البوليصة|وقت التحديث):/.test(source)) return null;
+  const en = typeof currentLang !== 'undefined' && currentLang === 'en';
+  const field = label => new RegExp('^' + label + ':[ \\t]*(.*)$', 'm').exec(source)?.[1]?.trim() || '';
+  const statusLabels = { 'في الطريق': 'In transit', 'خارج للتسليم': 'Out for delivery', 'العميل أجّل الاستلام': 'Customer postponed delivery',
+    'تم التسليم': 'Delivered', 'تم تسليم الطلب': 'Delivered', 'محاولة تسليم فاشلة': 'Delivery attempt failed', 'مرتجع': 'Returned',
+    'تم استلام الشحنة': 'Parcel collected', 'تم إنشاء الشحنة': 'Shipment created', 'ملغي': 'Cancelled' };
+  const reasonEn = { 1: 'Customer unavailable', 2: 'Customer changed the address', 3: 'Customer requested a later delivery',
+    4: 'Customer wants to open the parcel', 5: 'Address or phone needs checking', 6: 'Sender requested cancellation',
+    7: 'Customer is not answering', 8: 'Customer refused delivery', 12: 'Address outside delivery coverage',
+    13: 'Address unclear', 14: 'Incorrect phone number', 26: 'Parcel damaged', 27: 'Parcel empty', 28: 'Parcel incomplete' };
+  const reasonAr = field('(?:آخر سبب مسجل لدى بوسطة|السبب المبلّغ)');
+  const code = Number(field('كود السبب'));
+  let reason = en ? reasonEn[code] || field('نص شركة الشحن') || reasonAr : reasonAr;
+  const delivered = /^(?:تم التسليم|تم تسليم الطلب|تم تسليم الشحنة|Delivered)$/i.test(status);
+  if (reason === status || delivered) reason = '';
+  else if (reason && /آخر سبب مسجل لدى بوسطة:/.test(source) && code !== 3) reason = (en ? 'Last note: ' : 'آخر ملاحظة: ') + reason;
+  const reopened = /أُ?عيد فتح المتابعة/.test(source);
+  const title = [reopened ? (en ? 'Follow-up reopened' : 'أُعيد فتح المتابعة') : '', en ? statusLabels[status] || status : status].filter(Boolean).join(' · ');
+  const scheduled = field('موعد إعادة المحاولة حسب بوسطة'), date = new Date(scheduled);
+  let appointment = '';
+  if (!delivered && scheduled && Number.isFinite(date.getTime())) {
+    const formatted = new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG-u-nu-latn', {
+      timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true,
+    }).format(date);
+    appointment = (en ? 'Next delivery: ' : 'إعادة التسليم: ') + formatted;
+  }
+  return { title, reason, appointment, scheduled };
+}
+function _fuCommentAuthor(comment) {
+  if (String(comment.authorId || '') === 'system') {
+    const bosta = /^(?:بوسطة|bosta)$/i.test(String(comment.authorName || '').trim()) || /تحديث بوسطة:/.test(comment.text || '');
+    const en = typeof currentLang !== 'undefined' && currentLang === 'en';
+    return { _id: 'system', name: bosta ? (en ? 'Bosta' : 'بوسطة') : (comment.authorName || (en ? 'System' : 'النظام')), ...(bosta ? { carrier: 'bosta' } : {}) };
+  }
+  const user = (typeof users !== 'undefined' && Array.isArray(users) ? users : []).find(u => String(u._id) === String(comment.authorId));
+  return { ...(user || {}), _id: comment.authorId || user?._id, name: comment.authorName || user?.name || '' };
+}
 function _fuAppointmentPresentation(value, now = Date.now()) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return null;
@@ -40374,6 +40417,8 @@ function _fuAppointmentPresentation(value, now = Date.now()) {
 }
 function _fuCommentDisplayHtml(text, mentions = false, now = Date.now()) {
   const render = value => mentions && typeof renderMentionText === 'function' ? renderMentionText(value) : esc(value);
+  const carrier = _fuCarrierCommentPresentation(text);
+  if (carrier) return `<span class="fu-carrier-update"><span class="fu-carrier-status">${esc(carrier.title)}</span>${carrier.reason ? `<span>${esc(carrier.reason)}</span>` : ''}${carrier.appointment ? `<time class="fu-carrier-next" datetime="${escHtml(carrier.scheduled)}" dir="auto">${esc(carrier.appointment)}</time>` : ''}</span>`;
   const source = String(text || '');
   const pattern = /موعد المتابعة:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g;
   let html = '', offset = 0;
@@ -40417,7 +40462,7 @@ function renderMyFollowUpComment(f, layout = 'bubble') {
   if (!comment?.text?.trim()) return '';
   const en = currentLang === 'en';
   const author = [currentUser, ...(typeof users !== 'undefined' && Array.isArray(users) ? users : [])].find(user => user && ((comment.authorId && String(user._id) === String(comment.authorId)) || (comment.authorName && user.name === comment.authorName)));
-  const profile = { ...(author || {}), name: comment.authorName || author?.name || '', avatar: comment.authorAvatar || author?.avatar || '' };
+  const profile = { ...(author || {}), ..._fuCommentAuthor(comment), avatar: comment.authorAvatar || author?.avatar || '' };
   const date = new Date(comment.at || '');
   const timestamp = Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(en ? 'en-GB' : 'ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(date) : '';
   if (layout === 'card') {
@@ -62772,6 +62817,12 @@ function buildInvEditHistorySection(tx) {
   const history = tx.editHistory.filter(e => e && e.before);
   if (!history.length) return '';
   const entries = history.map((entry, i) => {
+    // Imported order edits already carry their exact changes. Comparing their
+    // partial snapshots to the invoice would include unrelated confirmation data.
+    if (entry.source === 'shopify' && Array.isArray(entry.changes)) {
+      return { editedAt: entry.editedAt, editedBy: entry.editedBy || '', approvedBy: entry.approvedBy || '',
+        details: entry.changes.map(ehRowFromText) };
+    }
     const b = entry.before;
     const after = (i < history.length - 1) ? (history[i + 1].before || {}) : tx;
     const details = [];
@@ -91699,6 +91750,9 @@ function userAvatarHtml(user, sizePx = 26, neutral = false) {
   const name = (user?.name || user?.username || '').trim();
   const initials = name ? name.trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const common = `width:${sizePx}px;height:${sizePx}px;border-radius:50%;flex-shrink:0`;
+  if (user?._id === 'system' && (user.carrier === 'bosta' || /^(?:بوسطة|bosta)$/i.test(name))) {
+    return `<span class="bosta-system-avatar" style="${common};display:inline-flex;overflow:hidden;background:#fff;border-radius:8px" title="${esc(name)}"><img src="/bosta-logo-original.png" alt="Bosta" width="${sizePx}" height="${sizePx}" style="display:block;width:100%;height:100%;object-fit:cover;object-position:right;filter:none" draggable="false"></span>`;
+  }
   if (user?._id === 'system') {
     return `<span class="soulia-system-avatar" style="${common};display:inline-flex;align-items:center;justify-content:center;border-radius:6px" title="${esc(name || 'Soulia')}"><img src="/favicon.png" alt="Soulia" width="${sizePx}" height="${sizePx}" style="display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit;filter:none;transform:none" draggable="false"></span>`;
   }
@@ -94445,10 +94499,10 @@ function _fuRenderCommentThread() {
           <div class="fu-timeline-top">
             <div class="fu-timeline-who">
               <span class="fu-timeline-name" style="color:#dc2626">${esc(f.cancelledByName || '—')}</span>
-              <span class="fu-timeline-time" title="${esc(fmtDateTime(f.cancelledAt))}">${esc(_fuRelTime(f.cancelledAt))}</span>
             </div>
           </div>
           <span class="fu-timeline-call-badge" style="color:#dc2626"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>${esc(t('fuFinalDecisionCancel', { reason: _fuCancelReasonLabel(f.cancelReason || '') }))}</span>
+          <div class="fu-timeline-footer"><time class="fu-timeline-time" datetime="${escHtml(f.cancelledAt || '')}" title="${esc(fmtDateTime(f.cancelledAt))}">${esc(_fuRelTime(f.cancelledAt))}</time></div>
         </div>
       </div>`
     : '';
@@ -94463,7 +94517,7 @@ function _fuRenderCommentThread() {
   threadEl.innerHTML = `<div class="fu-timeline">${comments.map(c => {
     const mine = c.kind !== 'decision' && (canManageAll || String(c.authorId) === myId);
     const cid = String(c._id);
-    const u = (typeof users !== 'undefined' ? users : []).find(x => String(x._id) === String(c.authorId)) || { _id: c.authorId, name: c.authorName };
+    const u = _fuCommentAuthor(c);
     const isCall = c.kind === 'call';
     const answered = c.callOutcome === 'answered';
     const ac = c.kind === 'decision'
@@ -94486,13 +94540,12 @@ function _fuRenderCommentThread() {
       <div class="fu-timeline-content" style="background:${ac.bg};border:1px solid ${ac.bd}">
         <div class="fu-timeline-top">
           <div class="fu-timeline-who">
-            <span class="cmt-who"><span class="fu-timeline-name" style="color:${ac.text}">${esc(c.authorName || '—')}</span>${cmtJobTitleHtml(u)}</span>
+            <span class="cmt-who"><span class="fu-timeline-name" style="color:${ac.text}">${esc(u.name || '—')}</span>${cmtJobTitleHtml(u)}</span>
           </div>
-          <time class="fu-timeline-time" datetime="${escHtml(c.createdAt || '')}" title="${esc(fmtDateTime(c.createdAt))}">${esc(_fuRelTime(c.createdAt))}</time>
           ${menuBtn}
         </div>
         ${isCall ? callBadge : `<div class="fu-timeline-text" dir="auto"${_fuCommentTimeAttrs(c.text)}>${_fuCommentDisplayHtml(c.text)}</div>`}
-        ${commentReactionsHtml('followup', f, c._id)}
+        <div class="fu-timeline-footer"><time class="fu-timeline-time" datetime="${escHtml(c.createdAt || '')}" title="${esc(fmtDateTime(c.createdAt))}">${esc(_fuRelTime(c.createdAt))}</time>${commentReactionsHtml('followup', f, c._id)}</div>
       </div>
     </div>`;
   }).join('')}${decisionHtml}</div>`;
@@ -104341,7 +104394,7 @@ function _spPeekFuHtml(o) {
   const fid = esc(String(f._id));
 
   const trail = comments.map(c => {
-    const u = _users.find(x => String(x._id) === String(c.authorId)) || { _id: c.authorId, name: c.authorName };
+    const u = _fuCommentAuthor(c);
     const isCall = c.kind === 'call';
     const outcome = c.callOutcome === 'answered' ? (isEn ? 'answered' : 'رد') : (isEn ? 'no answer' : 'لم يرد');
     const body = isCall
@@ -104350,7 +104403,7 @@ function _spPeekFuHtml(o) {
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
-        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(c.authorName || '—')}</b>${cmtJobTitleHtml(u)}</span><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
+        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(u.name || '—')}</b>${cmtJobTitleHtml(u)}</span><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
         ${body}
       </div>
     </li>`;
@@ -110550,17 +110603,17 @@ function _spRenderHistoryTab() {
 <script src="/pickup-daily-shipping.js?v=20261029-group-previews"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
-<script src="/notification-settings.js?v=20261021-3"></script>
+<script src="/notification-settings.js?v=20261029-reactions"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
-<script src="/notification-feed.js?v=20261027-followup-reminder"></script>
+<script src="/notification-feed.js?v=20261029-reactions"></script>
 <link rel="stylesheet" href="/followup-reminders.css?v=20261027-1">
 <script src="/followup-reminders.js?v=20261027-1"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>
 <script src="/order-audit-insights.js?v=20261021-6"></script>
 <script src="/order-audit-marketing.js?v=20261021-7"></script>
 <script src="/order-audit-periods.js?v=20261021-2"></script>
-<script src="/notification-history.js?v=20261025-dedup-1"></script>
+<script src="/notification-history.js?v=20261029-reactions"></script>
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/shopify-sync.css?v=20261029-1">
 <script src="/shopify-sync.js?v=20261029-2"></script>

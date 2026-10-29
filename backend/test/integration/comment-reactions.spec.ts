@@ -14,12 +14,14 @@ import { ShopifyService } from '../../src/shopify/shopify.service';
 import { TransactionsController } from '../../src/transactions/transactions.controller';
 import { TransactionsService } from '../../src/transactions/transactions.service';
 import { PresenceGateway } from '../../src/auth/presence.gateway';
+import { NotificationsService } from '../../src/notifications/notifications.service';
 
 describe('Persistent comment reactions', () => {
   let connection: Connection;
   let app: INestApplication;
   let baseUrl: string;
-  const presence = { emitEvent: jest.fn() };
+  const presence = { emitEvent: jest.fn(), emitToUser: jest.fn() };
+  const reactionServices = new Map<string, any>();
   const jwt = new JwtService({ secret: 'comment-reaction-test-only-secret' });
   const dbName = `soulia_test_reactions_${process.pid}_${Date.now()}`;
   beforeAll(async () => {
@@ -41,6 +43,9 @@ describe('Persistent comment reactions', () => {
       const service = Object.create(serviceClass.prototype);
       service[modelKey] = connection.model(name, schema as any);
       service.presence = presence;
+      service.notifications = new NotificationsService(connection);
+      (service.notifications as any).push = {};
+      reactionServices.set(name, service);
       providers.set(serviceClass, service);
     }
     providers.set(PresenceGateway, presence);
@@ -136,5 +141,54 @@ describe('Persistent comment reactions', () => {
     expect(removed.reactions).toEqual([{ commentId: String(cid), userId: 'staff-b', userName: 'staff-b', reaction: 'applause' }]);
     expect(presence.emitEvent).toHaveBeenLastCalledWith('comment:reaction', expect.objectContaining({ id: String(_id), ...removed }));
     expect((await model.findById(_id).lean() as any).commentReactions).toEqual(removed.reactions);
+  });
+
+  it.each([
+    ['FollowUp', 'followup', true], ['ShopifyOrder', 'shopify', false], ['Transaction', 'tx', false],
+  ] as const)('%s: notifies only the author for every new reaction, including push and comment navigation', async (name, recordKind, embedded) => {
+    const model = connection.model(name), _id = new Types.ObjectId(), author = new Types.ObjectId(), actor = new Types.ObjectId();
+    const cid = embedded ? new Types.ObjectId() : 789;
+    const authorName = name + ' comment author';
+    await connection.collection('users').insertMany([
+      { _id: author, name: authorName, username: name + '-author', role: 'staff', isActive: true },
+      { _id: actor, name: name + ' colleague', role: 'staff', isActive: true },
+      { _id: new Types.ObjectId(), name: 'Unrelated administrator', role: 'admin', isActive: true },
+    ]);
+    await connection.collection('notificationaccounts').insertOne({ userId: String(author), preferences: { enabled: true, comment: true },
+      subscriptions: [{ endpoint: 'https://web.push.apple.com/' + name, keys: {} }] });
+    await model.collection.insertOne({ _id, ref: '2966', orderRef: '2966', comments: [{ [embedded ? '_id' : 'id']: cid,
+      ...(embedded ? { authorId: String(author) } : { employee: authorName }), text: 'Customer confirmed the order' }] });
+    const service = reactionServices.get(name);
+    const react = (reaction: string | null, userId = String(actor)) => service.reactToComment(String(_id), String(cid), userId, name + ' colleague', reaction);
+    const inbox = connection.collection('notificationinbox'), jobs = connection.collection('notificationjobs');
+    const filter = { recordId: `${recordKind}:${_id}` };
+    for (const [index, reaction] of ['like', 'applause', 'strong', 'love', 'fire', 'star', 'angry'].entries()) {
+      await Promise.all([react(reaction), react(reaction), react(reaction)]);
+      const entries = await inbox.find(filter).toArray();
+      expect(entries).toHaveLength(index + 1);
+      expect(entries.every(row => row.userId === String(author))).toBe(true);
+      const row = entries.find(row => row.reaction === reaction)!;
+      expect(row.event).toBe(String(cid));
+      expect(row.body).toContain(name + ' colleague');
+      expect(row.body).toContain('Customer confirmed the order');
+      expect(row.title).toMatch(/تفاعل جديد|New reaction/);
+      const url = new URL(row.url, 'https://example.test');
+      expect(url.searchParams.get('pushRecord')).toBe(`${recordKind}:${_id}`);
+      expect(url.searchParams.get('pushEvent')).toBe(String(cid));
+      expect(url.searchParams.get('pushType')).toBe('comment');
+      expect(await jobs.countDocuments({ userId: String(author) })).toBe(index + 1);
+      expect(presence.emitToUser).toHaveBeenLastCalledWith(String(author), 'notification:new', { source: 'reaction' });
+    }
+    await react(null);
+    await react('like', String(author)); // Self-reactions and removals do not notify.
+    expect(await inbox.countDocuments(filter)).toBe(7);
+    await react('star'); // A newly added reaction after removal gets its own notification.
+    expect(await inbox.countDocuments(filter)).toBe(8);
+    // Ambiguous legacy display names must not notify the wrong employee.
+    if (!embedded) {
+      await connection.collection('users').insertOne({ _id: new Types.ObjectId(), name: authorName, role: 'staff', isActive: true });
+      await react('fire');
+      expect(await inbox.countDocuments(filter)).toBe(8);
+    }
   });
 });

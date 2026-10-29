@@ -71,7 +71,10 @@ export class ShopifyService {
   @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
 
   async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
-    const result = await setCommentReaction(this.shopifyOrderModel, id, commentId, false, userId, userName, reaction);
+    const result = await setCommentReaction(this.shopifyOrderModel, id, commentId, false, userId, userName, reaction, async event => {
+      const recipientId = await this.notifications?.notifyCommentReaction('shopify', event);
+      if (recipientId) try { this.presence?.emitToUser(recipientId, 'notification:new', { source: 'reaction' }); } catch { /* best effort */ }
+    });
     try { this.presence?.emitEvent('comment:reaction', { kind: 'shopify', id, ...result }); } catch { /* best effort */ }
     return result;
   }
@@ -1110,6 +1113,9 @@ export class ShopifyService {
       // برقم الأوردر عبر shopifyOrderId/ref أدناه.
       comments: order.comments || [],
       commentReactions: order.commentReactions || [],
+      // Preserve the original audit details; confirmation adds invoice fields that
+      // must not be reported as changes made by the last employee who edited it.
+      editHistory: (order.editHistory || []).map(entry => ({ ...entry, source: 'shopify' })),
       payStatus,
       employee,
       source: 'shopify',

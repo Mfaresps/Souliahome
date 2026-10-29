@@ -769,6 +769,28 @@ describe('manager side — the vault moves on approval, exactly once', () => {
 });
 
 describe('confirming the order — reads the approved deposit, books nothing', () => {
+  it.each([false, true])('carries staff edit history into the transaction (direct permission: %s)', async (direct) => {
+    const { shop } = setup();
+    const o = await newOrder();
+    const id = String(o._id);
+    const actor = { ...STAFF, role: 'staff', perms: direct ? ['shopify-edit-direct'] : [] };
+    for (const qty of [2, 3]) {
+      const result = await shop.submitOrderEdit(id, { items: [{ ...o.items[0], qty }] }, actor);
+      if (!direct) await shop.decideOrderEdit(id, result.requestId, true, { ...ADMIN, role: 'admin', perms: [] });
+    }
+    const history = (await fresh(id)).editHistory;
+    expect(history).toHaveLength(2);
+    expect(history[0].editedBy).toBe(STAFF.name);
+    expect(history[0].approvedBy).toBe(direct ? STAFF.name : ADMIN.name);
+
+    const result = await shop.approveOrder(id, ADMIN.name, 'bosta');
+    const tx: any = await txModel.findById(result.txId).lean();
+    expect(tx.editHistory).toEqual(history.map((entry: any) => ({ ...entry, source: 'shopify' })));
+    expect((await fresh(id)).editHistory).toEqual(history);
+    await expect(shop.approveOrder(id, ADMIN.name, 'bosta')).resolves.toEqual({ success: false });
+    expect(await txModel.countDocuments({ shopifyOrderId: o.shopifyId })).toBe(1);
+  });
+
   it('two receipts in two vaults become two deposit lines; the vault is not touched again', async () => {
     const { receipts, shop, vault } = setup();
     const o = await newOrder({ total: 1500 });
@@ -807,6 +829,7 @@ describe('confirming the order — reads the approved deposit, books nothing', (
     const tx: any = await txModel.findById(res.txId).lean();
     expect(tx.deposit).toBe(0);
     expect(tx.remaining).toBe(900);
+    expect(tx.editHistory).toEqual([]);
     expect(tx.deposits).toEqual([]);
     expect(vault.entries).toHaveLength(0);
   });

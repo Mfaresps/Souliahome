@@ -152,7 +152,10 @@ export class TransactionsService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
 
   async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
-    const result = await setCommentReaction(this.transactionModel, id, commentId, false, userId, userName, reaction);
+    const result = await setCommentReaction(this.transactionModel, id, commentId, false, userId, userName, reaction, async event => {
+      const recipientId = await this.notifications?.notifyCommentReaction('transaction', event);
+      if (recipientId) try { this.presence?.emitToUser(recipientId, 'notification:new', { source: 'reaction' }); } catch { /* best effort */ }
+    });
     try { this.presence?.emitEvent('comment:reaction', { kind: 'transaction', id, ...result }); } catch { /* best effort */ }
     return result;
   }

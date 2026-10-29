@@ -227,7 +227,8 @@ export class AfterSalesService {
     }
     const replacement = money(exchangeItems.reduce((n, row) => n + row.total, 0));
     if (body.kind === 'exchange' && body.reason !== 'customer-choice' && replacement > credit && body.upgradeAccepted !== true) throw new BadRequestException('البديل أغلى؛ يلزم موافقة العميل على فرق الترقية أو اختيار بديل بلا تكلفة');
-    const fee = body.fulfillmentChannel !== 'direct' && body.reason === 'customer-choice' && policy.customerFeesEnabled ? Number(body.customerFee ?? (body.kind === 'exchange' ? policy.exchangeFee : policy.returnFee)) : 0;
+    const defaultFee = body.fulfillmentChannel === 'direct' ? 0 : (body.kind === 'exchange' ? policy.exchangeFee : policy.returnFee);
+    const fee = body.reason === 'customer-choice' && policy.customerFeesEnabled ? Number(body.customerFee ?? defaultFee) : 0;
     if (fee > 0 && !String(body.feeBasis || '').trim()) throw new BadRequestException('حدد سبب انطباق رسوم العميل وفق السياسة');
     const quote = afterSalesQuote(body.kind, body.reason, credit, replacement, fee);
     const deliveredAt = original.deliveredAt;

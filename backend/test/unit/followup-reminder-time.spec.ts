@@ -17,6 +17,46 @@ function fixture(language = 'ar', document: any = {}) {
 }
 
 describe('dynamic follow-up reminder display', () => {
+  const carrierText = ['أُعيد فتح المتابعة — تحديث جديد على نفس الطلب: تحديث بوسطة: في الطريق',
+    'آخر سبب مسجل لدى بوسطة: العميل طلب تأجيل الاستلام',
+    'نص شركة الشحن: Postponed - the customer requested postponement for another day.',
+    'كود السبب: 3', 'موعد إعادة المحاولة حسب بوسطة: 2026-10-29T03:00:00.000Z',
+    'عدد محاولات بوسطة: 1', 'وقت التحديث: 2026-10-28T16:58:17.000Z', 'البوليصة: internal-shipment-id'].join('\n');
+  it('reduces existing carrier audit notes to a clear status, reason and Cairo delivery time', () => {
+    const context = fixture();
+    const copy = context._fuCommentDisplayText(carrierText);
+    expect(copy.split('\n')).toHaveLength(3);
+    expect(copy).toContain('أُعيد فتح المتابعة · في الطريق');
+    expect(copy).toContain('العميل طلب تأجيل الاستلام');
+    expect(copy).toContain('29 أكتوبر');
+    expect(copy).toContain('6:00 ص');
+    expect(copy).not.toMatch(/Postponed|كود السبب|البوليصة|وقت التحديث|2026-10-29T/);
+    const markup = context._fuCommentDisplayHtml(carrierText);
+    expect(markup).toContain('fu-carrier-update');
+    expect(markup).toContain('datetime="2026-10-29T03:00:00.000Z"');
+    expect(markup).not.toContain('internal-shipment-id');
+  });
+  it('translates the compact update and removes old postponements after delivery', () => {
+    const context = fixture('en');
+    expect(context._fuCommentDisplayText(carrierText)).toContain('Follow-up reopened · In transit');
+    expect(context._fuCommentDisplayText(carrierText)).toContain('Customer requested a later delivery');
+    const delivered = context._fuCommentDisplayText(carrierText.replace('في الطريق', 'تم التسليم'));
+    expect(delivered).toContain('Delivered');
+    expect(delivered).not.toMatch(/later delivery|Next delivery/);
+    expect(context._fuCommentDisplayText('تحديث بوسطة: موعدي مع العميل بكرة')).toBe('تحديث بوسطة: موعدي مع العميل بكرة');
+  });
+  it('uses Bosta identity for legacy carrier notes and keeps the system identity for internal actions', () => {
+    const context = fixture();
+    const bosta = context._fuCommentAuthor({ authorId: 'system', authorName: 'النظام', text: carrierText });
+    expect(bosta).toMatchObject({ _id: 'system', name: 'بوسطة', carrier: 'bosta' });
+    expect(context._fuCommentAuthor({ authorId: 'system', authorName: 'النظام', text: 'تم إسناد المتابعة' }).carrier).toBeUndefined();
+    const avatarStart = html.indexOf('function userAvatarHtml(');
+    runInNewContext(html.slice(avatarStart, html.indexOf('\n}', avatarStart) + 2), context);
+    const avatar = context.userAvatarHtml(bosta, 36);
+    expect(avatar).toContain('/bosta-logo-original.png');
+    expect(avatar).not.toContain('/favicon.png');
+    expect(context.userAvatarHtml({ _id: 'system', name: 'النظام' })).toContain('/favicon.png');
+  });
   it('shows the remaining duration and exact Cairo appointment', () => {
     const text = fixture()._fuCommentDisplayText(prefix + due, Date.parse('2026-10-27T15:01:00Z'));
     expect(text).toContain('خلال ساعتين');

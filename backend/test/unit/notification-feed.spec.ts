@@ -57,6 +57,17 @@ it('does not merge unrelated follow-up notices with an empty comment identifier'
   const items = c.souliaMergeNotifications([{ id: 'h1', history: true, recordId: 'followup:fu1', eventType: 'comment', event: '0' }]);
   expect(items).toHaveLength(2);
 });
+it('keeps each reaction separate from the mention and original comment on the same message', () => {
+  const c = fixture(); c.souliaSyncNotificationAccount();
+  c._mentionsCache = [{ id: 'm1', txId: 'tx1', commentId: 42, read: false }];
+  const original = { id: 'comment', history: true, recordId: 'tx:tx1', event: '42', eventType: 'comment', historyRead: false };
+  const reactions = ['like', 'applause'].map(reaction => ({ ...original, id: reaction, reaction, eventId: 'reaction:' + reaction }));
+  c.history = [original, ...reactions]; c.unread = 3;
+  const items = c.souliaMergeNotifications(c.history);
+  expect(items.map((item: any) => item.id).sort()).toEqual(['applause', 'like', 'mention-m1']);
+  expect(items.find((item: any) => item.id === 'mention-m1').historyIds).toEqual(['comment']);
+  expect(c.souliaNotificationUnread(items, [])).toBe(3);
+});
 it('shows one follow-up creation notice with the responsible person, reason and one unread count', async () => {
   const c = fixture(); c.souliaSyncNotificationAccount();
   const card = { id: 'fu-unseen-fu1', refType: 'fu', refId: 'fu1', desc: 'Malak Abbas — عملية تأكيد الطلب', ts: '2026-10-25T10:00:00Z' };

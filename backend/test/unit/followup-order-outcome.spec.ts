@@ -172,6 +172,7 @@ describe('Order outcomes close follow-up trails', () => {
         comments: [{ _id: 'c1', authorId: 'system', authorName: 'النظام', kind: 'decision', text: 'Final outcome', createdAt: new Date().toISOString() }] }],
       fuCommentTargetId: 'f1', currentUser: { _id: 'admin' }, isAdmin: () => true,
       users: [], userAvatarHtml: () => '', cmtJobTitleHtml: () => '',
+      commentReactionsHtml: () => '',
       esc: (value: any) => String(value || ''), escHtml: (value: any) => String(value || ''),
       fmtDateTime: () => '', _fuRelTime: () => '', t: (value: string) => value,
     };

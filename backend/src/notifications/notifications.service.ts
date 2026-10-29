@@ -7,6 +7,7 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Connection, Types } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
+import { COMMENT_REACTION_LABELS, CommentReactionAdded } from '../shared/comment-reactions';
 
 export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
@@ -15,7 +16,7 @@ const TITLES = { deliveryPostponed: 'تأجيل الاستلام بطلب الع
 const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', deliveryPostponed: 'Delivery Postponed by Customer', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
 export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
-export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; }
+export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; reaction?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
@@ -79,6 +80,13 @@ export function notificationBody(type: NotificationType, ref: string, details: N
   }
   if (type === 'followup') return `${orderLabel} · ${language === 'en' ? 'New Follow-up' : 'متابعة جديدة'}`;
   if (type === 'comment') {
+    if (details.reaction && COMMENT_REACTION_LABELS[details.reaction]) {
+      const [emoji, ar, en] = COMMENT_REACTION_LABELS[details.reaction];
+      const prefix = language === 'en' ? `${actor} reacted ${emoji} ${en} to your comment on ${orderLabel}`
+        : `${actor} تفاعل ${emoji} ${ar} مع تعليقك على ${orderLabel}`;
+      const excerpt = cleanText(details.commentText, Math.max(0, 155 - prefix.length));
+      return prefix + (excerpt ? `: «${excerpt}»` : '');
+    }
     const prefix = details.followupComment ? `${actor} · ${orderLabel}` : language === 'en' ? `${actor} commented on ${orderLabel}` : `${actor} علّق على ${orderLabel}`;
     const text = cleanText(details.commentText, 10000);
     if (!text) return prefix;
@@ -399,6 +407,7 @@ export class NotificationsService implements OnModuleInit {
                 eventId, userId, type, title, body, ref: reference, recordId, event: event == null ? '' : String(event),
                 ...(receiptRecipientId ? { receiptRecipientId } : {}),
                 actorUserId: details.actorUserId || '', actorName: details.actorName || '', commentText: details.commentText || '',
+                ...(details.reaction ? { reaction: details.reaction } : {}),
                 url: recordId ? '/?' + target.toString() : '/', createdAt: new Date(eventTimestamp), readAt: null,
               } }, { upsert: true });
             }
@@ -414,6 +423,29 @@ export class NotificationsService implements OnModuleInit {
       }));
       if (queued.some(result => result.status === 'rejected')) this.logger.warn('Some notification recipients could not be queued');
     } catch { this.logger.warn('Notification enqueue failed'); }
+  }
+  async notifyCommentReaction(kind: 'followup' | 'transaction' | 'shopify', event: CommentReactionAdded): Promise<string | undefined> {
+    try {
+      if (!COMMENT_REACTION_LABELS[event.reaction] || event.authorId === 'system') return;
+      const users = this.connection.collection('users');
+      let recipient: any;
+      if (event.authorId) {
+        if (!/^[a-f\d]{24}$/i.test(event.authorId)) return;
+        recipient = await users.findOne({ _id: new Types.ObjectId(event.authorId), isActive: { $ne: false } });
+      } else if (event.authorName) {
+        // Old ordinary comments store only a display name. Never guess between namesakes.
+        const matches = await users.find({ isActive: { $ne: false }, $or: [{ name: event.authorName }, { username: event.authorName }] }).limit(2).toArray();
+        if (matches.length === 1) recipient = matches[0];
+      }
+      if (!recipient || String(recipient._id) === event.actorUserId) return;
+      const recipientId = String(recipient._id);
+      const recordId = (kind === 'transaction' ? 'tx:' : kind + ':') + event.id;
+      await this.enqueue('comment', 'reaction:' + randomUUID(), event.ref, recordId, recipientId, undefined, {
+        reaction: event.reaction, actorUserId: event.actorUserId, actorName: event.actorName,
+        commentId: event.commentId, commentText: event.text,
+      });
+      return recipientId;
+    } catch { this.logger.warn('Comment reaction notification could not be recorded'); }
   }
   async notifyFollowUpSchedule(followUp: { id: string; orderRef: string; responsibleId: string; until: string; reason: string }, due: boolean, actorUserId = '', actorName = '') {
     const users = await this.connection.collection('users').find({ isActive: { $ne: false },

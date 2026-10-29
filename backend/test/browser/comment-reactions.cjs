@@ -52,20 +52,34 @@ for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
         document.body.classList.toggle('dark-mode', dark); _fuRenderCommentThread();
       }, { lang, dark });
       await page.click(host + ' .cmt-reaction-add');
-      assert.equal(await page.$$eval(host + ' .cmt-reaction-picker button', els => els.length), 6);
+      assert.equal(await page.$$eval('.cmt-reaction-popover .cmt-reaction-picker button', els => els.length), 7);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const popover = await page.evaluate(() => {
+        const picker = document.querySelector('.cmt-reaction-popover'), button = document.querySelector('#fu-comment-thread .cmt-reaction-add');
+        return { bottom: picker.getBoundingClientRect().bottom, top: button.getBoundingClientRect().top, width: picker.offsetWidth, height: picker.offsetHeight, animation: getComputedStyle(picker).animationName, text: button.textContent };
+      });
+      assert(popover.bottom <= popover.top, 'Picker opens above its trigger');
+      assert(popover.width <= 304 && popover.height <= 66, JSON.stringify(popover));
+      assert.equal(popover.animation, 'cmt-reaction-enter');
+      assert.equal(popover.text.trim(), '', 'Add reaction uses a compact icon without visible text');
+      assert(await page.$eval(host + ' .cmt-reaction-add', el => !!el.querySelector('svg') && !!el.getAttribute('aria-label')));
+
       assert(await page.$eval('.fu-thread-modal', el => el.scrollWidth <= el.clientWidth + 1));
-      assert(await page.$eval(host + ' .cmt-reaction-picker', el => el.getBoundingClientRect().right <= innerWidth && el.getBoundingClientRect().left >= 0));
+      assert(await page.$eval('.cmt-reaction-popover .cmt-reaction-picker', el => el.getBoundingClientRect().right <= innerWidth && el.getBoundingClientRect().left >= 0));
       await page.screenshot({ path: path.join(output, `followup-${lang}-${width}${dark ? '-dark' : ''}.png`) });
       await page.keyboard.press('Escape');
       assert(await page.$eval('#fu-comment-popup', el => el.classList.contains('show')), 'Escape closes only the picker');
     }
     await page.click(host + ' .cmt-reaction-add');
-    await page.$eval(host + ' .cmt-reaction-picker [data-reaction="applause"]', el => { el.click(); el.click(); });
+    await page.$eval('.cmt-reaction-popover [data-reaction="applause"]', el => { el.click(); el.click(); });
     await page.waitForFunction(() => document.querySelector('.cmt-reaction-chip.is-mine'));
     assert.equal(await page.evaluate(() => reactionRequests.length), 1, 'Repeated taps only send once');
     assert.equal(await page.$eval(host + ' .cmt-reaction-chip', el => el.textContent.trim()), '👏2');
     assert.equal(await page.$eval('#fu-comment-text', el => el.value), 'تعليق لسه بكتبه');
-    await page.click(host + ' .cmt-reaction-add'); await page.click(host + ' [data-reaction="strong"]');
+    await page.click(host + ' .cmt-reaction-add'); await page.click('.cmt-reaction-popover [data-reaction="angry"]');
+    await page.waitForFunction(() => document.querySelector('.cmt-reaction-chip.is-mine')?.dataset.reaction === 'angry');
+    assert.equal(await page.$eval(host + ' .cmt-reaction-chip.is-mine', el => el.textContent.trim()), '😠1');
+    await page.click(host + ' .cmt-reaction-add'); await page.click('.cmt-reaction-popover [data-reaction="strong"]');
     await page.waitForFunction(() => document.querySelector('.cmt-reaction-chip.is-mine')?.dataset.reaction === 'strong');
     await page.click(host + ' .cmt-reaction-chip.is-mine');
     await page.waitForFunction(() => !document.querySelector('.cmt-reaction-chip.is-mine'));
@@ -88,7 +102,7 @@ for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
       _shopifyOrders = [{ _id: 'order', ref: '2966', client: 'Salma', comments: [{ id: 123, employee: 'Malak Abbas', text: 'تم التأكيد', timestamp: new Date().toISOString() }] }];
       openShopifyCommentsModal('order'); qs('.sp-cmtwin textarea').value = 'Keep my Shopify draft';
     });
-    await page.click('#sp-cmt-host .cmt-reaction-add'); await page.click('#sp-cmt-host [data-reaction="fire"]');
+    await page.click('#sp-cmt-host .cmt-reaction-add'); await page.click('.cmt-reaction-popover [data-reaction="fire"]');
     await page.waitForFunction(() => document.querySelector('#sp-cmt-host .cmt-reaction-chip.is-mine'));
     assert.equal(await page.$eval('.sp-cmtwin textarea', el => el.value), 'Keep my Shopify draft');
     await page.screenshot({ path: path.join(output, 'shopify-mobile.png') });
@@ -100,9 +114,38 @@ for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
       fixture.querySelector('.inv-section-body').classList.add('expanded');
     });
     await page.$eval('#invoice-reaction-test .cmt-reaction-add', el => el.click());
-    await page.$eval('#invoice-reaction-test [data-reaction="star"]', el => el.click());
+    await page.$eval('.cmt-reaction-popover [data-reaction="star"]', el => el.click());
     await page.waitForFunction(() => document.querySelector('#invoice-reaction-test .cmt-reaction-chip.is-mine'));
     assert((await page.evaluate(() => reactionRequests.at(-1).url)).startsWith('/transactions/tx/'));
+    await page.evaluate(() => {
+      document.querySelector('#invoice-reaction-test').remove(); closeModal();
+      window.carrierAuditText = ['أُعيد فتح المتابعة — تحديث جديد على نفس الطلب: تحديث بوسطة: في الطريق',
+        'آخر سبب مسجل لدى بوسطة: العميل طلب تأجيل الاستلام',
+        'نص شركة الشحن: Postponed - the customer requested postponement for another day.', 'كود السبب: 3',
+        'موعد إعادة المحاولة حسب بوسطة: 2026-10-29T03:00:00.000Z', 'عدد محاولات بوسطة: 1',
+        'وقت التحديث: 2026-10-28T16:58:17.000Z', 'البوليصة: internal-shipment-id'].join('\n');
+      followUps[0].comments = [
+        { _id: 'carrier-old', authorId: 'system', authorName: 'النظام', text: carrierAuditText, createdAt: new Date(Date.now() - 7200000).toISOString() },
+        { _id: 'carrier-new', authorId: 'system', authorName: 'بوسطة', text: carrierAuditText.replace(/^.*تحديث بوسطة:/, 'تحديث بوسطة:'), createdAt: new Date().toISOString() },
+        { _id: 'internal', authorId: 'system', authorName: 'النظام', text: 'تم إسناد المتابعة للموظف', createdAt: new Date().toISOString() },
+      ];
+    });
+    await new Promise(resolve => setTimeout(resolve, 350));
+    for (const [width, language] of [[390, 'ar'], [1440, 'en']]) {
+      await page.setViewport({ width, height: 850 });
+      await page.evaluate(language => { currentLang = language; document.documentElement.dir = language === 'en' ? 'ltr' : 'rtl'; openFuCommentPopup('trail'); }, language);
+      await page.waitForFunction(() => [...document.querySelectorAll('.bosta-system-avatar img')].every(img => img.complete && img.naturalWidth));
+      await new Promise(resolve => setTimeout(resolve, 250));
+      assert.equal(await page.$$eval('#fu-comment-thread .bosta-system-avatar', els => els.length), 2);
+      assert.equal(await page.$$eval('#fu-comment-thread .soulia-system-avatar', els => els.length), 1);
+      const copy = await page.$eval('#fu-comment-thread [data-comment-id="carrier-old"]', el => el.textContent);
+      assert(copy.includes(language === 'en' ? 'Bosta' : 'بوسطة'));
+      assert(!/internal-shipment-id|Postponed -|كود السبب|وقت التحديث/.test(copy));
+      assert(await page.$eval('.fu-thread-modal', el => el.scrollWidth <= el.clientWidth + 1));
+      assert(await page.evaluate(() => followUps[0].comments[0].text === carrierAuditText));
+      await page.screenshot({ path: path.join(output, `carrier-summary-${language}-${width}.png`) });
+      await page.evaluate(() => closeFuCommentPopup());
+    }
     assert.deepEqual(errors, []);
     console.log('PASS: follow-up, Shopify and invoice reactions; change/remove, duplicates, errors, live updates, draft preservation, RTL/LTR, 320px layout, dark mode and keyboard.');
   } finally { await browser.close(); }

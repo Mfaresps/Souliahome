@@ -100,6 +100,40 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     expect(closed.workflow.stage).toBe('closed');expect(closed.workflow.shipment).toBeUndefined();expect(closed.workflow.carrierSettlement).toBeUndefined();
     expect(carrier.createAfterSalesShipment).not.toHaveBeenCalled();
   });
+  it.each(['bosta', 'direct'])('deducts a manual return cost from the actual refund for %s', async fulfillmentChannel => {
+    const row: any = await service.create({ ...request(), fulfillmentChannel, customerFee: 75.25 }, actor);
+    expect(row.workflow.quote).toMatchObject({ customerFee: 75.25, refundDue: 424.75, collectDue: 0 });
+    expect(row.workflow.policy.returnFee).toBe(50);
+    await service.approve(String(row._id), op(), actor);
+    await service.receive(String(row._id), receive(), actor);
+    const paid: any = await service.settle(String(row._id), settle('refund'), actor);
+    expect(paid.workflow.refund.amount).toBe(424.75);
+    const entry: any = await Vault.findById(paid.workflow.refund.vaultEntryId).lean();
+    expect(entry.amount).toBe(-424.75);
+    expect((await mongo.connection.collection('settings').findOne({}))?.vaultCash).toBe(9575.25);
+  });
+  it.each(['bosta', 'direct'])('deducts a manual exchange cost from a cheaper replacement refund for %s', async fulfillmentChannel => {
+    const other = oid();
+    await mongo.connection.collection('products').insertOne({ _id: other, code: 'CHEAPER', name: 'Cheaper replacement', sellPrice: 300, buyPrice: 100, openingBalance: 10 });
+    const row: any = await service.create({ ...request('exchange'), fulfillmentChannel, customerFee: 75.25,
+      exchangeItems: [{ productId: String(other), qty: 1 }] }, actor);
+    expect(row.workflow.quote).toMatchObject({ customerFee: 75.25, refundDue: 124.75, collectDue: 0, creditApplied: 375.25 });
+    const approved: any = await service.approve(String(row._id), op(), actor);
+    const replacement: any = await Tx.findById(approved.workflow.replacementTxId).lean();
+    expect(replacement).toMatchObject({ total: 375.25, deposit: 375.25, remaining: 0, shipCost: 75.25 });
+  });
+  it('allows zero overrides and validates manual costs without changing the policy', async () => {
+    expect((await service.quote({ ...request(), customerFee: 0 })).quote.refundDue).toBe(500);
+    for (const customerFee of [-1, 501, 'invalid']) {
+      await expect(service.quote({ ...request(), fulfillmentChannel: 'direct', customerFee })).rejects.toThrow();
+    }
+    await expect(service.quote({ ...request(), fulfillmentChannel: 'direct', customerFee: 20, feeBasis: '' })).rejects.toThrow();
+    for (const reason of ['defect', 'wrong-item']) {
+      expect((await service.quote({ ...request('return', reason), fulfillmentChannel: 'direct', customerFee: 20 })).quote.customerFee).toBe(0);
+    }
+    await mongo.connection.collection('settings').updateOne({}, { $set: { 'afterSalesPolicy.customerFeesEnabled': false } });
+    expect((await service.quote({ ...request(), fulfillmentChannel: 'direct', customerFee: 20 })).quote.refundDue).toBe(500);
+  });
   it('posts complaint compensation to the real vault and expense ledger once, blocking independent reversals', async () => {
     const Complaints=mongo.connection.models.Complaint||mongo.connection.model('Complaint',ComplaintSchema);
     const complaints=new ComplaintsService(Complaints as any,vault);

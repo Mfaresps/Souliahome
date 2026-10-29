@@ -62,7 +62,10 @@ export class FollowUpsService implements OnModuleInit {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
 
   async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
-    const result = await setCommentReaction(this.model, id, commentId, true, userId, userName, reaction);
+    const result = await setCommentReaction(this.model, id, commentId, true, userId, userName, reaction, async event => {
+      const recipientId = await this.notifications?.notifyCommentReaction('followup', event);
+      if (recipientId) try { this.presence?.emitToUser(recipientId, 'notification:new', { source: 'reaction' }); } catch { /* best effort */ }
+    });
     try { this.presence?.emitEvent('comment:reaction', { kind: 'followup', id, ...result }); } catch { /* best effort */ }
     return result;
   }

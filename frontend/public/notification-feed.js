@@ -166,7 +166,7 @@
       const id = String(mention.id || mention._id || '');
       if (!id) continue;
       const related = history.filter(n => n.recordId === 'mention:' + id ||
-        (n.eventType === 'comment' && (mention.fuCommentId
+        (n.eventType === 'comment' && !n.reaction && (mention.fuCommentId
           ? n.recordId === 'followup:' + mention.txId && String(n.event) === String(mention.fuCommentId)
           : !!mention.commentId && String(n.event) === String(mention.commentId) && String(n.recordId || '').split(':').pop() === String(mention.txId))));
       related.forEach(n => consumed.add(n.id));
