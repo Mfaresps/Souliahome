@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { runInNewContext } from 'vm';
+import { runInNewContext } from '../pickup-authorized-context';
 
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
 const source = html.slice(html.indexOf('function _bsfIsBostaOrder('), html.indexOf('async function bulkSendToBosta('));

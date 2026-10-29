@@ -14,6 +14,7 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
     await page.addStyleTag({ path: path.join(publicDir, 'bosta-pickup.css') });
     await page.evaluate(() => {
       window.currentLang = 'ar'; window.qs = s => document.querySelector(s);
+      window._puCanEdit = window._puRequireEdit = () => true;
       window.esc = window.escHtml = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
       window.openModal = (html, style) => { qs('#modal-content').innerHTML = html; qs('#modal-content').className = 'modal'; qs('#modal-content').style.cssText = style; };
       window.closeModal = () => { qs('#modal-content').innerHTML = ''; };

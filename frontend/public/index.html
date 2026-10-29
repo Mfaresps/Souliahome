@@ -38,8 +38,10 @@
 })();
 </script>
 <script src="/config.js"></script>
-<script src="/order-status.js?v=20261026-customer-cancellation"></script>
-<link rel="stylesheet" href="/order-status.css?v=20261029-status-progress">
+<script src="/order-status.js?v=20261029-group-previews"></script>
+<script defer src="/order-status-preview.js?v=20261029-group-previews"></script>
+<link rel="stylesheet" href="/order-status-preview.css?v=20261029-group-previews">
+<link rel="stylesheet" href="/order-status.css?v=20261029-dashboard-status">
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
@@ -6580,6 +6582,14 @@ body.dark-mode .sup-card2-avatar{background:rgba(45,122,79,.18)}
 #users-table th[data-col="u-pass"],#users-table td[data-col="u-pass"]{width:14%}
 #users-table th[data-col="u-joined"],#users-table td[data-col="u-joined"]{width:12%}
 #users-table th[data-col="u-actions"],#users-table td[data-col="u-actions"]{width:52px}
+#users-table :is(th,td):is([data-col="u-user"],[data-col="u-job"]){text-align:start}
+#users-table :is(th,td):is([data-col="u-role"],[data-col="u-status"],[data-col="u-pass"],[data-col="u-joined"],[data-col="u-actions"]){text-align:center}
+#users-table .users-identity{display:flex;align-items:center;gap:9px;min-width:0}
+#users-table .users-name-cell,#users-table .users-job-cell{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+#users-table .users-name-cell{flex:1}
+#users-table .users-name-line{max-width:100%}
+#users-table .users-job-title{max-width:100%;overflow-wrap:anywhere}
+#users-table :is(.users-username-line,.users-phone-sub){max-width:100%;text-align:start;overflow-wrap:anywhere}
 #users-table thead th{padding:10px;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface);white-space:nowrap;border-bottom:1px solid var(--border)}
 #users-table tbody tr td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:.82rem;box-sizing:border-box}
 #users-table tbody tr:last-child td{border-bottom:none}
@@ -6632,6 +6642,16 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
    is the ONLY scroller. Without that, the modal's own scrollbar fights the
    inner one and the sticky head/foot drift. */
 .um2{display:flex;flex-direction:column;height:min(86vh,720px);overflow:hidden}
+#modal-overlay:has(> .user-modal-host){
+  top:var(--um-viewport-top,0px);bottom:auto;height:var(--um-viewport-height,100dvh);
+  padding:12px;box-sizing:border-box;align-items:center!important;overscroll-behavior:contain;
+}
+#modal-content.user-modal-host{
+  width:100%!important;max-width:760px;height:min(720px,100%);max-height:100%!important;
+  min-height:0;padding:0!important;border-radius:14px!important;overflow:hidden;animation:none!important;
+}
+#modal-content.user-modal-host::before{display:none}
+#modal-content.user-modal-host > .um2{flex:1 1 auto;min-height:0;height:100%;max-height:100%}
 .um2-head{display:flex;align-items:center;gap:12px;padding:16px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .um2-head-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .um2-head-title{font-size:1.02rem;font-weight:700;color:var(--text);line-height:1.2}
@@ -6649,7 +6669,7 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
 .um2-tab-badge{font-size:.66rem;padding:1px 7px;border-radius:20px;background:var(--surface2);color:var(--muted);font-weight:700}
 .um2-tab[aria-selected="true"] .um2-tab-badge{background:var(--primary-pale);color:var(--primary)}
 
-.um2-scroll{flex:1;min-height:0;overflow-y:auto;padding:16px 20px;border-top:1px solid var(--border);margin-top:-1px}
+.um2-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;scroll-padding-block:12px;padding:16px 20px;border-top:1px solid var(--border);margin-top:-1px}
 .um2-panel[hidden]{display:none}
 /* The role <select> is kept in the DOM as saveUser()'s source of truth but is
    never shown; the global `input,select{width:100%}` rule at ~line 428 makes a
@@ -6706,12 +6726,21 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
 .um2-meter-track{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
 .um2-meter-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary),var(--accent));width:0;transition:width .25s ease}
 @media (max-width:640px){
-  .um2{height:min(92vh,100%)}
+  #modal-content.user-modal-host{height:100%}
   .um2-grid{grid-template-columns:1fr}
   .um2-roles{grid-template-columns:1fr}
   .um2-role{flex-direction:row;text-align:start;gap:9px}
   .um2-head,.um2-scroll,.um2-foot{padding-left:14px;padding-right:14px}
   .um2-tabs{padding-left:14px;padding-right:14px}
+  .um2-tab,.um2-foot .btn{min-height:44px}
+  .um2 .perm-sys-search input,.um2 .form-group input,.um2 .form-group select{font-size:16px}
+  .um2-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .um2 .perm-module-head{min-height:44px}
+  .um2 .perm-module-title{font-size:13px}
+  .um2 .perm-module-actions{grid-template-columns:1fr;padding-inline:10px}
+  .um2 .perm-action-label{min-height:44px;padding:8px;gap:8px;font-size:12px;line-height:1.5}
+  .um2 .perm-module-head input[type="checkbox"],.um2 .perm-action-label input[type="checkbox"]{width:18px;height:18px;min-width:18px;min-height:18px;padding:0}
+  .um2 .perm-module.open .perm-module-body{max-height:none;overflow:visible}
 }
 
 /* ── Hierarchical permissions (ERP-style accordion) ───────────── */
@@ -14511,7 +14540,7 @@ body.dark-mode .dashboard-v2 .ds-attn-row.is-warn .ds-attn-n{color:#fcd34d}
 
    ⚠ لون واحد (--ds-accent) مش تدرّج ألوان. الاستثناء الوحيد هو المسار المكسور
    (مرتجع/فشل) — أحمر لأن معناه مختلف. */
-.dashboard-v2 .ds-shc-trk{display:flex;align-items:center;gap:10px;min-width:0}
+.dashboard-v2 .ds-shc-trk{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0}
 .dashboard-v2 .ds-ship-head .ds-shc-trk{justify-content:flex-start}
 /* ⚠ `flex:1` على العنصر نفسه عشان المسار يمتد بعرض العمود كله. من غيرها كان
    بيتكوّم على قد محتواه ويسيب نص الجدول فاضي. */
@@ -16620,7 +16649,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261022">
 <link rel="stylesheet" href="/inventory-responsive.css?v=20261020-1">
-<link rel="stylesheet" href="/pickup-workspace.css?v=20261025-stage-colors">
+<link rel="stylesheet" href="/pickup-workspace.css?v=20261029-carrier-select">
 <link rel="stylesheet" href="/awb-preview.css?v=20261024">
 <link rel="stylesheet" href="/pickup-ready-return.css?v=20261024-new-group">
 <link rel="stylesheet" href="/picking-scan.css?v=20261020-always-ready">
@@ -18286,10 +18315,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <div class="ent-bulk-spacer"></div>
 
     <div class="ent-bulk-group">
-      <button class="ent-bulk-btn" onclick="exportSelectedExcel()">
+      <button class="ent-bulk-btn" id="bulk-export-btn" onclick="exportSelectedExcel()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg> <span data-i18n="bulkExportExcel">Excel</span>
       </button>
-      <button class="ent-bulk-btn" onclick="bulkPrintPDF()">
+      <button class="ent-bulk-btn" id="bulk-print-btn" onclick="bulkPrintPDF()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> <span data-i18n="bulkPrint">طباعة</span>
       </button>
     </div>
@@ -18310,7 +18339,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <button class="ent-bulk-btn ent-bulk-btn-blue" id="bulk-manual-delivery-btn" style="display:none" onclick="openBulkManualDeliveryModal()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="bulkManualDelivery">تأكيد التسليم يدوياً</span>
       </button>
-      <button class="ent-bulk-btn" id="bulk-bosta-btn" onclick="bulkSendToBosta()">
+      <button class="ent-bulk-btn" id="bulk-bosta-btn" style="display:none" onclick="bulkSendToBosta()">
         <span class="bosta-icon" style="width:14px;height:14px"></span> Bosta
       </button>
     </div>
@@ -20387,15 +20416,15 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span data-i18n="exportAction">تصدير</span>
       </button>
-      <button class="btn btn-outline btn-sm" onclick="puCloseActionsMenu();openPickupBulkModal()" style="display:flex;align-items:center;gap:6px">
+      <button class="btn btn-outline btn-sm" data-pu-edit onclick="puCloseActionsMenu();openPickupBulkModal()" style="display:flex;align-items:center;gap:6px">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
         <span data-i18n="puBulkEntry">إدخال مجمّع</span>
       </button>
-      <button class="btn btn-outline btn-sm pu-create-action" onclick="puCloseActionsMenu();openPrepGroupModal()">
+      <button class="btn btn-outline btn-sm pu-create-action" data-pu-edit onclick="puCloseActionsMenu();openPrepGroupModal()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         <span data-i18n="puCreatePrepGroup">إنشاء مجموعة تحضير</span>
       </button>
-      <button class="btn btn-outline btn-sm pu-create-action" onclick="puCloseActionsMenu();openCreatePickupModal()">
+      <button class="btn btn-outline btn-sm pu-create-action" data-pu-edit onclick="puCloseActionsMenu();openCreatePickupModal()">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <span data-i18n="puNewOrderBtn">أمر Pick-Up جديد</span>
       </button>
@@ -20507,11 +20536,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <input type="text" id="pu-pending-search" data-i18n-placeholder="puSearchPendingPh" placeholder="بحث في المعلقة…" oninput="renderPickupBoard()" autocomplete="off">
         </div>
         <div class="pu-pending-actions-bar" id="pu-pending-actions-bar">
-          <button class="pu-pt-create-btn" id="pu-pt-create-btn-static" onclick="if(_puPendingSelected.size>0)puPtMoveSelected();else toast(t('puSelectFirstToast'),true)">
+          <button class="pu-pt-create-btn" id="pu-pt-create-btn-static" data-pu-edit onclick="if(_puPendingSelected.size>0)puPtMoveSelected();else toast(t('puSelectFirstToast'),true)">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
             <span data-i18n="puCreatePrepGroup">إنشاء مجموعة تحضير</span>
           </button>
-          <button class="pu-pt-bulk-btn" onclick="openPuBulkModal()">
+          <button class="pu-pt-bulk-btn" data-pu-edit onclick="openPuBulkModal()">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             <span data-i18n="puEntryByRefs">إدخال بأرقام المراجع</span>
           </button>
@@ -20685,7 +20714,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-outline btn-sm" onclick="closePuConfirmModal()" data-i18n="cancel">إلغاء</button>
-      <button class="btn btn-primary btn-sm" id="pu-confirm-ok-btn" onclick="puConfirmMoveToReady()" style="gap:5px">
+      <button class="btn btn-primary btn-sm" id="pu-confirm-ok-btn" data-pu-edit onclick="puConfirmMoveToReady()" style="gap:5px">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span data-i18n="puConfirmPickup">تأكيد الاستلام</span>
       </button>
@@ -20725,7 +20754,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <!-- Select-all bar -->
     <div style="padding:8px 20px;border-bottom:1px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;cursor:pointer;font-weight:600;color:var(--text)">
-        <input type="checkbox" id="pu-prep-check-all" onchange="prepModalToggleAll(this.checked)" style="width:15px;height:15px;accent-color:#2563eb">
+        <input type="checkbox" id="pu-prep-check-all" data-pu-edit onchange="prepModalToggleAll(this.checked)" style="width:15px;height:15px;accent-color:#2563eb">
         <span data-i18n="puSelectAll">تحديد الكل</span>
       </label>
       <span id="pu-prep-selected-count" style="font-size:.82rem;color:#2563eb;font-weight:700;background:#dbeafe;padding:3px 10px;border-radius:20px"></span>
@@ -20755,7 +20784,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="closePrepGroupModal()" style="padding:8px 18px" data-i18n="cancel">إلغاء</button>
-        <button class="btn btn-sm" id="pu-prep-confirm-btn" onclick="submitPrepGroup()" style="padding:8px 22px;display:flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border-color:#2563eb">
+        <button class="btn btn-sm" id="pu-prep-confirm-btn" data-pu-edit onclick="submitPrepGroup()" style="padding:8px 22px;display:flex;align-items:center;gap:6px;background:#2563eb;color:#fff;border-color:#2563eb">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <span data-i18n="puCreatePrepGroupBtn">إنشاء مجموعة التحضير</span>
         </button>
@@ -20819,7 +20848,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--bg-alt);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-shrink:0">
       <span id="pu-bulk-match-count" style="font-size:.82rem;color:var(--muted);margin-right:auto"></span>
       <button class="btn btn-outline btn-sm" onclick="closePuBulkModal()" data-i18n="cancel">إلغاء</button>
-      <button class="btn btn-sm" id="pu-bulk-confirm-btn" onclick="submitPuBulk()" style="background:#2563eb;color:#fff;border-color:#2563eb;display:flex;align-items:center;gap:6px;padding:8px 20px">
+      <button class="btn btn-sm" id="pu-bulk-confirm-btn" data-pu-edit onclick="submitPuBulk()" style="background:#2563eb;color:#fff;border-color:#2563eb;display:flex;align-items:center;gap:6px;padding:8px 20px">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span data-i18n="puMoveToPrep">نقل لقيد التحضير</span>
       </button>
@@ -20899,12 +20928,12 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
                 style="width:100%;padding:7px 10px;padding-inline-start:32px;border:1.5px solid var(--border);border-radius:9px;font-size:.82rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s;font-family:inherit;box-sizing:border-box"
                 onfocus="this.style.borderColor='var(--primary)';pucoAddSearch(this.value)"
                 onblur="this.style.borderColor='var(--border)';setTimeout(()=>pucoHideAddSuggest(),180)"
-                oninput="pucoAddSearch(this.value)"
-                onkeydown="pucoAddKeydown(event)">
+                data-pu-edit oninput="pucoAddSearch(this.value)"
+                data-pu-edit onkeydown="pucoAddKeydown(event)">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;inset-inline-start:11px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <div id="puco-add-suggest" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--primary);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:9999;max-height:220px;overflow-y:auto"></div>
             </div>
-            <button type="button" onmousedown="event.preventDefault()" onclick="pucoOpenAddPicker()" class="puco-add-btn" title="إضافة طلبات أخرى" data-i18n-title="puAddMoreOrders">
+            <button type="button" onmousedown="event.preventDefault()" data-pu-edit onclick="pucoOpenAddPicker()" class="puco-add-btn" title="إضافة طلبات أخرى" data-i18n-title="puAddMoreOrders">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
           </div>
@@ -20950,7 +20979,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <!-- Select-all bar -->
     <div style="padding:8px 20px;border-bottom:1px solid var(--border);background:var(--bg-alt);display:flex;align-items:center;justify-content:space-between">
       <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;cursor:pointer;font-weight:600;color:var(--text)">
-        <input type="checkbox" id="pu-create-check-all" onchange="puCreateToggleAll(this.checked)" style="width:15px;height:15px;accent-color:var(--primary)">
+        <input type="checkbox" id="pu-create-check-all" data-pu-edit onchange="puCreateToggleAll(this.checked)" style="width:15px;height:15px;accent-color:var(--primary)">
         <span data-i18n="puSelectAll">تحديد الكل</span>
       </label>
       <span id="pu-create-selected-count" style="font-size:.82rem;color:var(--primary);font-weight:700;background:color-mix(in srgb,var(--primary) 12%,transparent);padding:3px 10px;border-radius:20px"></span>
@@ -20987,7 +21016,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="closePuCreateModal()" style="padding:8px 18px" data-i18n="cancel">إلغاء</button>
-        <button class="btn btn-primary btn-sm" id="pu-create-confirm-btn" onclick="submitCreatePickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
+        <button class="btn btn-primary btn-sm" id="pu-create-confirm-btn" data-pu-edit onclick="submitCreatePickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <span data-i18n="puCreateRunBtn">إنشاء أمر الاستلام</span>
         </button>
@@ -21038,7 +21067,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <!-- Footer -->
     <div style="padding:14px 20px;border-top:1px solid var(--border);background:var(--bg-alt);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
       <button class="btn btn-outline btn-sm" onclick="closeBulkRunModal()" style="padding:8px 18px" data-i18n="cancel">إلغاء</button>
-      <button class="btn btn-primary btn-sm" id="pu-bulk-run-confirm-btn" onclick="runBulkPickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
+      <button class="btn btn-primary btn-sm" id="pu-bulk-run-confirm-btn" data-pu-edit onclick="runBulkPickup()" style="padding:8px 20px;display:flex;align-items:center;gap:6px">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span data-i18n="puConfirmPickup">تأكيد الاستلام</span>
       </button>
@@ -21078,7 +21107,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <div id="pu-edit-date-preview"></div>
       <label for="pu-edit-date-val" data-i18n="puPickupDate">تاريخ الاستلام</label>
       <input type="date" id="pu-edit-date-val" onchange="_puEditRefreshDatePreview()">
-      <button class="btn btn-outline btn-sm pu-edit-save" onclick="savePuEditDate()">
+      <button class="btn btn-outline btn-sm pu-edit-save" data-pu-edit onclick="savePuEditDate()">
         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <span data-i18n="puSaveDate">حفظ التاريخ</span>
       </button>
@@ -21128,7 +21157,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
     <div class="modal-footer" style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-outline btn-sm" onclick="closePuDateModal()" data-i18n="cancel">إلغاء</button>
-      <button class="btn btn-primary btn-sm" onclick="savePuDateEdit()" data-i18n="save">حفظ</button>
+      <button class="btn btn-primary btn-sm" data-pu-edit onclick="savePuDateEdit()" data-i18n="save">حفظ</button>
     </div>
   </div>
 </div>
@@ -21525,13 +21554,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <table id="users-table" class="ent-table">
       <thead>
         <tr>
-          <th data-col="u-user" style="text-align:right">المستخدم</th>
-          <th data-col="u-job" style="text-align:right">الوظيفة</th>
-          <th data-col="u-role" style="text-align:center">الدور</th>
-          <th data-col="u-status" style="text-align:center">الحالة</th>
-          <th data-col="u-pass" style="text-align:center">الرقم السري</th>
-          <th data-col="u-joined" style="text-align:center">تاريخ الانضمام</th>
-          <th data-col="u-actions" style="text-align:center"></th>
+          <th data-col="u-user">المستخدم</th>
+          <th data-col="u-job">الوظيفة</th>
+          <th data-col="u-role">الدور</th>
+          <th data-col="u-status">الحالة</th>
+          <th data-col="u-pass">الرقم السري</th>
+          <th data-col="u-joined">تاريخ الانضمام</th>
+          <th data-col="u-actions"></th>
         </tr>
       </thead>
       <tbody id="users-tbody"></tbody>
@@ -23616,7 +23645,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
-<script src="/invoice-image.js?v=20261029-pending-customer-values"></script>
+<script src="/invoice-image.js?v=20261029-purchase-access"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -24124,7 +24153,7 @@ let prodFilter = 'all';
 const fxState = {
   inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '', color: new Set(), material: new Set(), size: new Set(), feature: new Set() },
   prod: { sort: 'name-asc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '', category: new Set(), collection: new Set(), color: new Set(), material: new Set(), size: new Set(), feature: new Set() },
-  mov: { sort: 'priority-desc', operation: new Set(), employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), pickup: new Set(), dateFrom: '', dateTo: '', dateField: 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
+  mov: { sort: 'date-desc', operation: new Set(), employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), pickup: new Set(), dateFrom: '', dateTo: '', dateField: 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
   invLog: { sort: 'date-desc', type: new Set(), employee: new Set(), dateFrom: '', dateTo: '' },
 };
 let _fxDrawerCtx = null; // 'inv' | 'prod' while drawer open
@@ -24460,6 +24489,7 @@ const _SPP_LS_KEY = 'soulia_sp_send_preparing_v1';
    re-ticking it per order is the manual step this exists to remove. Same
    convention as settings.defaultCarrierCode pre-selecting the carrier. */
 function _sppEnabledDefault() {
+  if (!_puCanEdit()) return false;
   try { return localStorage.getItem(_SPP_LS_KEY) === '1'; } catch(_) { return false; }
 }
 function _sppRemember(on) {
@@ -24472,6 +24502,7 @@ function _sppRemember(on) {
 let _sppGroups = [];
 
 async function _sppLoadGroups() {
+  if (!_puCanEdit()) return [];
   let orders = [];
   try { orders = await api('/transactions/pickup-orders'); } catch(_) { return []; }
   if (!Array.isArray(orders)) orders = [];
@@ -24525,6 +24556,7 @@ async function _sppLoadGroups() {
    is removed on the next frame so a LATER user click (switching the toggle
    off and back on) still gets the normal animated reveal. */
 function _sppToggleHtml(idp, opts) {
+  if (!_puCanEdit()) return '';
   const o = opts || {};
   const on = _sppEnabledDefault();
   return `
@@ -24626,6 +24658,7 @@ function _sppReadChoice(idp) {
 async function _sppCommit(txIds, choice) {
   const ids = (txIds || []).filter(Boolean).map(String);
   if (!ids.length || !choice || !choice.on) return null;
+  if (!_puRequireEdit()) return null;
 
   const prepRef = choice.prepRef || _genPrepRef();
   const isNew   = !choice.prepRef;
@@ -24878,12 +24911,15 @@ let currentLang = 'ar';
 
 const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
+  'pickup-orders','pickup-orders-edit',
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
   'suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','suppliers-returns',
   // Bosta settlements — four levels of authority, mirrored on the backend controller.
   'carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse',
   'products-sku-manage','inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select'];
 const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
+  'pickup-orders':'Pick-Up Orders - عرض الصفحة (مشاهدة فقط)',
+  'pickup-orders-edit':'Pick-Up Orders - السماح بالتعديلات والتحضير والشحن',
   'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات (Prep & Ship)',
   'shopify-reassign':'شوبيفاي - إدارة إسناد الطلبات للموظفين (Assignee)',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
@@ -24901,6 +24937,7 @@ const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',
 
 // Module grouping for the ERP-style hierarchical permissions UI
 const PERM_MODULES = [
+  {key:'pickup-orders',label:'Pick-Up Orders - طلبات الاستلام',icon:'',perms:['pickup-orders','pickup-orders-edit']},
   {key:'inventory-units',label:'تتبع الوحدات والباركود',icon:'',perms:['inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select']},
   { key:'dashboard', label:'الرئيسية', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>', perms:['dashboard'] },
   { key:'inventory', label:'المخزن والأصناف', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>', perms:['inventory','products','products-sku-manage'] },
@@ -24919,7 +24956,7 @@ const PERM_MODULES = [
   { key:'settings', label:'المستخدمون والإعدادات', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>', perms:['users','settings'] },
 ];
 const ROLE_TEMPLATES = {
-  staff: ['dashboard','transaction','inventory','movements','clients','products','complaints','expenses','categories-view'],
+  staff: ['dashboard','transaction','inventory','movements','pickup-orders','clients','products','complaints','expenses','categories-view'],
   viewer: ['dashboard','inventory','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','categories-view'],
   admin: PERMS.slice(),
 };
@@ -24942,31 +24979,31 @@ const ROLE_TEMPLATES = {
      see "Supplier Account Permissions" in CLAUDE.md. */
 const JOB_TEMPLATES = {
   operations: { ar: 'مدير عمليات', role: 'staff', perms: [
-    'dashboard','transaction','movements','approvals','inventory','products','clients','suppliers','complaints','expenses',
+    'dashboard','transaction','movements','pickup-orders','pickup-orders-edit','approvals','inventory','products','clients','suppliers','complaints','expenses',
     'categories-view','categories-create','categories-edit','categories-assign-products',
     'purchase-create','purchase-view','delivery-manual-confirm','delivery-view-audit',
     'reports','reports-kpis','reports-charts','suppliers-tab-invoices','suppliers-tab-pos'] },
   // `shopify-deposit-upload` only RECORDS a receipt; approving it (the vault entry) is admin-only
   // and never a perm, so it is safe in the presets that handle customer orders.
   sales: { ar: 'مبيعات', role: 'staff', perms: [
-    'dashboard','transaction','movements','clients','products','inventory','complaints','categories-view','shopify-orders','shopify-deposit-upload'] },
+    'dashboard','transaction','movements','pickup-orders','clients','products','inventory','complaints','categories-view','shopify-orders','shopify-deposit-upload'] },
   support: { ar: 'خدمة عملاء', role: 'staff', perms: [
-    'dashboard','clients','complaints','movements','products','inventory','categories-view','shopify-orders','shopify-deposit-upload',
+    'dashboard','clients','complaints','movements','pickup-orders','products','inventory','categories-view','shopify-orders','shopify-deposit-upload',
     'csp-view','csp-create','csp-edit'] },
   warehouse: { ar: 'أمين مخزن', role: 'staff', perms: [
-    'dashboard','inventory','products','movements','categories-view','categories-assign-products'] },
+    'dashboard','inventory','products','movements','pickup-orders','pickup-orders-edit','categories-view','categories-assign-products'] },
   fulfillment: { ar: 'تجهيز وشحن', role: 'staff', perms: [
-    'dashboard','movements','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','shopify-orders','shopify-prepare-ship','shopify-deposit-upload'] },
+    'dashboard','movements','pickup-orders','pickup-orders-edit','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','shopify-orders','shopify-prepare-ship','shopify-deposit-upload'] },
   accountant: { ar: 'محاسب', role: 'staff', perms: [
-    'dashboard','movements','expenses','vault','clients','suppliers',
+    'dashboard','movements','pickup-orders','expenses','vault','clients','suppliers',
     'reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export',
     'purchase-view','suppliers-tab-invoices','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-pos',
     // Read-only: settling moves vault money and stays a deliberate per-account grant.
     'carrier-settle-view'] },
   cashier: { ar: 'أمين خزنة', role: 'staff', perms: [
-    'dashboard','vault','expenses','movements','clients'] },
+    'dashboard','vault','expenses','movements','pickup-orders','clients'] },
   purchasing: { ar: 'مشتريات وموردون', role: 'staff', perms: [
-    'dashboard','suppliers','products','inventory','movements',
+    'dashboard','suppliers','products','inventory','movements','pickup-orders',
     'purchase-create','purchase-view','purchase-edit-price',
     'categories-view','categories-link-suppliers',
     'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-activity','suppliers-returns'] },
@@ -25020,7 +25057,7 @@ const NAV_ITEMS = [
   {id:'sep-3',sep:true},
   // ── Pick-Up Orders
   // ('pending-sync' lived here; the offline queue is now an inline panel on #page-transaction.)
-  {id:'pickup-orders',label:'Pick-Up Orders',labelEn:'Pick-Up Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',perm:'movements'},
+  {id:'pickup-orders',label:'Pick-Up Orders',labelEn:'Pick-Up Orders',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',perm:'pickup-orders'},
   {id:'sep-4',sep:true},
   // ── الموافقات / الموردون / المصاريف / التقارير / الخزنة
   {id:'approvals',label:'الموافقات',labelEn:'Approvals',icon:NAV_ICONS.approvals,perm:'approvals'},
@@ -25583,7 +25620,7 @@ const TRANSLATIONS = {
   dashShipOrderCount:{ar:'{n} طلب',en:'{n} orders'},
   dashShipColOrder:{ar:'الطلب',en:'Order'},
   dashShipColSince:{ar:'منذ',en:'Since'},
-  dashShipColTrack:{ar:'مراحل الشحن',en:'Shipping stages'},
+  dashShipColTrack:{ar:'حالة الشحن',en:'Shipping status'},
   /* أسماء المحطات تصف ما حدث في الشحنة، بينما الشارة المجاورة تعرض حالتها الحالية. */
   dsTrkCreated:{ar:'إنشاء الشحنة',en:'Shipment created'},
   dsTrkPicked:{ar:'استلام الناقل',en:'Carrier received'},
@@ -33082,6 +33119,9 @@ function withHeaderRefresh(key, work) {
 }
 const _apiPendingReads = new Map();
 function api(path, options = {}) {
+  if (_puRequestBlocked(path, options.method || 'GET')) {
+    return Promise.reject(new Error(currentLang === 'en' ? 'Pick-Up Orders is read-only.' : 'طلبات الاستلام للمشاهدة فقط.'));
+  }
   const method = String(options.method || 'GET').toUpperCase();
   // Share concurrent JSON reads only. No response is retained after completion.
   // Writes separate the read batches so a refresh after saving always goes to the server.
@@ -35634,6 +35674,7 @@ function _puSidebarOrderCount() {
 }
 
 function buildSidebar() {
+  _puSyncPermissions();
   const sb = qs('#sidebar');
   const navLabel = (n) => currentLang === 'en' ? (n.labelEn || n.label) : n.label;
   const pendingExpCount = expenses.filter(e => e.status === 'معلق').length;
@@ -41661,73 +41702,6 @@ function _trkIcon(name) {
   if (!p) return '';
   return `<svg class="ds-trk-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 }
-const _DASH_TRACK = [
-  { key: 'dsTrkCreated',   at: 1, ico: 'created' },
-  { key: 'dsTrkPicked',    at: 2, ico: 'picked' },
-  { key: 'dsTrkTransit',   at: 3, ico: 'transit' },  // بيغطي IN_TRANSIT (3) و OUT_FOR_DELIVERY (4)
-  { key: 'dsTrkDelivered', at: 5, ico: 'delivered' },
-];
-function _dashTrackHtml(status, tx) {
-  if (!status) return '';
-  const rank = Number(status.rank || 0);
-  /* rank 0 = مرتجع/فشل توصيل. */
-  const broken = rank === 0;
-  /* ⚠ `reached` هي المحطة الحالية على المسار، مش الـrank نفسه:
-     - OUT_FOR_DELIVERY (rank 4) محطته هي «في الطريق» (at:3) — الفرق بينها وبين
-       IN_TRANSIT تفصيلة شحن، والشارة جنبها بتسمّيها. من غير الطيّ ده كانت
-       المحطة تتحسب «تمّت» والطلب لسه في الشارع، فالمسار يبان واقف بلا محطة حالية.
-     - المكسور (rank 0) وقف عند «الاستلام» (2) — الشحنة اتستلمت فعلاً وبعدين رجعت. */
-  const reached = broken ? 2 : (rank === 4 ? 3 : rank);
-
-  /* ⚠ المسار بيرسم المحطات الأربعة دايماً — المتعدّاة والحالية واللي لسه.
-     قبل كده كان بيتقصّ عند المحطة الحالية، فطلب لسه في أول الطريق («تم الإنشاء»)
-     كان بيظهر كنقطة واحدة يتيمة في خانة فاضية: مالوش شكل مسار أصلاً، ومفيش أي
-     إشارة إن قدّامه تلات محطات. دلوقتي كل الصفوف ليها نفس الهيكل بالظبط،
-     والفرق بينها هو المحطة المضيئة — وده اللي بيخلّي العين تقارن الصفوف ببعضها. */
-  const stations = _DASH_TRACK.map((st, i) => {
-    /* ⚠ على المسار المكسور المحطة اللي وقف عندها (`reached`) بتتحسب «حالية» —
-       الشحنة فعلاً وصلتها وبعدين رجعت. اللي بعدها مش «قادمة»، هي محطات
-       مالهاش لازمة خلاص، فبتتعلّم `is-void` وبتتعرض باهتة جداً. */
-    const cls = st.at < reached ? 'is-done'
-      : st.at === reached ? (broken ? 'is-end is-stopped' : 'is-end')
-      : broken ? 'is-void' : 'is-todo';
-    const state = cls === 'is-done' ? t('dsTrkDone')
-      : cls.startsWith('is-end') ? (broken ? t('dsTrkStopped', { v: status.label }) : t('dsTrkNow'))
-      : t('dsTrkWaiting');
-    /* اسم المحطة الحالية على المسار المكسور بيبقى اسم الحالة الفعلية («مُرتجع»)
-       مش اسم المحطة («الاستلام») — الحالة هي المعلومة اللي المستخدم محتاجها. */
-    const label = (cls === 'is-end is-stopped') ? status.label : t(st.key);
-    /* الوصلة بتاخد حالة المحطة اللي بعدها فالمسار يقرا كخط متصل.
-       ⚠ `is-tail` (وصلة التحميل المتحرّكة) على الوصلة **الخارجة** من المحطة
-       الحالية، يعني الوصلة اللي قبل المحطة اللي بعدها — مش الداخلة عليها.
-       الحركة بتقول «رايح للمرحلة الجاية»، فمكانها الطريق اللي قدّامه.
-       الحالة الأولى (CREATED) كانت بتطلع من غير أي أنيميشن لما الحركة كانت على
-       الوصلة الداخلة — وهي أصلاً أول محطة فمافيش وصلة قبلها. */
-    const barCls = st.at <= reached ? 'is-on' : (broken ? 'is-void' : '');
-    const isTail = _DASH_TRACK[i - 1] && _DASH_TRACK[i - 1].at === reached;
-    const bar = i === 0 ? '' : `<span class="ds-trk-bar ${barCls}${isTail ? ' is-tail' : ''}"></span>`;
-    /* ⚠ الاسم تحت كل نقطة — من غيره النقط رموز مالهاش معنى إلا بالوقوف عليها
-       بالماوس، وده مش موجود على اللمس أصلاً. */
-    /* الأيقونة في المحطة المفعّلة بس. المكسور بياخد أيقونة تحذير بدل أيقونة
-       محطته — الرسالة هنا «وقف» مش «وصل للاستلام». */
-    const ico = cls.startsWith('is-end')
-      ? _trkIcon(broken ? 'stopped' : st.ico)
-      : '';
-    return `${bar}<span class="ds-trk-st ${cls}" title="${escHtml(`${t(st.key)} — ${state}`)}">
-        <span class="ds-trk-dot">${ico}</span>
-        <span class="ds-trk-lbl">${esc(label)}</span>
-      </span>`;
-  }).join('');
-
-  /* المحطة الحالية (`is-end`) هي الوحيدة المضيئة: نقطة أكبر مصمتة بهالة، واسم
-     ملوّن وأتقل. الباقي — متعدّاة أو قادمة — رمادي هادي. الفرق في الوزن بس،
-     فالمسار بيفضل شكل واحد متجانس والعين بتلقط «إحنا فين» فوراً. */
-  /* ⚠ `data-st` مش `status.cls`. كلاسات الشارات (`.ds-ship-transit` وإخواتها)
-     بتحمل `background` كمان مش لون بس — فحطّها على جذر المسار كان بيصبغ خلية
-     الجدول كلها بأزرق فاتح. الـdata attribute بيدّي نفس التمييز من غير ما يجرّ
-     معاه ستايل الشارة. */
-  return `${tx ? _orderStateBadge(tx) : ''}<span class="ds-trk${broken ? ' is-broken' : ''}" data-st="${escHtml(status.key || '')}"${broken ? ' data-broken="1"' : ''} role="img" aria-label="${escHtml(status.label)}">${stations}</span>`;
-}
 
 /* شبكة أعمدة (CSS grid) مش صفوف flex حرة. على شاشة عريضة الصف كان بيتمدّد بعرض
    الشاشة كلها فيفضل بينه وبين الشارات فراغ ميّت بمئات البكسلات، والأعمدة ما كانتش
@@ -41754,8 +41728,7 @@ function renderDashShipList(sel, items, emptyMsg, totalCount, showArt) {
     return;
   }
   const _total = Number.isFinite(totalCount) ? totalCount : items.length;
-  /* ⚠ مافيش عمود «الحالة» — الشارة بقت نهاية المسار نفسه (شوف `_dashTrackHtml`).
-     عمود منفصل ليها كان بيكرّر المرحلة الحالية حرفيًّا مرتين على نفس الصف. */
+  // One shared status badge per row, in the shipping-status column.
   const head = `<div class="ds-ship-head" role="row">
       <span class="ds-shc-order">${esc(t('dashShipColOrder'))}</span>
       <span class="ds-shc-age">${esc(t('dashShipColSince'))}</span>
@@ -41813,7 +41786,7 @@ function renderDashShipList(sel, items, emptyMsg, totalCount, showArt) {
       ? `<span class="ds-ship-reship" title="${escHtml(t('fdReshipRowTip', { v: fmtN(_att) }))}">${esc(t('fdReshipRowTag', { v: fmtN(_att + 1) }))}</span>`
       : '';
     const fuBadge = ISSUE_SHIP_KEYS.includes(status.key) ? _dashFuBadgeHtml(_dashFollowUpFor(tx)) : '';
-    // الشارات المساعدة — كانت في عمود «الحالة» اللي اتشال، بقت بعد نهاية المسار
+    // Keep follow-up and delivery actions beside the shipping status.
     const _extras = `${reshipTag}${fuBadge}${answerChip}${contactChip}`;
     const age = _dashShipAge(tx, status);
     const ageCell = age
@@ -41833,7 +41806,7 @@ function renderDashShipList(sel, items, emptyMsg, totalCount, showArt) {
            بعض. كانت بعد المسار فكانت بتفصل بين المسار وأزراره. */''}
       <div class="ds-shc-age">${ageCell}</div>
       <div class="ds-shc-trk">
-        ${_dashTrackHtml(status, tx)}
+        ${_orderStateBadge(tx)}
         ${_extras ? `<span class="ds-trk-extra">${_extras}</span>` : ''}
       </div>
       <div class="ds-shc-act">${bostaBizBtn}${menu}</div>
@@ -46247,11 +46220,19 @@ function updateMovementSelectionActions() {
   const exchBtn = qs('#mov-exchange-from-selection-btn');
   const retBtn2 = qs('#mov-return-from-selection-btn2');
   const bulkCancelBtn = qs('#bulk-cancel-btn');
+  const selectedTxs = [...selectedMovIds].map(id => transactions.find(tx => tx._id === id)).filter(Boolean);
+  const canExportDetails = selectedTxs.length === n && n > 0 && !selectedTxs.some(_isPurchaseDetailsRestricted);
+  ['bulk-print-btn','bulk-export-btn'].forEach(id => {
+    const button = qs('#' + id);
+    if (button) button.style.display = canExportDetails ? 'inline-flex' : 'none';
+  });
+  const bostaButton = qs('#bulk-bosta-btn');
+  if (bostaButton) bostaButton.style.display = _puCanEdit() && selectedTxs.length === n && n > 0
+    && selectedTxs.every(tx => tx.type === 'مبيعات') && selectedTxs.some(_isBulkBostaEligible) ? 'inline-flex' : 'none';
 
   if (bulkBar) bulkBar.style.display = n > 0 ? 'flex' : 'none';
 
   if (n > 0) {
-    const selectedTxs = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
     const totalVal = selectedTxs.reduce((s, t) => s + (t.total || 0), 0);
     const infoEl = qs('#mov-bulk-info');
     // The aggregate value of a selection is financial data, same rule as the vault totals bar:
@@ -48719,7 +48700,7 @@ function setFxSort(ctx, sortId) {
   else { movPage = 1; renderMovements(); }
 }
 
-/* Per-user Movements sort preference — default is always "priority-desc" (الأولوية الذكية)
+/* Per-user Movements sort preference — default is "date-desc" (newest first)
    for everyone; only a user who explicitly picks another sort keeps that choice, and only
    on their own account (keyed by username), not globally. */
 function _movSortPrefKey() {
@@ -48734,7 +48715,7 @@ function _saveMovSortPref(sortId) {
 function _loadMovSortPref() {
   const key = _movSortPrefKey();
   const saved = key ? (() => { try { return localStorage.getItem(key); } catch(_) { return null; } })() : null;
-  const sortId = (saved && FX_SORT_OPTIONS.mov.some(o => o.id === saved)) ? saved : 'priority-desc';
+  const sortId = (saved && FX_SORT_OPTIONS.mov.some(o => o.id === saved)) ? saved : 'date-desc';
   fxState.mov.sort = sortId;
   const labelEl = qs('#mov-sort-label');
   const opt = FX_SORT_OPTIONS.mov.find(o => o.id === sortId);
@@ -50077,7 +50058,7 @@ function renderMovCompactCard(tx, grid = false) {
       <span class="is-paid"><small>${esc(t('gcPaid'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : exchangeSalePaidDisplayAmount(tx)}</bdi></span>
       <span class="is-remaining"><small>${esc(t('gcRemaining'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</bdi></span>
     </div>
-    <div class="mov-compact-footer">${sale ? `<span class="mov-compact-pickup"><span>${t('ivPickupStatus')}</span>${_puStatusBadge(_puDisplayStatus(tx), tx)}</span>` : _txTypeInlineBadge(tx)}${isCancelled ? `<span class="badge badge-status-cancelled">${esc(_statusLabel('ملغي'))}</span>` : ''}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
+    <div class="mov-compact-footer">${sale ? `<span class="mov-compact-pickup"><span>${t('ivPickupStatus')}</span>${_puStatusBadge(_puDisplayStatus(tx), tx, false, true)}</span>` : _txTypeInlineBadge(tx)}${isCancelled ? `<span class="badge badge-status-cancelled">${esc(_statusLabel('ملغي'))}</span>` : ''}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
   </div>`;
 }
 
@@ -50518,7 +50499,7 @@ function renderMovementTxRow(tx) {
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
     <td data-col="discount" style="text-align:center;white-space:nowrap">${_movDiscountBadge(tx)}</td>
-    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx), tx, true) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
+    <td data-col="pickup" style="text-align:center;white-space:nowrap">${tx.type==='مبيعات' ? _puStatusBadge(_puDisplayStatus(tx), tx, true, true) : '<span style="color:var(--muted);font-size:.8rem">—</span>'}</td>
     <td data-col="bosta" style="text-align:center;white-space:nowrap"><span class="mov-bosta-line">${_bostaStatusBadge(tx, { hideStatus: true })}${_awbPrintedMarkHtml((tx.bostaAwbPrints || []).filter(p => !p.trackingNumber || !tx.bostaTrackingNumber || p.trackingNumber === tx.bostaTrackingNumber))}</span></td>
     <td data-col="tag" style="text-align:center" onclick="event.stopPropagation()" data-tag-cell="${esc(tx._id)}">${renderTxTagsCell(tx._id)}</td>
     <td data-col="employee" class="mov-col-employee"><div class="mov-col-employee-wrap" title="${esc(tx.employee||'')}">${tx.shopifyOrderId ? `<a href="https://admin.shopify.com/store/soulia-2/orders/${esc(tx.shopifyOrderId)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="mov-emp-initials-sm" title="فتح أوردر Shopify #${esc(tx.shopifyOrderId)}" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">${_SHOPIFY_LOGO_SVG}</a>` : `<span class="mov-emp-initials-sm">${_empInitialsText(tx.employee)}</span>`}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div></td>
@@ -50934,8 +50915,7 @@ function _mkSyncReveal() {
 }
 
 function renderMovements() {
-  // Ensure orders in prep groups show as 'Preparing' in the pickup status column
-  if (typeof _puSyncPrepStatusToTransactions === 'function') _puSyncPrepStatusToTransactions();
+  // Render the recorded transaction status; cached prep groups are not authoritative.
   // Built once per render (same rule as the Shopify table's _spCtx.unshipped) and read
   // by renderMovementTxRow() via this module-level var — not a per-row rescan of both arrays.
   _movUnshippedIdx = _unshippedSiblingIndex();
@@ -51314,6 +51294,7 @@ function renderMovements() {
 const debouncedRenderMovements = debounce(() => { movPage = 1; renderMovements(); }, 250);
 
 function _refreshPickupOrders() {
+  if (!hasPerm('pickup-orders')) return Promise.resolve();
   return api('/transactions/pickup-orders').then(all => {
     _pickupOrders = all;
     if (Array.isArray(transactions)) {
@@ -55985,11 +55966,21 @@ async function _bsfPrint() {
 }
 
 
+function _isBulkBostaEligible(tx) {
+  return !!tx && tx.type === 'مبيعات' && !tx.cancelled && !tx.archived && !tx.bostaOrderId
+    && _bsfIsBostaOrder(tx) && !_bostaCaseId(tx)
+    && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus || '');
+}
 async function bulkSendToBosta() {
+  if (!_puRequireEdit()) return;
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
-  const selected = [...selectedMovIds]
-    .map(id => transactions.find(t => t._id === id))
-    .filter(t => t && t.type === 'مبيعات' && !t.cancelled && !t.bostaOrderId && ['Preparing', 'Ready', 'Picked-Up', 'Shipped'].includes(t.pickupStatus || ''));
+  const picked = [...selectedMovIds].map(id => transactions.find(tx => tx._id === id)).filter(Boolean);
+  if (picked.length !== selectedMovIds.size || picked.some(tx => tx.type !== 'مبيعات')) {
+    toast(currentLang === 'en' ? 'Bosta is available for sales orders only.' : 'بوسطة متاحة لطلبات المبيعات فقط.', true);
+    return;
+  }
+  const selected = picked.filter(tx => !tx.cancelled && !tx.archived && !tx.bostaOrderId && _bsfIsBostaOrder(tx)
+    && ['Preparing','Ready','Picked-Up','Shipped'].includes(tx.pickupStatus || ''));
   const eligible = selected.filter(tx => !_bostaCaseId(tx));
   const linkedCount = selected.length - eligible.length;
   if (linkedCount) toast(t('bsfBulkCases', { n: fmtN(linkedCount) }));
@@ -58877,6 +58868,7 @@ function getFilteredExportData(txTypeFilter) {
   const to = qs('#mov-to')?.value;
   const tokens = normalizeUiSearch(qs('#mov-search')?.value || '').split(/\s+/).filter(Boolean);
   return transactions.filter(tx => {
+    if (_isPurchaseDetailsRestricted(tx)) return false;
     if (from && tx.date && tx.date.slice(0, 10) < from) return false;
     if (to && tx.date && tx.date.slice(0, 10) > to) return false;
     if (txTypeFilter === 'مبيعات' && tx.type !== 'مبيعات') return false;
@@ -58900,6 +58892,7 @@ function showExportModal(isSelected = false) {
   let previewData = isSelected
     ? [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean)
     : getFilteredExportData('all');
+  if (previewData.some(_isPurchaseDetailsRestricted)) { _invoiceDetailsDenied(); return; }
 
   if (!previewData.length && !isSelected) {
     toast(t('noTransactionsToExport'), true);
@@ -59032,6 +59025,7 @@ function performExport(type) {
 
   const rawInfo = window._exportRawData || {};
   const exportData = rawInfo.allData || [];
+  if (exportData.some(_isPurchaseDetailsRestricted)) { _invoiceDetailsDenied(); return; }
   if (!exportData.length) { toast('لا توجد بيانات للتصدير', true); return; }
 
   const format = document.querySelector('input[name="export-format"]:checked')?.value || 'excel';
@@ -59439,6 +59433,8 @@ function exportBulkRefMissing() {
 }
 
 function exportSelectedExcel() {
+  const selected = [...selectedMovIds].map(id => transactions.find(tx => tx._id === id)).filter(Boolean);
+  if (selected.some(_isPurchaseDetailsRestricted)) { _invoiceDetailsDenied(); return; }
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
   if (!isAdmin()) { requireExportOtp('تصدير المعاملات المحددة', () => showExportModal(true)); return; }
   showExportModal(true);
@@ -59859,7 +59855,14 @@ function _invSheetFoot(tx, dateStr, pageNo, pageCount) {
   </div>`;
 }
 
+function _isPurchaseDetailsRestricted(tx) {
+  return !!tx && (!!tx.purchaseDetailsHidden || (!isAdmin() && ['مشتريات','مرتجع مشتريات'].includes(tx.type)));
+}
+function _invoiceDetailsDenied() {
+  toast(currentLang === 'en' ? 'Purchase invoice details and printing are restricted to admins.' : 'تفاصيل وطباعة فواتير الشراء متاحة للمدير فقط.', true);
+}
 function buildInvoiceHtml(tx) {
+  if (_isPurchaseDetailsRestricted(tx)) return '';
   const isPur   = tx.type === 'مشتريات';
   const isSales = tx.type === 'مبيعات';
   const isRet   = tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات';
@@ -60102,6 +60105,8 @@ setTimeout(go,4000);})();<\/script>`;
 async function bulkPrintPDF() {
   if (!selectedMovIds.size) { toast('لم يتم تحديد أي معاملات', true); return; }
   const selected = [...selectedMovIds].map(id => transactions.find(t => t._id === id)).filter(Boolean);
+  if (selected.some(_isPurchaseDetailsRestricted)) { _invoiceDetailsDenied(); return; }
+  if (selected.length !== selectedMovIds.size) { toast(t('noTransactionsToExport'), true); return; }
   const w = window.open('', '_blank');
   if (!w) { toast('اسمح بفتح نافذة الطباعة', true); return; }
   const identityLoads = await Promise.allSettled(selected.map(tx => window.InvoiceUnitIdentities?.ensure(tx)));
@@ -60128,7 +60133,7 @@ function invoiceImageActions(source, id, buttons = false) {
 
 async function printInvoice(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
-  if (tx.purchaseDetailsHidden) { toast('طباعة تفاصيل الشراء متاحة للمدير فقط', true); return; }
+  if (_isPurchaseDetailsRestricted(tx)) { _invoiceDetailsDenied(); return; }
   const w = window.open('', '_blank');
   if (!w) { toast('اسمح بفتح نافذة الطباعة', true); return; }
   try { await window.InvoiceUnitIdentities?.ensure(tx); }
@@ -80642,7 +80647,8 @@ function _clearColsPref(base) {
   } catch (_) {}
 }
 
-const MOV_COLS_KEY = 'soulia_mov_cols_hidden';
+const MOV_COLS_KEY = 'soulia_mov_cols_hidden_v2';
+const MOV_COLS_DEFAULT_HIDDEN = ['employee'];
 const MOV_COLS = [
   { id:'ref',       i18n:'colRef',            ar:'المرجع',         en:'Ref.' },
   { id:'date',      i18n:'date',              ar:'التاريخ',        en:'Date' },
@@ -80662,7 +80668,19 @@ const MOV_COLS = [
 ];
 // Column widths follow visible content through the native table layout in
 // design-system.css; spare viewport width is shared by the visible columns.
-function _getHiddenMovCols() { return _readColsPref(MOV_COLS_KEY); }
+function _getHiddenMovCols() {
+  try {
+    const saved = localStorage.getItem(_colsPrefKey(MOV_COLS_KEY));
+    if (saved !== null) {
+      const values = JSON.parse(saved);
+      if (Array.isArray(values)) return new Set(values);
+    }
+    // Apply the new default once while preserving other hidden columns.
+    const hidden = new Set([...MOV_COLS_DEFAULT_HIDDEN, ..._readColsPref('soulia_mov_cols_hidden')]);
+    _writeColsPref(MOV_COLS_KEY, hidden);
+    return hidden;
+  } catch (_) { return new Set(MOV_COLS_DEFAULT_HIDDEN); }
+}
 function _setHiddenMovCols(set) { _writeColsPref(MOV_COLS_KEY, set); }
 function applyMovColsVisibility() {
   const hidden = _getHiddenMovCols();
@@ -80679,7 +80697,7 @@ function toggleMovCol(colId) {
   _renderMovColsMenu();
 }
 function resetMovCols() {
-  _clearColsPref(MOV_COLS_KEY);
+  _setHiddenMovCols(new Set(MOV_COLS_DEFAULT_HIDDEN));
   applyMovColsVisibility();
   _renderMovColsMenu();
   toast(currentLang==='en' ? 'Columns reset' : 'تم استعادة الأعمدة الافتراضية');
@@ -83085,8 +83103,8 @@ function renderUsers() {
     </span>`;
 
     return `<tr class="${isInactive ? 'users-row-inactive' : ''}">
-      <td data-col="u-user"><span style="display:flex;align-items:center;gap:9px">${avatarHtml}${nameHtml}</span></td>
-      <td data-col="u-job">${esc(jobTitleLabel(u.jobTitle) || role.label)}${u.phone ? `<div class="users-phone-sub">${esc(u.phone)}</div>` : ''}</td>
+      <td data-col="u-user"><span class="users-identity">${avatarHtml}${nameHtml}</span></td>
+      <td data-col="u-job"><div class="users-job-cell"><span class="users-job-title">${esc(jobTitleLabel(u.jobTitle) || role.label)}</span>${u.phone ? `<bdi class="users-phone-sub">${esc(u.phone)}</bdi>` : ''}</div></td>
       <td data-col="u-role" style="text-align:center"><span class="user-role-badge ${role.cls}">${esc(role.label)}</span></td>
       <td data-col="u-status" style="text-align:center"><span class="user-status-pill ${isInactive ? 'is-inactive' : 'is-active'}">${isInactive ? 'معطّل' : 'مفعّل'}</span></td>
       <td data-col="u-pass" style="text-align:center">${_userPasswordCellHtml(u)}</td>
@@ -83533,8 +83551,21 @@ function openUserModal(id) {
       <button class="btn btn-primary" onclick="saveUser('${id || ''}')">${u ? 'حفظ التعديلات' : 'إضافة المستخدم'}</button>
     </div>
   </div>`, 'max-width:760px;padding:0;overflow:hidden;max-height:none', { lockDismiss: true });
+  qs('#modal-content')?.classList.add('user-modal-host');
+  _umSyncViewport();
   refreshPermModules();
 }
+
+function _umSyncViewport() {
+  if (!qs('#modal-content.user-modal-host') || !qs('#modal-overlay.active')) return;
+  const viewport = window.visualViewport;
+  const overlay = qs('#modal-overlay');
+  overlay.style.setProperty('--um-viewport-height', (viewport?.height || window.innerHeight) + 'px');
+  overlay.style.setProperty('--um-viewport-top', (viewport?.offsetTop || 0) + 'px');
+}
+window.addEventListener('resize', _umSyncViewport);
+window.visualViewport?.addEventListener('resize', _umSyncViewport);
+window.visualViewport?.addEventListener('scroll', _umSyncViewport);
 
 /** Job-title change: toggles the custom free-text field (unchanged behaviour),
  *  then OFFERS the matching permission preset. It never applies it silently —
@@ -83674,6 +83705,10 @@ function togglePermModuleAll(masterCb) {
   refreshPermModules();
 }
 function onPermCbChange(cb) {
+  if (cb.value === 'pickup-orders' && !cb.checked) {
+    const edit = qs('.perm-cb[value="pickup-orders-edit"]');
+    if (edit) edit.checked = false;
+  }
   // Removing order access also removes the action that depends on it.
   if (cb.value === 'shopify-orders' && !cb.checked) {
     const prepareShip = qs('.perm-cb[value="shopify-prepare-ship"]');
@@ -83682,6 +83717,10 @@ function onPermCbChange(cb) {
   refreshPermModules();
 }
 function refreshPermModules() {
+  if (qs('.perm-cb[value="pickup-orders-edit"]')?.checked) {
+    const view = qs('.perm-cb[value="pickup-orders"]');
+    if (view) view.checked = true;
+  }
   // Granting Prep & Ship must also let the user reach the orders screen.
   if (qs('.perm-cb[value="shopify-prepare-ship"]')?.checked) {
     const orders = qs('.perm-cb[value="shopify-orders"]');
@@ -95567,18 +95606,13 @@ let _puGroupCollapsed   = {};       // groupKey → collapsed:boolean
 
 // Backend pickupStatus/pickupRef own membership; local storage only caches display metadata.
 let _puPrepGroups       = [];       // array of { prepRef, note, shipCo, orders:[] }
-/* Has _puLoadPrepGroups run? `_puPrepGroups` being empty is ambiguous on its own
-   — it means "no groups" only AFTER a load, and "never asked" before one. Only
-   the Pick-Up page loads them, so every other page sees [] and must not read
-   that as "no order is being prepared". See _puSyncPrepStatusToTransactions. */
-let _puPrepGroupsLoaded = false;
 let _prepModalSelected  = new Set();// selected order ids in prep modal
 let _prepModalAllOrders = [];       // pending orders shown in prep modal
 
 const _PU_PREP_LS_KEY = 'soulia_pu_prep_groups_v1';
 const _puPrepAddingIds = new Set();
 
-function _puSavePrepGroups() {
+function _puSavePrepGroups(changedOrders = []) {
   // The initiating drag and its socket echo can both add an order. Deduplicate
   // by order id before storing or rendering so repeated events are harmless.
   const groupsByRef = new Map();
@@ -95617,41 +95651,25 @@ function _puSavePrepGroups() {
     }));
     localStorage.setItem(_PU_PREP_LS_KEY, JSON.stringify(slim));
   } catch(_) {}
-  _puSyncPrepStatusToTransactions();
+  _puSyncPrepStatusToTransactions(changedOrders);
 }
 
 /**
- * Mirror the client-side prep groups onto the in-memory `transactions` array so
- * the Movements pick-up column shows «Preparing» for an order whose group has
- * not been persisted yet.
- *
- * ⚠ `_puPrepGroups` is filled ONLY by `_puLoadPrepGroups`, which runs only when
- * the PICK-UP page loads. Anywhere else it is `[]` — not "no groups exist", but
- * "this page never asked". The reset branch below therefore cannot run off an
- * empty array: it did, and it silently overwrote a correct `Preparing` (fetched
- * from the backend) back to `Pending` on every `renderMovements()` call. An
- * order confirmed straight into a prep group from the Shopify page showed up in
- * the prep card correctly and as «Pending» in سجل المعاملات at the same time.
- *
- * So: the map only ever ADDS Preparing. Clearing a stale one is scoped to the
- * page that actually owns the groups, via `authoritative` — passed true by the
- * Pick-Up page's own load/save, and never by the generic Movements render.
- * The backend value is the default everywhere else.
+ * Mirror only rows changed by a successful preparation action. Group membership
+ * is a cached view: a single socket update can rebuild it from a partial pickup
+ * list, and a transaction refresh can be newer than that list. Neither presence
+ * nor absence in those groups is evidence that a transaction changed status.
  */
-function _puSyncPrepStatusToTransactions() {
+function _puSyncPrepStatusToTransactions(changedOrders = []) {
   if (!Array.isArray(transactions)) return;
-  const prepOrderMap = new Map();
-  _puPrepGroups.forEach(g => g.orders.forEach(o => prepOrderMap.set(String(o._id), g.prepRef)));
-  transactions.forEach(tx => {
-    if (prepOrderMap.has(String(tx._id))) {
-      tx.pickupStatus = 'Preparing';
-      tx.pickupRef    = prepOrderMap.get(String(tx._id));
-    } else if (_puPrepGroupsLoaded && (tx.pickupStatus || 'Pending') === 'Preparing') {
-      // Left every known group — and the set is complete, so this is real.
-      tx.pickupStatus = 'Pending';
-      tx.pickupRef    = null;
+  const byId = new Map(transactions.map(tx => [String(tx._id), tx]));
+  for (const order of changedOrders) {
+    const tx = byId.get(String(order._id));
+    if (!tx) continue;
+    for (const field of ['pickupStatus', 'pickupRef', 'pickupDate', 'pickupBy', 'prepChecked']) {
+      if (Object.prototype.hasOwnProperty.call(order, field)) tx[field] = order[field];
     }
-  });
+  }
 }
 
 function _puLoadPrepGroups(orders) {
@@ -95689,9 +95707,7 @@ function _puLoadPrepGroups(orders) {
       orders: grpOrders,
     };
   });
-  // From here on the array holds every group that exists, so a Preparing row
-  // missing from it has genuinely left the prep stage and may be cleared.
-  _puPrepGroupsLoaded = true;
+  // This may be a partial list rebuilt by a live event, not a complete snapshot.
 }
 
 // ── Generate a unified group reference: RRR-DDMON ────────────
@@ -95708,6 +95724,7 @@ function _genPrepRef() {
 //  PREPARATION GROUP MODAL
 // ════════════════════════════════════════════════════════════════
 async function openPrepGroupModal() {
+  if (!_puRequireEdit()) return;
   _prepModalSelected.clear();
   const modal = qs('#pu-prep-modal');
   if (modal) { modal.style.display = 'flex'; requestAnimationFrame(() => {
@@ -95781,7 +95798,7 @@ function _buildPrepModalList() {
     const qty = (o.items||[]).reduce((s,i)=>s+(i.qty||0),0);
     const bg = checked ? 'background:color-mix(in srgb,#2563eb 8%,var(--surface));' : '';
     return `<label data-prep-order-id="${esc(o._id)}" class="pu-prep-order-row${checked?' selected':''}" style="${bg}">
-      <input type="checkbox" data-id="${esc(o._id)}" ${checked?'checked':''} onchange="prepModalRowCheck(this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563eb;justify-self:center">
+      <input type="checkbox" data-id="${esc(o._id)}" ${checked?'checked':''} data-pu-edit onchange="prepModalRowCheck(this)" style="width:15px;height:15px;cursor:pointer;accent-color:#2563eb;justify-self:center">
       <span style="font-weight:700;color:var(--accent);font-family:monospace;font-size:.82rem;white-space:nowrap">${esc(o.ref||'—')}</span>
       <span style="font-weight:600;font-size:.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(o.client||'')}">${esc(o.client||'—')}</span>
       <span style="font-size:.8rem;color:var(--muted);text-align:center">${fmtN(qty)}</span>
@@ -95847,6 +95864,7 @@ function prepModalToggleAll(checked) {
 }
 
 async function submitPrepGroup() {
+  if (!_puRequireEdit()) return;
   const ids = [..._prepModalSelected];
   if (!ids.length) return toast(t('puSelectAtLeastOne'), true);
 
@@ -95875,7 +95893,7 @@ async function submitPrepGroup() {
 
   _puPrepGroups.push({ prepRef, note, shipCo: detectedShip, orders, createdAt, createdAtIso, createdBy });
   orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; o.prepChecked = false; });
-  _puSavePrepGroups();
+  _puSavePrepGroups(orders);
 
   closePrepGroupModal();
   toast(t('puPrepGroupCreated',{ref:prepRef,n:fmtN(ids.length)}));
@@ -95883,6 +95901,7 @@ async function submitPrepGroup() {
 }
 
 async function deletePrepGroup(prepRef) {
+  if (!_puRequireEdit()) return;
   const grp = _puPrepGroups.find(g=>g.prepRef===prepRef);
   if (!grp) return;
   const ok = await _puConfirm(t('puDeleteGroupConfirm',{ref:prepRef,n:grp.orders.length}), t('puDeleteGroupTitle'), t('delete'), '#dc2626');
@@ -95907,7 +95926,7 @@ async function deletePrepGroup(prepRef) {
     }
   });
   _puPrepGroups = _puPrepGroups.filter(g=>g.prepRef!==prepRef);
-  _puSavePrepGroups();
+  _puSavePrepGroups(grp.orders);
   toast(t('puGroupDeleted'));
   renderPickupBoard();
 }
@@ -95927,6 +95946,7 @@ function _puUpdateConfirmRunHint() {
 }
 
 function prepGroupMoveToReady(prepRef) {
+  if (!_puRequireEdit()) return;
   const grp = _puPrepGroups.find(g=>g.prepRef===prepRef);
   if (!grp) return;
   const preparedOrders = grp.orders.filter(o=>!!o.prepChecked);
@@ -95956,6 +95976,7 @@ function prepGroupMoveToReady(prepRef) {
 }
 
 async function puConfirmMoveToReady() {
+  if (!_puRequireEdit()) return;
   if (!_puConfirmGroupIds.length) return;
   const date = qs('#pu-confirm-date')?.value || todayLocalISO();
   const btn  = qs('#pu-confirm-ok-btn');
@@ -95995,6 +96016,7 @@ async function puConfirmMoveToReady() {
       _puSavePrepGroups();
       delete modal.dataset.prepRef;
     }
+    _puSyncPrepStatusToTransactions(_pickupOrders.filter(o => _puConfirmGroupIds.includes(String(o._id))));
     toast(t('puMovedToReady',{n:fmtN(_puConfirmGroupIds.length),ref}));
     closePuConfirmModal();
     _puMarkLanding(ref);
@@ -96034,6 +96056,30 @@ const _puTipObserver = new MutationObserver(() => {
 function _puCanViewShipmentTotals() {
   return typeof currentUser !== 'undefined' && ['admin', 'manager'].includes(currentUser?.role);
 }
+
+function _puCanEdit() {
+  return hasPerm('pickup-orders') && hasPerm('pickup-orders-edit');
+}
+function _puRequestBlocked(path, method) {
+  if (currentPage !== 'pickup-orders' || _puCanEdit() || ['GET','HEAD','OPTIONS'].includes(String(method).toUpperCase())) return false;
+  // Fetching an existing label is a read; the separate print-record endpoint is a write.
+  if (/^\/shipping\/awb\/[^/?]+(?:\?.*)?$/.test(path)) return false;
+  return /^\/(?:transactions|shipping|inventory-units|inventory-packs|after-sales)(?:\/|$)/.test(path);
+}
+function _puRequireEdit() {
+  if (_puCanEdit()) return true;
+  toast(currentLang === 'en' ? 'Pick-Up Orders is read-only. You do not have permission to make changes.' : 'طلبات الاستلام للمشاهدة فقط. ليس لديك صلاحية إجراء تعديلات.', true);
+  return false;
+}
+function _puSyncPermissions() {
+  document.body.classList.toggle('pu-readonly', !_puCanEdit());
+  const requestLabel = qs('.bp-request-button [data-i18n="puRequestBostaPickup"]');
+  if (requestLabel) requestLabel.textContent = _puCanEdit() ? t('puRequestBostaPickup') : (currentLang === 'en' ? 'View pickup requests' : 'عرض طلبات الاستلام');
+  const subtitle = qs('#page-pickup-orders .page-subtitle');
+  if (subtitle) {
+    subtitle.textContent = _puCanEdit() ? t('puSubtitle') : (currentLang === 'en' ? 'View and track pickup orders · Read only' : 'عرض ومتابعة طلبات الاستلام · مشاهدة فقط');
+  }
+}
 function _puSetShipmentTotal(id, amount) {
   const el = qs('#' + id);
   if (!el) return;
@@ -96041,6 +96087,31 @@ function _puSetShipmentTotal(id, amount) {
   el.hidden = !allowed;
   el.textContent = allowed ? fmtJT(amount) : '';
 }
+function _puAttachGroupPreview(header, group, stage) {
+  const en = currentLang === 'en';
+  const rows = group.orders || [];
+  let meta = _orderStateMeta({ pickupStatus: stage === 'prep' ? 'Preparing' : stage === 'pending' ? 'Pending' : 'Ready' });
+  if (!['prep', 'pending'].includes(stage) && rows.length) {
+    const counts = new Map();
+    rows.forEach(row => {
+      const state = _orderStateMeta(row);
+      const key = state.previewKey || state.key;
+      const entry = counts.get(key) || { meta: state, count: 0 };
+      entry.count++;
+      counts.set(key, entry);
+    });
+    const sorted = [...counts.values()].sort((a, b) => b.count - a.count);
+    meta = { ...sorted[0].meta, note: '' };
+    if (sorted.length > 1) {
+      meta.label = en ? 'Mixed shipment statuses' : 'حالات شحن متنوعة';
+      meta.description = en ? 'Orders in this group are at different stages.' : 'طلبات المجموعة في مراحل مختلفة من الشحن.';
+      meta.note = sorted.map(entry => `${entry.meta.shortLabel || entry.meta.label}: ${fmtN(entry.count)}`).join(' · ');
+    }
+  }
+  if (!meta.note) meta.note = en ? `${rows.length} orders` : `${fmtN(rows.length)} طلبات`;
+  window.SouliaStatusPreview?.attachHeader(header, meta);
+}
+
 function _puShowQuickTip(target, grp) {
   _puHideQuickTip();
   if (!target.isConnected) return;
@@ -96261,9 +96332,8 @@ function _puBuildPrepGroupCard(grp) {
   header.className = 'pu-group-header';
   header.style.cursor = 'pointer';
   header.title = t('puCardClickHint');
-  header.draggable = true;
-  header.addEventListener('mouseenter', () => _puShowQuickTip(header, grp));
-  header.addEventListener('mouseleave', _puHideQuickTip);
+  header.draggable = _puCanEdit();
+  _puAttachGroupPreview(header, grp, 'prep');
   header.addEventListener('dragstart', e => {
     _puDragGroupKey = grp.prepRef;
     _puDragColType  = 'prep';
@@ -96325,12 +96395,12 @@ function _puBuildPrepGroupCard(grp) {
   footer.addEventListener('dragstart', e => e.stopPropagation());
   footer.innerHTML = `
     <div class="pu-group-footer-left">
-      ${hasDirty ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puGroupSaveAll('${esc(grp.prepRef)}')">${S.save} ${t('puSaveChanges')}</button>` : ''}
-      <button class="pu-card-btn pu-card-btn-danger" onclick="event.stopPropagation();deletePrepGroup('${esc(grp.prepRef)}')" title="${esc(t('puDeleteGroupBtnTitle'))}" style="padding:3px 7px">${S.trash}</button>
+      ${hasDirty ? `<button class="pu-card-btn pu-card-btn-primary" data-pu-edit onclick="event.stopPropagation();puGroupSaveAll('${esc(grp.prepRef)}')">${S.save} ${t('puSaveChanges')}</button>` : ''}
+      <button class="pu-card-btn pu-card-btn-danger" data-pu-edit onclick="event.stopPropagation();deletePrepGroup('${esc(grp.prepRef)}')" title="${esc(t('puDeleteGroupBtnTitle'))}" style="padding:3px 7px">${S.trash}</button>
     </div>
     <div class="pu-prep-actions">
       <button class="pu-card-btn pu-prep-open" onclick="event.stopPropagation();openPuCardOrdersModal('${esc(grp.prepRef)}', 'prep')">${t('puViewOrders')}</button>
-      <button class="pu-card-btn pu-card-btn-primary pu-prep-move" ${checkedCount ? '' : 'disabled'} onclick="event.stopPropagation();prepGroupMoveToReady('${esc(grp.prepRef)}')">${S.truck} ${t('puMovePreparedCompact',{n:fmtN(checkedCount)})}</button>
+      <button class="pu-card-btn pu-card-btn-primary pu-prep-move" ${checkedCount ? '' : 'disabled'} data-pu-edit onclick="event.stopPropagation();prepGroupMoveToReady('${esc(grp.prepRef)}')">${S.truck} ${t('puMovePreparedCompact',{n:fmtN(checkedCount)})}</button>
     </div>
   `;
   wrap.appendChild(footer);
@@ -96466,7 +96536,7 @@ function renderPickupBoard() {
   if (pendingCol) {
     pendingCol.innerHTML = '';
     // Flatten all pending orders from filtered groups into compact rows
-    const allPendingOrders = pendingFiltered.flatMap(g => g.orders);
+    const allPendingOrders = pendingFiltered.flatMap(g => g.orders.filter(o => matchOrder(o, pendingQ, g)));
     // Update static create-btn label to reflect selection count
     const staticCreateBtn = qs('#pu-pt-create-btn-static');
     if (staticCreateBtn) {
@@ -96560,12 +96630,12 @@ function _puPendingHeaderHTML(allSel, someSel, cnt) {
   const S = _puSVG;
   return `
     <label class="pu-pt-check-wrap" title="${esc(t('puSelectAll'))}">
-      <input type="checkbox" id="pu-pt-check-all" ${allSel?'checked':''} ${(!allSel&&someSel)?'data-indeterminate="true"':''} onchange="puPtToggleAll(this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer">
+      <input type="checkbox" id="pu-pt-check-all" ${allSel?'checked':''} ${(!allSel&&someSel)?'data-indeterminate="true"':''} data-pu-edit onchange="puPtToggleAll(this.checked)" style="width:14px;height:14px;accent-color:#2563eb;cursor:pointer">
     </label>
     <span style="font-size:.71rem;color:var(--muted);font-weight:700;flex:1">${t('puPtRefClient')}</span>
     <span class="pu-pt-shift-hint" title="${esc(t('puPtShiftHintTitle'))}">${t('puPtShiftHint')}</span>
     <span style="font-size:.71rem;color:var(--muted);font-weight:700;white-space:nowrap">${t('puPtValue')}</span>
-    ${cnt > 0 ? `<button class="pu-pt-move-btn" onclick="puPtMoveSelected()" title="${esc(t('puPtMoveBtnTitle'))}">
+    ${cnt > 0 ? `<button class="pu-pt-move-btn" data-pu-edit onclick="puPtMoveSelected()" title="${esc(t('puPtMoveBtnTitle'))}">
       ${S.pkg} ${t('puPtMoveBtn',{n:fmtN(cnt)})}
     </button>` : ''}
   `;
@@ -96602,7 +96672,7 @@ function _puBuildPendingTable(orders) {
     const row = document.createElement('div');
     row.className = 'pu-pt-row' + (checked ? ' pu-pt-row-sel' : '') + (isNew ? ' pu-pt-row-new' : '');
     row.dataset.oid = oid;
-    row.draggable = true;
+    row.draggable = _puCanEdit();
     row.title = t('puPtRowTitle');
     row.addEventListener('dragstart', e => {
       // Shift+click is range-select, not drag — otherwise a slight mouse move
@@ -96680,6 +96750,7 @@ function _puBindShiftHint(list) {
 // ── Add pending order(s) to an existing prep group ───────────
 let _puDragPendingId = null;
 async function _puAddPendingToPrepGroup(orderId, prepRef) {
+  if (!_puRequireEdit()) return;
   const grp = _puPrepGroups.find(g => g.prepRef === prepRef);
   if (!grp) { toast(t('puAddOrderFailed'), true); return; }
 
@@ -96720,7 +96791,7 @@ async function _puAddPendingToPrepGroup(orderId, prepRef) {
     _puPendingSelected.delete(String(o._id));
   });
 
-  _puSavePrepGroups();
+  _puSavePrepGroups(toAdd);
   const msg = toAdd.length === 1
     ? t('puAddedOneTo',{ref:toAdd[0].ref||t('puDragOrderWord'),group:prepRef})
     : t('puAddedManyTo',{n:toAdd.length,group:prepRef});
@@ -96730,6 +96801,7 @@ async function _puAddPendingToPrepGroup(orderId, prepRef) {
 
 // ── Pending table checkbox helpers ────────────────────────────
 function puPtRowCheck(evtOrOid, oidOrChecked, checkedArg) {
+  if (!_puRequireEdit()) return;
   // Supports both puPtRowCheck(event, oid, checked) and old puPtRowCheck(oid, checked)
   let evt, oid, checked;
   if (typeof evtOrOid === 'object' && evtOrOid !== null) {
@@ -96794,6 +96866,7 @@ function puPtRowCheck(evtOrOid, oidOrChecked, checkedArg) {
 }
 
 function puPtToggleAll(checked) {
+  if (!_puRequireEdit()) return;
   const prepIds = new Set(_puPrepGroups.flatMap(g=>g.orders.map(x=>String(x._id))));
   const allPending = _pickupOrders.filter(o=>(o.pickupStatus||'Pending')==='Pending'&&!prepIds.has(String(o._id)));
   allPending.forEach(o => {
@@ -96805,6 +96878,7 @@ function puPtToggleAll(checked) {
 }
 
 async function puPtMoveSelected() {
+  if (!_puRequireEdit()) return;
   if (!_puPendingSelected.size) return;
   const ids = [..._puPendingSelected];
   const orders = _pickupOrders.filter(o => ids.includes(String(o._id)) && (o.pickupStatus||'Pending')==='Pending');
@@ -96827,8 +96901,8 @@ async function puPtMoveSelected() {
     return;
   }
   _puPrepGroups.push({ prepRef, note:'', shipCo: detectedShip, orders, createdAt, createdAtIso, createdBy: _puCBy2 });
-  _puSavePrepGroups();
   orders.forEach(o => { o._prepGroup = prepRef; o.pickupStatus = 'Preparing'; o.pickupRef = prepRef; o.prepChecked = false; });
+  _puSavePrepGroups(orders);
   _puPendingSelected.clear();
   toast(t('puMovedToPrepToast',{ref:prepRef,n:fmtN(orders.length)}));
   renderPickupBoard();
@@ -96864,10 +96938,9 @@ function _puBuildGroupCard(group, colType) {
   const header = document.createElement('div');
   header.className = 'pu-group-header';
   header.style.cursor = 'pointer';
-  header.draggable = true;
+  header.draggable = _puCanEdit();
   header.title = t('puCardClickHint');
-  header.addEventListener('mouseenter', () => _puShowQuickTip(header, group));
-  header.addEventListener('mouseleave', _puHideQuickTip);
+  _puAttachGroupPreview(header, group, colType);
   header.addEventListener('dragstart', e => { _puDragColType = colType; _puGroupDragStart(e, group.key); _puHideQuickTip(); });
   header.addEventListener('dragend',   e => { _puDragColType = null; _puGroupDragEnd(e); });
   // Click on header (not drag handle) opens orders modal
@@ -96947,20 +97020,20 @@ function _puBuildGroupCard(group, colType) {
 
   footer.innerHTML = `
     <div class="pu-group-footer-left">
-      ${hasDirty ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puGroupSaveAll('${esc(group.key)}')">${S.save} ${t('puSaveChanges')}</button>` : ''}
-      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn pu-card-btn-danger" ${_puReturnGroupBusy ? 'disabled aria-busy="true"' : ''} onclick="event.stopPropagation();puGroupUndoReadyToPrep('${esc(group.key)}')">${S.undo} ${t('puReturnGroup')}</button>` : ''}
+      ${hasDirty ? `<button class="pu-card-btn pu-card-btn-primary" data-pu-edit onclick="event.stopPropagation();puGroupSaveAll('${esc(group.key)}')">${S.save} ${t('puSaveChanges')}</button>` : ''}
+      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn pu-card-btn-danger" ${_puReturnGroupBusy ? 'disabled aria-busy="true"' : ''} data-pu-edit onclick="event.stopPropagation();puGroupUndoReadyToPrep('${esc(group.key)}')">${S.undo} ${t('puReturnGroup')}</button>` : ''}
       ${colType==='pending' && _puPrepGroups.length > 0 ? `
         <select class="pu-card-btn" id="pu-join-sel-${esc(group.key)}" onclick="event.stopPropagation()" style="cursor:pointer;max-width:140px;font-size:.69rem">
           <option value="">${t('puJoinPrepPlaceholder')}</option>
           ${prepGroupOptions}
         </select>
-        <button class="pu-card-btn" onclick="event.stopPropagation();puJoinPrepGroup('${esc(group.key)}')" title="${esc(t('puJoinPrepTitle'))}" style="padding:3px 6px">${S.plus}</button>
+        <button class="pu-card-btn" data-pu-edit onclick="event.stopPropagation();puJoinPrepGroup('${esc(group.key)}')" title="${esc(t('puJoinPrepTitle'))}" style="padding:3px 6px">${S.plus}</button>
       ` : ''}
     </div>
     <div style="display:flex;align-items:center;gap:5px">
       ${colType==='ready' ? `<button class="pu-card-btn pu-prep-open" onclick="event.stopPropagation();openPuCardOrdersModal('${esc(group.key)}', 'ready')">${t('puViewOrders')}</button>` : ''}
-      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" onclick="event.stopPropagation();openPuEditModal('${esc(group.key)}')" title="${esc(t('puEditRun'))}" style="gap:4px">${S.edit || '✎'} ${t('puEditRun')}</button>` : ''}
-      ${colType==='pending' ? `<button class="pu-card-btn pu-card-btn-primary" onclick="event.stopPropagation();puMovePendingGroupToPrep('${esc(group.key)}')">${S.truck} ${t('puPrepareGroup')}</button>` : ''}
+      ${colType==='ready' && !allShipped ? `<button class="pu-card-btn" data-pu-edit onclick="event.stopPropagation();openPuEditModal('${esc(group.key)}')" title="${esc(t('puEditRun'))}" style="gap:4px">${S.edit || '✎'} ${t('puEditRun')}</button>` : ''}
+      ${colType==='pending' ? `<button class="pu-card-btn pu-card-btn-primary" data-pu-edit onclick="event.stopPropagation();puMovePendingGroupToPrep('${esc(group.key)}')">${S.truck} ${t('puPrepareGroup')}</button>` : ''}
       ${colType==='ready' && allShipped ? `<span style="font-size:.72rem;color:#7c3aed;font-weight:700;display:inline-flex;align-items:center;gap:4px;background:#ede9fe;border:1px solid #c4b5fd;padding:3px 9px;border-radius:20px">${S.truck} ${t('puShippedDone')}</span>` : ''}
     </div>
   `;
@@ -96997,7 +97070,7 @@ function _puBuildOrderCard(o, colType) {
   card.innerHTML = `
     ${colType === 'prep' ? `<div class="pu-card-prep-tick-wrap${isTicked ? ' ticked' : ''}" id="pu-tick-wrap-${o._id}">
       <input type="checkbox" class="pu-prep-tick" id="pu-tick-${o._id}" ${isTicked ? 'checked' : ''}
-        onchange="puCardPrepTick('${o._id}',this.checked)" onclick="event.stopPropagation()">
+        data-pu-edit onchange="puCardPrepTick('${o._id}',this.checked)" onclick="event.stopPropagation()">
       <label for="pu-tick-${o._id}" class="pu-prep-tick-label" onclick="event.stopPropagation()">
         ${isTicked ? t('puTickDone') : t('puTickDo')}
       </label>
@@ -97061,6 +97134,7 @@ function _puSetLocalPrepChecked(orderId, checked) {
 }
 
 function _puPersistPrepCheck(orderId, checked, reason = '') {
+  if (!_puRequireEdit()) return;
   const id = String(orderId);
   const prior = _puPrepCheckQueues.get(id) || Promise.resolve();
   const pending = prior.catch(() => {}).then(() => api(`/transactions/pickup-orders/${id}/prep-check`, {
@@ -97088,6 +97162,7 @@ function _puPersistPrepCheck(orderId, checked, reason = '') {
 }
 
 async function puCardPrepTick(orderId, checked) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o) return;
   let undoReason = '';
@@ -97570,6 +97645,7 @@ async function _pwLoadPickSummary(orderId, force = false) {
 }
 const _pwIdentifyTasks = new Map();
 function _pwEnsurePickLines(order) {
+  if (!_puRequireEdit()) return;
   const id = String(order?._id || '');
   if (_pwIdentifyTasks.has(id)) return _pwIdentifyTasks.get(id);
   const task = _pwEnsurePickLinesImpl(order).finally(() => _pwIdentifyTasks.delete(id));
@@ -97577,6 +97653,7 @@ function _pwEnsurePickLines(order) {
   return task;
 }
 async function _pwEnsurePickLinesImpl(order) {
+  if (!_puRequireEdit()) return;
   if (!order?._id || !Array.isArray(order.items) || !order.items.length || order.items.every(item => item.lineId)) return;
   const state = _pwPickState(order._id);
   if (state.identifying || state.identifyAttempted) return;
@@ -97596,6 +97673,7 @@ async function _pwEnsurePickLinesImpl(order) {
   if (String(_pwSelId) === String(order._id)) _pwRenderWork();
 }
 async function pwRetryOrderScan(orderId) {
+  if (!_puRequireEdit()) return;
   const state=_pwPickState(orderId);
   if(state.loading||state.identifying||state.routing)return;
   const order=(_pucoGetGroup()?.orders || []).find(row=>String(row._id)===String(orderId));
@@ -97652,10 +97730,10 @@ function _pwScanIntroHtml(o, state) {
   const readyText = manualReview ? (en ? 'Ready for review - approve preparation' : 'جاهز للمراجعة — اعتمد التحضير') : complete ? (en ? 'All pieces verified' : 'تم التحقق من كل القطع') : busy ? (state?.summary ? (en ? 'Checking scan… You can scan the next piece' : 'جارٍ التحقق… يمكنك مسح القطعة التالية') : (en ? 'Loading order data… Scans will be queued' : 'جارٍ تحميل بيانات الطلب… يمكنك المسح الآن')) : (en ? 'Scanner ready — scan a piece' : 'الماسح جاهز — امسح باركود القطعة');
   return `<div class="pw-scan-intro pw-scan-compact${manualReview?' is-manual-review':complete?' is-confirmed':''}">
     <div class="pw-scan-overview"><span><b>${fmtN(total)}</b>${en?'Required pieces':'القطع المطلوبة'}</span><span><b>${fmtN(matched)}</b>${en?'Scanned':'تم مسحها'}</span><span class="pw-scan-left"><b>${state?.summary ? fmtN(Math.max(0,total-matched-skipped)) : '—'}</b>${en?'Remaining':'المتبقي'}</span>${skipped ? `<span class="pw-scan-exceptions"><b>${fmtN(skipped)}</b>${en?'Without scan':'بدون مسح'}</span>` : ''}</div>
-    <div class="pw-reader-bar"><span class="pw-reader-light${busy?' is-busy':''}" aria-hidden="true">${manualReview?'!':complete?'✓':''}</span><strong>${readyText}</strong><span class="pw-scan-count">${fmtN(matched+skipped)} / ${fmtN(total)}</span><button type="button" class="pw-manual-toggle" aria-expanded="${!!state?.manualOpen}" onclick="pwToggleManualScan('${esc(String(o._id))}')">${state?.manualOpen?(en?'Close manual entry':'إغلاق الإدخال اليدوي'):(en?'Manual entry':'إدخال يدوي')}</button></div>
+    <div class="pw-reader-bar"><span class="pw-reader-light${busy?' is-busy':''}" aria-hidden="true">${manualReview?'!':complete?'✓':''}</span><strong>${readyText}</strong><span class="pw-scan-count">${fmtN(matched+skipped)} / ${fmtN(total)}</span><button type="button" class="pw-manual-toggle" aria-expanded="${!!state?.manualOpen}" data-pu-edit onclick="pwToggleManualScan('${esc(String(o._id))}')">${state?.manualOpen?(en?'Close manual entry':'إغلاق الإدخال اليدوي'):(en?'Manual entry':'إدخال يدوي')}</button></div>
     ${state?.manualOpen?`<form class="pw-order-scan pw-manual-form" onsubmit="event.preventDefault();pwSubmitManualScan('${esc(String(o._id))}')"><label for="pw-order-scan">${en?'Piece or pack barcode':'باركود القطعة أو الباك'}</label><div><input id="pw-order-scan" data-scan-input type="text" dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" value="${esc(state.orderScanDraft||'')}" oninput="_pwPickState('${esc(String(o._id))}').orderScanDraft=this.value" placeholder="${en?'Enter the barcode':'أدخل الباركود'}"><button type="submit">${en?'Verify':'تحقق'}</button></div></form>`:''}
-    ${state?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(en?'Could not load preparation data. Check the connection, then retry.':'تعذر تحميل بيانات التحضير. تحقق من الاتصال ثم أعد المحاولة.')} <button type="button" onclick="pwRetryOrderScan('${esc(String(o._id))}')">${en?'Retry':'إعادة المحاولة'}</button></div>`:''}
-    ${feedback?`<div data-pw-scan-result class="pw-scan-feedback ${feedback.error?'is-error':feedback.pending?'is-pending':'is-success'}" role="${feedback.error?'alert':'status'}"><span aria-hidden="true">${feedback.error?'!':feedback.pending?'◌':'✓'}</span><span>${esc(feedback.text)}</span>${feedback.identifier?`<code dir="ltr">${esc(feedback.identifier)}</code>`:''}${feedback.hint?`<small>${esc(feedback.hint)}</small>`:''}${feedback.retryable&&feedback.identifier?`<button type="button" onclick="_pwRetryLastScan('${esc(String(o._id))}')">${en?'Retry this scan':'إعادة محاولة المسحة'}</button>`:''}</div>`:''}
+    ${state?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(en?'Could not load preparation data. Check the connection, then retry.':'تعذر تحميل بيانات التحضير. تحقق من الاتصال ثم أعد المحاولة.')} <button type="button" data-pu-edit onclick="pwRetryOrderScan('${esc(String(o._id))}')">${en?'Retry':'إعادة المحاولة'}</button></div>`:''}
+    ${feedback?`<div data-pw-scan-result class="pw-scan-feedback ${feedback.error?'is-error':feedback.pending?'is-pending':'is-success'}" role="${feedback.error?'alert':'status'}"><span aria-hidden="true">${feedback.error?'!':feedback.pending?'◌':'✓'}</span><span>${esc(feedback.text)}</span>${feedback.identifier?`<code dir="ltr">${esc(feedback.identifier)}</code>`:''}${feedback.hint?`<small>${esc(feedback.hint)}</small>`:''}${feedback.retryable&&feedback.identifier?`<button type="button" data-pu-edit onclick="_pwRetryLastScan('${esc(String(o._id))}')">${en?'Retry this scan':'إعادة محاولة المسحة'}</button>`:''}</div>`:''}
     ${feedback?.purchaseTransactionId?`<button type="button" data-pw-scan-review class="pw-undo-pick" onclick="pucoShowInvoice('${esc(feedback.purchaseTransactionId)}')">${en?'Review purchase receipt':'مراجعة فاتورة الشراء'}</button>`:''}
     ${total?`<progress class="pw-scan-progress" value="${Math.min(total,matched+skipped)}" max="${total}" aria-label="${en?'Preparation progress':'تقدم التجهيز'}"></progress>`:''}</div>`;
 }
@@ -97697,6 +97775,7 @@ function _pwNormalizePickBarcode(value) {
   return /^PK-[A-F\d]{24}$/.test(pack) ? pack : normalized;
 }
 async function pwScanAnyOrderUnit(orderId, inputId = 'pw-order-scan', suppliedIdentifier) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId), source = document.getElementById(inputId);
   if (state.loading || state.routing || state.autoPreparing || !hasPerm('inventory-units-view') || !hasPerm('inventory-units-allocate')) return;
   const identifier = _pwNormalizePickBarcode(suppliedIdentifier ?? source?.value);
@@ -97753,10 +97832,11 @@ function _pwUnitScanHtml(o, it, state) {
   const lastException = line?.exceptions?.filter(entry => entry.active).at(-1);
   const scannedCodes = [...new Set((line?.units || []).filter(unit => ['picking','prepared'].includes(unit.status)).map(unit => unit.packId ? unit.packManualCode || `PK-${String(unit.packId).toUpperCase()}` : unit.manualCode || unit.barcode).filter(Boolean))];
   const scannedCodesHtml = scannedCodes.length ? `<div class="pw-scanned-codes" aria-label="${en?'Scanned codes':'الأكواد الممسوحة'}">${scannedCodes.map(code=>`<code dir="ltr">${esc(code)}</code>`).join('')}</div>` : '';
-  return `<div class="pw-unit-scan-row${complete ? ' is-complete' : ''}${skipped?' has-skips':''}${error?' has-error':''}"><div class="pw-piece-status" role="status"><span>${label}</span>${dots}<bdi>${fmtN(picked+skipped)} / ${fmtN(qty)}</bdi></div><small class="pw-line-scan-status">${en ? 'Matched' : 'تمت المطابقة'} ${fmtN(picked)}${skipped ? ` · ${en ? 'Skipped' : 'تم التخطي'} ${fmtN(skipped)}` : ''}</small>${scannedCodesHtml}<div class="pw-skip-actions">${!complete ? `<button type="button" ${disabled?'disabled':''} onclick="pwSkipDamagedLabel('${esc(String(o._id))}','${esc(it.lineId)}')">${en ? 'Prepare without scan' : 'تجهيز بدون مسح'}</button>` : ''}${lastException ? `<button type="button" ${state.loading?'disabled':''} onclick="pwSkipDamagedLabel('${esc(String(o._id))}','${esc(it.lineId)}','${esc(lastException.id)}')">${en ? 'Undo skip' : 'تراجع عن التخطي'}</button>` : ''}</div></div>`;
+  return `<div class="pw-unit-scan-row${complete ? ' is-complete' : ''}${skipped?' has-skips':''}${error?' has-error':''}"><div class="pw-piece-status" role="status"><span>${label}</span>${dots}<bdi>${fmtN(picked+skipped)} / ${fmtN(qty)}</bdi></div><small class="pw-line-scan-status">${en ? 'Matched' : 'تمت المطابقة'} ${fmtN(picked)}${skipped ? ` · ${en ? 'Skipped' : 'تم التخطي'} ${fmtN(skipped)}` : ''}</small>${scannedCodesHtml}<div class="pw-skip-actions">${!complete ? `<button type="button" ${disabled?'disabled':''} data-pu-edit onclick="pwSkipDamagedLabel('${esc(String(o._id))}','${esc(it.lineId)}')">${en ? 'Prepare without scan' : 'تجهيز بدون مسح'}</button>` : ''}${lastException ? `<button type="button" ${state.loading?'disabled':''} data-pu-edit onclick="pwSkipDamagedLabel('${esc(String(o._id))}','${esc(it.lineId)}','${esc(lastException.id)}')">${en ? 'Undo skip' : 'تراجع عن التخطي'}</button>` : ''}</div></div>`;
 }
 
 async function pwSkipDamagedLabel(orderId, lineId, exceptionId) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId);
   if (state.loading || !hasPerm('inventory-units-allocate')) return;
   state.loading = true;
@@ -97812,6 +97892,7 @@ async function pwSkipDamagedLabel(orderId, lineId, exceptionId) {
 }
 
 async function pwScanOrderUnit(orderId, lineId, inputId, suppliedIdentifier, unitVersion) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId);
   if (state.loading || state.autoPreparing || !hasPerm('inventory-units-allocate') || !hasPerm('inventory-units-view')) return;
   const input = document.getElementById(inputId), identifier = _pwNormalizePickBarcode(suppliedIdentifier ?? input?.value);
@@ -97906,12 +97987,14 @@ function _pwApplyScanReceipt(state, lineId, result) {
 }
 
 function pwToggleManualScan(orderId) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId);
   state.manualOpen = !state.manualOpen;
   _pwReaderKeys = '';
   _pwRenderWork(); _pwScanFocus(orderId, 'pw-order-scan');
 }
 function pwSubmitManualScan(orderId) {
+  if (!_puRequireEdit()) return;
   const input = document.getElementById('pw-order-scan');
   const identifier = input?.value || '';
   _pwPickState(orderId).orderScanDraft = '';
@@ -97921,8 +98004,10 @@ function pwSubmitManualScan(orderId) {
 
 const _pwScanJobs = [];
 let _pwScanDrainTask = null;
-function _pwRetryLastScan(orderId) { return _pwSubmitScan(orderId, _pwPickState(orderId).feedback?.identifier); }
+function _pwRetryLastScan(orderId) {
+  if (!_puRequireEdit()) return; return _pwSubmitScan(orderId, _pwPickState(orderId).feedback?.identifier); }
 function _pwSubmitScan(orderId, raw) {
+  if (!_puRequireEdit()) return;
   const identifier = _pwNormalizePickBarcode(raw), state = _pwPickState(orderId);
   if (!identifier || identifier.length > 160) return;
   if (_pwScanJobs.some(job => job.orderId === String(orderId) && job.identifier === identifier)) return _pwScanDrainTask;
@@ -97935,6 +98020,7 @@ function _pwSubmitScan(orderId, raw) {
   return _pwScanDrainTask;
 }
 async function _pwDrainScans() {
+  if (!_puRequireEdit()) return;
   while (_pwScanJobs.length) {
     const job = _pwScanJobs[0], state = _pwPickState(job.orderId);
     try {
@@ -97964,6 +98050,7 @@ function _pwFlushReader() {
   if (/^(?:(?:SU|PK)-[A-F\d]{24}|[A-F\d]{24}|U-?\d{4}-?\d{4}-?\d|PK-?\d{6}-?\d|\d{9})$/i.test(code)) _pwSubmitScan(orderId, code);
 }
 function _pwCaptureReaderKey(event) {
+  if (!_puCanEdit()) return;
   // HID readers emit separate modifier events between barcode letters.
   // These do not end the scan or erase the previously captured characters.
   if (['Shift', 'CapsLock', 'NumLock'].includes(event.key)) return;
@@ -97993,7 +98080,7 @@ function _pwUndoScanButtonHtml(order, state) {
   const label = currentLang === 'en' ? 'Undo last scan' : 'تراجع عن آخر مسح';
   const hint = currentLang === 'en' ? 'Undo the scanned piece before removing Prepared.' : 'تراجع عن مسح القطعة أولًا لإلغاء علامة تم التحضير.';
   return `<button type="button" class="pw-undo-pick${state?.undoScanAttention ? ' is-attention' : ''}" data-undo-scan
-    onclick="pwUndoLastPick('${esc(String(order._id))}')" title="${esc(state?.undoScanAttention ? hint : label)}"
+    data-pu-edit onclick="pwUndoLastPick('${esc(String(order._id))}')" title="${esc(state?.undoScanAttention ? hint : label)}"
     aria-label="${esc(state?.undoScanAttention ? label + '. ' + hint : label)}">↶ ${esc(label)}${state?.undoScanAttention ? '<span class="pw-undo-scan-dot" aria-hidden="true">!</span>' : ''}</button>`;
 }
 async function _pwGuideUndoScannedPreparation(orderId) {
@@ -98030,6 +98117,7 @@ function _pwResetUndoneScan(state) {
 }
 
 async function pwUndoLastPick(orderId) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId), en = currentLang === 'en';
   if (state.loading || state.routing || state.autoPreparing || !hasPerm('inventory-units-allocate')) return;
   state.loading = true;
@@ -98119,7 +98207,7 @@ function _pwRenderWork() {
   const units    = _pwUnitsOf(o);
   const paidAmt  = (o.total||0) - (o.remaining||0);
   const isDone   = !!o.prepChecked;
-  const canBarcodePick = colType === 'prep' && hasPerm('inventory-units-view') && hasPerm('inventory-units-allocate');
+  const canBarcodePick = _puCanEdit() && colType === 'prep' && hasPerm('inventory-units-view') && hasPerm('inventory-units-allocate');
   const pickState = colType === 'prep' ? _pwPickState(o._id) : null;
   const scanReady = canBarcodePick && !isDone && items.length > 0 && pickState?.summary && !_pwIncompletePickLines(o,pickState.summary).length;
   if (canBarcodePick && prevId !== String(o._id)) pickState.focusOrderScan = true;
@@ -98220,7 +98308,7 @@ function _pwRenderWork() {
       ${colType === 'prep' ? `
       <button type="button" id="puco-tick-wrap-${esc(o._id)}" class="pw-tickhead pw-head-tick${isDone?' is-done':''}${scanReady?' is-scan-ready':''}"
         aria-pressed="${isDone?'true':'false'}"
-        onclick="pucoTickOrder('${esc(o._id)}',${isDone?'false':'true'})">
+        data-pu-edit onclick="pucoTickOrder('${esc(o._id)}',${isDone?'false':'true'})">
         <span class="pw-tickhead-c" id="puco-tick-circle-${esc(o._id)}">
           ${isDone ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#10b981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </span>
@@ -98258,7 +98346,7 @@ function _pwRenderWork() {
       ${_bsfIsSent(o) ? (() => {
         const pr = _awbPrintsOf(o._id), lp = pr[pr.length - 1];
         const ttl = lp ? t('awbMarkTitle',{n:fmtN(pr.length),when:_awbWhen(lp.at),by:lp.by||'—'}) : t('awbPrintBtn');
-        return `<button type="button" class="pw-abtn${pr.length ? ' is-printed' : ''}" onpointerenter="_awbPrepareSoon('${esc(o._id)}')" onclick="printBostaAwb('${esc(o._id)}')" title="${esc(ttl)}">
+        return `<button type="button" class="pw-abtn${pr.length ? ' is-printed' : ''}" onpointerenter="_awbPrepareSoon('${esc(o._id)}')" data-pu-edit onclick="printBostaAwb('${esc(o._id)}')" title="${esc(ttl)}">
         ${_AWB_PRINTER_SVG.replace('width="12" height="12"','width="14" height="14"')}
         ${esc(pr.length ? t('awbPrintedMark') : t('awbPrintBtn'))}
       </button>`; })() : ''}
@@ -98268,14 +98356,14 @@ function _pwRenderWork() {
         ${esc(t('puViewInvoice'))}
       </button>
       ${colType === 'prep' ? `
-      <button type="button" class="pw-abtn is-warn" onclick="pucoRemoveFromPrep('${esc(o._id)}')">
+      <button type="button" class="pw-abtn is-warn" data-pu-edit onclick="pucoRemoveFromPrep('${esc(o._id)}')">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-1"/></svg>
         ${esc(t('puBackToPending'))}
       </button>` : ''}
       ${colType === 'ready' ? _puReadyReturnButtonsHtml(o) : ''}
       ${colType === 'prep' ? `
       <div class="pw-transfer-actions">
-      <button type="button" class="pw-abtn is-go" ${checkedOrders.length ? '' : 'disabled'} onclick="pucoMoveGroupToReady()">
+      <button type="button" class="pw-abtn is-go" ${checkedOrders.length ? '' : 'disabled'} data-pu-edit onclick="pucoMoveGroupToReady()">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/></svg>
         ${esc(checkedOrders.length === 1
           ? t('puMoveSingleToPickup',{ref:checkedOrders[0].ref||'—'})
@@ -98640,14 +98728,15 @@ function _pwNotesHtml(o) {
  * أو بلا تاريخ في كل شاشة أخرى تقرأ نفس المصفوفة.
  */
 function _pwCommentBoxHtml(o) {
+  if (!_puCanEdit()) return '';
   const id = esc(String(o._id || ''));
   return `${_cmtToolsHtml('pw-cmt-text-' + id, id)}<div class="pw-cmt-add">
     <textarea id="pw-cmt-text-${id}" class="pw-cmt-input" rows="1"
       placeholder="${escHtml(t('addComment'))}"
-      onkeydown="pwCommentKeydown(event,'${id}')"
+      data-pu-edit onkeydown="pwCommentKeydown(event,'${id}')"
       oninput="_pwCmtGrow(this);onMentionInput(this,'${id}')"></textarea>
     <button type="button" class="pw-cmt-send" id="pw-cmt-send-${id}"
-      onclick="pwAddComment('${id}')" title="${escHtml(t('addCommentBtn'))}" aria-label="${escHtml(t('addCommentBtn'))}">
+      data-pu-edit onclick="pwAddComment('${id}')" title="${escHtml(t('addCommentBtn'))}" aria-label="${escHtml(t('addCommentBtn'))}">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
   </div>`;
@@ -98687,6 +98776,7 @@ function pwCommentKeydown(e, id) {
  * الذي يجعل `pucoTickOrder` تُرقّع الـDOM بدل إعادة الرسم.
  */
 async function pwAddComment(id) {
+  if (!_puRequireEdit()) return;
   const box = qs(`#pw-cmt-text-${id}`);
   const btn = qs(`#pw-cmt-send-${id}`);
   const text = (box?.value || '').trim();
@@ -98712,7 +98802,7 @@ async function pwAddComment(id) {
   _pwRefreshThread(o);
 
   try {
-    await api(`/transactions/${id}/comments`, {
+    await api(`/transactions/pickup-orders/${id}/comments`, {
       method: 'POST',
       body: JSON.stringify({ comments: o.comments }),
     });
@@ -98934,6 +99024,7 @@ function _pwHoldEnd() {
 }
 
 async function _pwAutoPrepareScannedOrder(orderId) {
+  if (!_puRequireEdit()) return;
   const state = _pwPickState(orderId);
   const order = _pickupOrders.find(row => String(row._id) === String(orderId));
   const group = _pucoGetGroup();
@@ -98981,6 +99072,7 @@ async function _pwWarnIncompletePicking(order, pending, summary) {
 
 const _pwPreparationTasks = new Map();
 async function pucoTickOrder(orderId, checked) {
+  if (!_puRequireEdit()) return;
   if (_pwPreparationTasks.has(String(orderId))) return;
   const button = qs(`#puco-tick-wrap-${CSS.escape(String(orderId))}`);
   if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
@@ -98995,6 +99087,7 @@ async function pucoTickOrder(orderId, checked) {
 }
 
 async function _pucoTickOrderImpl(orderId, checked) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o) return;
   if (!checked && _pucoColType === 'prep' && await _pwGuideUndoScannedPreparation(orderId)) return;
@@ -99181,6 +99274,7 @@ function pucoAddKeydown(e) {
 }
 
 async function pucoAddOrder() {
+  if (!_puRequireEdit()) return;
   const input = qs('#puco-add-ref-input');
   const refStr = (input?.value || '').trim();
   if (!refStr) return;
@@ -99223,7 +99317,7 @@ async function pucoAddOrder() {
     o.pickupRef = grp.prepRef;
     o.prepChecked = false;
     grp.orders.push(o);
-    _puSavePrepGroups();
+    _puSavePrepGroups([o]);
     toast(t('puOrderAddedToGroup',{ref:refStr}));
   } else if (_pucoColType === 'pending') {
     // Merge pending: update client/phone to match group
@@ -99240,6 +99334,7 @@ async function pucoAddOrder() {
 function pucoDeleteOrder(orderId) { pucoRemoveFromPrep(orderId); }
 
 async function pucoRemoveFromPrep(orderId) {
+  if (!_puRequireEdit()) return;
   const group = _pucoGetGroup();
   if (!group) return;
   const o = group.orders.find(x => x._id === orderId);
@@ -99263,7 +99358,7 @@ async function pucoRemoveFromPrep(orderId) {
       o.prepChecked = false;
       o.pickupStatus = 'Pending';
       o.pickupRef = null;
-      _puSavePrepGroups();
+      _puSavePrepGroups([o]);
       _puUpdatePrepGroupProgress(grp.prepRef);
       toast(t('puOrderReturned',{ref:o.ref||''}));
       if (!grp.orders.length) { closePuCardOrdersModal(); renderPickupBoard(); return; }
@@ -99287,13 +99382,16 @@ async function pucoRemoveFromPrep(orderId) {
 }
 
 async function pucoRestoreFromReady(orderId) {
+  if (!_puRequireEdit()) return;
   return _puReturnReadyOrder(orderId, 'pending');
 }
 async function pucoReturnReadyToPrep(orderId) {
+  if (!_puRequireEdit()) return;
   return _puReturnReadyOrder(orderId, 'preparing');
 }
 
 function pucoMoveOrderToReady(orderId) {
+  if (!_puRequireEdit()) return;
   const group = _pucoGetGroup();
   const order = group?.orders?.find(o => String(o._id) === String(orderId));
   if (!order || _pucoColType !== 'prep') return;
@@ -99316,6 +99414,7 @@ function pucoMoveOrderToReady(orderId) {
 }
 
 function pucoMoveGroupToReady() {
+  if (!_puRequireEdit()) return;
   if (!_pucoGroupKey) return;
   const key     = _pucoGroupKey;
   const colType = _pucoColType;
@@ -99325,6 +99424,7 @@ function pucoMoveGroupToReady() {
 }
 
 function pucoMovePendingToPrep() {
+  if (!_puRequireEdit()) return;
   if (!_pucoGroupKey) return;
   closePuCardOrdersModal();
   puMovePendingGroupToPrep(_pucoGroupKey);
@@ -99332,6 +99432,7 @@ function pucoMovePendingToPrep() {
 
 // ── Inline item edit ──────────────────────────────────────────
 function puCardItemChange(orderId, idx, field, val) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o || !o.items[idx]) return;
   _puRememberDraft(o);
@@ -99376,6 +99477,7 @@ function puCardItemChange(orderId, idx, field, val) {
 }
 
 function puCardAddItem(orderId) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o) return;
   const sel = qs(`#pu-add-prod-${orderId}`);
@@ -99400,6 +99502,7 @@ function puCardAddItem(orderId) {
 }
 
 async function puCardDelItem(orderId, idx) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o || !o.items) return;
   if (o.items.length <= 1) return toast(t('puCannotDeleteLastItem'), true);
@@ -99420,6 +99523,7 @@ async function puCardDelItem(orderId, idx) {
 
 // ── Save a single order card's edits ─────────────────────────
 async function puCardSave(orderId) {
+  if (!_puRequireEdit()) return;
   const o = _pickupOrders.find(x => x._id === orderId);
   if (!o) return;
   if (_puRemoteConflicts.has(String(orderId))) {
@@ -99433,7 +99537,7 @@ async function puCardSave(orderId) {
   const btn = qs(`#pu-save-btn-${orderId}`);
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    await api(`/transactions/${orderId}`, {
+    await api(`/transactions/pickup-orders/${orderId}`, {
       method: 'PUT',
       body: JSON.stringify({ items: o.items, total: o.total }),
     });
@@ -99450,6 +99554,7 @@ async function puCardSave(orderId) {
 
 // ── Save ALL dirty orders in a group ─────────────────────────
 async function puGroupSaveAll(groupKey) {
+  if (!_puRequireEdit()) return;
   // Check if this is a prep group
   const prepGrp = _puPrepGroups.find(g=>g.prepRef===groupKey);
   const dirtyIds = _pickupOrders
@@ -99472,7 +99577,7 @@ async function puGroupSaveAll(groupKey) {
     try {
       await Promise.all(dirtyIds.map(id => {
         const o = _pickupOrders.find(x=>x._id===id);
-        return api(`/transactions/${id}`, { method:'PUT', body: JSON.stringify({ items: o.items, total: o.total }) });
+        return api(`/transactions/pickup-orders/${id}`, { method:'PUT', body: JSON.stringify({ items: o.items, total: o.total }) });
       }));
       dirtyIds.forEach(id => { _puDirtyCards.delete(id); _puDraftBases.delete(String(id)); _puRemoteConflicts.delete(String(id)); });
       toast(t('puSavedNOrders',{n:fmtN(dirtyIds.length)}));
@@ -99485,6 +99590,7 @@ async function puGroupSaveAll(groupKey) {
 
 // Persist the first stage before moving Pending orders into a prep ticket.
 async function puCreatePrepGroup(orders, note = '', shipCo = '') {
+  if (!_puRequireEdit()) return;
   const ids = [...new Set((orders || []).map(o => String(o?._id || '')).filter(Boolean))];
   const pending = ids.map(id => _pickupOrders.find(o => String(o._id) === id))
     .filter(o => o && (o.pickupStatus || 'Pending') === 'Pending');
@@ -99518,6 +99624,7 @@ async function puCreatePrepGroup(orders, note = '', shipCo = '') {
 }
 
 async function puMovePendingGroupToPrep(groupKey) {
+  if (!_puRequireEdit()) return;
   const orders = _pickupOrders.filter(o => {
     if ((o.pickupStatus || 'Pending') !== 'Pending') return false;
     const key = `${(o.client||'').trim()}||${(o.phone||o.clientPhone||'').trim()}` || o._id;
@@ -99528,6 +99635,7 @@ async function puMovePendingGroupToPrep(groupKey) {
 }
 
 function puGroupMoveToReady() {
+  if (!_puRequireEdit()) return;
   return toast(t('puPrepareOrdersFirst'), true);
 }
 
@@ -99539,6 +99647,7 @@ function closePuConfirmModal() {
 
 // ── Undo group (Ready → Pending) ─────────────────────────────
 async function puGroupUndoReady(groupKey) {
+  if (!_puRequireEdit()) return;
   const groupOrders = _pickupOrders.filter(o => {
     if ((o.pickupStatus||'Pending') !== 'Ready' && (o.pickupStatus||'Pending') !== 'Picked-Up') return false;
     const key = o.pickupRef || `noref-${o._id}`;
@@ -99564,6 +99673,7 @@ async function puGroupUndoReady(groupKey) {
 // ── Undo group (Ready → Prep) ─────────────────────────────────
 let _puReturnGroupBusy = false;
 async function puGroupUndoReadyToPrep(groupKey) {
+  if (!_puRequireEdit()) return;
   if (_puReturnGroupBusy) return;
   const groupOrders = _pickupOrders.filter(o => {
     if ((o.pickupStatus||'Pending') !== 'Ready' && (o.pickupStatus||'Pending') !== 'Picked-Up') return false;
@@ -99605,6 +99715,7 @@ async function puGroupUndoReadyToPrep(groupKey) {
 
 // ── Add pending group → existing prep group ───────────────────
 async function puJoinPrepGroup(groupKey) {
+  if (!_puRequireEdit()) return;
   const selId = `pu-join-sel-${groupKey}`;
   const sel = document.getElementById(selId);
   const prepRef = sel?.value;
@@ -99632,7 +99743,7 @@ async function puJoinPrepGroup(groupKey) {
   }
   grp.orders.push(...clientOrders);
   clientOrders.forEach(o=>{ o._prepGroup=grp.prepRef; o.pickupStatus='Preparing'; o.pickupRef=grp.prepRef; o.prepChecked=false; });
-  _puSavePrepGroups();
+  _puSavePrepGroups(clientOrders);
   toast(t('puAddedNToGroup',{n:fmtN(clientOrders.length),ref:prepRef}));
   renderPickupBoard();
 }
@@ -99659,6 +99770,7 @@ function _puCfdlgResolve(val) {
 
 // ── Bulk Entry Modal (إدخال مجمع) ────────────────────────────
 function openPuBulkModal() {
+  if (!_puRequireEdit()) return;
   const modal = qs('#pu-bulk-modal');
   if (!modal) return;
   const inp = qs('#pu-bulk-refs-input');
@@ -99745,6 +99857,7 @@ function puBulkPreview() {
 }
 
 async function submitPuBulk() {
+  if (!_puRequireEdit()) return;
   const refs = _puBulkParseRefs();
   if (!refs.length) return toast(t('puBulkEnterRefsFirst'), true);
 
@@ -99761,6 +99874,7 @@ async function submitPuBulk() {
 
 // ── Drag & Drop (group-level) ─────────────────────────────────
 function _puGroupDragStart(e, groupKey) {
+  if (!_puRequireEdit()) return;
   _puDragGroupKey = groupKey;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', groupKey);
@@ -99779,6 +99893,7 @@ function _puGroupDragEnd(e) {
 }
 
 function puBoardDragOver(e, colType) {
+  if (!_puCanEdit()) return;
   e.preventDefault();
   e.stopPropagation();
   e.dataTransfer.dropEffect = 'move';
@@ -99813,6 +99928,7 @@ function puBoardDragLeave(e) {
 }
 
 async function puBoardDrop(e, colType) {
+  if (!_puRequireEdit()) return;
   e.preventDefault();
   const col = e.currentTarget;
   col.classList.remove('pu-drag-over');
@@ -100348,8 +100464,8 @@ function _orderStateMeta(order, kind = 'transaction') {
 function _orderStateBadge(order, kind = 'transaction') {
   return SouliaOrderStatus.badge(_orderStateMeta(order, kind));
 }
-function _puStatusBadge(status, order, compact = false) {
-  return SouliaOrderStatus.badge(_orderStateMeta(order || { pickupStatus: status }), {compact,hideCarrier:compact});
+function _puStatusBadge(status, order, compact = false, preview = false) {
+  return SouliaOrderStatus.badge(_orderStateMeta(order || { pickupStatus: status }), {compact,hideCarrier:compact,preview});
 }
 function _puPayBadge(ps) {
   // 'مكتمل'/'معلق' are stored DB values — compared as-is, localized only for display.
@@ -100449,7 +100565,7 @@ function renderPickupRuns() {
                   ${onTheWay  ? `<span class="pu-panel-tag tag-blue">${svgTruck} ${t('puShippedChip',{n:fmtN(onTheWay)})}</span>` : ''}
                   ${pickedUp  ? `<span class="pu-panel-tag tag-amber">${svgTruck} ${t('puReadyChip',{n:fmtN(pickedUp)})}</span>` : ''}
                   ${_puCanViewShipmentTotals() ? `<span class="pu-panel-tag tag-blue" style="font-weight:700">${fmtJ(totalAmt)}</span>` : ''}
-                  <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.78rem;border-radius:6px" onclick="event.stopPropagation();openPuEditModal('${esc(run.pickupRef)}')">
+                  <button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:.78rem;border-radius:6px" data-pu-edit onclick="event.stopPropagation();openPuEditModal('${esc(run.pickupRef)}')">
                     <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     ${t('edit')}
                   </button>
@@ -100550,10 +100666,10 @@ function toggleRunMenu(e, pickupRef) {
   const svgExport = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>`;
   const svgDelete = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:#dc2626"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
   menu.innerHTML = `
-    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="edit" data-run-ref="${esc(pickupRef)}">${svgEdit} ${t('puEditRun')}</button>
-    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="undo" data-run-ref="${esc(pickupRef)}">${svgUndo} ${t('puUndoPickup')}</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:.85rem;direction:rtl" data-pu-edit data-run-action="edit" data-run-ref="${esc(pickupRef)}">${svgEdit} ${t('puEditRun')}</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl" data-pu-edit data-run-action="undo" data-run-ref="${esc(pickupRef)}">${svgUndo} ${t('puUndoPickup')}</button>
     <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl" data-run-action="export" data-run-ref="${esc(pickupRef)}">${svgExport} ${t('puExportRun')}</button>
-    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl;color:#dc2626" data-run-action="delete" data-run-ref="${esc(pickupRef)}">${svgDelete} ${t('puDeleteRun')}</button>
+    <button class="btn" style="display:flex;align-items:center;gap:8px;width:100%;text-align:right;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);cursor:pointer;font-size:.85rem;direction:rtl;color:#dc2626" data-pu-edit data-run-action="delete" data-run-ref="${esc(pickupRef)}">${svgDelete} ${t('puDeleteRun')}</button>
   `;
   menu.addEventListener('click', ev => {
     const b = ev.target.closest('[data-run-action]');
@@ -100570,6 +100686,7 @@ function toggleRunMenu(e, pickupRef) {
 }
 
 async function undoPickupRun(pickupRef) {
+  if (!_puRequireEdit()) return;
   const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
   if (!run) return;
   if (run.orders.some(o => ['Shipped','Delivered'].includes(o.pickupStatus))) return toast(t('puCannotUndoShippedRun'), true);
@@ -100585,6 +100702,7 @@ async function undoPickupRun(pickupRef) {
 }
 
 function deletePickupRun(pickupRef) {
+  if (!_puRequireEdit()) return;
   const run = _pickupRuns.find(r => r.pickupRef === pickupRef);
   if (!run) return;
   if (run.orders.some(o => ['Shipped','Delivered'].includes(o.pickupStatus))) return toast(t('puCannotUndoShippedRun'), true);
@@ -100663,6 +100781,7 @@ let _puEditAvailableRuns = [];  // active Ready tickets that can receive orders
 let _puEditSelectedIds = new Set();
 
 function openPuEditModal(pickupRef) {
+  if (!_puRequireEdit()) return;
   const modal = qs('#pu-edit-modal');
   if (!modal) return;
   modal.style.display = 'flex';
@@ -100789,6 +100908,7 @@ function _puEditRefreshDatePreview() {
 }
 
 async function savePuEditDate() {
+  if (!_puRequireEdit()) return;
   if (!_puEditCurrentRun) return;
   const date = qs('#pu-edit-date-val')?.value;
   if (!date) return toast(t('puPickDate'), true);
@@ -100812,7 +100932,7 @@ function _puEditOrderRow(o, action, type) {
     : `${svgAdd} ${t('puMoveToRun')}`;
   const selectable = type === 'remove' && ['Ready','Picked-Up'].includes(o.pickupStatus);
   const selector = type === 'remove'
-    ? `<div style="display:flex;justify-content:center"><input type="checkbox" data-pu-select-id="${esc(o._id)}" ${_puEditSelectedIds.has(String(o._id))?'checked':''} ${selectable?'':'disabled'} onchange="puEditToggleOrder(this)" title="${esc(t('puSelectForMove'))}" style="width:15px;height:15px;accent-color:var(--primary);cursor:${selectable?'pointer':'not-allowed'}"></div>`
+    ? `<div style="display:flex;justify-content:center"><input type="checkbox" data-pu-select-id="${esc(o._id)}" ${_puEditSelectedIds.has(String(o._id))?'checked':''} ${selectable?'':'disabled'} data-pu-edit onchange="puEditToggleOrder(this)" title="${esc(t('puSelectForMove'))}" style="width:15px;height:15px;accent-color:var(--primary);cursor:${selectable?'pointer':'not-allowed'}"></div>`
     : '';
   return `<div class="pu-edit-order${type === 'remove' ? '' : ' is-add'}">
     ${selector}
@@ -100859,7 +100979,7 @@ function _renderPuEditTargetList() {
         </div>
         <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${esc(_puCanViewShipmentTotals() ? t('puTicketSummary',{n:fmtN(readyCount),total:totalText}) : t('puOrdersCount',{n:fmtN(readyCount)}))}</div>
       </div>
-      <button class="pu-edit-order-action" ${disabled?`disabled title="${esc(t('puSelectForMove'))}"`:''} onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')">${esc(t('puMoveSelectedToTicket'))}</button>
+      <button class="pu-edit-order-action" ${disabled?`disabled title="${esc(t('puSelectForMove'))}"`:''} data-pu-edit onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')">${esc(t('puMoveSelectedToTicket'))}</button>
     </div>`;
   }).join('');
 }
@@ -100883,6 +101003,7 @@ function puEditToggleOrder(cb) {
 })();
 
 async function puEditRemoveOrder(id) {
+  if (!_puRequireEdit()) return;
   if (!_puEditCurrentRun) return;
   const o = _puEditCurrentRun.orders.find(x => x._id === id);
   if (!o) return;
@@ -100907,6 +101028,7 @@ async function puEditRemoveOrder(id) {
 }
 
 async function puEditMoveSelectedToRun(pickupRef) {
+  if (!_puRequireEdit()) return;
   if (!_puEditCurrentRun || !pickupRef) return;
   const ids = [..._puEditSelectedIds].filter(id => _puEditCurrentRun.orders.some(o => String(o._id) === id && ['Ready','Picked-Up'].includes(o.pickupStatus)));
   if (!ids.length) return toast(t('puSelectForMove'), true);
@@ -101058,7 +101180,14 @@ function _puApplyRealtimeEvent(payload) {
     if (row) {
       Object.assign(row, patch);
       _puLiveRows.set(id, { revision: ++_puLiveRevision, row });
-    } else _rtFetchTx(id);
+    } else {
+      // The transactions page can receive a pickup event before its pickup list
+      // is loaded. Retain that known row as a live revision so an older in-flight
+      // list response cannot overwrite the event while its detail fetch runs.
+      const tx = txRows.get(id);
+      if (tx) _puMergeLiveTransaction({ ...tx, ...patch });
+      _rtFetchTx(id);
+    }
     if (txRows.has(id)) Object.assign(txRows.get(id), patch);
   }
   _puLoadPrepGroups(_pickupOrders);
@@ -101120,6 +101249,8 @@ function _puRefreshSecondary() {
 }
 
 function loadPickupOrders(options = {}) {
+  _puSyncPermissions();
+  if (!_requirePageAccess('pickup-orders')) return Promise.resolve(null);
   if (_puOrdersRequest) return _puOrdersRequest;
   _puOrdersRequest = _loadPickupOrders(options).finally(() => { _puOrdersRequest = null; });
   return _puOrdersRequest;
@@ -101166,8 +101297,6 @@ async function _loadPickupOrders({ background = false } = {}) {
           tx.pickupBy     = pu.pickupBy;
         }
       });
-      // Sync prep-group orders as 'Preparing' (covers orders not yet persisted to backend)
-      _puSyncPrepStatusToTransactions();
       if (typeof renderMovements === 'function' && currentPage === 'movements') renderMovements();
     }
     buildSidebar();
@@ -101250,6 +101379,7 @@ async function _puManualSyncBostaStatuses() {
 
 // ── إنشاء Pick-Up Modal ────────────────────────────────────────
 async function openCreatePickupModal() {
+  if (!_puRequireEdit()) return;
   _puCreateSelected.clear();
 
   // Show modal immediately with loading state
@@ -101323,7 +101453,7 @@ function _puBuildCreateList() {
       const bg      = checked ? 'background:color-mix(in srgb,var(--primary) 6%,var(--surface));' : '';
       const paid = (o.total||0) - (o.remaining||0);
       return `<label data-pu-order-id="${esc(o._id)}" style="display:grid;grid-template-columns:20px 60px minmax(100px,1fr) 36px 88px 82px 82px 76px;align-items:center;gap:6px;padding:8px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;direction:rtl;${bg}">
-        <input type="checkbox" data-id="${esc(o._id)}" ${checked ? 'checked' : ''} onchange="puCreateRowCheck(this)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary);justify-self:center">
+        <input type="checkbox" data-id="${esc(o._id)}" ${checked ? 'checked' : ''} data-pu-edit onchange="puCreateRowCheck(this)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary);justify-self:center">
         <span style="font-weight:700;color:var(--accent);font-family:monospace;font-size:.82rem;white-space:nowrap">${esc(o.ref || '—')}</span>
         <span style="font-weight:600;font-size:.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(o.client || '')}">${esc(o.client || '—')}</span>
         <span style="font-size:.8rem;color:var(--muted);text-align:center;white-space:nowrap">${fmtN(qty)}</span>
@@ -101402,6 +101532,7 @@ function puCreateToggleAll(checked) {
 }
 
 async function submitCreatePickup() {
+  if (!_puRequireEdit()) return;
   const ids = [..._puCreateSelected];
   if (!ids.length) return toast(t('puSelectAtLeastOne'), true);
   const date = qs('#pu-create-date')?.value || todayLocalISO();
@@ -101428,6 +101559,7 @@ async function submitCreatePickup() {
 
 // ── إدخال مجمع Modal (run-based table view) ───────────────────
 function openPickupBulkModal() {
+  if (!_puRequireEdit()) return;
   const modal = qs('#pu-bulk-run-modal');
   if (!modal) return;
   const inp = qs('#pu-bulk-run-input');
@@ -101482,6 +101614,7 @@ function previewBulkPickup() {
 }
 
 async function runBulkPickup() {
+  if (!_puRequireEdit()) return;
   if (_bulkPickupRunning) return;
   const raw  = qs('#pu-bulk-run-input')?.value || '';
   const date = qs('#pu-bulk-run-date')?.value || todayLocalISO();
@@ -101551,6 +101684,7 @@ async function runBulkPickup() {
 
 // ── Date Edit Modal ────────────────────────────────────────────
 function openPuDateModal(id, currentDate) {
+  if (!_puRequireEdit()) return;
   _puDateEditId = id;
   const modal = qs('#pu-date-modal');
   if (!modal) return;
@@ -101567,6 +101701,7 @@ function closePuDateModal() {
 }
 
 async function savePuDateEdit() {
+  if (!_puRequireEdit()) return;
   if (!_puDateEditId) return;
   const date = qs('#pu-date-edit-val')?.value;
   if (!date) return toast(t('puPickDate'), true);
@@ -105828,9 +105963,9 @@ function renderShopifyOrders() {
           return `${_daySepHtml}
           <tr class="${_spRowSelected ? 'sp-row-selected' : ''}${_spCrClass}${o.cancelled ? ' sp-row-cancelled' : o.status !== 'pending' ? ' sp-row-completed' : ''}${_isNewToday && !_spCrClass ? ' sp-row-new' : ''}${_spMyFollowUpScope ? ' sp-my-followup-match' : ''}" style="animation-delay:${Math.min(_spRowIdx,20)*18}ms">
             <td class="sp-c-check">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
-            <td style="white-space:nowrap" data-col="ref"><div class="sp-ref-line">${_spStarHtml(o)}${o.ref
+            <td style="white-space:nowrap" data-col="ref"><div class="sp-ref-line">${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
-              : '<b>-</b>'}${_spOrderConfirmationMark(o)}${_spOrderEditMark(o)}${_oNewBadge}${(!o.editRequest && o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div>${_spRefTimeHtml(o)}</td>
+              : '<b>-</b>'}${_spStarHtml(o)}${_spOrderConfirmationMark(o)}${_spOrderEditMark(o)}${_oNewBadge}${(!o.editRequest && o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div>${_spRefTimeHtml(o)}</td>
             <td style="font-size:.85rem" data-col="client"><div class="sp-client-cq"><div class="sp-client-txt"><div class="sp-client-nameline"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spCustOrdersChipHtml(o, _spCtx.cust, _spCtx.unshipped)}</div>${_spPhone(o) ? `<div class="sp-client-phone" data-col="phone"><a class="sp-client-tel" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient') + ' ' + _spPhone(o))}">${esc(_spPhoneDisplay(_spPhone(o)))}</a></div>` : ''}</div>${_spPhone(o) ? `<span class="sp-ct-stack">${_spContactLinksHtml(o, 'icons')}</span>` : ''}</div></td>
             <td style="text-align:center" data-col="items"><div class="sp-items-cq">${_spItemsCell(o, _spCtx.inv)}</div></td>
             <!-- ⚠ NO inline text-align here. The stylesheet end-aligns الشحن / الخصم /
@@ -107695,8 +107830,8 @@ function _spShowBulkResult(modal, { okCount, total, errors, items, vaultBySeg, p
       <div class="csi-fail-list csi-done-rise">${errors.map(e => `<div dir="auto">${esc(e)}</div>`).join('')}</div>` : ''}
 
     <div class="sp-bulk-result-actions csi-done-rise">
-      ${modal._prepRef && hasPerm('movements') ? `<button type="button" class="btn btn-primary csi-done-btn" onclick="_spOpenBulkPreparation()">${esc(t('spGoToPreparation'))}</button>` : ''}
-      <button type="button" class="btn ${modal._prepRef && hasPerm('movements') ? 'btn-outline' : 'btn-primary'} csi-done-btn" onclick="_spdHide(document.getElementById('sp-bulk-confirm-modal'))">${esc(t('spDoneBtn'))}</button>
+      ${modal._prepRef && hasPerm('pickup-orders') ? `<button type="button" class="btn btn-primary csi-done-btn" onclick="_spOpenBulkPreparation()">${esc(t('spGoToPreparation'))}</button>` : ''}
+      <button type="button" class="btn ${modal._prepRef && hasPerm('pickup-orders') ? 'btn-outline' : 'btn-primary'} csi-done-btn" onclick="_spdHide(document.getElementById('sp-bulk-confirm-modal'))">${esc(t('spDoneBtn'))}</button>
     </div>
   </div>`;
 
@@ -107720,7 +107855,7 @@ function _spShowBulkResult(modal, { okCount, total, errors, items, vaultBySeg, p
 function _spOpenBulkPreparation() {
   const modal = qs('#sp-bulk-confirm-modal');
   const ref = modal?._prepRef;
-  if (!ref || !hasPerm('movements')) return;
+  if (!ref || !hasPerm('pickup-orders')) return;
   _spdHide(modal);
   clearBoardFilters();
   const search = qs('#pu-prep-search');
@@ -110404,10 +110539,10 @@ function _spRenderHistoryTab() {
 <script src="/shopify-edit-approvals.js?v=20261024-review-images"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
-<script src="/bosta-pickup.js?v=20261024-add-orders"></script>
-<script src="/pickup-daily-shipping.js?v=20261027-stable-refresh"></script>
+<script src="/bosta-pickup.js?v=20261029-permissions"></script>
+<script src="/pickup-daily-shipping.js?v=20261029-group-previews"></script>
 <script src="/awb-preview.js?v=20261024"></script>
-<script src="/pickup-ready-return.js?v=20261024-new-group"></script>
+<script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261021-3"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/push-navigation.js"></script>
@@ -110452,7 +110587,7 @@ function _spRenderHistoryTab() {
 <script src="/employee-followup-session.js?v=task-clarity-20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/employee-followup-tour.css?v=20261026-visible-help-color">
 <script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
-<link rel="stylesheet" href="/design-system.css?v=20261029-deposit-center">
-<link rel="stylesheet" href="/metrics-strip.css?v=20261029-above-search">
+<link rel="stylesheet" href="/design-system.css?v=20261029-order-selection">
+<link rel="stylesheet" href="/metrics-strip.css?v=20261029-green-kpis">
 </body>
 </html>

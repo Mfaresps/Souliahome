@@ -11,6 +11,7 @@ import { ManualPurchaseReceiptDto } from './manual-purchase.dto';
 import { InventoryPacksService } from './inventory-packs.service';
 import { ScannedSaleService } from './scanned-sale.service';
 import { ScannedSaleDto } from './scanned-sale.dto';
+import { assertPickupEditable } from '../core/pickup-access';
 
 @Controller('inventory-units')
 @UseGuards(JwtAuthGuard, PermsGuard)
@@ -64,7 +65,7 @@ export class InventoryUnitsController {
   labels(@Body() dto: LabelRequestDto, @Req() req: { user: TrackingActor }) { return this.service.labels(dto, req.user); }
   @Post('labels/preview') @RequirePerms('inventory-units-view')
   preview(@Body() dto: LabelRequestDto) { return this.service.preview(dto); }
-  @Post('orders/:id/identify-lines') @RequirePerms('inventory-units-allocate')
+  @Post('orders/:id/identify-lines') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
   identify(@Param('id') id: string, @Body() dto: TrackingRequestDto, @Req() req: { user: TrackingActor }) { return this.service.identifyLines(id, dto, req.user); }
   @Get('orders/:id/picking') @RequirePerms('inventory-units-view')
   picking(@Param('id') id: string) { return this.service.pickingSummary(id); }
@@ -76,9 +77,9 @@ export class InventoryUnitsController {
   receivePiece(@Param('id') id: string, @Body() dto: ReceiveCustomerPieceDto, @Req() req: { user: TrackingActor }) {
     return this.service.receiveCustomerPiece(id, dto, req.user);
   }
-  @Post('orders/:id/picking/exceptions') @RequirePerms('inventory-units-allocate')
+  @Post('orders/:id/picking/exceptions') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
   pickException(@Param('id') id: string, @Body() dto: OrderPickExceptionDto, @Req() req: { user: TrackingActor }) { return this.service.pickException(id, dto, req.user); }
-  @Post('orders/:id/picking/scans') @RequirePerms('inventory-units-allocate')
+  @Post('orders/:id/picking/scans') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
   pickScan(@Param('id') id: string, @Body() dto: OrderPickScanDto, @Req() req: { user: TrackingActor }) {
     const identifier = dto.identifier.trim().replace(/^\][A-Za-z]\d/, '').toUpperCase();
     if (/^PK-[A-F\d]{24}$/.test(identifier)) {
@@ -97,5 +98,8 @@ export class InventoryUnitsController {
   }
   // The service checks the action-specific permission as well; no generic write permission bypass.
   @Post(':identifier/actions')
-  action(@Param('identifier') id: string, @Body() dto: UnitActionDto, @Req() req: { user: TrackingActor }) { return this.service.action(id, dto, req.user); }
+  action(@Param('identifier') id: string, @Body() dto: UnitActionDto, @Req() req: { user: TrackingActor }) {
+    if (['picking', 'prepare', 'undo-picking'].includes(dto.action)) assertPickupEditable(req.user);
+    return this.service.action(id, dto, req.user);
+  }
 }

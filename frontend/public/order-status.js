@@ -19,6 +19,26 @@
     customer_cancelled: ['العميل ألغى الطلب', 'Cancelled by customer', 'cancelled'],
     rejected: ['مرفوض', 'Rejected', 'issue'],
   };
+  const previews = {
+    awaiting_confirmation: ['waiting', 'بانتظار تأكيد العميل للبدء في تجهيز الطلب.', 'Waiting for customer confirmation before preparation.'],
+    confirmed: ['confirmed', 'تم تأكيد الطلب، وبانتظار بدء التجهيز.', 'Order confirmed and waiting for preparation.'],
+    Pending: ['waiting', 'تم تسجيل الطلب، وبانتظار بدء التجهيز.', 'Order registered and waiting for preparation.'],
+    awaiting_shipment: ['waiting', 'بانتظار إنشاء شحنة جديدة لهذا الطلب.', 'Waiting for a new shipment to be created for this order.'],
+    Preparing: ['Preparing', 'جاري مسح باركود الشحنة وتغليفها في كيس SOULIA.', 'The parcel is being scanned and packed in a SOULIA mailer.'],
+    Ready: ['Ready', 'تم تجهيز الشحنة، وبانتظار استلام شركة الشحن.', 'Packed and ready for collection by the shipping company.'],
+    Shipped: ['transit', 'تم تسجيل شحن الطلب.', 'The order has been marked as shipped.'],
+    PICKED_UP: ['pickup', 'استلمت شركة الشحن الطرد لبدء رحلة التوصيل.', 'The shipping company has collected the parcel.'],
+    IN_TRANSIT: ['transit', 'الشحنة في الطريق عبر شبكة شركة الشحن.', 'The parcel is moving through the shipping network.'],
+    OUT_FOR_DELIVERY: ['delivery', 'الشحنة مع المندوب في جولة التسليم.', 'The parcel is with the courier for delivery.'],
+    DELIVERED: ['delivered', 'تم تسليم الشحنة بنجاح.', 'The parcel has been successfully delivered.'],
+    CUSTOMER_POSTPONED: ['postponed', 'طلب العميل تأجيل الاستلام إلى وقت لاحق.', 'The customer requested delivery at a later time.'],
+    FAILED_ATTEMPT: ['attempt', 'تعذّر تسليم الشحنة في المحاولة الأخيرة.', 'The latest delivery attempt was unsuccessful.'],
+    DELIVERY_FAILED: ['failed', 'تم تسجيل فشل التسليم لدى شركة الشحن.', 'The shipping company reported delivery failure.'],
+    RETURNED: ['returned', 'تم تسجيل الشحنة كمرتجع لدى شركة الشحن.', 'The shipping company has marked the parcel as returned.'],
+    CANCELLED: ['cancelled', 'تم إلغاء الطلب أو الشحنة.', 'The order or shipment has been cancelled.'],
+    customer_cancelled: ['cancelled', 'ألغى العميل الطلب.', 'The customer cancelled the order.'],
+    rejected: ['cancelled', 'تم رفض الطلب.', 'The order was rejected.'],
+  };
   function text(key, lang) {
     const state = states[key];
     return state ? state[lang === 'en' ? 1 : 0] : String(key || '');
@@ -47,16 +67,18 @@
       if (key === 'Picked-Up') key = 'Ready';
       if (key === 'Delivered') key = 'DELIVERED';
     }
-    let label = text(key, lang), tone = states[key]?.[2] || 'shipping';
+    let label = text(key, lang), tone = states[key]?.[2] || 'shipping', previewKey = key;
     const attempts = Array.isArray(o.shipmentAttempts) ? o.shipmentAttempts.length : Number(o.shipmentAttempts) || 0;
     if (!shopify && !activeShipment && o.deliverySource !== 'MANUAL' && attempts > 0 && key !== 'DELIVERED' && key !== 'CANCELLED') {
       label = en ? `Awaiting Shipment ${attempts + 1}` : `بانتظار الشحنة ${attempts + 1}`;
       tone = 'waiting';
+      previewKey = 'awaiting_shipment';
     }
     let carrier = !shopify && ['Ready', 'Shipped', 'DELIVERED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED', 'RETURNED', 'CANCELLED'].includes(key)
       ? String(o.shipCo || o.carrierName || (shipment ? 'Bosta' : o.carrierCode || '')).trim() : '';
     if (/^(bosta|بوسطة)$/i.test(carrier)) carrier = en ? 'Bosta' : 'بوسطة';
     const postponed = o.bostaDeliveryException?.code === 3 && ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(code);
+    if (postponed && ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(key)) previewKey = 'CUSTOMER_POSTPONED';
     if (postponed && key === 'IN_TRANSIT') label = en ? 'In Transit · Customer Postponed' : 'في الطريق · العميل أجّل الاستلام';
     const carrierReason = o.bostaLastTrackingUpdate?.status === code
       ? (en ? o.bostaLastTrackingUpdate.reason || o.bostaLastTrackingUpdate.reasonAr : o.bostaLastTrackingUpdate.reasonAr || o.bostaLastTrackingUpdate.reason) : '';
@@ -72,15 +94,23 @@
       FAILED_ATTEMPT: ['تعذّر التسليم', 'Failed Attempt'],
     };
     const shortLabel = shortLabels[key]?.[en ? 1 : 0] || label;
-    return { key, label, shortLabel, tone, carrier, note };
+    return { key, label, shortLabel, tone, carrier, note, previewKey };
   }
   function escape(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+  function preview(meta) {
+    const key = meta.previewKey || meta.key;
+    if (!Object.prototype.hasOwnProperty.call(previews, key)) return null;
+    const entry = previews[key];
+    return { scene: entry[0], description: entry[/[\u0600-\u06ff]/.test(meta.label) ? 1 : 2] };
+  }
   function badge(meta, options = {}) {
     const title = [meta.label, meta.note].filter(Boolean).join(' · ');
     const label = options.compact && meta.key === 'Ready' ? (/[\u0600-\u06ff]/.test(meta.label) ? 'جاهز للشحن' : 'Ready') : meta.shortLabel || meta.label;
-    return `<span class="order-state${options.compact ? ' is-compact' : ''}" data-order-state="${escape(meta.key)}" data-tone="${escape(meta.tone)}" title="${escape(title)}" aria-label="${escape(title)}"><span class="order-state-dot" aria-hidden="true"></span><span class="order-state-label">${escape(label)}</span></span>`;
+    const preview = options.preview && previews[meta.previewKey || meta.key];
+    const detail = preview ? `data-state-preview role="button" tabindex="0" aria-expanded="false" data-preview-scene="${preview[0]}" data-preview-description="${escape(preview[/[\u0600-\u06ff]/.test(meta.label) ? 1 : 2])}" data-preview-label="${escape(meta.label)}" data-preview-note="${escape(meta.note || '')}"` : `title="${escape(title)}"`;
+    return `<span class="order-state${options.compact ? ' is-compact' : ''}" data-order-state="${escape(meta.key)}" data-tone="${escape(meta.tone)}" ${detail} aria-label="${escape(title)}"><span class="order-state-dot" aria-hidden="true"></span><span class="order-state-label">${escape(label)}</span></span>`;
   }
   function postponements(tx) {
     const raw = tx.bostaRawResponse?.data || tx.bostaRawResponse || {};
@@ -99,7 +129,7 @@
     if (!events.size && tx.bostaStatus === 'CUSTOMER_POSTPONED') add({ status: tx.bostaStatus });
     return [...events.values()].sort((a, b) => (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0));
   }
-  const api = { resolve, badge, text, postponements };
+  const api = { resolve, badge, text, postponements, preview };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SouliaOrderStatus = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

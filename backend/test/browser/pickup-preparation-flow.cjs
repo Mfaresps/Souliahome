@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const puppeteer = require('puppeteer');
-const user = { _id: 'preview', name: 'Preview', role: 'staff', perms: ['pickup-orders', 'movements', 'inventory', 'inventory-units-view', 'inventory-units-allocate'] };
+const user = { _id: 'preview', name: 'Preview', role: 'staff', perms: ['pickup-orders', 'pickup-orders-edit', 'movements', 'inventory', 'inventory-units-view', 'inventory-units-allocate'] };
 const product = { _id: 'a'.repeat(24), code: 'TEST', name: 'Basket', price: 100 };
 const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-20', total: 100, remaining: 100,
   pickupStatus: 'Preparing', pickupRef: 'PREP-FLOW', prepCreatedAt: '2026-10-20', shipCo: 'Bosta',

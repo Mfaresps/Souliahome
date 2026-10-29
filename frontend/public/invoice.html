@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
 <script src="/order-status.js?v=20261026-submitted-deposit"></script>
-<link rel="stylesheet" href="/order-status.css?v=20261029-status-progress">
+<link rel="stylesheet" href="/order-status.css?v=20261029-dashboard-status">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -286,6 +286,11 @@ async function fetchTx() {
 }
 
 function renderInvoice(tx) {
+  if (tx.purchaseDetailsHidden) {
+    document.querySelectorAll('[onclick="window.print()"]').forEach(button => { button.style.display = 'none'; });
+    showState('error', 'الفاتورة محمية', 'تفاصيل وطباعة فواتير الشراء متاحة للمدير فقط');
+    return;
+  }
   const isPurchase = tx.type === 'مشتريات';
   const isReturn   = tx.type === 'مرتجع';
   const typeClass  = isPurchase ? 'is-purchase' : isReturn ? 'is-return' : 'is-sale';

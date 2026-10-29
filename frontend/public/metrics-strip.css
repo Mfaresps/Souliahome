@@ -1,7 +1,7 @@
 /* Shared, compact KPI strip for Transactions and Shopify Orders. */
 @media screen {
-  :is(#mov-kpi-strip,#sp-kpi) {--metric-line:#40b7ed;--metric-divider:#edf0ee}
-  body.dark-mode :is(#mov-kpi-strip,#sp-kpi) {--metric-line:#71d0fc;--metric-divider:var(--border)}
+  :is(#mov-kpi-strip,#sp-kpi) {--metric-line:#287d52;--metric-divider:#edf0ee}
+  body.dark-mode :is(#mov-kpi-strip,#sp-kpi) {--metric-line:#4ade80;--metric-divider:var(--border)}
   #mov-kpi-strip {padding:4px 0;background:var(--bg)}
   #mov-kpi-primary {flex:1 0 660px}
   #mov-kpi-primary .mov-kpi-stat {

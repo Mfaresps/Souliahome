@@ -1,6 +1,6 @@
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
-import {runInNewContext} from 'vm';
+import { runInNewContext } from '../pickup-authorized-context';
 const source=readFileSync(resolve(__dirname,'../../../frontend/public/pickup-ready-return.js'),'utf8');
 function fixture(){
   const button={disabled:false,setAttribute:jest.fn()};

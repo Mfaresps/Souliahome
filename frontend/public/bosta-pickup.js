@@ -35,7 +35,7 @@ function _bpHistory(requests) {
   return `<details class="bp-history" ${requests.length ? 'open' : ''}><summary>${_bpText('طلبات الاستلام', 'Pickup requests')} <span>${requests.length}</span></summary><div class="bp-history-list">${requests.length ? requests.map(r => {
     const created = r.status === 'created';
     const label = created ? _bpText('تم طلب الاستلام', 'Pickup requested') : r.status === 'rejected' ? _bpText('رُفض الطلب', 'Request rejected') : _bpText('قيد التأكيد — راجع بوسطة قبل إعادة المحاولة', 'Awaiting confirmation — check Bosta before retrying');
-    return `<article class="bp-history-item"><div class="bp-history-heading"><bdi>${esc(r.scheduledDate)}</bdi><span class="bp-card-badge ${created ? '' : 'bp-pending'}">${created ? _bpCheck : '◷'}${esc(label)}</span></div><p>${esc(String(r.numberOfParcels))} ${_bpText('طرد', 'parcels')} · ${_bpText('أرسل الطلب:', 'Requested by:')} <bdi>${esc(r.requestedBy || _bpText('غير مسجل', 'Not recorded'))}</bdi></p>${r.createdAt ? `<p class="text-muted">${_bpText('وقت الإرسال:', 'Sent at:')} <bdi>${esc(new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(r.createdAt)))}</bdi></p>` : ''}${r.bostaPickupId ? `<p class="text-muted">${_bpText('رقم الطلب:', 'Request ID:')} <bdi>${esc(r.bostaPickupId)}</bdi></p>` : ''}${['pending','uncertain'].includes(r.updateState) ? `<p class="bp-pending" role="status">${_bpText('إضافة قيد التأكيد:','Addition awaiting confirmation:')} <bdi>${esc(String((r.pendingOrderIds || []).length))}</bdi> · ${_bpText('الإجمالي المطلوب:','Requested total:')} <bdi>${esc(String(r.pendingNumberOfParcels))}</bdi></p><button type="button" class="btn btn-outline btn-sm" data-pickup-verify="${escHtml(r.id)}">${_bpText('تحقق من بوسطة','Verify with Bosta')}</button><p role="alert" class="bp-verify-error"></p>` : ''}</article>`;
+    return `<article class="bp-history-item"><div class="bp-history-heading"><bdi>${esc(r.scheduledDate)}</bdi><span class="bp-card-badge ${created ? '' : 'bp-pending'}">${created ? _bpCheck : '◷'}${esc(label)}</span></div><p>${esc(String(r.numberOfParcels))} ${_bpText('طرد', 'parcels')} · ${_bpText('أرسل الطلب:', 'Requested by:')} <bdi>${esc(r.requestedBy || _bpText('غير مسجل', 'Not recorded'))}</bdi></p>${r.createdAt ? `<p class="text-muted">${_bpText('وقت الإرسال:', 'Sent at:')} <bdi>${esc(new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(r.createdAt)))}</bdi></p>` : ''}${r.bostaPickupId ? `<p class="text-muted">${_bpText('رقم الطلب:', 'Request ID:')} <bdi>${esc(r.bostaPickupId)}</bdi></p>` : ''}${['pending','uncertain'].includes(r.updateState) ? `<p class="bp-pending" role="status">${_bpText('إضافة قيد التأكيد:','Addition awaiting confirmation:')} <bdi>${esc(String((r.pendingOrderIds || []).length))}</bdi> · ${_bpText('الإجمالي المطلوب:','Requested total:')} <bdi>${esc(String(r.pendingNumberOfParcels))}</bdi></p><button type="button" class="btn btn-outline btn-sm" data-pu-edit data-pickup-verify="${escHtml(r.id)}">${_bpText('تحقق من بوسطة','Verify with Bosta')}</button><p role="alert" class="bp-verify-error"></p>` : ''}</article>`;
   }).join('') : `<p class="text-muted">${_bpText('لا توجد طلبات استلام مسجلة.', 'No pickup requests recorded.')}</p>`}</div></details>`;
 }
 function _bpText(ar, en) { return currentLang === 'en' ? en : ar; }
@@ -98,7 +98,7 @@ async function openBostaPickup(button) {
     _bpSetRequests(preview.requests);
     if (typeof renderPickupBoard === 'function') renderPickupBoard();
     const requests = _bpHistory(preview.requests || []);
-    const canRequest = preview.orders.length > 0 && locations.length > 0;
+    const canRequest = _puCanEdit() && preview.orders.length > 0 && locations.length > 0;
     openModal(`<div class="bp-dialog"><h3>${_bpText('طلب استلام من بوسطة', 'Request Bosta pickup')}</h3>
       <div class="bp-count"><span>${_bpText('الطرود الجاهزة لطلب الاستلام', 'Parcels ready for pickup request')}</span> <strong dir="ltr">${preview.numberOfParcels}</strong></div>
       <p class="text-muted" style="font-size:.8rem">${_bpText('أوردر واحد = طرد واحد. العدد لا يتأثر بفلاتر البحث، ويستبعد ما تم طلب استلامه بالفعل.', 'One order = one parcel. Search filters do not affect the count; orders already scheduled are excluded.')}</p>
@@ -154,6 +154,7 @@ function _bpTargetChanged() {
   submit.disabled = _bostaPickupBusy || (!target && !_bostaPickupForm.schedule?.earliestDate);
 }
 async function _bpSubmitAddition(form) {
+  if (!_puRequireEdit()) return;
   const state = _bostaPickupForm;
   const target = (state.preview.requests || []).find(r => r.id === qs('#bp-target').value && r.canExtend && r.businessLocationId === qs('#bp-location').value);
   if (!target) { qs('#bp-error').textContent = _bpText('أعد فتح النافذة لمراجعة طلب الاستلام.','Reopen the dialog to review the pickup request.'); return; }
@@ -183,6 +184,7 @@ async function _bpSubmitAddition(form) {
 }
 document.addEventListener('click', async event => {
   const button = event.target.closest('[data-pickup-verify]');
+  if (button && !_puRequireEdit()) return;
   if (!button || _bostaPickupBusy) return;
   _bostaPickupBusy = true; button.disabled = true;
   const error = button.parentElement.querySelector('.bp-verify-error');
@@ -195,6 +197,7 @@ document.addEventListener('click', async event => {
   finally { _bostaPickupBusy = false; button.disabled = false; }
 });
 async function submitBostaPickup(form) {
+  if (!_puRequireEdit()) return;
   if (_bostaPickupBusy || !_bostaPickupForm || !form.reportValidity()) return;
   if (qs('#bp-target')?.value) return _bpSubmitAddition(form);
   const date = qs('#bp-date').value;

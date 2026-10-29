@@ -175,6 +175,15 @@
   #main #shopify-orders-table-wrap .data-table :is(th,td)[data-col="action"] {inset-inline-end:auto;box-shadow:none}
   #main #shopify-orders-table-wrap .data-table tbody td[data-col="action"] {position:relative;z-index:auto;background:transparent}
   #main #shopify-orders-table-wrap .data-table .sp-c-check {width:36px;padding-inline:6px;text-align:center}
+  /* Keep selection in its existing column, beside the order reference. */
+  #main #mov-table :is(thead th,tbody td):first-child,
+  #main #shopify-orders-table-wrap .data-table .sp-c-check {
+    text-align:end!important;padding-inline:8px 4px!important;
+  }
+  #main #mov-table .checkbox,
+  #main #shopify-orders-table-wrap .sp-c-check input[type="checkbox"] {
+    width:20px!important;height:20px!important;min-width:20px;margin:0;padding:0;vertical-align:middle;cursor:pointer;
+  }
   #main #shopify-orders-table-wrap :is(.sp-client-cq,.sp-items-cq) {container-type:normal;width:auto}
   #main #shopify-orders-table-wrap .sp-client-cq {justify-content:flex-start;gap:8px}
   #main #shopify-orders-table-wrap .sp-client-txt {flex:0 1 auto}

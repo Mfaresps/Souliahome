@@ -1,7 +1,8 @@
 /* Shared delivery badges: soft solid fills, rounded corners and a small status
    mark. Shipping/failure colours follow the supplied visual references. */
 .order-state{--state-ink:#4a4a4a;--state-fill:#ebebeb;display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:1px 6px;border:1px solid transparent;border-radius:8px;background:var(--state-fill);color:var(--state-ink);font-size:10px;font-weight:400;line-height:18px;vertical-align:middle;text-align:start;white-space:nowrap;overflow:hidden;flex-shrink:1;min-width:0;box-sizing:border-box;font-family:inherit}
-.order-state[data-tone=confirmed],.order-state[data-tone=delivered]{--state-ink:#145b37;--state-fill:#c7f0d8}
+.order-state[data-tone=confirmed]{--state-ink:#145b37;--state-fill:#c7f0d8}
+.order-state[data-tone=delivered]{--state-ink:#4a4a4a;--state-fill:#f2f2f2}
 .order-state[data-tone=preparing]{--state-ink:#214b8b;--state-fill:#d5e5ff}
 .order-state[data-tone=ready]{--state-ink:#634900;--state-fill:#ffeb78}
 .order-state[data-tone=shipping]{--state-ink:#00566b;--state-fill:#8ce3f5}
@@ -21,7 +22,7 @@
 body.dark-mode .order-state{background:var(--state-fill);color:var(--state-ink);border-color:transparent}
 .inv-order-state{display:flex;justify-content:center;padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
 .sp-card-order-state{padding:0 12px 9px}.sp-ref-line>.order-state{margin-block:3px}.sp-ref-line{flex-wrap:wrap}
-.inv-order-state-heading{margin-block-start:7px}.ds-shc-trk>.order-state{margin-block-end:7px}
+.inv-order-state-heading{margin-block-start:7px}
 .sp-table-confirmation{width:20px;height:20px}.sp-table-confirmation.is-waiting{color:#64748b;background:#f1f5f9}.sp-table-confirmation.is-paid{color:#047857;background:#ecfdf5}body.dark-mode .sp-table-confirmation.is-waiting{color:#94a3b8;background:#243041}body.dark-mode .sp-table-confirmation.is-paid{color:#6ee7b7;background:#12382d}
 .order-state.is-compact{font-size:10px;line-height:17px;padding:1px 5px}.order-state-cell{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0;vertical-align:middle;white-space:nowrap}.order-state-cell .bosta-track-link,.order-state-info{flex:0 0 auto}.order-state-info{font-size:11px;color:var(--muted);cursor:help}.order-state.is-compact .order-state-label{font-weight:500}
 @media print{.order-state{box-shadow:none;print-color-adjust:exact;-webkit-print-color-adjust:exact}}

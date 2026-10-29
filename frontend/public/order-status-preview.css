@@ -1,0 +1,74 @@
+.order-state[data-state-preview]{cursor:help;touch-action:manipulation}
+.order-state[data-state-preview]:focus-visible{outline:2px solid var(--state-ink);outline-offset:3px}
+.order-status-preview{position:fixed;z-index:10050;width:200px;max-width:calc(100vw - 20px);max-height:calc(100vh - 20px);overflow:auto;box-sizing:border-box;border:1px solid #dde4ec;border-radius:10px;background:#fff;color:#25334a;box-shadow:0 5px 16px #12243c14;font-family:inherit;text-align:start;animation:osp-appear .16s ease-out;isolation:isolate}
+.osp-scene{margin:5px 5px 0;border-radius:6px;background:linear-gradient(145deg,#f2f6fd,#eaf1fa);overflow:hidden;color:#395574}
+[data-state=Ready] .osp-scene{background:linear-gradient(145deg,#fcf9ed,#f3efdc)}
+.osp-scene svg{display:block;width:100%;height:88px}
+.osp-copy{padding:8px 10px 10px}
+.osp-copy strong{display:block;font-size:12px;font-weight:600;line-height:1.45}
+.osp-copy p{margin:3px 0 0;color:#657187;font-size:11.5px;line-height:1.55}
+.osp-copy .osp-note{padding-top:5px;border-top:1px solid #dde4ec;color:#986019}
+.osp-prep-brand{font:600 9px Arial,sans-serif;letter-spacing:1.3px;fill:#536d88;unicode-bidi:isolate}
+.osp-box-brand{font:600 5.5px Arial,sans-serif;fill:#654725;unicode-bidi:isolate;letter-spacing:0}
+.osp-box-brand-prep{font-size:6.5px}
+.pu-group-header[data-state-preview]:focus-visible{outline:2px solid #7894b6;outline-offset:2px;border-radius:6px}
+.osp-prep-transfer{animation:osp-prep-transfer 5.6s ease-in-out infinite}
+.osp-prep-hand{animation:osp-prep-hand 5.6s ease-in-out infinite}
+.osp-prep-scanner{animation:osp-prep-scanner 5.6s ease-in-out infinite}
+.osp-prep-beam{animation:osp-prep-beam 5.6s ease-in-out infinite}
+.osp-prep-laser{animation:osp-prep-laser 5.6s ease-in-out infinite}
+.osp-prep-flap{transform-origin:162px 65px;animation:osp-prep-seal 5.6s ease-in-out infinite}
+.osp-prep-done{transform-origin:205px 105px;animation:osp-prep-done 5.6s ease-in-out infinite}
+.osp-parcel{animation:osp-load 3.6s ease-in-out infinite}
+.osp-parcel-two{animation-delay:-1.2s}
+.osp-parcel-three{animation-delay:-2.4s}
+.order-status-preview:is([data-scene=transit],[data-scene=pickup]) .osp-scene{background:linear-gradient(145deg,#eff8fa,#e1f0f2)}
+.order-status-preview:is([data-scene=delivery],[data-scene=delivered],[data-scene=confirmed]) .osp-scene{background:linear-gradient(145deg,#f2f8f1,#e5f0e6)}
+.order-status-preview:is([data-scene=waiting],[data-scene=postponed]) .osp-scene{background:linear-gradient(145deg,#fcf9ef,#f3eddf)}
+.order-status-preview:is([data-scene=attempt],[data-scene=failed],[data-scene=cancelled]) .osp-scene{background:linear-gradient(145deg,#fcf5ef,#f4e9e4)}
+.order-status-preview[data-scene=returned] .osp-scene{background:linear-gradient(145deg,#f6f3fa,#ece6f4)}
+.osp-truck{animation:osp-drive .75s ease-in-out infinite alternate}
+.osp-wheel{transform-box:fill-box;transform-origin:center;animation:osp-spin 1s linear infinite}
+.osp-road{animation:osp-road 1s linear infinite}
+.osp-scenery{animation:osp-scenery 4s linear infinite}
+.osp-speed{animation:osp-breathe 1s ease-in-out infinite alternate}
+.osp-clock-hand{transform-origin:160px 78px;animation:osp-spin 8s linear infinite}
+.osp-check-draw{stroke-dasharray:34;animation:osp-tick 3s ease-in-out infinite}
+.osp-scan{animation:osp-scan 2.4s ease-in-out infinite}
+.osp-to-door{animation:osp-to-door 3.6s ease-in-out infinite}
+.osp-pin{animation:osp-drive 1.4s ease-in-out infinite alternate}
+.osp-confetti{animation:osp-celebrate 3s ease-out infinite}
+.osp-alert,.osp-knock,.osp-cancel-mark,.osp-stop-route{animation:osp-breathe 1.8s ease-in-out infinite alternate}
+.osp-return-arrow{animation:osp-breathe 1.5s ease-in-out infinite alternate}
+.osp-return-parcel{animation:osp-return 3.6s ease-in-out infinite}
+@keyframes osp-drive{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+@keyframes osp-spin{to{transform:rotate(360deg)}}
+@keyframes osp-road{to{stroke-dashoffset:36}}
+@keyframes osp-scenery{from{transform:translateX(18px)}to{transform:translateX(-18px)}}
+@keyframes osp-breathe{from{opacity:.5}to{opacity:1}}
+@keyframes osp-tick{0%,12%{stroke-dashoffset:34}40%,90%{stroke-dashoffset:0}100%{stroke-dashoffset:34}}
+@keyframes osp-scan{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(35px);opacity:1}}
+@keyframes osp-to-door{0%,8%{transform:translateX(-19px);opacity:0}22%{opacity:1}75%,90%{transform:translateX(49px);opacity:1}100%{transform:translateX(49px);opacity:0}}
+@keyframes osp-celebrate{0%,15%{transform:translateY(4px);opacity:0}45%{opacity:1}90%,100%{transform:translateY(-9px);opacity:0}}
+@keyframes osp-return{0%,8%{transform:translateX(24px);opacity:0}22%{opacity:1}75%,90%{transform:translateX(-46px);opacity:1}100%{transform:translateX(-46px);opacity:0}}
+@keyframes osp-appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes osp-prep-transfer{0%{transform:translate(0,0);opacity:0}7%,34%{transform:translate(0,0);opacity:1}49%{transform:translate(82px,-24px);opacity:1}65%,92%{transform:translate(82px,24px);opacity:1}98%,100%{transform:translate(82px,24px);opacity:0}}
+@keyframes osp-prep-hand{0%,22%{transform:translate(12px,-15px);opacity:0}31%,65%{transform:translate(0,0);opacity:1}76%{transform:translate(16px,-45px);opacity:0}100%{transform:translate(16px,-45px);opacity:0}}
+@keyframes osp-prep-scanner{0%,28%{opacity:1;transform:translate(0,0)}38%,92%{opacity:.3;transform:translate(-3px,-3px)}100%{opacity:1;transform:translate(0,0)}}
+@keyframes osp-prep-beam{0%,7%{opacity:0}10%,24%{opacity:1}29%,100%{opacity:0}}
+@keyframes osp-prep-laser{0%,10%{transform:translateY(0)}23%,100%{transform:translateY(12px)}}
+@keyframes osp-prep-seal{0%,74%{transform:scaleY(-1)}84%,94%{transform:scaleY(1)}100%{transform:scaleY(-1)}}
+@keyframes osp-prep-done{0%,83%{opacity:0;transform:scale(.7)}88%,94%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}
+@keyframes osp-load{0%{transform:translate(48px,78px);opacity:0}12%{opacity:1}68%{transform:translate(92px,75px);opacity:1}90%,100%{transform:translate(121px,75px);opacity:0}}
+body.dark-mode .order-status-preview{background:#1d2938;border-color:#3a495b;color:#e7edf5;box-shadow:0 5px 16px #0003}
+body.dark-mode .osp-copy p{color:#b1bfd0}
+body.dark-mode .osp-copy .osp-note{color:#edc37e;border-color:#3a495b}
+body.dark-mode .osp-scene{background:linear-gradient(145deg,#2e4056,#26384f);color:#c4d5ed}
+body.dark-mode [data-state=Ready] .osp-scene{background:linear-gradient(145deg,#454333,#33382f)}
+body.dark-mode .order-status-preview:is([data-scene=transit],[data-scene=pickup]) .osp-scene{background:linear-gradient(145deg,#29434b,#253940)}
+body.dark-mode .order-status-preview:is([data-scene=delivery],[data-scene=delivered],[data-scene=confirmed]) .osp-scene{background:linear-gradient(145deg,#33483d,#293c33)}
+body.dark-mode .order-status-preview:is([data-scene=waiting],[data-scene=postponed]) .osp-scene{background:linear-gradient(145deg,#474336,#38382e)}
+body.dark-mode .order-status-preview:is([data-scene=attempt],[data-scene=failed],[data-scene=cancelled]) .osp-scene{background:linear-gradient(145deg,#4b3c37,#3e3130)}
+body.dark-mode .order-status-preview[data-scene=returned] .osp-scene{background:linear-gradient(145deg,#403b50,#322e41)}
+@media(prefers-reduced-motion:reduce){.order-status-preview,.order-status-preview *{animation:none!important}.osp-prep-transfer{transform:translate(82px,24px)}.osp-prep-hand,.osp-prep-beam{display:none}.osp-parcel-two,.osp-parcel-three{display:none}}
+@media print{.order-status-preview{display:none!important}}

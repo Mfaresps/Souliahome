@@ -1,12 +1,13 @@
 const _puReadyReturnBusy = new Set();
 function _puReadyReturnButtonsHtml(order) {
+  if (!_puCanEdit()) return '';
   if (!_puDailyAwaitingPickup(order)) return '';
   const en = currentLang === 'en', id = esc(String(order._id));
   const busy = _puReadyReturnBusy.size ? 'disabled aria-busy="true"' : '';
   return `<button type="button" class="pw-abtn is-warn" data-ready-return="${id}" data-return-mode="pending" ${busy}
-    onclick="pucoRestoreFromReady(this.dataset.readyReturn)" title="${en ? 'Cancel preparation and remove scanned piece identities from this invoice' : 'إلغاء التحضير وإزالة أكواد القطع الممسوحة من الفاتورة'}">↩ ${en ? 'Return to Pending' : 'إرجاع للمعلّق'}</button>
+    data-pu-edit onclick="pucoRestoreFromReady(this.dataset.readyReturn)" title="${en ? 'Cancel preparation and remove scanned piece identities from this invoice' : 'إلغاء التحضير وإزالة أكواد القطع الممسوحة من الفاتورة'}">↩ ${en ? 'Return to Pending' : 'إرجاع للمعلّق'}</button>
     <button type="button" class="pw-abtn is-go" data-ready-return="${id}" data-return-mode="preparing" ${busy}
-    onclick="pucoReturnReadyToPrep(this.dataset.readyReturn)" title="${en ? 'Keep preparation and scanned piece identities' : 'الاحتفاظ بالتحضير وهوية القطع الممسوحة'}">↩ ${en ? 'Return to Preparing' : 'إرجاع للتحضير'}</button>`;
+    data-pu-edit onclick="pucoReturnReadyToPrep(this.dataset.readyReturn)" title="${en ? 'Keep preparation and scanned piece identities' : 'الاحتفاظ بالتحضير وهوية القطع الممسوحة'}">↩ ${en ? 'Return to Preparing' : 'إرجاع للتحضير'}</button>`;
 }
 function _puChooseReturnPrepGroup(order, groups) {
   const en = currentLang === 'en', host = document.createElement('div');
@@ -58,6 +59,7 @@ function _puChooseReturnPrepGroup(order, groups) {
   });
 }
 async function _puReturnReadyOrder(orderId, mode) {
+  if (!_puRequireEdit()) return;
   if (_puReadyReturnBusy.size || !['pending','preparing'].includes(mode)) return;
   const order = _pickupOrders.find(row => String(row._id) === String(orderId));
   if (!order || !['Ready','Picked-Up'].includes(order.pickupStatus) || !_puDailyAwaitingPickup(order)) return;

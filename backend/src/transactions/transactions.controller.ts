@@ -339,11 +339,13 @@ export class TransactionsController {
 
   // ─── Pick-Up endpoints (must be BEFORE @Get(':id') to avoid routing conflict) ──
 
+  @RequirePerms('pickup-orders')
   @Get('pickup-orders')
   async getPickupOrders() {
     return this.transactionsService.findPickupOrders();
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/preparing')
   async setPickupPreparing(
     @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; createdAt?: string },
@@ -358,6 +360,7 @@ export class TransactionsController {
     });
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/confirm')
   async confirmPickup(
     @Body() body: { ids: string[]; date?: string; reuseOpenRun?: boolean },
@@ -367,6 +370,7 @@ export class TransactionsController {
     return this.transactionsService.confirmPickup(body.ids, by, body.date, body.reuseOpenRun === true);
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/undo')
   async undoPickup(
     @Body() body: { ids: string[]; sourceRef?: string },
@@ -376,6 +380,7 @@ export class TransactionsController {
     return this.transactionsService.undoPickup(body.ids, by, req.user.userId, body.sourceRef);
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/return-to-preparing')
   async returnPickupToPreparing(
     @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; sourceRef?: string; joinExisting?: boolean },
@@ -385,6 +390,7 @@ export class TransactionsController {
     return this.transactionsService.returnPickupToPreparing(body.ids, by, req.user.userId, body.prepRef, body);
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/add-to-run')
   async addToPickupRun(
     @Body() body: { id?: string; ids?: string[]; pickupRef: string; date?: string },
@@ -395,6 +401,7 @@ export class TransactionsController {
     return this.transactionsService.addToPickupRun(ids, body.pickupRef, by, body.date);
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Patch('pickup-orders/:id/prep-check')
   async setPrepChecked(
     @Param('id') id: string,
@@ -403,6 +410,18 @@ export class TransactionsController {
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
     return this.transactionsService.setPrepChecked(id, body.prepChecked, by, body.reason || '');
+  }
+
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Put('pickup-orders/:id')
+  async updatePickupOrder(@Param('id') id: string, @Body() dto: UpdateTransactionDto, @Req() req: any) {
+    return this.update(id, dto, req);
+  }
+
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/:id/comments')
+  async addPickupComments(@Param('id') id: string, @Body() body: { comments: Array<any> }, @Req() req: any) {
+    return this.addComments(id, body, req);
   }
 
   @Get('by-ref/:ref')
@@ -419,6 +438,9 @@ export class TransactionsController {
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req?: { user?: { role?: string; perms?: string[] } }) {
     if (id === 'pickup-orders') {
+      if (req?.user?.role !== 'admin' && !req?.user?.perms?.includes('pickup-orders')) {
+        throw new ForbiddenException('ليس لديك صلاحية عرض طلبات الاستلام');
+      }
       const txs = await this.transactionsService.findPickupOrders();
       return maskTransactionsForRole(filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms), req?.user?.role);
     }

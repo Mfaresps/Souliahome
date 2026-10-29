@@ -84,7 +84,7 @@ async function assertStableRefresh(page, selector, table = false) {
     });
     await page.goto('http://soulia.test/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
-      currentUser = { _id: 'employee', role: 'staff', perms: ['movements'] }; currentLang = 'ar';
+      currentUser = { _id: 'employee', role: 'staff', perms: ['movements','pickup-orders','pickup-orders-edit'] }; currentLang = 'ar';
       document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl';
       qs('#app').style.display = ''; qs('#login-page').style.display = 'none'; qs('#splash-screen')?.remove();
       onPageEnter = () => {}; window.writes = [];

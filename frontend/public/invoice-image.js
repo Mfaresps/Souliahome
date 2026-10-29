@@ -272,7 +272,9 @@ async function exportInvoiceImage(source, id, action) {
     tx = transactions.find(entry => String(entry._id) === String(id));
     if (!tx) return fail(en ? 'Invoice not found' : 'الفاتورة غير موجودة');
   }
-  if (tx.purchaseDetailsHidden) return fail(en ? 'Purchase details are restricted to admins' : 'تفاصيل الشراء متاحة للمدير فقط');
+  if (tx.purchaseDetailsHidden || (['مشتريات','مرتجع مشتريات'].includes(tx.type) && !isAdmin())) {
+    return fail(en ? 'Purchase details are restricted to admins' : 'تفاصيل الشراء متاحة للمدير فقط');
+  }
   if (source !== 'shopify' && tx.shopifyOrderId) {
     order = (typeof _shopifyOrders === 'undefined' ? [] : _shopifyOrders).find(item =>
       item.editRequest?.transactionId === tx._id || String(item.shopifyId || '') === String(tx.shopifyOrderId));

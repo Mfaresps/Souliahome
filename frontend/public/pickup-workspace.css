@@ -127,8 +127,16 @@ body.dark-mode #page-pickup-orders .pu-bkpi.bkpi-rate { --pu-kpi: #b69aff; }
 }
 body.dark-mode #page-pickup-orders #pu-board-filters-row input[type=date] { color-scheme: dark; }
 #page-pickup-orders #pu-board-filters-row .pu-filter-shipco {
-  flex: 0 1 164px; width: 164px; max-width: 100%; min-width: 0; height: 36px;
-  padding: 0 9px; font-size: .75rem; border: 1px solid var(--border); border-radius: 8px;
+  flex: 0 1 184px; width: 184px; max-width: 100%; min-width: min(184px,100%); height: 36px;
+  padding: 0 9px; padding-inline-end: 32px; font-size: .75rem; border: 1px solid var(--border); border-radius: 8px;
+  /* The filter bar's background shorthand clears the global select chevron. */
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7f73' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: 14px; background-position: right 10px center;
+}
+[dir="rtl"] #page-pickup-orders #pu-board-filters-row .pu-filter-shipco { background-position: left 10px center; }
+body.dark-mode #page-pickup-orders #pu-board-filters-row .pu-filter-shipco {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239db3a5' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 #page-pickup-orders #pu-board-filters-row .pu-filter-clear { min-height: 34px; padding: 0 8px; }
 #page-pickup-orders #pu-sync-bosta-btn { min-height: 36px; border-radius: 8px; padding: 6px 10px; font-size: .75rem; }
@@ -996,3 +1004,12 @@ body.dark-mode #page-pickup-orders .pu-stage-card .pu-prep-open { color:var(--pu
 #page-pickup-orders .pu-stage-card .pu-daily-count>span {
   color: var(--pu-stage-ink); font-size: .75rem; font-weight: 700;
 }
+/* Read-only accounts keep filters, detail views and exports. */
+body.pu-readonly [data-pu-edit],
+body.pu-readonly #page-pickup-orders input[type="checkbox"],
+body.pu-readonly #puco-add-row,
+body.pu-readonly .pu-group-drag-handle,
+body.pu-readonly .pu-pt-shift-hint,
+body.pu-readonly .pu-card-prep-tick-wrap,
+body.pu-readonly .pw-cmt-compose {display:none!important}
+body.pu-readonly .bp-request-button {background:var(--surface);border-color:var(--border);color:var(--text)}
