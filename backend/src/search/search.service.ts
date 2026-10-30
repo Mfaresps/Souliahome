@@ -471,6 +471,7 @@ export class SearchService {
       // rule as the Movements table (_puDisplayStatus).
       bostaStatus: tx.bostaStatus || '',
       orderState: {
+        type: tx.type,
         cancelled: !!tx.cancelled, payStatus: tx.payStatus || '', pickupStatus: tx.pickupStatus || 'Pending',
         prepChecked: !!tx.prepChecked, bostaStatus: tx.bostaStatus || '',
         hasShipment: !!(tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId),

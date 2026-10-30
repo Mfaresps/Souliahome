@@ -64,6 +64,40 @@ function serviceFor(order: any): any {
 }
 
 describe('ShopifyService — cancellation request/approval', () => {
+  describe('mandatory customer cancellation detail', () => {
+    it('rejects the generic parent before direct cancellation or a request can change anything', async () => {
+      const order = buildOrder(), svc = serviceFor(order);
+      await expect(svc.cancelOrder('o1', 'موظف', '', 'customer-request', 'العميل طلب الإلغاء')).rejects.toThrow(BadRequestException);
+      await expect(svc.requestCancelOrder('o1', 'موظف', 'customer-request', '')).rejects.toThrow(BadRequestException);
+      expect(order.save).not.toHaveBeenCalled();
+      expect(svc.depositReceipts.settleOnCancel).not.toHaveBeenCalled();
+      expect(order.cancelled).toBe(false);
+    });
+
+    it.each(['customer-wants-inspection', 'customer-refused-deposit', 'customer-changed-mind', 'customer-price-too-high'])(
+      'keeps %s through direct cancellation and request approval', async code => {
+        const direct = buildOrder(), directService = serviceFor(direct);
+        await directService.cancelOrder('o1', 'موظف', '', code, 'قال العميل هذا السبب');
+        expect(direct).toMatchObject({ cancelled: true, cancelReasonCode: code, cancelReasonNote: 'قال العميل هذا السبب' });
+        expect(direct.cancelReason).toContain('العميل طلب الإلغاء —');
+        const requested = buildOrder(), requestService = serviceFor(requested);
+        await requestService.requestCancelOrder('o1', 'موظف', code, 'قال العميل هذا السبب');
+        expect(requested.cancelled).toBe(false);
+        await requestService.approveCancelRequest('o1', 'مدير');
+        expect(requested).toMatchObject({ cancelled: true, cancelReasonCode: code, cancelReasonNote: 'قال العميل هذا السبب', cancelledBy: 'موظف' });
+        expect(requested.cancelReason).toBe(direct.cancelReason);
+      },
+    );
+
+    it('requires an explanation for the customer-specific other reason', async () => {
+      const order = buildOrder(), svc = serviceFor(order);
+      await expect(svc.requestCancelOrder('o1', 'موظف', 'customer-request-other', '   ')).rejects.toThrow(BadRequestException);
+      await expect(svc.cancelOrder('o1', 'موظف', '', 'customer-request-other', 'آخر')).rejects.toThrow(BadRequestException);
+      expect(order.save).not.toHaveBeenCalled();
+      await svc.requestCancelOrder('o1', 'موظف', 'customer-request-other', 'العميل مسافر قبل موعد التوصيل');
+      expect(order.cancelRequest.cancelReasonNote).toBe('العميل مسافر قبل موعد التوصيل');
+    });
+  });
   describe('requestCancelOrder()', () => {
     it('records the request WITHOUT cancelling the order', async () => {
       const o = buildOrder();

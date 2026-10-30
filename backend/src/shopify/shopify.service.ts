@@ -2081,6 +2081,7 @@ export class ShopifyService {
     if (!def || !def.stages.includes('shopify')) {
       throw new BadRequestException('سبب الإلغاء غير معروف أو غير متاح لأوردرات شوبيفاي');
     }
+    if (def.requiresDetail) throw new BadRequestException('حدد السبب الفعلي لطلب العميل الإلغاء: المعاينة أو العربون أو تغيير الرأي أو السعر أو سبب آخر موضح');
     // ⚠ رمز systemOnly يكتبه النظام وحده. هذه الميثود تخدم مسارَي الإلغاء اليدوي
     //   (مباشر + طلب)، فقبوله هنا يسمح لموظف بوسم إلغائه اليدوي كإلغاء من شوبيفاي.
     if (def.systemOnly) {
@@ -2088,6 +2089,9 @@ export class ShopifyService {
     }
     if (def.requiresNote && !note) {
       throw new BadRequestException('يجب كتابة تفاصيل السبب عند اختيار «سبب آخر»');
+    }
+    if (def.minNoteLength && note.replace(/\s+/g, ' ').length < def.minNoteLength) {
+      throw new BadRequestException(`وضّح السبب الذي ذكره العميل في ${def.minNoteLength} أحرف على الأقل`);
     }
     return { code, note, summary: cancelReasonSummary(code, note) };
   }

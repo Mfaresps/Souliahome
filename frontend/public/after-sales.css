@@ -120,3 +120,21 @@ dialog.as-dialog.as-compact{width:min(620px,calc(100vw - 32px))}
 @media(max-width:640px){.as-flow-nav .as-steps{margin-inline:-13px;padding-inline:13px}.as-flow-nav .as-step button{min-height:42px}}
 
 .as-order-type{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 8px;border:1px solid var(--border,#d9e0e9);border-radius:7px;background:var(--surface2,#f1f5f9);color:var(--primary,#166534);font:inherit;font-size:.72rem;font-weight:700;vertical-align:middle}.as-order-type svg{width:15px;height:15px;flex:none}button.as-order-type{cursor:pointer}.pw-ocard>.as-order-type{margin-block:5px}.as-preparation{padding:12px;overflow-wrap:anywhere}.as-preparation h4{font-size:.78rem;margin:12px 0 6px}.as-prep-line{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;padding:5px 0}.as-prep-line b{white-space:nowrap}.as-preparation .as-summary{margin-block:12px}.as-preparation .as-summary div{font-size:.75rem}.as-preparation .as-actions{margin-top:12px}
+/* Report columns keep shipping details and financial values readable in both directions. */
+.as-report-table-wrap{border:1px solid var(--border,#d9e0e9);border-radius:12px;max-width:100%;overscroll-behavior-inline:contain}
+.as-report-table{min-width:820px;table-layout:fixed;line-height:1.6}
+.as-report-invoice-col{width:9%}.as-report-customer-col{width:19%}.as-report-status-col{width:30%}.as-report-money-col{width:14%}
+.as-report-table th,.as-report-table td{padding:14px 12px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere}
+.as-report-table th{background:var(--surface2,#f1f5f9);font-weight:700;line-height:1.6}
+.as-report-table tbody tr:last-child td{border-bottom:0}
+.as-report-table tbody tr:hover{background:var(--surface2,#f1f5f9)}
+.as-report-table th:nth-child(n+4),.as-report-table .as-report-money{text-align:end}
+.as-report-table .as-report-money{white-space:nowrap;font-variant-numeric:tabular-nums}
+.as-report-table .as-link{display:inline-block;padding:6px 0;font-weight:600;max-width:100%}
+.as-report-customer{font-weight:600}
+.as-report-status{display:grid;gap:8px;justify-items:start;text-align:start}
+.as-report-shipment{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;max-width:100%;padding:8px 10px;border:1px solid var(--border,#d9e0e9);border-radius:8px;background:var(--surface2,#f1f5f9);color:inherit;font:inherit;text-align:start;cursor:pointer}
+.as-report-shipment-label{font-size:.72rem;color:var(--muted,#64748b)}
+.as-report-shipment .order-state{max-width:100%;margin:0;white-space:normal}
+.as-report-tracking{flex-basis:100%;font-size:.76rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;text-align:start}
+.as-report-table .as-report-empty{text-align:center;padding:28px 16px;color:var(--muted,#64748b)}

@@ -40,6 +40,10 @@ export interface CancelReasonDef {
   group: 'customer' | 'operations' | 'inventory' | 'payment' | 'other';
   /** «سبب آخر» — the free-text note becomes required. */
   requiresNote?: boolean;
+  /** A navigation choice only; new cancellations must store one of its child codes. */
+  requiresDetail?: boolean;
+  parentCode?: string;
+  minNoteLength?: number;
 }
 
 export const CANCEL_REASON_GROUPS = [
@@ -52,10 +56,14 @@ export const CANCEL_REASON_GROUPS = [
 
 export const CANCEL_REASONS: CancelReasonDef[] = [
   // ── من العميل ────────────────────────────────────────────────────────────
-  { code: 'customer-request', ar: 'العميل طلب الإلغاء', en: 'Customer requested cancellation', stages: ['shopify', 'transaction'], group: 'customer' },
+  { code: 'customer-request', ar: 'العميل طلب الإلغاء', en: 'Customer requested cancellation', stages: ['shopify', 'transaction'], group: 'customer', requiresDetail: true },
+  { code: 'customer-wants-inspection', ar: 'يريد معاينة المنتج قبل الشراء', en: 'Wants to inspect the product before buying', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request' },
+  { code: 'customer-refused-deposit', ar: 'لا يريد دفع عربون مقدم', en: 'Does not want to pay a deposit', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request' },
+  { code: 'customer-price-too-high', ar: 'يرى أن السعر مرتفع', en: 'Considers the price too high', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request' },
+  { code: 'customer-request-other', ar: 'سبب آخر أوضحه العميل', en: 'Another reason explained by the customer', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request', requiresNote: true, minNoteLength: 8 },
   { code: 'customer-unreachable', ar: 'تعذّر الوصول للعميل', en: 'Customer unreachable', stages: ['shopify', 'transaction'], group: 'customer' },
-  { code: 'customer-changed-mind', ar: 'العميل غيّر رأيه', en: 'Customer changed their mind', stages: ['shopify', 'transaction'], group: 'customer' },
-  { code: 'customer-found-cheaper', ar: 'العميل وجد سعراً أفضل', en: 'Customer found a better price', stages: ['shopify', 'transaction'], group: 'customer' },
+  { code: 'customer-changed-mind', ar: 'العميل غيّر رأيه', en: 'Customer changed their mind', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request' },
+  { code: 'customer-found-cheaper', ar: 'العميل وجد سعراً أفضل', en: 'Customer found a better price', stages: ['shopify', 'transaction'], group: 'customer', parentCode: 'customer-request' },
   { code: 'wrong-order', ar: 'العميل طلب صنفاً خاطئاً', en: 'Customer ordered the wrong item', stages: ['shopify', 'transaction'], group: 'customer' },
 
   // ── تشغيلي / شحن ─────────────────────────────────────────────────────────
@@ -117,7 +125,8 @@ export function isValidCancelReason(code: string, stage?: CancelStage): boolean 
  */
 export function cancelReasonSummary(code: string, note?: string): string {
   const def = cancelReasonDef(code);
-  const label = def ? def.ar : String(code || '').trim();
+  const parent = def?.parentCode ? cancelReasonDef(def.parentCode) : undefined;
+  const label = def ? (parent ? `${parent.ar} — ${def.ar}` : def.ar) : String(code || '').trim();
   const n = String(note || '').trim();
   if (!label) return n;
   return n ? `${label} — ${n}` : label;

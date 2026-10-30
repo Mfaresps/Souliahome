@@ -642,6 +642,19 @@ body.dark-mode .spp-badge{color:#93c5fd}
 .crp-note{width:100%;box-sizing:border-box;font-family:inherit;font-size:.82rem;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);resize:vertical}
 .crp-err{margin-top:7px;font-size:.75rem;font-weight:650;color:var(--red)}
 .crp-err[hidden]{display:none}
+.crp [hidden]{display:none!important}
+.crp-detail-step{border:1px solid var(--border);border-radius:12px;background:var(--bg-alt);padding:14px}
+.crp-step-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:.72rem;color:var(--primary)}
+.crp-step-head button{border:0;padding:4px 0;background:transparent;color:var(--primary);font:inherit;text-decoration:underline;cursor:pointer}
+.crp-detail-step fieldset{border:0;padding:0;margin:0;min-width:0}
+.crp-detail-step legend{font-size:.94rem;font-weight:700;padding:0;color:var(--text)}
+.crp-detail-step p{margin:7px 0 14px;font-size:.76rem;color:var(--muted);line-height:1.7}
+.crp-detail-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.crp-detail-options .crp-opt{border-radius:10px;min-height:56px;padding:12px;align-items:flex-start;box-sizing:border-box}
+.crp-detail-options .crp-dot{margin-top:4px}
+.crp-detail-options .crp-txt{white-space:normal;line-height:1.7;overflow-wrap:anywhere}
+.cxr-reason-parent{display:block;font-size:.7rem;font-weight:400;color:var(--muted);line-height:1.7;margin-bottom:3px}
+@media(max-width:480px){.crp-detail-options{grid-template-columns:1fr}.crp-detail-options .crp-opt{min-height:44px;padding:10px 12px}.crp-detail-step{padding:12px}}
 body.dark-mode .crp-groups{background:rgba(148,163,184,.06)}
 
 /* هوية ما يُلغى — المرجع أولاً وبأكبر خط في النافذة.
@@ -714,14 +727,11 @@ body.dark-mode .cxr-kpi.is-late .cxr-kpi-v{color:#f87171}
 /* أعمدة ثابتة العرض (table-layout:fixed): بدونها يوزّع المتصفّح العرض حسب محتوى
    كل صفحة، فتتحرّك حدود الأعمدة عند كل تنقّل بين الصفحات — وهو ما يجعل الجدول
    يبدو غير مستقرّ رغم أن البيانات صحيحة. مع الثبات يحتاج كل عمود عرضاً صريحاً. */
-/* ⚠ لا min-width هنا: البطاقة أضيق من 900px على الشاشات المتوسطة، فكان الجدول
-   يفيض أفقياً ويخرج آخر عمود خارج الرؤية افتراضياً. الأعمدة ذات المحتوى معروف
-   الطول ثابتة بالبكسل، والعميل/بواسطة/السبب تتقاسم ما تبقّى بالنسبة المئوية —
-   فيتقلّص الجدول مع البطاقة بدل أن يدفعها. التمرير الأفقي يبقى متاحاً على الجوال
-   عبر .cxr-scroll لكنه لم يعد الحالة الافتراضية. */
-.cxr-tbl{width:100%;border-collapse:collapse;font-size:.78rem;table-layout:fixed;min-width:720px}
-.cxr-tbl thead th{font-size:.71rem;font-weight:700;color:var(--muted);padding:9px 7px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg-alt);position:sticky;top:0;z-index:2}
-.cxr-tbl tbody td{padding:9px 7px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+/* Preserve room for the shared table font size; narrower screens scroll inside
+   the card rather than letting dates and amounts overlap adjacent columns. */
+.cxr-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:.78rem;line-height:1.45;table-layout:fixed;min-width:1080px}
+.cxr-tbl thead th{font-size:.71rem;font-weight:700;color:var(--muted);padding:8px;border-bottom:1px solid var(--border);white-space:normal;background:var(--bg-alt);position:sticky;top:0;z-index:2}
+.cxr-tbl tbody td{padding:9px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
 /* ⚠ المحاذاة تُورَّث من <col> لا تُكتب على th وحدها: قاعدة `thead th{text-align:start}`
    أكثر تحديداً من `.cxr-num`، فكانت تُعيد رأس عمودَي المال إلى البداية بينما قيمهما
    في النهاية — العنوان لا يقف فوق عموده. المحاذاة الآن معرَّفة مرّة لكل عمود على
@@ -737,22 +747,27 @@ body.dark-mode .cxr-kpi.is-late .cxr-kpi-v{color:#f87171}
 .cxr-tbl tbody tr:hover td{background:var(--bg-alt)}
 /* تظليل خفيف للعمودين الماليّين — يربط الرأس بقيمه بصرياً عبر ارتفاع الجدول كله،
    وهو ما يعوّض غياب خطوط أفقية كثيفة. نفس فكرة عمود «المبلغ» في سجل الخزنة. */
-.cxr-tbl th.cxr-money,.cxr-tbl td.cxr-money{background:color-mix(in srgb,var(--border) 22%,transparent)}
+.cxr-tbl td.cxr-money{background:color-mix(in srgb,var(--border) 22%,transparent)}
+.cxr-tbl thead th.cxr-money{background:color-mix(in srgb,var(--border) 22%,var(--surface))}
 .cxr-tbl tbody tr:hover td.cxr-money{background:color-mix(in srgb,var(--border) 34%,transparent)}
-body.dark-mode .cxr-tbl thead th{background:rgba(148,163,184,.08)}
+body.dark-mode .cxr-tbl thead th{background:var(--bg-alt)}
 body.dark-mode .cxr-tbl tbody tr:hover td{background:rgba(148,163,184,.06)}
-body.dark-mode .cxr-tbl th.cxr-money,body.dark-mode .cxr-tbl td.cxr-money{background:rgba(148,163,184,.07)}
+body.dark-mode .cxr-tbl td.cxr-money{background:rgba(148,163,184,.07)}
+body.dark-mode .cxr-tbl thead th.cxr-money{background:color-mix(in srgb,#94a3b8 7%,var(--surface))}
 body.dark-mode .cxr-tbl tbody tr:hover td.cxr-money{background:rgba(148,163,184,.11)}
-/* عرض كل عمود: المرجع/التاريخ/المال ثابتة لأن محتواها معروف الطول، والسبب يأخذ
-   ما تبقّى لأنه وحده متغيّر الطول (وتحته سطر الملاحظة). */
-.cxr-c-ref{width:56px}
-.cxr-c-party{width:14%}
-.cxr-c-stage{width:88px}
-.cxr-c-reason{width:auto}
-.cxr-c-date{width:88px}
-.cxr-c-lost{width:96px}
-.cxr-c-refund{width:96px}
-.cxr-c-by{width:10%}
+/* Share extra width across all columns; keep the two staff columns together at the end. */
+.cxr-c-ref{width:5%}
+.cxr-c-party{width:13%}
+.cxr-c-stage{width:9%}
+.cxr-c-reason{width:22%}
+.cxr-c-date{width:9%}
+.cxr-c-lost{width:11%}
+.cxr-c-refund{width:10%}
+.cxr-c-requester{width:11%}.cxr-c-approver{width:10%}
+.cxr-tbl .cxr-customer{white-space:normal;overflow-wrap:anywhere}
+.cxr-tbl .cxr-requester{font-weight:700;color:var(--primary);overflow-wrap:anywhere}
+.cxr-tbl .cxr-approver{color:var(--muted);overflow-wrap:anywhere}
+.cxr-person-note{display:block;margin-top:4px;font-size:.68rem;line-height:1.5;font-weight:400;color:var(--muted)}
 /* رأس قابل للترتيب — نفس اصطلاح جدول الخزنة: المؤشّر عنصر مستقلّ، والتسمية داخل
    <span>، فلا يمسحه أي تحديث نصّي لاحق. */
 .cxr-tbl th.cxr-sortable{cursor:pointer;user-select:none}
@@ -771,13 +786,25 @@ body.dark-mode .cxr-refunded{color:#f87171}
 /* مع table-layout:fixed لا يتمدّد العمود للمحتوى الطويل — يفيض. الاسم يُقصّ
    بثلاث نقاط ونصّه الكامل في title. */
 .cxr-ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cxr-reason-n{font-weight:600}
+.cxr-reason-n{font-weight:600;overflow-wrap:anywhere}
 /* ملاحظة الموظف بنصّه هو — سطر فرعي لا tooltip: هي الجزء الوحيد الذي لا يمكن
    استنتاجه من الكود، وإخفاؤها خلف مرور المؤشّر يجعلها غير مقروءة على اللمس. */
-.cxr-reason-note{font-size:.71rem;color:var(--muted);margin-top:2px;line-height:1.5}
+.cxr-reason-note{font-size:.71rem;color:var(--muted);margin-top:2px;line-height:1.5;overflow-wrap:anywhere}
+.cxr-tbl td.cxr-ref{white-space:normal;overflow-wrap:anywhere}
+.cxr-note-details{margin-top:3px;font-size:.71rem;color:var(--muted)}
+.cxr-note-details summary{cursor:pointer;color:var(--primary);width:fit-content;padding-block:2px}
+.cxr-note-details[open] summary{margin-bottom:4px}
+.cxr-note-details summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:3px}
+.cxr-scroll{scrollbar-width:thin;overscroll-behavior-inline:contain}
 .cxr-tbl-card{padding-bottom:6px}
 .cxr-tbl-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .cxr-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cxr-reason-filter{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;font-size:12px;color:var(--muted)}
+.cxr-reason-filter .fsel{min-width:0;max-width:290px}
+.cxr-reason-filter .fsel-btn{max-width:100%;min-height:32px}
+.cxr-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:8px 0 12px;color:var(--muted);font-size:12px}
+.cxr-filter-summary button{font:inherit;color:var(--primary);background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 10px;cursor:pointer}
+.cxr-filter-summary button[hidden]{display:none}
 .cxr-ftabs{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .cxr-ftab{padding:5px 12px;border:0;background:var(--surface);color:var(--muted);font-family:inherit;font-size:.74rem;font-weight:600;cursor:pointer;transition:background .14s,color .14s}
 .cxr-ftab + .cxr-ftab{border-inline-start:1px solid var(--border)}
@@ -790,6 +817,9 @@ body.dark-mode .cxr-refunded{color:#f87171}
   .cxr-tbl-head{flex-direction:column}
   .cxr-tools{width:100%}
   .cxr-search{flex:1}
+  .cxr-reason-filter{width:100%}
+  .cxr-reason-filter .fsel{flex:1;max-width:100%}
+  .cxr-reason-filter .fsel-btn{width:100%}
 }
 .cxr-num{text-align:end;font-variant-numeric:tabular-nums;white-space:nowrap}
 .cxr-stage{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:700;white-space:nowrap}
@@ -2204,6 +2234,9 @@ body.dark-mode .rd-proof.is-ok{color:#4ade80}
 .rv-toggle:hover{color:var(--text);background:var(--surface2)}
 .rv-toggle[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:var(--primary-pale)}
 .rv-seg{display:inline-flex;gap:2px;padding:3px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-pill)}
+.rv-trend-seg{flex-wrap:wrap;max-width:100%;border-radius:18px}
+#rv-trend-table{overflow-x:auto}
+#rv-trend-table th{white-space:normal;min-width:110px}
 .rv-seg button{padding:5px 14px;font-family:var(--font-app);font-size:.78rem;font-weight:600;color:var(--muted);background:transparent;border:none;border-radius:var(--r-pill);cursor:pointer;transition:color .15s,background .15s}
 .rv-seg button:hover{color:var(--text)}
 /* color:var(--bg) rather than #fff — --accent is a dark green in light mode and a
@@ -7196,11 +7229,7 @@ body.dark-mode .cmp-stats-grid .cmp-stat.st-alert .cmp-stat-val{color:#fbbf24}
 .cmp-filter-field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:0 1 auto}
 .cmp-filter-field label{font-size:.68rem;color:var(--muted);font-weight:600;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmp-filter-field select,.cmp-filter-field input{min-width:0;width:100%}
-/* No width rule for input[type=date] here on purpose: these carry
-   .date-filter-icon, which deliberately collapses them to a 34px calendar
-   icon and expands to 140px on click (see the .sdp-open rules). Sizing them
-   from this bar would fight that pattern — and lose, since those rules are
-   !important. */
+/* Date filters use the shared stable field width defined by .date-filter-icon. */
 
 /* ─────────────────────────────────────────────────────────────
    .fsel — reusable filter select (popover)
@@ -11318,15 +11347,23 @@ body.dark-mode .mov-type-inline.t-exchange{background:#2e1065;color:#c4b5fd;bord
 .fx-date-custom-row input::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;transition:opacity .15s}
 .fx-date-custom-row input:hover::-webkit-calendar-picker-indicator{opacity:1}
 
-/* Collapsed date filter — shows only the calendar icon until focused/has a value */
-input[type="date"].date-filter-icon{width:34px!important;min-width:34px!important;padding:0!important;border:1.5px solid transparent;background:transparent;color:transparent;cursor:pointer;transition:width .15s ease,border-color .15s ease,background .15s ease,padding .15s ease;flex:none!important;box-sizing:border-box}
-input[type="date"].date-filter-icon::-webkit-calendar-picker-indicator{opacity:.65;cursor:pointer;margin:0}
+/* Keep empty and filled date filters readable without resizing on focus. */
+input[type="date"].date-filter-icon{width:156px!important;min-width:156px!important;min-height:36px;padding:6px 10px!important;border:1px solid var(--border);border-radius:8px!important;background:var(--bg)!important;color:var(--text)!important;font-family:inherit;font-size:13px!important;font-weight:500;line-height:1.4;direction:ltr;text-align:left;font-variant-numeric:tabular-nums;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease;flex:none!important;box-sizing:border-box;color-scheme:light}
+body.dark-mode input[type="date"].date-filter-icon{color-scheme:dark}
+input[type="date"].date-filter-icon::-webkit-datetime-edit{padding:0}
+input[type="date"].date-filter-icon::-webkit-calendar-picker-indicator{opacity:.65;cursor:pointer;margin:0 0 0 6px;padding:2px;flex-shrink:0}
 input[type="date"].date-filter-icon:hover::-webkit-calendar-picker-indicator{opacity:1}
+input[type="date"].date-filter-icon:hover{border-color:var(--primary)!important}
 input[type="date"].date-filter-icon:focus,
-input[type="date"].date-filter-icon.has-value,
-input[type="date"].date-filter-icon.sdp-open{width:140px!important;min-width:140px!important;padding:0 8px!important;border-color:var(--border);background:var(--bg);color:var(--text)}
-input[type="date"].date-filter-icon:focus,
-input[type="date"].date-filter-icon.sdp-open{outline:none;border-color:var(--primary)}
+input[type="date"].date-filter-icon.sdp-open{outline:none;border-color:var(--primary)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 14%,transparent)}
+.rep-date-range{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.rep-date-range label{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:.82rem;white-space:nowrap}
+@media(max-width:768px){
+  input[type="date"].date-filter-icon{width:164px!important;min-width:164px!important;min-height:44px;font-size:16px!important}
+  .coll-range-wrap,.fu-date-range{flex-wrap:wrap;gap:8px!important}
+  .coll-range-wrap>span,.fu-date-range>span,.fu-date-range>svg{display:none}
+  #page-approvals .otp-audit-field input[type="date"].date-filter-icon{min-width:0!important}
+}
 
 /* ═══════════════════════════════════════════════════════════
    SOULIA DATE PICKER — custom English calendar replacing Chrome's
@@ -19905,11 +19942,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <button class="tab-btn" data-rep-preset="all" onclick="setReportPeriod('all',this)">الكل</button>
     </div>
     <div style="width:1px;height:24px;background:var(--border);flex-shrink:0"></div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <span style="color:var(--muted);font-size:.82rem">من</span>
+    <div class="rep-date-range">
+      <label for="rep-from">من
       <input type="date" id="rep-from" class="date-filter-icon" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
-      <span style="color:var(--muted);font-size:.82rem">إلى</span>
+      </label>
+      <label for="rep-to">إلى
       <input type="date" id="rep-to" class="date-filter-icon" style="border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:.85rem" onchange="onReportRangeChange()">
+      </label>
     </div>
     <div id="rep-period-echo" style="margin-inline-start:auto;color:var(--muted);font-size:.8rem;white-space:nowrap"></div>
   </div>
@@ -19997,7 +20036,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <p class="rv-sub" id="rv-trend-sub">الخط الفاتح هو المتوسط المتحرك لسبعة أيام — يوضّح الاتجاه العام بعيداً عن قفزات اليوم الواحد.</p>
       </div>
       <div class="rv-head-a">
-        <div class="rv-seg">
+        <div class="rv-seg rv-trend-seg">
+          <button class="rep-trend-btn" data-trend="receivedOrders" data-i18n="repReceivedOrders" onclick="setTrendMetric('receivedOrders',this)">الواردة (المستقبَلة)</button>
+          <button class="rep-trend-btn" data-trend="confirmedOrders" data-i18n="repConfirmedOrders" onclick="setTrendMetric('confirmedOrders',this)">المسجّلة المؤكدة</button>
           <button class="rep-trend-btn active" data-trend="sales" onclick="setTrendMetric('sales',this)">المبيعات</button>
           <button class="rep-trend-btn" data-trend="purchases" onclick="setTrendMetric('purchases',this)">المشتريات</button>
           <button class="rep-trend-btn" data-trend="orders" onclick="setTrendMetric('orders',this)">عدد الفواتير</button>
@@ -23640,8 +23681,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/shopify-kpis.js?v=20261029-metric-strip"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261029-receipt-layout">
-<script src="/after-sales.js?v=20261029-label-config"></script>
+<link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
+<script src="/cancellations-analytics.js?v=20261030-details"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261030-report-layout">
+<script src="/after-sales.js?v=20261030-report-layout"></script>
 <link rel="stylesheet" href="/complaint-flow.css?v=20261029-6">
 <script src="/complaint-flow.js?v=20261029-6"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
@@ -23785,8 +23828,7 @@ function _sdpFmt(d) {
 function closeDatePicker() {
   if (!_sdpPanel) return;
   const p = _sdpPanel;
-  // The input never receives focus while the panel is open, so the
-  // expanded width is driven by .sdp-open instead of :focus.
+  // Remove the visual focus state when the custom panel closes.
   _sdpInput?.classList.remove('sdp-open');
   _sdpPanel = null; _sdpInput = null; _sdpView = null;
   p.classList.remove('show');
@@ -23898,7 +23940,7 @@ function openDatePicker(input) {
   closeAllMenus();
 
   _sdpInput = input;
-  input.classList.add('sdp-open');   // expand collapsed .date-filter-icon fields
+  input.classList.add('sdp-open');   // highlight the field while its panel is open
   const cur = _sdpParse(input.value) || new Date();
   _sdpView = { y: cur.getFullYear(), m: cur.getMonth() };
 
@@ -24739,10 +24781,14 @@ const CANCEL_REASON_GROUPS = [
 ];
 
 const CANCEL_REASONS = [
-  { code:'customer-request',       ar:'العميل طلب الإلغاء',            en:'Customer requested cancellation', stages:['shopify','transaction'], group:'customer' },
+  { code:'customer-request',       ar:'العميل طلب الإلغاء',            en:'Customer requested cancellation', stages:['shopify','transaction'], group:'customer', requiresDetail:true },
+  { code:'customer-wants-inspection', ar:'يريد معاينة المنتج قبل الشراء', en:'Wants to inspect the product before buying', stages:['shopify','transaction'], group:'customer', parentCode:'customer-request' },
+  { code:'customer-refused-deposit', ar:'لا يريد دفع عربون مقدم', en:'Does not want to pay a deposit', stages:['shopify','transaction'], group:'customer', parentCode:'customer-request' },
+  { code:'customer-price-too-high', ar:'يرى أن السعر مرتفع', en:'Considers the price too high', stages:['shopify','transaction'], group:'customer', parentCode:'customer-request' },
+  { code:'customer-request-other', ar:'سبب آخر أوضحه العميل', en:'Another reason explained by the customer', stages:['shopify','transaction'], group:'customer', parentCode:'customer-request', requiresNote:true, minNoteLength:8 },
   { code:'customer-unreachable',   ar:'تعذّر الوصول للعميل',           en:'Customer unreachable',            stages:['shopify','transaction'], group:'customer' },
-  { code:'customer-changed-mind',  ar:'العميل غيّر رأيه',              en:'Customer changed their mind',     stages:['shopify','transaction'], group:'customer' },
-  { code:'customer-found-cheaper', ar:'العميل وجد سعراً أفضل',         en:'Customer found a better price',   stages:['shopify','transaction'], group:'customer' },
+  { code:'customer-changed-mind',  ar:'العميل غيّر رأيه',              en:'Customer changed their mind',     stages:['shopify','transaction'], group:'customer', parentCode:'customer-request' },
+  { code:'customer-found-cheaper', ar:'العميل وجد سعراً أفضل',         en:'Customer found a better price',   stages:['shopify','transaction'], group:'customer', parentCode:'customer-request' },
   { code:'wrong-order',            ar:'العميل طلب صنفاً خاطئاً',       en:'Customer ordered the wrong item', stages:['shopify','transaction'], group:'customer' },
 
   { code:'duplicate-order',        ar:'طلب مكرر',                      en:'Duplicate order',                 stages:['shopify','transaction'], group:'operations' },
@@ -24784,6 +24830,13 @@ function cancelGroupLabel(key) {
   return currentLang === 'en' ? g.en : g.ar;
 }
 
+/** Show the stored detail explicitly without inferring reasons for historical cancellations. */
+function cancelReasonReportHtml(code) {
+  const def = CANCEL_REASONS.find(reason => reason.code === code);
+  const parent = CANCEL_REASONS.find(reason => reason.code === def?.parentCode);
+  return `${parent ? `<small class="cxr-reason-parent">${esc(currentLang==='en'?parent.en:parent.ar)}</small>` : ''}<span>${esc(cancelReasonLabel(code))}</span>${def?.requiresDetail ? `<small class="cxr-reason-parent">${currentLang==='en'?'Historical record — no detailed reason recorded':'سجل سابق — لم يُسجَّل السبب التفصيلي'}</small>` : ''}`;
+}
+
 function cancelReasonsFor(stage) {
   // systemOnly مستبعد: النظام يكتبه، والموظف لا يختاره. عرضه كخيار يسمح بوسم إلغاء يدوي
   // بأنه «أُلغي من شوبيفاي» فيفسد العدّ الذي أُضيف الرمز أصلاً من أجله.
@@ -24798,8 +24851,8 @@ function cancelReasonsFor(stage) {
    Reasons are radio CARDS grouped by category, not a <select>: a dropdown hides
    the options behind a click, and the whole point is that the operator SEES the
    standard list instead of typing whatever comes to mind. The note field stays
-   visible and optional at all times, and becomes required only for «سبب آخر» —
-   an "other" with no detail is the unusable row we are trying to stop.
+   visible and optional, becoming required for «سبب آخر». Customer-request is a
+   navigation choice: its second step must resolve to a specific child code.
 
    ⚠ `.crp-opt input` is absolutely positioned rather than a bare radio: the
    global `input,select{width:100%}` rule (~line 428) crushes bare radios — see
@@ -24809,12 +24862,12 @@ function cancelReasonPickerHtml(stage, opts) {
   const o = opts || {};
   const idp = o.idPrefix || 'crp';
   const groups = CANCEL_REASON_GROUPS
-    .map(g => ({ g, items: cancelReasonsFor(stage).filter(r => r.group === g.key) }))
+    .map(g => ({ g, items: cancelReasonsFor(stage).filter(r => r.group === g.key && !r.parentCode) }))
     .filter(x => x.items.length);
   return `
   <div class="crp" id="${idp}-wrap" data-stage="${esc(stage)}">
-    <div class="crp-label">${esc(t('cxReasonLabel'))} <span class="crp-req">*</span></div>
-    <div class="crp-groups">
+    <div class="crp-label" id="${idp}-step-label">${esc(t('cxReasonLabel'))} <span class="crp-req">*</span></div>
+    <div class="crp-groups" id="${idp}-main-step">
       ${groups.map(({ g, items }) => `
         <div class="crp-group">
           <div class="crp-group-t">${esc(cancelGroupLabel(g.key))}</div>
@@ -24829,6 +24882,14 @@ function cancelReasonPickerHtml(stage, opts) {
           </div>
         </div>`).join('')}
     </div>
+    <section class="crp-detail-step" id="${idp}-detail-step" aria-labelledby="${idp}-detail-title" hidden>
+      <div class="crp-step-head"><span>${currentLang==='en'?'Step 2 of 2 · Customer requested cancellation':'الخطوة 2 من 2 · العميل طلب الإلغاء'}</span><button type="button" onclick="_crpBack('${idp}')">${currentLang==='en'?'Change main reason':'تغيير السبب الرئيسي'}</button></div>
+      <fieldset><legend id="${idp}-detail-title">${currentLang==='en'?'Why does the customer want to cancel?':'لماذا يريد العميل الإلغاء؟'} <span class="crp-req">*</span></legend>
+        <p>${currentLang==='en'?'Select the reason the customer actually stated. This detail is saved in the cancellation report.':'اختر السبب الذي ذكره العميل فعليًا. يُحفظ هذا التفصيل في تقرير الإلغاءات.'}</p>
+        <div class="crp-detail-options">${['customer-wants-inspection','customer-refused-deposit','customer-changed-mind','customer-price-too-high','customer-found-cheaper','customer-request-other'].map(code => CANCEL_REASONS.find(reason=>reason.code===code)).filter(reason=>reason && reason.stages.includes(stage)).map(reason=>`
+          <label class="crp-opt" for="${idp}-d-${reason.code}"><input type="radio" name="${idp}-detail" id="${idp}-d-${reason.code}" value="${reason.code}" onchange="_crpDetailPick('${idp}',this)"><span class="crp-dot"></span><span class="crp-txt">${esc(currentLang==='en'?reason.en:reason.ar)}</span></label>`).join('')}</div>
+      </fieldset>
+    </section>
     <div class="crp-note-row">
       <label class="crp-note-lbl" for="${idp}-note">
         ${esc(t('cxNoteLabel'))} <span class="crp-note-hint" id="${idp}-note-hint">${esc(t('cxNoteOptional'))}</span>
@@ -24836,7 +24897,7 @@ function cancelReasonPickerHtml(stage, opts) {
       <textarea id="${idp}-note" rows="2" class="crp-note"
                 placeholder="${esc(t('cxNotePlaceholder'))}"></textarea>
     </div>
-    <div class="crp-err" id="${idp}-err" hidden></div>
+    <div class="crp-err" id="${idp}-err" role="alert" hidden></div>
   </div>`;
 }
 
@@ -24845,14 +24906,48 @@ function _crpPick(idp, el) {
   qsa(`#${idp}-wrap .crp-opt`).forEach(l => l.classList.remove('is-on'));
   el?.closest('.crp-opt')?.classList.add('is-on');
   const def = CANCEL_REASONS.find(r => r.code === el?.value);
+  qsa(`#${idp}-wrap input[name="${idp}-detail"]`).forEach(input => { input.checked = false; });
+  const details = qs(`#${idp}-detail-step`);
+  const main = qs(`#${idp}-main-step`);
+  if (details) details.hidden = !def?.requiresDetail;
+  if (main) main.hidden = !!def?.requiresDetail;
+  _crpNoteState(idp, def);
+  if (def?.requiresDetail) {
+    details?.querySelector('input')?.focus({preventScroll:true});
+    details?.scrollIntoView({block:'nearest'});
+  }
+  _crpClearErr(idp);
+}
+
+function _crpNoteState(idp, def) {
   const hint = qs(`#${idp}-note-hint`);
   if (hint) {
     hint.textContent = def?.requiresNote ? t('cxNoteRequired') : t('cxNoteOptional');
     hint.classList.toggle('is-req', !!def?.requiresNote);
   }
   const note = qs(`#${idp}-note`);
+  if (note) {
+    note.required = !!def?.requiresNote;
+    note.minLength = def?.minNoteLength || 0;
+    note.placeholder = def?.minNoteLength ? (currentLang==='en'?'Write what the customer said (at least 8 characters)':'اكتب السبب الذي ذكره العميل بوضوح (8 أحرف على الأقل)') : t('cxNotePlaceholder');
+  }
   if (note && def?.requiresNote) note.focus();
+}
+
+function _crpDetailPick(idp, el) {
+  qsa(`#${idp}-detail-step .crp-opt`).forEach(label => label.classList.toggle('is-on', label.contains(el)));
+  _crpNoteState(idp, CANCEL_REASONS.find(reason => reason.code === el.value));
   _crpClearErr(idp);
+}
+
+function _crpBack(idp) {
+  qsa(`#${idp}-wrap input[type="radio"]`).forEach(input => { input.checked = false; });
+  qsa(`#${idp}-wrap .crp-opt`).forEach(label => label.classList.remove('is-on'));
+  qs(`#${idp}-main-step`).hidden = false;
+  qs(`#${idp}-detail-step`).hidden = true;
+  _crpNoteState(idp, null);
+  _crpClearErr(idp);
+  qs(`#${idp}-r-customer-request`)?.focus({preventScroll:true});
 }
 
 function _crpClearErr(idp) {
@@ -24873,13 +24968,27 @@ function readCancelReason(idp) {
     return null;
   };
   if (!sel) return fail(t('cxErrNoReason'));
-  const def = CANCEL_REASONS.find(r => r.code === sel.value);
+  let def = CANCEL_REASONS.find(r => r.code === sel.value);
+  if (!def || !def.stages.includes(qs(`#${idp}-wrap`)?.dataset.stage) || def.systemOnly) return fail(t('cxErrNoReason'));
+  if (def?.requiresDetail) {
+    const detail = qs(`#${idp}-wrap input[name="${idp}-detail"]:checked`);
+    const child = CANCEL_REASONS.find(reason => reason.code === detail?.value && reason.parentCode === def.code);
+    if (!child) {
+      qs(`#${idp}-detail-step input`)?.focus();
+      return fail(currentLang==='en'?'Choose the actual reason the customer requested cancellation.':'اختر السبب الفعلي الذي جعل العميل يطلب الإلغاء.');
+    }
+    def = child;
+  }
   const note = (qs(`#${idp}-note`)?.value || '').trim();
   if (def?.requiresNote && !note) {
     qs(`#${idp}-note`)?.focus();
     return fail(t('cxErrNoteRequired'));
   }
-  return { code: sel.value, note };
+  if (def?.minNoteLength && note.replace(/\s+/g, ' ').length < def.minNoteLength) {
+    qs(`#${idp}-note`)?.focus();
+    return fail(currentLang==='en'?'Explain what the customer said in at least 8 characters.':'وضّح السبب الذي ذكره العميل في 8 أحرف على الأقل.');
+  }
+  return { code: def.code, note };
 }
 
 const RET_VAULT_TO_HEADER_CODE = { 'كاش': 'cash', 'فودافون كاش': 'vodafone', 'Instapay': 'instapay', 'تحويل بنكي': 'bank' };
@@ -26728,6 +26837,8 @@ const TRANSLATIONS = {
   zoneCairo:{ar:'القاهرة',en:'Cairo'},
   zoneGov:{ar:'المحافظات',en:'Governorates'},
   repDailySalesTrend:{ar:'اتجاه المبيعات اليومي',en:'Daily Sales Trend'},
+  repReceivedOrders:{ar:'الواردة (المستقبَلة)',en:'Received orders'},
+  repConfirmedOrders:{ar:'المسجّلة المؤكدة',en:'Confirmed orders'},
   repTopCustomers:{ar:'أفضل العملاء',en:'Top Customers'},
   // New Transaction page
   transactionSubtitle:{ar:'تسجيل مبيعات، مشتريات، أو طلب استرجاع',en:'Record sales, purchases, or a return request'},
@@ -27422,13 +27533,17 @@ const TRANSLATIONS = {
   cxrKpiRefunded:{ar:'نقد خرج من الخزنة مرة أخرى',en:'Cash that left the vault again'},
   cxrKpiHours:{ar:'متوسط زمن الالتقاط',en:'Average time to catch'},
   cxrHours:{ar:'{n} ساعة',en:'{n} h'},
-  cxrRecentTitle:{ar:'آخر الإلغاءات',en:'Latest cancellations'},
-  cxrRecentSub:{ar:'كل عمليات الإلغاء في الفترة المختارة — الأحدث أولاً',en:'Every cancellation in the selected period — newest first'},
+  cxrRecentTitle:{ar:'الأوردرات الملغاة',en:'Cancelled orders'},
+  cxrPeriodBasis:{ar:'الأعداد والمبالغ تخص الأوردرات المنشأة في الفترة المختارة والتي أُلغيت، حتى لو حدث الإلغاء خارج الفترة.',en:'Counts and amounts cover orders placed in the selected period that were cancelled, even if cancellation occurred outside that period.'},
+  cxrRecentSub:{ar:'الفترة حسب تاريخ الأوردر، بغض النظر عن تاريخ الإلغاء — أحدث الأوردرات أولاً',en:'Filtered by order date, regardless of cancellation date — newest orders first'},
   cxrRecentTruncated:{ar:'تُعرض {shown} من {total} عملية إلغاء — اختر فترة أقصر لرؤية الباقي',en:'Showing {shown} of {total} cancellations — pick a shorter period to see the rest'},
   cxrColRefunded:{ar:'نقد مُرتجع',en:'Cash returned'},
   cxrSortHint:{ar:'اضغط للترتيب',en:'Click to sort'},
-  cxrSearchPlaceholder:{ar:'بحث بالمرجع أو العميل أو السبب...',en:'Search by reference, customer or reason...'},
+  cxrSearchPlaceholder:{ar:'بحث بالموظف أو المعتمد أو العميل أو المرجع...',en:'Search requester, approver, customer or reference...'},
   cxrFilterAll:{ar:'الكل',en:'All'},
+  cxrAllReasons:{ar:'كل أسباب الإلغاء',en:'All cancellation reasons'},
+  cxrReasonFilter:{ar:'سبب الإلغاء',en:'Cancellation reason'},
+  cxrTableResults:{ar:'نتائج الجدول: {n} من {total}',en:'Table results: {n} of {total}'},
   cxrNoMatch:{ar:'لا توجد نتائج مطابقة للبحث أو الفلتر',en:'No rows match the current search or filter'},
   cxrClearFilters:{ar:'مسح الفلاتر',en:'Clear filters'},
   // إلغاء مجمّع
@@ -27445,13 +27560,19 @@ const TRANSLATIONS = {
   cxrColRef:{ar:'المرجع',en:'Reference'},
   cxrColParty:{ar:'العميل',en:'Customer'},
   cxrColStage:{ar:'مرحلة الإلغاء',en:'Stage'},
-  cxrColReason:{ar:'السبب',en:'Reason'},
-  cxrColDate:{ar:'التاريخ',en:'Date'},
-  cxrColBy:{ar:'بواسطة',en:'By'},
+  cxrColReason:{ar:'السبب / التفصيل',en:'Reason / detail'},
+  cxrColDate:{ar:'تاريخ الأوردر',en:'Order date'},
+  cxrColRequester:{ar:'مقدّم طلب الإلغاء',en:'Cancellation requester'},
+  cxrColApprover:{ar:'معتمد الإلغاء',en:'Approved by'},
+  cxrStaffNote:{ar:'ملاحظة الموظف',en:'Staff note'},
+  cxrDirectActor:{ar:'منفّذ الإلغاء المباشر',en:'Direct cancellation by'},
+  cxrNoApproval:{ar:'لا توجد موافقة مسجلة',en:'No approval recorded'},
+  cxrSystemActor:{ar:'إلغاء تلقائي',en:'Automatic cancellation'},
+  cxrPersonMissing:{ar:'غير مسجّل',en:'Not recorded'},
   cxrColLost:{ar:'القيمة',en:'Value'},
   cxrStageShopify:{ar:'قبل التسجيل',en:'Before entry'},
   cxrStageTx:{ar:'بعد التسجيل',en:'After entry'},
-  cxrEmpty:{ar:'لا توجد عمليات إلغاء في هذه الفترة',en:'No cancellations in this period'},
+  cxrEmpty:{ar:'لا توجد أوردرات ملغاة بتاريخ أوردر ضمن الفترة المختارة',en:'No cancelled orders placed in the selected period'},
   cxrGroupsTitle:{ar:'حسب الفئة',en:'By category'},
   cxrGroupsSub:{ar:'أين تتجمّع الأسباب — من العميل، أم من التشغيل عندنا',en:'Where the reasons cluster — the customer, or our own operations'},
   cxrTimes:{ar:'مرة',en:'×'},
@@ -75566,6 +75687,7 @@ let currentReportData = null;
 
 /* Reports Security */
 let reportsUnlocked = false;
+let reportsUnlockPending = false;
 
 /* Purchase Type Security — hides buy prices from staff behind vault password */
 let purchaseUnlocked = false;
@@ -75620,11 +75742,11 @@ function unlockReports() {
       <div class="form-group" style="margin:0 0 14px">
         <input type="password" id="reports-pass-input" placeholder="${escHtml(t('lockPassPlaceholder'))}"
           style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;text-align:center"
-          onkeydown="if(event.key==='Enter')verifyReportsPassword()">
+          onkeydown="if(event.key==='Enter'){event.preventDefault();verifyReportsPassword()}">
       </div>
 
       <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-primary btn-sm" onclick="verifyReportsPassword()">${esc(t('lockReportsBtn'))}</button>
+        <button type="button" id="reports-unlock-btn" class="btn btn-primary btn-sm" onclick="verifyReportsPassword()">${esc(t('lockReportsBtn'))}</button>
         <button class="btn btn-outline btn-sm" onclick="closeModal();reportsUnlocked=false">${esc(t('cancel'))}</button>
       </div>
     </div>
@@ -75633,20 +75755,29 @@ function unlockReports() {
 }
 
 async function verifyReportsPassword() {
-  const password = qs('#reports-pass-input')?.value;
+  if (reportsUnlockPending) return;
+  const input = qs('#reports-pass-input');
+  const password = input?.value;
   if (!password) { toast(t('lockReportsEmptyErr'), true); return; }
-
+  const button = qs('#reports-unlock-btn');
+  reportsUnlockPending = true;
+  if (button) button.disabled = true;
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
     reportsUnlocked = true;
     closeModal();
     loadReports();
     toast(t('lockReportsSuccess'));
   } catch (e) {
+    if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
     if (e.message?.includes('🔒')) return;
     toast(e.message || t('lockWrongPass'), true);
-    qs('#reports-pass-input').value = '';
-    qs('#reports-pass-input')?.focus();
+    input.value = '';
+    input.focus();
+  } finally {
+    reportsUnlockPending = false;
+    if (button) button.disabled = false;
   }
 }
 
@@ -75727,64 +75858,118 @@ async function loadReports() {
    permanently reorder the array the KPI/reason panels also read from.
 ────────────────────────────────────────────────────────────────────────────── */
 let _cxrRows = [];
+let _cxrReport = null;
 let _cxrPage = 1;
 let _cxrPerPage = 25;
 let _cxrSortKey = 'date';
 let _cxrSortDir = 'desc';
 let _cxrStageFilter = '';   // '' | 'shopify' | 'transaction'
 let _cxrSearch = '';
+let _cxrReasonFilter = '';
+let _cxrSearchTimer;
+let _cxrIndexCache = null;
+let _cxrViewCache = null;
 
-function setCxrPage(p) { _cxrPage = p; _cxrRenderTable(); }
-function setCxrPerPage(v) { _cxrPerPage = v; _cxrPage = 1; _cxrRenderTable(); }
+function setCxrPage(p) { _cxrPage = p; _cxrRenderTable(true); }
+function setCxrPerPage(v) { _cxrPerPage = v; _cxrPage = 1; _cxrRenderTable(true); }
 function setCxrSort(key) {
   if (_cxrSortKey === key) _cxrSortDir = (_cxrSortDir === 'desc') ? 'asc' : 'desc';
   else { _cxrSortKey = key; _cxrSortDir = 'desc'; }
   _cxrPage = 1;
-  _cxrRenderTable();
+  _cxrRenderTable(true);
 }
 function setCxrStage(v, btn) {
   _cxrStageFilter = v; _cxrPage = 1;
   qsa('#cxr-stage-tabs .cxr-ftab').forEach(b => b.classList.remove('is-on'));
   btn?.classList.add('is-on');
-  _cxrRenderTable();
+  _cxrRenderTable(true);
 }
-function onCxrSearch(v) { _cxrSearch = v || ''; _cxrPage = 1; _cxrRenderTable(); }
+function setCxrReason(v) { _cxrReasonFilter = v || ''; _cxrPage = 1; _cxrRenderTable(true); }
+function onCxrSearch(v) {
+  _cxrSearch = v || ''; _cxrPage = 1;
+  clearTimeout(_cxrSearchTimer);
+  _cxrSearchTimer = setTimeout(() => _cxrRenderTable(true), 180);
+}
 function resetCxrFilters() {
-  _cxrSearch = ''; _cxrStageFilter = ''; _cxrPage = 1;
+  _cxrSearch = ''; _cxrStageFilter = ''; _cxrReasonFilter = ''; _cxrPage = 1;
   const inp = qs('#cxr-search'); if (inp) inp.value = '';
   qsa('#cxr-stage-tabs .cxr-ftab').forEach((b, i) => b.classList.toggle('is-on', i === 0));
-  _cxrRenderTable();
+  _cxrRenderTable(true);
 }
 
-/** Filtered + sorted view of `_cxrRows`. Never mutates it. */
+/** Normalize once per report/language; paging reuses the filtered and sorted view. */
+function _cxrInitiator(row) {
+  return row.cancellationMode === 'approved-request' ? (row.requestedBy || '') : (row.cancelledBy || row.by || '');
+}
+
 function _cxrView() {
-  const q = normalizeUiSearch(_cxrSearch).trim();
-  let rows = _cxrRows.filter(r => {
-    if (_cxrStageFilter === 'shopify' && r.stage !== 'shopify') return false;
-    if (_cxrStageFilter === 'transaction' && r.stage === 'shopify') return false;
-    if (!q) return true;
-    // Reason is matched on its LABEL, not its code: searching for the text you can see must
-    // return something — the same rule renderUsers() follows for job titles.
-    const blob = normalizeUiSearch([
-      r.ref, r.client, r.by, r.note, cancelReasonLabel(r.code),
-    ].filter(Boolean).join(' '));
-    return blob.includes(q);
+  if (!_cxrIndexCache || _cxrIndexCache.source !== _cxrRows || _cxrIndexCache.lang !== currentLang) {
+    _cxrIndexCache = { source: _cxrRows, lang: currentLang, entries: _cxrRows.map(row => {
+      const code = row.code || LEGACY_CANCEL_REASON_CODE, label = cancelReasonLabel(code);
+      return { row, code, label, search: normalizeUiSearch([row.ref,row.client,_cxrInitiator(row),row.approvedBy,row.note,row.summary,label].filter(Boolean).join(' ')) };
+    }) };
+    _cxrViewCache = null;
+  }
+  const q = normalizeUiSearch(_cxrSearch).trim(), tokens = q.split(/\s+/).filter(Boolean);
+  const key = JSON.stringify([q,_cxrStageFilter,_cxrReasonFilter,_cxrSortKey,_cxrSortDir]);
+  if (_cxrViewCache?.key === key) return _cxrViewCache.rows;
+  const base = _cxrIndexCache.entries.filter(({row,search}) => {
+    if (_cxrStageFilter === 'shopify' && row.stage !== 'shopify') return false;
+    if (_cxrStageFilter === 'transaction' && row.stage === 'shopify') return false;
+    return tokens.every(token => search.includes(token));
   });
+  const counts = new Map();
+  for (const entry of base) counts.set(entry.code, (counts.get(entry.code) || 0) + 1);
+  const entries = base.filter(entry => !_cxrReasonFilter || entry.code === _cxrReasonFilter);
   const dir = _cxrSortDir === 'asc' ? 1 : -1;
-  rows = rows.slice().sort((a, b) => {
+  const collator = new Intl.Collator(currentLang === 'en' ? 'en' : 'ar', { numeric: true });
+  entries.sort((left, right) => {
+    const a = left.row, b = right.row;
     let av, bv;
     switch (_cxrSortKey) {
       case 'value': av = a.lostValue || 0; bv = b.lostValue || 0; break;
       case 'ref':   av = String(a.ref || ''); bv = String(b.ref || ''); break;
       case 'party': av = String(a.client || ''); bv = String(b.client || ''); break;
-      case 'reason':av = cancelReasonLabel(a.code); bv = cancelReasonLabel(b.code); break;
+      case 'requester': av = _cxrInitiator(a); bv = _cxrInitiator(b); break;
+      case 'approver': av = a.approvedBy || ''; bv = b.approvedBy || ''; break;
+      case 'reason':av = left.label; bv = right.label; break;
       case 'stage': av = a.stage === 'shopify' ? 0 : 1; bv = b.stage === 'shopify' ? 0 : 1; break;
       default:      av = String(a.date || ''); bv = String(b.date || '');
     }
     if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-    return String(av).localeCompare(String(bv), 'ar') * dir;
+    return collator.compare(String(av), String(bv)) * dir;
   });
+  const rows = entries.map(entry => entry.row);
+  _cxrViewCache = { key, rows, counts, baseTotal: base.length };
   return rows;
+}
+
+function _cxrSyncReasonFilter(total) {
+  const select = qs('#cxr-reason-filter');
+  if (select) {
+    const counts = _cxrReport?.breakdown ? new Map() : _cxrViewCache.counts;
+    if (_cxrReport?.breakdown) for (const bucket of _cxrReport.breakdown) {
+      if (!_cxrStageFilter || bucket.stage === _cxrStageFilter) counts.set(bucket.code, (counts.get(bucket.code) || 0) + bucket.count);
+    }
+    const codes = new Set(counts.keys());
+    if (_cxrReasonFilter) codes.add(_cxrReasonFilter);
+    const options = [...codes].map(code => ({ code, label: cancelReasonLabel(code), count: counts.get(code) || 0,
+      group: CANCEL_REASONS.find(reason => reason.code === code)?.group || 'other' }));
+    const option = item => `<option value="${escHtml(item.code)}">${esc(item.label)} (${fmtN(item.count)})</option>`;
+    const markup = `<option value="">${esc(t('cxrAllReasons'))} (${fmtN([...counts.values()].reduce((sum,count) => sum+count,0))})</option>`
+      + CANCEL_REASON_GROUPS.map(group => {
+        const members = options.filter(item => item.group === group.key).sort((a,b) => b.count-a.count || a.label.localeCompare(b.label));
+        return members.length ? `<optgroup label="${escHtml(cancelGroupLabel(group.key))}">${members.map(option).join('')}</optgroup>` : '';
+      }).join('');
+    if (select._cxrMarkup !== markup) { select.innerHTML = markup; select._cxrMarkup = markup; }
+    select.value = _cxrReasonFilter;
+    const signature = markup + _cxrReasonFilter;
+    if (select._cxrSelection !== signature) { fselSync(select); select._cxrSelection = signature; }
+  }
+  const summary = qs('#cxr-filter-summary');
+  if (summary) summary.textContent = t('cxrTableResults', { n: fmtN(total), total: fmtN(_cxrRows.length) });
+  const clear = qs('#cxr-clear-filters');
+  if (clear) clear.hidden = !(_cxrSearch || _cxrStageFilter || _cxrReasonFilter);
 }
 
 function _cxrTh(key, label, extraClass) {
@@ -75798,17 +75983,23 @@ function _cxrTh(key, label, extraClass) {
  * written once by renderCancellationsReport(). Re-rendering the whole card on every keystroke
  * would blur the search input mid-typing.
  */
-function _cxrRenderTable() {
+function _cxrRenderTable(resetScroll = false) {
+  clearTimeout(_cxrSearchTimer);
   const body = qs('#cxr-tbody');
   const head = qs('#cxr-thead');
   if (!body) return;
+  if (resetScroll) body.closest('.cxr-scroll').scrollTop = 0;
   const rows = _cxrView();
   const total = rows.length;
+  _cxrSyncReasonFilter(total);
+  window.CancellationAnalytics?.render(_cxrReport || {}, { stage: _cxrStageFilter, reason: _cxrReasonFilter });
   const pages = Math.ceil(total / _cxrPerPage) || 1;
-  if (_cxrPage > pages) _cxrPage = pages;
+  _cxrPage = Math.max(1, Math.min(_cxrPage, pages));
   const page = rows.slice((_cxrPage - 1) * _cxrPerPage, _cxrPage * _cxrPerPage);
 
-  if (head) {
+  const headKey = JSON.stringify([currentLang,_cxrSortKey,_cxrSortDir]);
+  if (head && head.dataset.cxrKey !== headKey) {
+    head.dataset.cxrKey = headKey;
     head.innerHTML = `<tr>
       ${_cxrTh('ref', t('cxrColRef'), 'cxr-c-ref')}
       ${_cxrTh('party', t('cxrColParty'), 'cxr-c-party')}
@@ -75817,15 +76008,16 @@ function _cxrRenderTable() {
       ${_cxrTh('date', t('cxrColDate'), 'cxr-c-date')}
       ${_cxrTh('value', t('cxrColLost'), 'cxr-num cxr-money cxr-c-lost')}
       <th class="cxr-num cxr-money cxr-c-refund">${esc(t('cxrColRefunded'))}</th>
-      <th class="cxr-c-by">${esc(t('cxrColBy'))}</th>
+      ${_cxrTh('requester', t('cxrColRequester'), 'cxr-c-requester')}
+      ${_cxrTh('approver', t('cxrColApprover'), 'cxr-c-approver')}
     </tr>`;
   }
 
   if (!total) {
     // Three states, never two: filtered-to-zero is not the same as "no cancellations", and
     // saying the latter under an active filter is how staff conclude data was lost.
-    const filtered = _cxrSearch || _cxrStageFilter;
-    body.innerHTML = `<tr><td colspan="8" class="cxr-empty">
+    const filtered = _cxrSearch || _cxrStageFilter || _cxrReasonFilter;
+    body.innerHTML = `<tr><td colspan="9" class="cxr-empty">
       ${esc(filtered ? t('cxrNoMatch') : t('cxrEmpty'))}
       ${filtered ? `<div style="margin-top:9px"><button class="btn btn-outline btn-sm" onclick="resetCxrFilters()">${esc(t('cxrClearFilters'))}</button></div>` : ''}
     </td></tr>`;
@@ -75835,20 +76027,21 @@ function _cxrRenderTable() {
 
   body.innerHTML = page.map(x => {
     const isShop = x.stage === 'shopify';
-    // The note is the operator's own words and the only part a tooltip would hide; it renders
-    // as a sub-line under the reason instead. `summary` (the derived prose) stays in the title.
+    // Keep short notes inline; longer notes expand with native keyboard/touch controls.
+    const noteHtml = x.note ? `<div class="cxr-reason-note">${esc(x.note)}</div>` : '';
     return `<tr>
       <td class="cxr-ref"><bdi>${esc(x.ref || '—')}</bdi></td>
-      <td class="cxr-ell" dir="auto" title="${escHtml(x.client || '')}">${esc(x.client || '—')}</td>
+      <td class="cxr-customer"><bdi>${esc(x.client || '—')}</bdi></td>
       <td class="cxr-mid"><span class="cxr-stage ${isShop ? 'is-shopify' : 'is-tx'}">${esc(isShop ? t('cxrStageShopify') : t('cxrStageTx'))}</span></td>
       <td dir="auto"${x.summary ? ` title="${escHtml(x.summary)}"` : ''}>
-        <div class="cxr-reason-n">${esc(cancelReasonLabel(x.code))}</div>
-        ${x.note ? `<div class="cxr-reason-note">${esc(x.note)}</div>` : ''}
+        <div class="cxr-reason-n">${cancelReasonReportHtml(x.code)}</div>
+        ${x.note && (x.note.length > 90 || /[\r\n]/.test(x.note)) ? `<details class="cxr-note-details"><summary>${esc(t('cxrStaffNote'))}</summary>${noteHtml}</details>` : noteHtml}
       </td>
       <td class="cxr-date"><bdi>${esc(x.date || '—')}</bdi></td>
       <td class="cxr-num cxr-money cxr-lost"><bdi>${fmtJ(x.lostValue || 0)}</bdi></td>
       <td class="cxr-num cxr-money">${x.refunded ? `<bdi class="cxr-refunded">${fmtJ(x.refunded)}</bdi>` : '<span class="cxr-dash">—</span>'}</td>
-      <td class="cxr-ell" dir="auto" title="${escHtml(x.by || '')}">${esc(x.by || '—')}</td>
+      <td class="cxr-requester"><bdi>${esc(_cxrInitiator(x) || t('cxrPersonMissing'))}</bdi>${x.cancellationMode === 'direct' || x.cancellationMode === 'system' ? `<small class="cxr-person-note">${esc(t(x.cancellationMode === 'system' ? 'cxrSystemActor' : 'cxrDirectActor'))}</small>` : ''}</td>
+      <td class="cxr-approver">${x.approvedBy ? `<bdi>${esc(x.approvedBy)}</bdi>` : `<span class="cxr-person-note">${esc(t(x.cancellationMode === 'approved-request' ? 'cxrPersonMissing' : 'cxrNoApproval'))}</span>`}</td>
     </tr>`;
   }).join('');
 
@@ -76346,6 +76539,11 @@ function renderCancellationsReport(r) {
   const box = qs('#rep-cancellations-body');
   if (!box) return;
   const c = (r && r.cancellations) || null;
+  clearTimeout(_cxrSearchTimer);
+  _cxrRows = c?.recent || [];
+  _cxrReport = c;
+  _cxrIndexCache = null;
+  _cxrViewCache = null;
 
   if (!c || !c.total) {
     box.innerHTML = `<div class="cxr-card"><div class="cxr-empty">${esc(t('cxrEmpty'))}</div></div>`;
@@ -76369,47 +76567,17 @@ function renderCancellationsReport(r) {
       ${k.s ? `<div class="cxr-kpi-s">${esc(k.s)}</div>` : ''}
     </div>`).join('')}</div>`;
 
-  // ── Reasons ────────────────────────────────────────────────────────────
-  const reasons = c.reasons || [];
-  const maxCount = reasons.reduce((m, x) => Math.max(m, x.count || 0), 0) || 1;
-  const reasonsHtml = `
-    <section class="cxr-card">
-      <h3 class="cxr-card-t">${esc(t('cxrTitle'))}</h3>
-      <p class="cxr-card-s">${esc(t('cxrSub'))}</p>
-      ${reasons.map(x => `
-        <div class="cxr-r">
-          <div class="cxr-r-n">${esc(cancelReasonLabel(x.code))}</div>
-          <div class="cxr-r-v"><bdi>${fmtN(x.count)}</bdi> ${esc(t('cxrTimes'))} · <bdi>${fmtN(x.share)}%</bdi></div>
-          <div class="cxr-r-meter"><i style="width:${Math.max(2, Math.round((x.count / maxCount) * 100))}%"></i></div>
-          <div class="cxr-r-sub">
-            <span>${esc(t('cxrStageShopify'))}: <b><bdi>${fmtN(x.shopifyCount || 0)}</bdi></b></span>
-            <span>${esc(t('cxrStageTx'))}: <b><bdi>${fmtN(x.transactionCount || 0)}</bdi></b></span>
-            <span>${esc(t('cxrKpiLost'))}: <b><bdi>${fmtJ(x.lostValue || 0)}</bdi></b></span>
-          </div>
-        </div>`).join('')}
-      ${c.unspecified ? `<div class="cxr-kpi-s" style="border-top:1px dashed var(--border);margin-top:10px;padding-top:9px">${esc(t('cxrUnspecifiedNote', { n: fmtN(c.unspecified) }))}</div>` : ''}
-    </section>`;
-
-  // ── Groups ─────────────────────────────────────────────────────────────
-  const groups = c.groups || [];
-  const gMax = groups.reduce((m, x) => Math.max(m, x.count || 0), 0) || 1;
-  const groupsHtml = `
-    <section class="cxr-card">
-      <h3 class="cxr-card-t">${esc(t('cxrGroupsTitle'))}</h3>
-      <p class="cxr-card-s">${esc(t('cxrGroupsSub'))}</p>
-      ${groups.map(g => `
-        <div class="cxr-r">
-          <div class="cxr-r-n">${esc(cancelGroupLabel(g.key))}</div>
-          <div class="cxr-r-v"><bdi>${fmtN(g.count)}</bdi> ${esc(t('cxrTimes'))}</div>
-          <div class="cxr-r-meter"><i style="width:${Math.max(2, Math.round((g.count / gMax) * 100))}%"></i></div>
-          <div class="cxr-r-sub"><span>${esc(t('cxrKpiLost'))}: <b><bdi>${fmtJ(g.lostValue || 0)}</bdi></b></span></div>
-        </div>`).join('')}
-    </section>`;
-
   // ── Recent ─────────────────────────────────────────────────────────────
   // The card shell is written ONCE here; the rows, header and pager are owned by
   // _cxrRenderTable() so typing in the search box cannot blur the input mid-keystroke.
-  _cxrRows = c.recent || [];
+  const analysisHtml = `<section class="cxr-card cxra-filterbar"><div class="cxr-tools">          <div class="cxr-ftabs" id="cxr-stage-tabs">
+            <button class="cxr-ftab is-on" onclick="setCxrStage('',this)">${esc(t('cxrFilterAll'))}</button>
+            <button class="cxr-ftab" onclick="setCxrStage('shopify',this)">${esc(t('cxrStageShopify'))}</button>
+            <button class="cxr-ftab" onclick="setCxrStage('transaction',this)">${esc(t('cxrStageTx'))}</button>
+          </div>
+          <div class="cxr-reason-filter"><label for="cxr-reason-filter">${esc(t('cxrReasonFilter'))}</label><select id="cxr-reason-filter" aria-label="${esc(t('cxrReasonFilter'))}" onchange="setCxrReason(this.value)"></select></div>
+</div><p>${currentLang==='en'?'Stage and reason filters apply to the analysis and order table. The search below filters only the table.':'فلاتر المرحلة والسبب تطبق على التحليل وجدول الطلبات. البحث أدناه يخص الجدول فقط.'}</p></section><div id="cxr-analysis"></div>`;
+
   const recentHtml = `
     <section class="cxr-card cxr-tbl-card" style="margin-top:14px">
       <div class="cxr-tbl-head">
@@ -76420,15 +76588,11 @@ function renderCancellationsReport(r) {
             : t('cxrRecentSub'))}</p>
         </div>
         <div class="cxr-tools">
-          <div class="cxr-ftabs" id="cxr-stage-tabs">
-            <button class="cxr-ftab is-on" onclick="setCxrStage('',this)">${esc(t('cxrFilterAll'))}</button>
-            <button class="cxr-ftab" onclick="setCxrStage('shopify',this)">${esc(t('cxrStageShopify'))}</button>
-            <button class="cxr-ftab" onclick="setCxrStage('transaction',this)">${esc(t('cxrStageTx'))}</button>
-          </div>
           <input id="cxr-search" class="cxr-search" type="search" placeholder="${esc(t('cxrSearchPlaceholder'))}"
                  oninput="onCxrSearch(this.value)">
         </div>
       </div>
+      <div class="cxr-filter-summary"><span id="cxr-filter-summary" role="status" aria-live="polite"></span><button type="button" id="cxr-clear-filters" onclick="resetCxrFilters()" hidden>${esc(t('cxrClearFilters'))}</button></div>
       <div class="cxr-scroll">
         <table class="cxr-tbl">
           <thead id="cxr-thead"></thead>
@@ -76438,9 +76602,10 @@ function renderCancellationsReport(r) {
       <div id="cxr-pagination"></div>
     </section>`;
 
-  box.innerHTML = kpiHtml + `<div class="cxr-grid">${reasonsHtml}${groupsHtml}</div>` + recentHtml;
+  box.innerHTML = `<p class="cxr-card-s">${esc(t('cxrPeriodBasis'))} ${currentLang==='en'?'The overview cards show the entire period before stage and reason filters.':'بطاقات المؤشرات تعرض إجمالي الفترة قبل فلاتر المرحلة والسبب.'}</p>` + kpiHtml + analysisHtml + recentHtml;
   // Restore the live filter state onto the freshly-written shell, then draw the rows.
   const si = qs('#cxr-search'); if (si) si.value = _cxrSearch;
+  fselInit(qs('#cxr-reason-filter'));
   qsa('#cxr-stage-tabs .cxr-ftab').forEach(b => {
     const v = (b.getAttribute('onclick') || '').match(/setCxrStage\('([^']*)'/)?.[1] ?? '';
     b.classList.toggle('is-on', v === _cxrStageFilter);
@@ -77367,27 +77532,36 @@ function renderTrendChart(r) {
   if (reportCharts.trend) { reportCharts.trend.destroy(); delete reportCharts.trend; }
   const canvas = qs('#chart-trend');
   if (!canvas) return;
-  const series = r.series || [];
+  const orderMetric = ['receivedOrders', 'confirmedOrders'].includes(repTrendMetric);
+  const rows = new Map();
+  (r.series || []).forEach(row => rows.set(row.date, { ...row }));
+  (r.orderActivity?.series || []).forEach(row => rows.set(row.date, { ...rows.get(row.date), ...row }));
+  const series = [...rows.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const wasTable = qs('#rv-trend-toggle')?.getAttribute('aria-pressed') === 'true';
+  const en = currentLang === 'en';
   const c = repViz();
   const metricMap = {
     sales:     { label: 'المبيعات',     color: c.sales,     key: 'sales',     money: true },
     purchases: { label: 'المشتريات',    color: c.purchases, key: 'purchases', money: true },
     orders:    { label: 'عدد الفواتير', color: c.orders,    key: 'orders',    money: false },
+    receivedOrders: { label: en ? 'Received orders' : 'الواردة (المستقبَلة)', color: c.purchases, key: 'receivedOrders', money: false },
+    confirmedOrders: { label: en ? 'Confirmed orders' : 'المسجّلة المؤكدة', color: c.sales, key: 'confirmedOrders', money: false },
   };
   const m = metricMap[repTrendMetric] || metricMap.sales;
   const values = series.map(s => Number(s[m.key]) || 0);
-  const fmtVal = v => (m.money ? repMoney(v) : fmtN(v) + ' فاتورة');
+  const fmtVal = v => (m.money ? repMoney(v) : fmtN(v) + (orderMetric ? (en ? ' orders' : ' طلب') : (en ? ' invoices' : ' فاتورة')));
 
   if (!series.length) {
     rvSetEmpty('trend', 'لا توجد حركة يومية في هذه الفترة', 'غيّر الفترة من الشريط أعلى الصفحة');
     return;
   }
   rvClearEmpty('trend');
+  if (wasTable) rvToggleTable('trend', qs('#rv-trend-toggle'));
 
   const pane = qs('#rv-trend-table');
   if (pane) {
-    pane.innerHTML = `<table class="rv-tbl"><thead><tr><th>التاريخ</th><th class="rv-num">${esc(m.label)}</th></tr></thead><tbody>${
-      series.map((s, i) => `<tr><td>${esc(String(s.date || ''))}</td><td class="rv-num"><bdi>${esc(fmtVal(values[i]))}</bdi></td></tr>`).join('')
+    pane.innerHTML = `<table class="rv-tbl"><thead><tr><th>${en ? 'Date' : 'التاريخ'}</th>${orderMetric ? '' : `<th class="rv-num">${esc(m.label)}</th>`}<th class="rv-num">${esc(metricMap.receivedOrders.label)}</th><th class="rv-num">${esc(metricMap.confirmedOrders.label)}</th></tr></thead><tbody>${
+      series.map(s => `<tr><td>${esc(String(s.date || ''))}</td>${orderMetric ? '' : `<td class="rv-num"><bdi>${esc(fmtVal(Number(s[m.key]) || 0))}</bdi></td>`}<td class="rv-num"><bdi>${fmtN(s.receivedOrders || 0)}</bdi></td><td class="rv-num"><bdi>${fmtN(s.confirmedOrders || 0)}</bdi></td></tr>`).join('')
     }</tbody></table>`;
   }
 
@@ -77396,9 +77570,14 @@ function renderTrendChart(r) {
   const ma = rvMovingAverage(values, 7);
   const sub = qs('#rv-trend-sub');
   if (sub) {
-    sub.textContent = ma
+    const trendNote = ma
       ? 'الخط الرمادي هو المتوسط المتحرك لسبعة أيام — يوضّح الاتجاه العام بعيداً عن قفزات اليوم الواحد.'
       : 'الفترة أقصر من أن تُحسب لها اتجاهات — وسّع النطاق الزمني لعرض المتوسط المتحرك.';
+    const dateNote = en
+      ? 'Received and confirmed orders both use the original arrival date (Cairo time), regardless of registration date. Received includes later cancellations; confirmed counts active sales invoices.'
+      : 'الواردة والمؤكدة حسب تاريخ القدوم الأصلي بتوقيت القاهرة، مهما كان تاريخ التسجيل. الواردة تشمل ما أُلغي لاحقًا؛ المؤكدة هي فواتير المبيعات غير الملغية وغير المؤرشفة.';
+    const missing = Number(r.orderActivity?.undatedOrders) || 0;
+    sub.textContent = dateNote + (missing ? (en ? ` ${missing} orders without a known arrival date are excluded.` : ` استُبعد ${fmtN(missing)} طلب بدون تاريخ قدوم معروف.`) : '') + ' ' + (en ? (ma ? 'The gray line is the 7-day moving average.' : '') : trendNote);
   }
 
   const datasets = [{
@@ -89646,6 +89825,8 @@ function _searchProIcon(item) {
    follows socket updates — else from the fields the server now returns. */
 function _gsOrderStatus(item) {
   const live = (transactions || []).find(t => String(t._id) === String(item.id));
+  const transactionType = live?.type || item.orderState?.type || String(item.subtitle || '').split('—')[0].trim();
+  if (transactionType !== 'مبيعات') return null;
   const meta = _orderStateMeta(live || item.orderState || item);
   return { ...meta, cls: 'search-order-badge-' + meta.tone };
 }
@@ -89700,7 +89881,7 @@ function renderSearchDropdown() {
         // The chip states the order's real state (_gsOrderStatus); a deleted or
         // rejected label rides beside it as a quiet note — context, not the status.
         const _st = _gsOrderStatus(item);
-        const bostaBadge = SouliaOrderStatus.badge(_st);
+        const bostaBadge = _st ? SouliaOrderStatus.badge(_st) : '';
         const custName = String(item.subtitle || '').replace(/^\s*[^—]+—\s*/, '').trim();
         const dateStr = _gsOrderDate(item);
         metaHtml = '<div class="search-order-meta">'

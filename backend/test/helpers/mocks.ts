@@ -23,6 +23,7 @@ export const createMockMongooseModel = <T = unknown>() => {
     skip: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     populate: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
     lean: jest.fn().mockReturnThis(),
     // Defaults to [] rather than undefined: service methods that internally list documents
     // (e.g. getInventory() iterating tx.items) would otherwise throw on an unstubbed query,

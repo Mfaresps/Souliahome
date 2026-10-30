@@ -71,8 +71,11 @@ import {
   CANCEL_REASON_GROUPS,
   LEGACY_CANCEL_REASON_AR,
   LEGACY_CANCEL_REASON_CODE,
+  SHOPIFY_CANCELLED_CODE,
 } from '../shared/cancellation.constants';
 import { inDateWindow, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
+import { buildCancelledProducts } from './cancellation-products';
+import { buildOrderArrivalTrend } from './order-arrival-trend';
 import { normalizeCity } from '../shared/normalize-city.util';
 import {
   ShipZone,
@@ -1913,6 +1916,7 @@ export class TransactionsService {
     }
     const def = cancelReasonDef(code);
     if (!def) throw new BadRequestException('سبب الإلغاء غير معروف');
+    if (def.requiresDetail) throw new BadRequestException('حدد السبب الفعلي لطلب العميل الإلغاء: المعاينة أو العربون أو تغيير الرأي أو السعر أو سبب آخر موضح');
     if (!def.stages.includes(stage)) {
       throw new BadRequestException(
         `سبب الإلغاء «${def.ar}» غير متاح لهذا النوع من الإلغاء`,
@@ -1920,6 +1924,9 @@ export class TransactionsService {
     }
     if (def.requiresNote && !note) {
       throw new BadRequestException('يجب كتابة تفاصيل السبب عند اختيار «سبب آخر»');
+    }
+    if (def.minNoteLength && note.replace(/\s+/g, ' ').length < def.minNoteLength) {
+      throw new BadRequestException(`وضّح السبب الذي ذكره العميل في ${def.minNoteLength} أحرف على الأقل`);
     }
     return { code, note, summary: cancelReasonSummary(code, note) };
   }
@@ -4139,6 +4146,14 @@ export class TransactionsService {
       to,
       settledSupplierReturns,
     );
+    // Intake includes orders later cancelled/archived. Linked invoices represent the
+    // same arrival, and active confirmations stay on that original arrival day.
+    const [arrivalOrders, arrivalSales] = await Promise.all([
+      this.shopifyOrderModel.find().select('_id shopifyId shopifyCreatedAt').lean().exec(),
+      this.transactionModel.find({ type: 'مبيعات' })
+        .select('_id shopifyOrderId shopifyCreatedAt transactionDate date cancelled archived').lean().exec(),
+    ]);
+    const orderActivity = buildOrderArrivalTrend(arrivalOrders, arrivalSales, from, to);
 
     const customerMap: Record<string, { orders: number; revenue: number }> = {};
     salesTx.forEach((tx) => {
@@ -4178,6 +4193,7 @@ export class TransactionsService {
       avgOrderValue,
       bestSellingProduct,
       series,
+      orderActivity,
       topCustomers,
       from: from || '',
       to: to || '',
@@ -4214,13 +4230,11 @@ export class TransactionsService {
    *   panel needs are NOT in that array by construction. This method runs its own query. Do not
    *   "optimise" it by reusing the caller's list — it would always return zero.
    *
-   * ⚠ Cancelled transactions are dated by `cancelledAt` (when the cancellation happened), not by
-   *   `date` (when the order was placed). A cancellation is an event in the period it occurred in;
-   *   bucketing an August cancellation of a June order into June would make the current period
-   *   look clean and silently rewrite a closed month. `cancelledAt` is a full ISO timestamp, so it
-   *   is compared on its date prefix against the same `YYYY-MM-DD` bounds the rest of the report
-   *   uses. Rows with no `cancelledAt` (pre-dating the field) fall back to `date` rather than being
-   *   dropped.
+   * The period selects when the ORDER was placed, regardless of when it was cancelled.
+   * Shopify's original creation time takes precedence over local ingestion/registration.
+   * Manual orders use their business date, then legacy date/creation time. Timestamp dates
+   * are interpreted in Cairo; date-only business values are already calendar days.
+   * `cancelledAt` is used only to measure elapsed time until cancellation.
    *
    * Money is reported as `lostValue` — the invoice total that did not become revenue — and, for
    * the transaction path only, `refunded`: cash that actually left the vault again. A Shopify-stage
@@ -4660,15 +4674,27 @@ export class TransactionsService {
       recent: [] as unknown[],
       recentTruncated: false,
       recentLimit: 0,
+      products: [],
+      productCoverage: [],
+      breakdown: [],
       avgHoursToCancel: null as number | null,
       unspecified: 0,
     };
     try {
-      const inRange = (iso: string | undefined, fallback?: string): string => {
-        // `cancelledAt` is an ISO timestamp, `date` a bare YYYY-MM-DD. Both reduce to a day key
-        // by taking the first 10 chars, which is also what the from/to bounds are.
-        const s = String(iso || '').trim() || String(fallback || '').trim();
-        return s.slice(0, 10);
+      const orderDayFormat = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+      });
+      const orderDay = (...candidates: unknown[]): string => {
+        for (const value of candidates) {
+          if (value instanceof Date && Number.isNaN(value.getTime())) continue;
+          const text = value instanceof Date ? value.toISOString() : String(value || '').trim();
+          if (!text) continue;
+          const date = new Date(text);
+          if (Number.isNaN(date.getTime())) continue;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+          return orderDayFormat.format(date);
+        }
+        return '';
       };
       const within = (day: string): boolean => {
         if (!day) return false;
@@ -4689,6 +4715,10 @@ export class TransactionsService {
         summary: string;
         day: string;
         by: string;
+        requestedBy: string;
+        approvedBy: string;
+        cancelledBy: string;
+        cancellationMode: 'approved-request' | 'direct' | 'system';
         ref: string;
         client: string;
         /** Invoice value that never became revenue. */
@@ -4698,6 +4728,7 @@ export class TransactionsService {
         /** Hours between the order being placed and it being cancelled; null when unknowable. */
         hoursToCancel: number | null;
         type: string;
+        items: Parameters<typeof buildCancelledProducts>[0][number]['items'];
       };
 
       const hoursBetween = (placed?: string, cancelled?: string): number | null => {
@@ -4709,8 +4740,23 @@ export class TransactionsService {
 
       const rows: Row[] = [];
 
+      // Only an approved request establishes who asked and who authorised it.
+      // Pending/rejected requests may remain attached when an admin cancels directly.
+      const cancellationActors = (record: {
+        cancelledBy?: string; cancelReasonCode?: string;
+        cancelRequest?: { status?: string; requestedBy?: string; requestedByUsername?: string; reviewedBy?: string } | null;
+      }) => {
+        const request = record.cancelRequest;
+        const approved = request?.status === 'معتمد';
+        const cancelledBy = String(record.cancelledBy || '').trim();
+        const requestedBy = approved ? String(request.requestedBy || request.requestedByUsername || '').trim() : '';
+        const approvedBy = approved ? String(request.reviewedBy || '').trim() : '';
+        const cancellationMode: Row['cancellationMode'] = approved ? 'approved-request' : record.cancelReasonCode === SHOPIFY_CANCELLED_CODE ? 'system' : 'direct';
+        return { requestedBy, approvedBy, cancelledBy, cancellationMode, by: approved ? requestedBy : cancelledBy };
+      };
+
       for (const tx of cancelledTx) {
-        const day = inRange((tx as any).cancelledAt, tx.date);
+        const day = orderDay(tx.shopifyCreatedAt, tx.transactionDate, tx.date, (tx as any).createdAt);
         if (!within(day)) continue;
         // Only the deposit ever left the vault at cancellation time; the remaining balance was
         // never collected, so calling the whole total "refunded" would double-count the loss
@@ -4722,7 +4768,7 @@ export class TransactionsService {
           note: (tx as any).cancelReasonNote || '',
           summary: tx.cancelReason || '',
           day,
-          by: tx.cancelledBy || '',
+          ...cancellationActors(tx),
           ref: tx.ref || String(tx._id),
           client: tx.client || '',
           lostValue: Number(tx.total) || 0,
@@ -4734,16 +4780,12 @@ export class TransactionsService {
             (tx as any).cancelledAt,
           ),
           type: tx.type || '',
+          items: tx.items || [],
         });
       }
 
       for (const o of cancelledShopify) {
-        // ShopifyOrder has no business-date field of its own — it relies on Mongoose
-        // `timestamps`, so `createdAt` (when we ingested the order) is the fallback.
-        const day = inRange(
-          (o as any).cancelledAt,
-          (o as any).createdAt ? new Date((o as any).createdAt).toISOString() : '',
-        );
+        const day = orderDay(o.shopifyCreatedAt, (o as any).createdAt);
         if (!within(day)) continue;
         rows.push({
           stage: 'shopify',
@@ -4751,7 +4793,7 @@ export class TransactionsService {
           note: (o as any).cancelReasonNote || '',
           summary: (o as any).cancelReason || '',
           day,
-          by: (o as any).cancelledBy || '',
+          ...cancellationActors(o),
           ref: (o as any).ref || String(o._id),
           client: (o as any).client || '',
           lostValue: Number((o as any).total) || 0,
@@ -4771,10 +4813,24 @@ export class TransactionsService {
             (o as any).cancelledAt,
           ),
           type: 'شوبيفاي',
+          items: o.items || [],
         });
       }
 
       if (!rows.length) return empty;
+
+      const productAnalysis = buildCancelledProducts(rows);
+      const analysisBuckets = new Map<string, { code: string; stage: string; count: number; lostValue: number; refunded: number }>();
+      for (const row of rows) {
+        const code = row.code || LEGACY_CANCEL_REASON_CODE;
+        const stage = row.stage === 'shopify' ? 'shopify' : 'transaction';
+        const key = JSON.stringify([code, stage]);
+        if (!analysisBuckets.has(key)) analysisBuckets.set(key, { code, stage, count: 0, lostValue: 0, refunded: 0 });
+        const bucket = analysisBuckets.get(key)!;
+        bucket.count++;
+        bucket.lostValue += row.lostValue;
+        bucket.refunded += row.refunded;
+      }
 
       // ── Per-reason breakdown ────────────────────────────────────────────
       // Rows with no code are bucketed under LEGACY_CANCEL_REASON_CODE rather than dropped, so
@@ -4885,6 +4941,10 @@ export class TransactionsService {
           summary: r.summary,
           date: r.day,
           by: r.by,
+          requestedBy: r.requestedBy,
+          approvedBy: r.approvedBy,
+          cancelledBy: r.cancelledBy,
+          cancellationMode: r.cancellationMode,
           lostValue: Math.round(r.lostValue),
           refunded: Math.round(r.refunded),
         }));
@@ -4897,6 +4957,8 @@ export class TransactionsService {
         refunded: Math.round(rows.reduce((s, r) => s + r.refunded, 0)),
         unspecified: rows.filter((r) => !r.code).length,
         avgHoursToCancel,
+        ...productAnalysis,
+        breakdown: [...analysisBuckets.values()],
         reasons,
         groups,
         series,
