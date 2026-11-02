@@ -6,9 +6,12 @@ jest.mock('../../src/employee-performance/employee-scoring.service', () => ({ Em
 
 describe('Structured deposit decision',()=>{
  const valid={revision:0,reasonCode:'prefers-cod',exceptionCode:'staff-discretion',note:' customer ',exceptionNote:''};
- it('requires a known reason and separate exception; rejects empty other details',()=>{
-  for(const input of [{}, {...valid,reasonCode:'bad'}, {...valid,exceptionCode:''}, {...valid,reasonCode:'other',note:' '}, {...valid,exceptionCode:'manager-exception',exceptionNote:''}, {...valid,exceptionCode:'other',exceptionNote:' '}, {...valid,note:'a'.repeat(501)}]) expect(()=>validateDepositDecision(input,true)).toThrow();
+ it('requires a known reason and separate exception; keeps exception details optional',()=>{
+  for(const input of [{}, {...valid,reasonCode:'bad'}, {...valid,exceptionCode:''}, {...valid,reasonCode:'other',note:' '}, {...valid,note:'a'.repeat(501)}]) expect(()=>validateDepositDecision(input,true)).toThrow();
   expect(validateDepositDecision(valid,true).note).toBe('customer');
+  expect(validateDepositDecision({...valid,exceptionCode:'manager-exception',exceptionNote:''},true).exceptionNote).toBe('');
+  expect(validateDepositDecision({...valid,exceptionCode:'other',exceptionNote:' optional context '},true).exceptionNote).toBe('optional context');
+  expect(validateDepositDecision({...valid,exceptionCode:'other',exceptionNote:''},true).exceptionNote).toBe('');
   expect(validateDepositDecision({reasonCode:'no-payment-method'},false)).toEqual({reasonCode:'no-payment-method',note:''});
  });
  it('rejects missing revisions and string booleans at the HTTP boundary',async()=>{

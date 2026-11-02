@@ -25,7 +25,6 @@ export function validateDepositDecision(input: any, exceptionRequired: boolean) 
   const note = text(input.note), exceptionNote = text(input.exceptionNote);
   if (input.reasonCode === 'other' && note.length < 5) throw new BadRequestException('وضح السبب الآخر في 5 أحرف على الأقل');
   if (exceptionRequired && !DEPOSIT_EXCEPTIONS.some(r => r.code === input.exceptionCode)) throw new BadRequestException('اختر مبرر السماح بالشحن بدون عربون');
-  if (exceptionRequired && ['other', 'manager-exception'].includes(input.exceptionCode) && exceptionNote.length < 5) throw new BadRequestException('وضح مبرر الاستثناء أو اسم المدير وتوجيهه');
   return { reasonCode: input.reasonCode as string, note, ...(exceptionRequired ? { exceptionCode: input.exceptionCode as string, exceptionNote } : {}) };
 }
 

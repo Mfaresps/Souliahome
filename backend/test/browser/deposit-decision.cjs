@@ -17,7 +17,7 @@ const output=path.join(root,'artifacts/deposit-decision');fs.mkdirSync(output,{r
   await page.addScriptTag({content:`
    let currentLang='ar';let order={_id:'o1',ref:'100',status:'pending',depositDecisionRevision:0};
    let _shopifyOrders=[order],transactions=[],currentAuditData=null;const _spShippingSwitchBusy=new Set();
-   const _spOrderById=()=>order,_spCanChooseShipping=()=>true,_spRefreshOrderRow=()=>{},renderAuditTable=()=>{},hasPerm=()=>true;
+   const _spOrderById=()=>order,_spCanChooseShipping=()=>true,_spRefreshOrderRow=()=>{},renderAuditTable=()=>{},hasPerm=p=>!window.deniedPerms?.has(p);
    const showConfirm=async()=>true,t=x=>x,esc=String;window.messages=[];const toast=(...args)=>messages.push(args);window.requests=[];
    const options={reasons:[{code:'no-payment-method',ar:'لا تتوفر للعميل وسيلة دفع أو تحويل',en:'No payment method'},{code:'first-order-trust',ar:'أول تعامل ويحتاج الاطمئنان قبل الدفع',en:'First-order concern'},{code:'prefers-cod',ar:'يفضل الدفع عند الاستلام',en:'Prefers COD'},{code:'transfer-problem',ar:'مشكلة مؤقتة في التحويل أو حد التحويل',en:'Transfer problem'},{code:'not-requested',ar:'لم يُطلب مقدم من العميل — استثناء من المتجر',en:'Store exception'},{code:'other',ar:'سبب آخر',en:'Other'}],exceptions:[{code:'staff-discretion',ar:'استثناء ضمن صلاحياتي',en:'Within my authority'},{code:'manager-exception',ar:'بتوجيه الإدارة',en:'Management direction'}]};
    const api=async(url,init)=>{
@@ -67,7 +67,7 @@ const output=path.join(root,'artifacts/deposit-decision');fs.mkdirSync(output,{r
    assert.equal(await page.$eval('#dd-reason',e=>e.value),'prefers-cod');
    await page.click('#dd-reason-trigger');assert.equal(await page.$eval('#dd-reason-list [data-value="prefers-cod"]',e=>e.getAttribute('aria-selected')),'true');
    await page.keyboard.press('Escape');
-   await page.select('#dd-reason','prefers-cod');await page.select('#dd-exception','manager-exception');await page.type('#dd-exception-note','Manager approved after reviewing history');
+   await page.select('#dd-reason','prefers-cod');await page.select('#dd-exception','manager-exception');await page.click('.dd-note-wrap:has(#dd-exception-note) summary');await page.type('#dd-exception-note','Manager approved after reviewing history');
    const frame=await page.$eval('dialog',e=>{const r=e.getBoundingClientRect(),footer=e.querySelector('.dd-actions').getBoundingClientRect();return {top:r.top,bottom:r.bottom,footerTop:footer.top,footerBottom:footer.bottom,scroll:e.querySelector('.dd-form-scroll').scrollHeight>e.querySelector('.dd-form-scroll').clientHeight};});
    assert(Math.abs((frame.top+frame.bottom)/2-height/2)<=1,'expanded form remains centered');
    assert(frame.footerTop>=frame.top&&frame.footerBottom<=height-10,'actions stay visible');
@@ -78,16 +78,17 @@ const output=path.join(root,'artifacts/deposit-decision');fs.mkdirSync(output,{r
   await page.click('#toggle');await page.waitForSelector('dialog[open]');
   await page.select('#dd-reason','other');await page.select('#dd-exception','manager-exception');
   await page.setViewport({width:320,height:480});
-  assert.equal(await page.$$eval('.dd-note-wrap[open]',els=>els.length),2);
+  assert.equal(await page.$$eval('.dd-note-wrap[open]',els=>els.length),1);
   const fullForm=await page.$eval('dialog[open]',e=>{const r=e.getBoundingClientRect(),f=e.querySelector('.dd-actions').getBoundingClientRect();return {center:(r.top+r.bottom)/2,footer:f.bottom,scroll:e.querySelector('.dd-form-scroll').scrollHeight>e.querySelector('.dd-form-scroll').clientHeight};});
   assert(Math.abs(fullForm.center-240)<=1);assert(fullForm.footer<=468);assert(fullForm.scroll);
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
   assert.equal(await page.evaluate(()=>document.body.style.overflow),'','restores background scrolling on Escape');
   await page.setViewport({width:390,height:844});
   console.log('Checking saves and server failure');
-  await page.click('#toggle');await page.waitForSelector('dialog[open]');await page.select('#dd-reason','prefers-cod');await page.select('#dd-exception','staff-discretion');
+  await page.click('#toggle');await page.waitForSelector('dialog[open]');await page.select('#dd-reason','prefers-cod');await page.select('#dd-exception','manager-exception');
+  assert.equal(await page.$eval('#dd-exception-note',e=>e.required),false);
   await page.click('[type=submit]');await page.waitForFunction(()=>order.shipWithoutDeposit===true);
-  assert.equal(await page.evaluate(()=>requests.at(-1).reasonCode),'prefers-cod');assert.equal(await page.evaluate(()=>order.depositDecisionRevision),1);
+  assert.equal(await page.evaluate(()=>requests.at(-1).reasonCode),'prefers-cod');assert.equal(await page.evaluate(()=>requests.at(-1).exceptionNote),'');assert.equal(await page.evaluate(()=>order.depositDecisionRevision),1);
   await page.click('#toggle');await page.waitForFunction(()=>order.shipWithoutDeposit===false);
   await page.evaluate(()=>{window.failSave=true;});await page.click('#toggle');await page.waitForSelector('dialog[open]');await page.select('#dd-reason','prefers-cod');await page.select('#dd-exception','staff-discretion');await page.click('[type=submit]');
   await page.waitForFunction(()=>messages.some(m=>m[0].includes('Simulated')));assert.equal(await page.evaluate(()=>order.shipWithoutDeposit),false);
@@ -108,6 +109,13 @@ const output=path.join(root,'artifacts/deposit-decision');fs.mkdirSync(output,{r
   await page.setViewport({width:390,height:900});assert(await page.$eval('.dd-report',e=>e.getBoundingClientRect().width<=390));
   await page.addStyleTag({path:path.join(root,'frontend/public/window-system.css')});
   assert.equal(await page.evaluate(()=>{const card=document.createElement('div');card.id='sp-peek';card.innerHTML=`<div class="sp-pk-decision-card">${depositDecisionSummaryHtml({...order,depositDecision:{reasonCode:'prefers-cod'}},true)}</div>`;document.body.appendChild(card);const size=getComputedStyle(card.querySelector('.dd-info-button--quiet')).fontSize;card.remove();return size;}),'11px','decision history label uses the smaller size');
-  console.log('PASS: custom dropdown click/keyboard/selection/validation and viewport bounds; centered responsive dialogs, sticky actions, Escape/scroll restoration, saving and error recovery.');
+  await page.click('.dd-report .dd-close');await page.waitForFunction(()=>!document.querySelector('.dd-report'));
+  await page.addStyleTag({path:path.join(root,'frontend/public/shopify-workspace.css')});
+  await page.evaluate(()=>{const host=document.createElement('div');host.id='page-shopify-orders';host.innerHTML='<div id="shopify-page-header"><button id="sp-deposit-analysis-btn" class="btn btn-sm" hidden>تحليل العربون</button></div>';document.body.appendChild(host);window.deniedPerms=new Set(['reports-orderaudit']);syncDepositDecisionButtons();});
+  assert.equal(await page.$eval('#sp-deposit-analysis-btn',e=>e.hidden&&getComputedStyle(e).display==='none'),true,'analysis is invisible without report permission');
+  await page.evaluate(()=>openDepositDecisionReport());assert.equal(await page.$('dialog.dd-report'),null,'denied report cannot open directly');
+  await page.evaluate(()=>{window.deniedPerms.clear();syncDepositDecisionButtons();});
+  assert.equal(await page.$eval('#sp-deposit-analysis-btn',e=>!e.hidden&&getComputedStyle(e).display!=='none'),true,'analysis appears with report permission');
+  console.log('PASS: dropdown, responsive dialogs, saving, and deposit analysis visibility for permitted and denied users.');
  }finally{clearTimeout(deadline);await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

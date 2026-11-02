@@ -2461,14 +2461,14 @@ body.dark-mode .upd-card{box-shadow:0 24px 60px rgba(0,0,0,.6),0 4px 12px rgba(0
 #header{position:fixed;top:0;right:0;left:0;height:var(--header-h);background:#f5f7f6;border-bottom:1px solid #dde6e0;color:#1a2e22;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;gap:16px;box-shadow:0 1px 8px rgba(0,0,0,.07)}
 body.dark-mode #header{background:#161d18;border-bottom-color:#2a3d2e;color:#e8f5ee;box-shadow:0 1px 8px rgba(0,0,0,.3)}
 #header-loadbar{position:absolute;inset-inline:0;bottom:-1px;height:2px;overflow:hidden;pointer-events:none;z-index:101;opacity:0;transition:opacity .12s ease}
-#header-loadbar::before{content:"";position:absolute;inset-block:0;left:0;width:35%;border-radius:2px;background:linear-gradient(90deg,#2d7a4f22,#2d7a4f,#8cdeb0);transform:translateX(-110%)}
+#header-loadbar::before{content:"";position:absolute;inset-block:0;left:0;width:100%;border-radius:2px;background:linear-gradient(90deg,#2d7a4f22,#2d7a4f,#8cdeb0);transform:scaleX(0);transform-origin:left center}
 #header-loadbar.active{opacity:1;background:#2d7a4f0a}
-#header-loadbar.active::before{animation:header-refresh-sweep 1.25s ease-in-out infinite}
+#header-loadbar.active::before{animation:header-progress-fill 1.2s ease-out forwards}
 #header-loadbar.done{opacity:0}
-#header-loadbar.done::before{animation:none;width:100%;transform:none;background:#2d7a4f}
+#header-loadbar.done::before{animation:none;transform:scaleX(1);background:#2d7a4f}
 #header-loadbar.is-error::before{background:#c74b4b}
-@keyframes header-refresh-sweep{to{transform:translateX(320%)}}
-@media(prefers-reduced-motion:reduce){#header-loadbar{transition:none}#header-loadbar.active::before{animation:none;transform:none;width:100%;opacity:.65}}
+@keyframes header-progress-fill{to{transform:scaleX(.92)}}
+@media(prefers-reduced-motion:reduce){#header-loadbar{transition:none}#header-loadbar.active::before{animation:none;transform:scaleX(.92);opacity:.65}}
 
 #header .logo{display:inline-flex;flex-direction:row-reverse;align-items:center;cursor:pointer;user-select:none;line-height:1}
 #header .logo img{height:40px;width:auto;display:block;transition:filter .22s ease,opacity .22s ease;filter:invert(27%) sepia(40%) saturate(600%) hue-rotate(110deg) brightness(60%) contrast(110%)}
@@ -16688,7 +16688,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/order-audit-insights.css?v=20261021-5">
 <link rel="stylesheet" href="/order-audit-layout.css?v=20261021-2">
 <link rel="stylesheet" href="/startup-experience.css?v=20261102-8">
-<link rel="stylesheet" href="/data-loading.css?v=20261102-2">
+<link rel="stylesheet" href="/data-loading.css?v=20261102-once">
 <link rel="stylesheet" href="/scan-station-redesign.css?v=20261102-larger-compact-photos">
 <script src="/loading-system.js?v=20261102-2" defer></script>
 </head>
@@ -23660,7 +23660,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 <script src="/deposit-history.js?v=20261019"></script>
 <link rel="stylesheet" href="/deposit-decision.css?v=20261102-picker-layout">
-<script src="/deposit-decision.js?v=20261102-picker-layout"></script>
+<script src="/deposit-decision.js?v=20261102-permission-visibility"></script>
 <script src="/shopify-kpis.js?v=20261029-metric-strip"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
@@ -34070,6 +34070,7 @@ async function doLogout() {
   _mentionsCache = [];
   localStorage.removeItem('token'); localStorage.removeItem('user');
   currentUser = null;
+  if (typeof syncDepositDecisionButtons === 'function') syncDepositDecisionButtons();
   window.souliaFollowUpReminder?.reset();
   _myWorkspace = null; _myWorkspaceRecipientId = '';
   window.hideAdminTeamWorkspace?.();
@@ -34115,6 +34116,7 @@ async function showApp() {
   // bootLangFromCache(). handleLangPolicy() inside loadAllData() remains the authority.
   try { bootLangFromCache(); } catch (_) {}
   updateHeader(); buildSidebar(); initMobileNav();
+  if (typeof syncDepositDecisionButtons === 'function') syncDepositDecisionButtons();
   // Start with the collections needed to paint the requested route.
   const bootHash = location.hash.slice(1);
   const bootRoute = _pageIdFromSlug(bootHash.split('/')[0]);
@@ -39108,6 +39110,7 @@ function onPageEnter(page) {
         if (me && typeof me === 'object') {
           currentUser = Object.assign({}, currentUser || {}, me);
           try { localStorage.setItem('user', JSON.stringify(currentUser)); } catch(_) {}
+          if (typeof syncDepositDecisionButtons === 'function') syncDepositDecisionButtons();
           renderProfile();
         }
       }).catch(() => {});
@@ -111362,7 +111365,7 @@ function _spRenderHistoryTab() {
 <script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/design-system.css?v=20261029-order-selection">
 <link rel="stylesheet" href="/metrics-strip.css?v=20261029-green-kpis">
-<link rel="stylesheet" href="/shopify-workspace.css?v=20261102-calm-stock-status">
+<link rel="stylesheet" href="/shopify-workspace.css?v=20261102-deposit-analysis-permission-mobile-kpis">
 <link rel="stylesheet" href="/dashboard-clarity.css?v=20261102">
 <link rel="stylesheet" href="/window-system.css?v=20261102-decision-label">
 </body>

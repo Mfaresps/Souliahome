@@ -87,17 +87,15 @@ button:is(.btn-primary,.primary)[aria-busy="true"] .ss-action-loader {
   transition: opacity var(--data-motion-time) ease;
 }
 #header-loadbar::before {
-  width: 30%;
+  width: 100%;
   background: var(--accent);
   border-radius: 0;
-  transform: translate3d(-110%, 0, 0);
+  transform: scaleX(0);
+  transform-origin: left center;
 }
 #header-loadbar.active { background: transparent; }
 #header-loadbar.active::before {
-  animation: data-progress-sweep 1.35s linear infinite;
-}
-@keyframes data-progress-sweep {
-  to { transform: translate3d(440%, 0, 0); }
+  animation: header-progress-fill 1.2s var(--data-motion-ease) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -116,5 +114,5 @@ button:is(.btn-primary,.primary)[aria-busy="true"] .ss-action-loader {
   .ss-reveal,
   .ss-reveal-stagger > * { opacity: 1 !important; transform: none !important; }
   #header-loadbar { transition: none; }
-  #header-loadbar.active::before { transform: none; width: 100%; }
+  #header-loadbar.active::before { transform: scaleX(.92); width: 100%; }
 }

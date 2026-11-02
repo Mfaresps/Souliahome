@@ -85,7 +85,6 @@ async function _spAskDepositDecision(order,objectionOnly=false,onSave){
   d.addEventListener('close',()=>{if(!settled)resolve(null);});d.querySelector('[data-close]').onclick=()=>d.close();
   const noteState=(select,textarea,required)=>{select.dataset.empty=String(!select.value);textarea.required=required;textarea.minLength=required?5:0;const details=textarea.closest('details');details.dataset.required=String(required);if(required)details.open=true;details.querySelector('summary').textContent=required?ddText('تفاصيل إضافية مطلوبة','Additional details required'):ddText('إضافة تفاصيل — اختياري','Add details — optional');if(!required&&typeof clearValidation==='function')clearValidation(textarea);};
   f.reasonCode.onchange=()=>noteState(f.reasonCode,f.note,f.reasonCode.value==='other');
-  if(!objectionOnly)f.exceptionCode.onchange=()=>noteState(f.exceptionCode,f.exceptionNote,['manager-exception','other'].includes(f.exceptionCode.value));
   const validateChoices=ddEnhanceDecisionSelects(d);
   f.onsubmit=async event=>{event.preventDefault();f.dataset.validationAttempted='true';
    if(!validateChoices())return;
@@ -93,7 +92,7 @@ async function _spAskDepositDecision(order,objectionOnly=false,onSave){
    if(typeof validateRequired==='function'&&!validateRequired(f).ok)return;
    if(!f.reportValidity())return;
    const payload={revision:initialRevision,reasonCode:f.reasonCode.value,note:f.note.value.trim(),...(!objectionOnly?{exceptionCode:f.exceptionCode.value,exceptionNote:f.exceptionNote.value.trim()}: {})};
-   if((payload.reasonCode==='other'&&payload.note.length<5)||(!objectionOnly&&['manager-exception','other'].includes(payload.exceptionCode)&&payload.exceptionNote.length<5)){d.querySelector('[role=alert]').textContent=ddText('اكتب توضيحًا من 5 أحرف على الأقل.','Enter at least five characters of detail.');return;}
+   if(payload.reasonCode==='other'&&payload.note.length<5){d.querySelector('[role=alert]').textContent=ddText('اكتب توضيحًا من 5 أحرف على الأقل.','Enter at least five characters of detail.');return;}
    const submit=f.querySelector('[type=submit]');if(submit.disabled)return;submit.disabled=true;
    try{if(onSave)await onSave(payload);settled=true;resolve(payload);d.close();}
    catch(e){d.querySelector('[role=alert]').textContent=e.message||ddText('تعذر الحفظ','Could not save');submit.disabled=false;}
@@ -145,7 +144,7 @@ async function openDepositDecisionHistory(ref,invoice=false){
  }catch(e){toast(e.message,true);}
 }
 function syncDepositDecisionButtons(){
- const b=document.getElementById('sp-deposit-analysis-btn');if(b){b.hidden=!hasPerm('reports-orderaudit');b.textContent=ddText('تحليل العربون','Deposit analysis');}
+ const b=document.getElementById('sp-deposit-analysis-btn');if(b){b.hidden=!(typeof hasPerm==='function'&&hasPerm('reports-orderaudit'));b.textContent=ddText('تحليل العربون','Deposit analysis');}
 }
 async function openDepositDecisionReport(){
  if(!hasPerm('reports-orderaudit'))return;
