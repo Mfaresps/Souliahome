@@ -1,0 +1,22 @@
+[
+  {
+    "width": 1440,
+    "orders": 5000,
+    "renderedRows": 30,
+    "initialRequests": 1,
+    "renderMs": 23.200000002980232,
+    "duplicateShared": true,
+    "staleResponseIgnored": true,
+    "failedRefreshPreserved": true
+  },
+  {
+    "width": 390,
+    "orders": 5000,
+    "renderedRows": 30,
+    "initialRequests": 1,
+    "renderMs": 20.399999998509884,
+    "duplicateShared": true,
+    "staleResponseIgnored": true,
+    "failedRefreshPreserved": true
+  }
+]

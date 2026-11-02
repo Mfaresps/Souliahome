@@ -1,0 +1,16 @@
+const {collections:d}=require('./snapshot.json');
+const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'});
+const day=x=>x&&Number.isFinite(+new Date(x))?fmt.format(new Date(x)):'';
+const oct=x=>day(x).startsWith('2026-10');
+const hist=(a,f)=>Object.entries(a.reduce((r,x)=>{const k=String(f(x)??'');r[k]=(r[k]||0)+1;return r},{})).sort((a,b)=>b[1]-a[1]);
+const orders=d.shopifyorders.filter(x=>oct(x.shopifyCreatedAt));
+const sales=d.transactions.filter(x=>x.type==='مبيعات');
+const norm=x=>String(x||'').replace(/^#/,'').trim();
+const linked=o=>sales.filter(t=>String(t.shopifyOrderId)===o.shopifyId||norm(t.ref)===norm(o.ref));
+const pending=orders.filter(o=>!o.cancelled&&o.status==='pending');
+const cancel=orders.filter(o=>o.cancelled||linked(o).some(t=>t.cancelled));
+const linkedIds=new Set(orders.flatMap(linked).map(t=>t._id));
+const other=sales.filter(t=>!linkedIds.has(t._id)&&oct(t.shopifyCreatedAt||t.date));
+console.log(JSON.stringify({counts:{orders:orders.length,sales:sales.length,linkedSales:linkedIds.size,otherOctoberSales:other.length},salesTypes:hist(d.transactions,t=>t.type),missing:orders.filter(o=>o.status==='approved'&&!linked(o).length).map(o=>o.ref),multiple:orders.filter(o=>linked(o).length>1).map(o=>({ref:o.ref,tx:linked(o).map(t=>({id:t._id,cancel:t.cancelled,type:t.type}))})),other:other.map(t=>({ref:t.ref,shopifyOrderId:t.shopifyOrderId,date:t.date,shopifyCreatedAt:t.shopifyCreatedAt,cancelled:t.cancelled,total:t.total,deposit:t.deposit,pickupStatus:t.pickupStatus})),txStatuses:hist(orders.flatMap(linked),t=>`${t.cancelled}|${t.pickupStatus}|${t.bostaStatus}`),txDeposits:hist(orders.flatMap(linked),t=>`${t.deposit>0}|${t.initialDeposit>0}|${(t.deposits||[]).length>0}|${(t.depositReceipts||[]).length>0}`),cancelCount:cancel.length},null,2));
+console.log('PENDING',JSON.stringify(pending.map(o=>({ref:o.ref,date:o.shopifyCreatedAt,deposit:o.depositAmount,receipts:o.depositReceipts?.map(r=>({status:r.status,amount:r.amount})),comments:o.comments?.map(c=>c.text),notes:o.notes,edit:o.editHistory?.map(e=>({action:e.action,changes:e.changes})),request:o.cancelRequest,followups:d.followups.filter(f=>norm(f.orderRef)===norm(o.ref)).map(f=>({status:f.status,reason:f.reason,autoSource:f.autoSource,comment:f.comment,comments:f.comments?.map(c=>({text:c.text,kind:c.kind,at:c.createdAt})),deferReason:f.deferReason,resolution:f.resolution}))})),null,2));
+console.log('CANCELLED',JSON.stringify(cancel.map(o=>({ref:o.ref,code:o.cancelReasonCode,reason:o.cancelReason,note:o.cancelReasonNote,comments:o.comments?.map(c=>c.text),notes:o.notes,deposit:o.depositAmount,tx:linked(o).map(t=>({cancel:t.cancelled,reason:t.cancelReason,code:t.cancelReasonCode,deposit:t.deposit,initial:t.initialDeposit})),followups:d.followups.filter(f=>norm(f.orderRef)===norm(o.ref)).map(f=>({comment:f.comment,comments:f.comments?.map(c=>c.text),resolution:f.resolution}))})),null,2));

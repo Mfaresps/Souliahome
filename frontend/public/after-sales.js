@@ -50,26 +50,60 @@
     }).join(' ');
   }
   function preparationDetails(tx) {
-    return orderCases(tx).map(c=>`<section class="as-card as-preparation" data-as-preparation="${esc(c.caseId)}">
-      <h3>${tr(c.kind==='exchange'?'تفاصيل طلب الاستبدال':'تفاصيل طلب الاسترجاع',c.kind==='exchange'?'Exchange request details':'Return request details')}</h3>
-      <div class="as-muted">${esc(c.caseRef||'')}${c.originalRef?' · '+tr('الفاتورة الأصلية','Original invoice')+' #'+esc(c.originalRef):''}</div>
+    return orderCases(tx).map(c=>`<section class="as-card as-preparation" data-as-preparation="${esc(c.caseId)}" data-as-view="${esc(navigationOwner()+':'+tr('ar','en'))}">
+      <h3>${tr(c.kind==='exchange'?'طلب الاستبدال':'طلب الاسترجاع',c.kind==='exchange'?'Exchange request':'Return request')}</h3>
+      <div class="as-prep-reference"><bdi>${esc(c.caseRef||'')}</bdi>${c.originalRef?'<span>'+tr('الفاتورة الأصلية','Original invoice')+' <bdi>#'+esc(c.originalRef)+'</bdi></span>':''}</div>
       <div data-as-preparation-content>${tr('جارٍ تحميل التفاصيل…','Loading details…')}</div>
       <div class="as-actions"><button type="button" class="pw-abtn" onclick="AfterSales.open('${esc(c.caseId)}')">${tr('فتح تفاصيل الطلب','Open request details')}</button><button type="button" class="pw-abtn" onclick="AfterSales.printOrderCase('${esc(c.caseId)}')">${tr('طباعة الطلب','Print request')}</button></div>
     </section>`).join('');
   }
-  async function loadPreparationDetails(host) {
-    await Promise.all([...host.querySelectorAll('[data-as-preparation]')].map(async section=>{
-      const target=section.querySelector('[data-as-preparation-content]');
+  function preparationContent(row) {
+    const exchange=row.requestKind==='exchange',q=row.workflow.quote;
+    const lines=(items)=>`<ul class="as-prep-lines">${(items||[]).map(i=>`<li><span title="${esc(i.code||'')}">${esc(i.name||i.code)}</span><b><bdi>× ${esc(i.qty)}</bdi></b></li>`).join('')}</ul>`;
+    const difference=exchange?(q.collectDue?tr('فرق مطلوب من العميل','Customer pays'):q.refundDue?tr('فرق يُرد للعميل','Customer refund'):tr('استبدال بدون فرق','No price difference')):tr('المستحق للعميل','Customer refund');
+    return `<div class="as-prep-status">${esc(stage(row.workflow.stage,row.requestKind))}</div>
+      <h4>${tr('القطع الراجعة','Returned items')}</h4>${lines(row.items)}
+      <div class="as-prep-difference"><span>${difference}</span>${q.collectDue||q.refundDue?'<b><bdi>'+amount(q.collectDue||q.refundDue)+'</bdi></b>':''}</div>
+      <details class="as-prep-more"><summary>${tr('الأصناف والمبالغ والتفاصيل','Items, amounts and details')}</summary><div>
+      <p class="as-muted">${esc(reasonLabel(row.reason))}${row.reasonDetails?' · '+esc(row.reasonDetails):''}</p>
+      ${exchange?'<h4>'+tr('القطع البديلة','Replacement items')+'</h4>'+lines(row.exchangeItems):''}${summary(q,row.requestKind)}</div></details>`;
+  }
+  const preparationLoads=new WeakMap();
+  function loadPreparationSection(section,force=false) {
+    let state=preparationLoads.get(section);
+    if(!state){state={attempted:false,task:null,revision:0};preparationLoads.set(section,state);}
+    if(force){state.revision++;state.attempted=false;}
+    if(state.task)return state.task;
+    if(state.attempted)return Promise.resolve();
+    state.attempted=true;
+    const revision=state.revision,owner=navigationOwner(),target=section.querySelector('[data-as-preparation-content]');
+    state.task=(async()=>{
       try {
-        const row=await api('/after-sales/'+encodeURIComponent(section.dataset.asPreparation));
-        if(!section.isConnected)return;
-        const lines=(title,items)=>`<h4>${title}</h4>${(items||[]).map(i=>`<div class="as-prep-line"><span>${esc(i.name||i.code)}${i.code?' · '+esc(i.code):''}</span><b>× ${esc(i.qty)}</b></div>`).join('')}`;
-        target.innerHTML=`<p class="as-muted">${esc(stage(row.workflow.stage,row.requestKind))} · ${esc(reasonLabel(row.reason))}${row.reasonDetails?' · '+esc(row.reasonDetails):''}</p>${lines(tr('القطع الراجعة','Returned items'),row.items)}${row.requestKind==='exchange'?lines(tr('القطع البديلة','Replacement items'),row.exchangeItems):''}${summary(row.workflow.quote,row.requestKind)}`;
+        const row=await api('/after-sales/'+encodeURIComponent(section.dataset.asPreparation),{background:true});
+        if(!section.isConnected||owner!==navigationOwner()||revision!==state.revision)return;
+        target.querySelector('[data-as-load-error]')?.remove();
+        const markup=preparationContent(row),expanded=target.querySelector('details')?.open;
+        if(target._asMarkup!==markup){target.innerHTML=markup;target._asMarkup=markup;if(expanded)target.querySelector('details').open=true;}
       } catch(error) {
-        if(section.isConnected)target.innerHTML=`<p class="as-error">${esc(error.message)}</p><button type="button" class="pw-abtn" data-as-retry>${tr('إعادة المحاولة','Retry')}</button>`;
-        target.querySelector('[data-as-retry]')?.addEventListener('click',()=>loadPreparationDetails(host));
+        if(!section.isConnected||owner!==navigationOwner()||revision!==state.revision)return;
+        // Keep a previously loaded summary visible if a later refresh fails.
+        target.querySelector('[data-as-load-error]')?.remove();
+        const errorNode=document.createElement('div');errorNode.dataset.asLoadError='';
+        errorNode.innerHTML=`<p class="as-error">${esc(error.message)}</p><button type="button" class="pw-abtn" data-as-retry>${tr('إعادة المحاولة','Retry')}</button>`;
+        if(!target._asMarkup)target.textContent='';target.appendChild(errorNode);
+        errorNode.querySelector('button').onclick=()=>loadPreparationSection(section,true);
+      } finally {
+        state.task=null;
+        if(!state.attempted&&section.isConnected&&owner===navigationOwner())await loadPreparationSection(section);
       }
-    }));
+    })();
+    return state.task;
+  }
+  async function loadPreparationDetails(host) {
+    await Promise.all([...host.querySelectorAll('[data-as-preparation]')].map(section=>loadPreparationSection(section)));
+  }
+  function refreshPreparationDetails(id) {
+    return Promise.all([...document.querySelectorAll('[data-as-preparation]')].filter(section=>!id||section.dataset.asPreparation===String(id)).map(section=>loadPreparationSection(section,true)));
   }
   async function printOrderCase(id) {
     const popup=window.open('','_blank');
@@ -141,38 +175,69 @@
     node.scrollIntoView({ block:'nearest' });
   }
   const disabledBeforeBusy = new WeakMap();
+  const busyLabels = new WeakMap();
   function setBusy(value) {
     busy = value; dialog?.setAttribute('aria-busy', String(value));
     dialog?.querySelectorAll('button').forEach(button => {
       if(value){if(!disabledBeforeBusy.has(button))disabledBeforeBusy.set(button,button.disabled);button.disabled=true;}
       else if(disabledBeforeBusy.has(button)){button.disabled=disabledBeforeBusy.get(button);disabledBeforeBusy.delete(button);}
+      if(value&&button.type==='submit'&&!busyLabels.has(button)){busyLabels.set(button,button.innerHTML);button.textContent=tr('جارٍ حفظ الخطوة…','Saving this step…');}
+      else if(!value&&busyLabels.has(button)){button.innerHTML=busyLabels.get(button);busyLabels.delete(button);}
     });
+    if(!value&&refreshNeeded.size)void refresh([]);
   }
   function requestStorage(action, id) { return 'as-pending:' + String(typeof currentUser !== 'undefined' ? currentUser?._id || currentUser?.userId || currentUser?.username : '') + ':' + id + ':' + action; }
   async function post(action, id, body = {}) {
+    const owner=navigationOwner();
     const storage = requestStorage(action,id || body.complaintId || body.originalTransactionId || ''); let pending;
     try { pending = JSON.parse(sessionStorage.getItem(storage) || 'null'); } catch {}
     if (!pending) { pending = { ...body, operationKey:key() }; sessionStorage.setItem(storage, JSON.stringify(pending)); }
     try {
       const result = await api('/after-sales' + (id ? '/' + id : '') + (action ? '/' + action : ''), { method:'POST', body:JSON.stringify(pending) });
-      sessionStorage.removeItem(storage); return result;
+      sessionStorage.removeItem(storage);
+      if(owner!==navigationOwner())throw new Error(tr('تغيّر الحساب أثناء الحفظ؛ افتح الملف من الحساب الحالي.','The account changed while saving; reopen the case with the current account.'));
+      return result;
     } catch (error) {
       if (Number(error.status) >= 400 && Number(error.status) < 500 && ![408,429].includes(Number(error.status))) sessionStorage.removeItem(storage);
       throw error;
     }
   }
-  async function refresh() {
-    const results = await Promise.allSettled([api('/returns'), api('/transactions'), api('/transactions/inventory')]);
-    if (results[0].status === 'fulfilled') returnRequests = results[0].value;
-    if (results[1].status === 'fulfilled') transactions = results[1].value;
-    if (results[2].status === 'fulfilled') inventoryCache = results[2].value;
-    window.InvoiceUnitIdentities?.changed(activeCase?.originalTransactionId || activeInvoice?._id);
-    if (typeof buildNotifications === 'function') buildNotifications();
-    if (typeof buildSidebar === 'function') buildSidebar();
-    if (typeof syncVaultState === 'function') void syncVaultState();
-    if (currentPage === 'movements') renderMovements();
-    if (currentPage === 'approvals') renderApprovals();
-    if (currentPage === 'invoice-view') renderInvoiceViewPage();
+  const refreshNeeded = new Set();
+  let refreshTask;
+  function refresh(datasets = ['returns','transactions','inventory','vault']) {
+    datasets.forEach(dataset=>refreshNeeded.add(dataset));
+    // Fold local socket echoes into the refresh after saving. Never make the
+    // next case step wait for the full transaction history or inventory list.
+    if(busy||refreshTask)return refreshTask;
+    const owner=navigationOwner();
+    refreshTask=(async()=>{
+      while(refreshNeeded.size&&!busy&&owner===navigationOwner()){
+        const requested=[...refreshNeeded];refreshNeeded.clear();
+        await Promise.allSettled(requested.map(async dataset=>{
+          if(dataset==='vault'){if(typeof syncVaultState==='function')await syncVaultState();return;}
+          const rows=await api({returns:'/returns',transactions:'/transactions',inventory:'/transactions/inventory'}[dataset],{background:true});
+          if(owner!==navigationOwner()||refreshNeeded.has(dataset))return;
+          if(dataset==='returns'){returnRequests=rows;if(currentPage==='approvals')renderApprovals();}
+          if(dataset==='transactions'){transactions=rows;if(currentPage==='movements')renderMovements();if(currentPage==='invoice-view')renderInvoiceViewPage();}
+          if(dataset==='inventory'){inventoryCache=rows;if(currentPage==='inventory'&&typeof renderInventory==='function')renderInventory();}
+        }));
+        if(owner!==navigationOwner())break;
+        if(typeof buildNotifications==='function')buildNotifications();
+        if(typeof buildSidebar==='function')buildSidebar();
+      }
+    })().catch(error=>console.warn('After-sales background refresh',error)).finally(()=>{
+      refreshTask=null;
+      if(owner!==navigationOwner())refreshNeeded.clear();
+      else if(refreshNeeded.size&&!busy)void refresh([]);
+    });
+    return refreshTask;
+  }
+  async function savedStep(result, id, datasets) {
+    // Use the server's committed state, not an optimistic financial/stock update.
+    await open(result?._id||id,false,result);
+    refreshPreparationDetails(result?._id||id);
+    window.InvoiceUnitIdentities?.changed(result?.originalTransactionId || activeInvoice?._id);
+    void refresh(datasets);
   }
   function summary(q, kind = 'return') {
     const exchange = kind === 'exchange';
@@ -383,7 +448,9 @@
           exchangeItems:field('kind').value==='exchange'?[...selected.values()].map(({product,qty})=>({productId:product._id,qty})):[],
           customerFee:Number(field('customerFee').value), feeBasis:field('feeBasis').value.trim(), upgradeAccepted:field('kind').value==='exchange'&&field('upgradeAccepted').checked, note:field('note').value.trim() };
       }
+      let quoteController, quoteKey = '';
       async function calculate() {
+        if(!form.isConnected||!dialog.open||busy)return;
         const isExchange=field('kind').value==='exchange';
         el('[data-as-replacements]').hidden = !isExchange;
         field('upgradeAccepted').disabled=!isExchange;
@@ -392,17 +459,26 @@
         el('[data-as-create] button[type=submit]').textContent=isExchange?tr('تسجيل طلب الاستبدال','Submit exchange request'):tr('تسجيل طلب الاسترجاع','Submit return request');
         field('feeBasis').required = !field('customerFee').disabled && Number(field('customerFee').value) > 0;
         const body=payload(); el('[data-as-exchange-summary]').innerHTML=exchangeSummary(body.items,body.exchangeItems);
+        // Notes/search and repeated input/change events do not change the quote.
+        const signature=JSON.stringify({...body,note:undefined,feeBasis:!!body.feeBasis});
+        if(signature===quoteKey)return;
+        quoteKey=signature;
+        quoteController?.abort();quoteController=new AbortController();
         const request = ++quoteSerial, target = el('[data-as-quote]');
+        target.removeAttribute('aria-busy');
         if(!body.items.length || body.kind==='exchange'&&!body.exchangeItems.length){target.innerHTML=summary(null,body.kind);return;}
+        target.setAttribute('aria-busy','true');
+        target.innerHTML=`<p class="as-muted" role="status">${tr('جارٍ حساب المبلغ…','Calculating amount…')}</p>`;
         try {
-          const result = await api('/after-sales/quote', { method:'POST', body:JSON.stringify(payload()), background:true });
+          const result = await api('/after-sales/quote', { method:'POST', body:JSON.stringify(body), background:true, signal:quoteController.signal });
           if (request !== quoteSerial || !target.isConnected) return;
           target.innerHTML = summary(result.quote,body.kind) + (result.requiresReview ? `<p class="as-muted">${tr('يلزم مراجعة المدير للمهلة أو تاريخ الاستلام.','Manager review required for the return window or delivery date.')}</p>` : '');
-        } catch(error) { if(request === quoteSerial && target.isConnected) target.innerHTML = `<p class="as-muted">${esc(error.message)}</p>`; }
+        } catch(error) { if(request === quoteSerial && target.isConnected&&error.name!=='AbortError'){quoteKey='';target.innerHTML = `<p class="as-muted">${esc(error.message)}</p>`;} }
+        finally { if(request===quoteSerial&&target.isConnected)target.removeAttribute('aria-busy'); }
       }
-      let timer; form.oninput = event => { if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); clearTimeout(timer); timer=setTimeout(calculate,250); };
-      form.onchange = event => { clearTimeout(timer); if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); if(['kind','reason','fulfillmentChannel'].includes(event.target.name)) syncFee(); void calculate(); };
-      form.onsubmit = async event => { event.preventDefault(); if(busy)return; setBusy(true); try { const result=await post('', '', payload()); if(complaintOrigin)complaintOrigin.caseId=result._id; await refresh(); if (complaint) void window.ComplaintFlow?.changed(); await open(result._id); message(tr('تم تسجيل الطلب وإرساله للمراجعة.','The request was submitted for review.'),false); } catch(error){message(error.message);} finally{setBusy(false);} };
+      let timer; form.oninput = event => { if(event.target.name==='note'||event.target.matches('[data-as-search]'))return; if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); clearTimeout(timer); timer=setTimeout(calculate,180); };
+      form.onchange = event => { if(event.target.name==='note'||event.target.matches('[data-as-search]'))return; clearTimeout(timer); if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); if(['kind','reason','fulfillmentChannel'].includes(event.target.name)) syncFee(); void calculate(); };
+      form.onsubmit = async event => { event.preventDefault(); if(busy)return; setBusy(true); try { const result=await post('', '', payload()); if(complaintOrigin)complaintOrigin.caseId=result._id; await savedStep(result,result._id,['returns']); if (complaint) void window.ComplaintFlow?.changed(); message(tr('تم تسجيل الطلب وإرساله للمراجعة.','The request was submitted for review.'),false); } catch(error){message(error.message);} finally{setBusy(false);} };
       await calculate();
     } catch(error) { message(error.message); }
   }
@@ -413,14 +489,14 @@
       { id:row.returnTxId,label:tr('فاتورة المرتجع','Return invoice')+' #'+(row.returnTxRef||'') }].filter(x=>x.id).map(x=>`<button class="as-link" type="button" data-as-invoice="${esc(x.id)}">${esc(x.label)}</button>`).join('');
   }
   function bindLinks() { dialog.querySelectorAll('[data-as-complaint]').forEach(button=>button.onclick=()=>{if(complaintOrigin?.complaintId===button.dataset.asComplaint)return backToComplaint();const task=window.ComplaintFlow?.resume(button.dataset.asComplaint);if(document.querySelector('.cf-dialog[open]')){serial++;dialog.close();}return task;}); dialog.querySelectorAll('[data-as-invoice]').forEach(button=>button.onclick=()=>{complaintOrigin=null;suspendedView=null;dialog.close();showInvoiceDetail(button.dataset.asInvoice);}); }
-  async function open(id, restorePosition = false) {
+  async function open(id, restorePosition = false, committedRow = null) {
     if(complaintOrigin&&String(complaintOrigin.caseId)!==String(id)){complaintOrigin=null;suspendedView=null;}
     const owner=navigationOwner();
     const cached=activeCaseOwner===owner&&String(activeCase?._id)===String(id)&&el('[data-as-print]');
     const version = cached?++serial:show(tr('ملف خدمة ما بعد البيع','After-sales case'),'',tr('جارٍ التحميل…','Loading…'));
     if(cached){showComplaintNavigation();if(!dialog.open)dialog.showModal();if(restorePosition&&caseReturn?.id===String(id))el('.as-body').scrollTop=caseReturn.top;}
     try {
-      const row=await api('/after-sales/'+encodeURIComponent(id)); if(version!==serial||!dialog.open||owner!==navigationOwner())return; activeCase=row;activeCaseOwner=owner;
+      const row=String(committedRow?._id)===String(id)&&committedRow?.workflow ? committedRow : await api('/after-sales/'+encodeURIComponent(id)); if(version!==serial||!dialog.open||owner!==navigationOwner())return; activeCase=row;activeCaseOwner=owner;
       if(!complaintOrigin&&row.workflow?.complaintIds?.length===1){const complaintId=row.workflow.complaintIds[0],source=(typeof complaints!=='undefined'?complaints:[]).find(c=>c._id===complaintId);complaintOrigin={complaintId,complaintNo:source?.complaintNo||'',caseId:id,owner:navigationOwner()};}
       const w=row.workflow, closed=['closed','cancelled'].includes(w.stage), actions=[];
       if(!closed){
@@ -463,7 +539,7 @@
     el('form').onsubmit=async event=>{
       event.preventDefault();if(busy)return;
       const form=event.target;setBusy(true);
-      try{await post('rollback',row._id,{step:row.rollback.step,expectedToken:row.rollback.token,note:form.elements.note.value.trim(),confirmed:form.elements.confirmed.checked});await refresh();await open(row._id);message(tr('تم الرجوع خطوة وتسجيل الإجراء في سجل الطلب.','The step was undone and recorded in the case history.'),false);}
+      try{const result=await post('rollback',row._id,{step:row.rollback.step,expectedToken:row.rollback.token,note:form.elements.note.value.trim(),confirmed:form.elements.confirmed.checked});await savedStep(result,row._id);message(tr('تم الرجوع خطوة وتسجيل الإجراء في سجل الطلب.','The step was undone and recorded in the case history.'),false);}
       catch(error){message(error.message);}finally{setBusy(false);}
     };
   }
@@ -472,12 +548,12 @@
     if(name==='rollback')return rollback(row);
     if(name==='receive')return receive(row);
     if(name==='settle')return settle(row);
-    if(name==='sync'){setBusy(true);try{await api('/after-sales/'+row._id+'/sync',{method:'POST',body:'{}'});await open(row._id);}catch(error){message(error.message);}finally{setBusy(false);}return;}
+    if(name==='sync'){setBusy(true);try{const result=await api('/after-sales/'+row._id+'/sync',{method:'POST',body:'{}'});await savedStep(result,row._id,['returns','transactions']);}catch(error){message(error.message);}finally{setBusy(false);}return;}
     const labels={approve:tr('اعتماد الطلب','Approve request'),cancel:tr('إلغاء الطلب','Cancel request'),ship:shipmentLabel(row.requestKind),delivery:tr('تأكيد التسليم','Confirm delivery'),'link-shipment':tr('ربط بوليصة بوسطة','Link Bosta shipment'),exception:tr('إدارة مشكلة','Manage issue')};
     show(labels[name],row.workflow.ref,`<form data-as-action-form><div class="as-banner">${name==='ship'?tr('سيتم إرسال طلب الشحنة إلى بوسطة. عند انقطاع الاتصال تتم مطابقة الطلب قبل إعادة الإرسال.','The shipment request will be sent to Bosta. An interrupted request must be reconciled before resending.'):name==='approve'?tr('الموافقة تبدأ التجهيز. الاستلام ورد المبلغ لهما خطوات مستقلة.','Approval starts preparation. Receipt and refund have separate steps.'):tr('سجّل التفاصيل والمرجع لإكمال الإجراء.','Record the details and reference to complete this action.')}</div>${name==='ship'?shippingAddressForm(row):''}${name==='link-shipment'?`<label class="as-field">${tr('معرّف الشحنة في بوسطة','Bosta delivery ID')}<input name="deliveryId" required></label>`:''}${name==='exception'&&admin()?`<label class="as-check"><input type="checkbox" name="resolve">${tr('تم حل المشكلة مع توثيق الإجراء','Issue resolved; document the resolution')}</label>`:''}<label class="as-field">${tr('الملاحظة / مرجع الإثبات','Note / evidence reference')}<textarea name="note" rows="3" maxlength="1000" ${['cancel','delivery','exception'].includes(name)||name==='approve'&&row.workflow.requiresReview?'required':''}></textarea></label>${name==='delivery'?`<label class="as-check"><input type="checkbox" name="confirmed" required>${tr('تأكدت من تسليم البديل للعميل','I verified delivery of the replacement to the customer')}</label>`:''}<footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary">${labels[name]}</button></footer></form>`);
     el('[data-as-back]').onclick=()=>open(row._id,true);
     if(name==='ship')bindShippingAddress(row);
-    el('form').onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);const form=event.target;try{await post(name,row._id,{note:form.elements.note.value,confirmed:form.elements.confirmed?.checked===true,resolve:form.elements.resolve?.checked===true,deliveryId:form.elements.deliveryId?.value,addressMode:form.elements.addressMode?.value,customerAddress:form.elements.addressMode?.value==='manual'?{cityId:form.elements.customerCityId.value,districtId:form.elements.customerDistrictId.value,firstLine:form.elements.customerFirstLine.value,phone:form.elements.customerPhone.value,customerName:form.elements.customerName.value}:undefined});await refresh();await open(row._id);message(name==='approve'&&row.requestKind==='exchange'?tr('تم الاعتماد. طلب الاستبدال مسجّل وبانتظار التجهيز، ويمكن بدء تجهيزه من شاشة الطلبات.','Approved. The replacement is registered and awaiting prep on the orders board.'):tr('تم حفظ الإجراء وتحديث سجل الطلب.','The action was saved and the order history updated.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
+    el('form').onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);const form=event.target;try{const result=await post(name,row._id,{note:form.elements.note.value,confirmed:form.elements.confirmed?.checked===true,resolve:form.elements.resolve?.checked===true,deliveryId:form.elements.deliveryId?.value,addressMode:form.elements.addressMode?.value,customerAddress:form.elements.addressMode?.value==='manual'?{cityId:form.elements.customerCityId.value,districtId:form.elements.customerDistrictId.value,firstLine:form.elements.customerFirstLine.value,phone:form.elements.customerPhone.value,customerName:form.elements.customerName.value}:undefined});await savedStep(result,row._id);message(name==='approve'&&row.requestKind==='exchange'?tr('تم الاعتماد. طلب الاستبدال مسجّل وبانتظار التجهيز، ويمكن بدء تجهيزه من شاشة الطلبات.','Approved. The replacement is registered and awaiting prep on the orders board.'):tr('تم حفظ الإجراء وتحديث سجل الطلب.','The action was saved and the order history updated.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
   }
   function receive(row) {
     const w=row.workflow;
@@ -495,7 +571,7 @@
       const identities=[...dialog.querySelectorAll('[data-as-label]')].map(label=>({unitId:label.dataset.asLabel,labelState:label.querySelector('[data-as-label-state]').value,condition:label.querySelector('[data-as-unit-condition]').value,labelAttached:label.querySelector('input').checked,printOperationKey:label.dataset.printOperationKey}));
       if(identities.some(l=>!l.labelState||!l.labelAttached||l.labelState==='reprinted'&&!l.printOperationKey)){message(tr('راجع كل هوية وأكّد لصق الملصق.','Review each identity and confirm label attachment.'));return;}
       const items=[...dialog.querySelectorAll('[data-as-receipt-line]')].map(line=>({lineIndex:Number(line.dataset.asReceiptLine),condition:line.querySelector('[data-as-condition]').value,damagedQty:Number(line.querySelector('[data-as-damaged-qty]').value)}));
-      setBusy(true);try{await post('receive',row._id,{items,identities,physicalPossessionConfirmed:true});await refresh();await open(row._id);message(tr('تم استلام القطع وتسجيل الفحص وحركة المخزن.','Items received; inspection and inventory movements recorded.'),false);}catch(error){message(error.message);}finally{setBusy(false);}
+      setBusy(true);try{const result=await post('receive',row._id,{items,identities,physicalPossessionConfirmed:true});await savedStep(result,row._id);message(tr('تم استلام القطع وتسجيل الفحص وحركة المخزن.','Items received; inspection and inventory movements recorded.'),false);}catch(error){message(error.message);}finally{setBusy(false);}
     };
   }
   async function printIdentity(label,sizeId) {
@@ -534,7 +610,7 @@
     show(row.requestKind==='exchange'?tr('تسوية الاستبدال: الفرق والشحن','Exchange settlement: difference and shipping'):tr('تسوية الاسترجاع ورد المبلغ','Return settlement and refund'),w.ref,`<form><section class="as-card">${summary(w.quote,row.requestKind)}</section><label class="as-field">${tr('الحركة','Action')}<select name="kind">${options.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><div data-as-carrier-fields><label class="as-field">${tr('تكلفة بوسطة الفعلية','Actual Bosta cost')}<input type="number" min="0" step="0.01" name="actualCost" value="0"></label>${w.quote.collectDue&&!w.collection?`<label class="as-check"><input type="checkbox" name="includesCollection" checked>${tr('التحويل يتضمن فرق العميل المحصل لدى بوسطة','Transfer includes the customer difference held by Bosta')}</label>`:''}<div class="as-banner" data-as-net></div></div><div class="as-two"><label class="as-field">${tr('الخزنة','Vault')}<select name="method">${['كاش','فودافون كاش','Instapay','تحويل بنكي'].map(m=>`<option>${m}</option>`).join('')}</select></label><label class="as-field">${tr('مرجع التحويل أو الدفع','Payment / transfer reference')}<input name="reference" required maxlength="150"></label></div><label class="as-check"><input type="checkbox" name="confirmed" required>${tr('الحركة تمت فعليًا، والمبلغ والخزنة والمرجع صحيحون.','The payment happened and the amount, vault and reference are correct.')}</label><footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary" ${options.length?'':'disabled'}>${tr('تسجيل التسوية','Record settlement')}</button></footer></form>`);
     const form=el('form');const update=()=>{el('[data-as-carrier-fields]').hidden=form.elements.kind.value!=='carrier';const net=(form.elements.includesCollection?.checked?w.quote.collectDue:0)-Number(form.elements.actualCost.value);el('[data-as-net]').textContent=tr('صافي حركة الخزنة: ','Net vault movement: ')+(net<0?tr('خروج ','Outflow '):tr('دخول ','Inflow '))+amount(Math.abs(net));};form.oninput=update;update();
     el('[data-as-back]').onclick=()=>open(row._id,true);
-    form.onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);try{await post('settle',row._id,{kind:form.elements.kind.value,method:form.elements.method.value,reference:form.elements.reference.value,actualCost:Number(form.elements.actualCost.value),includesCollection:form.elements.includesCollection?.checked===true,confirmed:true});await refresh();await open(row._id);message(tr('تم تسجيل التسوية المالية وربط قيد الخزنة بالطلب.','Settlement recorded and the vault entry linked to this case.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
+    form.onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);try{const result=await post('settle',row._id,{kind:form.elements.kind.value,method:form.elements.method.value,reference:form.elements.reference.value,actualCost:Number(form.elements.actualCost.value),includesCollection:form.elements.includesCollection?.checked===true,confirmed:true});await savedStep(result,row._id,['returns','transactions','vault']);message(tr('تم تسجيل التسوية المالية وربط قيد الخزنة بالطلب.','Settlement recorded and the vault entry linked to this case.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
   }
   async function list(invoiceId) {
     complaintOrigin=null;suspendedView=null;
@@ -633,9 +709,10 @@
     }
   }
   async function changed(id) {
-    try { returnRequests=await api('/returns'); if(typeof buildNotifications==='function')buildNotifications(); if(currentPage==='approvals')renderApprovals(); } catch {}
+    refreshPreparationDetails(id);
+    void refresh(['returns']);
     if(!busy&&dialog?.open&&activeCase?._id===id&&el('[data-as-print]'))void open(id);
   }
-  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,printOrderCase,shippingBadges,changed};
+  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,refreshPreparationDetails,printOrderCase,shippingBadges,changed};
   document.addEventListener('DOMContentLoaded',()=>{mountLaunchers();let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mountLaunchers();});}).observe(document.getElementById('main')||document.body,{childList:true,subtree:true});});
 })();

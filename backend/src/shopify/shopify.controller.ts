@@ -33,6 +33,7 @@ import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { OrderEditActor, OrderEditInput } from './order-edit.util';
 import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
+import { DepositObjectionDto, ShippingDecisionDto } from './dto/deposit-decision.dto';
 
 function editActorOf(req: any): OrderEditActor {
   return { ...actorOf(req), role: req.user?.role || '', perms: req.user?.perms || [] };
@@ -408,10 +409,26 @@ export class ShopifyController {
   @RequirePerms('shopify-deposit-upload')
   async setShipWithoutDeposit(
     @Param('id') id: string,
-    @Body('enabled') enabled: boolean,
+    @Body() body: ShippingDecisionDto,
     @Request() req: any,
   ) {
-    return this.shopifyService.setShipWithoutDeposit(id, enabled, req.user?.name || req.user?.username || '');
+    return this.shopifyService.setShipWithoutDeposit(id, body.enabled, req.user?.name || req.user?.username || '', body, actorOf(req));
+  }
+
+  @Get('deposit-decision-options')
+  @UseGuards(JwtAuthGuard)
+  depositDecisionOptions() { return this.shopifyService.depositDecisionOptions(); }
+
+  @Get('deposit-decision-report')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('reports-orderaudit')
+  depositDecisionReport(@Query('month') month: string) { return this.shopifyService.getDepositDecisionReport(month); }
+
+  @Patch('orders/:id/deposit-objection')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('shopify-deposit-upload')
+  recordDepositObjection(@Param('id') id: string, @Body() body: DepositObjectionDto, @Request() req: any) {
+    return this.shopifyService.recordDepositObjection(id, body, actorOf(req));
   }
 
   /** Visual marker; deliberately requires only authentication. */

@@ -90,6 +90,11 @@ export class AfterSalesService {
   async get(id: string) {
     const row: any = await this.cases.findOne({ _id: this.id(id), 'workflow.version': 2 }).lean();
     if (!row) throw new NotFoundException('طلب خدمة ما بعد البيع غير موجود');
+    return this.describe(row);
+  }
+  /** Enrich the committed response without fetching the same case again. */
+  async describe(row: any) {
+    if (row.addressHint && row.rollback) return row;
     // Fetch both invoices in one round trip, without their items, carrier payloads
     // or event histories. Reuse this fresh replacement state for rollback checks.
     const invoiceIds = [row.originalTransactionId, row.workflow.replacementTxId].filter(Boolean).map(value => this.id(String(value)));
@@ -171,8 +176,9 @@ export class AfterSalesService {
       this.cases.find({ originalTransactionId: id, status: { $in: ['معلق', 'معتمد'] }, reversedAt: null }).lean(),
       this.transactions.getInventory(),
     ]);
+    const inventoryByCode = new Map(inventory.map(item => [item.code, item]));
     return { invoice: tx, identities, cases, policy, products: products.map(p => ({ ...p, imageUrl: p.imageUrl || p.images?.[0] || '',
-      available: Number(inventory.find(i => i.code === p.code)?.warehouseBalances?.[tx.warehouseCode || 'MAIN'] || 0) })), prior };
+      available: Number(inventoryByCode.get(p.code)?.warehouseBalances?.[tx.warehouseCode || 'MAIN'] || 0) })), prior };
   }
   async quote(body: any, session?: any) {
     if (body.fulfillmentChannel && !['bosta','direct'].includes(body.fulfillmentChannel)) throw new BadRequestException('طريقة التنفيذ غير صالحة');
@@ -180,8 +186,21 @@ export class AfterSalesService {
     if (!original || !(original.deliveredAt || original.bostaStatus === 'DELIVERED' || original.pickupStatus === 'Delivered')) throw new BadRequestException('الطلب يجب أن يكون مسلّمًا للعميل؛ فشل التوصيل له مسار مستقل');
     if (original.afterSales?.caseId && !await this.cases.exists({ _id: this.id(original.afterSales.caseId), 'workflow.stage': 'closed' }).session(session || null)) throw new ConflictException('أكمل تسوية الاستبدال السابق قبل فتح طلب جديد على البديل');
     if (!Array.isArray(body.items) || !body.items.length || body.items.length > 100) throw new BadRequestException('اختر القطع المطلوبة');
-    const prior: any[] = await this.cases.find({ originalTransactionId: String(original._id), status: { $in: ['معلق', 'معتمد'] }, reversedAt: null }).session(session || null).lean();
+    const prior: any[] = await this.cases.find({ originalTransactionId: String(original._id), status: { $in: ['معلق', 'معتمد'] }, reversedAt: null })
+      .select('items total workflow.selectedUnits').session(session || null).lean();
     const policy = await this.policy(session), seen = new Set<number>();
+    if (body.kind === 'exchange' && (!Array.isArray(body.exchangeItems) || !body.exchangeItems.length || body.exchangeItems.length > 100)) throw new BadRequestException('اختر المنتج البديل');
+    // A quote used to issue two reads per returned line and another per replacement.
+    // Read only the selected catalog rows and assigned identities, once per quote.
+    // Keep reads sequential when a MongoDB transaction session is supplied.
+    const codes = [...new Set(body.items.map((selected: any) => original.items?.[Number(selected.lineIndex)]?.code).filter(Boolean))];
+    const replacementIds = body.kind === 'exchange' ? body.exchangeItems.map((selected: any) => this.id(selected.productId)) : [];
+    const catalog = await this.connection.collection('products').find({ $or: [{ code: { $in: codes } }, { _id: { $in: replacementIds }, archived: { $ne: true } }] },
+      { session, projection: { code: 1, name: 1, imageUrl: 1, images: 1, sellPrice: 1, isActive: 1, archived: 1 } }).toArray();
+    const byCode = new Map(catalog.map(product => [product.code, product]));
+    const byId = new Map(catalog.map(product => [String(product._id), product]));
+    const assignedUnits = await this.connection.collection('inventoryunits').find({ productId: { $in: catalog.filter(product => codes.includes(product.code)).map(product => String(product._id)) },
+      'assignment.transactionId': String(original._id) }, { session, projection: { productId: 1, 'assignment.lineId': 1, packId: 1 } }).toArray();
     const gross = (original.items || []).reduce((n: number, line: any) => n + Number(line.total || 0), 0);
     const ratio = gross > 0 ? Math.max(0, 1 - Math.min(gross, Number(original.discount || 0)) / gross) : 1;
     const items: any[] = [];
@@ -193,9 +212,8 @@ export class AfterSalesService {
       if (qty + used > Number(line.qty)) throw new ConflictException('الكمية المطلوبة تتجاوز المتبقي في بند الفاتورة');
       const unitIds: string[] = Array.isArray(selected.unitIds) ? selected.unitIds.map((id: string) => String(this.id(id))) : [];
       if (new Set(unitIds).size !== unitIds.length || unitIds.length > qty) throw new BadRequestException('هويات القطع مكررة أو تتجاوز الكمية');
-      const product = await this.connection.collection('products').findOne({ code: line.code }, { session });
-      const assigned = product ? await this.connection.collection('inventoryunits').find({ productId: String(product._id), 'assignment.transactionId': String(original._id),
-        ...(line.lineId ? { 'assignment.lineId': line.lineId } : {}) }, { session }).toArray() : [];
+      const product = byCode.get(line.code);
+      const assigned = product ? assignedUnits.filter(unit => unit.productId === String(product._id) && (!line.lineId || unit.assignment?.lineId === line.lineId)) : [];
       if (assigned.length && unitIds.length !== Math.min(qty, assigned.length)) throw new BadRequestException('حدد هويات القطع المرتبطة بالفاتورة قبل المتابعة');
       if (unitIds.some(id => !assigned.some(u => String(u._id) === id)) || prior.some(r => r.workflow?.selectedUnits?.some((id: string) => unitIds.includes(id)))) throw new ConflictException('هوية غير مرتبطة بالفاتورة أو لها طلب سابق');
       if (assigned.some(u => unitIds.includes(String(u._id)) && u.packId)) throw new ConflictException('افتح الباك في إدارة الباركود قبل استلام قطعه منفردة');
@@ -212,9 +230,9 @@ export class AfterSalesService {
     if (body.kind === 'exchange') {
       if (!Array.isArray(body.exchangeItems) || !body.exchangeItems.length || body.exchangeItems.length > 100) throw new BadRequestException('اختر المنتج البديل');
       for (const selected of body.exchangeItems) {
-        const product: any = await this.connection.collection('products').findOne({ _id: this.id(selected.productId), archived: { $ne: true } }, { session });
+        const product: any = byId.get(String(this.id(selected.productId)));
         const qty = Number(selected.qty);
-        if (!product || product.isActive === false || !Number.isSafeInteger(qty) || qty < 1 || exchangeItems.some(i => i.productId === String(product._id))) throw new BadRequestException('البديل أو الكمية غير صالح');
+        if (!product || product.archived === true || product.isActive === false || !Number.isSafeInteger(qty) || qty < 1 || exchangeItems.some(i => i.productId === String(product._id))) throw new BadRequestException('البديل أو الكمية غير صالح');
         // A like-for-like exchange keeps the paid value, including the original discount.
         // Sum matching invoice lines so rounding or split lines cannot create a price difference.
         const same = items.filter(i => i.productId === String(product._id));

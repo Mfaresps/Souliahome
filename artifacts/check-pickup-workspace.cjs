@@ -6,7 +6,7 @@ const row=(i,status,ref)=>({_id:String(i).padStart(24,'0'),type:'مبيعات',r
   items:[{lineId:'line-'+i,productId:product._id,code:product.code,name:product.name,qty:1,price:100,total:100}],payments:[],pickupHistory:[]});
 const orders=[row(1,'Pending'),row(2,'Preparing','PREP-A'),row(3,'Preparing','PREP-A'),row(4,'Preparing','PREP-B'),row(5,'Ready','RUN-A'),...Array.from({length:14},(_,i)=>row(i+6,'Shipped','SHIP-'+i))];
 (async()=>{
- const browser=await puppeteer.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',userDataDir:path.join(__dirname,'pickup-workspace-browser')});
+ const browser=await puppeteer.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',pipe:true});
  try{
   for(const [lang,width] of [['en',1920],['ar',390]]){
    const page=await browser.newPage();await page.setViewport({width,height:1000});const errors=[];let requests=0,releasePreview;
@@ -15,6 +15,7 @@ const orders=[row(1,'Pending'),row(2,'Preparing','PREP-A'),row(3,'Preparing','PR
    await page.setRequestInterception(true);
    page.on('request',request=>{
     const url=new URL(request.url());
+    if(url.pathname==='/vendor/socket.io-4.7.5.min.js')return request.respond({status:200,contentType:'text/javascript',body:"window.__previewHandlers={};window.io=function(){return {on:function(event,fn){(__previewHandlers[event]||=[]).push(fn)},emit:function(){},disconnect:function(){}}}"});
     if(url.origin!=='http://localhost:8080')return request.respond({status:200,contentType:request.resourceType()==='stylesheet'?'text/css':'text/javascript',body:url.hostname==='cdn.socket.io'?"window.__previewHandlers={};window.io=function(){return {on:function(event,fn){(__previewHandlers[event]||=[]).push(fn)},emit:function(){},disconnect:function(){}}}":''});
     if(url.pathname.startsWith('/api/')){
      if(url.pathname==='/api/shipping/pickup-preview'){releasePreview=()=>request.respond({status:200,contentType:'application/json',body:JSON.stringify({requests:[]})});return;}
@@ -40,8 +41,19 @@ const orders=[row(1,'Pending'),row(2,'Preparing','PREP-A'),row(3,'Preparing','PR
    }else assert(await page.$eval('#pu-prep-col',el=>el.clientHeight)>100,'mobile preparation body must remain usable');
    await page.screenshot({path:path.join(__dirname,`pickup-workspace-${lang}.png`)});
    await releasePreview();
+   await page.evaluate(async()=>{
+    currentUser.perms.push('pickup-orders-edit');
+    await openPrepGroupModal();
+   });
+   assert.equal(await page.$eval('#pu-prep-modal',el=>el.classList.contains('active')),true,'create preparation modal opens');
+   assert.equal(await page.evaluate(()=>document.activeElement?.id),'pu-prep-modal-search','create modal focuses search');
+   assert.equal(requests,1,'create modal reuses loaded orders');
+   await page.evaluate(()=>{closePrepGroupModal();currentUser.perms=currentUser.perms.filter(p=>p!=='pickup-orders-edit');});
    await page.evaluate(()=>openPuCardOrdersModal('PREP-A','prep'));
    await page.waitForFunction(()=>document.querySelectorAll('#puco-orders-list .pw-ocard').length===2);
+   await page.evaluate(()=>{closePuCardOrdersModal();openPuCardOrdersModal('PREP-A','prep');});
+   await new Promise(r=>setTimeout(r,260));
+   assert.equal(await page.$eval('#pu-card-orders-modal',el=>el.classList.contains('active')&&el.style.display!=='none'),true,'rapid reopen stays visible');
    const selection=await page.evaluate(()=>_pwSelId);
    const updated={...orders[1],client:'Live customer name',total:250};
    await page.evaluate(tx=>(__previewHandlers['tx:updated']||[]).forEach(fn=>fn({tx})),updated);

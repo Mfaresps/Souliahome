@@ -154,6 +154,57 @@ async function addPending(receipts: any, orderId: string, amount: number, method
 
 const fresh = (id: string) => orderModel.findById(id).lean().exec() as Promise<any>;
 
+describe('structured shipping decisions with real Mongo', () => {
+  const input = { revision: 0, reasonCode: 'prefers-cod', exceptionCode: 'staff-discretion', note: 'Customer prefers COD' };
+  it('allows only one concurrent decision at a revision and persists actor/history atomically', async () => {
+    const { shop, vault } = setup(); const o = await newOrder(); const id = String(o._id);
+    const results = await Promise.allSettled([
+      shop.setShipWithoutDeposit(id, true, STAFF.name, input, STAFF),
+      shop.setShipWithoutDeposit(id, true, OTHER.name, {...input, reasonCode:'no-payment-method'}, OTHER),
+    ]);
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    const saved = await fresh(id);
+    expect(saved.depositDecisionRevision).toBe(1);
+    expect(saved.depositDecisionHistory).toHaveLength(1);
+    expect(saved.depositDecisionHistory[0].byId).toBe(saved.depositDecision.byId);
+    expect(saved.shipWithoutDeposit).toBe(true);
+    expect(vault.entries).toHaveLength(0);
+  });
+  it('retains disabled history and freezes the latest decision in the confirmed sale', async () => {
+    const { shop, vault } = setup(); const o = await newOrder(); const id = String(o._id);
+    await shop.setShipWithoutDeposit(id, true, STAFF.name, input, STAFF);
+    await shop.setShipWithoutDeposit(id, false, STAFF.name, {revision:1}, STAFF);
+    expect((await fresh(id)).depositDecision.reasonCode).toBe('prefers-cod');
+    await shop.setShipWithoutDeposit(id, true, STAFF.name, {...input,revision:2,reasonCode:'first-order-trust'}, STAFF);
+    await shop.approveOrder(id, ADMIN.name, 'bosta');
+    const sale:any = await txModel.findOne({shopifyOrderId:o.shopifyId}).lean();
+    expect(sale.shipWithoutDeposit).toBe(true);
+    expect(sale.depositDecision.reasonCode).toBe('first-order-trust');
+    expect(sale.depositDecisionHistory.map((e:any)=>e.action)).toEqual(['enabled','disabled','enabled']);
+    expect(sale.initialDeposit).toBe(0);
+    await expect(shop.recordDepositObjection(id,{revision:3,reasonCode:'other',note:'new reason'},STAFF)).rejects.toThrow();
+    expect((await txModel.findById(sale._id).lean() as any).depositDecision.reasonCode).toBe('first-order-trust');
+    expect(vault.entries).toHaveLength(0);
+  });
+  it('blocks enabling when an approved or pending receipt wins the race', async () => {
+    const { shop, receipts } = setup(); const o = await newOrder(); const id = String(o._id);
+    await addPending(receipts,id,100,'Instapay');
+    await expect(shop.setShipWithoutDeposit(id,true,STAFF.name,input,STAFF)).rejects.toThrow();
+    expect((await fresh(id)).depositDecisionHistory).toHaveLength(0);
+  });
+  it('copies the decision returned by the confirmation claim rather than a stale pre-confirmation read', async () => {
+    const { shop } = setup(); const o = await newOrder(); const id = String(o._id);
+    await shop.setShipWithoutDeposit(id,true,STAFF.name,input,STAFF);
+    shop.transactionsService.assertWarehouseSale.mockImplementationOnce(async()=>{
+      await shop.setShipWithoutDeposit(id,true,OTHER.name,{...input,revision:1,reasonCode:'no-payment-method'},OTHER);
+    });
+    await shop.approveOrder(id,ADMIN.name,'bosta');
+    const sale:any = await txModel.findOne({shopifyOrderId:o.shopifyId}).lean();
+    expect(sale.depositDecision).toMatchObject({reasonCode:'no-payment-method',byId:OTHER.id});
+    expect(sale.depositDecisionHistory).toHaveLength(2);
+  });
+});
+
 async function secureSetup() {
   await settingsModel.deleteMany({});
   await vaultModel.deleteMany({});
@@ -704,6 +755,7 @@ describe('manager side — the vault moves on approval, exactly once', () => {
     expect(r.status).toBe('معتمد');
     expect(r.reviewedBy).toBe('محمد أشرف');
     expect(r.vaultTxNo).toBe('SAL-001');
+    expect(res.vaultEntryId).toBe(String(r.vaultEntryId));
     expect(doc.depositAmount).toBe(500);
     expect(doc.depositStatus).toBe('partial');
     expect(scoring.scoreDepositDetection).toHaveBeenCalled();
@@ -831,6 +883,44 @@ describe('confirming the order — reads the approved deposit, books nothing', (
     expect(tx.remaining).toBe(900);
     expect(tx.editHistory).toEqual([]);
     expect(tx.deposits).toEqual([]);
+    expect(vault.entries).toHaveLength(0);
+  });
+
+  it('records a deposit stated in the Shopify note on the sale and in the vault once', async () => {
+    const { shop, vault } = setup();
+    const o = await newOrder({ notes: 'تم دفع ديبوزت: ٥٠٠ عبر Instapay' });
+    const res = await shop.approveOrder(String(o._id), 'admin', 'bosta');
+    const tx: any = await txModel.findById(res.txId).lean();
+    expect(tx.deposit).toBe(500);
+    expect(tx.initialDeposit).toBe(500);
+    expect(tx.remaining).toBe(1000);
+    expect(tx.depMethod).toBe('Instapay');
+    expect(tx.deposits).toEqual([expect.objectContaining({ amount: 500, method: 'Instapay', source: 'shopify-note' })]);
+    expect(vault.entries).toEqual([expect.objectContaining({ amount: 500, method: 'Instapay', source: 'ديبوزت مبيعات' })]);
+    expect((await fresh(String(o._id))).depositAmount).toBe(500);
+    await expect(shop.approveOrder(String(o._id), 'admin', 'bosta')).resolves.toEqual({ success: false });
+    expect(vault.entries).toHaveLength(1);
+  });
+
+  it('uses the approved receipt instead of counting the same note deposit again', async () => {
+    const { receipts, shop, vault } = setup();
+    const o = await newOrder({ notes: 'ديبوزت 500 Instapay' });
+    await receipts.approve(String(o._id), await addPending(receipts, String(o._id), 500, 'Instapay'), ADMIN);
+    const res = await shop.approveOrder(String(o._id), 'admin', 'bosta');
+    const tx: any = await txModel.findById(res.txId).lean();
+    expect(tx.deposit).toBe(500);
+    expect(tx.deposits).toHaveLength(1);
+    expect(tx.deposits[0].source).toBe('deposit-receipt');
+    expect(vault.entries).toHaveLength(1);
+  });
+
+  it('does not leave a confirmed sale when the note deposit cannot enter the vault', async () => {
+    const { shop, vault } = setup();
+    const o = await newOrder({ notes: 'عربون 500' });
+    vault.failNextWrite();
+    await expect(shop.approveOrder(String(o._id), 'admin', 'bosta')).rejects.toThrow('vault write failed');
+    expect(await txModel.countDocuments({ shopifyOrderId: o.shopifyId })).toBe(0);
+    expect((await fresh(String(o._id))).status).toBe('pending');
     expect(vault.entries).toHaveLength(0);
   });
 

@@ -343,9 +343,8 @@ export class ShopifyOrder {
   } | null;
 
   /**
-   * Deposit summary — DERIVED from the approved `depositReceipts` (computeDepositFieldsFromReceipts).
-   * Kept because employee scoring and the staff dashboard read them. They used to be parsed from
-   * the Shopify note text; that path was removed with the receipt workflow.
+   * Deposit summary — derived from approved receipts while pending. On confirmation, an order
+   * with no receipts may use an explicit paid amount in its Shopify note.
    */
   @Prop({ default: 0 })
   depositAmount: number;
@@ -359,6 +358,16 @@ export class ShopifyOrder {
 
   @Prop({ default: '' })
   shipWithoutDepositAt: string;
+
+  /** Local structured customer reason and shipping exception; never derived from Shopify notes. */
+  @Prop({ type: Object, default: null })
+  depositDecision: Record<string, any> | null;
+
+  @Prop({ type: [Object], default: [] })
+  depositDecisionHistory: Record<string, any>[];
+
+  @Prop({ default: 0 })
+  depositDecisionRevision: number;
 
   @Prop({ default: '' })
   depositMethod: string;

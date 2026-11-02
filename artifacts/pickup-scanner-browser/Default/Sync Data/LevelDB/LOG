@@ -1,2 +1,3 @@
-2026/10/24-07:25:51.717 606c Creating DB D:\website\Souliahome\artifacts\pickup-scanner-browser\Default\Sync Data\LevelDB since it was missing.
-2026/10/24-07:25:51.806 606c Reusing MANIFEST D:\website\Souliahome\artifacts\pickup-scanner-browser\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/11/02-02:47:54.705 7434 Reusing MANIFEST D:\website\Souliahome\artifacts\pickup-scanner-browser\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/11/02-02:47:54.706 7434 Recovering log #3
+2026/11/02-02:47:54.706 7434 Reusing old log D:\website\Souliahome\artifacts\pickup-scanner-browser\Default\Sync Data\LevelDB/000003.log 

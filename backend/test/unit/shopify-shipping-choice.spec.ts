@@ -13,6 +13,7 @@ function ui(order: any, api: any = jest.fn().mockResolvedValue({shipWithoutDepos
   return new Function('order', 'api', 'showConfirm', `
     const _spShippingSwitchBusy = new Set();
     const currentLang = 'en';
+    const _spAskDepositDecision = async o => (await showConfirm('shipping-reason',{})) ? {revision:0,reasonCode:'prefers-cod',exceptionCode:'staff-discretion',note:'',exceptionNote:''} : null;
     const _spDepositOf = o => ({deposit:o.depositAmount || 0,pending:o.pending || [],byMethod:o.depositAmount?{Instapay:o.depositAmount}:{}});
     const hasPerm = () => true, esc = v => v, t = v => v;
     const _spReceiptJs = JSON.stringify, _spOrderById = () => order;
@@ -49,13 +50,14 @@ describe('Shipping without deposit — shipped UI', () => {
     const api = jest.fn().mockResolvedValue({shipWithoutDeposit:true});
     await ui(order,api).toggle('o1');
     expect(order.shipWithoutDeposit).toBe(true);
-    expect(JSON.parse(api.mock.calls[0][1].body)).toEqual({enabled:true});
+    expect(JSON.parse(api.mock.calls[0][1].body)).toEqual({enabled:true,revision:0,reasonCode:'prefers-cod',exceptionCode:'staff-discretion',note:'',exceptionNote:''});
   });
   it('rolls back on failure and permits retry', async () => {
     const order: any = pending();
     const api = jest.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({shipWithoutDeposit:true});
     const env = ui(order,api);
     await env.toggle('o1');
+    await Promise.resolve();
     expect(order.shipWithoutDeposit).toBe(false);
     await env.toggle('o1');
     expect(order.shipWithoutDeposit).toBe(true);
@@ -66,6 +68,7 @@ describe('Shipping without deposit — shipped UI', () => {
     const env = ui(pending(),api);
     const first = env.toggle('o1');
     await env.toggle('o1');
+    await Promise.resolve();
     expect(api).toHaveBeenCalledTimes(1);
     release({shipWithoutDeposit:true});
     await first;
@@ -76,7 +79,7 @@ describe('Shipping without deposit — shipped UI', () => {
     const confirm=jest.fn().mockResolvedValue(false);
     const env=ui(order,api,confirm);
     await env.toggle('o1');
-    expect(confirm).toHaveBeenCalledWith(previous?'spShipWithoutDepositOffConfirm':'spShipWithoutDepositOnConfirm',expect.any(Object));
+    expect(confirm).toHaveBeenCalledWith(previous?'spShipWithoutDepositOffConfirm':'shipping-reason',expect.any(Object));
     expect(order.shipWithoutDeposit).toBe(previous);
     expect(api).not.toHaveBeenCalled();
   });
@@ -126,6 +129,7 @@ describe('Shipping without deposit — shipped UI', () => {
 });
 
 describe('Shipping choice — service persistence', () => {
+  const decision={revision:0,reasonCode:'prefers-cod',exceptionCode:'staff-discretion'};
   function service(updated: any = {shipWithoutDeposit:true}) {
     const {ShopifyService} = require('../../src/shopify/shopify.service');
     const svc = Object.create(ShopifyService.prototype);
@@ -138,20 +142,22 @@ describe('Shipping choice — service persistence', () => {
   }
   it('atomically guards order and receipt state and only saves shipping metadata', async () => {
     const svc = service();
-    await expect(svc.setShipWithoutDeposit('o1',true,'Staff')).resolves.toMatchObject({success:true,shipWithoutDeposit:true});
+    await expect(svc.setShipWithoutDeposit('o1',true,'Staff',decision)).resolves.toMatchObject({success:true,shipWithoutDeposit:true});
     const [filter,update] = svc.shopifyOrderModel.findOneAndUpdate.mock.calls[0];
     expect(filter).toMatchObject({status:'pending',cancelled:{$ne:true},depositReceipts:{$not:{$elemMatch:{status:{$in:['معلق','معتمد']}}}}});
-    expect(update.$set).toEqual({shipWithoutDeposit:true,shipWithoutDepositBy:'Staff',shipWithoutDepositAt:expect.any(String)});
+    expect(update.$set).toMatchObject({shipWithoutDeposit:true,shipWithoutDepositBy:'Staff',shipWithoutDepositAt:expect.any(String),depositDecision:{reasonCode:'prefers-cod',exceptionCode:'staff-discretion'}});
+    expect(update.$inc).toEqual({depositDecisionRevision:1});
+    expect(update.$push.depositDecisionHistory).toMatchObject({action:'enabled',before:{enabled:false},after:{enabled:true,reasonCode:'prefers-cod'}});
   });
   it('rejects a receipt or status change racing the write', async () => {
     const svc=service(null);
-    await expect(svc.setShipWithoutDeposit('o1',true)).rejects.toThrow();
+    await expect(svc.setShipWithoutDeposit('o1',true,'Staff',decision)).rejects.toThrow();
     expect(svc.presence.emitEvent).not.toHaveBeenCalled();
   });
   it('broadcasts only the saved state, with its order and revision, to connected users', async () => {
     const updated={_id:'o1',ref:'2776',shipWithoutDeposit:true,shipWithoutDepositAt:'2026-10-11T12:00:00.000Z',shipWithoutDepositBy:'Staff'};
     const svc=service(updated);
-    const result=await svc.setShipWithoutDeposit('o1',true,'Staff');
+    const result=await svc.setShipWithoutDeposit('o1',true,'Staff',decision);
     expect(svc.presence.emitEvent).toHaveBeenCalledWith('shopify:shipping-choice-changed',{orderId:'o1',ref:'2776',shipWithoutDeposit:true,shipWithoutDepositAt:updated.shipWithoutDepositAt,shipWithoutDepositBy:'Staff'});
     expect(result.orderId).toBe('o1');
     expect(result.shipWithoutDepositAt).toBe(updated.shipWithoutDepositAt);
@@ -159,7 +165,7 @@ describe('Shipping choice — service persistence', () => {
   it('does not block a receipt-free order because of a legacy deposit summary', async () => {
     const svc=service();
     svc.shopifyOrderModel.findById.mockResolvedValue({_id:'o1',status:'pending',depositAmount:1000,depositReceipts:[]});
-    await expect(svc.setShipWithoutDeposit('o1',true)).resolves.toMatchObject({shipWithoutDeposit:true});
+    await expect(svc.setShipWithoutDeposit('o1',true,'Staff',decision)).resolves.toMatchObject({shipWithoutDeposit:true});
     const [filter,update]=svc.shopifyOrderModel.findOneAndUpdate.mock.calls[0];
     expect(filter.depositAmount).toBeUndefined();
     expect(filter.depositReceipts).toEqual({$not:{$elemMatch:{status:{$in:['معلق','معتمد']}}}});

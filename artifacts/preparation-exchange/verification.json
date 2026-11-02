@@ -1,0 +1,16 @@
+{
+  "repeatedWorkspaceRenders": 12,
+  "caseReads": 1,
+  "detailContentMutationsDuringRenders": 0,
+  "browserChecks": [
+    "Arabic desktop and mobile; English desktop",
+    "Expanded details stay open across workspace renders",
+    "Case change events and explicit refresh fetch current data",
+    "Repeated events during a request share one follow-up request",
+    "Failed refresh retains existing details; explicit retry succeeds",
+    "Switching orders or languages replaces the correct section",
+    "Existing preparation workspace tests pass in all six viewport/theme combinations",
+    "After-sales performance and payment retry checks still pass"
+  ],
+  "deployment": "Local workspace only"
+}

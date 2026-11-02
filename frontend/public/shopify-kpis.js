@@ -83,12 +83,14 @@ const _SPK_L = {
   rate: ['نسبة التأكيد', 'Confirmation rate'],
   rateHint: ['المؤكد (بعربون أو بدون) ÷ الأوردرات الواردة', 'Confirmed (with or without deposit) ÷ Received orders'],
   of: ['من', 'of'],
+  ofReceived: ['من الوارد', 'of received'],
   open: ['لم يُتخذ فيها إجراء بعد', 'with no action yet'],
   vsToday: ['عن نفس الوقت أمس', 'vs same time yesterday'],
   vsYesterday: ['عن أول أمس', 'vs the day before'],
   vsWeek: ['عن الـ7 أيام السابقة', 'vs previous 7 days'],
   vsThree: ['عن الـ3 أيام السابقة', 'vs previous 3 days'], vsCustom: ['عن الفترة السابقة بنفس المدة', 'vs previous period of the same length'],
   noChange: ['بدون تغيير', 'no change'],
+  noOrders: ['لا أوردرات في هذه الفترة', 'No orders in this period'],
   report: ['تقرير', 'Report'], reportTitle: ['تقرير الأوردرات', 'Orders report'],
   dailyReport: ['تقرير الأوردرات اليومي', 'Daily Orders Report'],
   weeklyReport: ['تقرير الأوردرات — آخر 7 أيام', 'Orders Report — Last 7 Days'],
@@ -194,39 +196,6 @@ function _spkStats(period) {
   return Object.assign(s, { period, from: r.from, to: r.to, days: r.days, prevReceived: prev.received });
 }
 
-/* Sparklines use the same creation-time window and current-state buckets as
-   the totals. No placeholder trends or future buckets in today's chart. */
-function _spkTrends(stats) {
-  const from = stats.from.getTime(), to = Math.min(stats.to.getTime(), Date.now());
-  const count = stats.days === 1 ? Math.max(1, Math.min(24, Math.ceil((to - from) / 3600000))) : Math.min(30, stats.days);
-  const bins = Array.from({length:count}, () => ({received:0,confirmed:0,followup:0,cancelled:0}));
-  if (to <= from) return bins.map(bin => ({...bin,rate:null}));
-  for (const order of (Array.isArray(_shopifyOrders) ? _shopifyOrders : [])) {
-    const ms = _spkOrderMs(order);
-    if (!(ms >= from && ms < to)) continue;
-    const bin = bins[Math.min(count - 1, Math.floor((ms - from) / (to - from) * count))];
-    const bucket = _spkBucket(order);
-    bin.received++;
-    if (bucket === 'deposit' || bucket === 'nodep') bin.confirmed++;
-    else if (bucket === 'followup' || bucket === 'cancelled') bin[bucket]++;
-  }
-  return bins.map(bin => ({...bin,rate:bin.received ? bin.confirmed / bin.received * 100 : null}));
-}
-function _spkTrendHtml(bins, key) {
-  const values = bins.map(bin => bin[key]), valid = values.filter(value => value != null);
-  if (!valid.length) return '';
-  const max = Math.max(1, ...valid), points = values.map((value, i) => value == null ? null : [values.length === 1 ? 50 : 2 + i / (values.length - 1) * 96, 22 - value / max * 19]);
-  let path = '', connected = false;
-  for (const point of points) {
-    if (!point) { connected = false; continue; }
-    path += `${connected ? 'L' : 'M'}${point[0].toFixed(2)},${point[1].toFixed(2)} `;
-    connected = true;
-  }
-  const dots = points.filter((point, i) => point && !points[i - 1] && !points[i + 1])
-    .map(point => `<circle cx="${point[0].toFixed(2)}" cy="${point[1].toFixed(2)}" r="1.5"/>`).join('');
-  return `<svg class="spk-trend" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="${path}"/>${dots}</svg>`;
-}
-
 /* ── Formatting ── */
 function _spkLoc() { return currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn'; }
 function _spkRangeLabel(s) {
@@ -282,18 +251,16 @@ function _spkRender(state) {
   }
 
   const s = _spkStats(_spkPeriod);
-  const trends = loading ? [] : _spkTrends(s);
   const tile = (key, value, sub, attrs, inner) => `
-    <button type="button" class="spk-tile is-${key}${loading?' is-loading':''}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" ${loading?'disabled':`onclick="_spkSetFilter('${key}')"`}${attrs || ''}>
+    <button type="button" class="spk-tile is-${key}${!loading && !s[key] ? ' is-zero' : ''}${loading?' is-loading':''}${_spkFilter === key ? ' is-active' : ''}" aria-pressed="${_spkFilter === key}" ${loading?'disabled':`onclick="_spkSetFilter('${key}')"`}${attrs || ''}>
       <div class="spk-tile-top"><span class="spk-lbl">${_spkEsc(_spkT(key))}</span><span class="spk-ic">${_spkIco(key)}</span></div>
       <div class="spk-val"><bdi>${loading?'<span class="ss-skeleton spk-loading-value" aria-hidden="true"></span>':value}</bdi></div>
-      ${loading ? '' : _spkTrendHtml(trends, key)}
       ${loading?'<div class="spk-sub"><span class="ss-skeleton spk-loading-sub" aria-hidden="true"></span></div>':sub ? `<div class="spk-sub">${sub}</div>` : ''}${loading?'':inner || ''}
     </button>`;
   const rateVal = s.rate == null ? '—' : `${s.rate}%`;
   const rateSub = s.received
     ? `<bdi>${_spkN(s.confirmed)}</bdi> ${_spkEsc(_spkT('of'))} <bdi>${_spkN(s.received)}</bdi>`
-    : '';
+    : _spkEsc(_spkT('noOrders'));
   const fuWarn = (typeof loadFailed === 'function' && loadFailed('followups'))
     ? `<span class="spk-warn">${_spkEsc(_spkT('fuFail'))}</span>` : '';
   const openNote = s.open
@@ -314,10 +281,11 @@ function _spkRender(state) {
       ${tile('received', _spkN(s.received), _spkDeltaText(s))}
       ${tile('confirmed', _spkN(s.confirmed),
         `<bdi>${_spkN(s.deposit)}</bdi> ${_spkEsc(_spkT('deposit'))} · <bdi>${_spkN(s.nodep)}</bdi> ${_spkEsc(_spkT('nodep'))}`,
-        /* The split also lives in title — the sub-line is hidden on phones. */
+        /* The split also lives in title for assistive and compact views. */
         ` title="${_spkEsc(`${_spkT('deposit')}: ${s.deposit} · ${_spkT('nodep')}: ${s.nodep}`)}"`)}
       ${tile('followup', _spkN(s.followup), _spkEsc(_spkT('followupSub')))}
-      ${tile('cancelled', _spkN(s.cancelled), '')}
+      ${tile('cancelled', _spkN(s.cancelled), s.received
+        ? `<bdi>${Math.round(s.cancelled / s.received * 100)}%</bdi> ${_spkEsc(_spkT('ofReceived'))}` : '')}
       ${tile('rate', rateVal, rateSub, ` title="${_spkEsc(_spkT('rateHint'))}"`,
         /* A share of one total — a single-hue meter, not a categorical colour. */
         `<div class="spk-meter" aria-hidden="true"><i style="width:${s.rate || 0}%"></i></div>`)}

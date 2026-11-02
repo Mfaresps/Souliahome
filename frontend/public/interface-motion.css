@@ -1,7 +1,7 @@
 /* Opacity-only entries keep sticky headers, menus and the mobile dock anchored. */
-:root{--ui-entry-duration:240ms;--ui-tab-duration:220ms;--ui-motion-ease:cubic-bezier(.22,.61,.36,1)}
-@keyframes uiPageReveal{from{opacity:.45}to{opacity:1}}
-@keyframes uiPanelReveal{from{opacity:.65}to{opacity:1}}
+:root{--ui-entry-duration:170ms;--ui-tab-duration:160ms;--ui-motion-ease:cubic-bezier(.22,.61,.36,1)}
+@keyframes uiPageReveal{from{opacity:.88}to{opacity:1}}
+@keyframes uiPanelReveal{from{opacity:.82}to{opacity:1}}
 #main .page{animation:uiPageReveal var(--ui-entry-duration) var(--ui-motion-ease);transform:none}
 
 /* Hidden panels restart on entry; route and selection updates remain immediate. */
@@ -21,7 +21,7 @@
     box-shadow var(--ui-tab-duration) var(--ui-motion-ease);
 }
 
-@media(max-width:820px),(pointer:coarse),(prefers-reduced-motion:reduce){
+@media(prefers-reduced-motion:reduce){
   #main .page,
   #main :is([role="tabpanel"],#sp-orders-tab-content,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content,
     #inv-panel-list,#inv-panel-log,#prod-pane-items,#prod-pane-drafts,

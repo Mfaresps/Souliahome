@@ -227,7 +227,7 @@ describe('TransactionsService (integration with mocks)', () => {
     it('returns all non-archived transactions', async () => {
       const txs = [buildSaleTransaction(), buildSaleTransaction({ _id: 't2' })];
       const selectFn = jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(txs) }),
+        sort: jest.fn().mockReturnValue({ lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(txs) }) }),
       });
       txModel.find.mockReturnValue({ select: selectFn });
       const result = await service.findAll();
@@ -245,7 +245,7 @@ describe('TransactionsService (integration with mocks)', () => {
        واحد من دول هيقع. */
     it('excludes heavy raw fields from list reads but not from findById', async () => {
       const selectFn = jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+        sort: jest.fn().mockReturnValue({ lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }) }),
       });
       txModel.find.mockReturnValue({ select: selectFn });
       await service.findAll();
@@ -253,6 +253,7 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(projection).toEqual({
         bostaRawResponse: 0,
         bostaStatusIgnoredEvents: 0,
+        bostaTrackingEvents: 0,
       });
 
       const tx = buildSaleTransaction();
@@ -272,6 +273,7 @@ describe('TransactionsService (integration with mocks)', () => {
           sort: jest.fn().mockReturnValue({
             skip: skipFn,
             limit: limitFn,
+            lean: jest.fn().mockReturnThis(),
             exec: jest.fn().mockResolvedValue([]),
           }),
         }),

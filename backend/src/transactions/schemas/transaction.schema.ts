@@ -88,6 +88,16 @@ export class Transaction {
   @Prop({ default: 0 })
   initialDeposit: number;
 
+  /** Frozen shipping choice at confirmation, separate from the money collected later. */
+  @Prop({ default: false })
+  shipWithoutDeposit: boolean;
+
+  @Prop({ type: Object, default: null })
+  depositDecision: Record<string, any> | null;
+
+  @Prop({ type: [Object], default: [] })
+  depositDecisionHistory: Record<string, any>[];
+
   @Prop({ default: 0 })
   remaining: number;
 

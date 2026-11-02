@@ -1010,9 +1010,10 @@ describe('Shopify — مصطلح تأكيد الطلب موحَّد', () => {
    */
   it('كل شريط يصرّف على مجموعة تحديده هو', () => {
     const lines = src.split('\n');
-    const sp = lines.find(l => l.includes("_shopifySelectedIds.size === 1 ? t('spSendToTransactionsLong')"));
+    const sp = extractFn(src, '_spRenderBulkBar');
     const dp = lines.find(l => l.includes("_dpReadySelectedIds.size === 1 ? t('spSendToTransactionsLong')"));
-    expect(sp).toBeDefined();
+    expect(sp).toContain('const count = _shopifySelectedIds.size;');
+    expect(sp).toContain("count === 1 ? t('spSendToTransactionsLong')");
     expect(dp).toBeDefined();
     expect(sp).not.toContain('_dpReadySelectedIds');
     expect(dp).not.toContain('_shopifySelectedIds');
@@ -1140,7 +1141,8 @@ describe('Shopify — نجمة تمييز الأوردر', () => {
   const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
 
   it('النجمة بجانب رقم الطلب في الجدول والبطاقة', () => {
-    expect(src).toMatch(/data-col="ref"><div class="sp-ref-line">\$\{_spStarHtml\(o\)\}/);
+    const tableRef = src.slice(src.indexOf('data-col="ref"><div class="sp-ref-line">'));
+    expect(tableRef.slice(0, 600)).toContain('${_spStarHtml(o)}');
     expect(src).toMatch(/class="sp-card-ref">\$\{_spStarHtml\(o\)\}/);
   });
 

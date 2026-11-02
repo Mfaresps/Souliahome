@@ -4,7 +4,7 @@
   const CACHE = 'soulia_branding_v1';
   const SLOTS = ['splash', 'header', 'tab'];
   const UUID = /^[a-f0-9-]{36}$/i;
-  const original = slot => slot === 'tab' ? '/favicon.png' : slot === 'splash' ? '/soulia-startup-logo.svg' : '/soulia-logo.svg';
+  const original = slot => slot === 'tab' ? '/favicon.png' : slot === 'splash' ? '/soulia-startup-flat.svg' : '/soulia-logo.svg';
   const empty = () => ({ splash: null, header: null, tab: null });
   const state = { public: { selection: empty(), logos: [] }, logos: [], draft: empty(), loaded: false, loading: false,
     dirty: false, busy: false, file: null, uploadName: '', message: '', error: false, lastRefresh: 0 };

@@ -1,0 +1,12 @@
+{
+  "backendBuild": "passed",
+  "targetedJest": { "suites": 6, "passed": 54, "failed": 0 },
+  "realMongoCoverage": ["warehouse balances", "damaged and legacy returns", "transfers and adjustments", "fresh stock validation", "legacy receipt warehouse", "session isolation"],
+  "browserCoverage": ["Arabic at 390px", "English at 1440px", "minimize and expand", "workspace remains clickable", "partial failure", "failed selections retained"],
+  "existingTransactionsServiceSuite": {
+    "beforeChange": { "passed": 64, "failed": 67 },
+    "afterChange": { "passed": 64, "failed": 67 },
+    "note": "The pre-change getInventory method was restored in memory using Jest setup for the baseline run. Existing mocks lack warehouse/database dependencies. No application files were reverted."
+  },
+  "deployment": "Local workspace changes only; no production deployment or live order writes."
+}

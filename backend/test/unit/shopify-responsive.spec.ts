@@ -13,12 +13,15 @@ function fixture(existing: any[] = []) {
   const context: any = {
     qs: (selector: string) => selector === '#sp-orders-tab-content' ? host : selector === '#sp-orders-loading' ? loading : null,
     _shopifyOrders: existing, _initShopifySubnav: jest.fn(), _getHiddenSpCols: () => new Set(),
-    SP_COL_W_FIXED: 34, SP_COL_W: { ref: 132, total: 128 }, api,
-    t: (key: string) => key, esc: (value: string) => value,
+    SP_COL_W_FIXED: 34, SP_COL_W: { ref: 132, total: 128 },
+    SP_COLS: [{ id: 'ref', ar: 'الطلب', en: 'Order' }, { id: 'total', ar: 'الإجمالي', en: 'Total' }], api,
+    t: (key: string) => key, tf: () => '', esc: (value: string) => value,
+    hasPerm: () => false, currentLang: 'ar',
     _spkRender: jest.fn(), _spSyncAuditPaymentRows: jest.fn(), _spRefreshReceiptViews: jest.fn(),
-    renderShopifyOrders: render, buildSidebar: jest.fn(), localStorage: { getItem: () => 'seen' },
+    renderShopifyOrders: render, buildSidebar: jest.fn(), localStorage: { getItem: () => 'seen', setItem: jest.fn() },
     _spSubnavTab: 'orders', console: { error: jest.fn() },
     document: { getElementById: () => null },
+    window: { matchMedia: () => ({ matches: false }) },
   };
   runInNewContext(source, context);
   return { context, host, loading, api, render };
@@ -64,11 +67,13 @@ it('shows a retry state for an initial failure and permits a successful retry', 
   expect(env.context._shopifyOrders).toHaveLength(1);
 });
 
-it('uses available content width and a hysteresis band to avoid scrollbar-driven oscillation', () => {
+it('uses the viewport breakpoint while keeping desktop tables scrollable inside their container', () => {
   const { context, host } = fixture();
-  host.clientWidth = 1300; expect(context._spEnsureOrdersLayout()).toBe('table');
-  host.clientWidth = 1270; expect(context._spEnsureOrdersLayout()).toBe('table');
-  host.clientWidth = 1240; expect(context._spEnsureOrdersLayout()).toBe('cards');
-  host.clientWidth = 1270; expect(context._spEnsureOrdersLayout()).toBe('cards');
-  host.clientWidth = 1300; expect(context._spEnsureOrdersLayout()).toBe('table');
+  let viewportWidth = 1440;
+  context.window.matchMedia = () => ({ matches: viewportWidth >= 769 });
+  expect(context._spEnsureOrdersLayout()).toBe('table');
+  host.clientWidth = 320; expect(context._spEnsureOrdersLayout()).toBe('table');
+  viewportWidth = 768; expect(context._spEnsureOrdersLayout()).toBe('cards');
+  viewportWidth = 390; expect(context._spEnsureOrdersLayout()).toBe('cards');
+  viewportWidth = 769; expect(context._spEnsureOrdersLayout()).toBe('table');
 });

@@ -90,7 +90,8 @@ describe('Warehouse routing and visibility', () => {
   it('does not allocate corrections in a secondary warehouse to MAIN', async () => {
     const service: any = Object.create(TransactionsService.prototype);
     service.productsService = { findAll: async () => [{ _id: productId, code: 'SKU-1', name: 'Basket', openingBalance: 10, minStock: 1 }] };
-    service.transactionModel = { find: () => ({ exec: async () => [] }), db: { collection: () => ({ find: () => ({ toArray: async () => [] }) }) } };
+    const query = { select: () => query, lean: () => query, exec: async () => [] };
+    service.transactionModel = { find: () => query, db: { collection: () => ({ find: () => ({ toArray: async () => [] }) }) } };
     service.inventoryMovementsService = { getManualAdjustmentQtyByProductCode: async () => new Map([['SKU-1', 2]]), getManualAdjustmentWarehouseRows: async () => [{ productCode: 'SKU-1', qtyDelta: 2, warehouseCode: 'WH-B' }] };
     const [row] = await service.getInventory();
     expect(row.current).toBe(12); expect(row.warehouseBalances).toEqual({ MAIN: 10, 'WH-B': 2 });

@@ -1,0 +1,25 @@
+{
+  "backendBuild": "passed",
+  "jest": { "suites": 2, "passed": 44, "failed": 0 },
+  "browser": {
+    "performance": "passed: Arabic mobile and English desktop",
+    "fees": "passed: Arabic/English, mobile/desktop, direct/shipped, returns/exchanges",
+    "rollback": "passed",
+    "blockedBackgroundRefresh": "Receipt and delivery finish and enable the next step while every list refresh remains unresolved",
+    "caseReloadsAfterSaving": 0,
+    "settlementInventoryReloads": 0,
+    "safety": ["double submit blocked", "retry preserves operation key and payment", "form retained after failure", "obsolete quotes ignored", "account switch cannot reopen previous account data"]
+  },
+  "quoteDatabaseReads": {
+    "scope": "Three-line exchange against an isolated real MongoDB replica set",
+    "catalogReads": 1,
+    "identityReads": 1,
+    "before": "Two reads per returned line plus one per replacement"
+  },
+  "preExistingBrowserFailure": {
+    "script": "backend/test/browser/after-sales.cjs",
+    "assertion": "line 104: expected checked unit ID, actual empty unitIds",
+    "baseline": "Same failure reproduced while serving the HEAD version of after-sales.js; application files were not reverted"
+  },
+  "deployment": "Local workspace changes only; no live customer, carrier, or payment writes"
+}

@@ -667,7 +667,7 @@ export class DepositReceiptsService {
     await this.followUpsService?.closeConfirmationForDeposit(claimed, admin.name || admin.username);
     this.emit(orderId, receiptId, 'معتمد');
     await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId }, r.submittedById);
-    return { success: true, vaultTxNo: entry?.txNo || '' };
+    return { success: true, vaultEntryId: String(entry?._id || ''), vaultTxNo: entry?.txNo || '' };
   }
 
   async reject(orderId: string, receiptId: string, admin: ReceiptActor, reason = '') {

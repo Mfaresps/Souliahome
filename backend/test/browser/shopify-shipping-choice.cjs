@@ -49,11 +49,11 @@ async function verifyRealtime(browser) {
     const service=Object.create(ShopifyService.prototype);
     service.presence={emitEvent:(event,payload)=>ioServer.emit(event,payload)};
     let saved;
-    service.shopifyOrderModel={findById:async()=>({_id:'o1'}),findOneAndUpdate:async(_filter,update)=>{
-      saved={_id:'o1',ref:'2776',...update.$set};return saved;
+    service.shopifyOrderModel={findById:async()=>saved||({_id:'o1'}),findOneAndUpdate:async(_filter,update)=>{
+      saved={_id:'o1',ref:'2776',...update.$set,depositDecisionRevision:(saved?.depositDecisionRevision||0)+1};return saved;
     }};
     for (const enabled of [true,false]) {
-      const result=await service.setShipWithoutDeposit('o1',enabled,'Test staff');
+      const result=await service.setShipWithoutDeposit('o1',enabled,'Test staff',{revision:saved?.depositDecisionRevision||0,reasonCode:'prefers-cod',exceptionCode:'staff-discretion'});
       for (const page of pages) {
         await page.waitForFunction(expected=>window.testState.order.shipWithoutDeposit===expected&&window.testState.audit.shipWithoutDeposit===expected,{timeout:10000},enabled);
         const state=await page.evaluate(()=>({card:document.querySelector('#card').className,report:document.querySelector('#audit').textContent,filter:matchesAuditPaymentFilter(window.testState.audit,'ship-without-deposit'),received:window.received}));

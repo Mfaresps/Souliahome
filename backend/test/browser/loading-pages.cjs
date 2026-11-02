@@ -81,11 +81,33 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    assert.equal(await page.$$eval('#sp-kpi .spk-tile:disabled',els=>els.length),5,'unknown metrics cannot apply filters');
    assert(await page.$eval('#page-shopify-orders',e=>e.scrollWidth<=e.clientWidth+1),`Shopify overflow ${lang}/${width}`);
    const loadingTop=await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top);
+  const loadingColumns=await page.evaluate(()=>qs('#sp-orders-tab-content').dataset.layout==='table'
+    ? [...document.querySelectorAll('.sp-orders-loading-table thead th')].map(el=>({id:el.dataset.col||'check',left:el.getBoundingClientRect().left,width:el.getBoundingClientRect().width}))
+    : null);
+  const loadingRows=loadingColumns?await page.evaluate(()=>({
+   header:document.querySelector('.sp-orders-loading-table thead tr').getBoundingClientRect().height,
+   day:document.querySelector('.sp-orders-loading-table .sp-loading-day').getBoundingClientRect().height,
+   order:document.querySelector('.sp-orders-loading-table tbody tr:not(.sp-loading-day)').getBoundingClientRect().height,
+  })):null;
    await page.screenshot({path:path.join(out,`shopify-loading-${lang}-${width}.png`)});
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
    const realTop=await page.evaluate(()=>{const table=qs('#sp-orders-tab-content').dataset.layout==='table';return qs(table?'#shopify-orders-table-wrap':'#sp-mobile-list').getBoundingClientRect().top;});
-   assert(Math.abs(realTop-loadingTop)<45,`orders stay below summary ${lang}/${width}: ${loadingTop}/${realTop}`);
+   assert(Math.abs(realTop-loadingTop)<=12,`orders stay below summary ${lang}/${width}: ${loadingTop}/${realTop}`);
+  if(loadingColumns){
+   const realColumns=await page.evaluate(()=>[...document.querySelectorAll('#shopify-orders-table-wrap .data-table thead th')].filter(el=>getComputedStyle(el).display!=='none').map(el=>({id:el.dataset.col||'check',left:el.getBoundingClientRect().left,width:el.getBoundingClientRect().width})));
+   const realRows=await page.evaluate(()=>({
+    header:document.querySelector('#shopify-orders-table-wrap .data-table thead tr').getBoundingClientRect().height,
+    day:document.querySelector('#shopify-orders-table-wrap .sp-day-sep').getBoundingClientRect().height,
+    order:document.querySelector('#shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep)').getBoundingClientRect().height,
+   }));
+   assert.deepEqual(realColumns.map(col=>col.id),loadingColumns.map(col=>col.id),`same visible columns ${lang}/${width}`);
+   for(let i=0;i<realColumns.length;i++){
+    assert(Math.abs(realColumns[i].left-loadingColumns[i].left)<=2,`column ${realColumns[i].id} moves ${lang}/${width}: ${loadingColumns[i].left} -> ${realColumns[i].left}`);
+    assert(Math.abs(realColumns[i].width-loadingColumns[i].width)<=2,`column ${realColumns[i].id} changes width ${lang}/${width}: ${loadingColumns[i].width} -> ${realColumns[i].width}`);
+   }
+   for(const row of ['header','day','order'])assert(Math.abs(realRows[row]-loadingRows[row])<=2,`${row} changes height ${lang}/${width}: ${loadingRows[row]} -> ${realRows[row]}`);
+  }
    await page.evaluate(()=>{window.shopTask=loadShopifyOrders();});
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true,'Shopify refresh retains loaded orders');
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
@@ -97,17 +119,35 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
   assert(await page.$('#sp-orders-loading[data-state=error] button'),'first-load failure offers retry');
   await page.evaluate(async()=>{fail=false;await loadShopifyOrders();});
   assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
+  await page.setViewport({width:1440,height:1000});
+  await page.evaluate(()=>{_spEnsureOrdersLayout();renderShopifyOrders();});
   await page.evaluate(()=>{_setHiddenSpCols(new Set(['client','items']));_spShowOrdersLoading();});
-  assert.equal(await page.$('.sp-orders-loading-table th[data-loading-col=client]'),null,'loading follows hidden columns');
+  assert.equal(await page.$('.sp-orders-loading-table th[data-col=client]'),null,'loading follows hidden columns');
   await page.evaluate(()=>toggleSpCol('client'));
-  assert(await page.$('.sp-orders-loading-table th[data-loading-col=client]'),'column changes also update an in-flight placeholder');
+  assert(await page.$('.sp-orders-loading-table th[data-col=client]'),'column changes also update an in-flight placeholder');
+  assert(await page.evaluate(()=>{
+   const expected=_spVisibleMinWidth()+'px';
+   return document.querySelector('.sp-orders-loading-table table').style.minWidth===expected
+    && document.querySelector('#shopify-orders-table-wrap .data-table').style.minWidth===expected;
+  }),'loaded and loading widths follow the same visible-column total');
   await page.evaluate(()=>{localStorage.setItem(_colsPrefKey(SPK_HIDDEN_KEY),'1');_spkRender('loading');});
   assert.equal(await page.$eval('#sp-kpi',e=>e.hidden),true,'loading respects hidden summary preference');
+  await page.evaluate(()=>{
+   currentLang='en';document.documentElement.dir='ltr';document.body.classList.remove('dark-mode');showPage('shopify-orders');
+   _shopifyOrders=[{...orderData[0],client:'Alexandria Customer With Several Family Names',phone:'01000000000',
+    items:Array.from({length:9},(_,i)=>({name:`Product ${i+1}`,qty:1,price:50})),
+    notes:'Call before delivery. Use the side entrance if the main gate is closed.',tags:'priority, repeat customer, delivery'}];
+   renderShopifyOrders();
+  });
+  assert(await page.$eval('#shopify-orders-table-wrap td[data-col="action"]',cell=>{
+   const r=cell.getBoundingClientRect(),buttons=[...cell.querySelectorAll('.sp-act-row button')];
+   return buttons.length>0&&buttons.every(button=>{const b=button.getBoundingClientRect();return b.left>=r.left-1&&b.right<=r.right+1;});
+  }),'action buttons fit the fixed column with richer order content');
   await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
   assert.equal(await page.$eval('.sp-loading-bar',e=>getComputedStyle(e).animationName),'none');
   await page.evaluate(async()=>{showPage('dashboard');currentUser={_id:'staff',role:'staff',perms:['dashboard']};renderDashKpis({});renderDashKpiSkeleton();hideAdminTeamWorkspace();});
   assert.equal(await page.$eval('#dash-stats',e=>getComputedStyle(e).display),'none','staff never sees admin placeholders');
   assert.deepEqual(errors,[],'no runtime errors');
-  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, matching KPI geometry, team tasks, Shopify order, retained refresh content, failures/retry, hidden columns and reduced motion.');
+  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, stable Shopify columns and rows, matching KPI geometry, rich actions, retained refresh content, failures/retry, hidden columns and reduced motion.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

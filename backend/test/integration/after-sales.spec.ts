@@ -84,6 +84,24 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     complaint=await close();expect(complaint.workflow.stage).toBe('closed');expect(complaint.workflow.financialPending).toBe(true);
     expect(complaint.workflow.executionEvents.map((e:any)=>e.action)).toEqual(expect.arrayContaining(['requested','approved','received-and-inspected','settlement:refund']));
   });
+  it('quotes several invoice lines with one catalog read and one identity read', async () => {
+    await Tx.updateOne({ _id: saleId }, { $set: { total: 1500, items: [0, 1, 2].map(i => ({ lineId: 'line' + (i + 1), code: 'ITEM', name: 'Product', qty: 1, price: 500, total: 500 })) } });
+    const products = mongo.connection.collection('products'), units = mongo.connection.collection('inventoryunits');
+    const catalogFind = jest.spyOn(products, 'find'), catalogFindOne = jest.spyOn(products, 'findOne'), unitFind = jest.spyOn(units, 'find');
+    try {
+      const result = await service.quote({ ...request('exchange', 'defect'), items: [0, 1, 2].map(lineIndex => ({ lineIndex, qty: 1, unitIds: lineIndex === 0 ? [unitId] : [] })), exchangeItems: [{ productId, qty: 3 }] });
+      expect(result.quote).toMatchObject({ credit: 1500, replacement: 1500, collectDue: 0, refundDue: 0 });
+      expect(result.items[0].unitIds).toEqual([unitId]);
+      expect(catalogFind).toHaveBeenCalledTimes(1);
+      expect(catalogFindOne).not.toHaveBeenCalled();
+      expect(unitFind).toHaveBeenCalledTimes(1);
+    } finally { catalogFind.mockRestore(); catalogFindOne.mockRestore(); unitFind.mockRestore(); }
+  });
+  it('does not allow an archived returned product to bypass replacement validation', async () => {
+    await mongo.connection.collection('products').updateOne({ _id: new Types.ObjectId(productId) }, { $set: { archived: true } });
+    await expect(service.quote(request('exchange', 'defect'))).rejects.toThrow('البديل أو الكمية');
+    await expect(service.quote(request('return', 'defect'))).resolves.toMatchObject({ quote: { credit: 500 } });
+  });
   it('calculates exchange differences and keeps company errors free of shipping fees', () => {
     expect(afterSalesQuote('exchange', 'customer-choice', 500, 600, 50)).toMatchObject({ collectDue: 150, refundDue: 0, creditApplied: 500 });
     expect(afterSalesQuote('exchange', 'customer-choice', 500, 300, 50)).toMatchObject({ collectDue: 0, refundDue: 150, creditApplied: 350 });

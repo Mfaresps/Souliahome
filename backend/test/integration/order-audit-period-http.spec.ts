@@ -20,7 +20,7 @@ describe('Order analysis period HTTP routing', () => {
     service.txModel = model([]); service.shopifyOrderModel = model(orders); service.productModel = model([]);
     service.loadReviews = jest.fn(async () => new Map()); service.saveAuditLog = jest.fn(async () => {});
     const module = await Test.createTestingModule({ controllers: [OrderAuditController], providers: [
-      { provide: OrderAuditService, useValue: service }, { provide: OrderAuditExportService, useValue: {} },
+      { provide: OrderAuditService, useValue: service }, { provide: OrderAuditExportService, useValue: { buildExcel: async () => Buffer.from('export fixture'), buildPdf: async () => Buffer.from('export fixture') } },
       { provide: OrderAuditMarketingService, useValue: new OrderAuditMarketingService({find:()=>{const q:any={sort:()=>q,skip:()=>q,limit:()=>q,select:()=>q,lean:async()=>[]};return q;}} as any, service) },
     ] }).overrideGuard(JwtAuthGuard).useValue({ canActivate: (context: any) => {context.switchToHttp().getRequest().user = {username:'test'};return true;} })
       .overrideGuard(PermsGuard).useValue({canActivate:()=>true}).compile();
@@ -66,10 +66,22 @@ describe('Order analysis period HTTP routing', () => {
     service.txModel={find:()=>({lean:async()=>[{_id:'fees-10',ref:'10',type:'مبيعات',shopifyCreatedAt:'2026-01-10T10:00:00Z',shipCost:9999,bostaOrderId:'delivery-10',items:[],total:10000}]})};
     service.carrierDetails={bostaDetails:jest.fn(async()=>({fetchedAt:'2026-10-21T10:00:00Z',wallet:{bostaFees:114.57}}))};
     try{
-      const response=await fetch(base+'/api/order-audit/period?fromDate=2026-01-01&toDate=2026-01-31&persist=false');
+      const stored=await fetch(base+'/api/order-audit/period?fromDate=2026-01-01&toDate=2026-01-31&persist=false');
+      const saved:any=await stored.json();expect(stored.status).toBe(200);
+      expect(saved.shipping.measuredCount).toBe(0);
+      expect(service.carrierDetails.bostaDetails).not.toHaveBeenCalled();
+      const numeric=await fetch(base+'/api/order-audit/run?from=10&to=10&persist=false');
+      expect(numeric.status).toBe(200);expect((await numeric.json() as any).shipping.measuredCount).toBe(0);
+      expect(service.carrierDetails.bostaDetails).not.toHaveBeenCalled();
+      const response=await fetch(base+'/api/order-audit/period?fromDate=2026-01-01&toDate=2026-01-31&persist=false&shippingLive=true');
       const result:any=await response.json();expect(response.status).toBe(200);
       expect(result.shipping.totalShippingCost).toBe(114.57);expect(result.shipping.highestOrder.cost).toBe(114.57);
       expect(service.carrierDetails.bostaDetails).toHaveBeenCalledWith('fees-10',true);
+      for (const query of ['from=10&to=10&format=excel', 'fromDate=2026-01-01&toDate=2026-01-31&format=pdf']) {
+        const exported=await fetch(base+'/api/order-audit/export?'+query);
+        expect(exported.status).toBe(200);await exported.arrayBuffer();
+      }
+      expect(service.carrierDetails.bostaDetails).toHaveBeenCalledTimes(1);
     }finally{service.txModel=previousModel;service.carrierDetails=undefined;}
   });
 });

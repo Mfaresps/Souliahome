@@ -1,0 +1,111 @@
+/* Soulia opening surfaces. Brand green and an editorial, framed workspace. */
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100svh;
+  background: #fbfbf5;
+  color: #173522;
+  transition: opacity .16s cubic-bezier(.22, 1, .36, 1);
+}
+#splash-screen::before { display: none; }
+#splash-screen .startup-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(320px, calc(100vw - 48px));
+  min-height: 188px;
+  text-align: center;
+}
+#splash-screen .splash-logo {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  opacity: 1;
+  filter: none;
+  animation: startupLogoReveal .78s cubic-bezier(.22, 1, .36, 1) both;
+}
+#splash-screen .splash-logo.soulia-custom-brand {
+  width: min(180px, 100%);
+  height: 88px;
+  max-width: 180px;
+  max-height: 88px;
+}
+#splash-screen .startup-status {
+  margin-top: 24px;
+  color: #5a7261;
+  font: 400 15px/1.6 "Segoe UI", Tahoma, sans-serif;
+  animation: startupFade .58s ease-out .16s both;
+}
+#splash-screen .startup-status-en { display: none; font-family: system-ui, sans-serif; }
+#splash-screen[data-startup-lang="en"] .startup-status:not(.startup-status-en) { display: none; }
+#splash-screen[data-startup-lang="en"] .startup-status-en { display: block; }
+#splash-screen .startup-progress {
+  width: 176px;
+  height: 2px;
+  margin-top: 18px;
+  overflow: hidden;
+  direction: ltr;
+  background: #d7e5db;
+}
+#splash-screen .startup-progress span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: #20603b;
+  animation: startupTrack 1.8s cubic-bezier(.4, 0, .2, 1) infinite;
+  will-change: transform;
+}
+@keyframes startupLogoReveal { from { clip-path: inset(100% 0 0 0); opacity: .6; } to { clip-path: inset(0); opacity: 1; } }
+@keyframes startupFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes startupTrack { from { transform: translate3d(-110%, 0, 0); } to { transform: translate3d(305%, 0, 0); } }
+
+#login-page { background: #f0f3ef; isolation: isolate; }
+#login-page::before, #login-page .login-meteor { display: none; }
+#login-quote-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  background: #113923;
+  color: #fff;
+  margin: 12px 0 12px 12px;
+  border-radius: 16px;
+  padding: clamp(32px, 5vw, 64px);
+}
+#login-quote-panel::before { display: none; }
+.startup-login-brand { display: flex; align-items: center; gap: 12px; font: 600 13px Inter, system-ui, sans-serif; letter-spacing: .14em; color: #c5e2cc; }
+.startup-login-brand img { display: block; width: 64px; height: 40px; object-fit: contain; filter: brightness(0) invert(1); }
+.startup-login-story { max-width: 630px; }
+.startup-login-kicker { display: block; font-size: 13px; font-weight: 600; color: #abd5b8; margin-bottom: 20px; }
+.startup-login-story h2 { font-size: clamp(38px, 4.8vw, 72px); line-height: 1.24; font-weight: 650; letter-spacing: -.035em; margin: 0 0 24px; color: #fff; }
+.startup-login-story p { font-size: clamp(15px, 1.4vw, 19px); line-height: 1.8; max-width: 490px; color: #c6daca; }
+.startup-login-footer { color: #a3c3aa; font: 600 11px Inter, system-ui, sans-serif; letter-spacing: .12em; }
+#login-quote-panel .startup-en { display: none; }
+html[lang="en"] #login-quote-panel [lang="ar"] { display: none; }
+html[lang="en"] #login-quote-panel .startup-en { display: block; }
+html[lang="en"] .startup-login-story h2 { font-family: Inter, system-ui, sans-serif; line-height: 1.1; }
+#login-form-panel { background: transparent; width: min(500px, 40vw); box-shadow: none; }
+#login-form { background: #fff; border: 1px solid #dfe7df; border-radius: 16px; padding: clamp(28px, 4vw, 46px); max-width: 420px; }
+#login-form-panel .lfp-header { text-align: start; }
+#login-form-panel .lfp-title { font-size: clamp(25px, 2.5vw, 32px); }
+#login-form .lfp-btn-login { border-radius: 8px; }
+@media (max-width: 700px) {
+  #splash-screen .startup-frame { width: min(300px, calc(100vw - 40px)); }
+}
+@media (max-width: 820px) {
+  #login-page { padding: 16px; justify-content: center; }
+  #login-quote-panel { display: none; }
+  #login-form-panel { width: min(100%, 480px); max-width: 480px; margin: auto; padding: 0; background: transparent; border: 0; box-shadow: none; }
+  #login-form { max-width: none; width: 100%; padding: clamp(26px, 6vw, 40px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #splash-screen, #splash-screen .splash-logo { transition: none; }
+  #splash-screen .splash-logo, #splash-screen .startup-status { animation: none; }
+  #splash-screen .startup-progress span { animation: none; width: 65%; }
+}

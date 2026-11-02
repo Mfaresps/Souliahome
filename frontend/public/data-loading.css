@@ -1,0 +1,120 @@
+/* Shared data-loading motion. Keep the final layout in place while values arrive. */
+:root {
+  --data-motion-time: 180ms;
+  --data-motion-ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* One narrow sheen moves over stable geometry; the base never changes color. */
+.ss-skeleton,
+.iu-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--border);
+  background-size: auto;
+  animation: none;
+}
+.ss-skeleton::after,
+.iu-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgb(255 255 255 / .28) 50%, transparent 65%);
+  transform: translate3d(-115%, 0, 0);
+  animation: data-sheen 2.35s ease-in-out infinite;
+}
+.ss-skeleton-row { min-height: 52px; box-sizing: border-box; }
+body.dark-mode .ss-skeleton::after,
+body.dark-mode .iu-skeleton::after {
+  background: linear-gradient(100deg, transparent 35%, rgb(255 255 255 / .09) 50%, transparent 65%);
+}
+@keyframes data-sheen {
+  to { transform: translate3d(115%, 0, 0); }
+}
+
+/* Values and rows fade into their allocated space without shifting the page. */
+@keyframes ss-reveal {
+  from { opacity: .72; transform: none; }
+  to { opacity: 1; transform: none; }
+}
+.ss-reveal,
+.ss-reveal-stagger > * {
+  animation-duration: var(--data-motion-time);
+  animation-timing-function: var(--data-motion-ease);
+}
+.ss-reveal-stagger > *:nth-child(n) { animation-delay: 0ms; }
+.ss-reveal-stagger > *:nth-child(2) { animation-delay: 25ms; }
+.ss-reveal-stagger > *:nth-child(3) { animation-delay: 50ms; }
+.ss-reveal-stagger > *:nth-child(n+4) { animation-delay: 75ms; }
+
+.ss-spinner,
+.loading-spinner::after {
+  border-color: var(--border);
+  border-top-color: var(--accent);
+  animation-duration: .9s;
+  animation-timing-function: linear;
+}
+.ss-overlay {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: none;
+}
+
+/* Action feedback occupies the button's existing box, so labels never jump. */
+button.ss-action-busy { position: relative; color: transparent !important; cursor: progress; }
+button.ss-action-busy > :not(.ss-action-loader) { visibility: hidden; }
+.ss-action-loader {
+  position: absolute;
+  inset-inline-start: calc(50% - 7px);
+  top: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+  pointer-events: none;
+}
+button:is(.btn-primary,.primary)[aria-busy="true"] .ss-action-loader {
+  border-color: rgb(255 255 255 / .35);
+  border-top-color: #fff;
+}
+.ss-refresh-error { margin-block: 12px; }
+.ss-refresh-error .empty-v2 { min-height: 0; padding: 12px 16px; }
+
+/* Show real foreground work at the page edge, without a bouncing highlight. */
+#header-loadbar {
+  height: 2px;
+  transition: opacity var(--data-motion-time) ease;
+}
+#header-loadbar::before {
+  width: 30%;
+  background: var(--accent);
+  border-radius: 0;
+  transform: translate3d(-110%, 0, 0);
+}
+#header-loadbar.active { background: transparent; }
+#header-loadbar.active::before {
+  animation: data-progress-sweep 1.35s linear infinite;
+}
+@keyframes data-progress-sweep {
+  to { transform: translate3d(440%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-skeleton,
+  .iu-skeleton,
+  .ss-skeleton::after,
+  .iu-skeleton::after,
+  .ss-action-loader,
+  .ss-spinner,
+  .loading-spinner::after,
+  .ss-reveal,
+  .ss-reveal-stagger > *,
+  #header-loadbar.active::before { animation: none !important; }
+  .ss-skeleton,.iu-skeleton { opacity: .82; }
+  .ss-skeleton::after,.iu-skeleton::after { display: none; }
+  .ss-reveal,
+  .ss-reveal-stagger > * { opacity: 1 !important; transform: none !important; }
+  #header-loadbar { transition: none; }
+  #header-loadbar.active::before { transform: none; width: 100%; }
+}

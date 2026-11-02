@@ -4,7 +4,7 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number = value => Number(value).toLocaleString('en-US', {maximumFractionDigits:2});
   const money = value => value == null ? '—' : `${number(value)} EGP`;
-  const state = {data:null, scopes:[], context:'', ids:[], invoices:[], result:null, busy:false, error:'', notice:'', revision:0,compare:true,comparison:null,previousIds:undefined};
+  const state = {data:null, scopes:[], context:'', ids:[], invoices:[], result:null, busy:false, error:'', notice:'', revision:0,compare:false,comparison:null,previousIds:undefined};
   let pickerMode='current';
   let dialog, draft, invoices = new Map(), visible = [], page = 1, hasMore = false, loading = false, listVersion = 0, timer, opener, closeTimer;
   let applyingRevision=0, appliedResult=null;

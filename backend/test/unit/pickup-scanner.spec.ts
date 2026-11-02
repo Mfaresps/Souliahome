@@ -40,7 +40,7 @@ it('has no visible barcode fields until Manual entry is opened', () => {
   expect(c._pwScanIntroHtml(order, state)).toContain('id="pw-order-scan"');
 });
 
-it('expires a rejection after eight seconds without extending it on re-render or altering saved scans', () => {
+it('keeps a rejected scan visible while preserving the saved pieces', () => {
   jest.useFakeTimers();
   try {
     const { c, state, order } = fixture();
@@ -49,17 +49,16 @@ it('expires a rejection after eight seconds without extending it on re-render or
     c._pwScanIntroHtml(order, state);
     jest.advanceTimersByTime(5000);
     c._pwScanIntroHtml(order, state);
-    jest.advanceTimersByTime(2999);
+    jest.advanceTimersByTime(10000);
     expect(state.feedback.error).toBe(true);
-    jest.advanceTimersByTime(1);
-    expect(state.feedback).toBeNull();
     expect(state.summary.lines[0].units).toHaveLength(1);
-    expect(c._pwUnitScanHtml(order, order.items[0], state)).not.toContain('Scan not accepted');
+    expect(c._pwUnitScanHtml(order, order.items[0], state)).toContain('Scan not accepted');
+    expect(c._pwScanIntroHtml(order, state)).toContain('Scan rejected · no piece added');
     expect(c._pwRenderWork).not.toHaveBeenCalled();
   } finally { jest.useRealTimers(); }
 });
 
-it.each([false, true])('an expired rejection cannot clear a newer result (new rejection=%s)', rejected => {
+it.each([false, true])('an older rejection cannot clear a newer result (new rejection=%s)', rejected => {
   jest.useFakeTimers();
   try {
     const { c, state, order } = fixture();
@@ -71,7 +70,7 @@ it.each([false, true])('an expired rejection cannot clear a newer result (new re
     jest.advanceTimersByTime(3000);
     expect(state.feedback).toBe(next);
     jest.advanceTimersByTime(5000);
-    expect(state.feedback).toBe(rejected ? null : next);
+    expect(state.feedback).toBe(next);
   } finally { jest.useRealTimers(); }
 });
 

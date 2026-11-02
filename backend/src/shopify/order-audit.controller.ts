@@ -51,13 +51,14 @@ export class OrderAuditController {
     @Query('toDate') toDate?: string,
     @Query('months') months?: string,
     @Query('year') year?: string,
+    @Query('shippingLive') shippingLive?: string,
   ) {
-    if (fromDate || toDate || months) return this.auditService.runAuditPeriod({ fromDate, toDate, months, year }, { persist: persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:true });
+    if (fromDate || toDate || months) return this.auditService.runAuditPeriod({ fromDate, toDate, months, year }, { persist: persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:shippingLive === 'true' });
     return this.auditService.runAudit(Number(from), Number(to), {
       persist: persist !== 'false',
       generatedBy: this.user(req),
       source: 'manual',
-      shippingLive:true,
+      shippingLive:shippingLive === 'true',
     });
   }
 
@@ -71,7 +72,7 @@ export class OrderAuditController {
   @Get('period')
   async period(@Query() query: Record<string, string>, @Request() req: any) {
     return this.auditService.runAuditPeriod({ fromDate: query.fromDate, toDate: query.toDate, months: query.months, year: query.year }, {
-      persist: query.persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:true,
+      persist: query.persist !== 'false', generatedBy: this.user(req), source: 'date',shippingLive:query.shippingLive === 'true',
     });
   }
 
@@ -134,11 +135,10 @@ export class OrderAuditController {
     }
 
     // Export must not pollute the audit history with a duplicate entry.
-    const exportOptions = { persist: false, generatedBy: this.user(req),shippingLive:true };
+    const exportOptions = { persist: false, generatedBy: this.user(req) };
     const result = fromDate || toDate || months ? await this.auditService.runAuditPeriod({ fromDate, toDate, months, year }, exportOptions) : await this.auditService.runAudit(Number(from), Number(to), {
       persist: false,
       generatedBy: this.user(req),
-      shippingLive:true,
     });
 
     const base = `order_audit_${result.from}_${result.to}`;

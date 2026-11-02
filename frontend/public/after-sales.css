@@ -121,6 +121,16 @@ dialog.as-dialog.as-compact{width:min(620px,calc(100vw - 32px))}
 
 .as-order-type{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:3px 8px;border:1px solid var(--border,#d9e0e9);border-radius:7px;background:var(--surface2,#f1f5f9);color:var(--primary,#166534);font:inherit;font-size:.72rem;font-weight:700;vertical-align:middle}.as-order-type svg{width:15px;height:15px;flex:none}button.as-order-type{cursor:pointer}.pw-ocard>.as-order-type{margin-block:5px}.as-preparation{padding:12px;overflow-wrap:anywhere}.as-preparation h4{font-size:.78rem;margin:12px 0 6px}.as-prep-line{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;padding:5px 0}.as-prep-line b{white-space:nowrap}.as-preparation .as-summary{margin-block:12px}.as-preparation .as-summary div{font-size:.75rem}.as-preparation .as-actions{margin-top:12px}
 /* Report columns keep shipping details and financial values readable in both directions. */
+.as-preparation h3{font-size:.85rem;margin:0 0 6px}
+.as-prep-reference{display:grid;gap:3px;color:var(--muted,#64748b);font-size:.7rem;line-height:1.6}
+.as-prep-status{margin-top:10px;font-size:.72rem;color:var(--muted,#64748b)}
+.as-prep-lines{list-style:none;padding:0;margin:4px 0 10px;display:grid;gap:8px}
+.as-prep-lines li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.76rem;line-height:1.6}
+.as-prep-lines li span{min-width:0;overflow-wrap:anywhere}.as-prep-lines li b{flex:none;font-variant-numeric:tabular-nums}
+.as-prep-difference{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;padding:9px 0;border-top:1px solid var(--border,#d9e0e9);color:var(--primary,#166534);font-size:.76rem;font-weight:600}
+.as-prep-more{border-top:1px solid var(--border,#d9e0e9);padding-top:8px;font-size:.73rem}
+.as-prep-more>summary{cursor:pointer;color:var(--muted,#64748b);line-height:1.7}.as-prep-more>div{padding-top:4px}
+.as-preparation .as-actions{display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px}.as-preparation .as-actions .pw-abtn{justify-content:center;font-size:.72rem;padding:7px 8px}
 .as-report-table-wrap{border:1px solid var(--border,#d9e0e9);border-radius:12px;max-width:100%;overscroll-behavior-inline:contain}
 .as-report-table{min-width:820px;table-layout:fixed;line-height:1.6}
 .as-report-invoice-col{width:9%}.as-report-customer-col{width:19%}.as-report-status-col{width:30%}.as-report-money-col{width:14%}

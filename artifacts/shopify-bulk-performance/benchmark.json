@@ -1,0 +1,10 @@
+{
+  "scope": "Synthetic inventory calculation only, excludes database and network latency",
+  "products": 800,
+  "transactions": 18000,
+  "lines": 54000,
+  "identicalResults": true,
+  "beforeMs": 9600.2,
+  "afterMs": 42.2,
+  "speedup": 227.3
+}

@@ -1,0 +1,37 @@
+{
+  "fixture": "1200 historical orders and selected October orders; isolated MongoDB; no carrier API",
+  "baselineMs": 519.8535999999986,
+  "optimizedMs": 51.65689999999995,
+  "baselineBytes": 40030670,
+  "optimizedBytes": 178972,
+  "reads": [
+    {
+      "name": "orders",
+      "projection": "_id ref orderNumber shopifyCreatedAt createdAt",
+      "count": 1202,
+      "bytes": 96159
+    },
+    {
+      "name": "tx",
+      "projection": "_id ref shopifyCreatedAt date createdAt",
+      "count": 1204,
+      "bytes": 81881
+    },
+    {
+      "name": "orders",
+      "count": 1,
+      "bytes": 203
+    },
+    {
+      "name": "tx",
+      "count": 3,
+      "bytes": 668
+    },
+    {
+      "name": "products",
+      "projection": "code buyPrice",
+      "count": 1,
+      "bytes": 61
+    }
+  ]
+}

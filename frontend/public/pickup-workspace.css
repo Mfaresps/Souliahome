@@ -270,6 +270,11 @@ body.dark-mode #page-pickup-orders #pu-board-filters-row .pu-filter-shipco {
 #page-pickup-orders .pu-stage-card .pu-card-btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 #page-pickup-orders .pu-stage-card .pu-card-btn:focus-visible { outline: 2px solid var(--pu-stage); outline-offset: 2px; }
 #page-pickup-orders .pu-stage-card.pu-group-dirty { border-color: #d97706; }
+#page-pickup-orders .pu-bkpi { background: var(--surface); }
+#page-pickup-orders .pu-bkpi-icon { color: var(--muted); }
+#page-pickup-orders .pu-bkpi.bkpi-ready { border-color: color-mix(in srgb, var(--primary) 38%, var(--border)); }
+#page-pickup-orders .pu-stage-card,
+#page-pickup-orders .pu-stage-card:hover { box-shadow: none; }
 body.dark-mode #page-pickup-orders .pu-stage-card { --pu-stage: #79a7ff; }
 body.dark-mode #page-pickup-orders .pu-stage-ready { --pu-stage: #fbbf24; }
 body.dark-mode #page-pickup-orders .pu-stage-shipped { --pu-stage: #a8b2c0; }

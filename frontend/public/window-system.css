@@ -1,0 +1,166 @@
+/* Shared window motion and action contract for the current vanilla UI. */
+:root{
+  --ui-window-duration:180ms;
+  --ui-window-ease:cubic-bezier(.22,.72,.32,1);
+  --ui-window-lift:10px;
+  --ui-action-height:40px;
+  --ui-action-radius:9px;
+}
+@keyframes uiWindowEnter{
+  from{opacity:0;transform:translateY(var(--ui-window-lift))}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes uiWindowBackdropEnter{from{opacity:0}to{opacity:1}}
+
+/* One restrained rise and fade. The order sheet keeps its swipe-to-dismiss drag. */
+:is(#modal-overlay,#soulia-modal-overlay,#inv-detail-overlay,#shopify-edit-modal,#fu-modal-overlay,#fu-comment-popup){
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+#modal-overlay,#soulia-modal-overlay,#inv-detail-overlay,#sp-peek{
+  transition:opacity var(--ui-window-duration) var(--ui-window-ease),
+    background-color var(--ui-window-duration) var(--ui-window-ease);
+}
+#modal-overlay>.modal,#soulia-modal-overlay #soulia-modal,#inv-detail-overlay>.inv-detail{
+  opacity:0;transform:translateY(var(--ui-window-lift));
+  transition:opacity var(--ui-window-duration) var(--ui-window-ease),
+    transform var(--ui-window-duration) var(--ui-window-ease);
+}
+#modal-overlay.active>.modal,#soulia-modal-overlay.active #soulia-modal,#inv-detail-overlay.active>.inv-detail{
+  opacity:1;transform:none;
+}
+#sp-peek .sp-peek{
+  opacity:0;transform:translateY(var(--ui-window-lift));
+  transition:opacity var(--ui-window-duration) var(--ui-window-ease),
+    transform var(--ui-window-duration) var(--ui-window-ease);
+}
+#sp-peek.is-open .sp-peek{opacity:1;transform:translateY(var(--sp-pk-drag-y,0px))}
+#sp-peek .sp-pk-body.is-in>*{animation:none!important}
+#shopify-edit-modal{animation:uiWindowBackdropEnter var(--ui-window-duration) var(--ui-window-ease) both!important}
+#shopify-edit-modal>[role="dialog"],
+#fu-modal-overlay[style*="display: flex"]>[role="dialog"],
+#fu-comment-popup.show .fu-thread-modal,
+dialog[open]{animation:uiWindowEnter var(--ui-window-duration) var(--ui-window-ease) both}
+#fu-modal-overlay[style*="display: flex"],#fu-comment-popup.show{
+  animation:uiWindowBackdropEnter var(--ui-window-duration) var(--ui-window-ease) both;
+}
+dialog[open]::backdrop{animation:uiWindowBackdropEnter var(--ui-window-duration) var(--ui-window-ease) both}
+
+/* Semantic action variants. These classes can be reused in the next windows. */
+.ui-action{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:var(--ui-action-height);padding:8px 12px;border:1px solid transparent;
+  border-radius:var(--ui-action-radius);font:inherit;font-size:13px;font-weight:650;
+  line-height:1.35;text-decoration:none;white-space:normal;cursor:pointer;
+  transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease,transform 120ms ease;
+}
+.ui-action--primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.ui-action--primary:hover:not(:disabled){filter:brightness(1.08)}
+.ui-action--secondary{background:var(--bg);border-color:var(--border);color:var(--text)}
+.ui-action--secondary:hover:not(:disabled){background:var(--surface2);border-color:var(--accent)}
+.ui-action--ghost{background:transparent;border-color:transparent;color:var(--accent)}
+.ui-action--ghost:hover:not(:disabled){background:var(--primary-pale)}
+.ui-action--icon{width:var(--ui-action-height);padding:0;flex:none}
+.ui-action:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ui-action:disabled,.ui-action[aria-disabled="true"]{opacity:.48;cursor:not-allowed}
+
+/* The order window uses one set of sizes and edges for every visible action. */
+#sp-peek{
+  --ui-action-border:var(--spw-edge,var(--border));
+  --ui-action-hover:var(--spw-frame,var(--surface2));
+}
+#sp-peek :is(.sp-pk-x,.sp-ct-btn,.sp-pk-copy,.sp-pk-add-comment,.sp-pk-empty button,
+  .sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.sp-pk-tg-go,.spdep-add,.dd-info-button,.sp-pk-link){
+  font-family:inherit;font-size:13px;font-weight:650;line-height:1.4;border-radius:var(--ui-action-radius);
+  transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease,transform 120ms ease;
+}
+#sp-peek :is(.sp-pk-x,.sp-pk-tg-go){width:40px;height:40px;min-height:40px;padding:0;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-muted,var(--muted))}
+#sp-peek :is(.sp-pk-x,.sp-pk-tg-go):hover{background:var(--ui-action-hover);border-color:var(--accent);color:var(--spw-ink,var(--text))}
+#sp-peek .sp-pk-contact.is-compact .sp-ct-btn{width:40px;height:40px;min-height:40px;padding:0;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-ink,var(--text))}
+#sp-peek .sp-pk-contact.is-compact .sp-ct-btn:hover{background:var(--ui-action-hover);border-color:var(--accent)}
+#sp-peek .sp-pk-copy{width:32px;height:32px;min-height:32px;border:1px solid transparent;opacity:1}
+#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link){min-height:40px;padding:8px 12px;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-ink,var(--text));box-shadow:none}
+#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link):hover{background:var(--ui-action-hover);border-color:var(--accent);color:var(--spw-ink,var(--text))}
+#sp-peek .sp-pk-fu .sp-pk-empty.is-row>button{max-width:none;min-height:40px;font-size:13px;white-space:nowrap}
+#sp-peek .sp-pk-add-comment{justify-content:flex-start;min-height:42px;padding:8px 10px;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--accent)}
+#sp-peek .sp-pk-add-comment:hover{background:var(--ui-action-hover);border-color:var(--accent)}
+#sp-peek .spdep-add{
+  height:40px!important;min-height:40px!important;padding:8px 12px;
+  border:1px solid color-mix(in srgb,var(--accent) 28%,var(--ui-action-border));
+  border-radius:var(--ui-action-radius);
+  background:color-mix(in srgb,var(--accent) 9%,var(--bg));
+  color:var(--accent);box-shadow:none;font-size:13px!important;
+}
+#sp-peek .spdep-add:hover{
+  filter:none;border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 15%,var(--bg));
+}
+#sp-peek .sp-pk-decision-card{padding:0}
+#sp-peek .sp-pk-decision-card .dd-summary--compact{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:0;padding:14px;background:transparent;
+}
+#sp-peek .dd-summary-copy{display:grid;gap:3px;min-width:0}
+#sp-peek .dd-summary-copy b{font-size:13px;font-weight:650;color:var(--spw-ink,var(--text))}
+#sp-peek .dd-summary-copy span{font-size:12px;line-height:1.45;color:var(--spw-muted,var(--muted))}
+#sp-peek .dd-summary-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#sp-peek .dd-summary-actions .dd-info-button{margin:0}
+#sp-peek .dd-summary-actions .dd-info-button--compact{
+  border-color:var(--ui-action-border);color:var(--accent);background:var(--bg);
+}
+#sp-peek .dd-summary-actions .dd-info-button--compact:hover{
+  border-color:var(--accent);background:var(--ui-action-hover);
+}
+#sp-peek .dd-summary-actions .dd-info-button--quiet{
+  border-color:transparent;background:transparent;color:var(--spw-muted,var(--muted));
+  font-size:11px;font-weight:600;line-height:1.35;
+}
+#sp-peek .dd-summary-actions .dd-info-button--quiet:hover{
+  border-color:transparent;background:var(--ui-action-hover);color:var(--accent);
+}
+#sp-peek :is(button,a):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#sp-peek :is(button,a):disabled{opacity:.48;cursor:not-allowed}
+
+@media(pointer:coarse),(max-width:600px){
+  #sp-peek :is(.sp-pk-x,.sp-pk-tg-go),#sp-peek .sp-pk-contact.is-compact .sp-ct-btn,
+  #sp-peek .sp-pk-copy{width:44px;height:44px;min-height:44px}
+  #sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link,.sp-pk-add-comment,.spdep-add){min-height:44px!important}
+  #sp-peek .spdep-add{height:44px!important}
+  #sp-peek .sp-pk-decision-card .dd-summary--compact{align-items:stretch;flex-direction:column;gap:10px}
+  #sp-peek .dd-summary-actions{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){
+  :root{--ui-window-duration:0ms}
+  #modal-overlay,#soulia-modal-overlay,#inv-detail-overlay,#sp-peek,
+  #modal-overlay>.modal,#soulia-modal-overlay #soulia-modal,#inv-detail-overlay>.inv-detail,
+  #sp-peek .sp-peek{transition:none!important}
+  #shopify-edit-modal,#shopify-edit-modal>[role="dialog"],
+  #fu-modal-overlay[style*="display: flex"],#fu-modal-overlay[style*="display: flex"]>[role="dialog"],
+  #fu-comment-popup.show,#fu-comment-popup.show .fu-thread-modal,dialog[open],dialog[open]::backdrop{animation:none!important}
+}
+
+/* Let the confirmation sheet grow with its summary, receipts and preparation
+   groups. On short screens the overlay scrolls as one surface, so there is no
+   second scrollbar inside the sheet. */
+#shopify-confirm-modal{
+  align-items:safe center!important;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+#shopify-confirm-modal .spd{
+  flex:none;
+  height:auto;
+  max-height:none;
+  overflow:visible;
+}
+#shopify-confirm-modal .spd-body{
+  flex:none;
+  overflow:visible;
+}
+#shopify-confirm-modal .spp-groups.is-open{
+  max-height:none;
+}
+@media(max-width:720px){
+  #shopify-confirm-modal .spd{
+    width:min(420px,100%);
+  }
+}

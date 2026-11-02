@@ -1,11 +1,11 @@
 const assert=require('node:assert/strict'),path=require('node:path'),puppeteer=require('../backend/node_modules/puppeteer');
-const user={_id:'preview-user',name:'Preview',username:'preview',role:'staff',perms:['pickup-orders','movements','inventory','inventory-units-view','inventory-units-allocate']};
+const user={_id:'preview-user',name:'Preview',username:'preview',role:'staff',perms:['pickup-orders','pickup-orders-edit','movements','inventory','inventory-units-view','inventory-units-allocate']};
 const product={_id:'aaaaaaaaaaaaaaaaaaaaaaaa',code:'SKU-A',name:'Cotton basket',price:100},productB={_id:'bbbbbbbbbbbbbbbbbbbbbbbb',code:'SKU-B',name:'White coaster',price:100};
 const order={_id:'000000000000000000000001',type:'مبيعات',ref:'3100',client:'Preview customer',date:'2026-10-20',total:500,remaining:500,pickupStatus:'Preparing',pickupRef:'PREP-SCAN',prepCreatedAt:'2026-10-20',shipCo:'Manual',
  items:[{lineId:'a',productId:product._id,code:product.code,name:product.name,qty:4,price:100},{lineId:'b',productId:productB._id,code:productB.code,name:productB.name,qty:1,price:100}]};
 const letterCode='SU-ABCDEF123456789012345678';
 (async()=>{
- const browser=await puppeteer.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',userDataDir:path.join(__dirname,'pickup-scanner-browser')});
+ const browser=await puppeteer.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',userDataDir:process.env.PICKUP_SCANNER_PROFILE_DIR||path.join(__dirname,'pickup-scanner-browser')});
  try{
   for(const [lang,width] of [['en',1500],['ar',390]]){
    const page=await browser.newPage();await page.setViewport({width,height:1000});const errors=[],writes=[];let summaries=0,inflight=0,peak=0;
@@ -65,8 +65,15 @@ const letterCode='SU-ABCDEF123456789012345678';
    await send('345678912');await page.waitForSelector('.pw-scan-feedback.is-error');assert.equal(writes.length,4,'duplicate does not save twice');
    await send('876543219');await page.waitForFunction(()=>document.querySelectorAll('.pw-piece-dots .matched').length===5);
    await page.waitForSelector('.pw-scan-feedback.is-success');assert.equal(writes.length,5);
+   const visual=await page.evaluate(()=>[...document.querySelectorAll('#pw-work .pw-item.is-picked')].map(card=>{
+    const photo=card.querySelector('.product-thumb').getBoundingClientRect(),mark=card.querySelector('.pw-scan-check');
+    const badge=mark.getBoundingClientRect();
+    return {photoWidth:photo.width,visible:getComputedStyle(mark).opacity==='1',badgeInside:badge.left>=photo.left&&badge.right<=photo.right&&badge.top>=photo.top&&badge.bottom<=photo.bottom};
+   }));
+   assert.equal(visual.length,2);
+   assert(visual.every(row=>row.visible&&row.badgeInside&&row.photoWidth>=(width<700?112:132)&&row.photoWidth<=144),`Correct-scan badge or enlarged product photo failed: ${JSON.stringify(visual)}`);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-   await page.screenshot({path:path.join(__dirname,`pickup-scanner-${lang}.png`)});
+   if(!process.env.PICKUP_SCANNER_NO_SCREENSHOT)await page.screenshot({path:path.join(__dirname,`pickup-scanner-${lang}.png`)});
    assert.deepEqual(errors,[]);console.log(`${lang}: hands-free scans, Arabic/English physical keys, queued writes, immediate receipt UI, manual entry, actionable errors and duplicate prevention passed.`);
    await page.close();
   }

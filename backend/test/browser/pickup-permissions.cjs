@@ -78,6 +78,18 @@ const root = path.resolve(__dirname, '../../..'), publicDir = path.join(root, 'f
       return {allowed:_puCanEdit(),readonlyClass:document.body.classList.contains('pu-readonly'),draggable:qs('#page-pickup-orders').querySelectorAll('[draggable="true"]').length};
     });
     assert(editor.allowed && !editor.readonlyClass && editor.draggable > 0,JSON.stringify(editor));
+    await page.evaluate(() => openPrepGroupModal());
+    await page.waitForFunction(() => qs('#pu-prep-modal')?.classList.contains('active'));
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'pu-prep-modal-search');
+    assert.equal(await page.$eval('#pu-prep-modal-list', el => el.textContent.includes('3201')), true);
+    await page.evaluate(() => {
+      closePrepGroupModal();
+      openPuCardOrdersModal('PREP-TEST', 'prep');
+      closePuCardOrdersModal();
+      openPuCardOrdersModal('PREP-TEST', 'prep');
+    });
+    await new Promise(resolve => setTimeout(resolve, 250));
+    assert.equal(await page.$eval('#pu-card-orders-modal', el => el.classList.contains('active') && el.style.display !== 'none'), true);
     console.log('PASS hidden page and editable page permission states.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode=1; });

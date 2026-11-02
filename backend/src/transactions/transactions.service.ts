@@ -744,7 +744,7 @@ export class TransactionsService {
     bostaTrackingEvents: 0,
   } as const;
 
-  async findAll(page?: number, limit?: number): Promise<TransactionDocument[]> {
+  async findAll(page?: number, limit?: number): Promise<Record<string, any>[]> {
     const query = this.transactionModel
       .find({ archived: { $ne: true } })
       .select(TransactionsService.LIST_EXCLUDED_FIELDS)
@@ -753,7 +753,9 @@ export class TransactionsService {
       const skip = ((page || 1) - 1) * limit;
       query.skip(skip).limit(limit);
     }
-    return query.exec();
+    // The list is serialized immediately by the controller. Avoid hydrating
+    // every row only to turn each document back into a plain object there.
+    return query.lean().exec();
   }
 
   async findArchived(): Promise<TransactionDocument[]> {
@@ -3769,7 +3771,9 @@ export class TransactionsService {
 
   async getInventory(session?: ClientSession): Promise<InventoryItem[]> {
     const products = session ? await this.productsService.findAll(session) : await this.productsService.findAll();
-    const query = this.transactionModel.find({ cancelled: { $ne: true }, archived: { $ne: true } });
+    // Stock does not need receipts, comments, edit history or hydrated documents.
+    const query = this.transactionModel.find({ cancelled: { $ne: true }, archived: { $ne: true } })
+      .select('type ref notes date warehouseCode items.code items.qty items.condition').lean();
     if (session) query.session(session);
     const transactions = await query.exec();
     const receiptLocations = await legacyReceiptLocations(this.transactionModel.db, transactions, session);
@@ -3794,47 +3798,50 @@ export class TransactionsService {
       balances[location] = (balances[location] || 0) + Number(adjustment.qtyDelta || 0);
       warehouseAdjustments.set(code, balances);
     }
+    // Accumulate each transaction line once, rather than scanning the entire
+    // history again for every product (and again for each Shopify approval).
+    const totalsByCode = new Map<string, {
+      purchases: number; sales: number; returnsToStock: number;
+      warehouseBalances: Record<string, number>; returnRefs: Set<string>; returnDates: Set<string>;
+    }>();
+    for (const tx of transactions) {
+      const purchase = this.transactionAddsSupplierPurchases(tx as TransactionDocument);
+      const returned = !purchase && this.transactionAddsReturnToStock(tx as TransactionDocument);
+      const sale = !purchase && !returned && (tx.type === 'مبيعات' || tx.type === 'مرتجع مشتريات');
+      if (!purchase && !returned && !sale) continue;
+      const location = purchase
+        ? receiptLocations.get(String(tx._id)) || warehouseCode(tx.warehouseCode)
+        : warehouseCode(tx.warehouseCode);
+      for (const item of tx.items || []) {
+        const code = String(item.code || '').trim();
+        let totals = totalsByCode.get(code);
+        if (!totals) {
+          totals = { purchases: 0, sales: 0, returnsToStock: 0,
+            warehouseBalances: Object.create(null), returnRefs: new Set(), returnDates: new Set() };
+          totalsByCode.set(code, totals);
+        }
+        let delta: number;
+        if (purchase) { totals.purchases += item.qty; delta = item.qty; }
+        else if (returned) {
+          delta = this.returnedItemQtyForStock(item);
+          totals.returnsToStock += delta;
+          const ref = String(tx.ref || '').trim();
+          const date = tx.date ? String(tx.date).split('T')[0] : '';
+          if (ref) totals.returnRefs.add(ref);
+          if (date) totals.returnDates.add(date);
+        } else { totals.sales += item.qty; delta = -item.qty; }
+        totals.warehouseBalances[location] = (totals.warehouseBalances[location] || 0) + delta;
+      }
+    }
     return products.map((product) => {
-      const warehouseBalances: Record<string, number> = Object.create(null);
-      const addWarehouse = (code: string, quantity: number) => { warehouseBalances[code] = (warehouseBalances[code] || 0) + quantity; };
-      let purchases = 0;
-      let sales = 0;
-      let returnsToStock = 0;
-      const returnRefSet = new Set<string>();
-      const returnDateSet = new Set<string>();
       const productCodeNorm = String(product.code || '').trim();
-      transactions.forEach((tx) => {
-        tx.items.forEach((item) => {
-          if (String(item.code || '').trim() !== productCodeNorm) {
-            return;
-          }
-          if (this.transactionAddsSupplierPurchases(tx)) {
-            // Supplier purchases: add to purchases count
-            purchases += item.qty;
-            addWarehouse(receiptLocations.get(String(tx._id)) || warehouseCode(tx.warehouseCode), item.qty);
-          } else if (this.transactionAddsReturnToStock(tx)) {
-            // Customer returns: add to stock
-            // Formula: current = opening + purchases + returns - sales
-            // where sales = direct sales only (not reduced by returns)
-            // A تالف unit contributes 0 — see returnedItemQtyForStock.
-            returnsToStock += this.returnedItemQtyForStock(item);
-            addWarehouse(warehouseCode(tx.warehouseCode), this.returnedItemQtyForStock(item));
-            const refStr = String(tx.ref || '').trim();
-            if (refStr) {
-              returnRefSet.add(refStr);
-            }
-            const dateStr = tx.date ? String(tx.date).split('T')[0] : '';
-            if (dateStr) {
-              returnDateSet.add(dateStr);
-            }
-          } else if (tx.type === 'مبيعات' || tx.type === 'مرتجع مشتريات') {
-            // Sales / supplier returns (stock leaving the warehouse back to the supplier):
-            // both consume stock the same way.
-            sales += item.qty;
-            addWarehouse(warehouseCode(tx.warehouseCode), -item.qty);
-          }
-        });
-      });
+      const totals = totalsByCode.get(productCodeNorm);
+      const warehouseBalances: Record<string, number> = Object.create(null);
+      Object.assign(warehouseBalances, totals?.warehouseBalances);
+      const addWarehouse = (code: string, quantity: number) => { warehouseBalances[code] = (warehouseBalances[code] || 0) + quantity; };
+      const purchases = totals?.purchases || 0;
+      const sales = totals?.sales || 0;
+      const returnsToStock = totals?.returnsToStock || 0;
       const openingBal = Math.max(
         0,
         Math.floor(Number(product.openingBalance) || 0),
@@ -3862,8 +3869,8 @@ export class TransactionsService {
         openingBalance: openingBal,
         purchases,
         returnsToStock,
-        returnRefs: [...returnRefSet].sort().join('، '),
-        returnDates: [...returnDateSet].sort().join('، '),
+        returnRefs: [...(totals?.returnRefs || [])].sort().join('، '),
+        returnDates: [...(totals?.returnDates || [])].sort().join('، '),
         sales,
         adjustments,
         current,
@@ -3874,34 +3881,27 @@ export class TransactionsService {
   }
 
   async getDashboard(expenseTotal = 0): Promise<DashboardData> {
-    const inventory = await this.getInventory();
-    const transactions = await this.transactionModel
-      .find({ archived: { $ne: true } })
-      .exec();
+    const [inventory, transactions, products, approvedReturns, supplierReturnsTotal, supplierPayables, recentTransactions] = await Promise.all([
+      this.getInventory(),
+      this.transactionModel.find({ archived: { $ne: true } }).exec(),
+      this.productsService.findAll(),
+      this.returnRequestModel.find({
+        status: 'معتمد',
+        $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }],
+      }).exec().then((rows): ReturnRequestDocument[] => rows).catch((): ReturnRequestDocument[] => []),
+      this.getSettledSupplierReturnsTotal(),
+      this.getTotalSupplierDebt(),
+      this.transactionModel.find().sort({ createdAt: -1 }).limit(8).exec(),
+    ]);
     const activeTx = transactions.filter((t) => !t.cancelled);
     const stockAlerts = inventory.filter((p) => p.isActive !== false && p.status !== 'ok');
     const lowStockCount = stockAlerts.length;
     const salesTx = activeTx.filter((t) => t.type === 'مبيعات');
 
     // احسب المرتجعات المقبولة (مرة واحدة فقط)
-    let totalReturns = 0;
     let returnedProfit = 0;
-    let approvedReturns: ReturnRequestDocument[] = [];
-    try {
-      // `reversedAt` must be filtered on, not just `status`: a reversed return KEEPS status 'معتمد'
-      // (mirroring SupplierReturnOrder), so the status check alone would keep subtracting a return
-      // whose stock and cash were already given back.
-      approvedReturns = await this.returnRequestModel
-        .find({
-          status: 'معتمد',
-          $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }],
-        })
-        .exec();
-      totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
-    } catch (e) {
-      totalReturns = 0;
-      approvedReturns = [];
-    }
+    // A reversed return keeps its approved status, so reversedAt must also be checked.
+    const totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
 
     const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
@@ -3915,7 +3915,6 @@ export class TransactionsService {
     const grossPurchases = activeTx
       .filter((t) => this.transactionAddsSupplierPurchases(t))
       .reduce((sum, t) => sum + t.total, 0);
-    const supplierReturnsTotal = await this.getSettledSupplierReturnsTotal();
     const totalPurchases = Math.max(0, grossPurchases - supplierReturnsTotal);
     // "المتبقي / الديون" mixes money owed TO us and money we owe. The supplier half can no longer
     // be read from tx.remaining: supplier-return debt offsets and manual ledger adjustments move
@@ -3930,7 +3929,6 @@ export class TransactionsService {
     const otherRemaining = activeTx
       .filter((t) => t.type !== 'مبيعات' && t.type !== 'مشتريات')
       .reduce((sum, t) => sum + (t.remaining || 0), 0);
-    const supplierPayables = await this.getTotalSupplierDebt();
     const totalRemaining =
       customerReceivables + otherRemaining + supplierPayables;
     const totalDiscounts = salesTx.reduce((s, t) => {
@@ -3946,11 +3944,14 @@ export class TransactionsService {
       return s;
     }, 0);
     const totalDeposit = salesTx.reduce((s, t) => s + (Number(t.deposit) || 0), 0);
-    const products = await this.productsService.findAll();
+    const productByCode = new Map<string, (typeof products)[number]>();
+    for (const product of products) {
+      if (!productByCode.has(product.code)) productByCode.set(product.code, product);
+    }
     let grossProfit = 0;
     salesTx.forEach((tx) => {
       tx.items.forEach((item) => {
-        const product = products.find((p) => p.code === item.code);
+        const product = productByCode.get(item.code);
         grossProfit +=
           (item.price - (product ? product.buyPrice : 0)) * item.qty;
       });
@@ -3978,11 +3979,6 @@ export class TransactionsService {
     const lowSellers =
       sorted.length > 5 ? sorted.slice(-5).reverse() : [...sorted].reverse();
     const lowStockItems = stockAlerts.slice(0, 8);
-    const recentTransactions = await this.transactionModel
-      .find()
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .exec();
     return {
       totalProducts: inventory.length,
       lowStockCount,

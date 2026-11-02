@@ -210,8 +210,8 @@ export class OrderAuditService {
       return `${part('year')}-${part('month')}-${part('day')}`;
     };
     const [transactions, orders] = await Promise.all([
-      this.txModel.find({ type: 'مبيعات', ref: { $exists: true, $ne: '' } }).lean(),
-      this.shopifyOrderModel.find({}).lean(),
+      this.txModel.find({ type: 'مبيعات', ref: { $exists: true, $ne: '' } }, '_id ref shopifyCreatedAt date createdAt').lean(),
+      this.shopifyOrderModel.find({}, '_id ref orderNumber shopifyCreatedAt createdAt').lean(),
     ]);
     const dates = new Map<string, string>();
     for (const tx of transactions as any[]) dates.set(this.normRef(tx.ref), dateKey(tx.shopifyCreatedAt || tx.date || tx.createdAt));
@@ -222,7 +222,12 @@ export class OrderAuditService {
     const selected = [...dates].filter(([ref, date]) => /^\d+$/.test(ref) && Number(ref) > 0 && date && date >= fromDate && date <= toDate && (!months.length || (Number(date.slice(0, 4)) === year && months.includes(Number(date.slice(5, 7)))))).map(([ref]) => ref);
     if (selected.length > 5000) throw new BadRequestException('الحد الأقصى 5000 طلب — اختر فترة أقصر');
     const numbers = selected.map(Number);
-    const result = await this.runAudit(numbers.length ? Math.min(...numbers) : 1, numbers.length ? Math.max(...numbers) : 1, { ...opts, persist: false, orderNumbers: selected });
+    const selectedSet = new Set(selected);
+    const sourceIds = {
+      transactions: transactions.filter(tx => selectedSet.has(this.normRef(tx.ref))).map(tx => tx._id),
+      orders: orders.filter(order => selectedSet.has(this.normRef(order.ref || (order as any).orderNumber))).map(order => order._id),
+    };
+    const result = await this.runAudit(numbers.length ? Math.min(...numbers) : 1, numbers.length ? Math.max(...numbers) : 1, { ...opts, persist: false, orderNumbers: selected, sourceIds });
     result.period = { fromDate, toDate, ...(months.length ? { months, year } : {}) };
     if (!numbers.length) { result.from = 0; result.to = 0; }
     if (opts.persist !== false) await this.saveAuditLog(result, opts.generatedBy || '', opts.source || 'date');
@@ -232,7 +237,7 @@ export class OrderAuditService {
   async runAudit(
     fromOrder: number,
     toOrder: number,
-    opts: { persist?: boolean; generatedBy?: string; source?: string; orderNumbers?: string[];shippingLive?:boolean } = {},
+    opts: { persist?: boolean; generatedBy?: string; source?: string; orderNumbers?: string[];shippingLive?:boolean; sourceIds?: { transactions: any[]; orders: any[] } } = {},
   ): Promise<AuditResult> {
     const from = Math.floor(Number(fromOrder));
     const to = Math.floor(Number(toOrder));
@@ -257,15 +262,31 @@ export class OrderAuditService {
     if (!opts.orderNumbers) for (let n = from; n <= to; n++) expected.push(String(n));
     const expectedSet = new Set(expected);
 
-    // ── Load Soulia transactions whose ref falls in range ───────────────────
-    // ref is stored clean (no '#') but old rows may still carry it, so we pull
-    // a superset by regex and filter numerically in memory.
-    const txs = await this.txModel
-      .find({
-        type: { $in: ['مبيعات'] },
-        ref: { $exists: true, $ne: '' },
-      })
-      .lean();
+    // Resolve historical reference formats using a small directory, then load
+    // only matching documents. Date reports already resolved this directory.
+    let sourceIds = opts.sourceIds;
+    if (!sourceIds) {
+      const [transactions, orders] = await Promise.all([
+        this.txModel.find({ type: 'مبيعات', ref: { $exists: true, $ne: '' } }, '_id ref').lean(),
+        this.shopifyOrderModel.find({}, '_id ref').lean(),
+      ]);
+      sourceIds = {
+        transactions: transactions.filter(tx => expectedSet.has(this.normRef(tx.ref))).map(tx => tx._id),
+        orders: orders.filter(order => expectedSet.has(this.normRef(order.ref))).map(order => order._id),
+      };
+    }
+    const [txs, shopifyOrders] = await Promise.all([
+      sourceIds.transactions.length ? this.txModel.find({ _id: { $in: sourceIds.transactions } }).lean() : [],
+      sourceIds.orders.length ? this.shopifyOrderModel.find({ _id: { $in: sourceIds.orders } }).lean() : [],
+    ]);
+    // Indexed _id reads can return a different order from the directory. Keep
+    // the existing duplicate preference (first active sale / last mirror row).
+    const preserveOrder = (documents: any[], ids: any[]) => {
+      const positions = new Map(ids.map((id, index) => [String(id), index]));
+      documents.sort((a, b) => (positions.get(String(a._id)) ?? 0) - (positions.get(String(b._id)) ?? 0));
+    };
+    preserveOrder(txs, sourceIds.transactions);
+    preserveOrder(shopifyOrders, sourceIds.orders);
 
     const txByRef = new Map<string, any>();
     for (const tx of txs) {
@@ -278,7 +299,6 @@ export class OrderAuditService {
 
     // ── Load the Shopify mirror for the same range ─────────────────────────
     const shippingRead=await this.readShipping([...txByRef.values()],opts.shippingLive===true);
-    const shopifyOrders = await this.shopifyOrderModel.find({}).lean();
     const shopByRef = new Map<string, any>();
     for (const o of shopifyOrders) {
       const key = this.normRef(o.ref);
@@ -287,7 +307,8 @@ export class OrderAuditService {
     }
 
     // ── Product cost lookup ────────────────────────────────────────────────
-    const products = await this.productModel.find({}).lean();
+    const productCodes = [...new Set([...txByRef.values(), ...shopByRef.values()].flatMap(order => (order.items || []).map((item: any) => String(item.code || ''))))];
+    const products = productCodes.length ? await this.productModel.find({ code: { $in: productCodes } }, 'code buyPrice').lean() : [];
     const costByCode = new Map<string, number>();
     for (const p of products) costByCode.set(String(p.code), Number(p.buyPrice) || 0);
 

@@ -11,7 +11,7 @@ function fixture() {
     nodes.set('#' + id, { textContent: '', style: {}, setAttribute: jest.fn() });
   }
   const orders = Array.from({ length: 7 }, (_, i) => ({ _id: String(i), ref: String(2800 + i), items: [{ qty: 2 }], status: 'pending' }));
-  const modal = { _running: false, _sendable: orders.map(order => ({ order })), querySelector: () => ({ innerHTML: '' }) };
+  const modal = { _running: false, classList: { toggle: jest.fn() }, _sendable: orders.map(order => ({ order })), querySelector: () => ({ innerHTML: '' }) };
   nodes.set('#sp-bulk-confirm-modal', modal);
   nodes.set('#spb-carrier', { value: 'bosta' });
   const endBatch = jest.fn();
@@ -31,7 +31,7 @@ function fixture() {
     qs: (selector: string) => nodes.get(selector),
     t: (key: string) => key,
     tf: (key: string, values: any) => key + ':' + JSON.stringify(values), esc: (value: string) => value,
-    SP_CONFIRM_ICON: '', requestAnimationFrame: (fn: () => void) => fn(),
+    SP_CONFIRM_ICON: '', setTimeout, _spRequirePrepareShip: () => true,
     window: { txNotifier: { beginBatch: () => endBatch, suppressCreated: jest.fn() } },
     _sppReadChoice: () => ({ on: true }), _sppCommit: group,
     _spDepositOf: () => ({ byMethod: { cash: 10 } }), _shopifySelectedIds: selected,
@@ -59,4 +59,20 @@ it('settles every attempt, keeps failed selections and prevents duplicate submis
   expect(env.endBatch).toHaveBeenCalledTimes(1);
   expect(env.modal._running).toBe(false);
   expect(env.context.window._souliaShopifyBatch).toBeNull();
+});
+
+it('allows minimizing and reopening progress without starting another send', async () => {
+  const env = fixture();
+  const button = { textContent: '', setAttribute: jest.fn() };
+  env.nodes.set('#sp-bulk-toggle', button);
+  const running = env.context._confirmBulkSendShopify();
+  env.context._spToggleBulkProgress(true);
+  expect(env.modal.classList.toggle).toHaveBeenLastCalledWith('is-minimized', true);
+  expect(button.textContent).toBe('spBatchExpand');
+  expect(button.setAttribute).toHaveBeenLastCalledWith('aria-expanded', 'false');
+  env.context._spToggleBulkProgress(false);
+  expect(button.textContent).toBe('spBatchMinimize');
+  await running;
+  expect(env.api.mock.calls.filter(([url]) => url.endsWith('/approve'))).toHaveLength(7);
+  expect(env.modal.classList.toggle).toHaveBeenLastCalledWith('is-minimized', false);
 });

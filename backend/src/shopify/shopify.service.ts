@@ -64,6 +64,8 @@ import { shopifyLineQuantity } from './shopify-line-quantity.util';
 import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
 import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount } from './order-edit.util';
 import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
+import { DEPOSIT_REASONS, DEPOSIT_EXCEPTIONS, validateDepositDecision, depositDecisionReport } from './deposit-decision.util';
+import { depositFromShopifyNote } from './shopify-note-deposit.util';
 
 @Injectable()
 export class ShopifyService {
@@ -928,12 +930,9 @@ export class ShopifyService {
    *   omission put the whole Shopify volume into the «غير محدد» bucket of the shipping report and
    *   left `order-audit.service.ts`'s per-company breakdown measuring nothing.
    *
-   * ⚠ THE DEPOSIT IS NOT AN INPUT. It is the sum of this order's APPROVED deposit receipts, whose
-   *   money entered the vault when each receipt was approved (DepositReceiptsService.approve).
-   *   This method therefore books NOTHING into the vault — it records the figures on the
-   *   transaction. It used to take a typed `deposit` and call `addSystemEntry` here; with
-   *   receipts that would book the same money twice. An order with no receipt confirms with no
-   *   deposit (allowed — the owner made the deposit optional).
+   * The deposit is never taken from the approval request. Approved receipts were already booked
+   * into the vault and are copied to the sale without another entry. For an older order with no
+   * receipts, an explicit paid amount in its Shopify note is booked once during confirmation.
    */
   async approveOrder(orderId: string, approvedBy: string, carrierCode?: string, actorUserId?: string): Promise<{ success: boolean; txId?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
@@ -953,7 +952,11 @@ export class ShopifyService {
     if (approvedReceipts.some(r => !r.vaultEntryId) || receiptsIn(order, 'مُسترد').some(r => !r.refundVaultEntryId)) {
       throw new BadRequestException('تسجيل العربون في الخزنة لم يكتمل — أعد المحاولة بعد انتهاء المراجعة');
     }
-    const paidNow = approvedDepositTotal(order);
+    // Older Shopify orders may carry a paid deposit only in the customer note.
+    // A receipt or an explicit ship-without-deposit decision takes precedence.
+    const noteDeposit = !order.shipWithoutDeposit && !(order.depositReceipts || []).length
+      ? depositFromShopifyNote(order.notes) : null;
+    const paidNow = round2(approvedDepositTotal(order) + (noteDeposit?.amount || 0));
     if (paidNow > (Number(order.total) || 0) + DEPOSIT_TOLERANCE) {
       throw new BadRequestException(
         `العربون المعتمد (${paidNow} ج) أكبر من إجمالي الطلب (${Number(order.total) || 0} ج) — رُدّ الزيادة قبل التحضير والشحن`,
@@ -961,7 +964,13 @@ export class ShopifyService {
     }
     const remaining = round2(Math.max(0, Number(order.total) - paidNow));
     const payStatus = remaining <= 0 ? 'مكتمل' : 'معلق';
-    const depMethod = computeDepositFieldsFromReceipts(order).depositMethod || order.payment || 'كاش';
+    const depMethod = computeDepositFieldsFromReceipts(order).depositMethod || noteDeposit?.method || order.payment || 'كاش';
+    const depositSummary = noteDeposit ? {
+      depositAmount: paidNow,
+      depositMethod: depMethod,
+      depositStatus: remaining <= 0 ? 'full' : 'partial',
+      depositPercentage: order.total > 0 ? Math.min(100, Math.round(paidNow / order.total * 100)) : 0,
+    } : computeDepositFieldsFromReceipts(order);
     // ⚠ "Shopify" moved cash to nobody — it is the sales channel, not the person who took the
     // deposit. The old `Shopify (${approvedBy})` named whoever happened to click «تأكيد», which is
     // a review action and often not the employee actually handling the order. The assigned staff
@@ -991,6 +1000,11 @@ export class ShopifyService {
       receiptId: r.id,
       vaultTxNo: r.vaultTxNo || '',
     }));
+    if (noteDeposit) depositsLog.push({
+      id: crypto.randomUUID(), amount: noteDeposit.amount, method: depMethod,
+      note: 'ديبوزت من ملاحظة أوردر Shopify', date: confirmedAt, by: employee,
+      source: 'shopify-note', receiptId: '', vaultTxNo: '',
+    });
     const depositReceiptsSnapshot = approvedReceipts.map((r) => ({
       id: r.id,
       amount: r.amount,
@@ -1052,16 +1066,17 @@ export class ShopifyService {
       ? { depositReceipts: receiptSnapshot }
       : { $or: [{ depositReceipts: { $size: 0 } }, { depositReceipts: { $exists: false } }] };
     const claimed = await this.shopifyOrderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, 'editRequest.status': { $ne: 'معلق' }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...receiptMatch },
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, 'editRequest.status': { $ne: 'معلق' }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...(noteDeposit ? { notes: order.notes, shipWithoutDeposit: { $in: [false, null] } } : {}), ...receiptMatch },
       { $set: {
         status: 'approved', reviewedBy: approvedBy, reviewedAt: confirmedAt,
-        ...computeDepositFieldsFromReceipts(order), depositDetectedAt: order.depositDetectedAt,
+        ...depositSummary, depositDetectedAt: order.depositDetectedAt,
       } },
       { new: true },
     ).exec();
     if (!claimed) throw new BadRequestException('تغيّر الأوردر أو العربون — حدّث البيانات وأعد المحاولة');
 
     let tx: TransactionDocument;
+    let createdTxId = '';
     try {
       tx = await this.txModel.create({
       date,
@@ -1075,6 +1090,9 @@ export class ShopifyService {
       depMethod,
       deposit: paidNow,
       initialDeposit: paidNow,
+      shipWithoutDeposit: !!claimed.shipWithoutDeposit && paidNow <= 0,
+      depositDecision: claimed.depositDecision || null,
+      depositDecisionHistory: claimed.depositDecisionHistory || [],
       remaining,
       deposits: depositsLog,
       depositReceipts: depositReceiptsSnapshot,
@@ -1134,8 +1152,18 @@ export class ShopifyService {
       cancelled: false,
       archived: false,
       });
+      createdTxId = String(tx._id);
+      if (noteDeposit) {
+        await this.vaultService.addSystemEntry(
+          noteDeposit.amount, depMethod,
+          `ديبوزت مبيعات #${cleanRef} — ${order.client || ''} (من ملاحظة Shopify)`,
+          date, 'ديبوزت مبيعات', cleanRef, { customer: order.client || '' }, employee,
+          { transactionId: String(tx._id), shopifyOrderId: order.shopifyId, source: 'shopify-note' },
+        );
+      }
     } catch (err) {
-      // A failed create leaves no sale; restore the claimed order without touching receipts.
+      // A failed create or note-deposit vault write leaves no sale.
+      if (createdTxId) await this.txModel.deleteOne({ _id: createdTxId });
       await this.shopifyOrderModel.updateOne(
         { _id: order._id, status: 'approved', reviewedAt: confirmedAt },
         { $set: { status: 'pending', reviewedBy: order.reviewedBy || '', reviewedAt: order.reviewedAt || '' } },
@@ -1143,7 +1171,7 @@ export class ShopifyService {
       throw err;
     }
 
-    // ⚠ لا قيد خزنة هنا — العربون دخل الخزنة لحظة اعتماد كل إيصال. انظر تعليق الدالة.
+    // إيصالات التحويل لا تُقيد مجددًا؛ قيد الملاحظة وحده سُجل أعلاه عند إنشاء المعاملة.
 
     // سجل حركة المخزون — لازم يتكتب هنا لأن approveOrder بتكتب المعاملة مباشرة
     // على txModel وبتتخطى TransactionsService.create() اللي بتسجل الحركة عادة.
@@ -1160,9 +1188,9 @@ export class ShopifyService {
 
     // Uploads abandoned before submission have no further use once the order is a transaction.
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
-    await this.followUpsService?.closeForOrder({ transactionId: String(tx._id), shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'confirmed', paidNow > 0 ? 'تم دفع الديبوزت' : 'سيتم الشحن بدون ديبوزت', approvedBy);
     // Independent post-commit work; persist the notification and clean drafts together.
     await Promise.all([
+      this.followUpsService?.closeForOrder({ transactionId: String(tx._id), shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'confirmed', paidNow > 0 ? 'تم دفع الديبوزت' : 'سيتم الشحن بدون ديبوزت', approvedBy),
       this.depositReceipts.discardDrafts(String(order._id)),
       notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: approvedBy, actorUserId, actionKey: 'order', status: 'approved' }),
     ]);
@@ -1883,13 +1911,20 @@ export class ShopifyService {
   }
 
   /** Save the explicit shipping choice without booking money or changing receipt totals. */
-  async setShipWithoutDeposit(orderId: string, enabled: boolean, by = '') {
+  async setShipWithoutDeposit(orderId: string, enabled: boolean, by = '', input: any = {}, actor: any = {}) {
     if (typeof enabled !== 'boolean') throw new BadRequestException('enabled must be a boolean');
+    const decision = enabled ? validateDepositDecision(input, true) : null;
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const revision = input.revision ?? (order.depositDecisionRevision || 0);
+    if (!Number.isInteger(revision) || revision < 0) throw new BadRequestException('إصدار القرار غير صحيح');
+    if (revision !== (order.depositDecisionRevision || 0)) throw new BadRequestException('تغيّر قرار العربون. حدّث الطلب وأعد المحاولة');
+    const at = new Date().toISOString();
+    const next = decision ? { ...decision, at, by, byId: actor.id || '', byUsername: actor.username || '' } : order.depositDecision || null;
     const updated = await this.shopifyOrderModel.findOneAndUpdate(
       {
         _id: orderId, status: 'pending', cancelled: { $ne: true },
+        $and: [revision === 0 ? { $or: [{ depositDecisionRevision: 0 }, { depositDecisionRevision: { $exists: false } }] } : { depositDecisionRevision: revision }],
         receiptCancelLock: { $in: ['', null] },
         ...(enabled ? {
           // Receipts are authoritative; legacy depositAmount summaries may be stale.
@@ -1899,8 +1934,14 @@ export class ShopifyService {
       { $set: {
         shipWithoutDeposit: enabled,
         shipWithoutDepositBy: by,
-        shipWithoutDepositAt: new Date().toISOString(),
-      } },
+        shipWithoutDepositAt: at,
+        depositDecision: next,
+      }, $inc: { depositDecisionRevision: 1 }, $push: { depositDecisionHistory: {
+        id: crypto.randomUUID(), action: enabled ? (order.shipWithoutDeposit ? 'reason-changed' : 'enabled') : 'disabled',
+        at, by, byId: actor.id || '', byUsername: actor.username || '',
+        before: { ...(order.depositDecision || {}), enabled: !!order.shipWithoutDeposit },
+        after: { ...(next || {}), enabled },
+      } } },
       { new: true },
     );
     if (!updated) throw new BadRequestException('تعذر تغيير خيار الشحن: تأكد أن الطلب ما زال معلقًا ولا توجد إيصالات عربون معتمدة أو قيد المراجعة، ثم حدّث الطلب وأعد المحاولة');
@@ -1909,9 +1950,46 @@ export class ShopifyService {
       shipWithoutDeposit: updated.shipWithoutDeposit,
       shipWithoutDepositAt: updated.shipWithoutDepositAt,
       shipWithoutDepositBy: updated.shipWithoutDepositBy,
+      depositDecision: updated.depositDecision,
+      depositDecisionRevision: updated.depositDecisionRevision,
+      depositDecisionHistory: updated.depositDecisionHistory,
     };
     this.emit('shopify:shipping-choice-changed', change);
     return { success: true, ...change };
+  }
+
+  depositDecisionOptions() { return { reasons: DEPOSIT_REASONS, exceptions: DEPOSIT_EXCEPTIONS }; }
+
+  async recordDepositObjection(orderId: string, input: any, actor: any) {
+    const details = validateDepositDecision(input, false);
+    const order = await this.shopifyOrderModel.findById(orderId);
+    if (!order) throw new NotFoundException('الأوردر غير موجود');
+    const revision = input.revision;
+    if (!Number.isInteger(revision) || revision < 0) throw new BadRequestException('حدّث الطلب وأعد المحاولة');
+    if (revision !== (order.depositDecisionRevision || 0)) throw new BadRequestException('تغيّر قرار العربون. حدّث الطلب وأعد المحاولة');
+    const at = new Date().toISOString();
+    const next = { ...(order.depositDecision || {}), ...details, at, by: actor.name || '', byId: actor.id || '', byUsername: actor.username || '' };
+    const updated = await this.shopifyOrderModel.findOneAndUpdate({
+      _id:orderId,status:'pending',cancelled:{$ne:true},
+      $and:[revision===0?{$or:[{depositDecisionRevision:0},{depositDecisionRevision:{$exists:false}}]}:{depositDecisionRevision:revision}],
+    },{$set:{depositDecision:next},$inc:{depositDecisionRevision:1},$push:{depositDecisionHistory:{
+      id:crypto.randomUUID(),action:'objection-recorded',at,by:actor.name || '',byId:actor.id || '',byUsername:actor.username || '',
+      before:{...(order.depositDecision || {}),enabled:!!order.shipWithoutDeposit},after:{...next,enabled:!!order.shipWithoutDeposit},
+    }}},{new:true});
+    if (!updated) throw new BadRequestException('تغيّر الطلب أو تم تأكيده/إلغاؤه. حدّث البيانات وأعد المحاولة');
+    const change={orderId:String(updated._id),ref:updated.ref,shipWithoutDeposit:!!updated.shipWithoutDeposit,
+      shipWithoutDepositAt:updated.shipWithoutDepositAt,shipWithoutDepositBy:updated.shipWithoutDepositBy,
+      depositDecision:updated.depositDecision,depositDecisionHistory:updated.depositDecisionHistory,depositDecisionRevision:updated.depositDecisionRevision};
+    this.emit('shopify:shipping-choice-changed',change);
+    return {success:true,...change};
+  }
+
+  async getDepositDecisionReport(month: string) {
+    // Validate before querying. No remote shipping calls or mutations are performed by this report.
+    depositDecisionReport([], [], month);
+    const orders = await this.shopifyOrderModel.find({}).select('shopifyId ref shopifyCreatedAt status cancelled cancelReason cancelReasonCode depositAmount depositReceipts shipWithoutDeposit depositDecision depositDecisionHistory').lean();
+    const transactions = await this.txModel.find({type:'مبيعات'}).select('type ref shopifyOrderId initialDeposit deposits pickupStatus bostaStatus cancelled cancelReason cancelReasonCode shipWithoutDeposit depositDecision').lean();
+    return depositDecisionReport(orders, transactions, month);
   }
 
   /** Personal visual marker, available in every state; does not change money or stock. */
