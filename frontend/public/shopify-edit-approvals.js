@@ -193,7 +193,7 @@ async function _spConfirmEditSubmission(order, proposal) {
   });
 }
 
-function _spOrderEditMark(order) {
+function _spOrderEditMark(order, compact = false) {
   const request = order.editRequest;
   if (!request) return '';
   const pending = request.status === 'معلق' || request.status === 'قيد التنفيذ';
@@ -202,7 +202,7 @@ function _spOrderEditMark(order) {
   if (request.status === 'معتمد') {
     return `<button type="button" class="sp-edit-status is-approved is-compact" title="${esc(label)}" aria-label="${esc(label)}" onclick="event.stopPropagation();openShopifyEditReview('${esc(order._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></svg></button>`;
   }
-  return `<button type="button" class="sp-edit-status ${pending ? 'is-pending' : request.status === 'معتمد' ? 'is-approved' : 'is-rejected'}${isAdmin() ? ' is-admin' : ''}" title="${esc(label)}" aria-label="${esc(label)}" onclick="event.stopPropagation();openShopifyEditReview('${esc(order._id)}')"><span aria-hidden="true">${pending ? '◷' : request.status === 'معتمد' ? '✓' : '✕'}</span><span>${esc(label)}</span></button>`;
+  return `<button type="button" class="sp-edit-status ${pending ? 'is-pending' : request.status === 'معتمد' ? 'is-approved' : 'is-rejected'}${isAdmin() ? ' is-admin' : ''}${compact ? ' is-compact' : ''}" title="${esc(label)}" aria-label="${esc(label)}" onclick="event.stopPropagation();openShopifyEditReview('${esc(order._id)}')"><span aria-hidden="true">${pending ? '◷' : request.status === 'معتمد' ? '✓' : '✕'}</span>${compact ? '' : `<span>${esc(label)}</span>`}</button>`;
 }
 
 function _spEditRequestDetail(order) {

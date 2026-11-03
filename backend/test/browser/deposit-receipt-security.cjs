@@ -19,6 +19,7 @@ function fn(name){const start=src.indexOf(`function ${name}(`);assert(start>=0);
       window.requests=[];window.pending=[];window.modalOpens=0;
       const openModal=html=>{window.modalOpens++;qs('#modal-content').innerHTML=html;};
       const closeModal=()=>{qs('#modal-content').innerHTML='';},toast=()=>{},loadShopifyOrders=async()=>{};
+      const _spApplyApprovedReceipt=()=>{},_spRefreshReceiptViews=()=>{},_spRefreshAfterReceiptApproval=()=>{};
       const api=async(path)=>{window.requests.push(path);return new Promise(resolve=>window.pending.push(()=>resolve({success:true})));};
       ${fn('_spReceiptAction')}
       ${fn('_spDepRunBulkApprove')}

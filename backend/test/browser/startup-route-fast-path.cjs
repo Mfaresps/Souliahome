@@ -5,22 +5,32 @@ const puppeteer = require('puppeteer');
 // must become usable from its own data without waiting for that collection.
 const routes = [
   ['/#transactions', 'movements'],
+  ['/#transactions', 'movements', false, true],
   ['/#pickup-orders', 'pickup-orders'],
   ['/#shopify-orders', 'shopify-orders'],
+  ['/#shopify-orders', 'shopify-orders', false, false, true],
+  ['/#warehouse-management', 'barcodes'],
+  ['/#barcodes', 'barcodes'],
+  ['/#warehouse-management/layout', 'barcodes'],
+  ['/#warehouse-management/layout', 'barcodes', true],
+  ['/#barcodes/layout', 'barcodes'],
+  ['/#warehouse-layout', 'barcodes'],
   ['/#transactions/orders/view/sales-123', 'invoice-view'],
 ];
 
 (async () => {
   const browser = await puppeteer.launch({ headless: true });
   try {
-    for (const [url, expectedPage] of routes) {
+    for (const [url, expectedPage, productsOnly = false, nullTransactions = false, nullOrders = false] of routes) {
       const page = await browser.newPage();
       const errors = [];
+      const consoleErrors = [];
       page.on('pageerror', error => errors.push(error.message));
-      await page.evaluateOnNewDocument(() => {
+      page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+      await page.evaluateOnNewDocument(productsOnly => {
         localStorage.setItem('token', 'startup-route-test');
-        localStorage.setItem('user', JSON.stringify({ name: 'Test', role: 'admin', perms: [] }));
-      });
+        localStorage.setItem('user', JSON.stringify({ name: 'Test', role: productsOnly ? 'staff' : 'admin', perms: productsOnly ? ['products'] : [] }));
+      }, productsOnly);
       await page.setRequestInterception(true);
       let expensesRequested = false;
       const routeReads = { '/api/shopify/orders': 0, '/api/transactions/pickup-orders': 0 };
@@ -38,18 +48,56 @@ const routes = [
           return;
         }
         let body = '[]';
-        if (pathname === '/api/auth/me') body = JSON.stringify({ name: 'Test', role: 'admin', perms: [] });
+        if (pathname === '/api/auth/me') body = JSON.stringify({ name: 'Test', role: productsOnly ? 'staff' : 'admin', perms: productsOnly ? ['products'] : [] });
+        if (pathname === '/api/warehouse-layout') body = JSON.stringify({ warehouses: [{ code: 'MAIN', name: 'Main warehouse' }], locations: [], labelSizes: [{ id: '80x40', widthMm: 80, heightMm: 40 }] });
         if (pathname === '/api/settings' || pathname === '/api/transactions/dashboard') body = '{}';
+        if (nullTransactions && pathname === '/api/transactions') body = 'null';
+        if (nullOrders && pathname === '/api/shopify/orders') body = 'null';
         return request.respond({ status: 200, contentType: 'application/json', body });
       });
 
       await page.goto('http://127.0.0.1:8080' + url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.waitForFunction(expected => currentPage === expected
-        && document.querySelector('#page-' + expected)?.classList.contains('active')
-        && !document.querySelector('#splash-screen'), { timeout: 10000 }, expectedPage);
+      try {
+        await page.waitForFunction(expected => currentPage === expected
+          && document.querySelector('#page-' + expected)?.classList.contains('active')
+          && !document.querySelector('#splash-screen'), { timeout: 10000 }, expectedPage);
+      } catch (error) {
+        const state = await page.evaluate(() => ({ hash: location.hash, page: window.currentPage, active: [...document.querySelectorAll('.page.active')].map(node => node.id), splash: !!document.querySelector('#splash-screen') }));
+        throw new Error(`${url}: ${error.message}; ${JSON.stringify(state)}; page errors: ${errors.join(' | ')}`);
+      }
+      if (url.includes('/layout') || url.includes('#warehouse-layout')) {
+        await page.waitForSelector('#page-barcodes #page-warehouse-layout .wl-grid');
+        assert.equal(await page.$eval('#iu-tab-layout', element => element.getAttribute('aria-selected')), 'true');
+        assert.equal(await page.evaluate(() => location.hash), '#warehouse-management/layout');
+        if (productsOnly) assert.equal(await page.$$eval('#page-barcodes [data-iu-tab]:not([hidden])', tabs => tabs.length), 1);
+      }
+      if (url === '/#barcodes') assert.equal(await page.evaluate(() => location.hash), '#warehouse-management');
+      if (url === '/#warehouse-management') {
+        for (const [lang, expected] of [['ar', 'إدارة المخازن'], ['en', 'Warehouse management']]) {
+          const labels = await page.evaluate(async language => {
+            currentLang = language;
+            buildSidebar();
+            await window.renderBarcodeManagement();
+            return { heading: document.querySelector('#page-barcodes h1')?.textContent,
+              navigation: document.querySelector('#sidebar [data-page="barcodes"]')?.textContent?.trim() };
+          }, lang);
+          assert.equal(labels.heading, expected);
+          assert.equal(labels.navigation, expected);
+        }
+      }
       assert.equal(expensesRequested, true, `${expectedPage}: background read was not started`);
       assert.equal(await page.evaluate(() => !!window._startupBackgroundReady), true,
         `${expectedPage}: first view waited for the unrelated read`);
+      if (nullTransactions) {
+        assert.equal(await page.evaluate(() => Array.isArray(transactions)), true, 'null transaction response must not replace the list');
+        assert.equal(await page.evaluate(() => loadFailed('transactions')), true, 'null transaction response must remain retryable');
+        assert.equal(consoleErrors.some(message => message.includes("Cannot read properties of null (reading 'filter')")), false);
+      }
+      if (nullOrders) {
+        await page.waitForFunction(() => !!_spReceiptLoadError);
+        assert.equal(await page.evaluate(() => Array.isArray(_shopifyOrders)), true, 'null Shopify response must not replace the list');
+        assert.equal(await page.$eval('#sp-orders-loading', el => el.dataset.state), 'error');
+      }
       if (expectedPage === 'shopify-orders') assert.equal(routeReads['/api/shopify/orders'], 1,
         'Shopify route must reuse its startup read');
       if (expectedPage === 'pickup-orders') assert.equal(routeReads['/api/transactions/pickup-orders'], 1,

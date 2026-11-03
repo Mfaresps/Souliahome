@@ -21,10 +21,11 @@ const run = new Function('orders', 'page', 'perPage', 'tab', 'filter', `
   const _shopifyOrders = orders, _shopifyTab = tab;
   let shopifyPage = page, shopifyPerPage = perPage, _shopifyStatusFilter = filter;
   let _spResultTotal;
-  const _shopifyDateFilter = {}, _spStarOnly = false, _shopifySelectedIds = new Set();
+  const _shopifyDateFilter = {}, _spStarOnly = false, _spMyFollowUpScope = null, _shopifySelectedIds = new Set();
   const qs = selector => selector === '#shopify-orders-table-body' ? {} : null;
   const _spBuildInvIndex = () => ({}), _spBuildCustomerOrderIndex = () => ({}), _unshippedSiblingIndex = () => ({});
   const _spRenderFilterDropdown = () => {}, _spRenderToolbarState = () => {}, _spUpdateTriggerLabel = () => {};
+  const _spPanelActiveCount = () => 0, _spPanelTest = () => true, _spPanel = {};
   const _spFilterDef = key => ({ test: o => o.pendingStatus === key });
   const _spApplyPanel = data => data, _renderShopifyDepositSummary = () => {};
   const _spHideCommentPreview = () => {};

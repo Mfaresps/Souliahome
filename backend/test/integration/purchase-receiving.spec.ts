@@ -81,6 +81,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
       logger: new Logger('IsolatedReceiptTest'), _recentSubmissions: new Map(), _SUBMIT_DEDUP_MS: 15000 });
     const manualCodes = new UnitManualCodesService(mongo.connection); await manualCodes.onModuleInit();
     units = new InventoryUnitsService(mongo.connection, models.InventoryUnit, models.InventoryUnitEvent, models.InventoryUnitOperation, transactions, manualCodes);
+    await units.onModuleInit();
     receiving = new PurchaseReceivingService(mongo.connection, units, transactions);
     manual = new ManualPurchaseReceivingService(mongo.connection, units, transactions);
     scannedSales = new ScannedSaleService(mongo.connection, units, transactions);
@@ -103,7 +104,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
   }, 40000);
   beforeEach(async () => {
     await raw('warehouses').updateOne({ code: 'ACTUAL-SHELF-A' }, { $setOnInsert: { code: 'ACTUAL-SHELF-A', active: true } }, { upsert: true });
-    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'manualdepositreceipts', 'users', 'suppliers', 'inventorypacks']) await raw(name).deleteMany({});
+    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabels', 'inventoryunitprelabelbatches', 'manualdepositreceipts', 'users', 'suppliers', 'inventorypacks']) await raw(name).deleteMany({});
     productId = id(); supplierId = id(); actorId = id(); actor = { userId: actorId, role: 'admin', name: 'Forged Request Name' };
     await raw('users').insertOne({ _id: new Types.ObjectId(actorId), name: 'Authenticated Receiver', role: 'admin', isActive: true });
     await raw('suppliers').insertOne({ _id: new Types.ObjectId(supplierId), name: 'Supplier One' });
@@ -242,6 +243,32 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
       client: 'Supplier One', supplierId, employee: 'Forged Name', items: [{ productId, code: 'SKU-1', name: 'Basket', qty: 3, price: 20, total: 60 }],
       itemsTotal: 60, discount: 5, total: 55, deposit: 20, remaining: 35, creditApplied: 0, depMethod: 'كاش', payment: 'كاش', payStatus: 'معلق', ...extra } };
   }
+  it('persists purchase quantities against their receiving warehouse independently', async () => {
+    const secondary = await transactions.create({ ...manualPayload().invoice, ref: '883001', warehouseCode: 'ACTUAL-SHELF-A' } as any,
+      'admin', undefined, 'Authenticated Receiver');
+    const main = await transactions.create({ ...manualPayload().invoice, ref: '883002', warehouseCode: 'MAIN',
+      items: [{ productId, code: 'SKU-1', name: 'Basket', qty: 2, price: 20, total: 40 }],
+      itemsTotal: 40, discount: 0, total: 40, deposit: 0, remaining: 40 } as any,
+      'admin', undefined, 'Authenticated Receiver');
+    expect((await models.Transaction.findById(secondary._id).lean() as any).warehouseCode).toBe('ACTUAL-SHELF-A');
+    expect((await models.Transaction.findById(main._id).lean() as any).warehouseCode).toBe('MAIN');
+    const inventory = (await transactions.getInventory()).find(row => row.code === 'SKU-1');
+    expect(inventory?.warehouseBalances).toMatchObject({ MAIN: 9, 'ACTUAL-SHELF-A': 3 });
+    expect(inventory?.current).toBe(12);
+    const movements = await models.InventoryMovement.find().lean() as any[];
+    expect(movements).toEqual(expect.arrayContaining([
+      expect.objectContaining({ warehouseCode: 'ACTUAL-SHELF-A', qtyDelta: 3 }),
+      expect.objectContaining({ warehouseCode: 'MAIN', qtyDelta: 2 }),
+    ]));
+  });
+  it('rejects tracked receiving into a warehouse different from its purchase invoice', async () => {
+    const request = manualPayload();
+    request.invoice.warehouseCode = 'MAIN';
+    await expect(manual.receive(request, actor)).rejects.toThrow('مخزن القطع يجب أن يطابق مخزن فاتورة الشراء');
+    expect(await models.Transaction.countDocuments()).toBe(0);
+    expect(await models.InventoryUnit.countDocuments()).toBe(0);
+    expect((await transactions.getInventory()).find(row => row.code === 'SKU-1')?.warehouseBalances).toMatchObject({ MAIN: 7 });
+  });
   it('receives a manual purchase as exactly one invoice with traceable units and no invented PO', async () => {
     const result = await manual.receive(manualPayload(), actor);
     expect(await baseline()).toEqual({ stock: 10, cash: 980, debt: 135, transactions: 1, movements: 1, vault: 1, units: 3 });
@@ -257,6 +284,38 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     const event: any = await raw('inventoryunitevents').findOne({ unitId: result.receipt.unitIds[0], action: 'registered' });
     const expectedDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(event.createdAt);
     expect(labels.labels.every(label => label.receivedDate === expectedDate)).toBe(true);
+    expect(await baseline()).toEqual({ stock: 10, cash: 980, debt: 135, transactions: 1, movements: 1, vault: 1, units: 3 });
+  });
+  it('saves a normal purchase invoice, then receives preprinted identities by scan and stored range without duplicate stock', async () => {
+    const issued = await units.issuePrelabels({ operationKey: id(), reason: 'Supplier labels', productId, quantity: 3 }, actor);
+    const printed = await units.printPrelabels(issued.batchId, { operationKey: id(), reason: 'Print supplier labels', start: 1,
+      quantity: 3, sizeId: '50x30' }, actor);
+    expect(await baseline()).toEqual({ stock: 7, cash: 1000, debt: 100, transactions: 0, movements: 0, vault: 0, units: 0 });
+    const invoice = await transactions.create({ ...manualPayload().invoice, warehouseCode: 'ACTUAL-SHELF-A' } as any,
+      'admin', undefined, 'Authenticated Receiver');
+    const invoiceId = String(invoice._id);
+    expect(await baseline()).toEqual({ stock: 10, cash: 980, debt: 135, transactions: 1, movements: 1, vault: 1, units: 0 });
+    const optionsResponse = await fetch(`${base}/inventory-units/purchases/${invoiceId}/prelabels/options`,
+      { headers: { 'x-test-role': 'receiver' } });
+    expect(optionsResponse.status).toBe(200);
+    expect(await optionsResponse.json()).toMatchObject({ receipt: { transactionId: invoiceId,
+      lines: [{ quantity: 3, createdUnits: 0 }] }, batches: [{ batchId: issued.batchId, unused: 3 }] });
+    const scanned = await units.prelabelLookup(printed.labels[0].barcode);
+    expect(scanned).toMatchObject({ batchId: issued.batchId, ordinal: 1, state: 'unused', printCount: 1 });
+    const scanResponse = await fetch(`${base}/inventory-units/purchases/${invoiceId}/prelabels/link`, { method: 'POST',
+      headers: { 'x-test-role': 'receiver', 'Content-Type': 'application/json' }, body: JSON.stringify({ operationKey: id(), reason: 'Physical QR scan', batchId: scanned.batchId,
+      lineIndex: 0, start: scanned.ordinal, quantity: 1, physicalPossessionConfirmed: true,
+      physicalLabelsConfirmed: true, inspectionPassed: true }) });
+    expect(scanResponse.status).toBe(201);
+    const byScan = await scanResponse.json();
+    const byRange = await units.linkPrelabels(invoiceId, { operationKey: id(), reason: 'Counted stored range', batchId: issued.batchId,
+      lineIndex: 0, start: 2, quantity: 2, physicalPossessionConfirmed: true,
+      physicalLabelsConfirmed: true, inspectionPassed: true }, actor);
+    expect(byScan.linked).toBe(1); expect(byRange.linked).toBe(2);
+    expect((await units.purchaseReceipts({ transactionId: invoiceId }) as any)[0].lines[0].createdUnits).toBe(3);
+    expect((await units.purchaseReceipts({ transactionId: invoiceId, page: '1' }) as any).receipts[0].lines[0].createdUnits).toBe(3);
+    expect((await units.lookup(printed.labels[0].barcode)).unit.status).toBe('available');
+    expect((await units.prelabelLookup(printed.labels[0].barcode)).state).toBe('linked');
     expect(await baseline()).toEqual({ stock: 10, cash: 980, debt: 135, transactions: 1, movements: 1, vault: 1, units: 3 });
   });
   it('persists same-key manual retries through concurrency and service restart', async () => {

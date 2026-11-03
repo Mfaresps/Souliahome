@@ -56,7 +56,7 @@
       };
       picker.querySelector('.wh-picker-options').onclick = event => {
         const button = event.target.closest('[data-wh-option]'); if (!button || button.disabled || select.disabled) return;
-        event.preventDefault(); select.value = button.dataset.whOption; picker.open = false; select.dispatchEvent(new Event('change', { bubbles: true })); enhanceSelect(select); picker.querySelector('summary').focus({ preventScroll: true });
+        event.preventDefault(); select.value = button.dataset.whOption; if (select.id === 'tx-warehouse') select.dataset.userSelected = 'true'; picker.open = false; select.dispatchEvent(new Event('change', { bubbles: true })); enhanceSelect(select); picker.querySelector('summary').focus({ preventScroll: true });
       };
       picker.onkeydown = event => {
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); picker.open = false; picker.querySelector('summary').focus(); return; }
@@ -88,7 +88,9 @@
   }
   function invoiceChip(tx) {
     const code = tx.warehouseCode || 'MAIN';
-    return `<div class="wh-invoice-chip"><span>${tr('Invoice warehouse', 'مخزن الفاتورة')}</span><strong data-warehouse-name="${esc(code)}" dir="auto">${esc(name(code))}</strong></div>`;
+    const purchase = tx.type === 'مشتريات';
+    const quantity = Array.isArray(tx.items) ? tx.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
+    return `<div class="wh-invoice-chip"><span>${purchase ? tr('Receiving warehouse', 'مخزن الاستلام') : tr('Invoice warehouse', 'مخزن الفاتورة')}</span><strong data-warehouse-name="${esc(code)}" dir="auto">${esc(name(code))}</strong>${purchase ? `<small>${tr(`${quantity} purchased pieces`, `${quantity} قطعة مشتراة`)}</small>` : ''}</div>`;
   }
   function mount() {
     const page = el('page-inventory');
@@ -226,6 +228,7 @@
   document.addEventListener('reset', () => setTimeout(mount, 0));
   document.addEventListener('change', event => {
     if (event.target.matches('[data-warehouse-select]')) mount();
+    if (event.target.id === 'tx-warehouse' && event.isTrusted) event.target.dataset.userSelected = 'true';
     if (event.target.id === 'tx-warehouse') window.refreshSaleWarehouseStock?.(true);
   });
   const originalRender = window.renderInventory;

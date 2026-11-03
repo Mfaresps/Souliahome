@@ -61,7 +61,7 @@ describe('The same order state is rendered across application views', () => {
   });
   it('uses current transaction data over an older search payload', () => {
     const { context } = fixture();
-    context.transactions = [{ _id: 't1', pickupStatus: 'Shipped', bostaOrderId: 'b1', bostaStatus: 'DELIVERED', shipCo: 'Bosta' }];
+    context.transactions = [{ _id: 't1', type: 'مبيعات', pickupStatus: 'Shipped', bostaOrderId: 'b1', bostaStatus: 'DELIVERED', shipCo: 'Bosta' }];
     const meta = context._gsOrderStatus({ id: 't1', orderState: { pickupStatus: 'Pending' } });
     expect(meta.key).toBe('DELIVERED');
     expect(context._puStatusBadge('Shipped', context.transactions[0])).toBe(states.badge(meta));
@@ -77,6 +77,14 @@ describe('The same order state is rendered across application views', () => {
     const { context } = fixture();
     context.transactions = [{ _id: 't1', pickupStatus: 'Preparing' }];
     expect(context._spPeekStatePill({ status: 'approved', transactionId: 't1' })).toContain('قيد التجهيز');
+  });
+  it('finds the linked invoice by Shopify ID when the order has no transaction ID', () => {
+    const { context } = fixture();
+    context.transactions = [
+      { _id: 'other', shopifyOrderId: 'different', pickupStatus: 'Pending' },
+      { _id: 't2', shopifyOrderId: 'shopify-3023', pickupStatus: 'Ready', bostaOrderId: 'b1', bostaStatus: 'IN_TRANSIT' },
+    ];
+    expect(context._orderStateMeta({ status: 'approved', shopifyId: 'shopify-3023' }, 'shopify').key).toBe('IN_TRANSIT');
   });
   it('does not count an unapproved receipt as confirmation in the summary', () => {
     const { context } = fixture();

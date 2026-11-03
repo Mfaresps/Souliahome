@@ -10,6 +10,7 @@
     --ui-control-font:14px;
     --ui-control-radius:8px;
     --ui-card-radius:12px;
+    --ui-table-neutral:var(--surface2);
     --fs-dash-title:var(--ui-title-size);
     --fs-th:13px;
     --fw-th:600;
@@ -18,8 +19,9 @@
   #header {height:var(--header-h);padding-inline:var(--ui-page-gap)}
   #header .header-search input {height:var(--ui-control-height);border-radius:var(--ui-control-radius);font-size:14px}
   #header .header-search input::placeholder {font-size:13px!important}
-  #main {padding:var(--ui-page-gap);min-width:0}
+  #main {padding:var(--ui-page-gap);padding-block-start:0;min-width:0}
   #main > .page {min-width:0;padding:var(--ui-page-gap)}
+  body:not(.dark-mode) #page-transaction #tx-sale-scanner {background:var(--surface2)}
   /* Size columns from their content, then share any spare width across the table.
      Long content can still scroll instead of being clipped or shrinking the font. */
   :is(#mov-table-wrap .ent-table-scroll,#shopify-orders-table-wrap .sp-table-scroll) {scrollbar-gutter:stable;overflow-x:auto;max-width:100%}
@@ -142,6 +144,12 @@
   /* Typography is shared; semantic per-column alignment wins over this default. */
   :where(#main .page) :is(th,td) {text-align:start}
   #main .page thead th {font-size:var(--fs-th);font-weight:var(--fw-th);line-height:1.5;letter-spacing:0;text-transform:none;padding-block:12px;vertical-align:middle}
+  body:not(.dark-mode) #main #mov-table thead th {background:var(--ui-table-neutral)}
+  body:not(.dark-mode) #main #shopify-orders-table-wrap {
+    --spw-frame:var(--ui-table-neutral);
+    --spw-edge:#e5e7eb;
+    --spw-rule:#eceff1;
+  }
   #main .page tbody td {font-size:var(--fs-td);line-height:1.5;vertical-align:middle}
   /* Order/transaction tables: rem-based child labels used to fall to 9–12px
      on the 14px root, bypassing the shared td size. Keep an explicit reading
@@ -174,15 +182,18 @@
   #main #shopify-orders-table-wrap .data-table thead th {position:sticky;top:0;z-index:4;padding-block:12px;background:var(--surface);overflow:visible}
   #main #shopify-orders-table-wrap .data-table :is(th,td)[data-col="action"] {inset-inline-end:auto;box-shadow:none}
   #main #shopify-orders-table-wrap .data-table tbody td[data-col="action"] {position:relative;z-index:auto;background:transparent}
-  #main #shopify-orders-table-wrap .data-table .sp-c-check {width:36px;padding-inline:6px;text-align:center}
-  /* Keep selection in its existing column, beside the order reference. */
-  #main #mov-table :is(thead th,tbody td):first-child,
-  #main #shopify-orders-table-wrap .data-table .sp-c-check {
+  /* Keep selection beside the order reference with one centered 16px checkbox. */
+  #main #mov-table :is(thead th,tbody td):first-child {
     text-align:end!important;padding-inline:8px 4px!important;
   }
-  #main #mov-table .checkbox,
-  #main #shopify-orders-table-wrap .sp-c-check input[type="checkbox"] {
+  #main #shopify-orders-table-wrap .data-table .sp-c-check {
+    width:34px;text-align:center!important;padding-inline:4px!important;
+  }
+  #main #mov-table .checkbox {
     width:20px!important;height:20px!important;min-width:20px;margin:0;padding:0;vertical-align:middle;cursor:pointer;
+  }
+  #main #shopify-orders-table-wrap .sp-c-check input[type="checkbox"] {
+    width:16px!important;height:16px!important;min-width:16px;margin:0;padding:0;vertical-align:middle;cursor:pointer;
   }
   #main #shopify-orders-table-wrap :is(.sp-client-cq,.sp-items-cq) {container-type:normal;width:auto}
   #main #shopify-orders-table-wrap .sp-client-cq {justify-content:flex-start;gap:8px}

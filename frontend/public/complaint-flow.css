@@ -1,4 +1,4 @@
-.cf-dialog{width:min(1040px,calc(100vw - 32px));max-height:90dvh;padding:0;border:1px solid var(--border,#dce5e0);border-radius:18px;background:var(--bg,#f5f8f6);color:var(--text,#17372b);box-shadow:0 24px 90px #0003;overflow:hidden}
+.cf-dialog{width:min(1040px,calc(100vw - 32px));max-height:90dvh;padding:0;border:1px solid var(--border,#dce5e0);border-radius:18px;background:var(--bg,#fff);color:var(--text,#17372b);box-shadow:0 24px 90px #0003;overflow:hidden}
 .cf-dialog{position:fixed;inset:0;margin:auto;height:fit-content}
 .cf-timeline-content>p>strong{display:inline-block;margin-inline-start:4px}
 .cf-card .cf-section-intro{margin:-3px 0 16px;color:var(--muted);font-size:12px;line-height:1.7}

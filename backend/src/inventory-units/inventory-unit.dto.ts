@@ -77,6 +77,46 @@ export class LabelRequestDto extends TrackingRequestDto {
   @IsString({ each: true }) @Matches(OBJECT_ID_PATTERN, { each: true }) unitIds: string[];
   @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
 }
+export class PrelabelIssueDto extends TrackingRequestDto {
+  @IsString() @Matches(OBJECT_ID_PATTERN) productId: string;
+  @IsInt() @Min(1) @Max(1000) quantity: number;
+}
+export class PrelabelPrintDto extends TrackingRequestDto {
+  @IsInt() @Min(1) start: number;
+  @IsInt() @Min(1) @Max(100) quantity: number;
+  @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
+  @IsOptional() @IsBoolean() allowReprint?: boolean;
+  @IsOptional() @IsString() @Matches(/^[a-f\d]{64}$/) selectionHash?: string;
+}
+export class PrelabelRangePreviewDto {
+  @IsInt() @Min(1) start: number;
+  @IsInt() @Min(1) @Max(100) quantity: number;
+  @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
+}
+export class PrelabelBulkSelectionDto {
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(20) @ArrayUnique()
+  @IsString({ each: true }) @Matches(OBJECT_ID_PATTERN, { each: true }) batchIds: string[];
+  @IsString() @IsIn(['unprinted', 'all-unused']) mode: 'unprinted' | 'all-unused';
+  @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
+}
+export class PrelabelBulkPrintDto extends PrelabelBulkSelectionDto {
+  @IsString() @Matches(/^[A-Za-z0-9:_-]{8,120}$/) operationKey: string;
+  @IsString() @MaxLength(1000) reason: string;
+  @IsString() @Matches(/^[a-f\d]{64}$/) selectionHash: string;
+  @IsBoolean() allowReprint: boolean;
+}
+export class PrelabelBulkPreviewDto extends PrelabelBulkSelectionDto {
+  @IsString() @Matches(/^[a-f\d]{64}$/) selectionHash: string;
+}
+export class PrelabelLinkDto extends TrackingRequestDto {
+  @IsString() @Matches(OBJECT_ID_PATTERN) batchId: string;
+  @IsInt() @Min(0) lineIndex: number;
+  @IsInt() @Min(1) start: number;
+  @IsInt() @Min(1) @Max(1000) quantity: number;
+  @IsBoolean() physicalPossessionConfirmed: boolean;
+  @IsBoolean() physicalLabelsConfirmed: boolean;
+  @IsBoolean() inspectionPassed: boolean;
+}
 export class CountAttestationDto extends TrackingRequestDto {
   @IsString() @Matches(OBJECT_ID_PATTERN) productId: string;
   @IsString() @MaxLength(120) countReference: string;

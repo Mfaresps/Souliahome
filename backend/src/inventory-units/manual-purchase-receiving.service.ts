@@ -66,10 +66,13 @@ export class ManualPurchaseReceivingService {
     if (!purchase) throw new NotFoundException('Purchase not found');
     const units = await this.connection.collection('inventoryunits').find({ 'origin.purchaseTransactionId': id.toLowerCase() }, { projection: { origin: 1 } }).toArray();
     const requested = await this.connection.collection('inventoryunitevents').distinct('unitId', { unitId: { $in: units.map(row => String(row._id)) }, action: { $in: ['label-print-requested', 'label-reprint-requested'] } });
+    const preprinted = await this.connection.collection('inventoryunitprelabels').find({ _id: { $in: units.map(row => row._id) },
+      state: 'linked', printCount: { $gt: 0 } }, { projection: { _id: 1 } }).toArray();
+    const printedIds = new Set([...requested.map(String), ...preprinted.map(row => String(row._id))]);
     const lines = (purchase.items || []).map((line: any) => ({ lineId: line.lineId, sku: line.code, receivedQty: line.qty, createdUnits: units.filter(row => row.origin.purchaseLineId === line.lineId).length }));
     const unresolvedErrors: string[] = [];
     if (purchase.cancelled || purchase.archived) unresolvedErrors.push('Purchase reversed/archived; retain identities and review physical custody');
-    if (units.length && lines.some((line: any) => line.createdUnits !== line.receivedQty)) unresolvedErrors.push('Current purchase lines differ from unit identities; reconciliation required');
-    return { transactionId: id.toLowerCase(), lines, createdUnits: units.length, labelRequests: requested.length, physicalPrintingVerified: false, unresolvedErrors, enforcementEnabled: false };
+    if (units.length && lines.some((line: any) => line.createdUnits > line.receivedQty)) unresolvedErrors.push('Unit identities exceed the current purchase quantity; reconciliation required');
+    return { transactionId: id.toLowerCase(), lines, createdUnits: units.length, labelRequests: printedIds.size, physicalPrintingVerified: false, unresolvedErrors, enforcementEnabled: false };
   }
 }

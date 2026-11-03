@@ -1,0 +1,357 @@
+/* Reports: a quiet, data-first workspace built on Soulia's green identity. */
+#page-reports {
+  --rep-ink: var(--text);
+  --rep-muted: color-mix(in srgb, var(--text) 66%, var(--surface));
+  --rep-line: var(--border);
+  --rep-canvas: color-mix(in srgb, var(--surface2) 76%, var(--surface));
+  max-width: 1480px;
+  padding: 24px;
+  background: var(--rep-canvas);
+  box-shadow: none;
+  border-radius: 20px;
+}
+
+#page-reports .rep-page-header {
+  overflow: hidden;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border: 1px solid var(--rep-line);
+  border-radius: 16px;
+}
+#page-reports .rep-page-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 22px 24px 18px;
+}
+#page-reports .rep-page-top .page-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--rep-ink);
+}
+#page-reports .rep-page-top .page-subtitle {
+  margin-top: 4px;
+  color: var(--rep-muted);
+  font-size: 13px;
+}
+#page-reports #rep-export-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#page-reports #rep-export-actions .btn {
+  min-height: 38px;
+  padding-inline: 14px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+#page-reports #rep-export-actions .btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+body.dark-mode #page-reports #rep-export-actions .btn-primary { color: #fff; }
+
+#page-reports .rep-section-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0 16px 12px;
+  border: 0;
+  overflow-x: auto;
+}
+#page-reports .rep-sec-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--rep-muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+#page-reports .rep-sec-tab svg { width: 15px; height: 15px; }
+#page-reports .rep-sec-tab:hover {
+  color: var(--rep-ink);
+  background: var(--surface2);
+}
+#page-reports .rep-sec-tab.active,
+#page-reports .rep-sec-tab.active:hover {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+#page-reports .rep-sec-tab:focus-visible,
+#page-reports .rep-filter button:focus-visible,
+#page-reports .rep-filter input:focus-visible,
+#page-reports #rep-export-actions button:focus-visible,
+#page-reports #profit-search:focus-visible,
+#page-reports .ds-kpi-info-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#page-reports .rep-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 0;
+  border-top: 1px solid var(--rep-line);
+  border-radius: 0;
+}
+#page-reports .rep-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--rep-line);
+  border-radius: 11px;
+}
+#page-reports .rep-presets .tab-btn {
+  min-height: 32px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--rep-muted);
+  font-size: 12px;
+}
+#page-reports .rep-presets .tab-btn:hover { color: var(--rep-ink); }
+#page-reports .rep-presets .tab-btn.active {
+  color: var(--rep-ink);
+  background: var(--surface);
+  border-color: var(--rep-line);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+#page-reports .rep-filter-divider { width: 1px; height: 28px; background: var(--rep-line); flex-shrink: 0; }
+#page-reports .rep-date-range { gap: 10px; }
+#page-reports .rep-date-range label { color: var(--rep-muted); font-size: 12px; font-weight: 600; }
+#page-reports .rep-date-range input {
+  width: 142px;
+  min-height: 36px;
+  padding: 5px 8px;
+  color: var(--rep-ink);
+  background: var(--surface);
+  border: 1px solid var(--rep-line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+#page-reports #rep-period-echo {
+  margin-inline-start: auto;
+  color: var(--rep-muted);
+  font-size: 12px;
+  white-space: normal;
+}
+
+#page-reports .rep-kpi-dashboard { display: grid; gap: 22px; margin: 0 0 22px; }
+#page-reports #rep-stats:has(> .ss-skeleton-wrap) { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+#page-reports .rep-kpi-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 10px;
+}
+#page-reports .rep-kpi-section-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--rep-ink); }
+#page-reports .rep-kpi-section-head p { margin: 0; font-size: 12px; color: var(--rep-muted); }
+#page-reports .rep-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+#page-reports .rep-kpi-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 128px;
+  padding: 16px 17px 13px;
+  background: var(--surface);
+  border: 1px solid var(--rep-line);
+  border-radius: 14px;
+  box-shadow: none;
+  transition: border-color .16s ease, background .16s ease;
+}
+#page-reports .rep-kpi-card:hover { transform: none; box-shadow: none; }
+#page-reports .rep-kpi-card.is-drill:hover { border-color: var(--accent); background: color-mix(in srgb, var(--primary-pale) 32%, var(--surface)); }
+#page-reports .rep-kpi-open { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; padding: 0; background: transparent; border: 0; border-radius: inherit; cursor: pointer; }
+#page-reports .rep-kpi-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#page-reports .rep-kpi-card .ds-kpi-info-btn { position: relative; z-index: 2; }
+#page-reports .rep-kpi-card--rep_sales { border-color: color-mix(in srgb, var(--accent) 42%, var(--rep-line)); }
+#page-reports .rep-kpi-card--rep_sales::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 16px;
+  inset-inline-start: 17px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+#page-reports .rep-kpi-card--rep_sales .rep-kpi-label { padding-inline-start: 13px; }
+#page-reports .rep-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#page-reports .rep-kpi-label { color: var(--rep-muted); font-size: 12px; font-weight: 600; line-height: 1.5; }
+#page-reports .rep-kpi-card .ds-kpi-info-btn {
+  width: 26px;
+  height: 26px;
+  border-width: 1px;
+  color: var(--rep-muted);
+  font-size: 11px;
+}
+#page-reports .rep-kpi-value {
+  margin: 7px 0 auto;
+  color: var(--rep-ink);
+  font-size: clamp(20px, 1.8vw, 28px);
+  font-weight: 600;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+#page-reports .rep-kpi-section--overview .rep-kpi-value { font-size: clamp(23px, 2.1vw, 30px); }
+#page-reports .rep-kpi-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rep-line);
+  color: var(--rep-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+#page-reports .rep-kpi-drill-hint { position: static; display: inline-flex; opacity: .7; color: var(--rep-muted); }
+#page-reports .rep-kpi-card.is-drill:hover .rep-kpi-drill-hint { color: var(--accent); opacity: 1; }
+
+#page-reports .rep-tab-panel .card,
+#page-reports .rv-card { background: var(--surface); border-color: var(--rep-line); box-shadow: none; border-radius: 14px; }
+#page-reports .rep-best-seller { padding: 17px 20px; }
+#page-reports .rep-best-seller-content { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 20px; }
+#page-reports .rep-best-seller-identity { min-width: 0; }
+#page-reports .rep-best-seller-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--rep-muted); font-size: 12px; }
+#page-reports .rep-best-seller-mark { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+#page-reports #rep-best-seller-name { margin-top: 5px; color: var(--rep-ink); font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+#page-reports .rep-best-seller-stat { min-width: 115px; padding-inline-start: 20px; border-inline-start: 1px solid var(--rep-line); }
+#page-reports .rep-best-seller-stat > div:first-child { color: var(--rep-muted); font-size: 12px; }
+#page-reports .rep-best-seller-stat > div:last-child { margin-top: 4px; color: var(--rep-ink); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#page-reports .rep-profit-panel { padding: 0; overflow: hidden; }
+#page-reports .rep-profit-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 20px; }
+#page-reports .rep-profit-head h3 { margin: 0; color: var(--rep-ink); font-size: 16px; font-weight: 700; }
+#page-reports .rep-profit-head p { margin: 3px 0 0; color: var(--rep-muted); font-size: 12px; }
+#page-reports .rep-profit-search { display: block; }
+#page-reports #profit-search { width: min(260px, 100%); min-height: 38px; padding: 7px 12px; color: var(--rep-ink); background: var(--surface); border: 1px solid var(--rep-line); border-radius: 9px; font-size: 13px; }
+#page-reports #rep-profit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#page-reports #rep-profit-table thead tr { background: var(--surface); border-block: 1px solid var(--rep-line); }
+#page-reports #rep-profit-table th { padding: 10px 12px !important; color: var(--rep-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+#page-reports #rep-profit-table td { padding: 11px 12px !important; color: var(--rep-ink); border-bottom: 1px solid var(--rep-line); font-variant-numeric: tabular-nums; }
+#page-reports #rep-profit-table .rep-cell-rank { color: var(--rep-muted); text-align: center; }
+#page-reports #rep-profit-table .rep-cell-name { font-weight: 600; }
+#page-reports #rep-profit-table .rep-cell-num { text-align: end; }
+#page-reports #rep-profit-table .rep-cell-num.is-loss { color: var(--red); }
+#page-reports #rep-profit-table .rep-cell-outcome { text-align: center; }
+#page-reports #rep-profit-table .rep-money { display: inline-flex; align-items: baseline; gap: 4px; direction: ltr; white-space: nowrap; }
+#page-reports #rep-profit-table .rep-outcome { display: inline-block; min-width: 48px; padding: 2px 8px; color: var(--rep-muted); background: var(--surface2); border-radius: 999px; font-size: 11px; text-align: center; }
+#page-reports #rep-profit-table .rep-outcome.is-loss { color: var(--red); background: color-mix(in srgb, var(--red) 10%, var(--surface)); }
+#page-reports #rep-profit-table tbody tr:last-child td { border-bottom: 0; }
+#page-reports #rep-profit-table tbody tr:hover { background: var(--surface2); }
+#page-reports .rv-stack { margin-top: 0; }
+#page-reports .rv-title { font-size: 16px; }
+#page-reports .rv-sub { color: var(--rep-muted); }
+
+@media (max-width: 1080px) {
+  #page-reports .rep-kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  #page-reports #rep-stats:has(> .ss-skeleton-wrap) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  #page-reports { padding: 14px; border-radius: 14px; }
+  #page-reports .rep-page-top { padding: 18px 16px 14px; }
+  #page-reports #rep-export-actions .btn { min-height: 44px; }
+  #page-reports .rep-section-tabs { padding-inline: 10px; }
+  #page-reports .rep-sec-tab { min-height: 44px; }
+  #page-reports .rep-sec-tab svg { display: none; }
+  #page-reports .rep-filter { align-items: stretch; padding: 12px 14px; }
+  #page-reports .rep-filter-divider { display: none; }
+  #page-reports .rep-presets { justify-content: space-between; }
+  #page-reports .rep-presets .tab-btn { min-height: 44px; flex: 1 1 auto; padding-inline: 8px; }
+  #page-reports .rep-date-range { justify-content: space-between; }
+  #page-reports .rep-date-range label { flex: 1 1 0; }
+  #page-reports .rep-date-range input { flex: 1; width: 100%; min-width: 0; min-height: 44px; font-size: 16px; }
+  #page-reports #rep-period-echo { margin-inline-start: 0; }
+  #page-reports .rep-kpi-dashboard { gap: 20px; }
+  #page-reports .rep-kpi-card { min-height: 118px; padding: 13px; }
+  #page-reports .rep-kpi-card .ds-kpi-info-btn { width: 44px; height: 44px; border: 0; background: transparent; }
+  #page-reports .rep-kpi-card .ds-kpi-info-btn::before { content: ''; position: absolute; inset: 8px; border: 1px solid var(--rep-line); border-radius: 50%; }
+  #page-reports .rep-kpi-top { min-height: 44px; }
+  #page-reports .rep-kpi-label { padding-inline-end: 44px; }
+  #page-reports .rep-kpi-top .ds-kpi-info-btn { position: absolute; inset-block-start: 6px; inset-inline-end: 7px; }
+  #page-reports .rep-kpi-card--rep_sales::before { inset-block-start: 15px; inset-inline-start: 13px; }
+  #page-reports .rep-kpi-value { font-size: 22px; }
+  #page-reports .rep-kpi-section--overview .rep-kpi-value { font-size: 24px; }
+  #page-reports .rep-best-seller-content { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+  #page-reports .rep-best-seller-identity { grid-column: 1/-1; }
+  #page-reports .rep-best-seller-stat { min-width: 0; padding: 0; border: 0; }
+  #page-reports .rep-profit-search { flex: 1 1 100%; }
+  #page-reports #profit-search { width: 100%; min-height: 44px; font-size: 16px; }
+  #page-reports .rep-profit-panel .overflow-x { overflow: visible; }
+  #page-reports #rep-profit-table,
+  #page-reports #rep-profit-table tbody { display: block; width: 100%; }
+  #page-reports #rep-profit-table thead { display: none; }
+  #page-reports #rep-profit-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 0;
+    padding: 12px 16px;
+    border-top: 1px solid var(--rep-line);
+  }
+  #page-reports #rep-profit-table td {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 0 !important;
+    border: 0;
+    text-align: start !important;
+    white-space: nowrap;
+  }
+  #page-reports #rep-profit-table td:first-child { display: none; }
+  #page-reports #rep-profit-table td.empty-state { display: block !important; }
+  #page-reports #rep-profit-table td:nth-child(2) { padding-bottom: 11px !important; font-size: 14px; font-weight: 700; white-space: normal; }
+  #page-reports #rep-profit-table td[data-label]::before { content: attr(data-label); color: var(--rep-muted); font-size: 11px; font-weight: 500; }
+  #page-reports #rep-profit-table tbody tr:last-child { border-bottom: 0; }
+}
+@media (max-width: 430px) {
+  #page-reports { padding: 10px; border: 0; }
+  #page-reports .rep-presets { flex-wrap: nowrap; }
+  #page-reports .rep-presets .tab-btn { min-width: 0; flex: 1 1 0; padding-inline: 4px; }
+  #page-reports .rep-kpi-grid { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  #page-reports .rep-kpi-section--finance .rep-kpi-grid,
+  #page-reports .rep-kpi-section--collection .rep-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #page-reports .rep-kpi-card { min-height: 108px; padding: 12px 14px; }
+  #page-reports .rep-kpi-section--finance .rep-kpi-card,
+  #page-reports .rep-kpi-section--collection .rep-kpi-card { min-height: 118px; padding: 10px; }
+  #page-reports #rep-stats:has(> .ss-skeleton-wrap) { grid-template-columns: minmax(0,1fr); }
+  #page-reports .rep-kpi-section--finance .rep-kpi-value,
+  #page-reports .rep-kpi-section--collection .rep-kpi-value { font-size: 18px; }
+  #page-reports .rep-kpi-card--rep_sales::before { inset-block-start: 14px; inset-inline-start: 11px; }
+  #page-reports .rep-kpi-label { font-size: 11px; }
+  #page-reports .rep-kpi-value,
+  #page-reports .rep-kpi-section--overview .rep-kpi-value { font-size: 24px; }
+  #page-reports .rep-kpi-foot { font-size: 10px; }
+}
+@media (max-width: 360px) {
+  #page-reports .rep-kpi-section--finance .rep-kpi-grid,
+  #page-reports .rep-kpi-section--collection .rep-kpi-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #page-reports .rep-sec-tab,
+  #page-reports .rep-kpi-card { transition: none; }
+  #page-reports .rep-tab-panel { animation: none; }
+}

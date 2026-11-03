@@ -8,6 +8,8 @@ const start = html.indexOf('let _pmSelOpen = null;');
 const end = html.indexOf('/** Renders the extra-images gallery', start);
 const supplierStart = html.indexOf('function _onNewSupplierChange(');
 const supplierFn = html.slice(supplierStart, html.indexOf('\n}', supplierStart) + 2);
+const warehouseSuggestionStart = html.indexOf('let _purchaseWarehouseSuggestion = 0;');
+const warehouseSuggestionEnd = html.indexOf('function addTxItem(productId)', warehouseSuggestionStart);
 const cssStart = html.indexOf('.pm-sel{');
 const cssEnd = html.indexOf('.pm-sel-btn .pm-mat-ic', cssStart);
 
@@ -28,8 +30,10 @@ const cssEnd = html.indexOf('.pm-sel-btn .pm-mat-ic', cssStart);
     assert.equal(await page.$eval('#tx-supplier', el => el.value), 'Talla');
     assert.equal(await page.$eval('#tx-phone', el => el.value), '01222222222');
     await page.click('#tx-supplier + .pm-sel-btn');
-    await page.type('.pm-sel-search', 'No phone');
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => {
+      const input = document.querySelector('.pm-sel-search'); input.value = 'No phone'; input.dispatchEvent(new Event('input', { bubbles: true }));
+      [...document.querySelectorAll('.pm-sel-opt')].find(option => option.textContent.includes('No phone'))?.click();
+    });
     assert.equal(await page.$eval('#tx-phone', el => el.value), '');
     await page.evaluate(() => { document.querySelector('#tx-supplier').value = 'Laser'; });
     assert.equal(await page.$eval('#tx-supplier + .pm-sel-btn .pm-sel-txt', el => el.textContent), 'Laser Ray');
@@ -43,7 +47,20 @@ const cssEnd = html.indexOf('.pm-sel-btn .pm-mat-ic', cssStart);
     await page.click('#tx-account + .pm-sel-btn');
     await page.keyboard.press('Tab');
     assert.equal(await page.$eval('#tx-account + .pm-sel-btn', el => el.getAttribute('aria-expanded')), 'false');
-    console.log('Passed: styled supplier/payment lists, search, keyboard choice, disabled options, phone updates, programmatic value, Escape and Tab.');
+    await page.evaluate(() => {
+      document.body.insertAdjacentHTML('beforeend', '<select id="tx-warehouse"><option value="MAIN">Main</option><option value="BRANCH">Branch</option></select>');
+      window.SouliaWarehouseLayout = { load: async () => ({}), describe: () => ({ warehouseCode: 'BRANCH' }) };
+      window.SouliaWarehouses = { load: async () => [] };
+    });
+    await page.addScriptTag({ content: `let txType='مشتريات',txItems=[{productId:'p1'}];${html.slice(warehouseSuggestionStart, warehouseSuggestionEnd)}` });
+    await page.evaluate(async () => { await suggestPurchaseWarehouse({ _id: 'p1', storageLocationId: 'level-1' }); });
+    assert.equal(await page.$eval('#tx-warehouse', el => el.value), 'BRANCH');
+    await page.evaluate(async () => {
+      const field = document.querySelector('#tx-warehouse'); field.value = 'MAIN'; field.dataset.userSelected = 'true';
+      await suggestPurchaseWarehouse({ _id: 'p1', storageLocationId: 'level-1' });
+    });
+    assert.equal(await page.$eval('#tx-warehouse', el => el.value), 'MAIN', 'manual receiving warehouse must take precedence');
+    console.log('Passed: styled supplier/payment lists, keyboard choice, receiving warehouse suggestion and manual override.');
   } finally {
     await browser.close();
   }

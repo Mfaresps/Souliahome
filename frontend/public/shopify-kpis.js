@@ -263,8 +263,9 @@ function _spkRender(state) {
     : _spkEsc(_spkT('noOrders'));
   const fuWarn = (typeof loadFailed === 'function' && loadFailed('followups'))
     ? `<span class="spk-warn">${_spkEsc(_spkT('fuFail'))}</span>` : '';
-  const openNote = s.open
-    ? `<span class="spk-open"><bdi>${_spkN(s.open)}</bdi> ${_spkEsc(_spkT('open'))}</span>` : '';
+  const openNote = !loading && s.open
+    ? `<span class="spk-open"><bdi>${_spkN(s.open)}</bdi> ${_spkEsc(_spkT('open'))}</span>`
+    : `<span class="spk-open spk-open-placeholder" aria-hidden="true"><bdi>0</bdi> ${_spkEsc(_spkT('open'))}</span>`;
 
   host.innerHTML = `
     <div class="spk-head">
@@ -429,7 +430,7 @@ async function _spkDrawReport(s) {
   let y = P;
   /* Brand row: logo + SOULIA at the start, the period chip at the end. */
   if (logo) x.drawImage(logo, X(P, 64), y, 64, 64);
-  x.fillStyle = '#00311e'; font(700, 30);
+  x.fillStyle = '#2d7a4f'; font(700, 30);
   text('SOULIA', P + (logo ? 82 : 0), y + 43);
   y += 64 + 34;
 

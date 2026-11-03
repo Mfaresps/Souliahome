@@ -91,9 +91,12 @@ export class InventoryScanningService {
         return { outcome: 'accepted', code: 'VALIDATED', unit: result.unit, eligibilityOnly: true, stockChanged: false, lifecycleChanged: false };
       }
       const unit: any = await this.units.findOne(await this.tracking.identifierFilter(dto.identifier, session)).session(session).lean();
+      const prelabel = !unit ? await this.connection.collection('inventoryunitprelabels').findOne(
+        OBJECT_ID_PATTERN.test(dto.identifier.trim()) ? { _id: this.id(dto.identifier.trim()) } : { barcode: dto.identifier.trim().toUpperCase() },
+        { session, projection: { state: 1 } }) : null;
       // Same lock order as lifecycle writes: product first; concurrent audit sequences retry safely.
       if (unit) await this.connection.collection('products').updateOne({ _id: this.id(unit.productId) }, { $inc: { unitTrackingRevision: 1 } }, { session });
-      const code = await this.check(unit, dto, actor, session);
+      const code = prelabel ? prelabel.state === 'unused' ? 'PREPRINTED_NOT_LINKED' : 'UNAVAILABLE_UNIT' : await this.check(unit, dto, actor, session);
       if (code) return { outcome: 'rejected', code, stockChanged: false, lifecycleChanged: false };
       const last: any = await this.events.findOne({ unitId: String(unit._id) }).sort({ sequence: -1 }).session(session).lean();
       await new this.events({ unitId: String(unit._id), sequence: (last?.sequence || 0) + 1,
@@ -104,7 +107,7 @@ export class InventoryScanningService {
           expectedProductId: dto.productId || null, transactionId: dto.transactionId || null, lineId: dto.lineId || null,
           manualSelectionConfirmed: manual, custodyConfirmed: false } }).save({ session });
       const [identified] = await this.tracking.withManualCodes([unit]);
-      return { outcome: 'accepted', code: 'VALIDATED', unit: { _id: String(unit._id), barcode: unit.barcode, manualCode: identified.manualCode, productId: unit.productId, status: unit.status, version: unit.__v },
+      return { outcome: 'accepted', code: 'VALIDATED', unit: { _id: String(unit._id), barcode: unit.barcode, manualCode: identified.manualCode, productId: unit.productId, warehouseCode: unit.warehouseCode, status: unit.status, version: unit.__v },
         supplierReturn: await this.tracking.supplierReturnInfo(unit, session), stockChanged: false, lifecycleChanged: false, eligibilityOnly: true };
     });
   }

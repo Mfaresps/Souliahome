@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
   ForbiddenException,
@@ -44,6 +45,12 @@ export class ProductsController {
   @Get()
   async findAll() {
     return this.productsService.findAll();
+  }
+
+  @Get('suggest-sku')
+  @RequirePerms('products-sku-manage')
+  async suggestSku(@Query('name') name = '', @Query('exclude') exclude = '') {
+    return { code: await this.productsService.suggestProductCode(name, exclude) };
   }
 
   @Get('analytics/card/:productCodeOrName')

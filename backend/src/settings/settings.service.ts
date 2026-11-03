@@ -984,9 +984,12 @@ export class SettingsService {
     // Raw-driver warehouse collections are not discovered through Mongoose models.
     'warehouses',
     'warehousetransfers',
+    'warehouselayoutnodes',
     'inventorypacks', 'inventoryunits',
     'inventoryunitevents',
     'inventoryunitoperations',
+    'inventoryunitprelabelbatches',
+    'inventoryunitprelabels',
     'inventoryunitcodes',
     'inventoryunitcodecounters',
     // ── Per-segment vault balances (settings.vault* is only a mirror of these) ──
@@ -1873,7 +1876,7 @@ export class SettingsService {
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
     transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'carrierimports', 'carrierpayouts'],
-    inventoryUnits: ['warehouses', 'warehousetransfers', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitcodes', 'inventoryunitcodecounters'],
+    inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitcodes', 'inventoryunitcodecounters'],
     products:       ['products', 'categories', 'collections', 'collectionproducts'],
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],

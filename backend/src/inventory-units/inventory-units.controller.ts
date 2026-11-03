@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { InventoryUnitsService, TrackingActor } from './inventory-units.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
 import { InventoryScanningService } from './inventory-scanning.service';
 import { EligibleScanQueryDto, ScanRequestDto } from './inventory-scan.dto';
 import { ManualPurchaseReceivingService } from './manual-purchase-receiving.service';
@@ -46,6 +46,40 @@ export class InventoryUnitsController {
   }
   @Get('purchases/:id/receipt') @RequirePerms('purchase-view')
   manualSummary(@Param('id') id: string) { return this.manualReceiving.summary(id); }
+  @Post('prelabels/batches') @RequirePerms('inventory-units-view', 'inventory-units-print')
+  issuePrelabels(@Body() dto: PrelabelIssueDto, @Req() req: { user: TrackingActor }) { return this.service.issuePrelabels(dto, req.user); }
+  @Post('prelabels/bulk/preview') @RequirePerms('inventory-units-view', 'inventory-units-print')
+  previewPrelabelBulk(@Body() dto: PrelabelBulkSelectionDto) { return this.service.previewPrelabelBulk(dto); }
+  @Post('prelabels/bulk/labels') @RequirePerms('inventory-units-view', 'inventory-units-print')
+  previewPrelabelBulkLabels(@Body() dto: PrelabelBulkPreviewDto) { return this.service.previewPrelabelBulkLabels(dto); }
+  @Post('prelabels/batches/:id/preview') @RequirePerms('inventory-units-view', 'inventory-units-print')
+  previewPrelabelRange(@Param('id') id: string, @Body() dto: PrelabelRangePreviewDto) { return this.service.previewPrelabelRange(id, dto); }
+  @Post('prelabels/bulk/print') @RequirePerms('inventory-units-view', 'inventory-units-print')
+  printPrelabelBulk(@Body() dto: PrelabelBulkPrintDto, @Req() req: { user: TrackingActor }) { return this.service.printPrelabelBulk(dto, req.user); }
+  @Get('prelabels/batches') @RequirePerms('inventory-units-view')
+  prelabelBatches(@Query('productId') productId?: string) { return this.service.prelabelBatches(productId); }
+  @Get('prelabels/batches/page') @RequirePerms('inventory-units-view')
+  prelabelBatchPage(@Query() query: Record<string, string>) { return this.service.prelabelBatchPage(query); }
+  @Get('prelabels/lookup') @RequirePerms('purchase-view', 'inventory-units-receive')
+  prelabelLookup(@Query('identifier') identifier: string) { return this.service.prelabelLookup(identifier); }
+  @Get('prelabels/batches/:id/range') @RequirePerms('inventory-units-view')
+  prelabelRange(@Param('id') id: string, @Query('start', ParseIntPipe) start: number, @Query('quantity', ParseIntPipe) quantity: number) {
+    return this.service.prelabelRange(id, start, quantity);
+  }
+  @Get('prelabels/batches/:id') @RequirePerms('inventory-units-view')
+  prelabelBatchDetails(@Param('id') id: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.service.prelabelBatchDetails(id, Number(page || 1), Number(limit || 20));
+  }
+  @Post('prelabels/batches/:id/print') @RequirePerms('inventory-units-print')
+  printPrelabels(@Param('id') id: string, @Body() dto: PrelabelPrintDto, @Req() req: { user: TrackingActor }) {
+    return this.service.printPrelabels(id, dto, req.user);
+  }
+  @Post('purchases/:id/prelabels/link') @RequirePerms('purchase-view', 'inventory-units-receive')
+  linkPrelabels(@Param('id') id: string, @Body() dto: PrelabelLinkDto, @Req() req: { user: TrackingActor }) {
+    return this.service.linkPrelabels(id, dto, req.user);
+  }
+  @Get('purchases/:id/prelabels/options') @RequirePerms('purchase-view', 'inventory-units-receive')
+  prelabelReceiptOptions(@Param('id') id: string) { return this.service.prelabelReceiptOptions(id); }
   @Post('scans/validate') @RequirePerms('inventory-units-view')
   scan(@Body() dto: ScanRequestDto, @Req() req: { user: TrackingActor }) { return this.scanning.validate(dto, req.user); }
   @Get('scans/eligible') @RequirePerms('inventory-units-view', 'inventory-units-manual-select')

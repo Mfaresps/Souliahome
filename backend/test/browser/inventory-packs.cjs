@@ -64,9 +64,8 @@ async function main(){
   assert.doesNotMatch(await page.$eval('#ip-list',e=>e.textContent),/Previous pack/);
   assert.match(await page.$eval('#ip-list',e=>e.textContent),/PK-000001-8/);
   assert.match(await page.$eval('#ip-preview',e=>e.textContent),/PK-000001-8/);
-  assert.equal(await page.$eval('#ip-preview .iu-label-invoice-date',e=>e.textContent),'Inv: 20/10/2026');
-  assert.equal(await page.$eval('#ip-preview .iu-label-invoice-date',e=>getComputedStyle(e).display),'block');
-  assert.equal(await page.$eval('#ip-preview .iu-label-invoice-date',e=>e.previousElementSibling.className),'iu-label-sku');
+   assert.equal(await page.$('#ip-preview .iu-label-invoice-date'),null);
+   assert.equal(await page.$('#ip-preview .iu-label-print-date'),null);
   await page.click('#ip-history-toggle');await page.waitForFunction(()=>document.querySelectorAll('#ip-list .ip-row').length===5);
   await page.evaluate(()=>{document.querySelector('#ip-list').scrollTop=60;});
   assert.ok(await page.$eval('#ip-list',e=>e.scrollTop>0));

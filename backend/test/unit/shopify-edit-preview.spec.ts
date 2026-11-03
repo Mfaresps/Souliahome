@@ -130,6 +130,10 @@ it('gives employees and administrators distinct visible pending labels without d
     const ui = preview(admin);
     const pendingOrder = { ...order, _id: 'o1', editRequest: { status: 'معلق' } };
     expect(ui.env._spOrderEditMark(pendingOrder)).toContain(admin ? 'Edit request needs approval' : 'Awaiting edit approval');
+    const compactMark = ui.env._spOrderEditMark(pendingOrder, true);
+    expect(compactMark).toContain('is-compact');
+    expect(compactMark).toContain(`aria-label="${admin ? 'Edit request needs approval' : 'Awaiting edit approval'}"`);
+    expect(compactMark).not.toContain(`<span>${admin ? 'Edit request needs approval' : 'Awaiting edit approval'}</span>`);
     expect(ui.env._spEditReviewActions(pendingOrder).includes('decideShopifyEdit')).toBe(admin);
     pendingOrder.editRequest.status = 'معتمد';
     expect(ui.env._spOrderEditMark(pendingOrder)).toContain('Edit approved');

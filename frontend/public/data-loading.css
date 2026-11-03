@@ -4,9 +4,15 @@
   --data-motion-ease: cubic-bezier(.22, .61, .36, 1);
 }
 
-/* One narrow sheen moves over stable geometry; the base never changes color. */
-.ss-skeleton,
-.iu-skeleton {
+/* Neutral placeholders share the same palette as the loaded work surfaces. */
+body:not(.dark-mode) :is(.ss-skeleton,.iu-skeleton) {
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb;
+  background-size: auto;
+  animation: none;
+}
+body.dark-mode :is(.ss-skeleton,.iu-skeleton) {
   position: relative;
   overflow: hidden;
   background: var(--border);

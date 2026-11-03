@@ -103,13 +103,16 @@ export class PurchaseReceivingService {
     const tx = OBJECT_ID_PATTERN.test(po.linkedTransactionId || '') ? await this.connection.collection('transactions').findOne({ _id: new Types.ObjectId(po.linkedTransactionId) }) : null;
     const units = await this.connection.collection('inventoryunits').find({ 'origin.purchaseOrderId': id.toLowerCase() }, { projection: { barcode: 1, origin: 1, status: 1 } }).toArray();
     const requested = await this.connection.collection('inventoryunitevents').distinct('unitId', { unitId: { $in: units.map(unit => String(unit._id)) }, action: { $in: ['label-print-requested', 'label-reprint-requested', 'label-printed', 'label-reprinted'] } });
+    const preprinted = await this.connection.collection('inventoryunitprelabels').find({ _id: { $in: units.map(unit => unit._id) },
+      state: 'linked', printCount: { $gt: 0 } }, { projection: { _id: 1 } }).toArray();
+    const printedIds = new Set([...requested.map(String), ...preprinted.map(row => String(row._id))]);
     const errors: string[] = [];
     if (tx?.cancelled || tx?.archived) errors.push('الفاتورة ملغاة/مؤرشفة: لا تُحذف الوحدات؛ يلزم فحص الحيازة ومراجعة إجراءات العكس الحالية');
     const lines = (tx?.items || []).map((line: any) => ({ lineId: line.lineId, sku: line.code, receivedQty: line.qty,
       invoiceLinePrice: line.price, createdUnits: units.filter(unit => unit.origin.purchaseLineId === line.lineId).length }));
-    if (units.length && lines.some((line: any) => line.createdUnits !== line.receivedQty)) errors.push('كميات الوحدات لا تطابق السطور الحالية للفاتورة؛ مراجعة مطلوبة');
+    if (units.length && lines.some((line: any) => line.createdUnits > line.receivedQty)) errors.push('عدد هويات القطع يتجاوز كمية الفاتورة الحالية؛ مراجعة مطلوبة');
     return { purchaseOrderId: id.toLowerCase(), transactionId: po.linkedTransactionId || null, supplierId: po.supplierId,
-      posted: !!tx, reversedOrArchived: !!(tx?.cancelled || tx?.archived), lines, createdUnits: units.length, labelRequests: requested.length,
-      labelsWithoutRequests: units.length - requested.length, physicalPrintingVerified: false, unresolvedErrors: errors, enforcementEnabled: false };
+      posted: !!tx, reversedOrArchived: !!(tx?.cancelled || tx?.archived), lines, createdUnits: units.length, labelRequests: printedIds.size,
+      labelsWithoutRequests: units.length - printedIds.size, physicalPrintingVerified: false, unresolvedErrors: errors, enforcementEnabled: false };
   }
 }

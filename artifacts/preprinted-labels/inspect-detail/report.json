@@ -1,0 +1,1309 @@
+{
+ "url": "artifacts/preprinted-labels/workspace-detail.html",
+ "at": "2026-11-03T01:17:05.091Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.91
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 112,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 2,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 86,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Arial"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Arial",
+       "share": 0.96,
+       "mono": false
+      },
+      {
+       "family": "monospace",
+       "share": 0.04,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      24
+     ],
+     "sizeCount": 6,
+     "notLoaded": [],
+     "body": {
+      "font": "Arial",
+      "size": 13,
+      "leading": 1.8,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 5.6
+     },
+     "measureChars": 49,
+     "max": {
+      "size": 24,
+      "vw": 1.7,
+      "font": "Arial",
+      "text": "تفاصيل الدفعة والطباعة"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "monospace"
+     ],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.03,
+     "smallText": 4
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f5f7f6",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.11,
+      "l": 0.96
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 20,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#56665e",
+       "share": 0.67
+      },
+      {
+       "color": "#18392e",
+       "share": 0.32
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#18392e"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 8,
+     "height": 42,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "رجوع للدفعات",
+      "طباعة"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.sl-counts 1350px"
+     ],
+     "outlinedBoxes": 4,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 4,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": false,
+     "height": 21,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": 45,
+     "right": 45
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "تفاصيل الدفعة والطباعة",
+      "size": 24,
+      "top": 86,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 866,
+      "n": 1
+     },
+     {
+      "x": 921,
+      "n": 1
+     },
+     {
+      "x": 1212,
+      "n": 1
+     },
+     {
+      "x": 1289,
+      "n": 1
+     },
+     {
+      "x": 1302,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.18,
+    "voidBox": {
+     "x": 0,
+     "y": 600,
+     "w": 780,
+     "h": 300
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f5f7f6",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 45,
+     "right": 45
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 24,
+     "vw": 1.7,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 86,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       10,
+       3
+      ],
+      [
+       16,
+       1
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 0.67,
+     "kpiMax": 24
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.12,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      24
+     ]
+    },
+    "title": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "size": 24,
+     "top": 86
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.85
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1024,
+     "screens": 1,
+     "words": 112,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 2,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 82,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "lines": 1,
+     "size": 24,
+     "font": "Arial"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Arial",
+       "share": 0.96,
+       "mono": false
+      },
+      {
+       "family": "monospace",
+       "share": 0.04,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      24
+     ],
+     "sizeCount": 6,
+     "notLoaded": [],
+     "body": {
+      "font": "Arial",
+      "size": 13,
+      "leading": 1.8,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 5.6
+     },
+     "measureChars": 45,
+     "max": {
+      "size": 24,
+      "vw": 3.1,
+      "font": "Arial",
+      "text": "تفاصيل الدفعة والطباعة"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "monospace"
+     ],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.03,
+     "smallText": 4
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f5f7f6",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.11,
+      "l": 0.96
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 20,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#56665e",
+       "share": 0.67
+      },
+      {
+       "color": "#18392e",
+       "share": 0.32
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#18392e"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 8,
+     "height": 42,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "رجوع للدفعات",
+      "طباعة"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.sl-counts 686px"
+     ],
+     "outlinedBoxes": 4,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 4,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": false,
+     "height": 21,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1024,
+    "margins": {
+     "left": 41,
+     "right": 41
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "تفاصيل الدفعة والطباعة",
+      "size": 24,
+      "top": 82,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 229,
+      "n": 1
+     },
+     {
+      "x": 284,
+      "n": 1
+     },
+     {
+      "x": 544,
+      "n": 1
+     },
+     {
+      "x": 621,
+      "n": 1
+     },
+     {
+      "x": 634,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f5f7f6",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 41,
+     "right": 41
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 24,
+     "vw": 3.1,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 82,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       10,
+       3
+      ],
+      [
+       16,
+       1
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 0.67,
+     "kpiMax": 24
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.12,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      24
+     ]
+    },
+    "title": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "size": 24,
+     "top": 82
+    },
+    "colourShare": 0.001
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.91,
+    0.89
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 1433,
+     "screens": 1.7,
+     "words": 112,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 2,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 5.6,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 78,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "lines": 1,
+     "size": 22,
+     "font": "Arial"
+    },
+    "headings": [
+     {
+      "text": "تفاصيل الدفعة والطباعة",
+      "words": 3,
+      "chars": 22,
+      "lines": 1,
+      "size": 22,
+      "vw": 5.6,
+      "font": "Arial",
+      "weight": 650,
+      "tracking": 0,
+      "leading": 1.5,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.43,
+      "top": 78,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "1,000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Arial",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.6,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 398,
+      "tag": "strong",
+      "kind": "heading"
+     },
+     {
+      "text": "0",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Arial",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.6,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.34,
+      "top": 398,
+      "tag": "strong",
+      "kind": "heading"
+     },
+     {
+      "text": "0",
+      "words": 1,
+      "chars": 1,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Arial",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.6,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 477,
+      "tag": "strong",
+      "kind": "heading"
+     },
+     {
+      "text": "1,000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Arial",
+      "weight": 600,
+      "tracking": 0,
+      "leading": 1.6,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.34,
+      "top": 477,
+      "tag": "strong",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 5,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Arial",
+       "share": 0.96,
+       "mono": false
+      },
+      {
+       "family": "monospace",
+       "share": 0.04,
+       "mono": false
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      22,
+      24
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": {
+      "font": "Arial",
+      "size": 13,
+      "leading": 1.8,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 5.6
+     },
+     "measureChars": 43,
+     "max": {
+      "size": 24,
+      "vw": 6.2,
+      "font": "Arial",
+      "text": "1,000"
+     },
+     "monoShare": 0.04,
+     "monoProseShare": 0,
+     "monoFamilies": [
+      "monospace"
+     ],
+     "monoSamples": [],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.01,
+     "centerShare": 0.03,
+     "smallText": 4
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f5f7f6",
+     "bodyBgHsl": {
+      "h": 150,
+      "s": 0.11,
+      "l": 0.96
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 20,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#56665e",
+       "share": 0.67
+      },
+      {
+       "color": "#18392e",
+       "share": 0.32
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ffffff",
+      "hsl": {
+       "h": 0,
+       "s": 0,
+       "l": 1
+      },
+      "fg": "#18392e"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 1,
+     "radius": 8,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "رجوع للدفعات"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.sl-counts 316px"
+     ],
+     "outlinedBoxes": 4,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 4,
+     "boxRadius": 10,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 2,
+     "fixed": false,
+     "height": 21,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 1433,
+    "margins": {
+     "left": 37,
+     "right": 37
+    },
+    "sections": [
+     {
+      "sel": "div.sl-counts",
+      "tag": "div",
+      "top": 356,
+      "height": 176,
+      "words": 8,
+      "media": 0,
+      "middle": 110,
+      "heading": {
+       "text": "1,000",
+       "size": 24,
+       "tag": "strong"
+      },
+      "left": 123,
+      "right": 37,
+      "textLeft": 123,
+      "textRight": 37,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.sl-detail-grid",
+      "tag": "div",
+      "top": 556,
+      "height": 839,
+      "words": 69,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "طباعة الملصقات",
+       "size": 16,
+       "tag": "h2"
+      },
+      "left": 54,
+      "right": 54,
+      "textLeft": 77,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "تفاصيل الدفعة والطباعة",
+      "size": 22,
+      "top": 78,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 37,
+      "n": 1
+     },
+     {
+      "x": 185,
+      "n": 1
+     },
+     {
+      "x": 212,
+      "n": 1
+     },
+     {
+      "x": 251,
+      "n": 1
+     },
+     {
+      "x": 267,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f5f7f6",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 37,
+     "right": 37
+    },
+    "hero": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "words": 3,
+     "chars": 22,
+     "lines": 1,
+     "size": 22,
+     "vw": 5.6,
+     "font": "Arial",
+     "weight": 650,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 78,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       10,
+       4
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 3,
+     "tabularShare": 0.67,
+     "kpiMax": 24
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.12,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      16,
+      20,
+      22,
+      24
+     ]
+    },
+    "title": {
+     "text": "تفاصيل الدفعة والطباعة",
+     "size": 22,
+     "top": 78
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\desktop-fold.jpg",
+   "pages": [
+    "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\tablet-fold.jpg",
+   "pages": [
+    "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\mobile-fold.jpg",
+   "pages": [
+    "D:\\website\\Souliahome\\artifacts\\preprinted-labels\\inspect-detail\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

@@ -11,6 +11,7 @@ describe('Coordinated backup restore with existing inventory tracking', () => {
   let settings: Model<any>, service: SettingsService, directory: string;
   let filename: string;
   const productId = new Types.ObjectId(), unitId = new Types.ObjectId(), actorId = new Types.ObjectId();
+  const prelabelId = new Types.ObjectId(), prelabelBatchId = new Types.ObjectId();
   const raw = (name: string) => mongo.connection.collection(name);
   const editBackup = (edit: (backup: any) => void) => {
     const file = join(directory, filename), backup = JSON.parse(readFileSync(file, 'utf8'));
@@ -40,6 +41,8 @@ describe('Coordinated backup restore with existing inventory tracking', () => {
     await raw('inventoryunits').insertOne({ _id: unitId, productId: String(productId), barcode: 'SU-TEST', status: 'available', registeredByUserId: String(actorId) });
     await raw('inventoryunitevents').insertOne({ unitId: String(unitId), sequence: 1, byUserId: String(actorId) });
     await raw('inventoryunitoperations').insertOne({ _id: 'stable-operation-key' as any, kind: 'register' });
+    await raw('inventoryunitprelabelbatches').insertOne({ _id: prelabelBatchId, productId: String(productId), quantity: 1, createdByUserId: String(actorId) });
+    await raw('inventoryunitprelabels').insertOne({ _id: prelabelId, batchId: String(prelabelBatchId), productId: String(productId), ordinal: 1, state: 'unused', createdByUserId: String(actorId) });
     await raw('inventoryunitcodecounters').insertOne({ _id: 'manual-unit-code' as any, sequence: 42 });
     const result = await service.createBackup();
     expect(result.success).toBe(true); filename = result.filename;
@@ -65,6 +68,8 @@ describe('Coordinated backup restore with existing inventory tracking', () => {
     expect(await raw('inventoryunitcodecounters').findOne({ _id: 'manual-unit-code' as any })).toMatchObject({ sequence: 42 });
     expect(await raw('inventoryunitoperations').findOne({ _id: 'stable-operation-key' as any })).toBeTruthy();
     expect(await raw('inventoryunits').findOne({ _id: unitId })).toBeTruthy();
+    expect(await raw('inventoryunitprelabelbatches').findOne({ _id: prelabelBatchId })).toBeTruthy();
+    expect(await raw('inventoryunitprelabels').findOne({ _id: prelabelId })).toMatchObject({ state: 'unused', batchId: String(prelabelBatchId) });
     expect((await raw('users').findOne({ _id: actorId }))!.password).toBe('current-secret');
     const safety = JSON.parse(readFileSync(join(directory, result.safetyBackup), 'utf8'));
     expect(safety.data.products[0].name).toBe('Current product');
@@ -103,6 +108,8 @@ describe('Coordinated backup restore with existing inventory tracking', () => {
     expect(await raw('inventoryunitevents').findOne({})).toMatchObject({ byUserId: String(liveAdminId), unitId: String(unitId) });
     expect(await raw('inventorypacks').findOne({})).toMatchObject({ createdByUserId: String(liveAdminId), history: [{ byUserId: String(liveAdminId) }], unitIds: [String(unitId)] });
     expect(await raw('inventoryunitoperations').findOne({})).toMatchObject({ _id: 'stable-operation-key', actorId: String(liveAdminId), fingerprint: 'unchanged-fingerprint', result: { unit: { _id: String(unitId), registeredByUserId: String(liveAdminId) }, exception: { undoneByUserId: String(liveAdminId) } } });
+    expect(await raw('inventoryunitprelabelbatches').findOne({ _id: prelabelBatchId })).toMatchObject({ createdByUserId: String(liveAdminId) });
+    expect(await raw('inventoryunitprelabels').findOne({ _id: prelabelId })).toMatchObject({ createdByUserId: String(liveAdminId) });
     expect(await raw('shopifyorders').findOne({})).toMatchObject({ assignedTo: String(liveAdminId), assignmentHistory: [{ previousUserId: String(liveAdminId), newUserId: String(liveAdminId) }], depositReceipts: [{ submittedById: String(liveAdminId), reviewedById: String(liveAdminId), warningAcknowledgedById: String(liveAdminId) }] });
     expect(await raw('employeeperformancelogs').findOne({})).toMatchObject({ employeeId: String(liveAdminId) });
     expect(await raw('followups').findOne({})).toMatchObject({ responsibleId: String(liveAdminId), comments: [{ authorId: String(liveAdminId) }] });

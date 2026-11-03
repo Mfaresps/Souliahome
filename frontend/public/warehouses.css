@@ -42,8 +42,9 @@
 #wh-history-rows p{font-size:11px;margin:0}
 .purchase-receipt-grid>label:only-child{grid-column:1/-1}
 .iu-form-field select{min-height:40px;border:1px solid var(--iu-border);border-radius:7px;background:var(--iu-surface);color:var(--iu-text);padding:9px;font:inherit}
-.wh-invoice-chip{display:flex;align-items:center;gap:9px;padding:10px 13px;margin:0 0 12px;border:1px solid var(--border,#dce4de);border-radius:8px;background:var(--surface2,#f3f8f5);font-size:12px;line-height:1.6}
+.wh-invoice-chip{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:10px 13px;margin:0 0 12px;border:1px solid var(--border,#dce4de);border-radius:8px;background:var(--surface2,#f3f8f5);font-size:12px;line-height:1.6}
 .wh-invoice-chip>span{color:var(--muted,#738279);font-size:11px}.wh-invoice-chip strong{font-weight:600;overflow-wrap:anywhere}
+.wh-invoice-chip>small{margin-inline-start:auto;color:var(--primary,#2d7a4f);font-size:11px;font-weight:700}
 .inv-header .wh-invoice-chip{display:inline-flex;padding:4px 10px;margin:8px 0 0;font-size:11px}
 .wh-source-note{margin:10px 0;padding:10px 12px;border:1px solid var(--border,#dce4de);border-radius:8px;background:var(--surface2,#f3f8f5);font-size:12px;line-height:1.8}
 .wh-movement-name{display:inline-block;min-width:90px;max-width:180px;font-size:11px;font-weight:600;overflow-wrap:anywhere}
@@ -90,7 +91,7 @@ select.wh-native-select{position:absolute!important;width:1px!important;height:1
 .wh-transfer-dialog{width:860px}
 .wh-step-heading{display:flex;align-items:center;gap:8px;margin:8px 0 13px!important;font-size:13px!important;font-weight:600}
 .wh-step-heading>b{display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--surface2,#f3f8f5);border:1px solid var(--border,#dce4de);color:var(--primary,#06533b);font-size:11px}
-.wh-transfer-locations{grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:14px;padding:15px;border:1px solid var(--border,#dce4de);border-radius:10px;background:var(--surface2,#f7f9f7);margin-bottom:22px}
+.wh-transfer-locations{grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:14px;padding:15px;border:1px solid var(--border,#dce4de);border-radius:10px;background:var(--surface2,#f5f6f7);margin-bottom:22px}
 .wh-flow-middle{display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:23px}
 .wh-flow-arrow{display:inline-flex;align-items:center;justify-content:center;color:var(--primary,#06533b);flex:none}
 .wh-flow-arrow svg{width:26px;height:24px}

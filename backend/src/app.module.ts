@@ -38,6 +38,7 @@ import { EmployeePerformanceModule } from './employee-performance/employee-perfo
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { SeedService } from './seed/seed.service';
 import { WarehousesModule } from './warehouses/warehouses.module';
+import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { WarehousesModule } from './warehouses/warehouses.module';
     InventoryMovementsModule,
     InventoryUnitsModule,
     WarehousesModule,
+    WarehouseLayoutModule,
     SupplierLedgerModule,
     SupplierLedgerBackfillModule,
     DraftsModule,

@@ -25,7 +25,7 @@ export function retainRecords(schema: Schema, message: string, appendOnly = fals
 }
 
 /** MongoDB has no foreign keys. Enforce normal Mongoose deletion paths without altering old rows. */
-export function restrictInventoryParentDeletion(schema: Schema, paths: string[], eventPaths: string[] = []): void {
+export function restrictInventoryParentDeletion(schema: Schema, paths: string[], eventPaths: string[] = [], prelabelPaths: string[] = []): void {
   async function check(model: any, filter: any, session: any): Promise<void> {
     const parents = await model.find(filter).select('_id').session(session || null).lean().exec();
     const ids = parents.map((parent: any) => String(parent._id));
@@ -38,7 +38,11 @@ export function restrictInventoryParentDeletion(schema: Schema, paths: string[],
       { $or: eventPaths.map(path => ({ [path]: { $in: ids } })) },
       { projection: { _id: 1 }, ...(session ? { session } : {}) },
     );
-    if (linked || audited) throw new Error('Cannot delete a record referenced by retained inventory units/events');
+    const preprinted = prelabelPaths.length && await model.db.collection('inventoryunitprelabels').findOne(
+      { $or: prelabelPaths.map(path => ({ [path]: { $in: ids } })) },
+      { projection: { _id: 1 }, ...(session ? { session } : {}) },
+    );
+    if (linked || audited || preprinted) throw new Error('Cannot delete a record referenced by retained inventory units/events or preprinted labels');
   }
   for (const operation of ['deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne', 'findOneAndReplace'] as const) {
     schema.pre(operation, async function () {

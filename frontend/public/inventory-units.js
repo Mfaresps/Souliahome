@@ -1,7 +1,7 @@
 /* Barcode workspace: server-issued physical identities only; selection never creates stock. */
 (function () {
   'use strict';
-  const VERSION = '20261024-compact-registry';
+  const VERSION = '20261103-adaptive-batch-separators';
   const state = {
     generation: 0, actor: '', ready: false, busy: false, selectionBusy: false, refreshQueued: false, config: null,
     selected: new Map(), sizeId: '', preview: null, pendingPrint: null, view: 'receipts',
@@ -49,12 +49,15 @@
     check: '<path d="m5 12 4 4L19 6"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7 .4l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7-.4l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    pin: '<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/>',
     close: '<path d="m6 6 12 12M18 6 6 18"/>',
   };
   const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.box}</svg>`;
   function productImage(line, compact = false) {
-    const source = typeof line.imageUrl === 'string' ? line.imageUrl.trim() : '';
+    const source = typeof (line.imageUrl || line.images?.[0]) === 'string' ? (line.imageUrl || line.images?.[0]).trim() : '';
     let safe = '';
     try {
       const url = new URL(source, location.href);
@@ -103,6 +106,24 @@
         popup.document.body.textContent=tr('Preparing labels…','جارٍ تجهيز الملصقات…');prompt.close();
       };
       prompt.showModal();prompt.querySelector('[data-cancel]').focus();
+    });
+  }
+  function chooseBatchCovers(count) {
+    return new Promise(resolve => {
+      const prompt = document.createElement('dialog'); let choice = null;
+      prompt.className = 'iu-reprint-confirm iu-cover-choice'; prompt.dir = tr('ltr', 'rtl');
+      prompt.setAttribute('aria-label', tr('Choose batch covers', 'اختيار ورقة تعريف الدفعة'));
+      prompt.innerHTML = `<h2>${tr('Print batch cover sheets?', 'هل تريد طباعة ورقة تعريف الدفعة؟')}</h2><p>${tr(`${count} cover sheet${count === 1 ? '' : 's'} will print before the product labels.`, `ستُطبع ${count} ورقة تعريف قبل ملصقات المنتجات.`)}</p><p data-confirm-error role="alert"></p><footer><button type="button" data-cancel>${tr('Cancel', 'إلغاء')}</button><button type="button" data-include-covers="no">${tr('No, labels only', 'لا، الملصقات فقط')}</button><button type="button" data-include-covers="yes">${tr('Yes, with cover sheets', 'نعم، مع ورقة التعريف')}</button></footer>`;
+      document.body.append(prompt);
+      prompt.addEventListener('close', () => { prompt.remove(); resolve(choice); }, { once: true });
+      prompt.querySelector('[data-cancel]').onclick = () => prompt.close();
+      for (const button of prompt.querySelectorAll('[data-include-covers]')) button.onclick = () => {
+        const popup = window.open('', '_blank', 'width=850,height=750');
+        if (!popup) { prompt.querySelector('[data-confirm-error]').textContent = tr('Allow popups for this site, then try again.', 'اسمح بالنوافذ المنبثقة لهذا الموقع ثم حاول مجددًا.'); return; }
+        popup.document.body.textContent = tr('Preparing labels…', 'جارٍ تجهيز الملصقات…');
+        choice = { popup, includeCovers: button.dataset.includeCovers === 'yes' }; prompt.close();
+      };
+      prompt.showModal(); prompt.querySelector('[data-include-covers="yes"]').focus();
     });
   }
   function showDialog(id) {
@@ -213,8 +234,8 @@
     get('page-barcodes')?.classList.toggle('iu-selecting', state.selectionBusy);
     syncSizePicker();
     if (get('iu-select-invoice')) get('iu-select-invoice').disabled = blocked || !state.activeInvoice || readonly(state.activeInvoice) || !state.activeInvoice.lines.some(line => line.createdUnits > 0);
-    for (const control of get('page-barcodes')?.querySelectorAll('[data-select-line],[data-register-line],[data-view-line]') || []) {
-      const index = Number(control.dataset.selectLine ?? control.dataset.registerLine ?? control.dataset.viewLine), line = state.activeInvoice?.lines.find(row => row.lineIndex === index);
+    for (const control of get('page-barcodes')?.querySelectorAll('[data-select-line],[data-register-line],[data-link-line],[data-view-line]') || []) {
+      const index = Number(control.dataset.selectLine ?? control.dataset.registerLine ?? control.dataset.linkLine ?? control.dataset.viewLine), line = state.activeInvoice?.lines.find(row => row.lineIndex === index);
       control.disabled = blocked || !line || (control.dataset.selectLine !== undefined && (!line.createdUnits || readonly(state.activeInvoice)));
     }
     for (const id of ['iu-preview', 'iu-mobile-preview']) if (get(id)) get(id).disabled = blocked || !state.selected.size || !state.sizeId;
@@ -236,19 +257,15 @@
     function labelHtml(label, size) {
     if (!(label.isPack ? /^PK-[A-F\d]{24}$/ : /^SU-[A-F\d]{24}$/).test(label.barcode) || label.barcode !== (label.isPack ? 'PK-' : 'SU-') + String(label.unitId).toUpperCase() || (label.isPack && (!Number.isSafeInteger(label.quantity) || label.quantity < 2))) throw new Error(tr('Invalid label identity. Refresh the selection.', 'هوية الملصق غير صحيحة. حدّث التحديد.'));
     const source = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(label.svg);
-    const idGroups = String(label.unitId).match(/.{1,4}/g);
-    const groupedId = html(idGroups.slice(0, 3).join(' ')) + '<br>' + html(idGroups.slice(3).join(' '));
-    const printTime = new Date();
-    const printDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit', year: 'numeric' }).format(printTime);
-    const invoiceDate = label.invoiceDate ? new Date(label.invoiceDate) : null;
-    const invoiceDateText = invoiceDate && Number.isFinite(invoiceDate.getTime()) ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',day:'2-digit',month:'2-digit',year:'numeric'}).format(invoiceDate) : (label.invoiceDates?.length > 1 ? 'Multiple dates' : '');
-    const price = typeof label.sellPrice === 'number' && Number.isFinite(label.sellPrice) && label.sellPrice >= 0
-      ? 'EGP ' + new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(label.sellPrice) : tr('Price unavailable', 'السعر غير متاح');
-    return `<article class="iu-label${label.isPack ? " iu-label-pack" : ""}${size.widthMm <= 50 ? ' iu-label-compact' : size.widthMm >= 100 ? ' iu-label-large' : ''}${size.id === '50x25' ? ' iu-label-50x25' : ''}" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--qr-size:${Number(size.qrMm)}mm;--label-margin:${Number(size.marginMm || 2)}mm" aria-label="${html(label.barcode)}">
-      <div class="iu-label-header"><time class="iu-label-print-date" datetime="${printTime.toISOString()}">Print: ${html(printDate)}</time><div class="iu-label-brand">SOULIA HOME</div></div>
-      <div class="iu-label-layout"><img src="${source}" alt="${html(label.barcode)}"><div class="iu-label-text"><p class="iu-label-name" dir="auto">${html(label.productName)}</p>
-      <div class="iu-label-price">${label.isPack ? `<b class="iu-pack-piece-count">${label.quantity} PCS / ${label.quantity} &#1602;&#1591;&#1593;</b>` : html(price)}</div>
-      <p class="iu-label-sku">SKU: ${html(label.sku)}</p>${invoiceDateText ? `<div class="iu-label-date iu-label-invoice-date" dir="ltr">Inv: ${html(invoiceDateText)}</div>` : ''}<p class="iu-label-id">${label.isPack ? "Pack" : "Unit"} code:<br><span>${label.manualCode ? html(label.manualCode) : groupedId}</span></p></div></div><p class="iu-label-value${label.manualCode && !label.isPack ? ' iu-short-code' : ''}">${html(label.manualCode || label.barcode)}</p></article>`;
+    const logo = location.origin + '/soulia-label-logo.svg';
+    const qrSize = Math.min(Number(size.qrMm) * (Number(size.heightMm) <= 30 ? 1.25 : 1.4), Number(size.heightMm) - 3, Number(size.widthMm) * .54);
+    const margin = size.id === '50x25' ? 1 : Number(size.marginMm || 2);
+    const code = String(label.manualCode || label.barcode);
+    const codeWidth = Number(size.widthMm) - qrSize - margin * 2 - (size.id === '50x25' ? .8 : 1.4);
+    const codeFont = Math.min(label.manualCode ? (size.id === '50x25' ? 2.6 : 3.4) : (size.id === '50x25' ? 1.4 : 2.2), codeWidth / (code.length * .68));
+    const footerFont = size.id === '50x25' ? 1.8 : Math.min(2.2, Math.max(1.8, Number(size.heightMm) * .04));
+    return `<article class="iu-label${label.isPack ? " iu-label-pack" : ""}${size.widthMm <= 50 ? ' iu-label-compact' : size.widthMm >= 100 ? ' iu-label-large' : ''}${size.id === '50x25' ? ' iu-label-50x25' : ''}" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--qr-size:${qrSize}mm;--label-margin:${Number(size.marginMm || 2)}mm;--code-font:${codeFont}mm;--footer-font:${footerFont}mm" aria-label="${html(label.barcode)}">
+      <div class="iu-label-layout"><img class="iu-label-qr" src="${source}" alt="${html(label.barcode)}"><div class="iu-label-text"><div class="iu-label-header"><div class="iu-label-brand"><img src="${logo}" alt="Soulia"></div>${label.ordinal ? `<span class="iu-label-ordinal">#${Number(label.ordinal)} · ${html(String(label.batchId || '').slice(-6).toUpperCase())}</span>` : ''}</div><div class="iu-label-product"><p class="iu-label-name" dir="auto">${html(label.productName)}</p>${label.isPack ? `<b class="iu-pack-piece-count">${label.quantity} PCS / ${label.quantity} &#1602;&#1591;&#1593;</b>` : ''}</div><div class="iu-label-meta"><p class="iu-label-sku"><strong dir="ltr">${html(label.sku)}</strong></p></div><p class="iu-label-id">${label.isPack ? "Pack" : "Unit"} code</p><p class="iu-label-value${label.manualCode && !label.isPack ? ' iu-short-code' : ''}" dir="ltr">${html(label.manualCode || label.barcode)}</p></div></div><div class="iu-label-footer" dir="ltr">Made in Egypt - © SOULIA HOME</div></article>`;
   }
   function validateBatch(batch, expectedIds, sizeId, config = state.config) {
     if (!batch || batch.size?.id !== sizeId || !Array.isArray(config?.labelSizes) || !config.labelSizes.some(size => size.id === sizeId && size.widthMm === batch.size.widthMm && size.heightMm === batch.size.heightMm && size.qrMm === batch.size.qrMm)) throw new Error(tr('Unsupported label dimensions.', 'أبعاد الملصق غير مدعومة.'));
@@ -263,24 +280,40 @@
     await Promise.all([...doc.querySelectorAll('img')].map(img => img.complete ? (img.naturalWidth ? Promise.resolve() : Promise.reject(new Error('Barcode image failed to load'))) : new Promise((resolve, reject) => { img.onload = resolve; img.onerror = () => reject(new Error('Barcode image failed to load')); })));
     const fonts = (doc.ownerDocument || doc).fonts;
     if (fonts?.ready) await fonts.ready;
-    // Keep the QR at its physical size; fit only the product name and SKU into
-    // the compact label's text area, above the separate piece code.
-    for (const label of doc.querySelectorAll('.iu-label-50x25')) {
+    // Measure the rendered words (including Arabic and wrapped names), not
+    // character counts. Consume spare spacing before reducing text size.
+    for (const label of doc.querySelectorAll('.iu-label:not(.iu-label-batch-cover)')) {
       const text = label.querySelector('.iu-label-text');
       const view = label.ownerDocument.defaultView;
+      const name = text.querySelector('.iu-label-name');
+      name.style.maxHeight = 'none';
+      name.style.lineHeight = '1.12';
+      const arrange = () => {
+        const style = view.getComputedStyle(text), box = text.getBoundingClientRect();
+        const scale = box.width / parseFloat(style.width);
+        const children = [...text.children].filter(child => view.getComputedStyle(child).display !== 'none');
+        const used = children.reduce((sum,child) => sum + child.getBoundingClientRect().height / scale, 0);
+        const available = parseFloat(style.height) - parseFloat(style.paddingBottom) - parseFloat(style.paddingTop);
+        const lines = Math.max(1, Math.round(name.getBoundingClientRect().height / scale / parseFloat(view.getComputedStyle(name).lineHeight)));
+        const mm = 96 / 25.4, heightMm = parseFloat(label.style.getPropertyValue('--label-height'));
+        const preferred = Math.min(1.5, Math.max(.35, heightMm * .04 / lines)) * mm;
+        text.style.gap = Math.max(.35 * mm, Math.min(preferred, (available - used) / Math.max(1,children.length - 1) - .1)) + 'px';
+      };
       const fits = () => {
+        arrange();
         const box = text.getBoundingClientRect();
         const scale = box.height / text.offsetHeight;
         const bottom = box.bottom - parseFloat(view.getComputedStyle(text).paddingBottom) * scale;
-        return [...text.children].filter(child => view.getComputedStyle(child).display !== 'none').every(child => {
+        const blocksFit = [...text.children].filter(child => view.getComputedStyle(child).display !== 'none').every(child => {
           const rect = child.getBoundingClientRect();
-          return rect.top >= box.top - .5 && rect.bottom <= bottom + .5 && child.scrollWidth <= child.clientWidth + 1;
+          return rect.top >= box.top - .5 && rect.bottom <= bottom + .5 && child.scrollWidth <= child.clientWidth + 1 && child.scrollHeight <= child.clientHeight + 1;
         });
+        return blocksFit && [text.querySelector('.iu-label-name'), text.querySelector('.iu-label-sku strong')].every(field => field.scrollWidth <= field.clientWidth + 1 && field.scrollHeight <= field.clientHeight + 1);
       };
       const fields = [[text.querySelector('.iu-label-name'), 2], [text.querySelector('.iu-label-sku'), 1.6]];
       // Reset before measuring so preview zoom and print use identical fitting.
       for (const [field] of fields) field.style.removeProperty('font-size');
-      for (let step = 0; !fits() && step < 20; step++) {
+      for (let step = 0; !fits() && step < 60; step++) {
         let changed = false;
         for (const [field, minMm] of fields) {
           const current = parseFloat(view.getComputedStyle(field).fontSize), minimum = minMm * 96 / 25.4;
@@ -290,10 +323,35 @@
       }
       if (!fits()) throw new Error(tr('Product text is too long for this label. Shorten the name/SKU or choose a larger label.', 'نص الصنف أطول من مساحة الملصق. اختصر الاسم أو SKU أو اختر مقاسًا أكبر.'));
     }
+    for (const cover of doc.querySelectorAll('.iu-label-batch-cover')) {
+      const name = cover.querySelector('.iu-cover-name'), top = cover.querySelector('.iu-cover-top'), bottom = cover.querySelector('.iu-cover-bottom');
+      const view = cover.ownerDocument.defaultView;
+      const fits = () => name.scrollWidth <= name.clientWidth + 1 && name.scrollHeight <= name.clientHeight + 1 &&
+        name.getBoundingClientRect().top >= top.getBoundingClientRect().bottom - .5 && name.getBoundingClientRect().bottom <= bottom.getBoundingClientRect().top + .5 &&
+        cover.scrollWidth <= cover.clientWidth + 1 && cover.scrollHeight <= cover.clientHeight + 1;
+      name.style.removeProperty('font-size');
+      for (let step = 0; !fits() && step < 30; step++) {
+        const current = parseFloat(view.getComputedStyle(name).fontSize), minimum = 1.7 * 96 / 25.4;
+        if (current <= minimum + .01) break;
+        name.style.fontSize = Math.max(minimum, current - .4) + 'px';
+      }
+      if (!fits()) throw new Error(tr('Product name is too long for the batch cover. Shorten it or choose a larger label.', 'اسم المنتج أطول من ورقة تعريف الدفعة. اختصره أو اختر مقاسًا أكبر.'));
+    }
     // Check actual rendered content, including long names/SKUs; never silently shrink the barcode.
-    for (const label of doc.querySelectorAll('.iu-label:not(.iu-label-separator)')) {
-      const content = label.querySelector('.iu-label-value').getBoundingClientRect(), box = label.getBoundingClientRect();
-      if (label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || content.bottom > box.bottom - 3) throw new Error(tr('Label content overflows. Choose a larger supported label or review the product text.', 'محتوى الملصق يتجاوز الأبعاد. اختر مقاساً أكبر أو راجع نص الصنف.'));
+    for (const label of doc.querySelectorAll('.iu-label:not(.iu-label-batch-cover)')) {
+      const footer = label.querySelector('.iu-label-footer'), view = label.ownerDocument.defaultView;
+      footer.style.removeProperty('font-size');
+      for (let step = 0; footer.scrollWidth > footer.clientWidth + 1 && step < 25; step++) {
+        const current = parseFloat(view.getComputedStyle(footer).fontSize), minimum = .95 * 96 / 25.4;
+        if (current <= minimum + .01) break;
+        footer.style.fontSize = Math.max(minimum, current - .2) + 'px';
+      }
+      const value = label.querySelector('.iu-label-value'), content = value.getBoundingClientRect(), box = label.getBoundingClientRect();
+      const name = label.querySelector('.iu-label-name'), sku = label.querySelector('.iu-label-sku strong');
+      if (label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || content.bottom > box.bottom - 3 ||
+        footer.scrollWidth > footer.clientWidth + 1 || footer.getBoundingClientRect().bottom > box.bottom - 2 ||
+        name.scrollWidth > name.clientWidth + 1 || name.scrollHeight > name.clientHeight + 1 ||
+        sku.scrollWidth > sku.clientWidth + 1 || value.scrollWidth > value.clientWidth + 1) throw new Error(tr('Label content overflows. Choose a larger supported label or review the product text.', 'محتوى الملصق يتجاوز الأبعاد. اختر مقاساً أكبر أو راجع نص الصنف.'));
     }
   }
 
@@ -400,7 +458,7 @@
   function chooseInvoice(invoice, updateHash = true) {
     if (state.activeInvoice === invoice) return;
     state.activeInvoice = invoice; state.productQuery = ''; state.productFilter = 'all';
-    if (updateHash) history.replaceState(null, '', '#barcodes/receipt/' + encodeURIComponent(invoice.transactionId));
+    if (updateHash) history.replaceState(null, '', '#warehouse-management/receipt/' + encodeURIComponent(invoice.transactionId));
     renderReceipts(); renderDetail(); revealSurface(get('iu-invoice-detail'));
   }
   function rangeFor(invoice, line) {
@@ -413,7 +471,7 @@
     if (!invoice) { host.innerHTML = emptyState(tr('Choose a purchase invoice', 'اختر فاتورة شراء'), tr('Its products and registered unit counts appear here.', 'ستظهر هنا منتجاتها وكميات القطع ذات الأكواد.')); return; }
     const s = totals(invoice), missing = invoice.lines.reduce((sum, line) => sum + Math.max(0, line.quantity - line.createdUnits), 0);
     host.innerHTML = `<header class="iu-detail-head"><div class="iu-detail-title"><h2>${tr('Invoice', 'فاتورة')} <bdi>#${html(invoice.ref || invoice.transactionId.slice(-6))}</bdi></h2><span class="iu-badge ${missing ? 'amber' : ''}">${readonly(invoice) ? tr('Read only invoice', 'فاتورة للعرض فقط') : missing ? tr('Incomplete unit codes', 'أكواد غير مكتملة') : tr('Codes complete', 'مكتملة الأكواد')}</span></div><p class="iu-invoice-meta"><span dir="auto">${html(invoice.supplier || tr('Unspecified supplier', 'مورد غير محدد'))}</span><span>·</span><time>${html(invoiceDate(invoice))}</time></p><div class="iu-invoice-summary"><div><span>${tr('Products', 'منتجات الفاتورة')}</span><b>${invoice.lines.length}</b></div><div><span>${tr('Total pieces', 'إجمالي القطع')}</span><b>${s.qty}</b></div><div><span>${tr('Pieces with codes', 'قطع لها أكواد')}</span><b class="ready">${s.coded}</b></div><div><span>${tr('Codes needed', 'تحتاج تسجيل كود')}</span><b class="${missing ? 'amber' : ''}">${missing}</b></div></div></header>
-      ${missing && !readonly(invoice) && !invoice.quantityEditedAt ? `<div class="iu-receipt-notice">${icon('info')}<span>${tr(`${missing} pieces need unit identities before printing. Confirm physical quantities using Register codes on each product.`, `${missing} قطعة تحتاج تسجيل هويتها قبل الطباعة. افتح «تسجيل الأكواد» في المنتج وأكد العدد الفعلي.`)}</span></div>` : ''}
+      ${missing && !readonly(invoice) && !invoice.quantityEditedAt ? `<div class="iu-receipt-notice">${icon('info')}<span>${tr(`${missing} pieces need unit identities before printing. Choose Link preprinted QR labels for attached labels, or Register new codes after counting the pieces.`, `${missing} قطعة تحتاج تسجيل هويتها قبل الطباعة. اختر ربط ملصقات QR المطبوعة للملصقات المثبتة، أو سجّل أكوادًا جديدة بعد عد القطع.`)}</span></div>` : ''}
       <div class="iu-product-toolbar"><label class="iu-check"><input id="iu-select-invoice" type="checkbox" ${readonly(invoice) || !invoice.lines.some(line => line.createdUnits) ? 'disabled' : ''}>${tr('Select coded pieces', 'تحديد القطع ذات الأكواد')}</label><div class="iu-product-tools"><label class="iu-field">${icon('search')}<input id="iu-product-query" type="search" maxlength="160" placeholder="${tr('Search products', 'بحث في المنتجات')}" aria-label="${tr('Search invoice products', 'بحث منتجات الفاتورة')}" value="${html(state.productQuery)}"></label><select id="iu-product-filter" aria-label="${tr('Product code status', 'حالة أكواد المنتج')}"><option value="all">${tr('All products', 'كل المنتجات')}</option><option value="ready">${tr('Has codes', 'لها أكواد')}</option><option value="missing">${tr('Needs codes', 'تحتاج أكواد')}</option></select></div></div><div id="iu-receipt-products" class="iu-receipt-products"></div><footer class="iu-detail-footer">${tr('Each label identifies one registered physical piece.', 'كل ملصق يخص قطعة فعلية مسجلة بهوية مستقلة.')}</footer>`;
     const notice = purchaseChangeNotice(invoice);
     if (notice) host.querySelector('.iu-detail-head').insertAdjacentHTML('afterend', notice);
@@ -447,7 +505,7 @@
       const remainingPrints = Math.max(0, line.quantity - printed);
       const printStatus = line.createdUnits > line.quantity ? tr('Quantity conflict', 'تعارض في الكمية') : allPrinted ? tr(`All labels sent to print (${printed} / ${line.quantity})`, `أُرسلت جميع الملصقات للطباعة (${printed} / ${line.quantity})`) : printed > 0 ? tr(`${printed} / ${line.quantity} sent to print · ${remainingPrints} remaining`, `أُرسل ${printed} من ${line.quantity} للطباعة · متبقي ${remainingPrints}`) : complete ? tr('Ready for labels', 'جاهز لطباعة الملصق') : line.createdUnits ? tr('Partial codes', 'أكواد جزئية') : tr('No codes recorded', 'لم تسجل الأكواد');
       const canRegister = !readonly(invoice) && !Number(invoice.orphanedUnits) && !invoice.lines.some(row => row.createdUnits > row.quantity) && has('inventory-units-receive') && Number.isSafeInteger(line.quantity) && line.quantity > line.createdUnits;
-      return `<article class="iu-card iu-receipt-product ${line.change ? 'is-quantity-edited' : ''} ${count ? 'selected' : ''}" data-line-index="${line.lineIndex}"><div class="iu-product-heading"><div class="iu-product-identity">${productImage(line)}<div><h3 dir="auto">${html(line.name || line.sku || tr('Purchase item', 'صنف مشتريات'))}</h3><span class="iu-unit-sku">SKU <bdi>${html(line.sku)}</bdi></span></div></div><input type="checkbox" data-select-line="${line.lineIndex}" aria-label="${html(tr('Select ', 'تحديد ') + (line.name || line.sku))}" ${count ? 'checked' : ''} ${!line.createdUnits || readonly(invoice) ? 'disabled' : ''}></div>${purchaseLineChange(line)}<div class="iu-product-numbers"><span>${tr('Invoice qty', 'كمية الفاتورة')} <b>${line.quantity}</b></span><span>${tr('With codes', 'لها أكواد')} <bdi>${line.createdUnits} / ${line.quantity}</bdi></span></div><div class="iu-product-status"><span class="iu-badge ${allPrinted ? 'is-printed' : printed > 0 ? 'amber' : complete ? '' : line.createdUnits ? 'amber' : 'neutral'}">${allPrinted ? icon('check') : !printed && complete ? icon('clock') : ''}${html(printStatus)}</span><div>${line.createdUnits ? `<button class="iu-link" type="button" data-view-line="${line.lineIndex}">${tr('View pieces', 'عرض القطع')}</button>` : ''}${canRegister ? `<button class="iu-link" type="button" data-register-line="${line.lineIndex}">${tr('Register codes', 'تسجيل الأكواد')}</button>` : ''}</div></div><div class="iu-product-selection-slot ${line.createdUnits > 100 ? 'iu-wide-range' : ''}" ${!line.createdUnits ? 'hidden' : ''}>${count ? range.custom ? `<div class="iu-product-range"><small>${tr(`${count} pieces selected individually. Edit them in View pieces.`, `تم تحديد ${count} قطعة بعينها. عدّلها من عرض القطع.`)}</small></div>` : `<div class="iu-product-range"><label>${tr('Labels in batch', 'ملصقات هذه الدفعة')}<input type="number" min="1" max="${Math.min(100, line.createdUnits - range.start)}" step="1" value="${count}" data-line-count="${line.lineIndex}" aria-label="${html(tr('Label quantity for ', 'كمية ملصقات ') + line.name)}"></label>${line.createdUnits > 100 ? `<label>${tr('From piece', 'بدءًا من القطعة')}<input type="number" min="1" max="${line.createdUnits}" step="1" value="${range.start + 1}" data-line-start="${line.lineIndex}" aria-label="${html(tr('Start piece for ', 'القطعة الأولى لـ ') + line.name)}"></label><small>${tr('Range', 'النطاق')} <bdi>${range.start + 1}–${range.start + count}</bdi> ${tr('of', 'من')} ${line.createdUnits}</small>` : `<small>${tr('of', 'من')} ${line.createdUnits} ${tr('coded pieces', 'قطعة مسجلة')}</small>`}</div>` : line.createdUnits > 100 ? `<small class="iu-range-hint">${tr('Over 100 pieces. Select the product to set the quantity and starting piece.', 'أكثر من 100 قطعة. حدد المنتج لضبط العدد والقطعة التي تبدأ منها.')}</small>` : ''}</div></article>`;
+      return `<article class="iu-card iu-receipt-product ${line.change ? 'is-quantity-edited' : ''} ${count ? 'selected' : ''}" data-line-index="${line.lineIndex}"><div class="iu-product-heading"><div class="iu-product-identity">${productImage(line)}<div><h3 dir="auto">${html(line.name || line.sku || tr('Purchase item', 'صنف مشتريات'))}</h3><span class="iu-unit-sku">SKU <bdi>${html(line.sku)}</bdi></span></div></div><input type="checkbox" data-select-line="${line.lineIndex}" aria-label="${html(tr('Select ', 'تحديد ') + (line.name || line.sku))}" ${count ? 'checked' : ''} ${!line.createdUnits || readonly(invoice) ? 'disabled' : ''}></div>${purchaseLineChange(line)}<div class="iu-product-numbers"><span>${tr('Invoice qty', 'كمية الفاتورة')} <b>${line.quantity}</b></span><span>${tr('With codes', 'لها أكواد')} <bdi>${line.createdUnits} / ${line.quantity}</bdi></span></div><div class="iu-product-status"><span class="iu-badge ${allPrinted ? 'is-printed' : printed > 0 ? 'amber' : complete ? '' : line.createdUnits ? 'amber' : 'neutral'}">${allPrinted ? icon('check') : !printed && complete ? icon('clock') : ''}${html(printStatus)}</span><div>${line.createdUnits ? `<button class="iu-link" type="button" data-view-line="${line.lineIndex}">${tr('View pieces', 'عرض القطع')}</button>` : ''}</div></div>${canRegister ? `<div class="iu-identity-actions" role="group" aria-label="${html(tr('Add identities for ', 'إضافة هويات للمنتج ') + (line.name || line.sku))}"><button class="iu-identity-action" type="button" data-link-line="${line.lineIndex}">${icon('link')}<span>${tr('Link preprinted QR labels', 'ربط ملصقات QR المطبوعة')}</span></button><button class="iu-identity-action" type="button" data-register-line="${line.lineIndex}">${icon('plus')}<span>${tr('Register new codes', 'تسجيل أكواد جديدة')}</span></button></div>` : ''}<div class="iu-product-selection-slot ${line.createdUnits > 100 ? 'iu-wide-range' : ''}" ${!line.createdUnits ? 'hidden' : ''}>${count ? range.custom ? `<div class="iu-product-range"><small>${tr(`${count} pieces selected individually. Edit them in View pieces.`, `تم تحديد ${count} قطعة بعينها. عدّلها من عرض القطع.`)}</small></div>` : `<div class="iu-product-range"><label>${tr('Labels in batch', 'ملصقات هذه الدفعة')}<input type="number" min="1" max="${Math.min(100, line.createdUnits - range.start)}" step="1" value="${count}" data-line-count="${line.lineIndex}" aria-label="${html(tr('Label quantity for ', 'كمية ملصقات ') + line.name)}"></label>${line.createdUnits > 100 ? `<label>${tr('From piece', 'بدءًا من القطعة')}<input type="number" min="1" max="${line.createdUnits}" step="1" value="${range.start + 1}" data-line-start="${line.lineIndex}" aria-label="${html(tr('Start piece for ', 'القطعة الأولى لـ ') + line.name)}"></label><small>${tr('Range', 'النطاق')} <bdi>${range.start + 1}–${range.start + count}</bdi> ${tr('of', 'من')} ${line.createdUnits}</small>` : `<small>${tr('of', 'من')} ${line.createdUnits} ${tr('coded pieces', 'قطعة مسجلة')}</small>`}</div>` : line.createdUnits > 100 ? `<small class="iu-range-hint">${tr('Over 100 pieces. Select the product to set the quantity and starting piece.', 'أكثر من 100 قطعة. حدد المنتج لضبط العدد والقطعة التي تبدأ منها.')}</small>` : ''}</div></article>`;
     }).join('') || emptyState(tr('No matching products', 'لا توجد منتجات مطابقة'), tr('Change the search or filter.', 'غيّر البحث أو الفلتر.'));
     const eligible = invoice.lines.filter(line => line.createdUnits > 0), chosen = eligible.filter(line => lineSelected(sourceKey(invoice, line)).length > 0);
     patchCards(host, markup, 'data-line-index');
@@ -567,14 +625,15 @@
       const source = origin.kind === 'purchase' ? tr('Purchase invoice', 'فاتورة شراء') : origin.kind === 'opening-stock' ? tr('Opening stock', 'رصيد افتتاحي') : tr('Existing stock registration', 'تكويد رصيد سابق');
       const purchaseId = String(origin.purchaseTransactionId || '');
       const invoiceLink = has('purchase-view') && /^[a-f\d]{24}$/i.test(purchaseId)
-        ? `<a class="iu-link" href="#barcodes/receipt/${encodeURIComponent(purchaseId)}">${html(unit.invoiceRef ? tr('Invoice #', 'فاتورة #') + unit.invoiceRef : tr('Open source invoice', 'فتح فاتورة المصدر'))}</a>` : '';
+        ? `<a class="iu-link" href="#warehouse-management/receipt/${encodeURIComponent(purchaseId)}">${html(unit.invoiceRef ? tr('Invoice #', 'فاتورة #') + unit.invoiceRef : tr('Open source invoice', 'فتح فاتورة المصدر'))}</a>` : '';
+      const locationId = String(unit.product?.storageLocationId || '');
       return `<tr data-log-unit="${html(unit._id)}" class="${state.selected.has(String(unit._id)) ? 'selected' : ''}">
         <td class="iu-log-select"><input type="checkbox" data-unit-id="${html(unit._id)}" ${state.selected.has(String(unit._id)) ? 'checked' : ''} aria-label="${html(tr('Select unit ', 'تحديد قطعة ') + unit.barcode)}"></td>
-        <td class="iu-log-product"><button type="button" class="iu-product-open" data-piece-actions="${html(unit._id)}" dir="auto">${html(unit.product?.name || tr('Unknown product', 'منتج غير معروف'))}</button><span class="iu-unit-sku">SKU <bdi>${html(unit.product?.code || '—')}</bdi></span></td>
+        <td class="iu-log-product"><div class="iu-unit-product-line">${productImage(unit.product || {}, true)}<span><button type="button" class="iu-product-open" data-piece-actions="${html(unit._id)}" dir="auto">${html(unit.product?.name || tr('Unknown product', 'منتج غير معروف'))}</button><span class="iu-unit-sku">SKU <bdi>${html(unit.product?.code || '—')}</bdi></span></span></div></td>
         <td class="iu-log-invoice" data-label="${tr('Invoice reference', 'مرجع الفاتورة')}">${unit.invoiceRef ? `<bdi>${html(unit.invoiceRef)}</bdi>` : '<span class="iu-muted">—</span>'}</td>
         <td class="iu-log-identity"><div class="iu-log-code"><code dir="ltr">${html(unit.manualCode || unit.barcode)}</code><button type="button" class="iu-link iu-copy-code" data-copy-barcode="${html(unit.manualCode || unit.barcode)}" aria-label="${html(tr('Copy barcode ', 'نسخ الباركود ') + unit.barcode)}">${icon('copy')}</button></div><details class="iu-log-details"><summary>${tr('Piece details', 'تفاصيل القطعة')}</summary><dl><div><dt>${tr('Unit ID', 'هوية القطعة')}</dt><dd><code dir="ltr">${html(unit._id)}</code></dd></div><div><dt>${tr('Source', 'المصدر')}</dt><dd>${html(source)} ${invoiceLink}</dd></div>${origin.reconciliationRef ? `<div><dt>${tr('Count reference', 'مرجع الجرد')}</dt><dd dir="auto">${html(origin.reconciliationRef)}</dd></div>` : ''}${unit.registeredBy ? `<div><dt>${tr('Registered by', 'سجّلها')}</dt><dd dir="auto">${html(unit.registeredBy)}</dd></div>` : ''}</dl><button type="button" class="iu-link iu-piece-actions" data-piece-actions="${html(unit._id)}">${tr('Piece actions & history', 'إجراءات القطعة وسجلها')}</button></details></td>
         <td class="iu-log-status">${pieceStatus(unit, true)}<div class="iu-row-meta"><button type="button" class="iu-link iu-history-open" data-piece-actions="${html(unit._id)}">${icon('clock')}${tr('History & actions', 'السجل والإجراءات')}</button><span title="${tr('Print requests', 'طلبات الطباعة')}">${icon('printer')}${Number(unit.printCount) || 0}</span></div></td>
-        <td class="iu-log-location" data-label="${tr('Warehouse', 'المخزن')}"><span dir="auto" data-warehouse-name="${html(unit.warehouseCode || 'MAIN')}">${html(window.SouliaWarehouses?.name(unit.warehouseCode) || unit.warehouseCode || 'المخزن الرئيسي')}</span></td>
+        <td class="iu-log-location" data-label="${tr('Warehouse', 'المخزن')}"><div class="iu-location-cell"><span dir="auto" data-warehouse-name="${html(unit.warehouseCode || 'MAIN')}">${html(window.SouliaWarehouses?.name(unit.warehouseCode) || unit.warehouseCode || 'المخزن الرئيسي')}</span>${locationId ? `<details class="iu-location-menu"><summary data-unit-location="${html(locationId)}" data-unit-warehouse="${html(unit.warehouseCode || 'MAIN')}" aria-label="${html(tr('Show piece location', 'عرض موقع القطعة'))}" title="${html(tr('Show piece location', 'عرض موقع القطعة'))}">${icon('pin')}</summary><div class="iu-location-detail" role="group" aria-label="${html(tr('Piece location', 'موقع القطعة'))}"></div></details>` : ''}</div></td>
         <td class="iu-log-date" data-label="${tr('Registered', 'التسجيل')}">${validDate ? `<time datetime="${html(created.toISOString())}" title="${html(created.toLocaleString(tr('en-GB', 'ar-EG')))}">${html(created.toLocaleDateString(tr('en-GB', 'ar-EG'), { day: 'numeric', month: 'short', year: 'numeric' }))}</time><small>${html(created.toLocaleTimeString(tr('en-GB', 'ar-EG'), { hour: '2-digit', minute: '2-digit' }))}</small>` : '<span>—</span>'}</td>
       </tr>`;
     }).join('');
@@ -800,7 +859,15 @@
       renderLabelAudit();
       get('iu-line-units-meta').textContent = tr(`Invoice #${invoice.ref} · page ${page} · ${response.total} pieces`, `فاتورة #${invoice.ref} · صفحة ${page} · ${response.total} قطعة`);
       get('iu-line-prev').disabled = page <= 1; get('iu-line-next').disabled = page * 30 >= response.total;
-    } catch (error) { if (request === state.unitDialogRequest && generation === state.generation) get('iu-line-units').innerHTML = emptyState(tr('Units could not be loaded', 'تعذر تحميل القطع'), error.message); }
+    } catch (error) {
+      if (request !== state.unitDialogRequest || generation !== state.generation) return;
+      get('iu-line-units-meta').textContent = tr(`Invoice #${invoice.ref} · ${line.name || line.sku}`, `فاتورة #${invoice.ref} · ${line.name || line.sku}`);
+      const detail = error.status >= 500 || error.code === 'NETWORK_ERROR'
+        ? tr('The piece list could not be loaded. Retry the read; no identities were changed.', 'تعذر تحميل قائمة القطع. أعد المحاولة؛ لم تتغير أي هوية.')
+        : error.message;
+      get('iu-line-units').innerHTML = emptyState(tr('Units could not be loaded', 'تعذر تحميل القطع'), detail)
+        + `<div class="iu-dialog-retry"><button type="button" class="btn btn-primary" data-retry-line="${line.lineIndex}">${tr('Retry loading pieces', 'إعادة تحميل القطع')}</button></div>`;
+    }
   }
   function renderLabelAudit() {
     const host = get('iu-label-audit');
@@ -872,26 +939,41 @@
   function groupedLabelSheets(batch) {
     const groups = new Map();
     for (const label of batch.labels) {
-      const key = String(label.sku);
+      const key = String(label.sku) + '|' + String(label.batchId || '');
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(label);
     }
     const sheets = [];
     for (const labels of groups.values()) {
-      if (sheets.length) sheets.push({ separator: true });
+      const input = [labels[0].sku, ...labels.map(label => label.barcode).sort()].join('|');
+      let hash = 2166136261;
+      for (let i = 0; i < input.length; i++) hash = Math.imul(hash ^ input.charCodeAt(i), 16777619);
+      const storedBatchId = String(labels[0].batchId || '');
+      const batchNumber = /^[a-f\d]{24}$/i.test(storedBatchId) && labels.every(label => label.batchId === storedBatchId)
+        ? storedBatchId.slice(-8).toUpperCase() : (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+      sheets.push({ cover: { productName: labels[0].productName, sku: labels[0].sku, batchId: storedBatchId, count: labels.length,
+        code: 'B-' + (hash >>> 0).toString(36).toUpperCase().padStart(6, '0').slice(-6),
+        batchNumber, batchId:storedBatchId } });
       sheets.push(...labels.map(label => ({ label })));
     }
     return sheets;
   }
-  function separatorHtml(size) {
-    return `<article class="iu-label iu-label-separator" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--separator-font:${Math.min(10, Number(size.heightMm) / 4)}mm" aria-label="فاصل"><strong dir="rtl">فاصل</strong></article>`;
+  function batchCoverHtml(cover, size) {
+    const logo = location.origin + '/soulia-label-logo.svg';
+    return `<article class="iu-label iu-label-batch-cover${size.widthMm <= 50 ? ' iu-label-batch-cover-compact' : ''}" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--label-margin:${Number(size.marginMm || 2)}mm" aria-label="${html(tr(`Batch cover: ${cover.productName}`, `ورقة تعريف دفعة: ${cover.productName}`))}"><div class="iu-cover-top"><code dir="ltr">${html(cover.code)}</code></div><strong class="iu-cover-name" dir="auto">${html(cover.productName)}</strong><div class="iu-cover-bottom"><div class="iu-cover-count"><b dir="ltr">${Number(cover.count)}</b><span>${tr('labels', 'ملصق')}</span></div><div class="iu-cover-brand-row"><span class="iu-cover-brand"><img src="${logo}" alt="Soulia"></span><code class="iu-cover-batch-number" dir="ltr" aria-label="${html(tr('Batch number', 'رقم الدفعة'))}">${html(cover.batchNumber)}</code></div></div></article>`;
   }
   function previewSheets(batch, separateProducts = false) {
     const sheets = separateProducts ? groupedLabelSheets(batch) : batch.labels.map(label => ({ label }));
     let index = 0;
-    return sheets.map(({ label, separator }) => separator
-      ? `<figure class="iu-preview-sheet"><figcaption>${tr('Product separator', 'فاصل بين المنتجات')}</figcaption>${separatorHtml(batch.size)}<small class="iu-print-count">${tr('Extra roll label', 'ملصق إضافي على الرول')}</small></figure>`
+    return sheets.map(({ label, cover }) => cover
+      ? `<figure class="iu-preview-sheet"><figcaption><span>${tr('Batch cover', 'ورقة تعريف الدفعة')}</span><bdi>${html(cover.code)}</bdi></figcaption>${batchCoverHtml(cover, batch.size)}<small class="iu-print-count">${tr(`${cover.count} labels · printed before this product`, `${cover.count} ملصق · تُطبع قبل هذا المنتج`)}</small></figure>`
       : `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${++index}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count">${tr('Recorded print requests: ', 'طلبات الطباعة المسجلة: ')}<b>${Number(label.printCount) || 0}</b></small></figure>`).join('');
+  }
+  function renderPreviewSheets(batch, includeCovers) {
+    get('iu-previews').innerHTML = previewSheets(batch, includeCovers);
+    const coverCount = includeCovers ? groupedLabelSheets(batch).length - batch.labels.length : 0;
+    get('iu-preview-total').textContent = tr(`${batch.labels.length} piece label(s)`, `${batch.labels.length} ملصق قطعة`) +
+      (coverCount ? tr(` + ${coverCount} batch cover${coverCount === 1 ? '' : 's'}`, ` + ${coverCount} ورقة تعريف`) : '');
   }
   async function preview() {
     if (!state.ready || state.busy || !state.sizeId || !state.selected.size) return;
@@ -907,9 +989,7 @@
       get('iu-preview-section').querySelector('.iu-preview-stage-note').textContent = tr(
         `Printer stock: width ${batch.size.widthMm} mm across the roll × ${batch.size.heightMm} mm feed length. Use 100% scale, zero margins, headers/footers off, and disable driver rotation.`,
         `إعداد ورق الطابعة: عرض ${batch.size.widthMm} مم عبر الرول × طول تغذية ${batch.size.heightMm} مم. استخدم مقياس 100٪، وهوامش صفر، وأوقف الترويسات والتذييلات وتدوير تعريف الطابعة.`);
-      get('iu-previews').innerHTML = previewSheets(batch, true);
-      const separatorCount = groupedLabelSheets(batch).length - batch.labels.length;
-      if (separatorCount) get('iu-preview-total').textContent += tr(` + ${separatorCount} separator(s)`, ` + ${separatorCount} فاصل`);
+      renderPreviewSheets(batch, true);
       await waitForLayout(get('iu-previews'));
       if (generation !== state.generation) return;
       state.preview = { batch, ids, sizeId }; message(tr('Preview validated. Check the paper dimensions before printing.', 'تم التحقق من المعاينة. راجع مقاس الورق قبل الطباعة.'));
@@ -922,14 +1002,19 @@
     if (!state.ready || state.busy || !state.preview || !has('inventory-units-print')) return;
     const { ids, sizeId } = state.preview;
     if (JSON.stringify(ids) !== JSON.stringify(selectedIds()) || sizeId !== state.sizeId) { invalidatePreview(); message(tr('Selection changed. Preview the labels again.', 'تغير التحديد. عاين الملصقات مجددًا.'), true); return; }
-    let popup = window.open('', '_blank', 'width=850,height=750');
-    if (!popup) { message(tr('Allow popups to open the print preview.', 'اسمح بالنوافذ المنبثقة لفتح معاينة الطباعة.'), true); return; }
-    popup.document.body.textContent = tr('Preparing labels…', 'جارٍ تجهيز الملصقات…'); setBusy(true);
+    const choice = await chooseBatchCovers(groupedLabelSheets(state.preview.batch).length - state.preview.batch.labels.length);
+    if (!choice) return;
+    let { popup } = choice;
+    const { includeCovers } = choice;
+    if (!state.preview || JSON.stringify(ids) !== JSON.stringify(selectedIds()) || sizeId !== state.sizeId) {
+      popup.close(); invalidatePreview(); message(tr('Selection changed. Preview the labels again.', 'تغير التحديد. عاين الملصقات مجددًا.'), true); return;
+    }
+    renderPreviewSheets(state.preview.batch, includeCovers); setBusy(true);
     try {
       if (!state.pendingPrint) {
         const fresh = validateBatch(await post('/labels/preview', { unitIds: ids, sizeId, operationKey: requestKey(), reason: 'Check recorded print history before label printing' }), ids, sizeId);
         const reprints = fresh.labels.filter(label => Number(label.printCount) > 0);
-        state.preview.batch = fresh; get('iu-previews').innerHTML = previewSheets(fresh, true);
+        state.preview.batch = fresh; renderPreviewSheets(fresh, includeCovers);
         if (reprints.length) {
           popup.close();popup=await confirmReprint(reprints);
           if (!popup) { message(tr('Reprint cancelled. No new print request recorded.', 'تم إلغاء إعادة الطباعة دون تسجيل طلب جديد.')); return; }
@@ -938,7 +1023,7 @@
         state.pendingPrint = { unitIds: ids, sizeId, operationKey: requestKey(), allowReprint: reprints.length > 0, reason: 'Operator requested browser label printing; physical outcome unverified' };
       }
       const batch = validateBatch(await post('/labels/requests', state.pendingPrint), ids, sizeId), size = batch.size;
-      state.preview.batch = batch; get('iu-previews').innerHTML = previewSheets(batch, true);
+      state.preview.batch = batch; renderPreviewSheets(batch, includeCovers);
       const printedInvoiceIds = [...new Set(batch.labels.map(label => state.selected.get(label.unitId)?.origin?.purchaseTransactionId).filter(Boolean))];
       if (printedInvoiceIds.length && has('purchase-view')) void refreshPrintedInvoices(printedInvoiceIds);
       for (const label of batch.labels) {
@@ -953,7 +1038,7 @@
         .iu-print-sheet{page:unit-label;display:block;position:relative;box-sizing:border-box;width:${size.widthMm}mm;height:${size.heightMm}mm;margin:0;padding:0;overflow:hidden;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
         .iu-print-sheet:last-child{break-after:auto;page-break-after:auto}
         .iu-print-sheet>.iu-label{display:block;width:${size.widthMm}mm!important;height:${size.heightMm}mm!important;margin:0!important;transform:none!important;zoom:1!important;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-        </style></head><body>${groupedLabelSheets(batch).map(({ label, separator }) => `<section class="iu-print-sheet">${separator ? separatorHtml(size) : labelHtml(label, size)}</section>`).join('')}</body></html>`);
+        </style></head><body>${(includeCovers ? groupedLabelSheets(batch) : batch.labels.map(label => ({ label }))).map(({ label, cover }) => `<section class="iu-print-sheet">${cover ? batchCoverHtml(cover, size) : labelHtml(label, size)}</section>`).join('')}</body></html>`);
       popup.document.close();
       await new Promise((resolve, reject) => {
         const css = popup.document.querySelector('link'), timeout = setTimeout(() => reject(new Error(tr('Print stylesheet timed out.', 'انتهت مهلة تحميل تنسيق الطباعة.'))), 15000);
@@ -973,14 +1058,51 @@
     }
     finally { setBusy(false); }
   }
-  function switchView(view) {
-    if (state.busy || view === 'receipts' && !has('purchase-view')) return;
+  function switchView(view, updateRoute = true) {
+    if (state.busy || window.SupplierLabels?.isBusy() || view !== 'layout' && !has('inventory-units-view') || view === 'receipts' && !has('purchase-view') || view === 'supplier-labels' && !has('inventory-units-print') || view === 'layout' && !has('products')) return;
+    if (updateRoute) {
+      const hash = '#warehouse-management' + (view === 'receipts' ? '' : '/' + view);
+      if (location.hash !== hash) history.pushState(null, '', hash);
+    }
+    if (view === 'supplier-labels' || view === 'layout' || !get('iu-workspace')) {
+      void window.renderBarcodeManagement();
+      get('iu-tab-' + view)?.focus({ preventScroll:true });
+      return;
+    }
     const changed = state.view !== view;
     state.view = view; get('iu-workspace').dataset.view = view;
     get('iu-invoice-rail').hidden = view !== 'receipts'; get('iu-invoice-detail').hidden = view !== 'receipts'; get('iu-registry').hidden = view !== 'units';
-    document.querySelectorAll('#page-barcodes [data-iu-tab]').forEach(button => { const active = button.dataset.iuTab === view; button.classList.toggle('active', active); button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1; button.setAttribute('aria-controls', button.dataset.iuTab === 'receipts' ? 'iu-invoice-detail' : 'iu-registry'); });
+    selectBarcodeTab(view);
+    const title = get('iu-view-title'), description = get('iu-view-description');
+    if (title && description) {
+      title.textContent = view === 'units' ? tr('Find a piece', 'البحث عن قطعة') : tr('Print by invoice', 'الطباعة حسب الفاتورة');
+      description.textContent = view === 'units' ? tr('Search by product, SKU or barcode and review each piece.', 'ابحث باسم المنتج أو كوده أو الباركود، وراجع بيانات كل قطعة.') : tr('Choose an invoice and print labels for its pieces.', 'اختر فاتورة واطبع ملصقات قطعها.');
+    }
     if (view === 'units' && !state.unitsReady) loadUnits();
     if (changed) revealSurface(get(view === 'units' ? 'iu-registry' : 'iu-invoice-detail'));
+  }
+  function selectBarcodeTab(view) {
+    const root = get('page-barcodes');
+    if (root) {
+      root.dataset.view = view;
+      const current = root.querySelector('#iu-current-tab-name');
+      const tab = root.querySelector('#iu-tab-' + view);
+      if (current && tab) current.textContent = tab.childNodes[0]?.textContent?.trim() || tab.textContent.trim();
+    }
+    document.querySelectorAll('#page-barcodes [data-iu-tab]').forEach(button => {
+      const tab = button.dataset.iuTab, active = tab === view;
+      button.classList.toggle('active', active); button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1;
+      button.setAttribute('aria-controls', tab === 'receipts' ? 'iu-invoice-detail' : tab === 'units' ? 'iu-registry' : tab === 'layout' ? 'page-warehouse-layout' : 'page-supplier-labels');
+    });
+  }
+  function barcodeTabKeys(event, root) {
+    const tab = event.target.closest('[data-iu-tab]');
+    if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const tabs = [...root.querySelectorAll('[data-iu-tab]:not([hidden])')], index = tabs.indexOf(tab);
+    const offset = event.key === 'ArrowRight' ? (root.dir === 'rtl' ? -1 : 1) : (root.dir === 'rtl' ? 1 : -1);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length;
+    event.preventDefault(); const view = tabs[next].dataset.iuTab;
+    switchView(view); get('iu-tab-' + view)?.focus({preventScroll:true});
   }
   async function refreshData() {
     if (!state.ready || state.busy) return;
@@ -989,6 +1111,26 @@
     if (generation !== state.generation) return;
     if (results[1].status === 'fulfilled' && results[1].value && state.activeInvoice?.transactionId === activeId) { state.activeInvoice = results[1].value; renderDetail(); renderReceipts(); }
     else if (results[1].status === 'rejected') message(results[1].reason.message, true);
+  }
+  async function showPieceLocation(summary) {
+    const details = summary.closest('details'), host = details?.querySelector('.iu-location-detail');
+    if (!host || details.open) return;
+    host.textContent = tr('Loading location…', 'جارٍ تحميل الموقع…');
+    try {
+      const layout = window.SouliaWarehouseLayout;
+      if (!layout) throw new Error('Warehouse layout unavailable');
+      await layout.load();
+      if (!host.isConnected) return;
+      const place = layout.describe(summary.dataset.unitLocation);
+      if (!place) { host.textContent = tr('Location is no longer available.', 'الموقع المحدد لم يعد متاحًا.'); return; }
+      const parts = [[tr('Warehouse', 'المخزن'), place.warehouse], [tr('Zone', 'المنطقة'), place.zone ? 'ZONE ' + place.zone : '—'],
+        [tr('Rack', 'الرف'), place.rack || '—'], [tr('Level', 'المستوى'), place.level || '—']];
+      const normalizedWarehouse = value => ['main', 'المخزن الرئيسي'].includes(String(value || '').trim().toLowerCase()) ? 'MAIN' : String(value || '').trim();
+      const differentWarehouse = normalizedWarehouse(place.warehouseCode) !== normalizedWarehouse(summary.dataset.unitWarehouse);
+      host.innerHTML = `<dl>${parts.map(([label, value]) => `<div><dt>${label}</dt><dd dir="auto">${html(value)}</dd></div>`).join('')}</dl>${differentWarehouse ? `<p class="iu-location-warning">${tr('This piece is recorded in another warehouse. Check its physical location.', 'هذه القطعة مسجلة في مخزن آخر؛ تحقق من موقعها الفعلي.')}</p>` : ''}`;
+    } catch {
+      if (host.isConnected) host.textContent = tr('Could not load the location.', 'تعذر تحميل الموقع.');
+    }
   }
   function bindEvents(root) {
     if (!root.dataset.productImageFallback) {
@@ -1008,17 +1150,14 @@
           options[next]?.focus(); return;
         }
       }
-      const tab = event.target.closest('[data-iu-tab]');
-      if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-      const tabs = [...root.querySelectorAll('[data-iu-tab]:not([hidden])')], index = tabs.indexOf(tab);
-      const offset = event.key === 'ArrowRight' ? (root.dir === 'rtl' ? -1 : 1) : (root.dir === 'rtl' ? 1 : -1);
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + offset + tabs.length) % tabs.length;
-      event.preventDefault(); switchView(tabs[next].dataset.iuTab); tabs[next].focus();
+      barcodeTabKeys(event, root);
     };
     root.onclick = event => {
       const picker = get('iu-size-picker');
       if (picker?.open && !picker.contains(event.target)) picker.open = false;
       if (event.target.closest('#iu-size-picker summary') && (!state.ready || state.busy)) { event.preventDefault(); return; }
+      const locationSummary = event.target.closest('summary[data-unit-location]');
+      if (locationSummary) { void showPieceLocation(locationSummary); return; }
       const button = event.target.closest('button'); if (!button || button.disabled) return;
       if (button.dataset.pieceActions) { openPieceActions(button.dataset.pieceActions); return; }
       if (button.dataset.copyBarcode) {
@@ -1035,6 +1174,11 @@
       if (button.dataset.invoiceId) { const invoice = state.receipts.find(inv => inv.transactionId === button.dataset.invoiceId); if (invoice) chooseInvoice(invoice); }
       if (button.dataset.receiptFilter) { state.receiptFilter = button.dataset.receiptFilter; renderReceipts(); }
       if (button.dataset.viewLine !== undefined) viewLine(Number(button.dataset.viewLine));
+      if (button.dataset.retryLine !== undefined) viewLine(Number(button.dataset.retryLine), state.unitScope?.page || 1);
+      if (button.dataset.linkLine !== undefined) {
+        if (window.PreprintedLabels?.openLink && state.activeInvoice) void window.PreprintedLabels.openLink(state.activeInvoice.transactionId, Number(button.dataset.linkLine));
+        else message(tr('Preprinted label linking is unavailable. Refresh this page and try again.', 'ربط الملصقات المطبوعة مسبقًا غير متاح الآن. حدّث الصفحة وحاول مجددًا.'), true);
+      }
       if (button.dataset.registerLine !== undefined) openRegistration(Number(button.dataset.registerLine));
       if (button.dataset.iuClose) closeDialog(button.dataset.iuClose);
       if (button.dataset.removeGroup && !state.busy) { for (const [id, u] of state.selected) if ((u.sourceKey || (u.origin?.purchaseTransactionId || '') + ':' + u.productId) === button.dataset.removeGroup) state.selected.delete(id); selectionChanged(); }
@@ -1128,6 +1272,22 @@
       <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><section id="iu-label-audit" class="iu-label-audit"></section><p data-dialog-message role="status"></p><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>
       <dialog id="iu-preview-section" class="iu-dialog iu-preview-dialog" aria-labelledby="iu-preview-title" hidden><header class="iu-dialog-header"><h2 id="iu-preview-title">${tr('Label preview', 'معاينة الملصقات')}</h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-preview-section" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-preview-layout"><div class="iu-preview-summary"><strong id="iu-preview-total"></strong><p id="iu-preview-size" dir="ltr"></p></div><div class="iu-preview-stage"><div class="iu-preview-toolbar"><span>${tr('Check your labels before printing', 'راجع الملصقات قبل الطباعة')}</span><label>${tr('Zoom', 'نسبة التكبير')}<select dir="ltr" id="iu-preview-zoom" aria-label="${tr('Preview zoom', 'تكبير المعاينة')}"><option value="100">${tr('100%', '100٪')}</option><option value="125">${tr('125%', '125٪')}</option><option value="150">${tr('150%', '150٪')}</option><option value="200">${tr('200%', '200٪')}</option></select></label></div><div id="iu-previews" class="iu-previews"></div><p class="iu-preview-stage-note">${tr('Print at 100% scale with matching paper and no margins.', 'اطبع بمقياس 100٪ وبمقاس الورق المطابق دون هوامش.')}</p></div><p class="iu-preview-message" data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-preview-section">${tr('Back to selection', 'الرجوع للتحديد')}</button><button id="iu-print" class="btn btn-primary" type="button" disabled>${icon('printer')}${tr('Print / reprint', 'طباعة / إعادة طباعة')}</button></footer></dialog>`;
   }
+  function barcodeNavigationHtml(canPurchase) {
+    return `<header class="iu-header"><div><h1>${tr('Warehouse management', 'إدارة المخازن')}</h1><p class="iu-subtitle">${tr('Print labels, find pieces and manage warehouse locations.', 'اطبع الملصقات، وابحث عن القطع، وأدر مواقع التخزين.')}</p></div><div class="iu-header-actions"><span id="iu-connection" class="iu-connection" data-state="loading">${tr('Connecting…', 'جار الاتصال…')}</span><button id="iu-refresh" class="btn btn-outline iu-icon-button" type="button" aria-label="${tr('Refresh data', 'تحديث البيانات')}">${icon('refresh')}</button></div></header>
+      <nav class="iu-tabs" role="tablist" aria-label="${tr('Barcode views', 'عروض الباركود')}"><button id="iu-tab-receipts" type="button" role="tab" data-iu-tab="receipts" ${canPurchase ? '' : 'hidden'}>${tr('Print by invoice', 'الطباعة حسب الفاتورة')} <span id="iu-tab-invoice-count" class="iu-count">0</span></button><button id="iu-tab-units" type="button" role="tab" data-iu-tab="units">${tr('Find a piece', 'البحث عن قطعة')}</button>${has('inventory-units-print') ? `<button id="iu-tab-supplier-labels" type="button" role="tab" data-iu-tab="supplier-labels">${tr('QR Label Generator', 'مولّد ملصقات QR')}</button>` : ''}${has('products') ? `<button id="iu-tab-layout" type="button" role="tab" data-iu-tab="layout">${tr('Warehouse locations', 'مواقع التخزين')}</button>` : ''}</nav>
+      <nav class="iu-breadcrumb" aria-label="${tr('Breadcrumb', 'مسار الصفحة')}"><span>${tr('Warehouse management', 'إدارة المخازن')}</span><span aria-hidden="true">/</span><strong id="iu-current-tab-name"></strong></nav>`;
+  }
+  function mountBarcodeContent(root, content, canPurchase, actorId) {
+    const permissions = [canPurchase, has('inventory-units-view'), has('inventory-units-print'), has('products')].join(':');
+    const language = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'ar';
+    const previous = root.querySelector('#iu-tab-content');
+    if (previous && root.dataset.barcodeActor === actorId && root.dataset.barcodePermissions === permissions && root.dataset.barcodeLanguage === language) previous.innerHTML = content;
+    else root.innerHTML = barcodeNavigationHtml(canPurchase) + `<div id="iu-tab-content">${content}</div>`;
+    root.dataset.barcodeActor = actorId;
+    root.dataset.barcodePermissions = permissions;
+    root.dataset.barcodeLanguage = language;
+    revealSurface(root.querySelector('#iu-tab-content'));
+  }
   window.renderBarcodeManagement = async function () {
     if (state.busy) { state.refreshQueued = true; return; }
     const root = get('page-barcodes'); if (!root) return;
@@ -1138,19 +1298,42 @@
     const actor = typeof currentUser === 'undefined' ? null : currentUser, actorId = String(actor?._id || actor?.id || actor?.userId || actor?.username || '');
     if (state.stockScope?.actor && state.stockScope.actor !== actorId) state.stockScope = null;
     if (actorId !== state.actor) { state.selected.clear(); state.activeInvoice = null; state.sizeId = ''; state.registrationRequests.clear(); state.ranges.clear(); state.receipts = []; state.actor = actorId; }
-    if (!has('inventory-units-view')) { state.selected.clear(); root.innerHTML = emptyState(tr('Permission denied', 'الصلاحية غير متاحة'), tr('Ask an administrator for inventory-unit access.', 'تواصل مع المسؤول لإتاحة الوصول إلى القطع.')); return; }
+    if (!has('inventory-units-view') && !(location.hash.split('/')[1] === 'layout' && has('products'))) { state.selected.clear(); root.innerHTML = emptyState(tr('Permission denied', 'الصلاحية غير متاحة'), tr('Ask an administrator for inventory-unit access.', 'تواصل مع المسؤول لإتاحة الوصول إلى القطع.')); return; }
     state.labelAudit = null; state.ready = false; state.config = null; state.preview = null; state.unitsReady = false; state.unitLoading = false; state.receiptLoading = false;
-    const match = location.hash.match(/^#barcodes\/receipt\/([a-f\d]{24})(?:\/([^/]+))?$/i), linkedId = match?.[1]?.toLowerCase();
+    const match = location.hash.match(/^#warehouse-management\/receipt\/([a-f\d]{24})(?:\/([^/]+))?$/i), linkedId = match?.[1]?.toLowerCase();
     const canPurchase = has('purchase-view'); if (!canPurchase) state.view = 'units'; else if (linkedId) state.view = 'receipts';
     root.dir = tr('ltr', 'rtl'); root.classList.add('iu-option-a');
-    root.innerHTML = `<header class="iu-header"><div><h1>${tr('Barcode management', 'إدارة الباركود')}</h1><p class="iu-subtitle">${tr('Choose an invoice, select pieces, then preview and print their labels.', 'اختر الفاتورة، حدد القطع، ثم عاين الملصقات واطبعها.')}</p></div><div class="iu-header-actions"><span id="iu-connection" class="iu-connection" data-state="loading">${tr('Connecting…', 'جار الاتصال…')}</span><button id="iu-refresh" class="btn btn-outline iu-icon-button" type="button" aria-label="${tr('Refresh data', 'تحديث البيانات')}">${icon('refresh')}</button></div></header>
-      <nav class="iu-tabs" role="tablist" aria-label="${tr('Barcode views', 'عروض الباركود')}"><button id="iu-tab-receipts" type="button" role="tab" data-iu-tab="receipts" ${canPurchase ? '' : 'hidden'}>${tr('Print by invoice', 'الطباعة حسب الفاتورة')} <span id="iu-tab-invoice-count" class="iu-count">0</span></button><button id="iu-tab-units" type="button" role="tab" data-iu-tab="units">${tr('Find a piece', 'البحث عن قطعة')}</button></nav>
+    const subroute = location.hash.split('/')[1];
+    if (subroute === 'units') state.view = 'units';
+    else if (subroute === 'layout' && has('products')) state.view = 'layout';
+    else if (subroute === 'layout') { state.view = 'units'; history.replaceState(null, '', '#warehouse-management/units'); }
+    else if (canPurchase && !subroute && !state.stockScope) state.view = 'receipts';
+    if (subroute === 'layout' && has('products')) {
+      state.view = 'layout';
+      mountBarcodeContent(root, '<section id="page-warehouse-layout" role="tabpanel" aria-labelledby="iu-tab-layout"></section>', canPurchase, actorId);
+      if (!has('inventory-units-view')) root.querySelectorAll('[data-iu-tab]:not([data-iu-tab="layout"])').forEach(tab => { tab.hidden = true; });
+      root.onclick = event => { const tab = event.target.closest('[data-iu-tab]'); if (tab) switchView(tab.dataset.iuTab); };
+      root.onkeydown = event => barcodeTabKeys(event, root);
+      selectBarcodeTab('layout');
+      await window.SouliaWarehouseLayout?.render();
+      return;
+    }
+    if (subroute === 'supplier-labels') {
+      state.view = 'supplier-labels';
+      mountBarcodeContent(root, '<section id="page-supplier-labels" class="active" role="tabpanel" aria-labelledby="iu-tab-supplier-labels"></section>', canPurchase, actorId);
+      root.onclick = event => { const tab=event.target.closest('[data-iu-tab]'); if(tab) switchView(tab.dataset.iuTab); };
+      root.onkeydown = event => barcodeTabKeys(event,root);
+      selectBarcodeTab('supplier-labels');
+      await window.SupplierLabels?.render();
+      return;
+    }
+    mountBarcodeContent(root, `<header class="iu-section-heading iu-standard-heading"><div><h2 id="iu-view-title"></h2><p id="iu-view-description"></p></div></header>
       <div id="iu-message" role="status" aria-live="polite"></div><section id="iu-error" class="iu-inline-error" role="alert" hidden><div><strong id="iu-error-title"></strong><p id="iu-error-detail"></p></div><button id="iu-retry" class="btn btn-outline" type="button">${tr('Retry', 'إعادة المحاولة')}</button></section><div id="iu-receipt-filter" hidden></div>
       <div id="iu-workspace" class="iu-workspace" data-view="receipts"><aside id="iu-invoice-rail" class="iu-panel iu-invoice-rail"><div class="iu-rail-head"><h2>${tr('Invoices', 'الفواتير')} <span id="iu-invoice-count" class="iu-count">0</span></h2><label class="iu-field">${icon('search')}<input id="iu-receipt-query" type="search" maxlength="160" value="${html(state.receiptQuery)}" placeholder="${tr('Invoice, supplier or product', 'الفاتورة، المورد أو المنتج')}" aria-label="${tr('Find invoices', 'البحث عن الفواتير')}"></label><div class="iu-rail-filters"><button class="iu-chip active" data-receipt-filter="all" type="button">${tr('All', 'الكل')}</button><button class="iu-chip" data-receipt-filter="missing" type="button">${tr('Needs codes', 'تحتاج أكواد')}</button><button class="iu-chip" data-receipt-filter="ready" type="button">${tr('Codes complete', 'مكتملة الأكواد')}</button></div></div><div id="iu-receipts-error" class="iu-inline-error" hidden><span id="iu-receipts-error-text"></span><button id="iu-receipts-retry" class="iu-link" type="button">${tr('Retry', 'إعادة المحاولة')}</button></div><div id="iu-receipt-list" class="iu-invoice-list"><div class="iu-skeleton"></div></div><div class="iu-rail-footer"><span id="iu-receipt-progress"></span><button id="iu-more-receipts" class="iu-link" type="button" hidden>${tr('Load more invoices', 'تحميل المزيد من الفواتير')}</button><p>${tr('Your label batch stays selected while switching invoices.', 'يظل تحديد الدفعة محفوظًا أثناء التنقل بين الفواتير.')}</p></div></aside>
       <section id="iu-invoice-detail" class="iu-panel iu-invoice-detail" role="tabpanel" aria-labelledby="iu-tab-receipts" aria-label="${tr('Invoice products', 'منتجات الفاتورة')}"></section>${registryHtml()}
-      <aside class="iu-panel iu-label-panel"><div class="iu-panel-heading iu-print-heading">${icon('printer')}<h2>${tr('Label batch', 'دفعة الملصقات')}</h2></div><div class="iu-print-body"><div class="iu-print-first"><p class="iu-step"><b>1</b>${tr('Selected pieces', 'القطع المحددة')}</p><div class="iu-batch-total"><strong id="iu-stat-selected">0</strong><span>${tr('piece labels', 'ملصق قطعة')}</span></div><div class="iu-capacity"><i id="iu-capacity"></i></div><div class="iu-capacity-caption"><span id="iu-batch-source"></span><span>${tr('Limit 100', 'الحد 100')}</span></div><div id="iu-queue" class="iu-queue"></div></div><div class="iu-print-second"><p class="iu-step"><b>2</b>${tr('Label dimensions', 'مقاس الملصق')}</p>${paperPickerHtml()}<div class="iu-paper-placeholder"><div class="iu-demo-label" role="img" aria-label="${tr('Sample label for illustration only, not for scanning', 'نموذج ملصق توضيحي فقط، غير مخصص للمسح')}"><div class="iu-demo-brand"><b>SOULIA HOME</b><span>${tr('SAMPLE', 'نموذج')}</span></div><div class="iu-demo-content"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M1 1h10v10H1zm20 0h10v10H21zM1 21h10v10H1zM14 2h4v5h-4zm0 9h4v7h-4zM2 14h7v4H2zm19 0h4v4h-4zm7 0h3v7h-3zM14 22h4v9h-4zm7-1h4v4h-4zm3 7h7v3h-7z"/><path fill="white" d="M3 3h6v6H3zm20 0h6v6h-6zM3 23h6v6H3z"/><path fill="currentColor" d="M5 5h2v2H5zm20 0h2v2h-2zM5 25h2v2H5z"/></svg><div><strong>${tr('Sample product', 'منتج تجريبي')}</strong><bdi>SKU: SAMPLE-01</bdi><span>EGP 250.00</span></div></div><div class="iu-demo-code">SAMPLE · NOT FOR SCANNING</div></div><span id="iu-paper-size" dir="ltr"></span><small>${tr('Illustration only · preview your actual labels before printing', 'نموذج توضيحي · عاين الملصقات الفعلية قبل الطباعة')}</small></div><button id="iu-preview" class="btn btn-primary iu-full-button" type="button" disabled>${icon('eye')}${tr('Preview labels', 'معاينة الملصقات')}</button><p class="iu-help" id="iu-preview-hint"></p><p id="iu-selection" class="iu-selection-caption"></p><button id="iu-clear" class="iu-clear" type="button" disabled>${tr('Clear batch selection', 'مسح تحديد الدفعة')}</button><details class="iu-print-help"><summary>${tr('Printer setup', 'إعدادات الطابعة')}</summary><p>${tr('Use matching paper, 100% scale, zero margins, and disable headers and footers.', 'استخدم الورق المطابق، ومقياس 100٪، ودون هوامش أو ترويسات.')} ${tr('Physical printing is verified by the operator.', 'يتحقق الموظف من خروج الملصقات فعليًا.')}</p></details></div></div></aside></div>
-      <div id="iu-mobile-bar" class="iu-mobile-bar" hidden><span><b id="iu-mobile-total">0</b> ${tr('labels selected', 'ملصق محدد')}</span><button id="iu-mobile-preview" class="btn btn-primary" type="button" disabled>${tr('Preview & print', 'معاينة وطباعة')}</button></div>${dialogsHtml()}`;
-    bindEvents(root); renderDetail(); renderBatch(); switchView(state.view);
+      <aside class="iu-panel iu-label-panel"><div class="iu-panel-heading iu-print-heading">${icon('printer')}<h2>${tr('Label batch', 'دفعة الملصقات')}</h2></div><div class="iu-print-body"><div class="iu-print-first"><p class="iu-step"><b>1</b>${tr('Selected pieces', 'القطع المحددة')}</p><div class="iu-batch-total"><strong id="iu-stat-selected">0</strong><span>${tr('piece labels', 'ملصق قطعة')}</span></div><div class="iu-capacity"><i id="iu-capacity"></i></div><div class="iu-capacity-caption"><span id="iu-batch-source"></span><span>${tr('Limit 100', 'الحد 100')}</span></div><div id="iu-queue" class="iu-queue"></div></div><div class="iu-print-second"><p class="iu-step"><b>2</b>${tr('Label dimensions', 'مقاس الملصق')}</p>${paperPickerHtml()}<div class="iu-paper-placeholder"><div class="iu-demo-label" role="img" aria-label="${tr('Sample label for illustration only, not for scanning', 'نموذج ملصق توضيحي فقط، غير مخصص للمسح')}"><div class="iu-demo-brand"><img src="/soulia-label-logo.svg" alt="Soulia"><span>${tr('SAMPLE', 'نموذج')}</span></div><div class="iu-demo-content"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M1 1h10v10H1zm20 0h10v10H21zM1 21h10v10H1zM14 2h4v5h-4zm0 9h4v7h-4zM2 14h7v4H2zm19 0h4v4h-4zm7 0h3v7h-3zM14 22h4v9h-4zm7-1h4v4h-4zm3 7h7v3h-7z"/><path fill="white" d="M3 3h6v6H3zm20 0h6v6h-6zM3 23h6v6H3z"/><path fill="currentColor" d="M5 5h2v2H5zm20 0h2v2h-2zM5 25h2v2H5z"/></svg><div><strong>${tr('Sample product', 'منتج تجريبي')}</strong><bdi>SKU: SAMPLE-01</bdi></div></div><div class="iu-demo-code">SAMPLE · NOT FOR SCANNING</div></div><span id="iu-paper-size" dir="ltr"></span><small>${tr('Illustration only · preview your actual labels before printing', 'نموذج توضيحي · عاين الملصقات الفعلية قبل الطباعة')}</small></div><button id="iu-preview" class="btn btn-primary iu-full-button" type="button" disabled>${icon('eye')}${tr('Preview labels', 'معاينة الملصقات')}</button><p class="iu-help" id="iu-preview-hint"></p><p id="iu-selection" class="iu-selection-caption"></p><button id="iu-clear" class="iu-clear" type="button" disabled>${tr('Clear batch selection', 'مسح تحديد الدفعة')}</button><details class="iu-print-help"><summary>${tr('Printer setup', 'إعدادات الطابعة')}</summary><p>${tr('Use matching paper, 100% scale, zero margins, and disable headers and footers.', 'استخدم الورق المطابق، ومقياس 100٪، ودون هوامش أو ترويسات.')} ${tr('Physical printing is verified by the operator.', 'يتحقق الموظف من خروج الملصقات فعليًا.')}</p></details></div></div></aside></div>
+      <div id="iu-mobile-bar" class="iu-mobile-bar" hidden><span><b id="iu-mobile-total">0</b> ${tr('labels selected', 'ملصق محدد')}</span><button id="iu-mobile-preview" class="btn btn-primary" type="button" disabled>${tr('Preview & print', 'معاينة وطباعة')}</button></div>${dialogsHtml()}`, canPurchase, actorId);
+    bindEvents(root); renderDetail(); renderBatch(); switchView(state.view, false);
     try {
       const config = await api('/inventory-units/config');
       if (generation !== state.generation) return;
@@ -1194,10 +1377,10 @@
     if (!has('inventory-units-view')) return;
     const actor = typeof currentUser === 'undefined' ? null : currentUser;
     state.stockScope = { ...scope, actor: String(actor?._id || actor?.id || actor?.userId || actor?.username || '') }; state.selected.clear(); state.view = 'units'; state.page = 1; state.q = scope.identifier || ''; state.status = '';
-    if (currentPage === 'barcodes') { history.replaceState(null, '', '#barcodes'); void window.renderBarcodeManagement(); }
+    if (currentPage === 'barcodes') { history.replaceState(null, '', '#warehouse-management'); void window.renderBarcodeManagement(); }
     else navigateTo('barcodes');
   }
-  window.InventoryUnitLabels = { labelHtml, validateBatch, waitForLayout, openStockUnits, previewSheets, printSuccess, confirmReprint,
+  window.InventoryUnitLabels = { labelHtml, validateBatch, waitForLayout, openStockUnits, previewSheets, groupedLabelSheets, batchCoverHtml, printSuccess, confirmReprint,
     receiptChanged: id => {
       if (typeof currentPage === 'undefined' || currentPage !== 'barcodes' || !state.ready) return;
       if (id && state.activeInvoice?.transactionId !== String(id) && !state.receipts.some(invoice => invoice.transactionId === String(id))) return;

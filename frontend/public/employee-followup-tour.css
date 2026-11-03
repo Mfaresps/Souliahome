@@ -28,7 +28,7 @@
 .employee-tour-popover progress{display:block;width:100%;height:4px;margin:12px 0 0;border:0;accent-color:#c3952f}
 .employee-tour-popover footer{display:flex;align-items:center;gap:6px;margin-top:12px;flex-wrap:wrap}
 .employee-tour-popover footer button{min-height:32px;padding:6px 9px;border:1px solid #dfc786;border-radius:7px;background:#fffdf5;color:#60491e;font:600 11px/1.4 var(--font-app,Arial);cursor:pointer}
-.employee-tour-popover footer [data-tour-next],.employee-tour-popover footer [data-tour-close]{margin-inline-start:auto;background:#236443;color:#fff;border-color:#236443}
+.employee-tour-popover footer [data-tour-next],.employee-tour-popover footer [data-tour-close]{margin-inline-start:auto;background:var(--primary);color:#fff;border-color:var(--primary)}
 .employee-tour-popover [data-tour-skip]{border-color:transparent;background:transparent;color:#806026;font-weight:400}
 .employee-tour-popover button:disabled{opacity:.4;cursor:default}.employee-tour-popover button:focus-visible{outline:2px solid #c3952f;outline-offset:2px}
 @media(max-width:600px){.employee-tour-invite{padding:8px 14px}.employee-tour-popover{padding:11px}}

@@ -3,8 +3,8 @@
   --ds-muted: #586779;
   --ds-control-size: 30px;
   --ds-section-gap: 14px;
-  --ds-border: #e0e7e2;
-  --ds-bg: #f8faf8;
+  --ds-border: #e5e7eb;
+  --ds-bg: #f5f6f7;
 }
 body.dark-mode .dashboard-v2 { --ds-muted: #a3b8aa; }
 body.dark-mode .dashboard-v2 { --ds-border: #2a3d2e; --ds-bg: #0f1814; }

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, Logger, OnModuleInit } from '@nestjs/common';
 import { DatabaseWriteContext } from '../shared/database-write-context';
 import { UnitManualCodesService } from './unit-manual-codes.service';
 import { manualPackCode, packCodeFilter } from './pack-manual-codes';
@@ -12,10 +12,10 @@ import * as QRCode from 'qrcode';
 import { InventoryUnit } from './schemas/inventory-unit.schema';
 import { InventoryUnitEvent } from './schemas/inventory-unit-event.schema';
 import { InventoryUnitOperation } from './schemas/inventory-unit-operation.schema';
-import { INVENTORY_UNIT_STATUSES, OBJECT_ID_PATTERN, LABEL_SIZES } from './inventory-unit.constants';
+import { INVENTORY_UNIT_STATUSES, OBJECT_ID_PATTERN, LABEL_SIZES, inventoryUnitBarcode } from './inventory-unit.constants';
 import { migrateInventoryUnitIndexes } from './inventory-unit-index.migration';
 import { TransactionsService } from '../transactions/transactions.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
 
 export type TrackingActor = { userId?: string; name?: string; username?: string; role?: string; perms?: string[] };
 type PurchaseReceiptLine = { lineIndex: number; lineId: string; sku: string; name: string; imageUrl: string; quantity: number; createdUnits: number; onHandUnits: number; unassignedUnits: number; printedUnits: number; printRequests: number; change?: any };
@@ -29,7 +29,7 @@ const digest = (value: any) => createHash('sha256').update(JSON.stringify(canoni
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 @Injectable()
-export class InventoryUnitsService {
+export class InventoryUnitsService implements OnModuleInit {
   private readonly logger = new Logger(InventoryUnitsService.name);
   constructor(
     @InjectConnection() private readonly connection: Connection,
@@ -39,6 +39,14 @@ export class InventoryUnitsService {
     private readonly transactions: TransactionsService,
     private readonly manualCodes: UnitManualCodesService,
   ) {}
+
+  async onModuleInit() {
+    await this.connection.collection('inventoryunitprelabels').createIndex({ batchId: 1, ordinal: 1 }, { unique: true, name: 'prelabel_batch_ordinal_unique' });
+    await this.connection.collection('inventoryunitprelabels').createIndex({ productId: 1, state: 1 }, { name: 'prelabel_product_state' });
+    await this.connection.collection('inventoryunitprelabelbatches').createIndex({ createdAt: -1 }, { name: 'prelabel_batch_created' });
+    await this.connection.collection('inventoryunitprelabelbatches').createIndex({ createdAt: -1, _id: -1 }, { name: 'prelabel_batch_created_page' });
+    await this.connection.collection('inventoryunitprelabelbatches').createIndex({ productId: 1, createdAt: -1, _id: -1 }, { name: 'prelabel_product_created_page' });
+  }
 
   private id(value: string) {
     if (!OBJECT_ID_PATTERN.test(String(value || ''))) throw new BadRequestException('Invalid identifier');
@@ -295,7 +303,7 @@ export class InventoryUnitsService {
     const rows: any[] = result.rows, total: number = result.counts[0]?.total || 0;
     const productIds = [...new Set(rows.map((row: any) => row.productId))];
     const associated = await this.connection.collection('products').find({ _id: { $in: productIds.map(id => this.id(id)) } },
-      { projection: { name: 1, code: 1, colors: 1, size: 1 } }).toArray();
+      { projection: { name: 1, code: 1, colors: 1, size: 1, imageUrl: 1, images: 1, storageLocationId: 1 } }).toArray();
     const purchaseIds = [...new Set(rows.map((row: any) => row.origin?.purchaseTransactionId).filter(id => OBJECT_ID_PATTERN.test(String(id))))];
     const purchases = purchaseIds.length ? await this.connection.collection('transactions').find({ _id: { $in: purchaseIds.map(id => this.id(String(id))) }, type: 'مشتريات' },
       { projection: { ref: 1 }, maxTimeMS: 5000 }).toArray() : [];
@@ -307,7 +315,7 @@ export class InventoryUnitsService {
       units: await this.withManualCodes(rows.map((row: any) => ({ ...row, invoiceRef: invoiceRefs.get(String(row.origin?.purchaseTransactionId)) || '', product: associated.find(product => String(product._id) === row.productId) || null }))), total, page, limit };
   }
 
-  /** Recent supplier invoices and their exact per-line physical identity coverage for Barcode management. */
+  /** Recent supplier invoices and their exact per-line physical identity coverage for Warehouse management. */
   purchaseReceipts(): Promise<PurchaseReceipt[]>;
   purchaseReceipts(query: Record<string, string>): Promise<PurchaseReceiptPage | PurchaseReceipt[]>;
   async purchaseReceipts(query: Record<string, string> = {}): Promise<PurchaseReceiptPage | PurchaseReceipt[]> {
@@ -396,7 +404,7 @@ export class InventoryUnitsService {
     if (!sku) throw new ConflictException('Purchase line has no product SKU');
     const products = await this.connection.collection('products').find({ code: { $regex: '^\\s*' + escapeRegex(sku) + '\\s*$' } }, { projection: { _id: 1 } }).toArray();
     if (products.length !== 1) throw new ConflictException('Missing or duplicate SKU prevents exact unit selection');
-    return this.search({ page: query.page, limit: query.limit }, { 'origin.purchaseTransactionId': purchaseId,
+    return this.search({ page: query.page, limit: query.limit, productId: String(products[0]._id) }, { 'origin.purchaseTransactionId': purchaseId,
       productId: String(products[0]._id), ...purchaseLineOrigins(invoice.items, line) });
   }
 
@@ -1240,27 +1248,357 @@ export class InventoryUnitsService {
   }
 
   private async labelPrintCounts(ids: string[], session?: ClientSession): Promise<Map<string, number>> {
+    if (!ids.length) return new Map();
     const query = this.events.aggregate([
       { $match: { unitId: { $in: ids }, action: { $in: ['label-print-requested', 'label-reprint-requested', 'label-printed', 'label-reprinted'] } } },
       { $group: { _id: '$unitId', count: { $sum: 1 } } },
     ]);
     if (session) query.session(session);
     const rows = await query;
-    return new Map(rows.map(row => [String(row._id), Number(row.count || 0)]));
+    const counts = new Map<string, number>(rows.map(row => [String(row._id), Number(row.count || 0)]));
+    const preprinted = await this.connection.collection('inventoryunitprelabels').find({ _id: { $in: ids.map(id => this.id(id)) },
+      state: 'linked' }, { session, projection: { printCount: 1 } }).toArray();
+    for (const label of preprinted) {
+      const id = String(label._id);
+      counts.set(id, (counts.get(id) || 0) + Number(label.printCount || 0));
+    }
+    return counts;
   }
 
   private async labelData(unit: any, product: any, session?: ClientSession, printCount = 0) {
     // The invoice date or ObjectId timestamp cannot prove physical receipt.
+    const prelabelBatch = /^prelabel:([a-f\d]{24})$/i.exec(String(unit.origin?.reconciliationRef || ''));
     const receipt: any = unit.origin?.kind === 'purchase' ? await this.events.findOne({ unitId: String(unit._id),
       action: 'registered', 'details.physicalPossessionConfirmed': true }).select('createdAt').session(session || null).lean() : null;
     const date = receipt?.createdAt ? new Date(receipt.createdAt) : null;
     const purchase = unit.origin?.purchaseTransactionId ? await this.connection.collection('transactions').findOne({_id:this.id(unit.origin.purchaseTransactionId),type:'مشتريات'},{session,projection:{date:1}}) : null;
     return { unitId: String(unit._id), barcode: unit.barcode, manualCode: await this.manualCodes.codeFor(String(unit._id)), printCount, productName: product.name, sku: product.code,
+      ...(prelabelBatch ? { batchId: prelabelBatch[1].toLowerCase() } : {}),
       invoiceDate: purchase?.date || null,
       sellPrice: typeof product.sellPrice === 'number' && Number.isFinite(product.sellPrice) && product.sellPrice >= 0 ? product.sellPrice : null,
       receivedDate: date && !Number.isNaN(date.getTime()) ? new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date) : null,
       svg: await QRCode.toString(unit.barcode, { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) };
+  }
+
+  /** A preprinted code is a reservation only. It has no inventory unit or stock effect until linked. */
+  issuePrelabels(dto: PrelabelIssueDto, actor: TrackingActor) {
+    return this.write('prelabel-issue', dto, actor, 'inventory-units-print', async (session, name) => {
+      const product = await this.lockProduct(dto.productId, session);
+      if (product.isActive === false) throw new ConflictException('لا يمكن إصدار ملصقات لمنتج غير نشط');
+      const batchId = new Types.ObjectId(), now = new Date();
+      const labels = Array.from({ length: dto.quantity }, (_, index) => {
+        const _id = new Types.ObjectId();
+        return { _id, batchId: String(batchId), ordinal: index + 1, productId: String(product._id),
+          barcode: inventoryUnitBarcode(_id), state: 'unused', printCount: 0, createdAt: now, createdByUserId: actor.userId, createdBy: name };
+      });
+      await this.connection.collection('inventoryunitprelabelbatches').insertOne({ _id: batchId, productId: String(product._id),
+        sku: String(product.code).trim(), productName: String(product.name || ''), quantity: dto.quantity,
+        source: 'internal-prepurchase',
+        createdAt: now, createdByUserId: actor.userId, createdBy: name }, { session });
+      await this.connection.collection('inventoryunitprelabels').insertMany(labels, { session, ordered: true });
+      await this.manualCodes.codesFor(labels.map(label => String(label._id)), session);
+      return { batchId: String(batchId), productId: String(product._id), quantity: dto.quantity, stockChanged: false,
+        firstBarcode: labels[0].barcode, lastBarcode: labels[labels.length - 1].barcode };
+    });
+  }
+
+  async prelabelBatches(productId?: string) {
+    if (productId) this.id(productId);
+    const batches = await this.connection.collection('inventoryunitprelabelbatches').find(productId ? { productId: productId.toLowerCase() } : {})
+      .sort({ createdAt: -1, _id: -1 }).limit(100).toArray();
+    return this.enrichPrelabelBatches(batches);
+  }
+
+  async prelabelBatchPage(query: Record<string, string> = {}) {
+    const page = Number(query.page || 1), limit = Number(query.limit || 12), q = String(query.q || '').trim();
+    if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || !Number.isSafeInteger(limit) || limit < 1 || limit > 50 || q.length > 80)
+      throw new BadRequestException('صفحة الدفعات أو البحث غير صالح');
+    const filter: any = {};
+    if (query.productId) filter.productId = String(this.id(query.productId));
+    if (q) filter.$or = [{ productName: { $regex: escapeRegex(q), $options: 'i' } },
+      { sku: { $regex: escapeRegex(q), $options: 'i' } },
+      ...(OBJECT_ID_PATTERN.test(q) ? [{ _id: this.id(q) }] : [])];
+    const collection = this.connection.collection('inventoryunitprelabelbatches');
+    const [total, rows] = await Promise.all([collection.countDocuments(filter), collection.find(filter)
+      .sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).toArray()]);
+    return { batches: await this.enrichPrelabelBatches(rows), page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  }
+
+  private async enrichPrelabelBatches(batches: any[]) {
+    if (!batches.length) return [];
+    const productIds = [...new Set(batches.map(batch => String(batch.productId || '')).filter(id => OBJECT_ID_PATTERN.test(id)))];
+    const products = productIds.length ? await this.connection.collection('products').find(
+      { _id: { $in: productIds.map(id => new Types.ObjectId(id)) } }, { projection: { imageUrl: 1, images: 1 } }).toArray() : [];
+    const images = new Map(products.map(product => [String(product._id), [product.imageUrl, ...(Array.isArray(product.images) ? product.images : [])]
+      .find(value => typeof value === 'string' && value.trim()) || '']));
+    const counts = await this.connection.collection('inventoryunitprelabels').aggregate([
+      { $match: { batchId: { $in: batches.map(batch => String(batch._id)) } } },
+      { $group: { _id: { batchId: '$batchId', state: '$state' }, count: { $sum: 1 }, firstOrdinal: { $min: '$ordinal' },
+        printed: { $sum: { $cond: [{ $gt: ['$printCount', 0] }, 1, 0] } }, printRequests: { $sum: '$printCount' },
+        lastPrintRequestedAt: { $max: '$lastPrintRequestedAt' } } },
+    ]).toArray();
+    const nextPrint = await this.connection.collection('inventoryunitprelabels').aggregate([
+      { $match: { batchId: { $in: batches.map(batch => String(batch._id)) }, state: 'unused', printCount: 0 } },
+      { $group: { _id: '$batchId', firstOrdinal: { $min: '$ordinal' } } },
+    ]).toArray();
+    return batches.map(batch => ({ batchId: String(batch._id), productId: batch.productId, sku: batch.sku,
+      productName: batch.productName, imageUrl: images.get(String(batch.productId)) || '', quantity: batch.quantity, createdAt: batch.createdAt, createdBy: batch.createdBy,
+      createdByUserId: batch.createdByUserId || null, source: batch.source || 'internal-prepurchase',
+      unused: counts.find(row => row._id.batchId === String(batch._id) && row._id.state === 'unused')?.count || 0,
+      firstUnused: counts.find(row => row._id.batchId === String(batch._id) && row._id.state === 'unused')?.firstOrdinal || null,
+      firstUnprinted: nextPrint.find(row => row._id === String(batch._id))?.firstOrdinal || null,
+      linked: counts.find(row => row._id.batchId === String(batch._id) && row._id.state === 'linked')?.count || 0,
+      printed: counts.filter(row => row._id.batchId === String(batch._id)).reduce((sum, row) => sum + Number(row.printed || 0), 0),
+      printRequests: counts.filter(row => row._id.batchId === String(batch._id)).reduce((sum, row) => sum + Number(row.printRequests || 0), 0),
+      lastPrintRequestedAt: counts.filter(row => row._id.batchId === String(batch._id)).map(row => row.lastPrintRequestedAt)
+        .filter(Boolean).sort((a, b) => +new Date(b) - +new Date(a))[0] || null }));
+  }
+
+  async prelabelBatchDetails(batchId: string, page = 1, limit = 20) {
+    this.id(batchId);
+    if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || !Number.isSafeInteger(limit) || limit < 1 || limit > 50)
+      throw new BadRequestException('صفحة الفواتير غير صالحة');
+    const batch = await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(batchId) });
+    if (!batch) throw new NotFoundException('دفعة الملصقات غير موجودة');
+    const [summary] = await this.enrichPrelabelBatches([batch]);
+    const [links] = await this.connection.collection('inventoryunitprelabels').aggregate([
+      { $match: { batchId: batchId.toLowerCase(), state: 'linked', linkedPurchaseId: { $type: 'string' } } },
+      { $group: { _id: '$linkedPurchaseId', quantity: { $sum: 1 }, firstLinkedAt: { $min: '$linkedAt' }, lastLinkedAt: { $max: '$linkedAt' } } },
+      { $sort: { lastLinkedAt: -1, _id: -1 } },
+      { $facet: { rows: [{ $skip: (page - 1) * limit }, { $limit: limit }], count: [{ $count: 'total' }] } },
+    ]).toArray();
+    const rows: any[] = links?.rows || [], total = links?.count?.[0]?.total || 0;
+    const ids = rows.filter(row => OBJECT_ID_PATTERN.test(String(row._id))).map(row => this.id(row._id));
+    const invoices = ids.length ? await this.connection.collection('transactions').find({ _id: { $in: ids } },
+      { projection: { ref: 1, date: 1, client: 1, supplier: 1, cancelled: 1 } }).toArray() : [];
+    return { batch: summary, linkedPurchases: rows.map(row => {
+      const invoice = invoices.find(item => String(item._id) === row._id);
+      return { transactionId: row._id, ref: invoice?.ref || '', supplier: invoice?.client || invoice?.supplier || '',
+        invoiceDate: invoice?.date || null, cancelled: invoice?.cancelled === true,
+        quantity: row.quantity, firstLinkedAt: row.firstLinkedAt, lastLinkedAt: row.lastLinkedAt };
+    }), linkedPurchasePage: page, linkedPurchaseLimit: limit, linkedPurchaseTotal: total };
+  }
+
+  async prelabelReceiptOptions(transactionId: string) {
+    this.id(transactionId);
+    const page = await this.purchaseReceipts({ transactionId, page: '1' }) as PurchaseReceiptPage;
+    const receipt = page.receipts[0];
+    if (!receipt) throw new NotFoundException('فاتورة الشراء غير موجودة');
+    if (receipt.cancelled) throw new ConflictException('لا يمكن استلام ملصقات على فاتورة ملغاة');
+    const skus = [...new Set(receipt.lines.map(line => String(line.sku || '').trim()).filter(Boolean))];
+    const products = skus.length ? await this.connection.collection('products').find({ code: { $in: skus } },
+      { projection: { _id: 1 } }).toArray() : [];
+    const groups = await Promise.all(products.map(product => this.prelabelBatches(String(product._id))));
+    return { receipt, batches: groups.flat().filter(batch => batch.unused > 0) };
+  }
+
+  async prelabelRange(batchId: string, start: number, quantity: number) {
+    this.id(batchId);
+    if (!Number.isSafeInteger(start) || start < 1 || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100 || start + quantity > 1001)
+      throw new BadRequestException('اختر نطاقًا من 1 إلى 100 ملصق');
+    const batch = await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(batchId) });
+    if (!batch || start + quantity - 1 > batch.quantity) throw new NotFoundException('دفعة الملصقات أو النطاق غير موجود');
+    const labels = await this.connection.collection('inventoryunitprelabels').find({ batchId: batchId.toLowerCase(), ordinal: { $gte: start, $lt: start + quantity } })
+      .sort({ ordinal: 1 }).toArray();
+    if (labels.length !== quantity) throw new ConflictException('نطاق الملصقات غير مكتمل');
+    const manualCodes = await this.manualCodes.codesFor(labels.map(label => String(label._id)));
+    return { batch: { batchId, productId: batch.productId, sku: batch.sku, productName: batch.productName, quantity: batch.quantity },
+      labels: labels.map(label => ({ unitId: String(label._id), barcode: label.barcode, ordinal: label.ordinal,
+        manualCode: manualCodes.get(String(label._id)),
+        state: label.state, printCount: label.printCount, linkedPurchaseId: label.linkedPurchaseId || null })) };
+  }
+
+  async prelabelLookup(identifier: string) {
+    const normalized = String(identifier || '').trim().replace(/^\][A-Za-z]\d/, '').toUpperCase();
+    const match = /^SU-([A-F0-9]{24})$/.exec(normalized);
+    const unitId = match ? this.id(match[1]) : await this.manualCodes.findUnitId(identifier, undefined, true);
+    if (!unitId) throw new BadRequestException('امسح رمز QR أو أدخل كود U صالحًا لملصق مورد محفوظ');
+    const label = await this.connection.collection('inventoryunitprelabels').findOne({ _id: unitId });
+    if (!label) throw new NotFoundException('ملصق المورد غير مسجل');
+    const batch = await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(label.batchId) });
+    if (!batch || batch.productId !== label.productId || label.barcode !== inventoryUnitBarcode(label._id))
+      throw new ConflictException('بيانات ملصق المورد غير متطابقة');
+    return { batchId: label.batchId, batchQuantity: batch.quantity, unitId: String(label._id), barcode: label.barcode,
+      manualCode: await this.manualCodes.codeFor(String(label._id)), ordinal: label.ordinal,
+      state: label.state, printCount: label.printCount, productId: label.productId, sku: batch.sku, productName: batch.productName };
+  }
+
+  private async prelabelBulkSelection(dto: PrelabelBulkSelectionDto, session?: ClientSession) {
+    const ids = [...new Set((dto.batchIds || []).map(id => String(this.id(id))))].sort();
+    const size = LABEL_SIZES.find(row => row.id === dto.sizeId);
+    if (!ids.length || ids.length > 20 || ids.length !== dto.batchIds.length || !size || !['unprinted', 'all-unused'].includes(dto.mode))
+      throw new BadRequestException('اختر من 1 إلى 20 دفعة ومقاسًا وطريقة طباعة صالحة');
+    const batches = await this.connection.collection('inventoryunitprelabelbatches').find({ _id: { $in: ids.map(id => this.id(id)) } }, { session }).toArray();
+    if (batches.length !== ids.length) throw new NotFoundException('إحدى الدفعات المحددة غير موجودة؛ حدّث التحديد');
+    const all = await this.connection.collection('inventoryunitprelabels').find({ batchId: { $in: ids } }, { session }).sort({ batchId: 1, ordinal: 1 }).toArray();
+    if (batches.some(b => all.filter(l => l.batchId === String(b._id)).length !== b.quantity)) throw new ConflictException('بيانات إحدى الدفعات غير مكتملة');
+    const labels = all.filter(l => l.state === 'unused' && (dto.mode === 'all-unused' || !l.printCount));
+    const summary = ids.map(id => {
+      const b = batches.find(b => String(b._id) === id)!, rows = labels.filter(l => l.batchId === id);
+      return { batchId: id, productName: b.productName, sku: b.sku, quantity: b.quantity, printable: rows.length,
+        reprints: rows.filter(l => l.printCount > 0).length, linked: all.filter(l => l.batchId === id && l.state !== 'unused').length };
+    });
+    return { batches, labels, size, summary, selectionHash: digest({ ids, mode: dto.mode, sizeId: dto.sizeId,
+      labels: all.map(l => [String(l._id), l.batchId, l.ordinal, l.state, l.printCount || 0]) }) };
+  }
+
+  async previewPrelabelBulk(dto: PrelabelBulkSelectionDto) {
+    const { labels, size, summary, selectionHash } = await this.prelabelBulkSelection(dto);
+    return { size, summary, selectionHash, total: labels.length, reprints: labels.filter(l => l.printCount > 0).length,
+      maxLabels: 1000, labels: labels.map(l => ({ unitId: String(l._id), batchId: l.batchId, ordinal: l.ordinal })) };
+  }
+
+  printPrelabelBulk(dto: PrelabelBulkPrintDto, actor: TrackingActor) {
+    return this.write('prelabel-bulk-print', dto, actor, 'inventory-units-print', async session => {
+      // Use the same product locks as receipt and single-batch printing. A reviewed
+      // selection must never silently expand or change while another operator works.
+      const initial = await this.prelabelBulkSelection(dto, session);
+      const products = new Map<string, any>();
+      for (const productId of [...new Set(initial.batches.map(b => String(b.productId)))].sort())
+        products.set(productId, await this.lockProduct(productId, session));
+      const { labels, batches, size, summary, selectionHash } = await this.prelabelBulkSelection(dto, session);
+      if (dto.selectionHash !== selectionHash) throw new ConflictException('تغيرت حالة الملصقات منذ المراجعة؛ راجع التحديد مرة أخرى قبل الطباعة');
+      if (!labels.length || labels.length > 1000) throw new BadRequestException('اختر من 1 إلى 1000 ملصق في طلب الطباعة المجمع');
+      if (!dto.allowReprint && labels.some(l => l.printCount > 0)) throw new ConflictException('سبق طلب طباعة بعض الملصقات؛ أكّد إعادة الطباعة أولًا');
+      const manualCodes = await this.manualCodes.codesFor(labels.map(l => String(l._id)), session);
+      const changed = await this.connection.collection('inventoryunitprelabels').updateMany({ _id: { $in: labels.map(l => l._id) }, state: 'unused',
+        ...(dto.mode === 'unprinted' ? { printCount: 0 } : {}) }, { $inc: { printCount: 1 }, $set: { lastPrintRequestedAt: new Date() } }, { session });
+      if (changed.modifiedCount !== labels.length) throw new ConflictException('تغيرت حالة الدفعات؛ حدّث المراجعة');
+      return { size, summary, selectionHash, physicalPrintingVerified: false, stockChanged: false,
+        labels: await Promise.all(labels.map(async l => {
+          const b = batches.find(b => String(b._id) === l.batchId)!, product = products.get(String(b.productId));
+          return { unitId: String(l._id), barcode: l.barcode, manualCode: manualCodes.get(String(l._id)), batchId: l.batchId,
+            ordinal: l.ordinal, printCount: l.printCount + 1, productName: product.name, sku: product.code,
+            sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : null,
+            svg: await QRCode.toString(l.barcode, { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) };
+        })) };
+    });
+  }
+
+  private async renderPrelabelPreview(labels: any[], batches: any[]) {
+    const codes = await this.manualCodes.codesFor(labels.map(l => String(l._id || l.unitId)));
+    const products = await this.connection.collection('products').find({ _id: { $in: batches.map(b => this.id(b.productId)) } }).toArray();
+    return Promise.all(labels.map(async label => {
+      const batch = batches.find(b => String(b._id || b.batchId) === label.batchId)!;
+      const product = products.find(p => String(p._id) === String(batch.productId));
+      if (!product || product.isActive === false) throw new ConflictException('المنتج غير متاح للطباعة');
+      return { unitId: String(label._id || label.unitId), barcode: label.barcode, manualCode: codes.get(String(label._id || label.unitId)),
+        batchId: label.batchId, ordinal: label.ordinal, printCount: label.printCount || 0, productName: product.name, sku: product.code,
+        svg: await QRCode.toString(label.barcode, { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) };
+    }));
+  }
+
+  async previewPrelabelRange(batchId: string, dto: PrelabelRangePreviewDto) {
+    const size = LABEL_SIZES.find(s => s.id === dto.sizeId);
+    if (!size) throw new BadRequestException('مقاس الملصق غير صالح');
+    const range = await this.prelabelRange(batchId, dto.start, dto.quantity);
+    if (range.labels.some(l => l.state !== 'unused')) throw new ConflictException('بعض الملصقات مرتبطة بالفعل');
+    const selectionHash = digest(range.labels.map(l => [l.unitId, l.ordinal, l.state, l.printCount || 0]));
+    return { size, selectionHash, physicalPrintingVerified: false,
+      labels: await this.renderPrelabelPreview(range.labels.map(l => ({ ...l, batchId })), [range.batch]) };
+  }
+
+  async previewPrelabelBulkLabels(dto: PrelabelBulkPreviewDto) {
+    const selection = await this.prelabelBulkSelection(dto);
+    if (selection.selectionHash !== dto.selectionHash) throw new ConflictException('تغيرت الملصقات؛ حدّث المراجعة قبل المعاينة');
+    if (!selection.labels.length || selection.labels.length > 1000) throw new BadRequestException('اختر من 1 إلى 1000 ملصق للمعاينة');
+    return { size: selection.size, selectionHash: selection.selectionHash, physicalPrintingVerified: false,
+      labels: await this.renderPrelabelPreview(selection.labels, selection.batches) };
+  }
+
+  printPrelabels(batchId: string, dto: PrelabelPrintDto, actor: TrackingActor) {
+    this.id(batchId);
+    const size = LABEL_SIZES.find(row => row.id === dto.sizeId);
+    if (!size || dto.start + dto.quantity > 1001) throw new BadRequestException('نطاق أو مقاس الملصقات غير صالح');
+    return this.write(`prelabel-print:${batchId.toLowerCase()}`, dto, actor, 'inventory-units-print', async (session) => {
+      const batch = await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(batchId) }, { session });
+      if (!batch || dto.start + dto.quantity - 1 > batch.quantity) throw new NotFoundException('دفعة الملصقات أو النطاق غير موجود');
+      const product = await this.lockProduct(batch.productId, session);
+      const labels = await this.connection.collection('inventoryunitprelabels').find({ batchId: batchId.toLowerCase(),
+        ordinal: { $gte: dto.start, $lt: dto.start + dto.quantity } }, { session }).sort({ ordinal: 1 }).toArray();
+      if (labels.length !== dto.quantity || labels.some(label => label.state !== 'unused')) throw new ConflictException('بعض الأكواد مرتبطة بالفعل أو غير متاحة للطباعة المسبقة');
+      if (dto.selectionHash && dto.selectionHash !== digest(labels.map(l => [String(l._id), l.ordinal, l.state, l.printCount || 0])))
+        throw new ConflictException('تغيرت الملصقات منذ المعاينة؛ افتح المعاينة مجددًا قبل الطباعة');
+      const manualCodes = await this.manualCodes.codesFor(labels.map(label => String(label._id)), session);
+      if (!dto.allowReprint && labels.some(label => label.printCount > 0)) throw new ConflictException('سبق طلب طباعة بعض الأكواد؛ أكّد إعادة الطباعة');
+      const changed = await this.connection.collection('inventoryunitprelabels').updateMany({ _id: { $in: labels.map(label => label._id) }, state: 'unused' },
+        { $inc: { printCount: 1 }, $set: { lastPrintRequestedAt: new Date() } }, { session });
+      if (changed.modifiedCount !== labels.length) throw new ConflictException('تغيرت دفعة الملصقات؛ حدّثها قبل الطباعة');
+      return { batchId: batchId.toLowerCase(), size, symbology: 'QR', physicalPrintingVerified: false, stockChanged: false,
+        labels: await Promise.all(labels.map(async label => ({ unitId: String(label._id), barcode: label.barcode,
+          manualCode: manualCodes.get(String(label._id)), batchId: batchId.toLowerCase(), ordinal: label.ordinal,
+          printCount: label.printCount + 1, productName: product.name, sku: product.code,
+          sellPrice: typeof product.sellPrice === 'number' ? product.sellPrice : null,
+          svg: await QRCode.toString(label.barcode, { type: 'svg', errorCorrectionLevel: 'M', margin: 4 }) }))) };
+    });
+  }
+
+  linkPrelabels(transactionId: string, dto: PrelabelLinkDto, actor: TrackingActor) {
+    this.id(transactionId); this.id(dto.batchId);
+    if (!dto.physicalPossessionConfirmed || !dto.physicalLabelsConfirmed || dto.start + dto.quantity > 1001)
+      throw new BadRequestException('أكّد الحيازة الفعلية وعدّ القطع وتطابق الملصقات مع النطاق المختار');
+    return this.write(`prelabel-link:${transactionId.toLowerCase()}`, dto, actor, 'inventory-units-receive', async (session, name) => {
+      const invoice: any = await this.connection.collection('transactions').findOneAndUpdate({ _id: this.id(transactionId),
+        type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true } }, { $inc: { unitTrackingRevision: 1 } },
+      { session, returnDocument: 'after', includeResultMetadata: false });
+      if (!invoice || /-RET$/i.test(String(invoice.ref || '').trim())) throw new ConflictException('يلزم فاتورة مشتريات مورد فعالة');
+      const batch = await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(dto.batchId) }, { session });
+      if (!batch || dto.start + dto.quantity - 1 > batch.quantity) throw new NotFoundException('دفعة الملصقات أو النطاق غير موجود');
+      const product = await this.lockProduct(batch.productId, session);
+      if (String(product.code || '').trim() !== batch.sku) throw new ConflictException('تغير كود المنتج منذ إصدار الملصقات؛ راجع الدفعة');
+      const lines = Array.isArray(invoice.items) ? invoice.items.map((row: any) => ({ ...row })) : [];
+      const line = lines[dto.lineIndex];
+      if (!line || String(line.code || '').trim() !== batch.sku || !Number.isSafeInteger(line.qty) || line.qty < 1)
+        throw new ConflictException('بند الفاتورة لا يطابق منتج الملصقات');
+      const productLines = lines.filter((row: any) => String(row.code || '').trim() === batch.sku);
+      if (!line.lineId) {
+        if (productLines.length > 1) throw new ConflictException('بنود المنتج المتكررة تحتاج هوية سطر واضحة قبل الربط');
+        line.lineId = randomUUID(); lines[dto.lineIndex] = line;
+        await this.connection.collection('transactions').updateOne({ _id: invoice._id }, { $set: { items: lines } }, { session });
+      }
+      const existing = await this.units.find({ 'origin.purchaseTransactionId': transactionId.toLowerCase(), productId: batch.productId }).session(session).lean();
+      const count = existing.filter((unit: any) => unit.origin?.purchaseLineId === line.lineId ||
+        productLines.length === 1 && !unit.origin?.purchaseLineId).length;
+      if (count + dto.quantity > line.qty) throw new ConflictException(`المتبقي في بند الفاتورة ${line.qty - count} قطعة فقط`);
+      if (existing.length + dto.quantity > productLines.reduce((sum: number, row: any) => sum + Number(row.qty || 0), 0))
+        throw new ConflictException('عدد الهويات يتجاوز إجمالي كمية هذا المنتج في الفاتورة');
+      const labels = await this.connection.collection('inventoryunitprelabels').find({ batchId: dto.batchId.toLowerCase(),
+        ordinal: { $gte: dto.start, $lt: dto.start + dto.quantity } }, { session }).sort({ ordinal: 1 }).toArray();
+      if (labels.length !== dto.quantity || labels.some(label => label.state !== 'unused' || label.printCount < 1 || label.productId !== batch.productId))
+        throw new ConflictException('النطاق يحتوي كودًا غير مطبوع أو مرتبطًا من قبل؛ راجع الأكواد');
+      if (await this.units.exists({ _id: { $in: labels.map(label => label._id) } }).session(session)) throw new ConflictException('هوية ملصق مستخدمة بالفعل');
+      const warehouseCode = await requireWarehouse(this.connection, invoice.warehouseCode || 'MAIN', session);
+      const linkedOrders = await this.connection.collection('purchaseorders').find({ linkedTransactionId: transactionId.toLowerCase() },
+        { session, projection: { _id: 1 } }).limit(2).toArray();
+      if (linkedOrders.length > 1) throw new ConflictException('الفاتورة مرتبطة بأكثر من أمر شراء؛ راجع المصدر قبل ربط الهويات');
+      const purchaseOrderId = linkedOrders.length ? String(linkedOrders[0]._id) : undefined;
+      const now = new Date(), pieces: any[] = [], events: any[] = [];
+      for (const label of labels) {
+        const unit = new this.units({ _id: label._id, productId: batch.productId,
+          status: dto.inspectionPassed ? 'available' : 'inspection-required', warehouseCode,
+          origin: { kind: 'purchase', purchaseTransactionId: transactionId.toLowerCase(), purchaseLineId: line.lineId, purchaseOrderId,
+            reconciliationRef: `prelabel:${dto.batchId.toLowerCase()}` }, registeredByUserId: actor.userId, registeredBy: name });
+        await unit.validate();
+        const event = new this.events({ unitId: String(unit._id), sequence: 1,
+          operationKey: digest({ actor: actor.userId!.toLowerCase(), key: dto.operationKey }), action: 'registered',
+          fromStatus: null, toStatus: unit.status, transactionId: transactionId.toLowerCase(), lineId: line.lineId,
+          byUserId: actor.userId, by: name, reason: dto.reason,
+          details: { physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed: dto.inspectionPassed,
+            batchId: dto.batchId.toLowerCase(), ordinal: label.ordinal, purchaseOrderId, registrationKind: 'preprinted-bulk' } });
+        await event.validate();
+        pieces.push({ ...unit.toObject(), __v: 0, createdAt: now, updatedAt: now });
+        events.push({ ...event.toObject(), createdAt: now, updatedAt: now });
+      }
+      await this.units.collection.insertMany(pieces, { session, ordered: true });
+      await this.events.collection.insertMany(events, { session, ordered: true });
+      const changed = await this.connection.collection('inventoryunitprelabels').updateMany({ _id: { $in: labels.map(label => label._id) }, state: 'unused' },
+        { $set: { state: 'linked', linkedPurchaseId: transactionId.toLowerCase(), linkedLineId: line.lineId, linkedAt: now } }, { session });
+      if (changed.modifiedCount !== labels.length) throw new ConflictException('تغيرت حالة بعض الملصقات أثناء الربط');
+      return { transactionId: transactionId.toLowerCase(), lineId: line.lineId, batchId: dto.batchId.toLowerCase(),
+        linked: pieces.length, unitIds: pieces.map(piece => String(piece._id)), status: dto.inspectionPassed ? 'available' : 'inspection-required',
+        stockChanged: false, enforcementEnabled: false };
+    });
   }
 
   async labels(dto: LabelRequestDto, actor: TrackingActor) {

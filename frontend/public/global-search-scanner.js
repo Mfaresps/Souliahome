@@ -109,7 +109,7 @@
       const lines = [tr('Piece code: ', 'كود القطعة: ') + (row.manualCode || row.barcode), 'SKU: ' + product.code,
         ...(product.size ? [tr('Size: ', 'المقاس: ') + product.size] : []),
         ...(product.colors?.length ? [tr('Colors: ', 'الألوان: ') + (Array.isArray(product.colors) ? product.colors.join('، ') : product.colors)] : []),
-        tr('Location: ', 'المخزن: ') + (row.warehouseCode || tr('Unverified', 'غير مؤكد'))];
+        tr('Recorded warehouse: ', 'المخزن المسجل للقطعة: ') + (row.warehouseCode || tr('Unverified', 'غير مؤكد'))];
       for (const text of lines) { const line = document.createElement('p'); line.textContent = text; details.append(line); }
       const price = document.createElement('p'); price.className = 'gs-unit-price';
       const priceLabel = document.createElement('span'); priceLabel.textContent = tr('Selling price: ', 'سعر البيع: ');

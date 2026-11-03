@@ -7,7 +7,7 @@
   justify-content: center;
   width: 100vw;
   height: 100svh;
-  background: #fbfbf5;
+  background: var(--bg-alt, #f5f6f7);
   color: #173522;
   transition: opacity .16s cubic-bezier(.22, 1, .36, 1);
 }

@@ -60,6 +60,9 @@ export class Product {
   @Prop({ type: String, default: null })
   collectionId: string | null;
 
+  @Prop({ type: String, default: '' })
+  storageLocationId: string;
+
   @Prop({ default: true })
   isActive: boolean;
 
@@ -124,4 +127,5 @@ export class Product {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
-restrictInventoryParentDeletion(ProductSchema, ['productId']);
+ProductSchema.index({ storageLocationId: 1 });
+restrictInventoryParentDeletion(ProductSchema, ['productId'], [], ['productId']);

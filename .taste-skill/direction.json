@@ -1,11 +1,11 @@
 {
  "version": 1,
  "kind": "app",
- "at": "2026-11-01T23:55:41.155Z",
- "seed": 251047228,
+ "at": "2026-11-03T01:07:24.934Z",
+ "seed": 2112244810,
  "input": {
   "kind": "commerce",
-  "brief": "Soulia Arabic and English pickup order preparation, barcode scan, shipping and printing workspace",
+  "brief": "Soulia supplier preprinted QR batch operations",
   "theme": null,
   "screens": [
    "list",
@@ -146,19 +146,17 @@
   {
    "name": "list",
    "pattern": {
-    "id": "table-filter-bar",
-    "name": "Table with tabs and a filter bar",
+    "id": "count-cards-filter",
+    "name": "Count cards that filter",
     "screen": "list",
     "kinds": [
      "community",
-     "devtools",
      "commerce",
-     "support",
-     "smb-admin"
+     "support"
     ],
-    "basis": "an events back office, a tracks studio, a sessions overview",
-    "blueprint": "Title row: an 18-24px title on the left, at most an outlined secondary and the one primary (36px) on the right. Underline tabs for the list's states on a full-width 1px rule with a 2px indicator as wide as the label; 22-32px below, the toolbar: a search of about 252-316 x 32-36 on the left, the count ('7 events') and the sort on the right. The table sits on the panel or page ground with no card around it: a header of 12-13px grey sentence-case labels with no fill and no rule, rows on a 48-56px pitch for one line or 72-92px with a thumbnail (media height plus 24-32px), 1px rules 3-7% darker than the ground or no rules at all, the identity column given the most width, numbers right-aligned in tabular figures with the unit muted ('5 /10'), one status mark per row and one kebab at the far right. Drop a column that is empty in every row (a blank co-host column left a 300px dead band). On an overview, cap the rows and link to the full list; on the full list, state the total and load more at the end.",
-    "phone": "Rows become two-line items: identity and the key number on line 1, the secondary fields in 13px grey on line 2, the kebab at the right. Tabs scroll in their own row; the search becomes a full-width field."
+    "basis": "an events back office",
+    "blueprint": "Above a list, 3-5 equal count cards (61px tall, 12px padding, a 13px grey label over a 16/600 value, 8px gap) are the type filter: the selected card gets a 1.5px accent border and a pale accent fill, and the list below shows that type only. Zero counts print as '0' in the same style; no deltas, no icons. This is one place where a row of identical small cards is right: the cards are peers and each one does work.",
+    "phone": "The count cards become a horizontally scrolling row of chips with the count inside each, or a select above the list."
    }
   },
   {

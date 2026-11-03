@@ -4,16 +4,21 @@ import { productsSkuFixture } from '../helpers/products-sku.fixture';
 describe('ProductsService immutable SKU workflows', () => {
   it('creates 20 concurrent products sharing a prefix with unique codes', async () => {
     const { service, rows } = productsSkuFixture();
-    const result = await Promise.all(Array.from({ length: 20 }, (_, i) => service.create({ name: `Alba Cushion ${i}`, colors: ['Green'], size: 'Medium' }, 'Manager')));
+    const result = await Promise.all(Array.from({ length: 20 }, (_, i) => service.create({ name: `Alba Cushion Extra${i}`, colors: ['Green'], size: 'Medium' }, 'Manager')));
     expect(rows).toHaveLength(20);
     expect(new Set(result.map(row => row.code)).size).toBe(20);
-    expect(result.every(row => row.code.startsWith('ALBA-CUSHION-GRN-M-'))).toBe(true);
+    expect(result.every(row => /^ALB-CUS-EXT-\d{6}$/.test(row.code))).toBe(true);
     expect(result.every(row => row.createdBy === 'Manager')).toBe(true);
   });
-  it('allocates after the highest suffix rather than filling deletion gaps', async () => {
+  it('suggests a different available non-sequential suffix on every request', async () => {
     const { service, seed } = productsSkuFixture();
-    seed({ code: 'ALBA-CUSHION-001', name: 'one' }); seed({ code: 'ALBA-CUSHION-003', name: 'three' });
-    expect((await service.create({ name: 'Alba Cushion' })).code).toBe('ALBA-CUSHION-004');
+    const first = await service.suggestProductCode('Alba Cushion');
+    seed({ code: first, name: 'one' });
+    const second = await service.suggestProductCode('Alba Cushion', first);
+    expect(first).toMatch(/^ALB-CUS-\d{6}$/);
+    expect(second).toMatch(/^ALB-CUS-\d{6}$/);
+    expect(second).not.toBe(first);
+    expect((await service.create({ name: 'Alba Cushion' })).code).not.toBe(first);
   });
   it('returns a conflict for concurrent manual-code creation without silently changing the SKU', async () => {
     const { service, rows } = productsSkuFixture();

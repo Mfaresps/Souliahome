@@ -5,7 +5,7 @@ import puppeteer, { Browser, Page } from 'puppeteer';
 import * as QRCode from 'qrcode';
 import { LABEL_SIZES } from '../../src/inventory-units/inventory-units.service';
 
-describe('Actual barcode management script in Chromium', () => {
+describe('Actual warehouse management script in Chromium', () => {
   let browser: Browser, server: Server, origin: string, page: Page;
   let calls: any[], labels: any[], units: any[], receipts: any[], deny: boolean, printer: boolean, failOnce: boolean, configMissing: boolean, listFailure: boolean;
   const sizes = [...LABEL_SIZES];
@@ -58,8 +58,8 @@ describe('Actual barcode management script in Chromium', () => {
           response.end(JSON.stringify({ products: q && !found.length ? [] : [{ _id: 'product-1', name: 'Cotton Shirt', code: 'SKU-1', size: 'XL', colors: ['Red'] }], units: found.slice((index - 1) * limit, index * limit), total: found.length, page: index, limit }));
         }
       } else if (url.pathname === '/') { response.setHeader('Content-Type', 'text/html; charset=utf-8'); response.end(html); }
-      else if (['/inventory-units.js', '/inventory-units.css', '/purchase-receiving.js', '/purchase-receiving.css', '/inventory-scanner.js', '/inventory-scanner.css', '/vendor/zxing-browser-0.2.1.min.js'].includes(url.pathname)) {
-        response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'application/javascript' : 'text/css'); response.end(readFileSync(publicDir + url.pathname));
+      else if (['/inventory-units.js', '/inventory-units.css', '/purchase-receiving.js', '/purchase-receiving.css', '/inventory-scanner.js', '/inventory-scanner.css', '/vendor/zxing-browser-0.2.1.min.js', '/soulia-label-logo.svg'].includes(url.pathname)) {
+        response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'application/javascript' : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css'); response.end(readFileSync(publicDir + url.pathname));
       } else { response.statusCode = 404; response.end(); }
     });
     await new Promise<void>(done => server.listen(0, '127.0.0.1', done)); origin = `http://127.0.0.1:${(server.address() as any).port}`;
@@ -67,7 +67,7 @@ describe('Actual barcode management script in Chromium', () => {
   beforeEach(async () => {
     calls = []; receipts = []; deny = false; printer = true; failOnce = false; configMissing = false; listFailure = false;
     labels = await Promise.all(['507f1f77bcf86cd799439031', '507f1f77bcf86cd799439032'].map(async id => {
-      const barcode = 'SU-' + id.toUpperCase(); return { unitId: id, barcode, productName: 'Cotton Shirt', sku: 'SKU-1', sellPrice: 249.5, receivedDate: '2026-10-17', svg: await QRCode.toString(barcode, { type: 'svg', margin: 4 }) };
+      const barcode = 'SU-' + id.toUpperCase(); return { unitId: id, barcode, productName: 'Cotton Shirt', sku: 'SKU-1', sellPrice: 249.5, invoiceDate: '2026-10-17', svg: await QRCode.toString(barcode, { type: 'svg', margin: 4 }) };
     }));
     units = labels.map(label => ({ _id: label.unitId, barcode: label.barcode, status: 'available', product: { code: label.sku, name: label.productName } }));
     page = await browser.newPage(); await page.goto(origin); await page.click('#iu-tab-units'); await page.waitForSelector('#iu-units [data-unit-id]');
@@ -78,11 +78,38 @@ describe('Actual barcode management script in Chromium', () => {
     await page.click('#iu-select-page'); await page.waitForFunction(() => [...document.querySelectorAll<HTMLInputElement>('[data-unit-id]')].every(input => input.checked));
     await page.select('#iu-size', size); await page.click('#iu-preview'); await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
   }
+  async function clickPrint(includeCovers = true) {
+    await page.click('#iu-print');
+    await page.waitForSelector('dialog.iu-cover-choice[open]');
+    await page.click(`dialog.iu-cover-choice [data-include-covers="${includeCovers ? 'yes' : 'no'}"]`);
+  }
+  it('asks about batch covers and can print only the product labels', async () => {
+    await selectPreview('50x25');
+    await page.click('#iu-print');
+    await page.waitForSelector('dialog.iu-cover-choice[open]');
+    const folder = resolve(__dirname, '../../../artifacts/barcode-ui'); mkdirSync(folder, { recursive: true });
+    await (await page.$('dialog.iu-cover-choice'))!.screenshot({ path: resolve(folder, 'cover-choice.png') });
+    expect(calls.filter(call => call.path.endsWith('/requests'))).toHaveLength(0);
+    await page.click('dialog.iu-cover-choice [data-cancel]');
+    await page.waitForFunction(() => !document.querySelector('dialog.iu-cover-choice'));
+    expect(await page.$$('#iu-previews .iu-label-batch-cover')).toHaveLength(1);
+    expect(calls.filter(call => call.path.endsWith('/requests'))).toHaveLength(0);
+    await page.evaluate(() => { const open = window.open; window.open = (...args) => { const popup = open.apply(window, args); if (popup) popup.print = () => {}; return popup; }; });
+    const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
+    await clickPrint(false); const popup = await (await target).page();
+    await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success'));
+    expect(await popup!.$$('.iu-print-sheet')).toHaveLength(2);
+    expect(await popup!.$$('.iu-label-batch-cover')).toHaveLength(0);
+    expect(await page.$$('#iu-previews .iu-label-batch-cover')).toHaveLength(0);
+    expect(await page.$eval('#iu-preview-total', el => el.textContent)).toBe('2 piece label(s)');
+    expect(calls.filter(call => call.path.endsWith('/requests'))).toHaveLength(1);
+  });
   it('previews only the exact stocktake IDs passed from the product count', async () => {
     await page.evaluate(ids => window.InventoryUnitLabels.openStockUnits({ unitIds: ids, preview: true }), [units[1]._id]);
     await page.waitForFunction(() => !!document.querySelector('#iu-preview-section[open]') && !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
     expect(await page.evaluate(() => window.InventoryUnitLabels.selection().ids)).toEqual([units[1]._id]);
-    expect(await page.$$('#iu-previews .iu-label')).toHaveLength(1);
+    expect(await page.$$('#iu-previews .iu-label:not(.iu-label-batch-cover)')).toHaveLength(1);
+    expect(await page.$$('#iu-previews .iu-label-batch-cover')).toHaveLength(1);
     expect(calls.some(call => call.search?.includes('unitIds=' + units[1]._id))).toBe(true);
   });
   it.each(['shipped', 'delivered'])('shows confirmed order %s instead of the older prepared unit status', async status => {
@@ -102,21 +129,20 @@ describe('Actual barcode management script in Chromium', () => {
     const check = async (target: Page) => target.evaluate(async () => {
       const root = document.querySelector('#iu-previews') || document;
       await window.InventoryUnitLabels?.waitForLayout(root);
-      return [...root.querySelectorAll('.iu-label')].map(label => {
-        const image = label.querySelector('img')!, text = label.querySelector('.iu-label-text')!, code = label.querySelector('.iu-label-value')!;
-        const last = [...text.children].filter(child => getComputedStyle(child).display !== 'none').at(-1)!;
-        return { qr: getComputedStyle(image).width, font: parseFloat(getComputedStyle(label.querySelector('.iu-label-name')!).fontSize), bottom: last.getBoundingClientRect().bottom, codeTop: code.getBoundingClientRect().top };
+      return [...root.querySelectorAll('.iu-label:not(.iu-label-batch-cover)')].map(label => {
+        const image = label.querySelector('.iu-label-qr')!, code = label.querySelector('.iu-label-value')!;
+        return { qr: getComputedStyle(image).width, font: parseFloat(getComputedStyle(label.querySelector('.iu-label-name')!).fontSize), nameBottom: label.querySelector('.iu-label-name')!.getBoundingClientRect().bottom, codeTop: code.getBoundingClientRect().top, codeBottom: code.getBoundingClientRect().bottom, labelBottom: label.getBoundingClientRect().bottom };
       });
     });
-    for (const row of await check(page)) { expect(parseFloat(row.qr)).toBeCloseTo(20 * 96 / 25.4, 1); expect(row.font).toBeGreaterThanOrEqual(2 * 96 / 25.4 - .01); expect(row.bottom).toBeLessThanOrEqual(row.codeTop); }
+    for (const row of await check(page)) { expect(parseFloat(row.qr)).toBeCloseTo(21.25 * 96 / 25.4, 1); expect(row.font).toBeGreaterThanOrEqual(2 * 96 / 25.4 - .01); expect(row.nameBottom).toBeLessThanOrEqual(row.codeTop); expect(row.codeBottom).toBeLessThanOrEqual(row.labelBottom); }
     const folder = resolve(__dirname, '../../../artifacts/label-fit'); mkdirSync(folder, { recursive: true });
     await page.screenshot({ path: resolve(folder, 'compact-preview.png') });
     await page.select('#iu-preview-zoom', '200');
     await check(page);
     const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
-    await page.click('#iu-print'); const popup = await (await target).page();
+    await clickPrint(); const popup = await (await target).page();
     await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success'));
-    for (const row of await check(popup!)) { expect(parseFloat(row.qr)).toBeCloseTo(20 * 96 / 25.4, 1); expect(row.bottom).toBeLessThanOrEqual(row.codeTop); }
+    for (const row of await check(popup!)) { expect(parseFloat(row.qr)).toBeCloseTo(21.25 * 96 / 25.4, 1); expect(row.nameBottom).toBeLessThanOrEqual(row.codeTop); expect(row.codeBottom).toBeLessThanOrEqual(row.labelBottom); }
     await popup!.close();
     await page.click('#iu-preview-section [data-iu-close]');
     labels[0].productName = 'W'.repeat(600);
@@ -124,6 +150,43 @@ describe('Actual barcode management script in Chromium', () => {
     await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('Product text is too long'));
     expect(await page.$eval('#iu-print', el => (el as HTMLButtonElement).disabled)).toBe(true);
   }, 15000);
+  it('fits a compact pack label with its piece count and footer', async () => {
+    const unitId = '507f1f77bcf86cd799439061', barcode = 'PK-' + unitId.toUpperCase();
+    const svg = await QRCode.toString(barcode, { type: 'svg', margin: 4 });
+    const result = await page.evaluate(async label => {
+      const host = document.createElement('div'); document.body.append(host);
+      host.innerHTML = window.InventoryUnitLabels.labelHtml(label, { id: '50x25', widthMm: 50, heightMm: 25, qrMm: 17, marginMm: 1.5 });
+      await window.InventoryUnitLabels.waitForLayout(host);
+      const node = host.querySelector('.iu-label')!, count = host.querySelector('.iu-pack-piece-count')!;
+      return { count: count.textContent, footer: host.querySelector('.iu-label-footer')!.textContent,
+        fits: node.scrollWidth <= node.clientWidth + 1 && node.scrollHeight <= node.clientHeight + 1 };
+    }, { unitId, barcode, isPack: true, quantity: 6, productName: 'Fringe Cushion', sku: 'CUSHION-6', manualCode: 'PK-000001-8', invoiceDate: '2026-10-20', svg });
+    expect(result.count).toContain('6 PCS');
+    expect(result.footer).toBe('Made in Egypt - © SOULIA HOME');
+    expect(result.fits).toBe(true);
+  });
+  it('adapts vertical spacing to measured name wrapping and preserves it at preview zoom', async () => {
+    const result = await page.evaluate(async label => {
+      const host=document.createElement('div'); host.id='spacing-check'; host.style.cssText='display:flex;gap:20px;padding:20px;background:white'; document.body.append(host);
+      const names=['Ribbon Storage','Sandora Deep Gray Storage','سلة تنظيم رمادي غامق كبيرة'];
+      host.innerHTML=names.map(productName=>window.InventoryUnitLabels.labelHtml({...label,productName,sku:'Code 32',manualCode:'U-0000-0488-7'}, {id:'50x25',widthMm:50,heightMm:25,qrMm:17,marginMm:1.5})).join('');
+      const measure=()=>[...host.querySelectorAll('.iu-label')].map(el=>{
+        const name=el.querySelector('.iu-label-name')!,text=el.querySelector('.iu-label-text')!,code=el.querySelector('.iu-label-value')!,sku=el.querySelector('.iu-label-sku')!,footer=el.querySelector('.iu-label-footer')!;
+        return {gap:parseFloat(getComputedStyle(text).gap),lines:Math.round(name.clientHeight/parseFloat(getComputedStyle(name).lineHeight)),
+          clear:name.getBoundingClientRect().bottom<=sku.getBoundingClientRect().top && sku.getBoundingClientRect().bottom<=code.getBoundingClientRect().top && code.getBoundingClientRect().bottom<footer.getBoundingClientRect().top,
+          qr:parseFloat(getComputedStyle(el.querySelector('.iu-label-qr')!).width)};
+      });
+      await window.InventoryUnitLabels.waitForLayout(host); const normal=measure();
+      host.style.zoom='2'; await window.InventoryUnitLabels.waitForLayout(host); const zoomed=measure();
+      return {normal,zoomed};
+    },labels[0]);
+    expect(result.normal[0].lines).toBe(1);
+    for(const row of result.normal.slice(1)) {expect(row.lines).toBeGreaterThan(1);expect(row.gap).toBeLessThan(result.normal[0].gap);}
+    result.normal.forEach((row,index)=>{expect(row.clear).toBe(true);expect(result.zoomed[index].clear).toBe(true);expect(result.zoomed[index].gap).toBeCloseTo(row.gap,1);expect(row.qr).toBeCloseTo(21.25*96/25.4,1);});
+    await page.setViewport({width:1440,height:900});
+    await page.$eval('#spacing-check',(el:HTMLElement)=>{el.style.zoom='1.5';el.style.width='max-content';});
+    await (await page.$('#spacing-check'))!.screenshot({path:resolve(__dirname,'../../../artifacts/label-fit/adaptive-spacing.png')});
+  });
   async function addFixtureUnit(invoice: any, line: any) {
     const id = String(1000 + units.length).padStart(24, '0'), barcode = 'SU-' + id.toUpperCase();
     const label = { unitId: id, barcode, productName: line.name, sku: line.sku, sellPrice: 249.5, svg: await QRCode.toString(barcode, { type: 'svg', margin: 4 }) };
@@ -152,34 +215,63 @@ describe('Actual barcode management script in Chromium', () => {
     try { await page.waitForFunction(count => document.querySelector('#iu-stat-selected')!.textContent === String(count), { timeout: 3000 }, count); }
     catch { throw new Error(`Expected ${count} selected: ` + await page.$eval('#page-barcodes', e => e.textContent)); }
   }
-  it('prints one separator between grouped products and none for a single product', async () => {
+  it('uses green highlights for active barcode tabs and invoices in both themes', async () => {
+    await invoiceWorkspace();
+    const highlights = await page.evaluate(() => ({
+      badge: getComputedStyle(document.querySelector('#iu-tab-invoice-count')!).backgroundColor,
+      invoice: getComputedStyle(document.querySelector('.iu-invoice-link.active')!).backgroundColor,
+      filter: getComputedStyle(document.querySelector('.iu-chip.active')!).backgroundColor,
+    }));
+    expect(highlights).toEqual({ badge: 'rgb(226, 241, 231)', invoice: 'rgb(226, 241, 231)', filter: 'rgb(226, 241, 231)' });
+    await page.evaluate(() => document.body.classList.add('dark-mode'));
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.iu-invoice-link.active')!).backgroundColor === 'rgb(35, 68, 50)');
+    expect(await page.$eval('.iu-invoice-link.active', el => getComputedStyle(el).backgroundColor)).toBe('rgb(35, 68, 50)');
+  });
+  it('prints a named cover before every product group, including a single product', async () => {
     await invoiceWorkspace();
     const line = receipts[0].lines[1]; line.quantity = line.createdUnits = line.onHandUnits = 10;
     const removed = new Set(units.filter(unit => unit.product.code === line.sku).slice(10).map(unit => unit._id));
     units = units.filter(unit => !removed.has(unit._id)); labels = labels.filter(label => !removed.has(label.unitId));
     const a = labels.filter(label => label.sku === 'BASKET-1'), b = labels.filter(label => label.sku === 'BLANKET-1');
+    a.forEach(label => { label.batchId = '507f1f77bcf86cd7a381ed3a'; });
+    b.forEach(label => { label.batchId = '507f1f77bcf86cd7b4d9a711'; });
     labels = [...a.flatMap((label, i) => b[i] ? [label, b[i]] : [label]), ...labels.filter(label => !['BASKET-1', 'BLANKET-1'].includes(label.sku))];
     await page.reload(); await page.waitForSelector('[data-select-line="0"]');
     await page.click('[data-select-line="0"]'); await expectSelected(20);
     await page.select('#iu-size', '50x25'); await page.click('#iu-preview');
     await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
-    expect(await page.$$('.iu-label-separator')).toHaveLength(0);
+    expect(await page.$$('#iu-previews .iu-label-batch-cover')).toHaveLength(1);
+    expect(await page.$eval('#iu-previews .iu-label:first-of-type', el => el.classList.contains('iu-label-batch-cover'))).toBe(true);
+    expect(await page.$eval('#iu-previews .iu-label-batch-cover', el => ({ name: el.querySelector('.iu-cover-name')?.textContent, count: el.querySelector('.iu-cover-count b')?.textContent, code: el.querySelector('.iu-cover-top code')?.textContent, batchNumber: el.querySelector('.iu-cover-batch-number')?.textContent, by: el.querySelector('.iu-cover-by') }))).toMatchObject({ name: 'Lovely Basket', count: '20', code: expect.stringMatching(/^B-[A-Z0-9]{6}$/), batchNumber: 'A381ED3A', by: null });
+    expect(await page.$eval('#iu-previews .iu-label-batch-cover', el => {
+      const cover = el.getBoundingClientRect(), parts = ['.iu-cover-top', '.iu-cover-name', '.iu-cover-count', '.iu-cover-brand-row'].map(selector => el.querySelector(selector)!.getBoundingClientRect());
+      const groupTop = Math.min(...parts.map(part => part.top)), groupBottom = Math.max(...parts.map(part => part.bottom));
+      const logo = el.querySelector('.iu-cover-brand')!.getBoundingClientRect(), batchNumber = el.querySelector('.iu-cover-batch-number')!.getBoundingClientRect();
+      return { centeredX: parts.every(part => Math.abs((part.left + part.right - cover.left - cover.right) / 2) < 2 * 96 / 25.4), centeredY: Math.abs((groupTop + groupBottom - cover.top - cover.bottom) / 2) < 2 * 96 / 25.4,
+        roundedLogo: getComputedStyle(el.querySelector('.iu-cover-brand')!).borderRadius !== '0px', numberBesideLogo: batchNumber.left >= logo.right && batchNumber.top < logo.bottom && batchNumber.bottom > logo.top };
+    })).toEqual({ centeredX: true, centeredY: true, roundedLogo: true, numberBesideLogo: true });
+    await (await page.$('#iu-previews .iu-label-batch-cover'))!.screenshot({ path: resolve(__dirname, '../../../artifacts/barcode-ui/batch-cover-50x25.png') });
     await page.click('#iu-preview-section [data-iu-close]');
     await page.click('[data-select-line="1"]'); await expectSelected(30);
     await page.click('#iu-preview');
     await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
-    expect(await page.$eval('#iu-preview-total', el => el.textContent)).toBe('30 piece label(s) + 1 separator(s)');
-    const order = await page.$$eval('#iu-previews .iu-label', els => els.map(el => el.classList.contains('iu-label-separator') ? 'separator' : el.querySelector('.iu-label-sku')!.textContent));
-    expect(order).toEqual([...Array(20).fill('SKU: BASKET-1'), 'separator', ...Array(10).fill('SKU: BLANKET-1')]);
+    expect(await page.$eval('#iu-preview-total', el => el.textContent)).toBe('30 piece label(s) + 2 batch covers');
+    const order = await page.$$eval('#iu-previews .iu-label', els => els.map(el => el.classList.contains('iu-label-batch-cover') ? `cover:${el.querySelector('.iu-cover-name')!.textContent}` : el.querySelector('.iu-label-sku strong')!.textContent));
+    expect(order).toEqual(['cover:Lovely Basket', ...Array(20).fill('BASKET-1'), 'cover:Cotton Blanket', ...Array(10).fill('BLANKET-1')]);
+    const coverCodes = await page.$$eval('#iu-previews .iu-label-batch-cover .iu-cover-top code', els => els.map(el => el.textContent));
+    const batchNumbers = await page.$$eval('#iu-previews .iu-cover-batch-number', els => els.map(el => el.textContent));
+    expect(new Set(coverCodes).size).toBe(2);
+    expect(batchNumbers).toEqual(['A381ED3A', 'B4D9A711']);
     const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
-    await page.click('#iu-print'); const popup = await (await target).page();
+    await clickPrint(); const popup = await (await target).page();
     await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success'));
-    expect(await popup!.$$eval('.iu-print-sheet', els => els.length)).toBe(31);
-    expect(await popup!.$eval('.iu-label-separator', el => el.textContent)).toBe('فاصل');
-    expect(await popup!.$$eval('.iu-label-separator img', els => els.length)).toBe(0);
-    expect(await popup!.$$eval('.iu-label', els => els.map(el => el.classList.contains('iu-label-separator') ? 'separator' : el.querySelector('.iu-label-sku')!.textContent))).toEqual(order);
+    expect(await popup!.$$eval('.iu-print-sheet', els => els.length)).toBe(32);
+    expect(await popup!.$$eval('.iu-label-batch-cover .iu-cover-top code', els => els.map(el => el.textContent))).toEqual(coverCodes);
+    expect(await popup!.$$eval('.iu-cover-batch-number', els => els.map(el => el.textContent))).toEqual(batchNumbers);
+    expect(await popup!.$$eval('.iu-label-batch-cover img', els => els.every(el => (el as HTMLImageElement).naturalWidth > 0))).toBe(true);
+    expect(await popup!.$$eval('.iu-label', els => els.map(el => el.classList.contains('iu-label-batch-cover') ? `cover:${el.querySelector('.iu-cover-name')!.textContent}` : el.querySelector('.iu-label-sku strong')!.textContent))).toEqual(order);
     const pdf = Buffer.from(await popup!.pdf({ preferCSSPageSize: true })).toString('latin1');
-    expect((pdf.match(/\/Type \/Page\b/g) || []).length).toBe(31);
+    expect((pdf.match(/\/Type \/Page\b/g) || []).length).toBe(32);
     expect(calls.find(call => call.path.endsWith('/requests')).data.unitIds).toHaveLength(30);
     await popup!.close();
   }, 15000);
@@ -250,6 +342,22 @@ describe('Actual barcode management script in Chromium', () => {
     expect(await page.$eval('#iu-products', el => el.textContent)).toContain('SKU-1');
     expect(await page.$$eval('#iu-units code', els => els.map(el => el.textContent))).toContain(labels[0].unitId);
   });
+  it('shows a product image and opens the assigned shelf from a compact location icon', async () => {
+    units[0].product.imageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/yd0AAAAASUVORK5CYII=';
+    units[0].product.storageLocationId = '507f1f77bcf86cd799439099';
+    await page.evaluate(() => {
+      (window as any).SouliaWarehouseLayout = { load: async () => ({}), describe: () => ({ warehouse: 'Main', warehouseCode: 'MAIN', zone: 'A', rack: 'R1', level: 'S03' }) };
+      return window.renderBarcodeManagement();
+    });
+    await page.waitForSelector('#iu-units .iu-unit-product-line img');
+    expect(await page.$$eval('#iu-units summary[data-unit-location]', nodes => nodes.length)).toBe(1);
+    await page.click('#iu-units summary[data-unit-location]');
+    await page.waitForFunction(() => document.querySelector('#iu-units .iu-location-detail')?.textContent?.includes('S03'));
+    expect(await page.$eval('#iu-units .iu-location-detail', el => el.textContent)).toContain('R1');
+    await page.setViewport({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: resolve(__dirname, '../../../artifacts/warehouse-layout/find-piece-location-mobile.png'), fullPage: true });
+  });
   it('shows a missing API explanation, disables unsafe controls, and recovers through retry', async () => {
     configMissing = true; await page.evaluate(() => window.renderBarcodeManagement());
     expect(await page.$eval('#iu-error-title', el => el.textContent)).toBe('Barcode service unavailable');
@@ -316,21 +424,30 @@ describe('Actual barcode management script in Chromium', () => {
   });
   it.each(sizes.map(size => size.id))('previews readable, exact %s dimensions and distinct server values', async size => {
     await selectPreview(size);
-    const boxes = await page.$$eval('.iu-label', els => els.map(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height, text: el.textContent })));
+    const boxes = await page.$$eval('.iu-label:not(.iu-label-batch-cover)', els => els.map(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height, text: el.textContent })));
     const template = sizes.find(row => row.id === size)!;
     expect(boxes).toHaveLength(2); expect(boxes[0].width).toBeCloseTo(template.widthMm * 96 / 25.4, 0);
     expect(boxes[0].height).toBeCloseTo(template.heightMm * 96 / 25.4, 0); expect(boxes[0].text).toContain(labels[0].barcode);
-    expect(await page.$eval('.iu-label-brand', el => el.textContent)).toBe('SOULIA HOME');
-    expect(await page.$eval('.iu-label-brand', el => getComputedStyle(el).textAlign)).toBe('right');
-    expect(await page.$eval('.iu-label-price', el => el.textContent)).toBe('EGP 249.50');
-    expect(await page.$eval('.iu-label-print-date', el => el.textContent)).toContain(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()));
-    expect(await page.$eval('.iu-label-date', el => el.textContent)).toContain('2026-10-17');
-    expect(await page.$eval('.iu-label-id span', el => el.textContent!.replace(/\s/g, ''))).toBe(labels[0].unitId);
-    expect(await page.$eval('.iu-label', el => getComputedStyle(el, ':before').borderStyle)).toBe('solid');
+    expect(await page.$eval('.iu-label-brand img', el => (el as HTMLImageElement).naturalWidth > 0)).toBe(true);
+    expect(await page.$eval('.iu-label-brand', el => getComputedStyle(el).backgroundColor)).toBe('rgb(0, 0, 0)');
+    expect(await page.$eval('.iu-label:not(.iu-label-batch-cover)', el => { const brand = el.querySelector('.iu-label-brand')!.getBoundingClientRect(), name = el.querySelector('.iu-label-name')!.getBoundingClientRect(); return brand.top < name.top && Math.abs(brand.left - name.left) < 1 && brand.height < parseFloat(getComputedStyle(el.querySelector('.iu-label-name')!).fontSize) * 1.1; })).toBe(true);
+    expect(await page.$eval('.iu-label-footer', el => el.textContent)).toBe('Made in Egypt - © SOULIA HOME');
+    expect(await page.$eval('.iu-label-footer', el => el.getBoundingClientRect().height < parseFloat(getComputedStyle(el).fontSize) * 1.2 && el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    expect(await page.$eval('.iu-label:not(.iu-label-batch-cover)', el => getComputedStyle(el.querySelector('.iu-label-brand')!).borderRadius === getComputedStyle(el.querySelector('.iu-label-value')!).borderRadius)).toBe(true);
+    expect(await page.$eval('.iu-label:not(.iu-label-batch-cover)', el => { const label = el.getBoundingClientRect(), footer = el.querySelector('.iu-label-footer')!.getBoundingClientRect(), qr = el.querySelector('.iu-label-qr')!.getBoundingClientRect(); return label.right - footer.right >= 1.9 * 96 / 25.4 && label.bottom - footer.bottom >= 1.4 * 96 / 25.4 && footer.top >= qr.bottom - 1 * 96 / 25.4; })).toBe(true);
+    if (size === '50x25') expect(await page.$eval('.iu-label-footer', el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(1.7 * 96 / 25.4);
+    expect(await page.$('.iu-label-price')).toBeNull();
+    expect(boxes[0].text).not.toContain('EGP 249.50');
+    expect(await page.$('.iu-label-print-date')).toBeNull();
+    expect(await page.$('.iu-label-invoice-date')).toBeNull();
+    expect(await page.$eval('.iu-label-sku strong', el => el.textContent)).toBe(labels[0].sku);
+    expect(await page.$eval('.iu-label', el => getComputedStyle(el, ':before').content)).toBe('none');
+    expect(await page.$eval('.iu-label-qr', el => (el as HTMLElement).getBoundingClientRect().width)).toBeGreaterThan(template.qrMm * 96 / 25.4);
     const folder = resolve(__dirname, '../../../artifacts/barcode-ui'); mkdirSync(folder, { recursive: true });
     await page.setViewport({ width: 1280, height: 1000, deviceScaleFactor: 203 / 96 });
-    await (await page.$('.iu-label'))!.screenshot({ path: resolve(folder, `label-${size}.png`) });
-    const qr = await (await page.$('.iu-label img'))!.screenshot({ encoding: 'base64' });
+    if (size === '100x70') await (await page.$('.iu-label-batch-cover'))!.screenshot({ path: resolve(folder, 'batch-cover-100x70.png') });
+    await (await page.$('.iu-label:not(.iu-label-batch-cover)'))!.screenshot({ path: resolve(folder, `label-${size}.png`) });
+    const qr = await (await page.$('.iu-label-qr'))!.screenshot({ encoding: 'base64' });
     await page.addScriptTag({ url: origin + '/vendor/zxing-browser-0.2.1.min.js' });
     expect(await page.evaluate(async png => {
       const reader = new (window as any).ZXingBrowser.BrowserQRCodeReader();
@@ -338,31 +455,33 @@ describe('Actual barcode management script in Chromium', () => {
     }, qr)).toBe(labels[0].barcode);
     expect(calls.some(call => call.path.endsWith('/requests'))).toBe(false);
   });
-  it.each(sizes.map(size => size.id))('prints framed %s pages at exact dimensions and never claims physical success', async sizeId => {
+  it.each(sizes.map(size => size.id))('prints borderless %s pages at exact dimensions and never claims physical success', async sizeId => {
     await selectPreview(sizeId);
     if (sizeId === '60x40') await page.select('#iu-preview-zoom', '150');
+    await page.evaluate(() => { const open = window.open; window.open = (...args) => { const popup = open.apply(window, args); if (popup) popup.print = () => {}; return popup; }; });
     const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
-    await page.click('#iu-print'); const popup = await (await target).page(); expect(popup).not.toBeNull();
-    await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('physical printing is unverified'));
+    await clickPrint(); const popup = await (await target).page(); expect(popup).not.toBeNull();
+    await page.waitForFunction(() => document.querySelector('#iu-message')?.classList.contains('iu-print-success'));
     await popup!.emulateMediaType('print');
-    expect(await popup!.$$eval('.iu-label', els => els.length)).toBe(2);
+    expect(await popup!.$$eval('.iu-label', els => els.length)).toBe(3);
+    expect(await popup!.$eval('.iu-print-sheet:first-child .iu-label', el => el.classList.contains('iu-label-batch-cover'))).toBe(true);
     const pdf = await popup!.pdf({ preferCSSPageSize: true, printBackground: true });
     const pdfText = Buffer.from(pdf).toString('latin1');
     const boxes = [...pdfText.matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g)];
     const template = sizes.find(size => size.id === sizeId)!;
-    expect(boxes).toHaveLength(2);
+    expect(boxes).toHaveLength(3);
     for (const box of boxes) {
       expect(Math.abs(Number(box[1]) - template.widthMm * 72 / 25.4)).toBeLessThan(0.6);
       expect(Math.abs(Number(box[2]) - template.heightMm * 72 / 25.4)).toBeLessThan(0.6);
     }
-    expect((pdfText.match(/\/Type \/Page\b/g) || []).length).toBe(2);
+    expect((pdfText.match(/\/Type \/Page\b/g) || []).length).toBe(3);
     expect(calls.filter(call => call.path.endsWith('/requests'))).toHaveLength(1);
   });
   it('keeps the request key on retry and prevents repeat clicks during a print request', async () => {
-    await selectPreview(); failOnce = true; await page.click('#iu-print');
+    await selectPreview(); failOnce = true; await clickPrint();
     await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('Retry uses the same request key'));
-    await page.click('#iu-print');
-    await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('physical printing is unverified'));
+    await clickPrint();
+    await page.waitForFunction(() => !window.InventoryUnitLabels.selection().busy && (document.querySelector('#iu-message')!.classList.contains('iu-print-success') || document.querySelector('#iu-message')!.textContent!.includes('physical printing is unverified')));
     const requests = calls.filter(call => call.path.endsWith('/requests'));
     expect(requests).toHaveLength(2); expect(requests[0].data).toEqual(requests[1].data);
     expect(new Set(requests[0].data.unitIds).size).toBe(2);
@@ -377,14 +496,14 @@ describe('Actual barcode management script in Chromium', () => {
     await page.click('#iu-preview');
     await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
     failOnce = true;
-    await page.click('#iu-print');
+    await clickPrint();
     await page.waitForFunction(() => document.querySelector('#iu-message')!.textContent!.includes('Retry uses the same request key'));
     await page.click('#iu-preview-section [data-iu-close]');
     await expectSelected(20);
     await page.click('#iu-preview');
     await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('#iu-print')!.disabled);
     const target = browser.waitForTarget(target => target.type() === 'page' && target.url() === 'about:blank');
-    await page.click('#iu-print'); const popup = await (await target).page();
+    await clickPrint(); const popup = await (await target).page();
     await page.waitForFunction(() => !!document.querySelector('#iu-preview-section .iu-print-success') && !window.InventoryUnitLabels.selection().busy);
     await popup!.close();
     await page.keyboard.press('Escape');
@@ -406,7 +525,7 @@ describe('Actual barcode management script in Chromium', () => {
   it('shows empty, permission-denied and translated mobile states', async () => {
     await page.type('#iu-query', 'missing'); await page.waitForFunction(() => document.querySelector('#iu-units')!.textContent!.includes('No tracked units'));
     await page.evaluate(() => { currentLang = 'ar'; return window.renderBarcodeManagement(); });
-    expect(await page.$eval('h1', el => el.textContent)).toBe('إدارة الباركود');
+    expect(await page.$eval('h1', el => el.textContent)).toBe('إدارة المخازن');
     deny = true; await page.evaluate(() => window.renderBarcodeManagement());
     expect(await page.$eval('#iu-error-title', el => el.textContent)).toBe('الصلاحية غير متاحة');
   });
@@ -442,7 +561,7 @@ describe('Actual barcode management script in Chromium', () => {
     expect(await page.$eval('#receipt-summary', el => el.textContent)).toContain('Print requests do not prove physical printing');
     await page.click('#receipt-summary .btn-primary');
     await page.waitForFunction(() => document.querySelector('#iu-invoice-detail')!.textContent!.includes('900011'));
-    expect(page.url()).toContain('#barcodes/receipt/' + transactionId);
+    expect(page.url()).toContain('#warehouse-management/receipt/' + transactionId);
     await page.waitForFunction(() => document.querySelector('[data-unit-id]'));
     expect(calls.some(call => call.path.endsWith('/requests'))).toBe(false);
   });
@@ -480,6 +599,25 @@ describe('Actual barcode management script in Chromium', () => {
     const sent = calls.find(c => c.path.endsWith('/identify'));
     expect(sent.data).toMatchObject({ physicalQuantity: 5, warehouseCode: 'Main shelf', expectedQuantity: 5, physicalPossessionConfirmed: true });
     await page.click('[data-select-line="2"]'); await page.waitForFunction(() => document.querySelector('#iu-stat-selected')!.textContent === '25');
+  });
+  it('places both identity choices on the product and passes its line to QR linking', async () => {
+    await invoiceWorkspace();
+    const layout = await page.$eval('[data-line-index="2"]', card => {
+      const actions = [...card.querySelectorAll('.iu-identity-action')] as HTMLElement[];
+      return { labels: actions.map(button => button.textContent?.trim()), sameRow: Math.abs(actions[0].getBoundingClientRect().top - actions[1].getBoundingClientRect().top) < 2,
+        inCard: actions.every(button => card.contains(button)) };
+    });
+    expect(layout).toMatchObject({ sameRow: true, inCard: true });
+    expect(layout.labels).toHaveLength(2);
+    expect(await page.$('.iu-detail-head [data-link-line]')).toBeNull();
+    await page.setViewport({ width: 390, height: 840 });
+    expect(await page.$eval('[data-line-index="2"] .iu-identity-actions', actions =>
+      actions.scrollWidth <= actions.clientWidth + 1 && [...actions.querySelectorAll('button')].every(button => button.scrollWidth <= button.clientWidth + 1))).toBe(true);
+    await page.evaluate(() => { (window as any).PreprintedLabels = { openLink: (...args: unknown[]) => { (window as any).__linkedLine = args; } }; });
+    await page.click('[data-link-line="2"]');
+    expect(await page.evaluate(() => (window as any).__linkedLine)).toEqual(['507f1f77bcf86cd799439051', 2]);
+    await page.click('[data-register-line="2"]');
+    expect(await page.$eval('#iu-register-dialog', dialog => (dialog as HTMLDialogElement).open)).toBe(true);
   });
   it('uses an explicit piece range for purchases larger than 100 and previews the second range correctly', async () => {
     await invoiceWorkspace(true);

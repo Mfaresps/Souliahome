@@ -4,6 +4,7 @@
   const messages = {
     VALIDATED: ['Piece identified', 'تم التعرف على القطعة'],
     UNKNOWN_BARCODE: ['Unknown barcode or Unit ID.', 'الباركود أو معرف الوحدة غير معروف.'],
+    PREPRINTED_NOT_LINKED: ['Stored supplier label. Link it to a purchase invoice before using it.', 'ملصق مورد محفوظ. اربطه بفاتورة شراء قبل استخدامه.'],
     WRONG_PRODUCT: ['This unit belongs to another product.', 'هذه الوحدة تخص صنفًا آخر.'],
     INVALID_UNIT_STATE: ['The unit state is not eligible for this operation.', 'حالة الوحدة لا تسمح بهذه العملية.'],
     DUPLICATE_SCAN: ['This unit was already scanned in this session.', 'تم مسح الوحدة بالفعل في جلسة المسح الحالية.'],
@@ -137,7 +138,7 @@
       <label>${tr('Scanner suffix', 'لاحقة القارئ')}<select data-scan-suffix><option value="Enter">Enter / CR / LF</option><option value="Tab">Tab</option><option value="none">${tr('None — use Validate', 'بدون — استخدم تحقق')}</option></select></label><button class="btn btn-outline" data-scan-submit>${tr('Validate', 'تحقق')}</button></form>
       <div class="iu-scanner-actions"><button type="button" class="btn btn-outline" data-scan-camera>${tr('Start camera', 'تشغيل الكاميرا')}</button><button type="button" class="btn btn-outline" data-scan-stop disabled>${tr('Stop camera', 'إيقاف الكاميرا')}</button>
       <button type="button" class="btn btn-outline" data-scan-check hidden disabled>${tr('Check pending request', 'التحقق من نتيجة المسح')}</button><button type="button" class="btn btn-outline" data-scan-retry hidden disabled>${tr('Retry same request', 'إعادة محاولة المسح')}</button></div>
-      <video data-scan-video playsinline muted hidden></video><p data-scan-message role="status" aria-live="polite" tabindex="-1"></p><p data-scan-pending dir="ltr"></p>
+      <video data-scan-video playsinline muted hidden></video><p data-scan-message role="status" aria-live="polite" tabindex="-1"></p><section data-scan-location hidden aria-live="polite"></section><p data-scan-pending dir="ltr"></p>
       <details data-scan-manual ${options.canManualSelect ? '' : 'hidden'}><summary>${tr('Select an eligible unit manually', 'اختيار وحدة مؤهلة يدويًا')}</summary>
       <label>${tr('Exact barcode / Unit ID (optional)', 'باركود / معرف وحدة مطابق (اختياري)')}<input data-scan-filter maxlength="160"></label><button class="btn btn-outline" type="button" data-scan-load>${tr('Load eligible units', 'تحميل الوحدات المؤهلة')}</button>
       <label>${tr('Eligible units', 'الوحدات المؤهلة')}<select data-scan-choice><option value="">${tr('Load and select a unit', 'حمّل واختر وحدة')}</option></select></label><button type="button" class="btn btn-outline" data-scan-more hidden>${tr('Next eligible units', 'الوحدات المؤهلة التالية')}</button>
@@ -158,7 +159,29 @@
       get('pending').hidden = !needsRecovery;
       get('pending').textContent = client.pending ? 'Request: ' + client.pending.operationKey : '';
     }
+    let locationGeneration = 0;
+    async function showLocation(result) {
+      const host = get('location'), generation = ++locationGeneration;
+      const productId = result?.unit?.productId;
+      host.hidden = !productId;
+      host.replaceChildren();
+      if (!productId) return;
+      host.textContent = tr('Loading assigned storage location…', 'جارٍ تحميل موقع التخزين المخصص…');
+      try {
+        const product = await options.api('/products/' + encodeURIComponent(productId), { background: true });
+        const layout = window.SouliaWarehouseLayout;
+        if (layout) await layout.load(true);
+        if (generation !== locationGeneration || stopped || !host.isConnected) return;
+        if (!layout) throw new Error('Warehouse layout unavailable');
+        layout.renderLocationCard(host, product, result.unit.warehouseCode);
+      } catch {
+        if (generation !== locationGeneration || stopped || !host.isConnected) return;
+        host.textContent = tr('Assigned location could not be loaded.', 'تعذر تحميل موقع التخزين المخصص.');
+      }
+    }
     function feedback(code, result) {
+      if (code === 'VALIDATED' && result?.unit) void showLocation(result);
+      else { locationGeneration++; get('location').hidden = true; get('location').replaceChildren(); }
       get('message').textContent = text(code, lang) + (result?.unit ? ' ' + (result.unit.manualCode || result.unit.barcode) : '');
       if (code === 'VALIDATED') {
         const label = document.createElement('span'); label.textContent = text(code, lang);

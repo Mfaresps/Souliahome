@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../../src/core/guards/jwt-auth.guard';
 import { migrateInventoryUnitIndexes } from '../../src/inventory-units/inventory-unit-index.migration';
 import { TransactionsService } from '../../src/transactions/transactions.service';
 import { TransactionSchema } from '../../src/transactions/schemas/transaction.schema';
+import { ProductSchema } from '../../src/products/schemas/product.schema';
 
 describe('Tracking backend on isolated transaction-capable MongoDB', () => {
   let mongo: Awaited<ReturnType<typeof trackingMongo>>, Unit: Model<any>, Event: Model<any>, Operation: Model<any>, service: InventoryUnitsService;
@@ -35,12 +36,14 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     Unit = mongo.connection.model('InventoryUnit', InventoryUnitSchema); Event = mongo.connection.model('InventoryUnitEvent', InventoryUnitEventSchema);
     Operation = mongo.connection.model('InventoryUnitOperation', InventoryUnitOperationSchema);
     const Transaction = mongo.connection.model('Transaction', TransactionSchema);
+    mongo.connection.model('Product', ProductSchema);
     const stockService: any = Object.create(TransactionsService.prototype);
     stockService.productsService = { findAll: () => raw('products').find({}).toArray() };
     stockService.transactionModel = Transaction;
     stockService.inventoryMovementsService = { getManualAdjustmentQtyByProductCode: async () => new Map(), getManualAdjustmentWarehouseRows: async () => [] };
     const manualCodes = new UnitManualCodesService(mongo.connection); await manualCodes.onModuleInit();
     service = new InventoryUnitsService(mongo.connection, Unit, Event, Operation, stockService, manualCodes);
+    await service.onModuleInit();
     const module = await Test.createTestingModule({ controllers: [InventoryUnitsController], providers: [{ provide: InventoryUnitsService, useValue: service },
       { provide: InventoryScanningService, useValue: new InventoryScanningService(mongo.connection, Unit, Event, Operation, service) },
       { provide: ManualPurchaseReceivingService, useValue: new ManualPurchaseReceivingService(mongo.connection, service, stockService) }] })
@@ -55,7 +58,7 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
   }, 40000);
   beforeEach(async () => {
     for (const code of ['Main', 'Main shelf', 'COUNTED-SHELF-A']) await raw('warehouses').updateOne({ code }, { $setOnInsert: { code, active: true } }, { upsert: true });
-    for (const name of ['products', 'users', 'transactions', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'vaultentries']) await raw(name).deleteMany({});
+    for (const name of ['products', 'users', 'transactions', 'purchaseorders', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabels', 'inventoryunitprelabelbatches', 'vaultentries']) await raw(name).deleteMany({});
     productId = key(); actorId = key(); saleId = key(); purchaseId = key(); actor = { userId: actorId, role: 'admin', name: 'FORGED' };
     await raw('products').insertOne({ _id: new Types.ObjectId(productId), code: 'SKU-1', name: 'Product One', size: 'XL', colors: ['Red'], openingBalance: 2 });
     await raw('users').insertOne({ _id: new Types.ObjectId(actorId), name: 'Verified Operator' });
@@ -71,6 +74,225 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     const response = await fetch(base + '/config', { headers: { 'x-test-role': 'reader' } });
     expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ symbology: 'QR', enforcementEnabled: false });
   });
+  it('validates and protects the preprint and invoice-link HTTP routes', async () => {
+    const headers = { 'Content-Type': 'application/json', 'x-test-role': 'admin' };
+    await raw('products').updateOne({ _id: new Types.ObjectId(productId) }, { $set: { imageUrl: 'https://example.test/product.webp' } });
+    expect((await fetch(base + '/prelabels/batches', { method: 'POST', headers: { ...headers, 'x-test-role': 'reader' },
+      body: JSON.stringify({ ...req(), productId, quantity: 2 }) })).status).toBe(403);
+    expect((await fetch(base + '/prelabels/batches', { method: 'POST', headers,
+      body: JSON.stringify({ ...req(), productId, quantity: 0 }) })).status).toBe(400);
+    const created = await fetch(base + '/prelabels/batches', { method: 'POST', headers,
+      body: JSON.stringify({ ...req(), productId, quantity: 2 }) });
+    expect(created.status).toBe(201);
+    const batchId = (await created.json()).batchId;
+    const listing = await fetch(base + '/prelabels/batches?productId=' + productId, { headers: { 'x-test-role': 'reader' } });
+    expect(listing.status).toBe(200); expect(await listing.json()).toMatchObject([{ batchId, unused: 2 }]);
+    const paged = await fetch(base + '/prelabels/batches/page?page=1&limit=12', { headers: { 'x-test-role': 'reader' } });
+    expect(paged.status).toBe(200); expect(await paged.json()).toMatchObject({ total: 1, batches: [{ batchId, imageUrl: 'https://example.test/product.webp' }] });
+    const detail = await fetch(base + '/prelabels/batches/' + batchId, { headers: { 'x-test-role': 'reader' } });
+    expect(detail.status).toBe(200); expect(await detail.json()).toMatchObject({ batch: { batchId,
+      source: 'internal-prepurchase', createdBy: 'Verified Operator' }, linkedPurchases: [] });
+    expect((await fetch(base + '/prelabels/batches/page?page=0', { headers: { 'x-test-role': 'reader' } })).status).toBe(400);
+    const unprintedLink = await fetch(base + '/purchases/' + purchaseId + '/prelabels/link', { method: 'POST', headers,
+      body: JSON.stringify({ ...req(), batchId, lineIndex: 0, start: 1, quantity: 2, physicalPossessionConfirmed: true,
+        physicalLabelsConfirmed: true, inspectionPassed: true }) });
+    expect(unprintedLink.status).toBe(409);
+    expect(await Unit.countDocuments()).toBe(0);
+  });
+  it('previews exact supplier identities without recording printing and rejects a stale single preview', async () => {
+    const { batchId } = await service.issuePrelabels({ ...req(), productId, quantity: 3 }, actor);
+    const range = { start: 1, quantity: 2, sizeId: '50x25' };
+    const operations = await Operation.countDocuments();
+    const preview = await service.previewPrelabelRange(batchId, range);
+    expect(await service.previewPrelabelRange(batchId, range)).toEqual(preview);
+    expect(preview.labels).toHaveLength(2);
+    expect(preview.labels.every(l => l.svg.includes('<svg') && l.manualCode?.startsWith('U-') && l.printCount === 0)).toBe(true);
+    expect(await Operation.countDocuments()).toBe(operations);
+    expect(await raw('inventoryunitprelabels').countDocuments({ printCount: 0 })).toBe(3);
+    expect(await Unit.countDocuments()).toBe(0);
+    const result = await service.printPrelabels(batchId, { ...req(), ...range, selectionHash: preview.selectionHash }, actor);
+    expect(result.labels.map(l => [l.unitId, l.manualCode])).toEqual(preview.labels.map(l => [l.unitId, l.manualCode]));
+    await expect(service.printPrelabels(batchId, { ...req(), ...range, allowReprint: true, selectionHash: preview.selectionHash }, actor)).rejects.toThrow('تغيرت');
+    expect(await raw('inventoryunitprelabels').countDocuments({ printCount: 1 })).toBe(2);
+  });
+  it('renders bulk preview labels without mutation and protects both preview routes', async () => {
+    const a = await service.issuePrelabels({ ...req(), productId, quantity: 2 }, actor);
+    const b = await service.issuePrelabels({ ...req(), productId, quantity: 2 }, actor);
+    const selection = { batchIds: [a.batchId, b.batchId], mode: 'unprinted' as const, sizeId: '50x25' };
+    const summary = await service.previewPrelabelBulk(selection);
+    const input = { ...selection, selectionHash: summary.selectionHash };
+    const operations = await Operation.countDocuments();
+    const preview = await service.previewPrelabelBulkLabels(input);
+    expect(preview.labels).toHaveLength(4);
+    expect(preview.labels.every(l => l.svg.includes('<svg') && l.manualCode?.startsWith('U-'))).toBe(true);
+    expect(await Operation.countDocuments()).toBe(operations);
+    const headers = { 'Content-Type': 'application/json', 'x-test-role': 'reader' };
+    expect((await fetch(base + '/prelabels/bulk/labels', { method: 'POST', headers, body: JSON.stringify(input) })).status).toBe(403);
+    expect((await fetch(base + '/prelabels/batches/' + a.batchId + '/preview', { method: 'POST', headers, body: JSON.stringify({ start: 1, quantity: 1, sizeId: '50x25' }) })).status).toBe(403);
+    headers['x-test-role'] = 'admin';
+    expect((await fetch(base + '/prelabels/bulk/labels', { method: 'POST', headers, body: JSON.stringify(input) })).status).toBe(201);
+    expect((await fetch(base + '/prelabels/batches/' + a.batchId + '/preview', { method: 'POST', headers, body: JSON.stringify({ start: 1, quantity: 101, sizeId: '50x25' }) })).status).toBe(400);
+    expect(await raw('inventoryunitprelabels').countDocuments({ printCount: 0 })).toBe(4);
+    await service.printPrelabels(a.batchId, { ...req(), start: 1, quantity: 1, sizeId: '50x25' }, actor);
+    await expect(service.previewPrelabelBulkLabels(input)).rejects.toThrow('تغيرت');
+  });
+  it('retains a product while an unused supplier label still identifies it', async () => {
+    await service.issuePrelabels({ ...req(), productId, quantity: 1 }, actor);
+    await expect(mongo.connection.model('Product').findByIdAndDelete(productId)).rejects.toThrow('preprinted labels');
+    expect(await raw('products').countDocuments()).toBe(1);
+  });
+  it('bulk-prints only never-requested identities across batches, including gaps, and replays safely', async () => {
+    const a = await service.issuePrelabels({ ...req(), productId, quantity: 5 }, actor);
+    const b = await service.issuePrelabels({ ...req(), productId, quantity: 3 }, actor);
+    await service.printPrelabels(a.batchId, { ...req(), start: 2, quantity: 1, sizeId: '50x25' }, actor);
+    await service.printPrelabels(a.batchId, { ...req(), start: 4, quantity: 1, sizeId: '50x25' }, actor);
+    const selection = { batchIds: [b.batchId, a.batchId], mode: 'unprinted' as const, sizeId: '50x25' };
+    const preview = await service.previewPrelabelBulk(selection);
+    expect(preview.total).toBe(6); expect(preview.reprints).toBe(0);
+    expect(preview.labels.filter(l => l.batchId === a.batchId).map(l => l.ordinal)).toEqual([1, 3, 5]);
+    const dto = { ...selection, ...req(), selectionHash: preview.selectionHash, allowReprint: false };
+    const result = await service.printPrelabelBulk(dto, actor);
+    expect(result.labels).toHaveLength(6); expect(result.stockChanged).toBe(false);
+    expect(await service.printPrelabelBulk(dto, actor)).toEqual(result);
+    expect((await raw('inventoryunitprelabels').find({}).toArray()).every(l => l.printCount === 1)).toBe(true);
+    expect(result.labels.every(l => /^U-/.test(l.manualCode))).toBe(true);
+    expect((await service.previewPrelabelBulk(selection)).total).toBe(0);
+    expect(await Unit.countDocuments()).toBe(0);
+  });
+  it('prints more than 100 labels for different products in one atomic job', async () => {
+    const otherProduct = key();
+    await raw('products').insertOne({ _id: new Types.ObjectId(otherProduct), name: 'Other Basket', code: 'OTHER-BASKET', isActive: true });
+    const a = await service.issuePrelabels({ ...req(), productId, quantity: 60 }, actor);
+    const b = await service.issuePrelabels({ ...req(), productId: otherProduct, quantity: 60 }, actor);
+    const selection = { batchIds: [a.batchId,b.batchId], mode:'unprinted' as const,sizeId:'50x25' };
+    const preview = await service.previewPrelabelBulk(selection);
+    const result = await service.printPrelabelBulk({ ...selection, ...req(), selectionHash:preview.selectionHash,allowReprint:false },actor);
+    expect(result.labels).toHaveLength(120);
+    expect(result.labels.filter(l=>l.batchId===b.batchId).every(l=>l.sku==='OTHER-BASKET' && l.productName==='Other Basket')).toBe(true);
+    expect(new Set(result.labels.map(l=>l.manualCode)).size).toBe(120);
+    expect(await Unit.countDocuments()).toBe(0);
+  },30000);
+  it('requires bulk reprint confirmation and rejects stale or racing reviews atomically', async () => {
+    const a = await service.issuePrelabels({ ...req(), productId, quantity: 3 }, actor);
+    const selection = { batchIds: [a.batchId], mode: 'all-unused' as const, sizeId: '50x25' };
+    const stale = await service.previewPrelabelBulk(selection);
+    await service.printPrelabels(a.batchId, { ...req(), start: 1, quantity: 1, sizeId: '50x25' }, actor);
+    await expect(service.printPrelabelBulk({ ...selection, ...req(), selectionHash: stale.selectionHash, allowReprint: true }, actor)).rejects.toThrow('تغيرت');
+    const preview = await service.previewPrelabelBulk(selection);
+    expect(preview.reprints).toBe(1);
+    await expect(service.printPrelabelBulk({ ...selection, ...req(), selectionHash: preview.selectionHash, allowReprint: false }, actor)).rejects.toThrow('أكّد');
+    const results = await Promise.allSettled([1, 2].map(() => service.printPrelabelBulk({ ...selection, ...req(), selectionHash: preview.selectionHash, allowReprint: true }, actor)));
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    const rows = await raw('inventoryunitprelabels').find({ batchId: a.batchId }).sort({ ordinal: 1 }).toArray();
+    expect(rows.map(l => l.printCount)).toEqual([2, 1, 1]);
+  });
+  it('excludes linked identities from bulk printing and enforces permissions, selection limits and job limits', async () => {
+    const a = await service.issuePrelabels({ ...req(), productId, quantity: 2 }, actor);
+    await service.printPrelabels(a.batchId, { ...req(), start: 1, quantity: 1, sizeId: '50x25' }, actor);
+    await service.linkPrelabels(purchaseId, { ...req(), batchId: a.batchId, lineIndex: 0, start: 1, quantity: 1,
+      physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed: true }, actor);
+    const selection = { batchIds: [a.batchId], mode: 'all-unused' as const, sizeId: '50x25' };
+    const preview = await service.previewPrelabelBulk(selection);
+    expect(preview.total).toBe(1); expect(preview.summary[0].linked).toBe(1); expect(preview.labels[0].ordinal).toBe(2);
+    const headers = { 'Content-Type': 'application/json', 'x-test-role': 'reader' };
+    expect((await fetch(base + '/prelabels/bulk/preview', { method: 'POST', headers, body: JSON.stringify(selection) })).status).toBe(403);
+    expect((await fetch(base + '/prelabels/bulk/print', { method: 'POST', headers, body: JSON.stringify({ ...selection, ...req(), selectionHash: preview.selectionHash, allowReprint: false }) })).status).toBe(403);
+    headers['x-test-role'] = 'admin';
+    expect((await fetch(base + '/prelabels/bulk/preview', { method: 'POST', headers, body: JSON.stringify({ ...selection, batchIds: [a.batchId, a.batchId] }) })).status).toBe(400);
+    const large = await service.issuePrelabels({ ...req(), productId, quantity: 1000 }, actor);
+    const oversized = { ...selection, batchIds: [a.batchId, large.batchId] };
+    const big = await service.previewPrelabelBulk(oversized);
+    expect(big.total).toBe(1001);
+    await expect(service.printPrelabelBulk({ ...oversized, ...req(), selectionHash: big.selectionHash, allowReprint: true }, actor)).rejects.toThrow('1000');
+    expect(await raw('inventoryunitprelabels').countDocuments({ batchId: large.batchId, printCount: 0 })).toBe(1000);
+  }, 30000);
+  it('issues supplier labels without stock, then links an exact printed partial range as normal units once', async () => {
+    const issued = await service.issuePrelabels({ ...req(), productId, quantity: 4 }, actor);
+    expect(issued).toMatchObject({ quantity: 4, stockChanged: false });
+    expect(await Unit.countDocuments()).toBe(0);
+    const batch = (await service.prelabelBatches(productId))[0];
+    expect(batch).toMatchObject({ batchId: issued.batchId, unused: 4, linked: 0 });
+    expect((await service.prelabelBatchPage({ page: '1', limit: '12' })).batches[0]).toMatchObject({
+      batchId: issued.batchId, source: 'internal-prepurchase', quantity: 4, createdBy: 'Verified Operator' });
+    const before = await service.prelabelRange(issued.batchId, 1, 2);
+    expect(before.labels.map(label => label.state)).toEqual(['unused', 'unused']);
+    expect(before.labels.every(label => /^U-\d{4}-\d{4}-\d$/.test(label.manualCode || ''))).toBe(true);
+    expect(new Set(before.labels.map(label => label.manualCode)).size).toBe(2);
+    expect(await service.prelabelLookup(before.labels[0].barcode)).toMatchObject({ batchId: issued.batchId,
+      ordinal: 1, sku: 'SKU-1', state: 'unused', printCount: 0 });
+    expect((await service.prelabelLookup(before.labels[0].manualCode!)).unitId).toBe(before.labels[0].unitId);
+    await expect(service.prelabelLookup('SU-INVALID')).rejects.toThrow();
+    const scanner = new InventoryScanningService(mongo.connection, Unit, Event, Operation, service);
+    const pendingScan = await scanner.validate({ ...req(), intent: 'lookup', sessionKey: key(), identifier: before.labels[0].barcode, inputMethod: 'manual-entry' }, actor);
+    expect(pendingScan).toMatchObject({ outcome: 'rejected', code: 'PREPRINTED_NOT_LINKED' });
+    const printed = await service.printPrelabels(issued.batchId, { ...req(), start: 1, quantity: 2, sizeId: '50x30' }, actor);
+    expect(printed.labels.map((label: any) => label.barcode)).toEqual(before.labels.map(label => label.barcode));
+    expect(printed.labels.map((label: any) => label.manualCode)).toEqual(before.labels.map(label => label.manualCode));
+    expect((await service.prelabelLookup(before.labels[0].barcode)).printCount).toBe(1);
+    expect((await service.prelabelBatches(productId))[0].firstUnprinted).toBe(3);
+    const poId = key();
+    await raw('purchaseorders').insertOne({ _id: new Types.ObjectId(poId), linkedTransactionId: purchaseId });
+    const link = { ...req(), batchId: issued.batchId, lineIndex: 0, start: 1, quantity: 2,
+      physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed: true };
+    const first = await service.linkPrelabels(purchaseId, link, actor);
+    expect(first).toMatchObject({ linked: 2, status: 'available', stockChanged: false });
+    expect((await service.linkPrelabels(purchaseId, link, actor)).unitIds).toEqual(first.unitIds);
+    expect(await Unit.countDocuments()).toBe(2);
+    expect((await Unit.findById(first.unitIds[0]).lean() as any).origin.purchaseOrderId).toBe(poId);
+    expect((await service.prelabelBatches(productId))[0]).toMatchObject({ unused: 2, linked: 2 });
+    const detail = await service.prelabelBatchDetails(issued.batchId);
+    expect(detail.batch).toMatchObject({ batchId: issued.batchId, printed: 2, linked: 2, unused: 2,
+      source: 'internal-prepurchase', createdBy: 'Verified Operator' });
+    expect(detail.linkedPurchases).toMatchObject([{ transactionId: purchaseId, ref: 'P1', quantity: 2 }]);
+    expect((await service.prelabelLookup(before.labels[0].barcode)).state).toBe('linked');
+    expect((await service.lookup(before.labels[0].barcode)).unit.status).toBe('available');
+    expect((await service.lookup(before.labels[0].manualCode!)).unit.status).toBe('available');
+    expect(await scanner.validate({ ...req(), intent: 'lookup', sessionKey: key(), identifier: before.labels[0].barcode, inputMethod: 'manual-entry' }, actor))
+      .toMatchObject({ outcome: 'accepted', code: 'VALIDATED' });
+    const preview = await service.preview({ ...req(), unitIds: first.unitIds, sizeId: '50x30' });
+    expect(preview.labels.map((label: any) => label.batchId)).toEqual([issued.batchId, issued.batchId]);
+    expect(preview.labels.map((label: any) => label.printCount)).toEqual([1, 1]);
+    expect(preview.labels.map((label: any) => label.manualCode)).toEqual(printed.labels.map((label: any) => label.manualCode));
+    await expect(service.labels({ ...req(), unitIds: first.unitIds, sizeId: '50x30' }, actor)).rejects.toThrow();
+    const receipt = await service.purchaseReceipts({ transactionId: purchaseId }) as any;
+    expect(receipt[0].lines[0].printedUnits).toBe(2);
+    await expect(service.linkPrelabels(purchaseId, { ...link, operationKey: key() }, actor)).rejects.toThrow();
+    await expect(service.linkPrelabels(purchaseId, { ...link, operationKey: key(), start: 3, quantity: 2 }, actor)).rejects.toThrow();
+    const reserved = await service.action(first.unitIds[0], { ...req(), action: 'reserve', expectedVersion: 0, transactionId: saleId, lineId: 'line-1' }, actor);
+    expect(reserved.unit.status).toBe('reserved');
+  });
+  it('paginates more than one hundred issued batches in stable date order', async () => {
+    const createdAt = new Date('2026-11-03T12:00:00Z');
+    const docs = Array.from({ length: 125 }, (_, index) => ({ _id: new Types.ObjectId(), productId,
+      sku: 'SKU-1', productName: 'Product One', quantity: 1, source: 'internal-prepurchase', createdBy: 'Verified Operator',
+      createdAt: new Date(createdAt.getTime() - index * 60000) }));
+    await raw('inventoryunitprelabelbatches').insertMany(docs);
+    const first = await service.prelabelBatchPage({ page: '1', limit: '12' });
+    const last = await service.prelabelBatchPage({ page: '11', limit: '12' });
+    expect(first).toMatchObject({ total: 125, page: 1, totalPages: 11 });
+    expect(first.batches).toHaveLength(12); expect(last.batches).toHaveLength(5);
+    expect(first.batches[0].batchId).toBe(String(docs[0]._id));
+    expect(last.batches[4].batchId).toBe(String(docs[124]._id));
+    expect((await service.prelabelBatchPage({ page: '1', limit: '12', q: String(docs[37]._id) })).batches[0].batchId)
+      .toBe(String(docs[37]._id));
+  });
+  it('links a large batch across print pages and rejects concurrent reuse of its codes', async () => {
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(purchaseId) }, { $set: { 'items.0.qty': 120 } });
+    const issued = await service.issuePrelabels({ ...req(), productId, quantity: 120 }, actor);
+    await service.printPrelabels(issued.batchId, { ...req(), start: 1, quantity: 100, sizeId: '50x30' }, actor);
+    await service.printPrelabels(issued.batchId, { ...req(), start: 101, quantity: 20, sizeId: '50x30' }, actor);
+    const input = { batchId: issued.batchId, lineIndex: 0, start: 1, quantity: 120,
+      physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed: true };
+    const attempts = await Promise.allSettled([
+      service.linkPrelabels(purchaseId, { ...req(), ...input }, actor),
+      service.linkPrelabels(purchaseId, { ...req(), ...input }, actor),
+    ]);
+    expect(attempts.filter(row => row.status === 'fulfilled')).toHaveLength(1);
+    expect(attempts.filter(row => row.status === 'rejected')).toHaveLength(1);
+    expect(await Unit.countDocuments()).toBe(120);
+    expect(await Event.countDocuments({ action: 'registered' })).toBe(120);
+    expect((await service.prelabelBatches(productId))[0]).toMatchObject({ unused: 0, linked: 120 });
+  }, 30000);
   it('counts warehouse stock and creates only genuinely uncoded identities with retry protection', async () => {
     const inventory = jest.spyOn((service as any).transactions, 'getInventory').mockResolvedValue([{ _id: productId, code: 'SKU-1', current: 25, warehouseBalances: { MAIN: 25 } }] as never);
     try {
@@ -354,10 +576,15 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     ] as const) expect((await fetch(base + route, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-test-role': role }, body: JSON.stringify(body) })).status).toBe(expected);
   });
   it('searches shared SKU/product attributes separately from unique unit barcode', async () => {
+    await raw('products').updateOne({ _id: new Types.ObjectId(productId) }, { $set: {
+      imageUrl: 'https://example.test/product.png', storageLocationId: '507f1f77bcf86cd799439099',
+    } });
     const { unit } = await register();
     expect((await service.search({ q: 'XL' })).units).toHaveLength(1);
     const result = await service.search({ q: unit.barcode }); expect(result.units).toHaveLength(1); expect(result.products).toHaveLength(0);
     expect(result.units[0].product.code).toBe('SKU-1');
+    expect(result.units[0].product).toMatchObject({ imageUrl: 'https://example.test/product.png',
+      storageLocationId: '507f1f77bcf86cd799439099' });
   });
   it('lists recent supplier invoices with per-line barcode coverage on the HTTP route', async () => {
     await raw('transactions').updateOne({ _id: new Types.ObjectId(purchaseId) }, { $set: { items: [{ code: 'SKU-1', name: 'Product One', qty: 3, lineId: 'purchase-line-1' }] } });
@@ -386,6 +613,7 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     await service.identifyPurchaseLine(purchaseId, 1, { ...req(), sku: 'SKU-10', expectedQuantity: 2, physicalQuantity: 1, warehouseCode: 'MAIN', physicalPossessionConfirmed: true }, actor);
     const exact = await (await fetch(base + `/purchases/${purchaseId}/lines/0/units?page=1&limit=1`, { headers: { 'x-test-role': 'admin' } })).json();
     expect(exact.total).toBe(2); expect(exact.units).toHaveLength(1); expect(exact.units[0].product.code).toBe('SKU-1');
+    expect(exact.products.map((product: any) => product.code)).toEqual(['SKU-1']);
     const second = await service.purchaseLineUnits(purchaseId, 0, { page: '2', limit: '1' });
     expect(second.units[0]._id.toString()).not.toBe(exact.units[0]._id); expect(second.units[0].product?.code).toBe('SKU-1');
     expect((await fetch(base + `/purchases/${purchaseId}/lines/0/units`, { headers: { 'x-test-role': 'reader' } })).status).toBe(403);

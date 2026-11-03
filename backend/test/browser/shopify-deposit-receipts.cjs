@@ -111,6 +111,27 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       qs('#app').style.display='';
       qs('#splash-screen')?.remove();
     },orders);
+    if(process.argv.includes('--notice-only')) {
+      for(const language of ['en','ar']) {
+        check(await page.evaluate(language=>{
+          currentLang=language;
+          const receipt={status:'معتمد',amount:1000,method:'Instapay',ocr:{amount:null,method:''},warnings:[{code:'ocr-unavailable'}],warningAcknowledgedAt:new Date().toISOString()};
+          const host=document.createElement('div');host.innerHTML=_spReceiptNoticeHtml(receipt);document.body.append(host);
+          const notice=host.firstElementChild;
+          const redSwatch=document.createElement('span');redSwatch.style.color='var(--red)';host.append(redSwatch);
+          const valid=notice.textContent===t('spDepManualScanNote') && !notice.classList.contains('is-duplicate') && getComputedStyle(notice).color!==getComputedStyle(redSwatch).color;
+          host.remove();return valid;
+        },language),`approved manual scan note is concise and neutral in ${language}`);
+      }
+      check(await page.evaluate(()=>{
+        const receipt={status:'معلق',amount:1000,method:'Instapay',ocr:{amount:1000,method:'Instapay'},warnings:[{code:'same-image',orderRef:'2719'}]};
+        const host=document.createElement('div');host.innerHTML=_spReceiptNoticeHtml(receipt);
+        return host.firstElementChild.classList.contains('is-duplicate');
+      }),'duplicate receipt retains its warning style');
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'receipt notices'},null,2));
+      return;
+    }
     if(process.argv.includes('--replacement-only')) {
       const fixture=path.join(os.tmpdir(),'soulia-replacement-'+process.pid+'.png');fs.writeFileSync(fixture,png);
       await page.evaluate(()=>{window.replacementOriginalApi=api;});

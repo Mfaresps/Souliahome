@@ -10,16 +10,21 @@
     if (prefix === 'tx') { try { pending = !!pendingManualReceipt(); } catch { /* Sending remains blocked if storage is unavailable. */ } }
     return `${warehouseField}<div class="purchase-receipt purchase-receipt-compact" id="${prefix}-receipt" role="group" aria-label="${tr('Unit barcodes', 'باركود القطع')}">
       <label class="purchase-receipt-check"><input id="${prefix}-track-units" type="checkbox" aria-controls="${prefix}-receipt-details" aria-expanded="false" onchange="togglePurchaseReceiptFields('${prefix}')"><span>${tr('Received in good condition · create barcodes', 'استلمت القطع سليمة — إنشاء باركود')}</span></label>
+      <label class="purchase-receipt-check"><input id="${prefix}-prelabels" type="checkbox" onchange="togglePurchaseReceiptFields('${prefix}', true)"><span>${tr('Link preprinted QR labels after saving', 'ربط QR مطبوع مسبقًا بعد الحفظ')}</span></label>
       <div id="${prefix}-receipt-details" class="purchase-receipt-details" hidden>
       <input id="${prefix}-unit-reason" maxlength="1000" aria-label="${tr('Reference (optional)', 'مرجع (اختياري)')}" placeholder="${tr('Reference (optional)', 'مرجع (اختياري)')}" disabled></div>
       ${prefix === 'tx' ? `<div class="purchase-receipt-recovery" ${pending ? '' : 'hidden'}><button type="button" class="btn btn-outline" onclick="resumeManualPurchaseReceipt()">${tr('Review / retry a pending receipt', 'مراجعة / إعادة استلام معلق')}</button></div>` : ''}</div>`;
   };
-  window.togglePurchaseReceiptFields = function (prefix) {
+  window.togglePurchaseReceiptFields = function (prefix, prelabels = false) {
     const checkbox = document.getElementById(prefix + '-track-units'), details = document.getElementById(prefix + '-receipt-details');
     if (!checkbox || !details) return;
+    const prior = document.getElementById(prefix + '-prelabels');
+    if (prelabels && prior?.checked) checkbox.checked = false;
+    if (!prelabels && checkbox.checked && prior) prior.checked = false;
     details.hidden = !checkbox.checked; checkbox.setAttribute('aria-expanded', String(checkbox.checked));
     details.querySelectorAll('input').forEach(input => { input.disabled = !checkbox.checked; });
   };
+  window.readPrelabelChoice = prefix => document.getElementById((prefix || 'conv') + '-prelabels')?.checked === true;
   window.readPurchaseReceiptTracking = function (prefix = 'conv') {
     if (!document.getElementById(prefix + '-track-units')?.checked) return null;
     if (!hasPerm('inventory-units-receive')) throw new Error(tr('Unit receiving permission required.', 'صلاحية استلام الوحدات مطلوبة.'));
@@ -31,7 +36,7 @@
   };
   window.openPurchaseReceiptLabels = function (transactionId) {
     if (!/^[a-f\d]{24}$/i.test(transactionId) || !hasPerm('inventory-units-view')) return;
-    closeModal(); history.pushState(null, '', '#barcodes/receipt/' + transactionId); navigateTo('barcodes', false);
+    closeModal(); history.pushState(null, '', '#warehouse-management/receipt/' + transactionId); navigateTo('barcodes', false);
   };
   window.showPurchaseReceiptSummary = async function (poId, saved) {
     let summary;
@@ -46,9 +51,9 @@
       openModal(`<section class="purchase-receipt-summary"><h3>${tr('Receipt summary', 'ملخص الاستلام')}</h3>
         <div class="prs-totals"><span>${tr('Pieces with codes', 'قطع لها أكواد')}<strong>${Number(summary.createdUnits || 0)}</strong></span><span>${tr('Labels sent to print', 'ملصقات أُرسلت للطباعة')}<strong>${Number(summary.labelRequests || 0)}</strong></span></div>
         <div class="prs-table"><table><thead><tr><th>${tr('Product', 'المنتج')}</th><th>${tr('Received', 'المستلم')}</th><th>${tr('Coded', 'المكود')}</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="prs-note">${tr('Print labels now, or later from Barcode management.', 'اطبع الملصقات الآن، أو لاحقًا من إدارة الباركود.')}</p>
+        <p class="prs-note">${tr('Print labels now, or later from Warehouse management.', 'اطبع الملصقات الآن، أو لاحقًا من إدارة المخازن.')}</p>
         ${(summary.unresolvedErrors || []).map(error => `<p role="alert" style="color:var(--red)">${esc(error)}</p>`).join('')}
-        <footer>${summary.createdUnits && summary.transactionId && hasPerm('inventory-units-view') ? `<button class="btn btn-primary" onclick="openPurchaseReceiptLabels('${esc(summary.transactionId)}')">${tr('Preview and print labels', 'معاينة الملصقات وطباعتها')}</button>` : ''}<button class="btn btn-outline" onclick="closeModal()">${tr('Close', 'إغلاق')}</button></footer></section>`, 'max-width:640px;max-height:85vh;overflow:auto');
+        <footer>${summary.transactionId && (summary.lines || []).some(line => Number(line.createdUnits) < Number(line.receivedQty)) && hasPerm('inventory-units-receive') && hasPerm('purchase-view') ? `<button class="btn btn-outline" onclick="closeModal();window.PreprintedLabels?.openLink('${esc(summary.transactionId)}')">${tr('Link preprinted QR labels', 'ربط QR مطبوع مسبقًا')}</button>` : ''}${summary.createdUnits && summary.transactionId && hasPerm('inventory-units-view') ? `<button class="btn btn-primary" onclick="openPurchaseReceiptLabels('${esc(summary.transactionId)}')">${tr('Preview and print labels', 'معاينة الملصقات وطباعتها')}</button>` : ''}<button class="btn btn-outline" onclick="closeModal()">${tr('Close', 'إغلاق')}</button></footer></section>`, 'max-width:640px;max-height:85vh;overflow:auto');
     } catch (error) { toast(tr('Invoice was not reposted. Receipt summary: ', 'لم تتم إعادة ترحيل الفاتورة. ملخص الاستلام: ') + error.message, true); }
   };
   function manualStorageKey() {

@@ -19,7 +19,7 @@ fs.mkdirSync(output, { recursive: true });
     page.on('request', request => {
       const url = new URL(request.url());
       if (url.origin === 'http://soulia.test' && url.pathname === '/') return request.respond({ status: 200, contentType: 'text/html', body: html });
-      if (['/shopify-edit-approvals.js', '/shopify-edit-approvals.css', '/shopify-responsive.css', '/approvals.css'].includes(url.pathname)) {
+      if (['/order-status.js', '/order-status.css', '/shopify-edit-approvals.js', '/shopify-edit-approvals.css', '/shopify-responsive.css', '/approvals.css'].includes(url.pathname)) {
         const file = path.join(publicDir, url.pathname.slice(1));
         if (fs.existsSync(file)) return request.respond({ status: 200, contentType: file.endsWith('.js') ? 'text/javascript' : 'text/css', body: fs.readFileSync(file) });
       }
@@ -53,7 +53,13 @@ fs.mkdirSync(output, { recursive: true });
       const selector = width === 390 ? '#sp-mobile-list .sp-edit-status' : '#shopify-orders-table-body .sp-edit-status';
       await page.waitForSelector(selector, { visible: true });
       await settle();
-      assert.match(await page.$eval(selector, el => el.textContent), /في انتظار الموافقة على التعديل/);
+      const mark = await page.$eval(selector, el => ({
+        text: el.textContent.trim(), label: el.getAttribute('aria-label'),
+        compact: el.classList.contains('is-compact'), height: el.getBoundingClientRect().height,
+      }));
+      assert.match(mark.label, /في انتظار الموافقة على التعديل/);
+      if (width === 390) assert.match(mark.text, /في انتظار الموافقة على التعديل/);
+      else { assert.equal(mark.compact, true); assert.equal(mark.text, '◷'); assert.ok(mark.height <= 24); }
       await page.screenshot({ path: path.join(output, `staff-orders-${width}.png`) });
       await page.click(selector);
       await page.waitForSelector('#modal-overlay.shopify-edit-review.active');

@@ -64,6 +64,21 @@ describe('Global search shared unit scanner in Chromium', () => {
   async function scan() { await page.type('[data-scan-input]', barcode); await page.keyboard.press('Enter'); }
   const result = () => page.waitForSelector('[data-gs-result] .gs-unit-price');
   const scans = () => requests.filter(row => row.path.endsWith('/scans/validate'));
+  it('shows the assigned storage location once after a scan', async () => {
+    await page.evaluate(() => {
+      (window as any).SouliaWarehouseLayout = {
+        load: async () => ({}),
+        renderLocationCard: (host: HTMLElement) => {
+          host.classList.add('wl-location-card');
+          host.textContent = 'ZONE A / R1 / S03';
+        },
+      };
+    });
+    await open(); await scan(); await result();
+    await page.waitForSelector('[data-scan-location].wl-location-card');
+    expect(await page.$$eval('.wl-location-card', cards => cards.length)).toBe(1);
+    expect(await page.$eval('[data-scan-location]', card => card.textContent)).toContain('S03');
+  });
   it.each(['en', 'ar'])('uses confirmed delivery for the scanned piece badge in %s', async lang => {
     mode = 'order-delivered';
     await page.evaluate(lang => { (window as any).eval('currentLang=' + JSON.stringify(lang)); }, lang);

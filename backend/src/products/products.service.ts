@@ -1,9 +1,10 @@
 import { notifyApproval } from '../notifications/admin-events';
+import { randomInt } from 'node:crypto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Inject as PushInject, Optional as PushOptional } from '@nestjs/common';
 import { Injectable, NotFoundException, ConflictException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId, ClientSession } from 'mongoose';
+import { Model, isValidObjectId, ClientSession, Types } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import {
@@ -13,7 +14,7 @@ import {
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
-import { isDuplicateProductKey, nextProductCode } from './product-code.util';
+import { isDuplicateProductKey, productCodePrefix } from './product-code.util';
 
 @Injectable()
 export class ProductsService {
@@ -29,94 +30,30 @@ export class ProductsService {
     private readonly mentionsService: MentionsService,
   ) {}
 
+  private async validateStorageLocation(id?: string): Promise<void> {
+    if (!id) return;
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('موقع التخزين غير صالح');
+    const level = await this.productModel.db.collection('warehouselayoutnodes').findOne({ _id: new Types.ObjectId(id), kind: 'level' });
+    if (!level) throw new BadRequestException('المستوى المحدد غير موجود');
+    const rack = level.parentId && await this.productModel.db.collection('warehouselayoutnodes').findOne({ _id: level.parentId, kind: 'rack', warehouseCode: level.warehouseCode });
+    const zone = rack?.parentId && await this.productModel.db.collection('warehouselayoutnodes').findOne({ _id: rack.parentId, kind: 'zone', warehouseCode: level.warehouseCode });
+    if (!rack || !zone || !await this.productModel.db.collection('warehouses').findOne({ code: level.warehouseCode, active: { $ne: false } })) throw new BadRequestException('مسار موقع التخزين غير مكتمل');
+  }
+
   private emit(event: string, payload: unknown): void {
     try { this.presence?.emitEvent(event, payload); } catch { /* swallow */ }
   }
 
-  /**
-   * ⚠ نسخة مطابقة لاختصارات PRODUCT_COLORS في frontend/public/index.html
-   * (`_pmSlugPreview` يعاين الكود بها، وهذه الدالة تولّده فعلياً). أي لون يُضاف
-   * هناك يجب أن يُضاف هنا، وإلا وُلّد اختصاره من أول ثلاثة أحرف فاختلف الكود
-   * المولَّد على الخادم عن المعاينة التي رآها المستخدم.
-   */
-  private static readonly COLOR_ABBR: Record<string, string> = {
-    Black: 'BLK',
-    Charcoal: 'CHR',
-    Gray: 'GRY',
-    Silver: 'SLV',
-    White: 'WHT',
-    'Off White': 'OWH',
-    Cream: 'CRM',
-    Beige: 'BEI',
-    Taupe: 'TPE',
-    Brown: 'BRN',
-    Camel: 'CML',
-    Gold: 'GLD',
-    Mustard: 'MST',
-    Yellow: 'YLW',
-    Orange: 'ORG',
-    Terracotta: 'TRC',
-    Red: 'RED',
-    Burgundy: 'BRG',
-    'Baby Blue': 'BBL',
-    Blue: 'BLU',
-    Navy: 'NVY',
-    Turquoise: 'TRQ',
-    Teal: 'TEL',
-    Sage: 'SGE',
-    Green: 'GRN',
-    'Dark Green': 'DGR',
-    Olive: 'OLV',
-    Pink: 'PNK',
-    'Dusty Rose': 'DRS',
-    Lilac: 'LIL',
-    Purple: 'PRP',
-  };
-  private static readonly SIZE_ABBR: Record<string, string> = {
-    Small: 'S',
-    Medium: 'M',
-    Large: 'L',
-  };
-
-  /**
-   * Builds a readable slug from name + color + size, e.g.
-   * "Alba Cushion" + Green + Medium -> ALBA-CUSHION-GRN-M
-   * Falls back to a name-only or generic prefix when those parts are missing.
-   */
-  private buildProductCodePrefix(
-    name: string,
-    colors?: string[],
-    size?: string,
-  ): string {
-    const cleaned = String(name || '')
-      .toUpperCase()
-      .replace(/[^A-Z0-9؀-ۿ\s]/g, '')
-      .trim();
-    const words = cleaned.split(/\s+/).filter(Boolean).slice(0, 2);
-    let prefix = words.join('-').slice(0, 16);
-    if (!prefix) prefix = `PROD-${Date.now().toString().slice(-6)}`;
-
-    const colorAbbr = colors?.[0]
-      ? ProductsService.COLOR_ABBR[colors[0]] || colors[0].slice(0, 3).toUpperCase()
-      : '';
-    const sizeAbbr = size
-      ? ProductsService.SIZE_ABBR[size] || size.slice(0, 1).toUpperCase()
-      : '';
-
-    return [prefix, colorAbbr, sizeAbbr].filter(Boolean).join('-');
-  }
-
-  private async generateProductCode(
-    name: string,
-    colors?: string[],
-    size?: string,
-  ): Promise<string> {
-    const prefix = this.buildProductCodePrefix(name, colors, size);
-    const regexSafePrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const rows = await this.productModel
-      .find({ code: { $regex: `^${regexSafePrefix}-\\d+$` } }, { code: 1 })
-      .lean().exec();
-    return nextProductCode(prefix, rows.map(row => row.code));
+  /** Suggestions are checked against the database; the unique index decides write races. */
+  async suggestProductCode(name: string, exclude = ''): Promise<string> {
+    const prefix = productCodePrefix(name);
+    if (!prefix) throw new BadRequestException('اكتب اسم الصنف أولًا لتوليد SKU');
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const code = `${prefix}-${randomInt(100000, 1000000)}`;
+      if (code === exclude) continue;
+      if (!await this.productModel.findOne({ code }).exec()) return code;
+    }
+    throw new ConflictException('تعذر تخصيص SKU فريد — حاول مرة أخرى');
   }
 
   /** Read-only prerequisite: never create/sync indexes from this write path. */
@@ -197,6 +134,7 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto, actor = ''): Promise<ProductDocument> {
+    await this.validateStorageLocation(dto.storageLocationId);
     const name = String(dto.name || '').trim();
     const nameConflict = await this.findByName(name);
     if (nameConflict) {
@@ -219,7 +157,7 @@ export class ProductsService {
     await this.assertSkuUniqueIndex();
     let created: ProductDocument | undefined;
     for (let attempt = 0; attempt < 50; attempt++) {
-      if (generated) code = await this.generateProductCode(name, dto.colors, dto.size);
+      if (generated) code = await this.suggestProductCode(name);
       try {
         created = await this.productModel.create({ ...dto, code, name, openingBalance, createdBy: actor });
         break;
@@ -245,6 +183,7 @@ export class ProductsService {
     dto: UpdateProductDto,
     actor = '',
   ): Promise<ProductDocument> {
+    await this.validateStorageLocation(dto.storageLocationId);
     if (!isValidObjectId(id)) throw new BadRequestException(`معرّف الصنف غير صالح: "${id}"`);
     const patch: Record<string, unknown> = { ...dto };
 
@@ -280,6 +219,7 @@ export class ProductsService {
       images: 'صور إضافية',
       categoryId: 'التصنيف',
       collectionId: 'المجموعة',
+      storageLocationId: 'موقع التخزين',
       isActive: 'الحالة (مفعّل)',
       description: 'الوصف',
       colors: 'الألوان',
@@ -527,6 +467,7 @@ export class ProductsService {
       images: 'صور إضافية',
       categoryId: 'التصنيف',
       collectionId: 'المجموعة',
+      storageLocationId: 'موقع التخزين',
       isActive: 'الحالة (مفعّل)',
       description: 'الوصف',
       colors: 'الألوان',
@@ -581,6 +522,8 @@ export class ProductsService {
     if (patch.openingBalance !== undefined) {
       patch.openingBalance = Math.max(0, Math.floor(Number(patch.openingBalance)));
     }
+
+    if (patch.storageLocationId !== undefined) await this.validateStorageLocation(String(patch.storageLocationId));
 
     req.status = 'معتمد';
     req.reviewedBy = reviewedBy;

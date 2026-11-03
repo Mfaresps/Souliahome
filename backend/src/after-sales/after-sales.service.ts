@@ -216,7 +216,7 @@ export class AfterSalesService {
       const assigned = product ? assignedUnits.filter(unit => unit.productId === String(product._id) && (!line.lineId || unit.assignment?.lineId === line.lineId)) : [];
       if (assigned.length && unitIds.length !== Math.min(qty, assigned.length)) throw new BadRequestException('حدد هويات القطع المرتبطة بالفاتورة قبل المتابعة');
       if (unitIds.some(id => !assigned.some(u => String(u._id) === id)) || prior.some(r => r.workflow?.selectedUnits?.some((id: string) => unitIds.includes(id)))) throw new ConflictException('هوية غير مرتبطة بالفاتورة أو لها طلب سابق');
-      if (assigned.some(u => unitIds.includes(String(u._id)) && u.packId)) throw new ConflictException('افتح الباك في إدارة الباركود قبل استلام قطعه منفردة');
+      if (assigned.some(u => unitIds.includes(String(u._id)) && u.packId)) throw new ConflictException('افتح الباك في إدارة المخازن قبل استلام قطعه منفردة');
       items.push({ lineIndex: index, lineId: line.lineId, productId: product ? String(product._id) : '', code: line.code, name: line.name || product?.name || line.code, imageUrl: line.imageUrl || product?.imageUrl || product?.images?.[0] || '',
         qty, price: money(Number(line.total || line.price * line.qty) / line.qty * ratio), total: money(Number(line.total || line.price * line.qty) / line.qty * qty * ratio), unitIds, condition: 'سليم' });
     }

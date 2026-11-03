@@ -1,0 +1,56 @@
+{
+  "style": "framed-sheet",
+  "seed": 2112244810,
+  "references": ["awesome-design-md/airtable", "design-taste-frontend/references/app-screens.md"],
+  "adaptation": "Keep Soulia's existing shell, Cairo/Inter and forest green. Use a ruled sheet, quiet rows and one primary action. No replacement of the app navigation design.",
+  "inventory": [
+    "Objects: supplier label batches, products, print requests, linked purchase invoices.",
+    "Batch fields: ID, product name/SKU, creation date/issuer, quantity, printed coverage, linked and unused counts.",
+    "Origin and linked invoices remain available in a separately addressable detail screen.",
+    "Quantities: 1–1000 per batch; 100 labels per single range request, or 1000 labels across up to 20 selected batches per atomic bulk print request.",
+    "Batch list pages contain 12 rows; product result pages contain 8 explicit choices, with no hidden 80-product cutoff.",
+    "Operators prepare labels for suppliers and later receive physical pieces through the existing invoice flow.",
+    "Most common jobs: create a batch, find an earlier batch, print its range, check its provenance.",
+    "Product identity is the real product name and SKU; reserved piece identities retain the ordinary U format.",
+    "Production UI reads existing APIs. Test fixtures are isolated from production storage.",
+    "Keep one document scroll; mobile tables become rows with all fields retained."
+  ],
+  "questions": {
+    "list": "Which batch do I need to open or print?",
+    "new": "Which product and how many unique labels do I need?",
+    "detail": "What happened to this batch and which label range should I print?"
+  },
+  "face": "Existing Soulia frame, dark green action and the product name/SKU as the leading identity.",
+  "signature": "Batch lineage: reserved count, print coverage, activation count and linked invoices alongside the numbered print range.",
+  "critique": [
+    "Removed stacked modal sections and the second scrolling batch list; each operation now has a route and explicit Back action.",
+    "Moved product results ahead of the summary on phones; choosing a result takes the operator to the quantity field.",
+    "Preserved matching column edges, neutral count typography and a single filled primary action per screen.",
+    "Counts come from API fields; printed coverage may include linked pieces and is not a separate disjoint stock category.",
+    "Zero counts show zero; missing timestamps/origins show a dash; failures show Retry rather than an empty stock message.",
+    "Real app shell screenshots reviewed at 1440, 768 and 390, in addition to isolated skill inspector captures.",
+    "No charts or fabricated operational totals were introduced."
+  ],
+  "inspector": {
+    "list": "0 FAIL, 0 WARN",
+    "detail": "0 FAIL, 0 WARN",
+    "new": "0 FAIL, 1 WARN (hero-void): the single-product test fixture produces a short form. The sheet ends with its content; filling the remaining viewport with invented products or stretching the form would worsen this task screen."
+  },
+  "validation": {
+    "supplier_feature": "18 of 18 Chromium integration tests passed. Bulk tests cover cross-page selection, discontiguous unprinted labels, one popup, explicit reprint confirmation, retry after an uncertain committed response, selection preservation and reduced motion.",
+    "backend": "48 of 48 isolated MongoDB integration tests passed. Bulk tests cover multiple products and more than 100 labels, confirmation, stale review and concurrency rejection, replay, permissions, linked exclusions and quantity limits.",
+    "app_shell": "supplier-labels-page.cjs passed direct routes, refresh, browser Back, bulk review and pixel bounds at 1440/768/390, with supplier module loading deliberately delayed to test startup races.",
+    "source_lint": "0 FAIL, 0 WARN",
+    "broader_inventory_ui": "33 passed, 11 failed in inventory-unit-ui.spec.ts. Failures include removed scanner selectors, label count expectations that omit batch covers, default size expectations and warehouse fixture differences; this is not a clean full-system run.",
+    "concurrent_template_edits": "The shared inventory label template changed during this work. The final template moves the footer outside the product text and validates footer fitting separately; supplier print and overflow tests were rerun against that current template. No baseline source files were left behind."
+  },
+  "bulk_review": {
+    "question": "Which exact identities will this combined print job send, and does it include duplicates?",
+    "default": "Unprinted only, based on recorded requests; explicit warning and checkbox for reprints. Both options exclude linked identities.",
+    "motion": "160ms opacity feedback on route content, subtle button hover/press feedback, no animated scroll during route replacement; reduced-motion removes transitions.",
+    "inspector": "0 FAIL, 1 hero-void WARN on the one-batch fixture. The short form ends at its data; no artificial rows or stretched panels were added to fill the viewport.",
+    "manual_review": "Real app desktop/tablet/phone screenshots reviewed, including reprint warning, confirmation and numeric totals. Shortened option text to fit phone controls and fixed checkbox/name overlap."
+  },
+  "fixture_locations": ["backend/test/integration/preprinted-labels-ui.spec.ts", "backend/test/browser/supplier-labels-page.cjs"],
+  "fixture_note": "Basket, numbered Basket rows and Brown jute coaster screenshots use isolated HTTP fixtures. No fixtures are bundled into production UI; no production sample data needs replacing."
+}

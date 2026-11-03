@@ -9,6 +9,7 @@ import {
   Min,
   ArrayMaxSize,
   IsIn,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -30,6 +31,8 @@ export class ProductDimensionsDto {
 }
 
 export class CreateProductDto {
+  @IsString() @Matches(/^(?:|[a-f\d]{24})$/i) @IsOptional()
+  readonly storageLocationId?: string;
   @IsString()
   @IsOptional()
   readonly code?: string;
@@ -132,6 +135,8 @@ export class CreateProductDto {
 }
 
 export class UpdateProductDto {
+  @IsString() @Matches(/^(?:|[a-f\d]{24})$/i) @IsOptional()
+  readonly storageLocationId?: string;
   @IsString()
   @IsOptional()
   readonly code?: string;
@@ -393,6 +398,7 @@ export class RequestProductEditDto {
     images?: string[];
     categoryId?: string;
     collectionId?: string;
+    storageLocationId?: string;
     isActive?: boolean;
     description?: string;
     colors?: string[];

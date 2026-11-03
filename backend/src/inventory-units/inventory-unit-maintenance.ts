@@ -1,7 +1,8 @@
 import { Connection } from 'mongoose';
 
 const CORE_TRACKING = ['inventoryunits', 'inventoryunitevents', 'inventoryunitoperations'];
-const TRACKING = [...CORE_TRACKING, 'inventoryunitcodes', 'inventorypacks', 'warehousetransfers'];
+const PRELABELS = ['inventoryunitprelabelbatches', 'inventoryunitprelabels'];
+const TRACKING = [...CORE_TRACKING, ...PRELABELS, 'inventoryunitcodes', 'inventorypacks', 'warehousetransfers'];
 const RELATED = ['products', 'transactions', 'inventorymovements', 'returnrequests', 'supplierreturnorders', 'purchaseorders', 'suppliers', 'supplierledgerentries', 'vaultentries', 'warehouses', ...TRACKING, 'inventoryunitcodecounters'];
 
 /** Reject unsafe partial maintenance. A true result requires an atomic full restore. */
@@ -17,6 +18,9 @@ export async function assertInventoryUnitMaintenance(
   if (backup?.inventorypacks?.length && !['inventoryunits','inventoryunitcodecounters','users'].every(name => Array.isArray(backup[name]))) {
     throw new Error('Pack identities require their physical units, code counters and actor datasets');
   }
+  if (PRELABELS.some(name => backup?.[name]?.length) && !['products', 'users', ...PRELABELS].every(name => Array.isArray(backup?.[name]))) {
+    throw new Error('Preprinted identity batches and labels require the product and actor datasets together');
+  }
   if (backup?.inventoryunits?.some(unit => unit.origin?.purchaseLineId || unit.origin?.purchaseOrderId) &&
     !['purchaseorders', 'suppliers', 'supplierledgerentries', 'vaultentries', 'users'].every(name => Array.isArray(backup[name]))) {
     throw new Error('Purchase receipt tracking requires the related orders, supplier, financial and actor backup datasets');
@@ -30,7 +34,8 @@ export async function assertInventoryUnitMaintenance(
     return true;
   }
   const aliasDatasets = backup?.inventoryunitcodes?.length ? ['inventoryunitcodes', 'inventoryunitcodecounters'] : [];
-  if (backupHasTracking && (!fullRestore || !['products', 'transactions', 'inventorymovements', ...CORE_TRACKING, ...aliasDatasets].every(name => Array.isArray(backup?.[name])))) {
+  const prelabelDatasets = PRELABELS.some(name => backup?.[name]?.length) ? PRELABELS : [];
+  if (backupHasTracking && (!fullRestore || !['products', 'transactions', 'inventorymovements', ...CORE_TRACKING, ...aliasDatasets, ...prelabelDatasets].every(name => Array.isArray(backup?.[name])))) {
     throw new Error('Inventory tracking requires a complete coordinated backup and full restore into a database without tracking data');
   }
   if (backupHasTracking) return true;

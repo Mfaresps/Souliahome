@@ -17,13 +17,20 @@ function ui() {
     '#pm-name': { value: 'Changed name' }, '#pm-code': { value: 'INJECTED' },
     '#pm-opening': { value: '5' }, '#pm-sell': { value: '90' }, '#pm-buy': { value: '20' },
     '#pm-min': { value: '2' }, '#pm-size-standard': { value: 'Large' }, '#pm-code-hint': {},
+    '#pm-code-gen-btn': {}, '.wl-product': { dataset: { ready: 'true' } },
   };
+  values['#pm-code'].isConnected = true;
+  values['#pm-code'].dispatchEvent = jest.fn();
+  let suggestions = 0;
   const context: any = {
     qs: (key: string) => values[key], document: { querySelector: () => null },
     products: [{ _id: 'a'.repeat(24), code: 'ORIGINAL', name: 'Original' }],
     isAdmin: () => true, hasPerm: () => true, toast: jest.fn(), t: (key: string) => key,
     _pmSelectedColors: ['Red'], _pmSelectedFeatures: ['Waterproof'], _pmExtraImages: [], _pmEditingId: '',
-    _pmSlugPreview: () => 'ALBA-001', _doSaveProduct: jest.fn(async () => {}),
+    _pmSkuSuggestionRequest: 0, Event: class Event {},
+    api: jest.fn(async () => ({ code: `CHA-NAM-${++suggestions === 1 ? '482731' : '916405'}` })),
+    withButtonLoading: (_button: unknown, task: () => Promise<unknown>) => task(),
+    _doSaveProduct: jest.fn(async () => {}),
     _doRequestProductEdit: jest.fn(async () => {}),
   };
   vm.createContext(context);
@@ -52,11 +59,22 @@ describe('Shipped product form SKU compatibility', () => {
     expect(values['#pm-code'].value).toBe('INJECTED'); // No change by either command.
     expect(shipped('openProductModal')).not.toContain("_pmToggleLock('code')");
   });
-  it('keeps generation as a preview so the backend chooses the actual unique suffix', () => {
-    const { context, values } = ui(); context.generateProductCodePreview();
-    expect(values['#pm-code'].value).toBe('');
-    expect(values['#pm-code'].placeholder).toBe('ALBA-001');
-    expect(values['#pm-code-hint'].textContent).toBe('pmSkuGeneratedOnSave');
+  it('requests a fresh available SKU on each click and sends it as the actual field value', async () => {
+    const { context, values } = ui();
+    values['#pm-code'].value = '';
+    await context.generateProductCodePreview();
+    expect(values['#pm-code'].value).toBe('CHA-NAM-482731');
+    expect(values['#pm-code-hint'].textContent).toBe('pmSkuSuggestionReady');
+    await context.generateProductCodePreview();
+    expect(values['#pm-code'].value).toBe('CHA-NAM-916405');
+    expect(context.api.mock.calls[1][0]).toContain('exclude=CHA-NAM-482731');
+  });
+  it('submits the displayed generated SKU when a new product is saved', async () => {
+    const { context, values } = ui();
+    values['#pm-code'].value = '';
+    await context.generateProductCodePreview();
+    await context.saveProduct();
+    expect(context._doSaveProduct.mock.calls[0][1].code).toBe('CHA-NAM-482731');
   });
   it('blocks creation without SKU authority before any write', async () => {
     const { context } = ui(); context.hasPerm = () => false;

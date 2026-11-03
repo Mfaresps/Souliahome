@@ -24,6 +24,27 @@ export class UnitManualCodesService implements OnModuleInit {
       .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x6f0)).toUpperCase().replace(/^U/, '').replace(/[\s\-–—]/g, '');
   }
   private format(code: string) { return `U-${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8)}`; }
+  async codesFor(unitIds: string[], session?: ClientSession): Promise<Map<string, string>> {
+    const ids = [...new Set(unitIds.map(id => String(new Types.ObjectId(id))))];
+    if (!ids.length) return new Map();
+    const codes = this.connection.collection('inventoryunitcodes');
+    const existing = await codes.find({ _id: { $in: ids.map(id => new Types.ObjectId(id)) } }, { session }).toArray();
+    const result = new Map(existing.map(row => [String(row._id), this.format(String(row.code))]));
+    const missing = ids.filter(id => !result.has(id));
+    if (missing.length) {
+      const counter: any = await this.connection.collection('inventoryunitcodecounters').findOneAndUpdate({ _id: this.counterId },
+        { $inc: { sequence: missing.length } }, { session, returnDocument: 'after', includeResultMetadata: false });
+      const end = counter?.sequence;
+      if (!Number.isSafeInteger(end) || end < missing.length || end > 99999999) throw new ServiceUnavailableException('Manual unit code counter requires review');
+      const documents = missing.map((id, index) => {
+        const body = String(end - missing.length + index + 1).padStart(8, '0');
+        return { _id: new Types.ObjectId(id), code: body + this.check(body), createdAt: new Date() };
+      });
+      await codes.insertMany(documents, { session, ordered: true });
+      for (const row of documents) result.set(String(row._id), this.format(row.code));
+    }
+    return result;
+  }
   async codeFor(unitId: string): Promise<string> {
     const id = new Types.ObjectId(unitId), codes = this.connection.collection('inventoryunitcodes');
     const existing = await codes.findOne({ _id: id });

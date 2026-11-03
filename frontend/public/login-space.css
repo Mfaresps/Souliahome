@@ -33,14 +33,14 @@
 #login-form .lfp-row{margin:4px 0 24px;min-height:24px;width:100%}
 #login-form .lfp-remember{min-height:44px;font-size:.83rem;color:#45614f}
 #login-form .lfp-checkbox-wrap input:focus-visible + #login-remember-box{outline:3px solid #2d7a4f55;outline-offset:3px}
-#login-form .lfp-btn-login{height:50px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:11px;background:#00311e;font-size:.95rem;font-weight:600;font-family:inherit;letter-spacing:0;box-shadow:0 4px 12px #00311e12;transition:background .15s,box-shadow .15s}
-#login-form .lfp-btn-login:hover:not(:disabled){background:#13583a;transform:none;box-shadow:0 6px 16px #00311e20}
+#login-form .lfp-btn-login{height:50px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;border-radius:11px;background:#2d7a4f;font-size:.95rem;font-weight:600;font-family:inherit;letter-spacing:0;box-shadow:0 4px 12px #2d7a4f12;transition:background .15s,box-shadow .15s}
+#login-form .lfp-btn-login:hover:not(:disabled){background:var(--primary-light,#236443);transform:none;box-shadow:0 6px 16px #2d7a4f20}
 #login-form .lfp-btn-login:disabled{cursor:wait;opacity:.85}
 #login-form .lfp-btn-login[aria-busy="true"]::before{content:'';width:16px;height:16px;border:2px solid #ffffff50;border-top-color:#fff;border-radius:50%;animation:loginSpin .7s linear infinite}
 @keyframes loginSpin{to{transform:rotate(360deg)}}
 #login-form :is(button,a):focus-visible{outline:3px solid #2d7a4f66;outline-offset:3px}
 #login-form .lfp-forgot{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;width:100%;margin-top:8px;border:0;background:transparent;color:#45614f;font:inherit;font-size:.82rem;cursor:pointer}
-#login-form .lfp-forgot:hover{color:#00311e;text-decoration:underline}
+#login-form .lfp-forgot:hover{color:#2d7a4f;text-decoration:underline}
 #login-form #login-error{text-align:start;line-height:1.65;font-size:.84rem;padding:10px 12px}
 #login-caps-warning{margin:8px 0 0;font-size:.78rem;color:#865a0e}
 #login-form[dir="rtl"] .lfp-title{letter-spacing:0}

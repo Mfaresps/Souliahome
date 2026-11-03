@@ -51,6 +51,7 @@ class WarehousesService implements OnModuleInit {
         const warehouse = await this.connection.collection('warehouses').findOneAndUpdate({ code, active: { $ne: false } }, { $inc: { revision: 1 } }, { session, returnDocument: 'after', includeResultMetadata: false });
         if (!warehouse) throw new BadRequestException('المخزن غير موجود أو محذوف بالفعل');
         if (warehouse.isDefault || code === MAIN_WAREHOUSE) throw new ConflictException('المخزن الرئيسي الافتراضي مرتبط بالمبيعات والرصيد الافتتاحي ولا يمكن حذفه؛ يمكنك تعديل اسمه');
+        if (await this.connection.collection('warehouselayoutnodes').findOne({ warehouseCode: code }, { session })) throw new ConflictException('احذف مواقع الزونات والأرفف والمستويات قبل حذف المخزن');
         const inventory = await this.transactions.getInventory(session);
         const balances = inventory.filter(row => Math.abs(Number(row.warehouseBalances?.[code] || 0)) > 0.000001);
         if (balances.length) throw new ConflictException({ code: 'WAREHOUSE_HAS_STOCK', message: `لا يمكن حذف «${warehouse.name}»: يوجد رصيد ${balances.slice(0, 5).map(row => `${row.code}: ${row.warehouseBalances[code]} قطعة`).join('، ')}. انقل الرصيد أولًا من نافذة نقل المنتجات.`, warehouseCode: code });
