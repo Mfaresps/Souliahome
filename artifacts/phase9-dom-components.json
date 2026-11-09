@@ -1,0 +1,159 @@
+{
+  "subtrees": [
+    {
+      "selector": "html",
+      "nodes": 11444,
+      "display": "block"
+    },
+    {
+      "selector": "body",
+      "nodes": 11369,
+      "display": "block"
+    },
+    {
+      "selector": "#app",
+      "nodes": 10705,
+      "display": "block"
+    },
+    {
+      "selector": "#main",
+      "nodes": 6379,
+      "display": "block"
+    },
+    {
+      "selector": "#page-dashboard",
+      "nodes": 706,
+      "display": "block"
+    },
+    {
+      "selector": "#sidebar",
+      "nodes": 172,
+      "display": "flex"
+    },
+    {
+      "selector": "#header",
+      "nodes": 4081,
+      "display": "flex"
+    },
+    {
+      "selector": "#notif-panel",
+      "nodes": 3987,
+      "display": "none"
+    },
+    {
+      "selector": "#dash-staff-section",
+      "nodes": 392,
+      "display": "block"
+    },
+    {
+      "selector": "#dash-ship-kpis",
+      "nodes": 31,
+      "display": "grid"
+    },
+    {
+      "selector": "#dash-ship-list",
+      "nodes": 0,
+      "display": null
+    },
+    {
+      "selector": "#page-shopify-orders",
+      "nodes": 174,
+      "display": "none"
+    },
+    {
+      "selector": "#page-movements",
+      "nodes": 432,
+      "display": "none"
+    },
+    {
+      "selector": "#page-followups",
+      "nodes": 0,
+      "display": null
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-users",
+      "nodes": 1485,
+      "active": false
+    },
+    {
+      "id": "page-dashboard",
+      "nodes": 706,
+      "active": true
+    },
+    {
+      "id": "page-reports",
+      "nodes": 470,
+      "active": false
+    },
+    {
+      "id": "page-movements",
+      "nodes": 432,
+      "active": false
+    },
+    {
+      "id": "page-transaction",
+      "nodes": 385,
+      "active": false
+    },
+    {
+      "id": "page-pickup-orders",
+      "nodes": 306,
+      "active": false
+    },
+    {
+      "id": "page-complaints",
+      "nodes": 264,
+      "active": false
+    },
+    {
+      "id": "page-products",
+      "nodes": 206,
+      "active": false
+    },
+    {
+      "id": "page-approvals",
+      "nodes": 195,
+      "active": false
+    },
+    {
+      "id": "page-inventory",
+      "nodes": 186,
+      "active": false
+    },
+    {
+      "id": "page-vault",
+      "nodes": 185,
+      "active": false
+    },
+    {
+      "id": "page-shopify-orders",
+      "nodes": 174,
+      "active": false
+    },
+    {
+      "id": "page-suppliers",
+      "nodes": 105,
+      "active": false
+    },
+    {
+      "id": "page-expenses",
+      "nodes": 104,
+      "active": false
+    },
+    {
+      "id": "page-supplier-profile",
+      "nodes": 82,
+      "active": false
+    }
+  ],
+  "renders": {
+    "buildNotifications": 35.6,
+    "buildSidebar": 5.3,
+    "renderStaffDashboard": 8.8,
+    "renderDashAttention": 0.2,
+    "renderUsers": 5.5
+  },
+  "heap": 17837431
+}

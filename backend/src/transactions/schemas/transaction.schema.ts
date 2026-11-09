@@ -355,6 +355,8 @@ export class Transaction {
     method: string;
     imageKey: string;
     imageDeleted: boolean;
+    noImage?: boolean;
+    noImageReason?: string;
     needsReview: boolean;
     submittedBy: string;
     submittedAt: string;
@@ -362,8 +364,11 @@ export class Transaction {
     reviewedAt: string;
     vaultTxNo: string;
     senderName?: string;
+    senderBank?: string;
     senderHandle?: string;
     senderPhone?: string;
+    transferDateText?: string;
+    transferReference?: string;
     screenshotTime?: string;
     screenshotTimeSource?: string;
     ocrAmount: number | null;
@@ -570,6 +575,10 @@ export class Transaction {
   /** Human-readable Arabic label for bostaStatus */
   @Prop({ default: '' })
   bostaStatusLabel: string;
+
+  /** Bosta's delay/SLA flag, updated by the full delivery sync. Not a movement state. */
+  @Prop({ default: false })
+  bostaIsDelayed: boolean;
 
   /** ISO timestamp of last Bosta status sync */
   @Prop({ default: '' })
@@ -863,4 +872,8 @@ export class Transaction {
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+TransactionSchema.index({ shopifyOrderId: 1, type: 1 });
+TransactionSchema.index({ type: 1, shopifyCreatedAt: 1 });
+TransactionSchema.index({ type: 1, transactionDate: 1 });
+TransactionSchema.index({ type: 1, date: 1 });
 restrictInventoryParentDeletion(TransactionSchema, ['origin.purchaseTransactionId', 'assignment.transactionId'], ['transactionId']);

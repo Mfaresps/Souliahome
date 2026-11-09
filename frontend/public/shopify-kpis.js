@@ -151,7 +151,7 @@ function _spkApplyDates(event) {
   }
   _spkCustomFrom = _spkDraftFrom = from; _spkCustomTo = _spkDraftTo = to;
   _spkCloseMenu(true);
-  if (_spkFilter && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
+  if ((_spkFilter || (typeof _spServerEnabled !== 'undefined' && _spServerEnabled)) && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
 }
 function _spkDateControls() {
   if (_spkPeriod !== 'custom' || !_spkMenuOpen) return '';
@@ -187,6 +187,11 @@ function _spkCount(fromMs, toMs) {
 
 function _spkStats(period) {
   const r = _spkRange(period);
+  if (typeof _spServerEnabled !== 'undefined' && _spServerEnabled
+      && typeof currentPage !== 'undefined' && currentPage === 'shopify-orders'
+      && period === _spkPeriod && _spServerResponse?.kpiStats) {
+    return { ..._spServerResponse.kpiStats, period, from: r.from, to: r.to, days: r.days };
+  }
   const s = _spkCount(r.from.getTime(), r.to.getTime());
   /* ⚠ The comparison window is cut at the same clock time: today at 11:00 against ALL of
      yesterday would read as a drop every morning. prev = [from − days, min(to, now) − days). */
@@ -242,9 +247,14 @@ function _spkRender(state) {
   if (hidden) { host.innerHTML = ''; return; }
   const seg = _spkPeriodHtml();
 
-  const loading = _spkState === 'loading' && !(_shopifyOrders || []).length;
+  // Entering the page revalidates against the server; the orders still in memory are
+  // the previous visit's, so their figures must not stand in for today's.
+  const stale = !(_shopifyOrders || []).length
+    || !!document.getElementById('page-shopify-orders')?.classList.contains('sp-nav-pending');
+  const loading = _spkState === 'loading' && stale;
+  const arriving = host.getAttribute('aria-busy') === 'true' && !loading; // skeleton tiles → figures
   host.setAttribute('aria-busy', String(loading));
-  if (_spkState === 'error' && !(_shopifyOrders || []).length) {
+  if (_spkState === 'error' && stale) {
     host.innerHTML = `<div class="spk-head"><span class="spk-warn">${_spkEsc(_spkT('loadFail'))}</span>
       <div class="spk-actions">${seg}</div></div>`;
     return;
@@ -291,6 +301,17 @@ function _spkRender(state) {
         /* A share of one total — a single-hue meter, not a categorical colour. */
         `<div class="spk-meter" aria-hidden="true"><i style="width:${s.rate || 0}%"></i></div>`)}
     </div>`;
+  // Cascade Reveal: the tiles rise and their figures count up once, when they replace the skeleton.
+  if (arriving && _spkState !== 'error') window.souliaCascade?.(host.querySelector('.spk-grid'), { count: '.spk-val' });
+  const previousReceived = typeof _spLivePaint === 'undefined' ? NaN : _spLivePaint?.previousReceived;
+  if (Number.isFinite(previousReceived) && s.received > previousReceived) {
+    const value = host.querySelector('.spk-tile.is-received .spk-val bdi');
+    if (value && window.AnimatedNumber?.set) {
+      window.AnimatedNumber.set(value, s.received, { startValue: previousReceived, duration: 650 });
+      value.classList.add('sp-live-count');
+      value.addEventListener('animationend', () => value.classList.remove('sp-live-count'), { once: true });
+    }
+  }
 }
 
 const _SPK_PERIODS = ['today', 'yesterday', 'three', 'week', 'custom'];
@@ -298,16 +319,36 @@ const _SPK_PERIODS = ['today', 'yesterday', 'three', 'week', 'custom'];
    row, so the button itself can stay an icon; its title / aria-label state it too. */
 function _spkPeriodHtml() {
   const cur = _spkT(_spkPeriod);
-  const items = _SPK_PERIODS.map(p => `
-    <button type="button" role="menuitemradio" aria-checked="${p === _spkPeriod}" class="spk-pm-item${p === _spkPeriod ? ' is-on' : ''}" onclick="_spkSetPeriod('${p}')">
-      <span>${_spkEsc(_spkT(p))}</span>${p === _spkPeriod ? _spkIco('check', 14) : ''}</button>`).join('');
   return `<div class="spk-period">
-    <button type="button" class="spk-icon-btn${_spkMenuOpen ? ' is-open' : ''}${_spkPeriod !== 'today' ? ' is-set' : ''}" id="spk-period-btn"
-      aria-haspopup="menu" aria-expanded="${_spkMenuOpen}" aria-controls="spk-period-menu" onclick="_spkToggleMenu()" onkeydown="_spkMenuKey(event)"
+    <button type="button" class="spk-icon-btn${_spkPeriod !== 'today' ? ' is-set' : ''}" id="spk-period-btn"
+      aria-haspopup="dialog" aria-expanded="false" onclick="_spkOpenSharedRange(this)"
       title="${_spkEsc(_spkT('pickPeriod') + ': ' + cur)}" aria-label="${_spkEsc(_spkT('pickPeriod') + ': ' + cur)}">${_spkIco('calendar', 16)}</button>
-    ${_spkMenuOpen ? `<div class="spk-pmenu" id="spk-period-menu" role="menu" aria-label="${_spkEsc(_spkT('pickPeriod'))}" onkeydown="_spkMenuKey(event)">
-      ${items}${_spkDateControls()}</div>` : ''}
   </div>`;
+}
+function _spkOpenSharedRange(button) {
+  const range = _spkRange(_spkPeriod);
+  SouliaDateRange.open(button, {
+    from: _spkYmd(range.from),
+    to: _spkYmd(new Date(range.to.getTime() - 1)),
+    presets: ['today', 'yesterday', 'last3', 'last7'],
+    max: _spkYmd(new Date()),
+    allowPartial: false,
+    onApply: (from, to) => {
+      const now = new Date();
+      const names = { today: 'today', yesterday: 'yesterday', last3: 'three', last7: 'week' };
+      const matching = Object.entries(names).find(([preset]) => {
+        const dates = SouliaDateRange.presets[preset](now);
+        return from === _spkYmd(dates[0]) && to === _spkYmd(dates[1]);
+      });
+      if (matching) _spkSetPeriod(matching[1]);
+      else {
+        _spkCustomFrom = _spkDraftFrom = from;
+        _spkCustomTo = _spkDraftTo = to;
+        _spkSetPeriod('custom');
+      }
+    },
+    onClear: () => _spkSetPeriod('today')
+  });
 }
 function _spkToggleMenu() {
   if (_spkMenuOpen) { _spkCloseMenu(true); return; }
@@ -357,7 +398,7 @@ function _spkSetPeriod(p) {
   _spkRender();
   if (p === 'custom') { const f = document.getElementById('spk-from'); if (f) f.focus(); }
   else if (wasOpen) document.getElementById('spk-period-btn')?.focus();
-  if (_spkFilter && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
+  if ((_spkFilter || (typeof _spServerEnabled !== 'undefined' && _spServerEnabled)) && typeof renderShopifyOrders === 'function') { shopifyPage = 1; renderShopifyOrders(); }
 }
 
 /* ── Report: text + image ── */

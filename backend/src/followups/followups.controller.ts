@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { FollowUpsService } from './followups.service';
 import { CreateFollowUpDto, UpdateFollowUpDto, DeferFollowUpDto } from './dto/followup.dto';
@@ -19,6 +19,21 @@ export class FollowUpsController {
   @Get()
   findAll() {
     return this.service.findAll();
+  }
+
+  @Get('dashboard-summary')
+  dashboardSummary() {
+    return this.service.findDashboardSummary();
+  }
+
+  @Get('shopify-order')
+  forShopifyOrder(@Query('shopifyOrderId') shopifyOrderId = '', @Query('ref') ref = '') {
+    return this.service.findForShopifyOrder(shopifyOrderId, ref);
+  }
+
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.service.findById(id);
   }
 
   @Post()

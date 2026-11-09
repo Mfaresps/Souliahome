@@ -1,0 +1,1233 @@
+{
+  "runs": [
+    {
+      "pair": 1,
+      "flows": [
+        {
+          "visibleMs": 555.8,
+          "freshMs": 593.9,
+          "added": 2,
+          "removed": 0,
+          "requests": 2,
+          "transferBytes": 109373,
+          "decodedBytes": 108773,
+          "endpoints": [
+            "/api/shopify/orders/summary-page",
+            "/api/announcements/mine"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 47.4,
+          "freshMs": 47.4,
+          "requests": 1
+        },
+        {
+          "visibleMs": 76.6,
+          "freshMs": 100.2,
+          "added": 49,
+          "removed": 49,
+          "requests": 2,
+          "transferBytes": 1150879,
+          "decodedBytes": 1150279,
+          "endpoints": [
+            "/api/followups",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 34.6,
+          "freshMs": 363.1,
+          "added": 21,
+          "removed": 1,
+          "requests": 3,
+          "transferBytes": 171458,
+          "decodedBytes": 170558,
+          "endpoints": [
+            "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 86.9,
+          "freshMs": 112.4,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 256.4,
+          "freshMs": 369.6,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 93,
+          "freshMs": 117.3,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 126.7,
+          "freshMs": 274.7,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 99.3,
+          "freshMs": 423.2,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 129.6,
+          "freshMs": 169.2,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 2,
+      "flows": [
+        {
+          "visibleMs": 552.1,
+          "freshMs": 578.4,
+          "added": 2,
+          "removed": 0,
+          "requests": 2,
+          "transferBytes": 109373,
+          "decodedBytes": 108773,
+          "endpoints": [
+            "/api/shopify/orders/summary-page",
+            "/api/announcements/mine"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 48.1,
+          "freshMs": 48.2,
+          "requests": 1
+        },
+        {
+          "visibleMs": 74.2,
+          "freshMs": 115.8,
+          "added": 49,
+          "removed": 49,
+          "requests": 2,
+          "transferBytes": 1150879,
+          "decodedBytes": 1150279,
+          "endpoints": [
+            "/api/followups",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 36.9,
+          "freshMs": 341.5,
+          "added": 21,
+          "removed": 1,
+          "requests": 3,
+          "transferBytes": 171458,
+          "decodedBytes": 170558,
+          "endpoints": [
+            "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 94.3,
+          "freshMs": 114.7,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 294.5,
+          "freshMs": 309.7,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 117.9,
+          "freshMs": 142.8,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 124,
+          "freshMs": 272.3,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 129.2,
+          "freshMs": 411.3,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 124.2,
+          "freshMs": 154.6,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 3,
+      "flows": [
+        {
+          "visibleMs": 475.9,
+          "freshMs": 501.9,
+          "added": 2,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 109071,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 46.4,
+          "freshMs": 46.5,
+          "requests": 1
+        },
+        {
+          "visibleMs": 86.3,
+          "freshMs": 125.9,
+          "added": 49,
+          "removed": 49,
+          "requests": 3,
+          "transferBytes": 1151181,
+          "decodedBytes": 1150281,
+          "endpoints": [
+            "/api/followups",
+            "/api/employee-performance/duty-board",
+            "/api/announcements/mine"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 39.1,
+          "freshMs": 332.4,
+          "added": 21,
+          "removed": 1,
+          "requests": 2,
+          "transferBytes": 120897,
+          "decodedBytes": 120297,
+          "endpoints": [
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 85.1,
+          "freshMs": 103.7,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 268.5,
+          "freshMs": 301.2,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 99.8,
+          "freshMs": 119.5,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 121.8,
+          "freshMs": 274,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 103.2,
+          "freshMs": 303.4,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 114.1,
+          "freshMs": 197,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 4,
+      "flows": [
+        {
+          "visibleMs": 481.4,
+          "freshMs": 508.1,
+          "added": 2,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 109071,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 38.2,
+          "freshMs": 38.2,
+          "requests": 1
+        },
+        {
+          "visibleMs": 86.3,
+          "freshMs": 113,
+          "added": 49,
+          "removed": 49,
+          "requests": 3,
+          "transferBytes": 1151181,
+          "decodedBytes": 1150281,
+          "endpoints": [
+            "/api/followups",
+            "/api/announcements/mine",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 33.9,
+          "freshMs": 308.3,
+          "added": 21,
+          "removed": 1,
+          "requests": 3,
+          "transferBytes": 171458,
+          "decodedBytes": 170558,
+          "endpoints": [
+            "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 75.4,
+          "freshMs": 101.6,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 272.9,
+          "freshMs": 301.7,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 103.2,
+          "freshMs": 130.6,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 146.2,
+          "freshMs": 300.9,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 115.9,
+          "freshMs": 329.7,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 129,
+          "freshMs": 168.9,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 5,
+      "flows": [
+        {
+          "visibleMs": 514.2,
+          "freshMs": 540.7,
+          "added": 2,
+          "removed": 0,
+          "requests": 2,
+          "transferBytes": 109373,
+          "decodedBytes": 108773,
+          "endpoints": [
+            "/api/shopify/orders/summary-page",
+            "/api/announcements/mine"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 42.4,
+          "freshMs": 42.4,
+          "requests": 1
+        },
+        {
+          "visibleMs": 80,
+          "freshMs": 117.7,
+          "added": 49,
+          "removed": 49,
+          "requests": 3,
+          "transferBytes": 1201440,
+          "decodedBytes": 1200540,
+          "endpoints": [
+            "/api/followups",
+            "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 36.5,
+          "freshMs": 324.8,
+          "added": 21,
+          "removed": 1,
+          "requests": 2,
+          "transferBytes": 120897,
+          "decodedBytes": 120297,
+          "endpoints": [
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 72.6,
+          "freshMs": 97.9,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 252.7,
+          "freshMs": 290.4,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 95.9,
+          "freshMs": 114.8,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 119.2,
+          "freshMs": 315.9,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 106.6,
+          "freshMs": 329.4,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 118.7,
+          "freshMs": 151,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 6,
+      "flows": [
+        {
+          "visibleMs": 514.8,
+          "freshMs": 541.2,
+          "added": 2,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 109071,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 47.4,
+          "freshMs": 47.5,
+          "requests": 2
+        },
+        {
+          "visibleMs": 73.1,
+          "freshMs": 109.5,
+          "added": 49,
+          "removed": 49,
+          "requests": 2,
+          "transferBytes": 1150879,
+          "decodedBytes": 1150279,
+          "endpoints": [
+            "/api/followups",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 32.7,
+          "freshMs": 343,
+          "added": 21,
+          "removed": 1,
+          "requests": 2,
+          "transferBytes": 120897,
+          "decodedBytes": 120297,
+          "endpoints": [
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 85.5,
+          "freshMs": 138.5,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 248.3,
+          "freshMs": 269.6,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 118.5,
+          "freshMs": 142,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 121.1,
+          "freshMs": 262.3,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 102.6,
+          "freshMs": 309.3,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 143.4,
+          "freshMs": 174.4,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "pair": 7,
+      "flows": [
+        {
+          "visibleMs": 487.6,
+          "freshMs": 513.3,
+          "added": 2,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 109071,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders"
+        },
+        {
+          "name": "orders-detail",
+          "visibleMs": 46.4,
+          "freshMs": 46.4,
+          "requests": 1
+        },
+        {
+          "visibleMs": 76.2,
+          "freshMs": 116,
+          "added": 49,
+          "removed": 49,
+          "requests": 3,
+          "transferBytes": 1151181,
+          "decodedBytes": 1150281,
+          "endpoints": [
+            "/api/followups",
+            "/api/announcements/mine",
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "orders-dashboard"
+        },
+        {
+          "visibleMs": 34.1,
+          "freshMs": 339.1,
+          "added": 21,
+          "removed": 1,
+          "requests": 3,
+          "transferBytes": 171458,
+          "decodedBytes": 170558,
+          "endpoints": [
+            "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "/api/transactions/movements-page",
+            "/api/notifications"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-movements"
+        },
+        {
+          "visibleMs": 86.4,
+          "freshMs": 107.3,
+          "added": 49,
+          "removed": 49,
+          "requests": 0,
+          "transferBytes": 0,
+          "decodedBytes": 0,
+          "endpoints": [],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "movements-dashboard"
+        },
+        {
+          "visibleMs": 249.7,
+          "freshMs": 291.6,
+          "added": 40,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-followups"
+        },
+        {
+          "visibleMs": 97.9,
+          "freshMs": 123,
+          "added": 49,
+          "removed": 49,
+          "requests": 1,
+          "transferBytes": 703,
+          "decodedBytes": 403,
+          "endpoints": [
+            "/api/employee-performance/duty-board"
+          ],
+          "page": "dashboard",
+          "rows": 9,
+          "filters": {},
+          "name": "followups-dashboard"
+        },
+        {
+          "visibleMs": 119.3,
+          "freshMs": 276.2,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 108771,
+          "endpoints": [
+            "/api/shopify/orders/summary-page"
+          ],
+          "page": "orders",
+          "rows": 2,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "dashboard-orders-return"
+        },
+        {
+          "visibleMs": 101.6,
+          "freshMs": 341.6,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 119903,
+          "decodedBytes": 119603,
+          "endpoints": [
+            "/api/transactions/movements-page"
+          ],
+          "page": "movements",
+          "rows": 20,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "orders-movements"
+        },
+        {
+          "visibleMs": 121.7,
+          "freshMs": 200,
+          "added": 0,
+          "removed": 0,
+          "requests": 1,
+          "transferBytes": 300,
+          "decodedBytes": 21009,
+          "endpoints": [
+            "/api/complaints"
+          ],
+          "page": "followups",
+          "rows": 40,
+          "filters": {
+            "page": 1,
+            "search": ""
+          },
+          "name": "movements-followups"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

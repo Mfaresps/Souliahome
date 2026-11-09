@@ -1,0 +1,73 @@
+/* DesignMe date-range-picker skin for Soulia dashboard. */
+.soulia-range-source{display:none!important}
+.soulia-range-replaced{display:none!important}
+.soulia-range-control{display:inline-flex;vertical-align:middle}
+.soulia-range-trigger{position:relative;display:inline-grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;cursor:pointer}
+.soulia-range-trigger:hover,.soulia-range-trigger[aria-expanded="true"]{border-color:var(--primary)}
+.soulia-range-trigger.is-set,.soulia-range-external.is-set{color:var(--primary);border-color:var(--primary)}
+.soulia-range-trigger.is-set::after{content:"";position:absolute;inset-inline-end:5px;top:5px;width:5px;height:5px;border-radius:50%;background:var(--primary)}
+#shopify-filter-icon-btn.soulia-range-external{min-width:38px;justify-content:center}
+#shopify-filter-icon-btn.soulia-range-external #sp-date-btn-label{display:none}
+.soulia-range-popover{box-sizing:border-box;position:fixed;z-index:10050;max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);color:var(--text);font-family:inherit}
+.soulia-range-popover[hidden]{display:none!important}
+.soulia-range-popover:not([hidden]){animation:drx-pop-in 160ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes drx-pop-in{from{opacity:0;transform:translateY(-5px) scale(.995)}to{opacity:1;transform:translateY(0) scale(1)}}
+.soulia-range-date-field{display:flex;justify-content:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.soulia-range-date-field button{min-height:32px;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--muted);font:600 12px inherit;cursor:pointer}
+.soulia-range-date-field button.on{border-color:var(--primary);background:var(--primary-pale);color:var(--primary)}
+.soulia-drx{--dm-line:var(--border);--dm-fg:var(--text);--dm-fg2:var(--muted);--dm-muted:var(--muted);--dm-accent:var(--primary);--dm-accent-fg:var(--primary);--dm-on-accent:#fff;--dm-sel:var(--primary-pale);--dm-row:var(--surface2);--dm-surface:var(--surface);--dm-chip:var(--surface2);--dm-field-line:var(--border);--dm-field-line-strong:var(--primary);--dm-rk:1;--dm-r-field:7px;--dm-r-sm:6px;--dm-s-2:8px;--dm-s-3:12px}
+.soulia-drx{--drx-enter-x:8px}
+.soulia-drx[dir="rtl"]{--drx-enter-x:-8px}
+.soulia-drx.drx-quarter-enter .drx-quarter-screen{animation:drx-quarter-in 150ms cubic-bezier(.2,.7,.2,1) both}
+.soulia-drx.drx-calendar-enter .drx{animation:drx-calendar-in 150ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes drx-quarter-in{from{opacity:0;transform:translateX(var(--drx-enter-x))}to{opacity:1;transform:translateX(0)}}
+@keyframes drx-calendar-in{from{opacity:0;transform:translateX(calc(var(--drx-enter-x) * -1))}to{opacity:1;transform:translateX(0)}}
+.soulia-drx .drx{display:grid;grid-template-columns:150px minmax(0,1fr);overflow:hidden}
+.soulia-drx .drx[hidden],.soulia-drx .drx-quarter-screen[hidden]{display:none}
+.soulia-drx .drx-side{display:flex;flex-direction:column;gap:2px;padding:10px;border-inline-end:1px solid var(--border)}
+.soulia-drx .drx-p{width:100%;text-align:start;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.soulia-drx .drx-quarter-open{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:36px;margin-top:7px;padding:7px 10px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);font:600 12.5px inherit;text-align:start;cursor:pointer}
+.soulia-drx .drx-quarter-open span{font-size:16px;color:var(--muted)}
+.soulia-drx .drx-quarter-open:hover{background:var(--surface2)}
+.soulia-drx .drx-quarter-screen{min-height:300px;background:var(--surface)}
+.soulia-drx .drx-quarter-head{display:flex;align-items:center;gap:18px;min-height:56px;padding:0 18px;border-bottom:1px solid var(--border);font-size:17px}
+.soulia-drx .drx-quarter-head strong{font-weight:700}
+.soulia-drx .drx-quarter-back{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:7px;background:transparent;color:var(--text);font:700 24px inherit;cursor:pointer}
+.soulia-drx .drx-quarter-back:hover{background:var(--surface2)}
+.soulia-drx .drx-quarter-list{display:flex;flex-direction:column;padding:13px 18px}
+.soulia-drx .drx-quarter-item{min-height:52px;padding:8px 12px;border:0;border-radius:7px;background:transparent;color:var(--text);font:500 16px inherit;text-align:start;cursor:pointer}
+.soulia-drx .drx-quarter-item:hover:not(:disabled){background:var(--surface2)}
+.soulia-drx .drx-quarter-item.on{background:var(--primary-pale);color:var(--primary);font-weight:700}
+.soulia-drx .drx-p:hover:not(:disabled){background:var(--surface2);color:var(--text)}
+.soulia-drx .drx-p.on{background:var(--primary-pale);color:var(--primary);font-weight:700}
+.soulia-drx .drx-p:disabled,.soulia-drx .drx-quarter-item:disabled{opacity:.35;cursor:not-allowed}
+.soulia-drx .drx-main{padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.soulia-drx .drx-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted)}
+.soulia-drx .drx-direction{direction:ltr;unicode-bidi:isolate;font-size:16px;line-height:1}
+.soulia-drx .drx-in{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);font-size:12px;white-space:nowrap}
+.soulia-drx .drx-in b{font-weight:600;font-size:12.5px;color:var(--text)}
+.soulia-drx .drx-in.on{border-color:var(--primary)}
+.soulia-drx .drx-n{margin-inline-start:auto;font-size:12px}
+.soulia-drx .drx-nav{display:flex;justify-content:space-between;direction:ltr}
+.soulia-drx .drx-nav button{width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:21px;line-height:1;cursor:pointer}
+.soulia-drx .drx-cals{display:grid;grid-template-columns:1fr 1fr;gap:18px;direction:ltr}
+.soulia-drx .drx-cal h5{margin:0 0 6px;font-size:12.5px;font-weight:600;text-align:center;direction:auto}
+.soulia-drx .drx-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
+.soulia-drx .drx-g .w{font-size:11px;color:var(--muted);text-align:center;height:23px}
+.soulia-drx .drx-d{height:32px;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.soulia-drx .drx-d.e{pointer-events:none}
+.soulia-drx .drx-d:disabled{opacity:.28;color:var(--muted);cursor:not-allowed}
+.soulia-drx .drx-d:hover:not(.e):not(.a):not(.b){background:var(--surface2);border-radius:6px}
+.soulia-drx .drx-d.in{background:var(--primary-pale)}
+.soulia-drx .drx-d.a,.soulia-drx .drx-d.b{background:var(--primary);color:#fff;border-radius:6px}
+.soulia-drx .drx-d.hv{background:var(--primary-pale)}
+.soulia-drx .drx-f{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;direction:rtl}
+.soulia-drx .drx-f .drx-open-start,.soulia-drx .drx-f .drx-open-end{min-width:0;color:var(--muted)}
+.soulia-drx .drx-f button{min-width:68px;min-height:34px;padding:5px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:600 12px inherit;cursor:pointer}
+.soulia-drx .drx-f .drx-ok{background:var(--primary);border-color:var(--primary);color:#fff}
+.soulia-drx .drx-f .drx-ok:disabled{opacity:.45;cursor:default}
+.soulia-drx button:focus-visible,.soulia-range-trigger:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:700px){.soulia-drx .drx{grid-template-columns:1fr}.soulia-drx .drx-side{flex-direction:row;flex-wrap:wrap;border-inline-end:0;border-bottom:1px solid var(--border)}.soulia-drx .drx-p{width:auto;min-height:36px}}
+@media(max-width:500px){.soulia-range-trigger{width:44px;height:44px}.soulia-drx .drx-cals{grid-template-columns:1fr}.soulia-drx .drx-cal[data-o="1"]{display:none}.soulia-range-popover{max-width:calc(100vw - 24px)}}
+@media(prefers-reduced-motion:reduce){.soulia-range-popover:not([hidden]),.soulia-drx.drx-quarter-enter .drx-quarter-screen,.soulia-drx.drx-calendar-enter .drx{animation:none}}
+.spk-date-filter:has(.soulia-range-control)>.spk-report-btn{display:none}

@@ -1,0 +1,33 @@
+/* Generated from designme.dev by scripts/sync.mjs. Edit the site, then sync. */
+/* ---------- Ticket list ---------- */
+/* rows run edge to edge inside the panel, so there is one surface instead of nested ones */
+/* the panel fits the tickets it lists, however few are left */
+.dm-tkx{padding:var(--dm-s-3) 0 0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.dm-tkx-h{display:flex;align-items:center;justify-content:space-between;padding:0 var(--dm-s-4) var(--dm-s-1);font-size:14px}
+.dm-tkx-h b{font-weight:500}
+.dm-tkx-sg button{font-size:12px;height:26px;padding:0 9px}
+.dm-tkx-list{display:flex;flex-direction:column}
+.dm-tkx-t{transition:background .2s;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent)}
+@media (hover:hover) and (pointer:fine){.dm-tkx-t:hover{background:var(--dm-row)}}
+.dm-tkx-t.dm-open{background:color-mix(in srgb,var(--dm-wash) 50%,var(--dm-surface))}
+.dm-tkx-r{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;width:100%;padding:10px var(--dm-s-4);text-align:left}
+/* rows fill the card, whose rounded edge would cut an outside ring: theirs is drawn inside */
+.dm-tkx-r:focus-visible{outline-offset:-2px}
+.dm-tkx-r .dm-pr{display:flex;align-items:center;justify-content:center;width:18px;height:18px}
+.dm-tkx-r .dm-pr .dm-dot{width:8px;height:8px}
+.dm-tkx-r .dm-t{display:flex;flex-direction:column;min-width:0;font-size:13px}
+.dm-tkx-r .dm-t b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-tkx-r .dm-t span{font-size:12px;color:var(--dm-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-tkx-r .dm-m{display:flex;align-items:center;gap:6px}
+.dm-tkx-r .dm-m .dm-av{width:20px;height:20px;font-size:9px}
+.dm-tkx-r .dm-w{font-size:11.5px;color:var(--dm-muted)}
+.dm-tkx-d{padding:0 var(--dm-s-4) 14px 44px;display:flex;flex-direction:column;gap:var(--dm-s-2)}
+.dm-tkx-q{font-size:12.5px;line-height:1.5;color:var(--dm-fg2)}
+.dm-tkx-s{padding:10px var(--dm-s-3);border-radius:var(--dm-r-in);background:var(--dm-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);font-size:12.5px;line-height:1.5;color:var(--dm-fg)}
+.dm-tkx-s .dm-lb{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--dm-accent-fg,var(--dm-accent));font-weight:500;margin-bottom:var(--dm-s-1)}
+/* the reply reads as text you can edit: the text cursor over it, and an accent caret once it has focus */
+.dm-tkx-s [contenteditable]{outline:0;border-radius:calc(6px * var(--dm-rk));cursor:text;caret-color:var(--dm-accent-fg,var(--dm-accent))}
+.dm-tkx-s [contenteditable]:focus{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-field-line-strong) 50%,transparent);padding:2px var(--dm-s-1);margin:-2px -4px}
+.dm-tkx-a{display:flex;gap:6px;justify-content:flex-end}
+.dm-tkx-e{padding:40px 10px;text-align:center;font-size:13px;color:var(--dm-muted)}
+.dm-tkx-t.dm-leave{animation:dm-leave .35s var(--dm-ease) both}

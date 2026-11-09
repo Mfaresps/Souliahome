@@ -17,21 +17,25 @@
 #sp-peek .sp-pk-sub-i>svg{width:13px;height:13px;flex-shrink:0}
 #sp-peek .sp-pk-head-acts{margin:0;gap:2px}
 #sp-peek .sp-pk-x{width:36px;height:36px}
-#sp-peek .sp-pk-head .sp-pk-cust-top{display:flex;flex-wrap:wrap;gap:8px;padding-top:8px}
-#sp-peek .sp-pk-head .sp-pk-av{width:32px;height:32px;font-size:.72rem}
-#sp-peek .sp-pk-cust-id{flex:1 1 150px;min-width:0}
-#sp-peek .sp-pk-client{font-size:.87rem;line-height:1.4;overflow-wrap:anywhere}
-#sp-peek .sp-pk-customer-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;min-width:0}
-#sp-peek .sp-pk-customer-line .sp-pk-client{flex:0 1 auto}
-#sp-peek .sp-pk-address{display:inline-flex;align-items:flex-start;gap:4px;flex:1 1 160px;min-width:0;font-size:12px;line-height:1.5;color:var(--muted)}
-#sp-peek .sp-pk-address>svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
-#sp-peek .sp-pk-address>bdi{min-width:0;overflow-wrap:anywhere}
+/* Customer block: row 1 = avatar · name over phone · contact buttons;
+   row 2 = the full address, under the name, never squeezed beside it. */
+#sp-peek .sp-pk-head .sp-pk-cust-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:8px;padding-top:10px}
+#sp-peek .sp-pk-head .sp-pk-av{width:36px;height:36px;font-size:.74rem}
+#sp-peek .sp-pk-cust-id{min-width:0;display:flex;flex-direction:column;gap:1px}
+#sp-peek .sp-pk-client{font-size:.92rem;font-weight:650;line-height:1.35;overflow-wrap:anywhere}
+#sp-peek .sp-pk-address{grid-column:1/-1;display:flex;align-items:flex-start;gap:7px;min-width:0;padding:8px 10px;border-radius:9px;background:var(--surface2);color:var(--text);font-size:12.5px;line-height:1.6}
+#sp-peek .sp-pk-address>svg{width:15px;height:15px;flex-shrink:0;margin-top:3px;color:var(--muted)}
+/* Stored prose: reads in its own direction, aligned to the panel's start edge. */
+#sp-peek .sp-pk-address-txt{min-width:0;flex:1;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:left}
+#sp-peek[dir="rtl"] .sp-pk-address-txt{text-align:right}
 #sp-peek .sp-pk-header-note{display:flex;align-items:flex-start;gap:6px;min-width:0;color:var(--muted);font-size:12px;line-height:1.5}
 #sp-peek .sp-pk-header-note>svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
 #sp-peek .sp-pk-header-note>span{min-width:0;max-height:72px;overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap;touch-action:pan-y}
 #sp-peek .sp-pk-header-note strong{font-weight:500}
-#sp-peek .sp-pk-phone{font-size:.72rem}
-#sp-peek .sp-pk-phone-row{margin:0}
+#sp-peek .sp-pk-phone{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;text-decoration:none}
+#sp-peek .sp-pk-phone:hover{color:var(--accent)}
+#sp-peek .sp-pk-phone bdi{unicode-bidi:isolate}
+#sp-peek .sp-pk-phone-row{display:flex;align-items:center;gap:2px;margin:0}
 #sp-peek .sp-pk-contact.is-compact{gap:5px}
 #sp-peek .sp-pk-contact.is-compact .sp-ct-btn{width:34px;height:34px;min-height:34px}
 #sp-peek .sp-pk-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:start;gap:8px;padding:10px;scroll-padding-block:8px;scrollbar-width:thin}
@@ -100,13 +104,15 @@
 #sp-peek .spdep-receipt-data small{font-size:.65rem;overflow-wrap:anywhere}
 #sp-peek .sp-pk-fchips{gap:4px;margin-bottom:7px}
 #sp-peek .sp-pk-fchip{min-height:25px;font-size:.7rem;padding-inline:7px}
-#sp-peek .sp-pk-trail{max-height:150px;margin-bottom:6px}
+/* The trail is part of the page flow: no inner scroll box. The newest four entries show;
+   older ones are revealed in place by the button above the list (JS: SP_PK_TRAIL_SHOWN). */
 #sp-peek .sp-pk-history{min-width:0}
-#sp-peek .sp-pk-history .sp-pk-trail{scrollbar-width:thin;scrollbar-color:var(--border) transparent;transition:max-height .22s ease;-webkit-overflow-scrolling:touch}
-#sp-peek .sp-pk-history.is-expanded .sp-pk-trail{max-height:min(440px,55dvh)}
-#sp-peek .sp-pk-history-more{display:block;width:100%;min-height:32px;margin:0 0 6px;border:0;border-radius:7px;background:var(--surface);color:var(--accent);font:inherit;font-size:.72rem;cursor:pointer}
+#sp-peek .sp-pk-history .sp-pk-trail{max-height:none;overflow:visible;margin-bottom:6px}
+#sp-peek .sp-pk-history.has-more:not(.is-expanded) .sp-pk-trail>li:nth-last-child(n+5){display:none}
+#sp-peek .sp-pk-history-more{display:inline-flex;align-items:center;gap:5px;min-height:30px;margin:0 0 4px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 #sp-peek .sp-pk-history-more[hidden]{display:none}
-#sp-peek .sp-pk-history-more:hover{background:var(--bg-alt)}
+#sp-peek .sp-pk-history-more:hover{background:var(--primary-pale)}
+#sp-peek .sp-pk-history-more svg{flex:none}
 #sp-peek .sp-pk-tl{padding:6px 0;gap:7px}
 #sp-peek .sp-pk-tl-b{font-size:.77rem;line-height:1.5}
 #sp-peek .sp-pk-tl-top{flex-wrap:wrap;gap:3px 6px}
@@ -130,8 +136,11 @@
 }
 @media(max-width:350px){#sp-peek .sp-pk-cust-id{flex-basis:150px}#sp-peek .sp-pk-head .sp-pk-av{display:none}#sp-peek .sp-pk-client{font-size:.8rem}}
 @media(min-width:601px){
+  /* Centred. The window opens at its final size (openSpOrderPeek waits for the data), and
+     any later height change slides symmetrically via _spPeekMorph — so centring no longer
+     makes the edges jump. */
   #sp-peek{align-items:center;padding:24px}
-  #sp-peek .sp-peek{width:min(900px,calc(100vw - 48px));height:auto;max-height:min(820px,calc(100dvh - 48px));opacity:0;transform:translateY(18px) scale(.985);transition:transform .2s ease,opacity .2s ease}
+  #sp-peek .sp-peek{width:min(940px,calc(100vw - 48px));height:auto;max-height:calc(100dvh - 48px)}
   #sp-peek.is-open .sp-peek{opacity:1;transform:none}
   #sp-peek .sp-pk-grip{display:none}
   #sp-peek .sp-pk-head{padding:16px 18px 12px;touch-action:auto}
@@ -142,7 +151,6 @@
   #sp-peek .sp-pk-body>:not(.sp-pk-column){order:-2}
   #sp-peek[dir="rtl"] .sp-pk-column{direction:rtl}
   #sp-peek .sp-pk-column>*{min-width:0}
-  #sp-peek .sp-pk-trail{max-height:180px}
   #sp-peek .sp-pk-payment-summary{grid-template-columns:1fr;gap:10px}
   #sp-peek .sp-pk-pay-total{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   #sp-peek .sp-pk-pay-total small{margin:0}
@@ -150,11 +158,55 @@
 }
 @media(min-width:601px) and (prefers-reduced-motion:reduce){#sp-peek .sp-peek{transition:none}}
 @media(prefers-reduced-motion:reduce){#sp-peek .sp-pk-chevron{transition:none}}
-@media(prefers-reduced-motion:reduce){#sp-peek .sp-pk-history .sp-pk-trail{transition:none}}
 /* Give the follow-up conversation the main reading area without empty filler. */
-#sp-peek .sp-pk-fu .sp-pk-trail{max-height:min(340px,44dvh)}
 #sp-peek .sp-pk-fu .sp-pk-tl-b{font-size:13px;line-height:1.55}
 #sp-peek .sp-pk-fu .sp-pk-tl-top{font-size:12px}
 #sp-peek .sp-pk-fu .sp-pk-tl-top time{font-size:11px}
-#sp-peek .sp-pk-fu .sp-pk-history.is-expanded .sp-pk-trail{max-height:min(520px,65dvh)}
 @media(pointer:coarse){#sp-peek .sp-pk-add-comment{min-height:44px}}
+/* Short desktop screens (1366×768 laptops): tighten spacing so the whole order still fits
+   without a scrollbar. Nothing is hidden — only gaps and paddings shrink. */
+@media(min-width:601px) and (max-height:820px){
+  #sp-peek{padding-top:10px;padding-bottom:10px}
+  #sp-peek .sp-peek{max-height:calc(100dvh - 20px)}
+  #sp-peek .sp-pk-head{padding:12px 16px 8px;gap:6px}
+  #sp-peek .sp-pk-head .sp-pk-cust-top{padding-top:8px;row-gap:6px}
+  #sp-peek .sp-pk-address{padding:6px 10px}
+  #sp-peek .sp-pk-body{gap:10px;padding:10px}
+  #sp-peek .sp-pk-column{gap:8px}
+  #sp-peek .sp-pk-sec{padding:8px 12px}
+  #sp-peek .sp-pk-sec-h{margin-bottom:5px}
+  #sp-peek .spdep-embedded{margin-top:8px;padding-top:7px}
+  #sp-peek .sp-pk-meter{margin:6px 0}
+  #sp-peek .sp-pk-pay-cell{padding:7px 10px}
+  #sp-peek .sp-pk-tl{padding:5px 0}
+}
+/* The backdrop dims the moment the order is clicked, while the window waits (≤450ms) for its
+   data — the click is acknowledged without showing a half-filled window. */
+#sp-peek.is-pending{background:rgba(15,23,42,.32);cursor:progress}
+/* No scrollbar while the height is sliding (see _spPeekMorph). */
+#sp-peek .sp-peek.is-morphing .sp-pk-body{overflow:hidden}
+@media(min-width:601px){#sp-peek .sp-peek.is-loading{min-height:min(560px,calc(100dvh - 48px))}}
+/* ── Payment card: payment + deposit receipts in one place ── */
+#sp-peek .sp-pk-paybox .sp-pk-sec-h{align-items:center}
+#sp-peek .sp-pk-dep-add{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;padding:0;margin-inline-start:6px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--accent);cursor:pointer;transition:background-color .14s ease,border-color .14s ease}
+#sp-peek .sp-pk-dep-add:hover{background:var(--primary-pale);border-color:var(--accent)}
+#sp-peek .sp-pk-dep-add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* total · deposit · remaining on one row, hairlines between */
+#sp-peek .sp-pk-paysum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:9px;background:var(--surface2)}
+#sp-peek .sp-pk-paysum-c{display:flex;flex-direction:column;gap:2px;min-width:0;padding:8px 10px}
+#sp-peek .sp-pk-paysum-c+.sp-pk-paysum-c{border-inline-start:1px solid var(--border)}
+#sp-peek .sp-pk-paysum-c>small{font-size:.66rem;color:var(--muted);line-height:1.35}
+#sp-peek .sp-pk-paysum-c>b{font-size:.92rem;font-weight:650;line-height:1.35;overflow-wrap:anywhere}
+#sp-peek .sp-pk-paysum-c small.is-pend{color:#b45309}
+body.dark-mode #sp-peek .sp-pk-paysum-c small.is-pend{color:#fbbf24}
+#sp-peek .sp-pk-paysum-c.is-due>b{color:var(--red)}
+#sp-peek .sp-pk-paysum-c .spdep-empty{font-size:.74rem}
+#sp-peek .sp-pk-paybox .sp-pk-meter{margin:8px 0 6px}
+#sp-peek .sp-pk-paybox .spdep-embedded{margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
+@media(pointer:coarse){#sp-peek .sp-pk-dep-add{width:40px;height:40px}}
+#sp-peek .sp-pk-paysum-c>b.is-pend{color:#b45309}
+body.dark-mode #sp-peek .sp-pk-paysum-c>b.is-pend{color:#fbbf24}
+/* The follow-up form opened from the order window sits ABOVE it (window 1150, trail 1200). */
+#fu-modal-overlay.is-over-peek{z-index:1180!important}
+/* The window takes focus on open (so keyboard users start inside it); it draws no ring. */
+#sp-peek .sp-peek:focus{outline:none}

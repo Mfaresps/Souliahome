@@ -1,0 +1,39 @@
+{
+  "closed": {
+    "documentNodes": 6167,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 17,
+    "centerCards": 0,
+    "panelCards": 0,
+    "allNotifications": 0,
+    "badge": "150"
+  },
+  "open": {
+    "documentNodes": 6956,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 806,
+    "centerCards": 50,
+    "panelCards": 0,
+    "allNotifications": 261,
+    "badge": "150"
+  },
+  "expanded": null,
+  "closedAgain": {
+    "documentNodes": 6167,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 17,
+    "centerCards": 0,
+    "panelCards": 0,
+    "allNotifications": 261,
+    "badge": "150"
+  },
+  "notificationCount": 261,
+  "notificationIdHash": "c31f1d486c36a97647af8fa40dda4d8177cd401622844a7a598060d3a3b758ae",
+  "blockedWrites": [
+    "POST /api/notifications/read-all"
+  ],
+  "errors": []
+}

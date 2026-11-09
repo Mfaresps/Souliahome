@@ -23,7 +23,8 @@ const root = path.resolve(__dirname, '../../..'), publicDir = path.join(root, 'f
       onPageEnter = () => {}; window.pickupWrites = [];
       api = async (url, options = {}) => {
         if (options.method && options.method !== 'GET') pickupWrites.push(url);
-        return url === '/transactions/pickup-orders' ? structuredClone(_pickupOrders) : [];
+        return ['/transactions/pickup-orders', '/transactions/pickup-orders/workspace'].includes(url)
+          ? structuredClone(_pickupOrders) : [];
       };
       currentUser = { _id:'operator', role:'staff', perms:['movements','inventory-units-view','inventory-units-allocate'] };
       const base = { type:'مبيعات', client:'Preview Customer', phone:'01000000000', total:500, remaining:0, date:'2026-10-29', createdAt:'2026-10-29T08:00:00Z', shipCo:'Bosta', items:[{name:'Cotton basket', code:'SKU-1', qty:1, price:500, lineId:'line-1'}] };

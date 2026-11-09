@@ -1,0 +1,20 @@
+/* Generated from designme.dev by scripts/sync.mjs. Edit the site, then sync. */
+/* ---------- Top pages ---------- */
+.dm-tpx{padding:var(--dm-s-4);display:flex;flex-direction:column;gap:10px}
+.dm-tpx-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:0 2px}
+.dm-tpx-h>div:first-child{display:flex;flex-direction:column;font-size:13.5px}
+.dm-tpx-h b{font-weight:500}
+.dm-tpx-sub{font-size:12px}
+.dm-tpx-sg button{font-size:12px;height:26px;padding:0 9px}
+.dm-tpx-list{position:relative;height:calc(6 * 50px)}
+.dm-tpx-r{position:absolute;left:0;right:0;height:46px;display:grid;grid-template-columns:20px 1fr 56px 60px;align-items:start;gap:10px;padding:9px var(--dm-s-2) 0;border-radius:var(--dm-r-in);transition:transform .55s var(--dm-ease),background .2s}
+@media (hover:hover) and (pointer:fine){.dm-tpx-r:hover{background:var(--dm-row)}}
+.dm-tpx-r .dm-rk{font-family:var(--dm-mono);font-size:11px;line-height:19.5px;color:var(--dm-muted);text-align:center;transition:color .2s}
+@media (hover:hover) and (pointer:fine){.dm-tpx-r:hover .dm-rk{color:var(--dm-fg)}}
+.dm-tpx-r .dm-pg{display:flex;flex-direction:column;gap:5px;min-width:0}
+.dm-tpx-r .dm-p{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-tpx-r .dm-tr{height:4px;border-radius:2px;background:var(--dm-chip);overflow:hidden}
+@media (hover:hover) and (pointer:fine){.dm-tpx-r:hover .dm-tr{background:var(--dm-surface)}}
+.dm-tpx-r .dm-tr i{display:block;height:100%;width:0;border-radius:2px;background:var(--dm-accent-mark,var(--dm-accent));transition:width .9s var(--dm-ease)}
+.dm-tpx-r .dm-n{font-size:13px;font-weight:500;min-width:52px;text-align:right}
+.dm-tpx-r .dm-ch{justify-self:end;padding:0 6px}

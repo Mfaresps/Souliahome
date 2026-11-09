@@ -46,6 +46,7 @@ import { RequirePerms } from '../core/decorators/perms.decorator';
 import { ExpensesService } from '../expenses/expenses.service';
 import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
 import { inDateWindow } from '../shared/date-window.util';
+import type { MovementsState } from './movements-page.util';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, UploadedImage, ReceiptActor } from '../shopify/deposit-receipts.service';
 import { ConfirmManualDepositReceiptDto } from './dto/manual-deposit-receipt.dto';
 
@@ -145,9 +146,58 @@ export class TransactionsController {
     const txs = await this.transactionsService.findAll(
       page ? Number(page) : undefined,
       limit ? Number(limit) : undefined,
+      !req?.user || req.user.role === 'admin' || !!req.user.perms?.includes('purchase-view'),
     );
     const filtered = filterPurchasesForPerms(txs, req?.user?.role, req?.user?.perms);
     return maskTransactionsForRole(filtered, req?.user?.role);
+  }
+
+  /** Bounded list transport for the browser. The legacy GET /transactions stays an array. */
+  @Get('summary-page')
+  async summaryPage(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('sort') sort?: string,
+    @Req() req?: { user?: { role?: string; perms?: string[] } },
+  ) {
+    const canSeePurchases = req?.user?.role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
+    const result = await this.transactionsService.findSummaryPage({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      search, type, status, from, to, sort,
+    }, canSeePurchases);
+    return { ...result, rows: maskTransactionsForRole(result.rows, req?.user?.role) };
+  }
+
+  /** Operational rows and the Movements badge count needed at dashboard startup. */
+  @Get('startup-overview')
+  async startupOverview(@Req() req?: { user?: { role?: string; perms?: string[] } }) {
+    const canSeePurchases = req?.user?.role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
+    const result = await this.transactionsService.findStartupOverview(canSeePurchases);
+    return { ...result, rows: maskTransactionsForRole(result.rows, req?.user?.role) };
+  }
+
+  @Get('dashboard-overview')
+  async dashboardOverview(@Req() req?: { user?: { role?: string; perms?: string[] } }) {
+    const canSeePurchases = req?.user?.role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
+    const result = await this.transactionsService.findDashboardOverview(canSeePurchases);
+    return { ...result, rows: maskTransactionsForRole(result.rows, req?.user?.role) };
+  }
+
+  /** Read-only query. POST carries the existing drawer filters and session exclusions. */
+  @Post('movements-page')
+  async movementsPage(
+    @Body() state: MovementsState,
+    @Req() req: { user?: { role?: string; perms?: string[] } },
+  ) {
+    const role = req?.user?.role;
+    const canSeePurchases = role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
+    return this.transactionsService.findMovementsPage(state || {}, role, canSeePurchases);
   }
 
   /**
@@ -166,6 +216,18 @@ export class TransactionsController {
   ) {
     const by = req?.user?.name || req?.user?.username || 'admin';
     return this.transactionsService.backfillCarrierCodes(by, dryRun !== false, String(fallback || ''));
+  }
+
+  @Roles('admin')
+  @Get('sales-overview')
+  async getSalesOverview(@Query('year') year?: string, @Query('month') month?: string) {
+    const selectedYear = year === undefined ? undefined : Number(year);
+    const selectedMonth = month === undefined ? undefined : Number(month);
+    if ((selectedYear !== undefined && (!/^\d{4}$/.test(year!) || selectedYear < 2000 || selectedYear > 2100))
+      || (selectedMonth !== undefined && (!/^\d{1,2}$/.test(month!) || selectedMonth < 1 || selectedMonth > 12))) {
+      throw new BadRequestException('Invalid sales overview month');
+    }
+    return this.transactionsService.getSalesOverview(selectedYear, selectedMonth);
   }
 
   @Roles('admin')
@@ -340,6 +402,12 @@ export class TransactionsController {
   // ─── Pick-Up endpoints (must be BEFORE @Get(':id') to avoid routing conflict) ──
 
   @RequirePerms('pickup-orders')
+  @Get('pickup-orders/workspace')
+  async getPickupWorkspaceOrders() {
+    return this.transactionsService.findPickupWorkspaceOrders();
+  }
+
+  @RequirePerms('pickup-orders')
   @Get('pickup-orders')
   async getPickupOrders() {
     return this.transactionsService.findPickupOrders();
@@ -433,6 +501,15 @@ export class TransactionsController {
     const tx = await this.transactionsService.findByRef(ref, type);
     this.assertPurchaseViewable(tx, req?.user);
     return maskTransactionForRole(tx, req?.user?.role);
+  }
+
+  @Get(':id/customer-history')
+  async movementCustomerHistory(
+    @Param('id') id: string,
+    @Req() req?: { user?: { role?: string } },
+  ) {
+    if (!isValidObjectId(id)) throw new BadRequestException('Invalid transaction id');
+    return this.transactionsService.findMovementCustomerHistory(id, req?.user?.role);
   }
 
   @Get(':id')

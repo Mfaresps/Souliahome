@@ -1,3 +1,7 @@
+/* Reserve the document scrollbar while the pickup workspace locks scrolling.
+   This keeps board width and responsive columns fixed as its dialog opens. */
+html:has(#page-pickup-orders.active) { scrollbar-gutter: stable; }
+
 #page-pickup-orders .pu-create-action {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   color: var(--text); background: transparent; border: 1px solid var(--border);

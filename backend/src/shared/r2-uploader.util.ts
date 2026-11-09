@@ -263,15 +263,17 @@ export interface R2Object {
 export async function r2ListObjects(
   cfg: R2Config,
   prefix: string,
-): Promise<{ ok: boolean; message: string; objects: R2Object[] }> {
+  maxPages = 20,
+): Promise<{ ok: boolean; message: string; objects: R2Object[]; truncated?: boolean }> {
   const objects: R2Object[] = [];
   let token = '';
+  let truncatedAtCap = false;
 
   try {
     const host = hostFor(cfg);
     const canonicalUri = `/${encodePath(cfg.bucket)}`;
 
-    for (let page = 0; page < 20; page++) {
+    for (let page = 0; page < maxPages; page++) {
       // المعاملات يجب أن تكون مرتبة أبجدياً في الاستعلام القانوني.
       const params: [string, string][] = [
         ['list-type', '2'],
@@ -319,9 +321,11 @@ export async function r2ListObjects(
       const next = /<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/.exec(res.body)?.[1];
       if (!truncated || !next) break;
       token = next;
+      // The loop is about to end with pages still left on R2: the list is partial.
+      if (page === maxPages - 1) truncatedAtCap = true;
     }
 
-    return { ok: true, message: 'تم', objects };
+    return { ok: true, message: 'تم', objects, truncated: truncatedAtCap };
   } catch (e: any) {
     return { ok: false, message: connectionError(e), objects: [] };
   }

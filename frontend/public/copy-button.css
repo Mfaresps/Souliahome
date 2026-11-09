@@ -1,0 +1,16 @@
+/* Shared icon feedback for copy controls. */
+[data-hcb] .hcb-icons { position: relative; display: inline-flex; width: 15px; height: 15px; align-items: center; justify-content: center; }
+[data-hcb] .hcb-icons svg { position: absolute; inset: 0; width: 15px; height: 15px; transition: opacity .15s ease, transform .15s ease; }
+[data-hcb] .hcb-copy-icon { opacity: 1; transform: scale(1); }
+[data-hcb] .hcb-check-icon { opacity: 0; transform: scale(.55); }
+[data-hcb][data-state="copied"] .hcb-copy-icon { opacity: 0; transform: scale(.55); }
+[data-hcb][data-state="copied"] .hcb-check-icon { opacity: 1; transform: scale(1); }
+[data-hcb][data-state="copied"] { color: var(--green, #059669); }
+[data-hcb][data-state="error"] { color: var(--red, #dc2626); }
+[data-hcb]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.hcb-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.hcb-hero { background: rgba(255,255,255,.2); border: 0; border-radius: 6px; padding: 3px 5px; cursor: pointer; display: inline-flex; align-items: center; color: #fff; opacity: .75; vertical-align: middle; margin-inline-start: 4px; }
+.hcb-hero:hover { opacity: 1; }
+.hcb-hero[data-state="copied"] { color: #bbf7d0; opacity: 1; }
+.hcb-hero[data-state="error"] { color: #fecaca; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { [data-hcb] .hcb-icons svg { transition: none; } }

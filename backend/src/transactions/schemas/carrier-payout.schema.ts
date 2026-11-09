@@ -34,6 +34,23 @@ export class CarrierPayout {
   @Prop({ default: '' })
   vaultEntryId: string;
 
+  /** Set only after an operator enters the amount shown on Bosta's transfer invoice. */
+  @Prop({ default: '' })
+  actualConfirmedAt: string;
+
+  /** Original estimate and the single vault entry used to correct a historical batch. */
+  @Prop({ default: 0 })
+  correctedFromAmount: number;
+
+  @Prop({ default: '' })
+  correctedAt: string;
+
+  @Prop({ default: '' })
+  correctionBookedDate: string;
+
+  @Prop({ default: '' })
+  correctionVaultEntryId: string;
+
   @Prop({ type: [String], default: [] })
   transactionIds: string[];
 

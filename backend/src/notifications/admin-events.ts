@@ -12,6 +12,7 @@ export const ACTIONS: Record<string, [string, string]> = {
   discount: ['طلب خصم', 'Discount request'], purchase: ['اعتماد مشتريات', 'Purchase approval'],
   'import-products': ['استيراد منتجات', 'Import products'], 'delete-product': ['حذف منتج', 'Delete product'],
   'delete-supplier': ['حذف مورد', 'Delete supplier'], 'supplier-pay': ['دفع لمورد', 'Supplier payment'],
+  'deposit-no-image': ['عربون بدون صورة تحويل', 'Deposit without transfer image'],
   'vault-access': ['فتح الخزنة', 'Open cash register'], 'add-product': ['إضافة منتج', 'Add product'],
   'export-excel': ['تصدير بيانات', 'Export data'], 'edit-tx': ['تعديل فاتورة', 'Modify invoice'],
   cancel: ['إلغاء طلب', 'Cancel order'], deposit: ['اعتماد عربون', 'Deposit approval'],

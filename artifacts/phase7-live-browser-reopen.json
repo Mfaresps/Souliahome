@@ -1,0 +1,7 @@
+﻿{
+  "mode": "read-only-post-boot-briefing",
+  "startupCount": 25,
+  "vaultRequestsOnReopen": 1,
+  "errors": [],
+  "blockedWrites": []
+}

@@ -57,44 +57,24 @@ describe('staff dashboard — row source is scoped by role', () => {
     workspace: any;
     period?: string;
   }) {
-    const body = extractFn(src, '_renderStaffDashboard');
-    // Keep only the row-source and bucketing section — everything after the
-    // delivered[] computation touches the DOM.
-    const from = body.indexOf('const allTx');
-    const to = body.indexOf("qs('#dash-tab-count-shipping')");
-    if (from < 0 || to < 0) {
-      throw new Error('The allTx/bucketing block moved — update this extractor.');
-    }
-    const block = body.slice(from, to);
-
-    const shipStatus = extractFn(src, '_dashShipStatus');
-    const issueSettled = extractFn(src, '_dashShipIssueSettled');
-    const isOpenIssue = extractFn(src, '_dashIsOpenIssue');
-    const periodMatches = extractFn(src, '_dashPeriodMatches');
-
-    const harness = `
-      ${shipStatus}
-      ${issueSettled}
-      ${isOpenIssue}
-      ${periodMatches}
-      const ISSUE_SHIP_KEYS = ['RETURNED','FAILED_ATTEMPT','DELIVERY_FAILED'];
-      const _DASH_PERIOD_DAYS = { '7d':7,'14d':14,'30d':30,'60d':60,'90d':90 };
-      const t = (k) => k;                       // labels are irrelevant to bucketing
-      const _dashDeliveredPeriod = ${JSON.stringify(opts.period || 'all')};
-      const adminMode = ${JSON.stringify(opts.adminMode)};
-      const transactions = ${JSON.stringify(opts.transactions)};
-      const _myWorkspace = ${JSON.stringify(opts.workspace)};
-      ${block}
-      return { allTx, salesTx, shipping, issues, delivered };
-    `;
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    return new Function(harness)() as {
-      allTx: any[];
-      salesTx: any[];
-      shipping: any[];
-      issues: any[];
-      delivered: any[];
-    };
+    const moduleSource = fs.readFileSync(path.resolve(__dirname, '../../../frontend/public/shipping-command-center.js'), 'utf8');
+    const status = require('../../../frontend/public/order-status.js');
+    const run = new Function('source', 'admin', 'status', `
+      const window = {}, currentLang = 'en';
+      const isAdmin = () => admin;
+      const SouliaOrderStatus = status;
+      const _orderStateMeta = tx => status.resolve(tx, 'transaction', 'en');
+      const ISSUE_SHIP_KEYS = ['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
+      ${extractFn(src, '_dashShipIssueSettled')}
+      ${extractFn(src, '_dashIsOpenIssue')}
+      ${moduleSource}
+      const salesTx = window.SouliaShipping.model(source).map(row => ({ ...row, status: row.meta }));
+      return { allTx: source, salesTx,
+        shipping: salesTx.filter(row => row.stage !== 'DELIVERED' && !row.issue),
+        issues: salesTx.filter(row => row.issue),
+        delivered: salesTx.filter(row => row.stage === 'DELIVERED') };
+    `);
+    return run(opts.transactions, opts.adminMode, status);
   }
 
   const mine = {
@@ -103,6 +83,7 @@ describe('staff dashboard — row source is scoped by role', () => {
     ref: '1001',
     client: 'Mine',
     cancelled: false,
+    bostaOrderId: 'shipment',
     bostaStatus: 'IN_TRANSIT',
     date: '2026-09-01',
   };
@@ -163,7 +144,7 @@ describe('staff dashboard — row source is scoped by role', () => {
 
   it('a delivered order lands in delivered, not in shipping', () => {
     const done = { ...mine, bostaStatus: 'DELIVERED', deliveredAt: '2026-09-02T10:00:00.000Z' };
-    const res = runRowSource({ adminMode: false, transactions: [done], workspace: null });
+    const res = runRowSource({ adminMode: true, transactions: [done], workspace: null });
     expect(res.delivered).toHaveLength(1);
     expect(res.shipping).toHaveLength(0);
   });
@@ -186,83 +167,14 @@ describe('staff dashboard — the panels are wired and admin-guarded', () => {
     }
   });
 
-  it('the company-level shipping figures are admin-only', () => {
-    /* Owner decision (8 Sep 2026): staff read the same shipment ROWS as the admin,
-       but not the company SCORECARD. «وصل بنجاح» (lifetime total) and «نسبة النجاح»
-       are performance metrics, not operational facts — showing them turns a work
-       queue into a report card. What stays for staff: how many are in transit and
-       how many have a problem, which is what they act on. */
-    /* ⚠ `extractFn` brace-matches from the first `{`, which for a destructured
-       parameter list is the parameter itself — so it returns only the signature.
-       Slice the source between this function and the next instead. */
-    const from = src.indexOf('function renderDashShipKpis(');
-    const to = src.indexOf('function renderDashAttention(', from);
-    expect(from).toBeGreaterThan(-1);
-    expect(to).toBeGreaterThan(from);
-    const fn = src.slice(from, to);
-    expect(fn).toContain('isAdmin()');
-    // Both the delivered tile and the success-rate block hang off the same gate,
-    // so one cannot be exposed while the other is hidden.
-    expect(fn).toContain('showTotals ?');
-    expect(fn).toContain('showTotals && rate !== null');
+  it('the command center uses shared transactions and preserves server-scoped personal panels', () => {
+    expect(extractFn(src, '_renderStaffDashboard')).toContain('SouliaShipping.render(transactions || [])');
+    expect(extractFn(src, '_renderStaffDashboard')).not.toContain('_myWorkspace.shipments');
+    expect(src).toContain('id="shipping-command-center"');
   });
 
-  it('staff get a delivery filter, capped at one week', () => {
-    /* Owner decision (8 Sep 2026): staff may filter deliveries over a SHORT range —
-       اليوم / أمس / آخر ٣ أيام / آخر ٧ أيام — but not the long ranges or «الكل»,
-       which answer "how is the company doing" rather than "what happened this week". */
-    const list = src.match(/const _DASH_STAFF_PERIODS = \[([^\]]*)\]/);
-    expect(list).not.toBeNull();
-    const allowed = (list as RegExpMatchArray)[1];
-    for (const p of ['today', 'yesterday', '3d', '7d']) expect(allowed).toContain(p);
-    // The unbounded option must NOT be reachable — it would void the cap entirely.
-    expect(allowed).not.toContain("'all'");
-    for (const p of ['14d', '30d', '60d', '90d']) expect(allowed).not.toContain(`'${p}'`);
-    expect(src).toContain("'3d': 3");                       // the new range actually resolves
-  });
-
-  it('the cap is enforced in the setter, not only by hiding buttons', () => {
-    /* ⚠ `_setDashDeliveredPeriod` is a global reachable from the console, so a hidden
-       button is presentation, not a limit. The guard must reject the value itself. */
-    const fn = extractFn(src, '_setDashDeliveredPeriod');
-    expect(fn).toMatch(/!isAdmin\(\)\s*&&\s*!_DASH_STAFF_PERIODS\.includes\(period\)/);
-    // And a staff member left on a now-forbidden range is moved to one they can see.
-    const sync = extractFn(src, '_syncShipAdminBits');
-    expect(sync).toContain('_DASH_STAFF_PERIODS.includes(_dashDeliveredPeriod)');
-    expect(sync).toContain("_dashDeliveredPeriod = '7d'");
-  });
-
-  it('the delivered TAB COUNT is hidden too — it is the same number as the KPI', () => {
-    /* ⚠ Hiding «وصل بنجاح» while the tab badge beside it still printed the same
-       figure (444) was cosmetic, not a real restriction. Both the badge and the
-       "N orders" line under it are gated, and the tab itself stays clickable: a
-       staff member still needs to open a delivered shipment a customer asks about. */
-    const from = src.indexOf("qs('#dash-tab-count-shipping')");
-    const to = src.indexOf('const byTab =', from);
-    expect(from).toBeGreaterThan(-1);
-    expect(to).toBeGreaterThan(from);
-    const block = src.slice(from, to);
-    expect(block).toContain("qs('#dash-tab-count-delivered')");
-    /* ⚠ Assert the GATE, not merely that `isAdmin()` appears somewhere in the block —
-       it appears for the total line too, so a bare `toContain('isAdmin()')` still
-       passed when the badge was reverted to printing the number unconditionally. */
-    expect(block).toContain("showTotals ? String(delivered.length) : ''");
-    expect(block).toMatch(/delCountEl\.style\.display\s*=\s*showTotals/);
-    // The per-tab total line must also skip the delivered tab for staff.
-    expect(block).toContain("_dashShipTab === 'delivered'");
-  });
-
-  it('the period control stays visible for staff — only its long ranges are removed', () => {
-    /* Superseded the earlier rule that hid the control outright: staff DO get a filter,
-       just a short one. What is pinned here is that the trimming happens per BUTTON,
-       so the admin keeps the full set from the very same markup. */
-    const fn = extractFn(src, '_syncShipAdminBits');
-    expect(fn).toContain("qs('#dash-ship-period')");
-    expect(fn).toContain("querySelectorAll('.ds-period-btn')");
-    expect(fn).toContain('_DASH_STAFF_PERIODS.includes(b.dataset.period)');
-    // The container itself is no longer blanket-hidden.
-    expect(fn).not.toMatch(/per\.style\.display\s*=\s*adm\s*\?/);
-  });
+  // Delivered totals, URL tampering and staff controls are exercised against
+  // the actual DOM by browser/shipping-command-center.cjs.
 
   it('loadMyWorkspace records failure instead of turning it into an empty state', () => {
     // LOAD_FAIL rule: "could not load" must never render as "you have no work".

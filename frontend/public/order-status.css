@@ -19,6 +19,8 @@
 .order-state[data-tone=cancelled] .order-state-dot::after{content:'';position:absolute;top:50%;left:0;right:0;height:1.5px;background:currentColor;transform:translateY(-50%) rotate(45deg)}
 .order-state-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .order-state-carrier{flex:0 1 auto;min-width:0;padding-inline-start:5px;border-inline-start:1px solid color-mix(in srgb,currentColor 24%,transparent);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
+.order-delay-badge{display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-start:5px;padding:1px 6px;border:1px solid #f5d48a;border-radius:8px;background:#fff8e8;color:#9a5700;font-family:inherit;font-size:10px;font-weight:500;line-height:18px;white-space:nowrap;vertical-align:middle}
+body.dark-mode .order-delay-badge{border-color:#7c5117;background:#3b2b15;color:#ffd58a}
 body.dark-mode .order-state{background:var(--state-fill);color:var(--state-ink);border-color:transparent}
 .inv-order-state{display:flex;justify-content:center;padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
 .sp-card-order-state{padding:0 12px 9px}.sp-ref-line>.order-state{margin-block:3px}.sp-ref-line{flex-wrap:wrap}

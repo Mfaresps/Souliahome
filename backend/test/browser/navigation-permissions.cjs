@@ -38,6 +38,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       onPageEnter = page => entries.push(page);
       api = async url => { requests.push(url); return []; };
       transactions = [{ _id: 'aaaaaaaaaaaaaaaaaaaaaaaa', ref: '123', type: 'مبيعات', items: [] }];
+      _transactionSummariesComplete = true; // fixture already supplies the list
       const denied = [];
       for (const role of ['staff', 'viewer']) {
         currentUser = { _id: 'test-user', role, perms: ['shopify-orders'] };

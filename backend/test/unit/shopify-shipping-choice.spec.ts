@@ -17,9 +17,9 @@ function ui(order: any, api: any = jest.fn().mockResolvedValue({shipWithoutDepos
     const _spDepositOf = o => ({deposit:o.depositAmount || 0,pending:o.pending || [],byMethod:o.depositAmount?{Instapay:o.depositAmount}:{}});
     const hasPerm = () => true, esc = v => v, t = v => v;
     const _spReceiptJs = JSON.stringify, _spOrderById = () => order;
-    const _spRefreshOrderRow = () => {}, toast = () => {};
+    const _spRefreshOrderRow = () => {}, _spWarnDepositAction = () => false, toast = () => {};
     const currentAuditData=null,renderAuditTable=()=>{};
-    ${['_spHasDepositRecorded','_spCanAddDeposit','_spCanChooseShipping','_spShipsWithoutDeposit','_spShippingSwitchHtml','_spDepositNeedsFollowup','_spDepIcon','_spVaultAmountHtml','_spMobileDepositActionHtml','_spDepositCellHtml','_spDepositAddButtonHtml','_spDepositCardClass','_spMobileDepositSummaryHtml'].map(shipped).join('\n')}
+    ${['_spHasDepositRecorded','_spCanAddDeposit','_spCanChooseShipping','_spShipsWithoutDeposit','_spShippingSwitchHtml','_spDepositNeedsFollowup','_spDepIcon','_spVaultAmountHtml','_spMobileDepositActionHtml','_spDepositCellHtml','_spDepositFabHtml','_spDepositCardClass','_spMobileDepositSummaryHtml'].map(shipped).join('\n')}
     const fmtJ=String,payMethodIcon=()=>'',_payMethodLabel=String;
     ${source.slice(source.indexOf('const SP_FILTERS = ['),source.indexOf('\n];',source.indexOf('const SP_FILTERS = ['))+3)}
     async ${shipped('_spToggleShipWithoutDeposit')}
@@ -83,24 +83,25 @@ describe('Shipping without deposit — shipped UI', () => {
     expect(order.shipWithoutDeposit).toBe(previous);
     expect(api).not.toHaveBeenCalled();
   });
-  it('keeps the compact plus disabled when on and enables it when off on both layouts', async () => {
+  it('shows one action trigger when off and the reversible switch when on', async () => {
     const order=pending({shipWithoutDeposit:true});
     const env=ui(order,jest.fn().mockResolvedValue({shipWithoutDeposit:false}));
-    expect(env.cell(order)).toContain('class="spdep-quick-add" disabled');
-    expect(env.mobile(order)).toContain('class="spdep-quick-add" disabled');
+    expect(env.cell(order)).toContain('role="switch"');
+    expect(env.mobile(order)).toContain('role="switch"');
+    expect(env.cell(order)).not.toContain('spdep-fab-trigger');
     expect(env.cell(order)).not.toContain('spdep-no-deposit');
     await env.toggle('o1');
-    expect(env.cell(order)).toContain('spdep-quick-add');
-    expect(env.cell(order)).not.toContain('class="spdep-quick-add" disabled');
-    expect(env.mobile(order)).toContain('spdep-quick-add');
-    expect(env.mobile(order)).not.toContain('class="spdep-quick-add" disabled');
+    expect(env.cell(order)).toContain('spdep-fab-trigger');
+    expect(env.mobile(order)).toContain('spdep-fab-trigger');
+    expect(env.cell(order)).not.toContain('role="switch"');
+    expect(env.mobile(order)).not.toContain('role="switch"');
   });
   it.each([{depositAmount:100},{pending:[{amount:100}]}])('hides switch until receipts are removed: %j', extra => {
     const order:any=pending(extra),env=ui(order);
     expect(env.html(order)).toBe('');
     expect(env.cell(order)).not.toContain('role="switch"');
     order.depositAmount=0;order.pending=[];
-    expect(env.cell(order)).toContain('role="switch"');
+    expect(env.cell(order)).toContain('spdep-fab-trigger');
   });
   it('includes the choice in the Shopify dropdown filter and excludes deposits and cancellations', () => {
     const env=ui(pending());
@@ -110,10 +111,11 @@ describe('Shipping without deposit — shipped UI', () => {
     expect(filter.test(pending({shipWithoutDeposit:true,cancelled:true}))).toBe(false);
     expect(filter.test(pending({shipWithoutDeposit:true,depositAmount:100}))).toBe(false);
   });
-  it.each([true,false])('renders only one switch per editable mobile card: %s', enabled => {
+  it.each([true,false])('renders one payment control per editable mobile card: %s', enabled => {
     const order=pending({shipWithoutDeposit:enabled}),env=ui(order);
     const html=env.summary(order)+env.mobile(order);
-    expect((html.match(/role="switch"/g)||[]).length).toBe(1);
+    expect((html.match(/role="switch"|class="spdep-fab-trigger"/g)||[]).length).toBe(1);
+    expect(html.includes('role="switch"')).toBe(enabled);
     expect(html).not.toContain('spdep-shipping-status');
   });
   it('uses the paid card color for shipping without deposit and restores amber when off', () => {

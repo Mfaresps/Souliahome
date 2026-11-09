@@ -1,0 +1,381 @@
+﻿{
+  "bytes": 5056218,
+  "statements": 4021,
+  "top": [
+    {
+      "names": [
+        "TRANSLATIONS"
+      ],
+      "kind": "FirstStatement",
+      "bytes": 509161,
+      "line": 1498
+    },
+    {
+      "names": [
+        "renderInvoiceViewPage"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 74048,
+      "line": 38237
+    },
+    {
+      "names": [
+        "buildOrderTimelineSection"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 40970,
+      "line": 39277
+    },
+    {
+      "names": [
+        "EXPORT_REGISTRY"
+      ],
+      "kind": "FirstStatement",
+      "bytes": 35207,
+      "line": 68095
+    },
+    {
+      "names": [
+        "_buildMentionCardHtml"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 30499,
+      "line": 13248
+    },
+    {
+      "names": [
+        "showInvoiceDetail"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 29575,
+      "line": 37411
+    },
+    {
+      "names": [
+        "openFxDrawer"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 28798,
+      "line": 25569
+    },
+    {
+      "names": [
+        "renderFollowUps"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 28065,
+      "line": 70911
+    },
+    {
+      "names": [
+        "renderMovementsLegacy"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 27206,
+      "line": 27633
+    },
+    {
+      "names": [],
+      "kind": "ExpressionStatement",
+      "bytes": 25543,
+      "line": 56510
+    },
+    {
+      "names": [
+        "renderTxFields"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 23293,
+      "line": 18996
+    },
+    {
+      "names": [
+        "saveEditMovement"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 21803,
+      "line": 30671
+    },
+    {
+      "names": [
+        "connectSocket"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 21667,
+      "line": 10722
+    },
+    {
+      "names": [
+        "openEditMovement"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 18895,
+      "line": 29668
+    },
+    {
+      "names": [
+        "openProductModal"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 18664,
+      "line": 41984
+    },
+    {
+      "names": [
+        "renderMovementTxRow"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 17751,
+      "line": 27148
+    },
+    {
+      "names": [],
+      "kind": "ExpressionStatement",
+      "bytes": 17458,
+      "line": 11671
+    },
+    {
+      "names": [
+        "_pwRenderWork"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 17270,
+      "line": 76205
+    },
+    {
+      "names": [
+        "renderAdminBriefing"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 15905,
+      "line": 16089
+    },
+    {
+      "names": [
+        "calcTxSummary"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 15630,
+      "line": 21705
+    },
+    {
+      "names": [
+        "buildInvoiceHtml"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 15546,
+      "line": 36887
+    },
+    {
+      "names": [
+        "applyLang"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 15291,
+      "line": 7320
+    },
+    {
+      "names": [
+        "openConvertPoModal"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 13824,
+      "line": 49132
+    },
+    {
+      "names": [
+        "openCollectMovement"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 13488,
+      "line": 31373
+    },
+    {
+      "names": [
+        "recalcEditTx"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 13012,
+      "line": 30541
+    },
+    {
+      "names": [
+        "renderApprovals"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 12938,
+      "line": 51876
+    },
+    {
+      "names": [
+        "renderShippingReport"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 12820,
+      "line": 53168
+    },
+    {
+      "names": [],
+      "kind": "ExpressionStatement",
+      "bytes": 12366,
+      "line": 11325
+    },
+    {
+      "names": [
+        "renderExpenses"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11710,
+      "line": 50039
+    },
+    {
+      "names": [
+        "_invoiceSharedCss"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11558,
+      "line": 36465
+    },
+    {
+      "names": [
+        "_buildInvoicePageHTML"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11533,
+      "line": 21926
+    },
+    {
+      "names": [
+        "renderProducts"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11419,
+      "line": 40909
+    },
+    {
+      "names": [
+        "openAdminImportConfirm"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11402,
+      "line": 59091
+    },
+    {
+      "names": [
+        "ICONS"
+      ],
+      "kind": "FirstStatement",
+      "bytes": 11377,
+      "line": 7182
+    },
+    {
+      "names": [
+        "renderPickupRuns"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11321,
+      "line": 78513
+    },
+    {
+      "names": [
+        "renderInventory"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11270,
+      "line": 26196
+    },
+    {
+      "names": [
+        "_buildInvoicePreviewHTML"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11161,
+      "line": 22104
+    },
+    {
+      "names": [
+        "renderProductCard"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11108,
+      "line": 73011
+    },
+    {
+      "names": [
+        "showReferenceDetail"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 11032,
+      "line": 40496
+    },
+    {
+      "names": [
+        "showEditConfirmDialog"
+      ],
+      "kind": "FunctionDeclaration",
+      "bytes": 10198,
+      "line": 29301
+    }
+  ],
+  "buckets": [
+    {
+      "kb": "0-1",
+      "statements": 3039,
+      "bytes": 914610
+    },
+    {
+      "kb": "1-5",
+      "statements": 843,
+      "bytes": 1777618
+    },
+    {
+      "kb": "5-10",
+      "statements": 100,
+      "bytes": 727094
+    },
+    {
+      "kb": "10-25",
+      "statements": 30,
+      "bytes": 448055
+    },
+    {
+      "kb": "25-50",
+      "statements": 7,
+      "bytes": 220320
+    },
+    {
+      "kb": "50-100",
+      "statements": 1,
+      "bytes": 74048
+    },
+    {
+      "kb": "100-250",
+      "statements": 0,
+      "bytes": 0
+    },
+    {
+      "kb": "250-500",
+      "statements": 1,
+      "bytes": 509161
+    },
+    {
+      "kb": "500-1000",
+      "statements": 0,
+      "bytes": 0
+    },
+    {
+      "kb": "1000-Infinity",
+      "statements": 0,
+      "bytes": 0
+    }
+  ],
+  "duplicates": [
+    {
+      "name": "stripHtml",
+      "lines": [
+        35701,
+        51592
+      ]
+    }
+  ]
+}

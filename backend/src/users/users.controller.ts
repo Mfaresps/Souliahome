@@ -85,7 +85,10 @@ export class UsersController {
 
   @Roles('admin')
   @Post()
-  async create(@Body() dto: CreateUserDto) {
+  async create(@Body() dto: CreateUserDto, @Req() req: {user:{username:string}}) {
+    if (dto.role === 'admin' && req.user?.username !== 'admin') {
+      throw new ForbiddenException('Only the Super Admin can create administrators');
+    }
     const user = await this.usersService.createUser(dto);
     return this.usersService.findAllForAdmin().then((users) =>
       users.find((u) => u._id.toString() === user._id.toString()),
@@ -107,6 +110,9 @@ export class UsersController {
     // Prevent demoting the super admin
     if (target && target.username === 'admin' && dto.role && dto.role !== 'admin') {
       throw new ForbiddenException('لا يمكن تغيير دور السوبر أدمن');
+    }
+    if (dto.role === 'admin' && req.user?.username !== 'admin' && target?.role !== 'admin') {
+      throw new ForbiddenException('Only the Super Admin can grant administrator access');
     }
     const user = await this.usersService.updateUser(id, dto);
     if (dto.avatar !== undefined || dto.name !== undefined) {

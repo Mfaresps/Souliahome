@@ -191,6 +191,13 @@ export class Settings {
   @Prop({ default: false })
   purchaseOtpEnabled: boolean;
 
+  /**
+   * «إضافة عربون بدون صورة تحويل»: staff holding `shopify-deposit-no-image-otp` need a manager
+   * OTP. When true, that OTP is skipped. Admins and `shopify-deposit-no-image` never need one.
+   */
+  @Prop({ type: Boolean, default: false })
+  depositNoImageSkipOtp: boolean;
+
   @Prop({ default: true })
   printIncludePolicy: boolean;
 

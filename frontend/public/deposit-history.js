@@ -12,6 +12,8 @@ const _depLogLabels = {
   unavailable:['الصورة غير متاحة','Image unavailable'], manual:['عملية بيع يدوية','Manual sale'], withdrawn:['مسحوب','Withdrawn'],
   senderName:['اسم المحوّل كما في الإيصال (اختياري)','Sender name on receipt (optional)'], senderHandle:['عنوان المحوّل في InstaPay (اختياري)','Sender InstaPay address (optional)'],
   senderPhone:['رقم هاتف المرسل (اختياري)','Sender phone number (optional)'], details:['تفاصيل التحويل','Transfer details'], transfer:['التحويل','Transfer'],
+  senderBank:['اسم البنك الظاهر في الإيصال (اختياري)','Bank shown on receipt (optional)'],
+  transferDateText:['تاريخ العملية في الإيصال','Transaction date on receipt'],
   reference:['مرجع التحويل','Transfer reference'], identifier:['معرّف السجل','Record ID'], destination:['الخزنة المستقبلة','Receiving vault'],
   viewDetails:['عرض التفاصيل','View details'], close:['إغلاق','Close'], currency:['جنيه مصري','EGP'], ledger:['رقم حركة الخزنة','Vault transaction number'],
   reviewDate:['تاريخ المراجعة','Reviewed on'],
@@ -123,12 +125,30 @@ function _depLogCardsHtml(rows, linkOf){
   return `<div class="dep-log-cards">${out}</div>`;
 }
 function _depLogSenderHtml(r) {
-  return `<div class="dep-log-sender"><span class="dep-log-person-icon" aria-hidden="true">${esc((r.senderName||r.senderHandle||'').slice(0,1).toUpperCase()||'↗')}</span><div>${esc(r.senderName||'—')}${r.senderPhone?`<small><bdi class="dep-log-phone">${esc(r.senderPhone)}</bdi></small>`:''}${r.senderHandle?`<small><bdi>${esc(r.senderHandle)}</bdi></small>`:''}</div></div>`;
+  const logoOnly=/^[A-Z]{3,4}$/.test(r.senderName||'')&&(!r.senderBank||r.senderBank===r.senderName);
+  const senderName=logoOnly?'':r.senderName||'';
+  const senderBank=r.senderBank||(logoOnly?r.senderName:'');
+  return `<div class="dep-log-sender"><span class="dep-log-person-icon" aria-hidden="true">${esc((senderName||r.senderHandle||'').slice(0,1).toUpperCase()||'↗')}</span><div>${esc(senderName||'—')}${r.senderPhone?`<small><bdi class="dep-log-phone">${esc(r.senderPhone)}</bdi></small>`:''}${r.senderHandle?`<small><bdi>${esc(r.senderHandle)}</bdi></small>`:''}${senderBank?`<small>${esc(_depLogText('senderBank'))}: <bdi>${esc(senderBank)}</bdi></small>`:''}</div></div>`;
+}
+function _depLogReceiptSenderName(receipt) {
+  const name=receipt.senderName??receipt.ocr?.senderName??'';
+  const bank=receipt.senderBank??receipt.ocr?.senderBank??'';
+  return /^[A-Z]{3,4}$/.test(name)&&(!bank||bank===name)?'':name;
+}
+function _depLogReceiptBank(receipt) {
+  const name=receipt.senderName??receipt.ocr?.senderName??'';
+  return receipt.senderBank??receipt.ocr?.senderBank??(/^[A-Z]{3,4}$/.test(name)?name:'');
 }
 function _depLogReceiptSenderHtml(receipt) {
-  const r={senderName:receipt.senderName??receipt.ocr?.senderName??'',senderHandle:receipt.senderHandle??receipt.ocr?.senderHandle??'',senderPhone:receipt.senderPhone??receipt.ocr?.senderPhone??''};
-  if(!r.senderName&&!r.senderHandle&&!r.senderPhone)return '';
+  const r={senderName:_depLogReceiptSenderName(receipt),senderBank:_depLogReceiptBank(receipt),senderHandle:receipt.senderHandle??receipt.ocr?.senderHandle??'',senderPhone:receipt.senderPhone??receipt.ocr?.senderPhone??''};
+  if(!r.senderName&&!r.senderBank&&!r.senderHandle&&!r.senderPhone)return '';
   return `<div class="spdep-sender-block"><small>${esc(_depLogText('person'))}</small>${_depLogSenderHtml(r)}</div>`;
+}
+function _depLogReceiptTransferMetaHtml(receipt) {
+  const reference=receipt.transferReference??receipt.ocr?.reference??'';
+  const date=receipt.transferDateText??receipt.ocr?.dateText??'';
+  if(!reference&&!date)return '';
+  return `<div class="spdep-sender-block">${date?`<small>${esc(_depLogText('transferDateText'))}: <bdi>${esc(date)}</bdi></small>`:''}${reference?`<small>${esc(_depLogText('reference'))}: <bdi>${esc(reference)}</bdi></small>`:''}</div>`;
 }
 function _depLogScreenTimeHtml(receipt, compact=false) {
   const value=receipt.screenshotTime??receipt.ocr?.screenshotTime;
@@ -140,11 +160,11 @@ function _depLogOpenDetails(id) {
   const L=k=>esc(_depLogText(k));
   const field=(label,value)=>`<div><dt>${L(label)}</dt><dd>${esc(value||'—')}</dd></div>`;
   openModal(`<section class="dep-transfer"><header class="dep-transfer-header"><div><small>${L('details')}</small><h3>${esc(_payMethodLabel(r.method))}</h3></div>${_depLogStatusHtml(r)}</header>
-    <div class="dep-transfer-image" data-receipt-id="${esc(r.id)}">${r.imageDeleted?`<small>${L('unavailable')}</small>`:`<span role="status">${L('loading')}</span>`}</div>
+    <div class="dep-transfer-image" data-receipt-id="${esc(r.id)}">${r.noImage?`<small>${esc(currentLang==='en'?'Recorded without a transfer image':'مسجّل بدون صورة تحويل')}</small>`:r.imageDeleted?`<small>${L('unavailable')}</small>`:`<span role="status">${L('loading')}</span>`}</div>
     <div class="dep-transfer-amount"><bdi>${esc(fmtN(r.amount))}</bdi><span>${L('currency')}</span></div>
     <div class="dep-transfer-route"><div><small>${L('person')}</small>${_depLogSenderHtml(r)}</div><span class="dep-transfer-arrow" aria-hidden="true">↓</span><div><small>${L('destination')}</small><strong>${payMethodIcon(r.method,24)}${esc(_payMethodLabel(r.method))}</strong></div></div>
     ${r.screenshotTime?`<div class="dep-screen-time-panel"><small>${L('screenTime')}</small><bdi>${esc(r.screenshotTime)} ≈</bdi><small>${L(r.screenshotTimeSource==='reviewed'?'reviewedClock':r.screenshotTimeSource==='embedded-status-bar'?'embeddedClock':'outerClock')}</small><p>${L('screenTimeHint')}</p></div>`:''}
-    <dl class="dep-transfer-fields">${field('reference',r.reference)}${field('identifier',r.id)}${field('order',r.orderNumber?'#'+String(r.orderNumber).replace(/^#+/,''):_depLogText('manual'))}${field('date',_depLogDate(r.submittedAt))}${field('employee',r.submittedBy)}${field('approver',r.reviewedBy)}${r.reviewedAt?field('reviewDate',_depLogDate(r.reviewedAt)):''}${r.vaultTxNo?field('ledger',r.vaultTxNo):''}</dl>
+    <dl class="dep-transfer-fields">${field('reference',r.reference)}${field('transferDateText',r.transferDateText)}${field('senderBank',r.senderBank)}${field('identifier',r.id)}${field('order',r.orderNumber?'#'+String(r.orderNumber).replace(/^#+/,''):_depLogText('manual'))}${field('date',_depLogDate(r.submittedAt))}${field('employee',r.submittedBy)}${field('approver',r.reviewedBy)}${r.reviewedAt?field('reviewDate',_depLogDate(r.reviewedAt)):''}${r.vaultTxNo?field('ledger',r.vaultTxNo):''}</dl>
     <footer class="dep-transfer-footer"><button class="btn btn-primary" onclick="_depLogCloseDetails()">${L('close')}</button></footer></section>`,'max-width:560px');
   _depLogReleaseImage();
   if(!r.imageDeleted)_depLogLoadImage(r.id);

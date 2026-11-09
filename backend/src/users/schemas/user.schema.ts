@@ -23,6 +23,9 @@ export class User {
   @Prop()
   phone: string;
 
+  @Prop({ default: '' })
+  email: string;
+
   @Prop()
   avatar: string;
 
@@ -31,6 +34,12 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   perms: string[];
+
+  @Prop({ type: String, default: null, index: true })
+  roleId: string | null;
+
+  @Prop({ type: Date, default: null })
+  roleAssignedAt: Date | null;
 
   @Prop({ default: true })
   isActive: boolean;

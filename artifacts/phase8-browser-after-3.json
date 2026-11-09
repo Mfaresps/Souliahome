@@ -1,0 +1,283 @@
+﻿{
+  "mode": "read-only-live-browser",
+  "startup": {
+    "dcl": 873.9000000059605,
+    "fcp": 844,
+    "lcp": 1552,
+    "interactive": 1675.5999999940395,
+    "tbt": 145,
+    "domNodes": 11508,
+    "coreLoaded": true,
+    "vaultLoaded": false,
+    "scriptMs": 158,
+    "taskMs": 1486,
+    "longTaskOver50Ms": 177
+  },
+  "dashboard": {
+    "shippingKpis": [
+      "967",
+      "11",
+      "2"
+    ],
+    "followupCount": 538,
+    "unseenFollowups": 11,
+    "transactionsCount": 1007,
+    "activeTransactionCount": 1027,
+    "followupBadgeCount": 0,
+    "notificationHash": "bacc855875176b35833257386a8931ace586fb2fee07365cc88d252419d99cbb",
+    "notificationCount": 308
+  },
+  "startupCount": 24,
+  "startupApiBytes": 1541148,
+  "startupApi": [
+    {
+      "path": "/api/branding",
+      "at": 1367.3753,
+      "bytes": 65,
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "at": 1647.2705,
+      "bytes": 533,
+      "status": 200
+    },
+    {
+      "path": "/api/warehouses",
+      "at": 1666.0138,
+      "bytes": 118,
+      "status": 200
+    },
+    {
+      "path": "/api/transactions/dashboard-overview",
+      "at": 1824.9426,
+      "bytes": 695816,
+      "status": 200
+    },
+    {
+      "path": "/api/settings",
+      "at": 1825.0787,
+      "bytes": 6109,
+      "status": 200
+    },
+    {
+      "path": "/api/drafts",
+      "at": 1825.4061,
+      "bytes": 6523,
+      "status": 200
+    },
+    {
+      "path": "/api/products",
+      "at": 2057.8715,
+      "bytes": 153379,
+      "status": 200
+    },
+    {
+      "path": "/api/expenses",
+      "at": 2058.095,
+      "bytes": 16714,
+      "status": 200
+    },
+    {
+      "path": "/api/users",
+      "at": 2058.2668,
+      "bytes": 10986,
+      "status": 200
+    },
+    {
+      "path": "/api/tags",
+      "at": 2058.5054,
+      "bytes": 2869,
+      "status": 200
+    },
+    {
+      "path": "/api/returns",
+      "at": 2058.7267,
+      "bytes": 60880,
+      "status": 200
+    },
+    {
+      "path": "/api/complaints",
+      "at": 2058.9587,
+      "bytes": 21009,
+      "status": 200
+    },
+    {
+      "path": "/api/purchase-orders",
+      "at": 2059.1642,
+      "bytes": 36856,
+      "status": 200
+    },
+    {
+      "path": "/api/supplier-returns",
+      "at": 2059.3875,
+      "bytes": 15027,
+      "status": 200
+    },
+    {
+      "path": "/api/transactions/inventory",
+      "at": 2059.6054,
+      "bytes": 47047,
+      "status": 200
+    },
+    {
+      "path": "/api/notifications/read-state",
+      "at": 2059.7449,
+      "bytes": 51929,
+      "status": 200
+    },
+    {
+      "path": "/api/notifications/history",
+      "at": 2059.8853,
+      "bytes": 32799,
+      "status": 200
+    },
+    {
+      "path": "/api/mentions",
+      "at": 2060.0234,
+      "bytes": 96457,
+      "status": 200
+    },
+    {
+      "path": "/api/auth/users-status",
+      "at": 2061.3797,
+      "bytes": 1399,
+      "status": 200
+    },
+    {
+      "path": "/api/transactions/sales-overview?year=2026&month=11",
+      "at": 2062.1549,
+      "bytes": 2145,
+      "status": 200
+    },
+    {
+      "path": "/api/employee-performance/duty-board",
+      "at": 2062.3016,
+      "bytes": 403,
+      "status": 200
+    },
+    {
+      "path": "/api/followups/dashboard-summary",
+      "at": 2062.5002,
+      "bytes": 239221,
+      "status": 200
+    },
+    {
+      "path": "/api/security-audit/locked-users",
+      "at": 2765.6046,
+      "bytes": 1736,
+      "status": 200
+    },
+    {
+      "path": "/api/security-audit/logs",
+      "at": 2766.1148,
+      "bytes": 41128,
+      "status": 200
+    }
+  ],
+  "followups": {
+    "ms": 322,
+    "rows": 40,
+    "records": 538,
+    "api": [
+      "/api/followups",
+      "/api/complaints",
+      "/api/announcements/mine"
+    ]
+  },
+  "invoice": {
+    "linked": true,
+    "ms": 203,
+    "hydrated": true
+  },
+  "loadedScripts": [
+    "/config.js",
+    "/branding.js",
+    "/order-status.js",
+    "/comment-reactions.js",
+    "/deposit-decision.js",
+    "/invoice-unit-identities.js",
+    "/cancellations-analytics.js",
+    "/customer-piece-return.js",
+    "/after-sales.js",
+    "/complaint-flow.js",
+    "/animated-number.js",
+    "/failed-delivery-identities.js",
+    "/copy-button.js",
+    "/comment-inline-edit.js",
+    "/shopify-deposit-fab.js",
+    "/navigation-shell.js",
+    "/admin-team-home.js",
+    "/sales-overview.js",
+    "/awb-preview.js",
+    "/bosta-pickup.js",
+    "/pickup-daily-shipping.js",
+    "/pickup-ready-return.js",
+    "/notification-settings.js",
+    "/roles-permissions.js",
+    "/push-navigation.js",
+    "/announcements.js",
+    "/notification-feed.js",
+    "/order-audit-financials.js",
+    "/followup-reminders.js",
+    "/order-audit-insights.js",
+    "/order-audit-marketing.js",
+    "/order-audit-periods.js",
+    "/notification-history.js",
+    "/shopify-sync.js",
+    "/supplier-return-pieces.js",
+    "/barcode-input.js",
+    "/inventory-errors.js",
+    "/inventory-scanner.js",
+    "/global-search-scanner.js",
+    "/warehouses.js",
+    "/warehouse-layout.js",
+    "/preprinted-labels.js",
+    "/inventory-units.js",
+    "/inventory-packs.js",
+    "/supplier-labels.js",
+    "/legacy-stock-labels.js",
+    "/product-stocktake.js",
+    "/purchase-receiving.js",
+    "/sales-scanner.js",
+    "/shopify-compact-header.js",
+    "/employee-followup-session.js",
+    "/employee-followup-tour.js",
+    "/designme/date-range-picker/soulia-range.js",
+    "/be-button-motion.js",
+    "/loading-system.js",
+    "/order-status-preview.js",
+    "/app-core.js",
+    "/vendor/socket.io-4.7.5.min.js",
+    "/deposit-history.js",
+    "/shopify-edit-approvals.js",
+    "/shopify-kpis.js",
+    "/shopify-orders-route.js",
+    "/followups-view-route.js",
+    "/invoice-views-route.js"
+  ],
+  "followupInitiators": [
+    {
+      "at": 248653.805004,
+      "stack": [
+        "_apiRequest:9712",
+        "api:9675",
+        "_readDashboardFollowUps:17932",
+        "_ensureDashFollowUps:17952",
+        "_renderStaffDashboard:17978"
+      ]
+    },
+    {
+      "at": 248654.877394,
+      "stack": [
+        "_apiRequest:9712",
+        "api:9675",
+        "_readFollowUps:17918",
+        "loadFollowUps:69001",
+        "switchMainTab:67371"
+      ]
+    }
+  ],
+  "errors": [],
+  "blockedWrites": []
+}

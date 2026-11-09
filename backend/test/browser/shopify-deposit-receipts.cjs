@@ -88,6 +88,15 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
           return reply([]);
         }
         if(url.pathname==='/deposit-history.js')return req.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/deposit-history.js'))});
+        if(url.pathname==='/app-core.js')return req.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/app-core.js'))});
+        if(url.pathname==='/designme/date-range-picker/soulia-range.js')return req.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/designme/date-range-picker/soulia-range.js'))});
+        if(['/app-core.css','/deposit-entry-compact.css'].includes(url.pathname))return req.respond({status:200,contentType:'text/css',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public',url.pathname.slice(1)))});
+        if(['/order-status.js','/shopify-deposit-fab.js','/shopify-edit-approvals.js'].includes(url.pathname))return req.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public',url.pathname.slice(1)))});
+        if(url.pathname==='/shopify-deposit-fab.css')return req.respond({status:200,contentType:'text/css',body:fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/shopify-deposit-fab.css'))});
+        if(url.pathname.endsWith('.css')) {
+          const asset=path.resolve(__dirname,'../../../frontend/public',url.pathname.slice(1));
+          if(fs.existsSync(asset))return req.respond({status:200,contentType:'text/css',body:fs.readFileSync(asset)});
+        }
         // No request escapes to a real site, including CDNs, Shopify, or payment providers.
         if(req.resourceType()==='script')return req.respond({status:200,contentType:'text/javascript',body:'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});'});
         if(req.resourceType()==='image') {
@@ -111,6 +120,37 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       qs('#app').style.display='';
       qs('#splash-screen')?.remove();
     },orders);
+    if(process.argv.includes('--approve-only')) {
+      const receipt={id:'receipt-1',status:'معلق',amount:500,method:'Instapay',imageDeleted:false,
+        submittedBy:'Tester',submittedById:'staff-1',submittedAt:new Date().toISOString(),
+        warnings:[],ocr:{amount:500,method:'Instapay',confident:true}};
+      order.depositReceipts=[receipt];
+      await page.evaluate(data=>{
+        currentUser={_id:'admin-1',name:'Admin',username:'admin',role:'admin',perms:['shopify-orders']};
+        _shopifyOrders[0].depositReceipts=[data];
+        _spServerEnabled=false;
+        window.__phase5={};
+        const original=window.api;
+        window.api=function(path,options){
+          if(path.endsWith('/deposit-receipts/receipt-1/approve'))window.__phase5.requestAt=performance.now();
+          return original(path,options);
+        };
+        _spReceiptAction('order-1','receipt-1','approve');
+        const button=qs('#spdep-decide');
+        window.__phase5.clickAt=performance.now();
+        button.click();button.click();
+      },receipt);
+      await page.waitForFunction(()=>_shopifyOrders[0].depositReceipts[0].status==='معتمد');
+      const observed=seen.filter(r=>r.path.endsWith('/deposit-receipts/receipt-1/approve'));
+      check(observed.length===1,'double click sends exactly one approval request');
+      const marks=await page.evaluate(()=>window.__phase5);
+      check(Number.isFinite(marks.requestAt-marks.clickAt),'click to request initiation was measured');
+      check(await page.evaluate(()=>_shopifyOrders[0].depositReceipts[0].vaultTxNo==='SAL-001'),'approved status updates the UI');
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,clickToRequestMs:+(marks.requestAt-marks.clickAt).toFixed(2),
+        approvalRequests:observed.length,network:'fully intercepted; no financial writes'},null,2));
+      return;
+    }
     if(process.argv.includes('--notice-only')) {
       for(const language of ['en','ar']) {
         check(await page.evaluate(language=>{
@@ -131,6 +171,113 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
       check(errors.length===0,'no browser errors: '+errors.join('; '));
       console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'receipt notices'},null,2));
       return;
+    }
+    if(process.argv.includes('--vault-compact-only')) {
+      for(const language of ['ar','en']) {
+        for(const size of [{width:320,height:568},{width:390,height:844},{width:1440,height:900}]) {
+          await page.setViewport(size);
+          await page.evaluate(language=>{
+            currentLang=language;document.documentElement.dir=language==='ar'?'rtl':'ltr';
+            _shopifyOrders[0].depositReceipts=[{id:'receipt-1',status:'مسودة',submittedBy:'Tester',submittedById:'staff-1',warnings:[],ocr:{amount:300,method:'Instapay'}}];
+            openSpReceiptForm('order-1','receipt-1');
+          },language);
+          check(await page.evaluate(()=>{
+            const amount=qs('#spdep-amount').getBoundingClientRect(),chip=qs('#spdep-vault-chip').getBoundingClientRect();
+            return qs('#spdep-amount').value==='300' && !!qs('#spdep-vault-chip :is(img,svg)')
+              && Math.abs(amount.top-chip.top)<45 && !qs('#spdep-vault-picker').open
+              && qs('#spdep-vault-chip').textContent.includes('Instapay');
+          }),`recognized amount and vault logo share a compact row ${language}/${size.width}`);
+          check(await page.$eval('#spdep-vault-picker',e=>!e.open&&e.querySelectorAll('input[name="spdep-vault"]').length===4),`vault options stay collapsed and available ${language}/${size.width}`);
+          await page.click('#spdep-vault-picker summary');
+          check(await page.$eval('#spdep-vault-picker',e=>e.open),`change vault opens options ${language}/${size.width}`);
+          await page.$eval('input[name="spdep-vault"][value="فودافون كاش"]',e=>e.closest('label').click());
+          check(await page.evaluate(()=>!qs('#spdep-vault-picker').open&&qs('#spdep-method').value==='فودافون كاش'&&!!qs('#spdep-vault-chip img[src="/vodafone.svg"]')),`chosen vault updates the amount logo and collapses options ${language}/${size.width}`);
+          check(await page.$eval('#modal-content',e=>e.scrollWidth<=e.clientWidth+1),`compact amount has no horizontal overflow ${language}/${size.width}`);
+          await page.screenshot({path:path.join(os.tmpdir(),`soulia-vault-compact-${language}-${size.width}.png`)});
+        }
+        await page.evaluate(()=>{
+          const r=_shopifyOrders[0].depositReceipts[0];r.ocr.method='';openSpReceiptForm('order-1',r.id);
+          qs('#spdep-confirm-check').checked=true;_spDepSyncConfirm();
+        });
+        check(await page.evaluate(()=>qs('#spdep-vault-picker').open&&qs('#spdep-vault-missing').hidden===false&&qs('#spdep-vault-chip').hidden&&qs('#spdep-submit-btn').disabled),`unrecognized vault requires a choice ${language}`);
+        await page.$eval('input[name="spdep-vault"][value="كاش"]',e=>e.closest('label').click());
+        check(await page.evaluate(()=>!qs('#spdep-submit-btn').disabled&&qs('#spdep-method').value==='كاش'&&!qs('#spdep-vault-picker').open),`manual vault choice unlocks submission ${language}`);
+      }
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'compact detected vault and required manual choice'},null,2));
+      return;
+    }
+    if(process.argv.includes('--no-scroll-only')) {
+      for(const size of [{width:320,height:568},{width:390,height:844},{width:603,height:741}]) {
+        await page.setViewport(size);
+        await page.evaluate(()=>{currentLang='ar';document.documentElement.dir='rtl';_shopifyOrders[0].depositReceipts=[];openSpReceiptForm('order-1');});
+        check(await page.evaluate(()=>{const box=qs('#modal-content'),body=qs('.spdep-form-body'),overlay=qs('#modal-overlay');return box.scrollHeight<=box.clientHeight+1&&body.scrollHeight<=body.clientHeight+1&&overlay.scrollHeight<=overlay.clientHeight+1;}),`collapsed deposit window fits without scrolling at ${size.width}`);
+      }
+      const draft={id:'receipt-1',status:'\u0645\u0633\u0648\u062f\u0629',submittedBy:'Tester',submittedById:'staff-1',warnings:[],ocr:{amount:500,method:'Instapay',senderHandle:'sender@instapay',senderBank:'CIB'}};
+      order.depositReceipts=[{...draft}];
+      for(const size of [{width:603,height:741},{width:390,height:844},{width:320,height:568}]) {
+        await page.setViewport(size);
+        await page.evaluate(draft=>{currentLang='en';document.documentElement.dir='ltr';_shopifyOrders[0].depositReceipts=[draft];openSpReceiptForm('order-1',draft.id);qs('.spdep-optional').open=true;},draft);
+        await new Promise(resolve=>setTimeout(resolve,180));
+        const geometry=await page.evaluate(()=>{
+          const box=qs('#modal-content'),body=qs('.spdep-form-body'),overlay=qs('#modal-overlay');
+          return {boxScroll:box.scrollHeight-box.clientHeight,bodyScroll:body.scrollHeight-body.clientHeight,footer:qs('.spdep-form-footer').getBoundingClientRect().bottom,viewport:innerHeight,overlayScroll:overlay.scrollHeight-overlay.clientHeight};
+        });
+        await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-no-scroll-'+size.width+'.png')});
+        check(geometry.boxScroll<=1 && geometry.bodyScroll<=1,`deposit window has no inner scrolling at ${size.width}`);
+        check(geometry.footer<=geometry.viewport+1,`deposit action stays visible at ${size.width}`);
+        await page.evaluate(()=>{const overlay=qs('#modal-overlay');overlay.scrollTop=overlay.scrollHeight;});
+        check(await page.evaluate(()=>qs('#spdep-transfer-reference').getBoundingClientRect().bottom<qs('.spdep-form-footer').getBoundingClientRect().top),`last receipt detail remains reachable at ${size.width}`);
+        await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-no-scroll-bottom-'+size.width+'.png')});
+      }
+      check(errors.length===0,'no browser errors: '+errors.join('; '));
+      console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'deposit window scrolling'},null,2));
+      return;
+    }
+    if(process.argv.includes('--remove-image-only')) {
+      const fixture=path.join(os.tmpdir(),'soulia-remove-receipt-'+process.pid+'.png');
+      fs.writeFileSync(fixture,png);
+      try {
+        for(const lang of ['ar','en']) {
+          const draft={id:'receipt-1',status:'\u0645\u0633\u0648\u062f\u0629',amount:0,method:'',submittedBy:'Tester',submittedById:'staff-1',warnings:[],ocr:{amount:null,method:'',senderHandle:'sender@instapay',senderBank:'CIB'}};
+          order.depositReceipts=[{...draft}];
+          await page.setViewport({width:390,height:844});
+          await page.evaluate(({lang,draft})=>{
+            currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+            _shopifyOrders[0].depositReceipts=[draft];openSpReceiptForm('order-1',draft.id);
+          },{lang,draft});
+          check(await page.$eval('.spdep-remove-image',e=>e.getAttribute('aria-label')===t('spDepRemoveImage')),`labelled remove button ${lang}`);
+          check(await page.evaluate(()=>qs('#spdep-sender-handle').value==='sender@instapay'&&qs('#spdep-sender-bank').value==='CIB'),`OCR sender address and bank populate optional fields ${lang}`);
+          const before=seen.filter(r=>r.method==='DELETE').length;
+          await page.click('.spdep-remove-image');
+          check(await page.$eval('#spdep-remove-confirm',e=>!e.hidden&&e.textContent.includes(t('spDepRemoveImageConfirm'))),`confirmation visible ${lang}`);
+          await page.screenshot({path:path.join(os.tmpdir(),'soulia-remove-confirm-'+lang+'.png')});
+          await page.click('#spdep-remove-confirm .btn-outline');
+          check(await page.$eval('#spdep-remove-confirm',e=>e.hidden),`cancel hides confirmation ${lang}`);
+          check(seen.filter(r=>r.method==='DELETE').length===before,`cancel preserves image ${lang}`);
+          await page.click('.spdep-remove-image');
+          failWithdraw=true;
+          await page.click('.spdep-remove-go');
+          await page.waitForFunction(()=>!qs('#spdep-remove-error').hidden);
+          check(!!await page.$('.spdep-remove-image') && !!await page.$('#spdep-amount'),`failed delete preserves receipt ${lang}`);
+          failWithdraw=false;
+          await page.click('.spdep-remove-go');
+          await page.waitForSelector('#spdep-file');
+          check(await page.evaluate(()=>!_shopifyOrders[0].depositReceipts.length && !_spReceiptForm.receiptId),`confirmed delete clears draft ${lang}`);
+          check(!await page.$('#spdep-amount') && !await page.$('.spdep-remove-image'),`upload screen returns ${lang}`);
+          check(seen.filter(r=>r.method==='DELETE').length===before+2,`delete uses existing endpoint ${lang}`);
+          await (await page.$('#spdep-file')).uploadFile(fixture);
+          while(!releaseUpload) await new Promise(resolve=>setTimeout(resolve,25));
+          releaseUpload();releaseUpload=null;
+          await page.waitForSelector('.spdep-remove-image');
+          check(await page.evaluate(()=>_spReceiptForm.receiptId==='receipt-1'&&_shopifyOrders[0].depositReceipts.length===1),`new upload works ${lang}`);
+          await page.setViewport({width:320,height:568});
+          check(await page.$eval('#modal-content',e=>e.scrollWidth<=e.clientWidth+1),`remove control fits narrow phone ${lang}`);
+        }
+        check(errors.length===0,'no browser errors: '+errors.join('; '));
+        console.log(JSON.stringify({checks,errors,network:'fully mocked',scope:'receipt image removal'},null,2));
+        return;
+      } finally { fs.unlinkSync(fixture); }
     }
     if(process.argv.includes('--replacement-only')) {
       const fixture=path.join(os.tmpdir(),'soulia-replacement-'+process.pid+'.png');fs.writeFileSync(fixture,png);
@@ -198,6 +345,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
         await page.evaluate(lang=>{currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';openSpReceiptForm('order-1');},lang);
         for(const size of [{width:320,height:568},{width:390,height:844},{width:1440,height:1000}]) {
           await page.setViewport(size);await new Promise(resolve=>setTimeout(resolve,180));
+          await page.waitForFunction(()=>{const r=qs('#modal-content').getBoundingClientRect();return Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;},{timeout:1000});
           check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return e.scrollWidth<=e.clientWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;}),'deposit entry centered and fits '+lang+'/'+size.width);
         }
       }
@@ -395,32 +543,41 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     await page.evaluate(()=>{stgSearch('deposit');_openR2SharedSettings();});
     check(await page.evaluate(()=>!qs('#stg-search-results') && qs('#stg-panel-data').classList.contains('active')),'shared settings link exits search and opens the data settings tab');
     check(await page.evaluate(()=>_spDepositOf(_shopifyOrders[0]).deposit===0),'notes and paid tags never become recorded deposits');
-    check(await page.evaluate(()=>_spDepositCellHtml(_shopifyOrders[0]).includes('No deposit')),'empty order deposit cell says no deposit');
-    await page.evaluate(()=>renderShopifyOrders());
-    check(!!await page.$('#shopify-orders-table-body .spdep-quick-add'),'desktop no-deposit cell includes a compact add button');
-    check(await page.$$eval('#sp-mobile-list .sp-mobile-deposit',els=>els.some(e=>e.textContent.includes('Add deposit'))),'mobile main action adds a deposit');
-    check(await page.$$eval('#sp-mobile-list .sp-mobile-confirm',els=>els.length===1 && !!els[0].closest('.dd-menu')),'mobile confirm action is retained inside the overflow menu');
-    check(!await page.$('#sp-mobile-list .sp-confirm-btn[onclick^="approveShopifyOrder"]'),'mobile primary button no longer confirms the order');
+    check(await page.evaluate(()=>_spDepositCellHtml(_shopifyOrders[0]).includes('spdep-fab-trigger')),'empty order deposit cell offers one action trigger');
+    await page.evaluate(()=>{currentPage='shopify-orders';qsa('.page').forEach(e=>e.classList.toggle('active',e.id==='page-shopify-orders'));renderShopifyOrders();});
+    check(!!await page.$('#shopify-orders-table-body .spdep-fab-trigger'),'desktop no-deposit cell includes one action trigger');
     await page.setViewport({width:390,height:844});
     await page.evaluate(()=>{
       currentPage='shopify-orders';qsa('.page').forEach(e=>e.classList.toggle('active',e.id==='page-shopify-orders'));
+      renderShopifyOrders();
     });
+    check(!!await page.$('#sp-mobile-list .spdep-fab-trigger'),'mobile card includes the same action trigger');
+    check(await page.$$eval('#sp-mobile-list .sp-mobile-confirm',els=>els.length===0),'staff without prepare permission does not get a mobile confirm action');
+    check(!await page.$('#sp-mobile-list .sp-confirm-btn[onclick^="approveShopifyOrder"]'),'mobile primary button no longer confirms the order');
     await new Promise(resolve=>setTimeout(resolve,350));
     await page.waitForFunction(()=>{const e=qs('#sp-mobile-list .sp-card');return e?.clientWidth>0 && e.scrollWidth<=e.clientWidth+1;},{timeout:3000});
     check(await page.$eval('#sp-mobile-list .sp-card',e=>e.clientWidth>0 && e.scrollWidth<=e.clientWidth+1),'mobile add action fits with Shopify link and assignee');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-mobile-card-add.png')});
     await page.setViewport({width:1440,height:1000});
+    await page.evaluate(()=>renderShopifyOrders());
     check(await page.evaluate(()=>{
       const o=_shopifyOrders[0],old=currentUser;currentUser={...currentUser,perms:['shopify-orders']};
-      const restricted=!_spDepositCellHtml(o).includes('spdep-quick-add') && !_spMobileDepositActionHtml(o);
-      currentUser=old;return restricted && !_spDepositCellHtml({...o,cancelled:true}).includes('spdep-quick-add');
+      const restricted=!_spDepositCellHtml(o).includes('spdep-fab-trigger') && !_spMobileDepositActionHtml(o);
+      currentUser=old;return restricted && !_spDepositCellHtml({...o,cancelled:true}).includes('spdep-fab-trigger');
     }),'deposit shortcuts respect upload permission and cancelled orders');
-    await page.$eval('#shopify-orders-table-body .spdep-quick-add',e=>e.click());
+    await page.$eval('#shopify-orders-table-body .spdep-fab-trigger',e=>e.click());
+    check(await page.$$eval('#spdep-fab-menu [role="menuitem"]',els=>els.length===2 && els[0].textContent.includes('Add deposit') && els[1].textContent.includes('Ship without deposit')),'single trigger exposes both existing actions');
+    await page.click('#spdep-fab-menu [data-action="deposit"]');
     check(!!await page.$('#spdep-file'),'desktop shortcut opens the existing receipt workflow');
     await page.evaluate(()=>_spCancelReceiptForm(qs('#sp-receipt-form .btn-outline')));
-    await page.$eval('#sp-mobile-list .sp-mobile-deposit',e=>e.click());
+    await page.setViewport({width:390,height:844});
+    await page.evaluate(()=>renderShopifyOrders());
+    await new Promise(resolve=>setTimeout(resolve,180));
+    await page.$eval('#sp-mobile-list .spdep-fab-trigger',e=>e.click());
+    await page.click('#spdep-fab-menu [data-action="deposit"]');
     check(!!await page.$('#spdep-file'),'mobile shortcut opens the same existing receipt workflow');
     await page.evaluate(()=>_spCancelReceiptForm(qs('#sp-receipt-form .btn-outline')));
+    await page.setViewport({width:1440,height:1000});
     await page.evaluate(()=>openSpReceiptForm('order-1'));
     failUpload=true;
     await selectReceipt();
@@ -497,28 +654,29 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     check(await page.evaluate(()=>_spReceiptForm.progress===100 && _spReceiptForm.progressStage==='complete'),'receipt completion is recorded only after upload and analysis succeed');
     check(await page.$eval('#spdep-amount',e=>e.value)==='500','OCR suggestion populates amount');
     check(await page.$eval('#spdep-method',e=>e.value)==='Instapay','OCR suggestion populates vault');
-    check(await page.$$eval('.spdep-vault-option',els=>els.length===4 && els.filter(e=>e.querySelector('input').checked)[0].textContent.includes('Instapay')),'all four vaults are visible and the OCR suggestion is selected');
+    check(await page.$$eval('.spdep-vault-option',els=>els.length===4 && els.filter(e=>e.querySelector('input').checked)[0].textContent.includes('Instapay')) && await page.$eval('#spdep-vault-picker',e=>!e.open),'four vaults remain available while the recognized vault stays compact');
     check(!await page.$('select#spdep-method'),'vault selection is not a dropdown');
-    await page.click('.spdep-vault-option input[value="كاش"]');
+    await page.click('#spdep-vault-picker summary');
+    await page.$eval('.spdep-vault-option input[value="كاش"]',e=>e.closest('label').click());
     check(await page.$eval('#spdep-method',e=>e.value)==='كاش','vault tile can override the OCR suggestion');
-    await page.click('.spdep-vault-option input[value="Instapay"]');
+    await page.click('#spdep-vault-picker summary');
+    await page.$eval('.spdep-vault-option input[value="Instapay"]',e=>e.closest('label').click());
     check(await page.$eval('.spdep-image-saved',e=>e.textContent.includes('Image uploaded') && e.textContent.includes('not submitted')),'completed upload clearly says the receipt is not submitted yet');
     check(await page.$eval('#spdep-amount',e=>e.classList.contains('is-detected') && e.title.includes('detected automatically')),'automatically entered amount is marked in green');
     check(await page.evaluate(()=>window.lastReceiptPasteAccepted===true),'clipboard image starts the standard upload workflow');
     await page.waitForFunction(()=>qs('#sp-receipt-form .spdep-thumb img').naturalWidth>0);
     check(await page.$eval('.spdep-thumb',e=>e.classList.contains('is-ready')),'saved receipt displays an authenticated thumbnail');
-    check(await page.$eval('#spdep-amount',e=>e.getBoundingClientRect().width<=205),'amount input stays compact on desktop');
-    check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).textAlign==='center'),'deposit amount is centered in its field');
+    check(await page.$eval('.spdep-amount-panel',e=>e.contains(document.querySelector('#spdep-vault-chip'))&&e.contains(document.querySelector('#spdep-amount'))),'amount and vault logo share one desktop panel');
+    check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).fontSize==='26px'),'deposit amount is prominent on desktop');
     check(await page.$eval('#spdep-remaining-value',e=>e.textContent.includes('1,000')),'remaining amount previews the current deposit deduction');
     await page.setViewport({width:390,height:844});
     await new Promise(resolve=>setTimeout(resolve,350));
-    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width<=366 && r.height>650 && r.height<762 && e.scrollWidth<=e.clientWidth && Math.abs((r.top+r.bottom)/2-innerHeight/2)<2;}),'receipt details remain centered and fit the viewport without horizontal clipping');
-    check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).fontSize==='24px'),'phone amount is readable without input zoom');
+    check(await page.$eval('#modal-content',e=>{const r=e.getBoundingClientRect();return r.width<=366 && r.bottom<=innerHeight+1 && e.scrollWidth<=e.clientWidth;}),'receipt details fit the phone viewport without horizontal clipping');
+    check(await page.$eval('#spdep-amount',e=>getComputedStyle(e).fontSize==='26px'),'phone amount is readable without input zoom');
     check(await page.evaluate(()=>{
       const body=qs('.spdep-form-body'),footer=qs('.spdep-form-footer');
-      const before=footer.getBoundingClientRect().top;body.scrollTop=body.scrollHeight;
-      return Math.abs(footer.getBoundingClientRect().top-before)<1 && footer.getBoundingClientRect().bottom<=window.innerHeight && getComputedStyle(body).overflowY==='auto';
-    }),'phone actions remain visible while the details scroll');
+      return body.scrollHeight<=body.clientHeight+1 && footer.getBoundingClientRect().bottom<=window.innerHeight;
+    }),'phone actions remain visible without inner scrolling');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-mobile-details.png')});
     await page.setViewport({width:390,height:460});
     await new Promise(resolve=>setTimeout(resolve,350));
@@ -615,7 +773,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     check(seen.filter(r=>r.path.endsWith('/submit')).length===submitCount,'invalid entries never reach the receipt submission API');
     await page.evaluate(()=>{qs('#spdep-method').value='Instapay';qs('#spdep-amount').dispatchEvent(new Event('input'));});
     check(await page.$eval('#modal-content',e=>e.getBoundingClientRect().width<=545),'deposit form uses a compact desktop width');
-    check(await page.$eval('.spdep-analysis .spdep-thumb',e=>e.getBoundingClientRect().width>=155),'analysis preview is enlarged on desktop');
+    check(await page.$eval('.spdep-analysis .spdep-thumb',e=>e.getBoundingClientRect().width<=96),'analysis preview stays compact beside the amount');
     check(await page.$eval('.spdep-suggestion',e=>!e.textContent.includes('Suggested')),'analysis uses extracted receipt terminology');
     check(await page.evaluate(()=>getComputedStyle(qs('#sp-receipt-form .spdep-status')).marginInlineStart==='0px'),'receipt status stays beside the amount without an empty gap');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-form-compact-desktop.png')});
@@ -685,13 +843,13 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     check(await page.evaluate(()=>!qs('#modal-overlay').classList.contains('active')),'success dialog closes using its button');
     await page.setViewport({width:1440,height:1000});
     await page.evaluate(()=>renderShopifyOrders());
-    check(await page.$eval('#sp-mobile-list .sp-mobile-deposit',e=>e.textContent.includes('Add another deposit')),'mobile deposit action allows another deposit after submission');
+    check(await page.$$eval('#sp-mobile-list .sp-card-menu .dd-item',els=>els.some(e=>e.textContent.includes('Add another deposit'))),'mobile menu allows another deposit after submission');
     await page.setViewport({width:390,height:844});
     await new Promise(resolve=>setTimeout(resolve,350));
     check(await page.$eval('#sp-mobile-list .sp-card',e=>e.clientWidth>0 && e.scrollWidth<=e.clientWidth+1),'pending deposit action and amount fit the mobile card');
     await page.screenshot({path:path.join(os.tmpdir(),'soulia-deposit-mobile-card-review.png')});
     await page.setViewport({width:1440,height:1000});
-    check(!await page.$('#shopify-orders-table-body .spdep-quick-add'),'desktop add shortcut is replaced by the submitted deposit details');
+    check(!await page.$('#shopify-orders-table-body .spdep-fab-trigger'),'desktop action trigger is replaced by the submitted deposit details');
     check(await page.evaluate(()=>_spDepositOf(_shopifyOrders[0]).pendingTotal===500),'pending amount is tracked');
     const deleteCount=seen.filter(r=>r.method==='DELETE').length;
     await page.evaluate(()=>approveShopifyOrder('order-1'));
@@ -777,7 +935,7 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
     });
     check(await page.evaluate(()=>_spDepositOf(_shopifyOrders[0]).deposit===500),'approved deposit is counted');
     await page.evaluate(()=>renderShopifyOrders());
-    check(await page.$eval('#sp-mobile-list .sp-mobile-deposit',e=>e.textContent.includes('Add another deposit')),'mobile action allows another deposit after manager approval');
+    check(await page.$$eval('#sp-mobile-list .sp-card-menu .dd-item',els=>els.some(e=>e.textContent.includes('Add another deposit'))),'mobile menu allows another deposit after manager approval');
     check(await page.$eval('#sp-mobile-list .sp-card-deposit-line',e=>!!e.querySelector('.spdep-approved') && !e.querySelector('.spdep-pending')),'approved deposit becomes green in the fixed mobile row');
     check(await page.$$eval('#sp-mobile-list .sp-card-subline',els=>els.every(e=>!/(AM|PM)/.test(e.textContent) && /\d{2}:\d{2}/.test(e.textContent))),'mobile order time uses the same 24-hour format as the table');
     check(await page.evaluate(()=>{const html=_spPeekReceiptsHtml(_shopifyOrders[0],false,false,true);return !html.includes('spdep-add') && !html.includes('&quot;refund&quot;') && html.includes('_spViewReceipt');}),'confirmation retains receipt previews while hiding add and refund actions');

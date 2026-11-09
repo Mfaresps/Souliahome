@@ -179,6 +179,10 @@ export class UpdateSettingsDto {
 
   @IsBoolean()
   @IsOptional()
+  readonly depositNoImageSkipOtp?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   readonly printIncludePolicy?: boolean;
 
   @IsString()

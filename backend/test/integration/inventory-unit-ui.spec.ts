@@ -10,7 +10,7 @@ describe('Actual warehouse management script in Chromium', () => {
   let calls: any[], labels: any[], units: any[], receipts: any[], deny: boolean, printer: boolean, failOnce: boolean, configMissing: boolean, listFailure: boolean;
   const sizes = [...LABEL_SIZES];
   const publicDir = resolve(__dirname, '../../../frontend/public');
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>:root{--border:#ddd;--bg:#fafafa;--surface:#fff;--text:#222;--muted:#666}body{margin:0;padding:12px;font:14px Arial}</style><link rel="stylesheet" href="/inventory-units.css"></head><body><main id="page-barcodes"></main><script>
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>:root{--border:#ddd;--bg:#fafafa;--surface:#fff;--text:#222;--muted:#666}body{margin:0;padding:12px;font:14px Arial}</style><link rel="stylesheet" href="/inventory-units.css"><link rel="stylesheet" href="/inventory-packs.css"></head><body><main id="page-barcodes"></main><script>
     let currentLang='en';let currentPage='barcodes';let printer=true;let receiver=true;let currentUser={_id:'507f1f77bcf86cd799439099'};
     function hasPerm(p){return p==='inventory-units-print'?printer:p==='inventory-units-receive'?receiver:true;}
     async function api(path,options={}){const r=await fetch('/api'+path,{...options,headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok){const e=new Error(d.message);e.status=r.status;throw e;}return d;}
@@ -58,7 +58,7 @@ describe('Actual warehouse management script in Chromium', () => {
           response.end(JSON.stringify({ products: q && !found.length ? [] : [{ _id: 'product-1', name: 'Cotton Shirt', code: 'SKU-1', size: 'XL', colors: ['Red'] }], units: found.slice((index - 1) * limit, index * limit), total: found.length, page: index, limit }));
         }
       } else if (url.pathname === '/') { response.setHeader('Content-Type', 'text/html; charset=utf-8'); response.end(html); }
-      else if (['/inventory-units.js', '/inventory-units.css', '/purchase-receiving.js', '/purchase-receiving.css', '/inventory-scanner.js', '/inventory-scanner.css', '/vendor/zxing-browser-0.2.1.min.js', '/soulia-label-logo.svg'].includes(url.pathname)) {
+      else if (['/inventory-units.js', '/inventory-units.css', '/inventory-packs.css', '/purchase-receiving.js', '/purchase-receiving.css', '/inventory-scanner.js', '/inventory-scanner.css', '/vendor/zxing-browser-0.2.1.min.js', '/soulia-label-logo.svg'].includes(url.pathname)) {
         response.setHeader('Content-Type', url.pathname.endsWith('.js') ? 'application/javascript' : url.pathname.endsWith('.svg') ? 'image/svg+xml' : 'text/css'); response.end(readFileSync(publicDir + url.pathname));
       } else { response.statusCode = 404; response.end(); }
     });
@@ -164,6 +164,38 @@ describe('Actual warehouse management script in Chromium', () => {
     expect(result.count).toContain('6 PCS');
     expect(result.footer).toBe('Made in Egypt - © SOULIA HOME');
     expect(result.fits).toBe(true);
+  });
+  it.each(['50x25', '80x40'])('prints the pack ID with the same QR label layout at %s', async sizeId => {
+    const size = sizes.find(row => row.id === sizeId)!;
+    const result = await page.evaluate(async ({ size, unit }) => {
+      const pack = { ...unit, isPack: true, quantity: 6, barcode: 'PK-' + unit.unitId.toUpperCase(), manualCode: 'PK-000001-8' };
+      const piece = { ...unit, manualCode: 'U-000001-8' };
+      const host = document.createElement('div');
+      document.body.append(host);
+      host.innerHTML = window.InventoryUnitLabels.labelHtml(piece, size) + window.InventoryUnitLabels.labelHtml(pack, size);
+      await window.InventoryUnitLabels.waitForLayout(host);
+      const metrics = (label: Element) => {
+        const qr = label.querySelector('.iu-label-qr')!.getBoundingClientRect();
+        const code = label.querySelector('.iu-label-value')!.getBoundingClientRect();
+        const footer = label.querySelector('.iu-label-footer')!.getBoundingClientRect();
+        const codeStyle = getComputedStyle(label.querySelector('.iu-label-value')!);
+        const box = label.getBoundingClientRect();
+        return { width: box.width, height: box.height, qr: qr.width, codeWidth: code.width,
+          codeHeight: code.height, codeFont: codeStyle.fontSize, codeBackground: codeStyle.backgroundColor,
+          codeToFooter: footer.top - code.bottom, fits: label.scrollWidth <= label.clientWidth + 1 && label.scrollHeight <= label.clientHeight + 1 };
+      };
+      const [pieceLabel, packLabel] = [...host.querySelectorAll('.iu-label')];
+      return { piece: metrics(pieceLabel), pack: metrics(packLabel) };
+    }, { size, unit: labels[0] });
+    expect(result.pack.width).toBeCloseTo(size.widthMm * 96 / 25.4, 0);
+    expect(result.pack.height).toBeCloseTo(size.heightMm * 96 / 25.4, 0);
+    expect(result.pack.qr).toBeCloseTo(result.piece.qr, 1);
+    expect(result.pack.codeWidth).toBeCloseTo(result.piece.codeWidth, 1);
+    expect(result.pack.codeHeight).toBeCloseTo(result.piece.codeHeight, 1);
+    expect(result.pack.codeFont).toBe(result.piece.codeFont);
+    expect(result.pack.codeBackground).toBe(result.piece.codeBackground);
+    expect(result.pack.codeToFooter).toBeGreaterThanOrEqual(0);
+    expect(result.pack.fits).toBe(true);
   });
   it('adapts vertical spacing to measured name wrapping and preserves it at preview zoom', async () => {
     const result = await page.evaluate(async label => {

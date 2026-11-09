@@ -1,0 +1,186 @@
+{
+  "closed": {
+    "documentNodes": 6224,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 17,
+    "centerCards": 0,
+    "panelCards": 0,
+    "allNotifications": 0,
+    "badge": "",
+    "largestPages": [
+      {
+        "id": "page-dashboard",
+        "nodes": 706,
+        "active": true
+      },
+      {
+        "id": "page-reports",
+        "nodes": 470,
+        "active": false
+      },
+      {
+        "id": "page-movements",
+        "nodes": 432,
+        "active": false
+      },
+      {
+        "id": "page-transaction",
+        "nodes": 385,
+        "active": false
+      },
+      {
+        "id": "page-pickup-orders",
+        "nodes": 306,
+        "active": false
+      },
+      {
+        "id": "page-complaints",
+        "nodes": 264,
+        "active": false
+      }
+    ]
+  },
+  "open": {
+    "documentNodes": 7019,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 812,
+    "centerCards": 50,
+    "panelCards": 0,
+    "allNotifications": 308,
+    "badge": "",
+    "largestPages": [
+      {
+        "id": "page-dashboard",
+        "nodes": 706,
+        "active": true
+      },
+      {
+        "id": "page-reports",
+        "nodes": 470,
+        "active": false
+      },
+      {
+        "id": "page-movements",
+        "nodes": 432,
+        "active": false
+      },
+      {
+        "id": "page-transaction",
+        "nodes": 385,
+        "active": false
+      },
+      {
+        "id": "page-pickup-orders",
+        "nodes": 306,
+        "active": false
+      },
+      {
+        "id": "page-complaints",
+        "nodes": 264,
+        "active": false
+      }
+    ]
+  },
+  "expanded": {
+    "documentNodes": 10468,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 4286,
+    "centerCards": 308,
+    "panelCards": 0,
+    "allNotifications": 308,
+    "badge": "",
+    "largestPages": [
+      {
+        "id": "page-dashboard",
+        "nodes": 706,
+        "active": true
+      },
+      {
+        "id": "page-reports",
+        "nodes": 470,
+        "active": false
+      },
+      {
+        "id": "page-movements",
+        "nodes": 432,
+        "active": false
+      },
+      {
+        "id": "page-transaction",
+        "nodes": 385,
+        "active": false
+      },
+      {
+        "id": "page-pickup-orders",
+        "nodes": 306,
+        "active": false
+      },
+      {
+        "id": "page-complaints",
+        "nodes": 264,
+        "active": false
+      }
+    ],
+    "allIdsRendered": true
+  },
+  "closedAgain": {
+    "documentNodes": 6199,
+    "panelNodes": 47,
+    "panelListNodes": 0,
+    "centerNodes": 17,
+    "centerCards": 0,
+    "panelCards": 0,
+    "allNotifications": 308,
+    "badge": "",
+    "largestPages": [
+      {
+        "id": "page-dashboard",
+        "nodes": 706,
+        "active": true
+      },
+      {
+        "id": "page-reports",
+        "nodes": 470,
+        "active": false
+      },
+      {
+        "id": "page-movements",
+        "nodes": 432,
+        "active": false
+      },
+      {
+        "id": "page-transaction",
+        "nodes": 385,
+        "active": false
+      },
+      {
+        "id": "page-pickup-orders",
+        "nodes": 306,
+        "active": false
+      },
+      {
+        "id": "page-complaints",
+        "nodes": 264,
+        "active": false
+      }
+    ]
+  },
+  "userPage": {
+    "rows": 11,
+    "requests": [
+      "/api/security-audit/locked-users",
+      "/api/security-audit/logs",
+      "/api/notifications"
+    ]
+  },
+  "notificationCount": 308,
+  "notificationIdHash": "d099dbdc8b8ec8a03e4d489b17db1d0bc3e3a8cbab01ebcbf253bcd2c065bde5",
+  "blockedWrites": [
+    "POST /api/notifications/read-all",
+    "POST /api/auth/update-last-seen"
+  ],
+  "errors": []
+}

@@ -53,6 +53,16 @@ describe('deposit receipt history', () => {
     expect(receiptSender({ senderName: '', senderHandle: '' }, { ocr: { senderHandle: 'old@instapay' } }).senderHandle).toBe('');
     expect(() => receiptSender({ senderHandle: 'not-an-address' }, {})).toThrow();
   });
+  it('keeps receipt date and reference separate from registration time and old logo text', () => {
+    const legacy = row('legacy', now.toISOString(), {senderName:'ABCD', ocr:{reference:'957372239566',dateText:'25 Sep 2026 03:44 PM'}});
+    const result = depositHistory([{depositReceipts:[legacy]}],[],[],{},now).rows[0];
+    expect(result).toMatchObject({senderName:'',senderBank:'ABCD',reference:'957372239566',transferDateText:'25 Sep 2026 03:44 PM'});
+    expect(result.submittedAt).toBe(now.toISOString());
+  });
+  it('normalizes a reviewed Arabic transfer reference', () => {
+    expect(receiptSender({transferReference:'٩٥٧٣٧٢٢٣٩٥٦٦',senderBank:'ABCD'},{}))
+      .toMatchObject({transferReference:'957372239566',senderBank:'ABCD'});
+  });
 });
 
 describe('sender OCR extraction', () => {

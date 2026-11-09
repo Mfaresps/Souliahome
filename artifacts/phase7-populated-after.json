@@ -1,0 +1,2566 @@
+﻿{
+  "mode": "split",
+  "fixture": {
+    "orders": 891,
+    "transactions": 1053,
+    "products": 120,
+    "followups": 90
+  },
+  "median": {
+    "dcl": 504.39999997615814,
+    "fcp": 176,
+    "lcp": 820,
+    "interactive": 952.5,
+    "tbt": 89,
+    "domNodes": 5680,
+    "scriptMs": 109,
+    "taskMs": 868
+  },
+  "runs": [
+    {
+      "startup": {
+        "dcl": 504.39999997615814,
+        "fcp": 532,
+        "lcp": 1228,
+        "interactive": 979.5999999940395,
+        "tbt": 64,
+        "domNodes": 6759,
+        "scriptMs": 109,
+        "taskMs": 866
+      },
+      "startupApi": 22,
+      "startupScripts": [
+        "/branding.js",
+        "/config.js",
+        "/order-status.js",
+        "/comment-reactions.js",
+        "/deposit-decision.js",
+        "/invoice-unit-identities.js",
+        "/cancellations-analytics.js",
+        "/after-sales.js",
+        "/customer-piece-return.js",
+        "/complaint-flow.js",
+        "/animated-number.js",
+        "/failed-delivery-identities.js",
+        "/comment-inline-edit.js",
+        "/copy-button.js",
+        "/shopify-deposit-fab.js",
+        "/navigation-shell.js",
+        "/sales-overview.js",
+        "/admin-team-home.js",
+        "/awb-preview.js",
+        "/pickup-ready-return.js",
+        "/bosta-pickup.js",
+        "/pickup-daily-shipping.js",
+        "/notification-settings.js",
+        "/roles-permissions.js",
+        "/notification-feed.js",
+        "/followup-reminders.js",
+        "/order-audit-financials.js",
+        "/push-navigation.js",
+        "/order-audit-insights.js",
+        "/announcements.js",
+        "/order-audit-marketing.js",
+        "/notification-history.js",
+        "/order-audit-periods.js",
+        "/shopify-sync.js",
+        "/supplier-return-pieces.js",
+        "/barcode-input.js",
+        "/inventory-errors.js",
+        "/inventory-scanner.js",
+        "/warehouses.js",
+        "/global-search-scanner.js",
+        "/warehouse-layout.js",
+        "/preprinted-labels.js",
+        "/inventory-packs.js",
+        "/inventory-units.js",
+        "/supplier-labels.js",
+        "/legacy-stock-labels.js",
+        "/product-stocktake.js",
+        "/purchase-receiving.js",
+        "/sales-scanner.js",
+        "/shopify-compact-header.js",
+        "/employee-followup-session.js",
+        "/employee-followup-tour.js",
+        "/app-core.js",
+        "/be-button-motion.js",
+        "/designme/date-range-picker/soulia-range.js",
+        "/order-status-preview.js",
+        "/loading-system.js",
+        "/vendor/socket.io-4.7.5.min.js"
+      ],
+      "startupScriptBytes": 6150462,
+      "totalApi": 45,
+      "api": [
+        "/api/branding",
+        "/api/auth/me",
+        "/api/warehouses",
+        "/api/transactions/startup-overview",
+        "/api/settings",
+        "/api/drafts",
+        "/api/products",
+        "/api/expenses",
+        "/api/users",
+        "/api/tags",
+        "/api/returns",
+        "/api/complaints",
+        "/api/purchase-orders",
+        "/api/supplier-returns",
+        "/api/transactions/inventory",
+        "/api/notifications/read-state",
+        "/api/notifications/history",
+        "/api/mentions",
+        "/api/auth/users-status",
+        "/api/transactions/sales-overview?year=2026&month=11",
+        "/api/employee-performance/duty-board",
+        "/api/followups",
+        "/api/settings",
+        "/api/branding/library",
+        "/api/shopify/sync/status",
+        "/api/settings/backups",
+        "/api/employee-performance/shifts",
+        "/api/employee-performance/leaves",
+        "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+        "/api/auth/update-last-seen",
+        "/api/announcements/mine",
+        "/api/announcements/config",
+        "/api/announcements",
+        "/api/shopify/orders/detail/o1",
+        "/api/transactions/movements-page",
+        "/api/notifications",
+        "/api/notifications/preferences",
+        "/api/followups",
+        "/api/complaints",
+        "/api/transactions/summary-page?page=1&limit=200",
+        "/api/transactions/summary-page?page=2&limit=200",
+        "/api/transactions/summary-page?page=3&limit=200",
+        "/api/transactions/summary-page?page=4&limit=200",
+        "/api/transactions/summary-page?page=5&limit=200",
+        "/api/transactions/summary-page?page=6&limit=200"
+      ],
+      "assets": [
+        {
+          "path": "/branding.js",
+          "bytes": 16026
+        },
+        {
+          "path": "/config.js",
+          "bytes": 38
+        },
+        {
+          "path": "/order-status.js",
+          "bytes": 11671
+        },
+        {
+          "path": "/comment-reactions.js",
+          "bytes": 8884
+        },
+        {
+          "path": "/deposit-decision.js",
+          "bytes": 25301
+        },
+        {
+          "path": "/invoice-unit-identities.js",
+          "bytes": 15996
+        },
+        {
+          "path": "/cancellations-analytics.js",
+          "bytes": 10066
+        },
+        {
+          "path": "/after-sales.js",
+          "bytes": 113707
+        },
+        {
+          "path": "/customer-piece-return.js",
+          "bytes": 9996
+        },
+        {
+          "path": "/complaint-flow.js",
+          "bytes": 88886
+        },
+        {
+          "path": "/animated-number.js",
+          "bytes": 3360
+        },
+        {
+          "path": "/failed-delivery-identities.js",
+          "bytes": 7816
+        },
+        {
+          "path": "/comment-inline-edit.js",
+          "bytes": 4386
+        },
+        {
+          "path": "/copy-button.js",
+          "bytes": 3418
+        },
+        {
+          "path": "/shopify-deposit-fab.js",
+          "bytes": 5102
+        },
+        {
+          "path": "/navigation-shell.js",
+          "bytes": 11349
+        },
+        {
+          "path": "/sales-overview.js",
+          "bytes": 34233
+        },
+        {
+          "path": "/admin-team-home.js",
+          "bytes": 15908
+        },
+        {
+          "path": "/awb-preview.js",
+          "bytes": 5416
+        },
+        {
+          "path": "/pickup-ready-return.js",
+          "bytes": 7847
+        },
+        {
+          "path": "/bosta-pickup.js",
+          "bytes": 25937
+        },
+        {
+          "path": "/pickup-daily-shipping.js",
+          "bytes": 21188
+        },
+        {
+          "path": "/notification-settings.js",
+          "bytes": 36383
+        },
+        {
+          "path": "/roles-permissions.js",
+          "bytes": 33678
+        },
+        {
+          "path": "/notification-feed.js",
+          "bytes": 20813
+        },
+        {
+          "path": "/followup-reminders.js",
+          "bytes": 8736
+        },
+        {
+          "path": "/order-audit-financials.js",
+          "bytes": 4250
+        },
+        {
+          "path": "/push-navigation.js",
+          "bytes": 10983
+        },
+        {
+          "path": "/order-audit-insights.js",
+          "bytes": 20221
+        },
+        {
+          "path": "/announcements.js",
+          "bytes": 45080
+        },
+        {
+          "path": "/order-audit-marketing.js",
+          "bytes": 23303
+        },
+        {
+          "path": "/notification-history.js",
+          "bytes": 5323
+        },
+        {
+          "path": "/order-audit-periods.js",
+          "bytes": 6155
+        },
+        {
+          "path": "/shopify-sync.js",
+          "bytes": 17126
+        },
+        {
+          "path": "/supplier-return-pieces.js",
+          "bytes": 10802
+        },
+        {
+          "path": "/barcode-input.js",
+          "bytes": 3439
+        },
+        {
+          "path": "/inventory-errors.js",
+          "bytes": 30365
+        },
+        {
+          "path": "/inventory-scanner.js",
+          "bytes": 26802
+        },
+        {
+          "path": "/warehouses.js",
+          "bytes": 30698
+        },
+        {
+          "path": "/global-search-scanner.js",
+          "bytes": 19612
+        },
+        {
+          "path": "/warehouse-layout.js",
+          "bytes": 34804
+        },
+        {
+          "path": "/preprinted-labels.js",
+          "bytes": 35494
+        },
+        {
+          "path": "/inventory-packs.js",
+          "bytes": 30650
+        },
+        {
+          "path": "/inventory-units.js",
+          "bytes": 163186
+        },
+        {
+          "path": "/supplier-labels.js",
+          "bytes": 54107
+        },
+        {
+          "path": "/legacy-stock-labels.js",
+          "bytes": 11993
+        },
+        {
+          "path": "/product-stocktake.js",
+          "bytes": 16690
+        },
+        {
+          "path": "/purchase-receiving.js",
+          "bytes": 11512
+        },
+        {
+          "path": "/sales-scanner.js",
+          "bytes": 18030
+        },
+        {
+          "path": "/shopify-compact-header.js",
+          "bytes": 5774
+        },
+        {
+          "path": "/employee-followup-session.js",
+          "bytes": 24177
+        },
+        {
+          "path": "/employee-followup-tour.js",
+          "bytes": 17165
+        },
+        {
+          "path": "/app-core.js",
+          "bytes": 4884286
+        },
+        {
+          "path": "/be-button-motion.js",
+          "bytes": 4581
+        },
+        {
+          "path": "/designme/date-range-picker/soulia-range.js",
+          "bytes": 18727
+        },
+        {
+          "path": "/order-status-preview.js",
+          "bytes": 17272
+        },
+        {
+          "path": "/loading-system.js",
+          "bytes": 1665
+        },
+        {
+          "path": "/vendor/socket.io-4.7.5.min.js",
+          "bytes": 49
+        },
+        {
+          "path": "/shopify-settings.js",
+          "bytes": 11765
+        },
+        {
+          "path": "/deposit-history.js",
+          "bytes": 25097
+        },
+        {
+          "path": "/shopify-edit-approvals.js",
+          "bytes": 26520
+        },
+        {
+          "path": "/shopify-kpis.js",
+          "bytes": 31794
+        },
+        {
+          "path": "/shopify-orders-route.js",
+          "bytes": 593217
+        },
+        {
+          "path": "/followups-view-route.js",
+          "bytes": 28069
+        },
+        {
+          "path": "/invoice-views-route.js",
+          "bytes": 144601
+        },
+        {
+          "path": "/invoice-image.js",
+          "bytes": 17839
+        }
+      ],
+      "navigation": {
+        "settings": {
+          "visibleMs": 47,
+          "dataReadyMs": 50,
+          "settledMs": 307,
+          "api": [
+            "/api/settings",
+            "/api/branding/library",
+            "/api/shopify/sync/status",
+            "/api/settings/backups",
+            "/api/employee-performance/shifts",
+            "/api/employee-performance/leaves"
+          ],
+          "scripts": [
+            "/shopify-settings.js"
+          ]
+        },
+        "shopify-orders": {
+          "visibleMs": 84,
+          "dataReadyMs": 204,
+          "settledMs": 461,
+          "api": [
+            "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+            "/api/auth/update-last-seen",
+            "/api/announcements/mine",
+            "/api/announcements/config",
+            "/api/announcements"
+          ],
+          "scripts": [
+            "/deposit-history.js",
+            "/shopify-edit-approvals.js",
+            "/shopify-kpis.js",
+            "/shopify-orders-route.js"
+          ],
+          "subnav": {
+            "role": "admin",
+            "admin": true,
+            "loaded": true,
+            "tabs": [
+              {
+                "id": "sp-subnav-orders",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposits",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposit-log",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-perf",
+                "hidden": false,
+                "display": "flex"
+              }
+            ]
+          },
+          "detail": {
+            "ms": 52,
+            "api": [
+              "/api/shopify/orders/detail/o1"
+            ]
+          }
+        },
+        "movements": {
+          "visibleMs": 50,
+          "dataReadyMs": 52,
+          "settledMs": 310,
+          "api": [
+            "/api/transactions/movements-page",
+            "/api/notifications",
+            "/api/notifications/preferences"
+          ],
+          "scripts": []
+        },
+        "followups": {
+          "visibleMs": 83,
+          "dataReadyMs": 160,
+          "settledMs": 415,
+          "api": [
+            "/api/followups",
+            "/api/complaints"
+          ],
+          "scripts": [
+            "/followups-view-route.js"
+          ]
+        },
+        "reports": {
+          "visibleMs": 98,
+          "dataReadyMs": 99,
+          "settledMs": 356,
+          "api": [
+            "/api/transactions/summary-page?page=1&limit=200",
+            "/api/transactions/summary-page?page=2&limit=200",
+            "/api/transactions/summary-page?page=3&limit=200",
+            "/api/transactions/summary-page?page=4&limit=200",
+            "/api/transactions/summary-page?page=5&limit=200",
+            "/api/transactions/summary-page?page=6&limit=200"
+          ],
+          "scripts": []
+        },
+        "invoice-view": {
+          "visibleMs": 51,
+          "dataReadyMs": 55,
+          "settledMs": 308,
+          "api": [],
+          "scripts": [
+            "/invoice-views-route.js"
+          ]
+        }
+      },
+      "invoiceImage": {
+        "elapsedMs": 184,
+        "loadedOnDemand": true
+      },
+      "errors": [],
+      "shopifyLoadStack": "Error\n    at libraryLoader (<anonymous>:10:47)\n    at navigateTo (http://127.0.0.1:8081/app-core.js?v=20261109-phase7-runtime:15134:12)\n    at pptr:evaluate;one%20(D%3A%5Cwebsite%5CSouliahome%5Cbackend%5Ctest%5Cperf%5Cphase6-populated-browser.cjs%3A154%3A16):1:12"
+    },
+    {
+      "startup": {
+        "dcl": 530.3999999761581,
+        "fcp": 224,
+        "lcp": 784,
+        "interactive": 917,
+        "tbt": 89,
+        "domNodes": 5680,
+        "scriptMs": 107,
+        "taskMs": 868
+      },
+      "startupApi": 22,
+      "startupScripts": [
+        "/config.js",
+        "/order-status.js",
+        "/branding.js",
+        "/comment-reactions.js",
+        "/deposit-decision.js",
+        "/invoice-unit-identities.js",
+        "/cancellations-analytics.js",
+        "/after-sales.js",
+        "/customer-piece-return.js",
+        "/animated-number.js",
+        "/failed-delivery-identities.js",
+        "/complaint-flow.js",
+        "/comment-inline-edit.js",
+        "/copy-button.js",
+        "/shopify-deposit-fab.js",
+        "/navigation-shell.js",
+        "/admin-team-home.js",
+        "/sales-overview.js",
+        "/bosta-pickup.js",
+        "/pickup-daily-shipping.js",
+        "/awb-preview.js",
+        "/pickup-ready-return.js",
+        "/notification-settings.js",
+        "/push-navigation.js",
+        "/roles-permissions.js",
+        "/announcements.js",
+        "/notification-feed.js",
+        "/followup-reminders.js",
+        "/order-audit-financials.js",
+        "/order-audit-periods.js",
+        "/notification-history.js",
+        "/order-audit-marketing.js",
+        "/order-audit-insights.js",
+        "/shopify-sync.js",
+        "/supplier-return-pieces.js",
+        "/barcode-input.js",
+        "/inventory-errors.js",
+        "/inventory-scanner.js",
+        "/global-search-scanner.js",
+        "/warehouses.js",
+        "/warehouse-layout.js",
+        "/preprinted-labels.js",
+        "/inventory-units.js",
+        "/supplier-labels.js",
+        "/legacy-stock-labels.js",
+        "/product-stocktake.js",
+        "/purchase-receiving.js",
+        "/inventory-packs.js",
+        "/shopify-compact-header.js",
+        "/sales-scanner.js",
+        "/employee-followup-tour.js",
+        "/app-core.js",
+        "/employee-followup-session.js",
+        "/be-button-motion.js",
+        "/order-status-preview.js",
+        "/loading-system.js",
+        "/designme/date-range-picker/soulia-range.js",
+        "/vendor/socket.io-4.7.5.min.js"
+      ],
+      "startupScriptBytes": 6150462,
+      "totalApi": 45,
+      "api": [
+        "/api/branding",
+        "/api/auth/me",
+        "/api/warehouses",
+        "/api/transactions/startup-overview",
+        "/api/settings",
+        "/api/drafts",
+        "/api/products",
+        "/api/expenses",
+        "/api/users",
+        "/api/tags",
+        "/api/returns",
+        "/api/complaints",
+        "/api/purchase-orders",
+        "/api/supplier-returns",
+        "/api/transactions/inventory",
+        "/api/notifications/read-state",
+        "/api/notifications/history",
+        "/api/mentions",
+        "/api/auth/users-status",
+        "/api/transactions/sales-overview?year=2026&month=11",
+        "/api/employee-performance/duty-board",
+        "/api/followups",
+        "/api/settings",
+        "/api/branding/library",
+        "/api/shopify/sync/status",
+        "/api/settings/backups",
+        "/api/employee-performance/shifts",
+        "/api/employee-performance/leaves",
+        "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+        "/api/auth/update-last-seen",
+        "/api/announcements/mine",
+        "/api/announcements/config",
+        "/api/announcements",
+        "/api/shopify/orders/detail/o1",
+        "/api/transactions/movements-page",
+        "/api/notifications",
+        "/api/notifications/preferences",
+        "/api/followups",
+        "/api/complaints",
+        "/api/transactions/summary-page?page=1&limit=200",
+        "/api/transactions/summary-page?page=2&limit=200",
+        "/api/transactions/summary-page?page=3&limit=200",
+        "/api/transactions/summary-page?page=4&limit=200",
+        "/api/transactions/summary-page?page=5&limit=200",
+        "/api/transactions/summary-page?page=6&limit=200"
+      ],
+      "assets": [
+        {
+          "path": "/config.js",
+          "bytes": 38
+        },
+        {
+          "path": "/order-status.js",
+          "bytes": 11671
+        },
+        {
+          "path": "/branding.js",
+          "bytes": 16026
+        },
+        {
+          "path": "/comment-reactions.js",
+          "bytes": 8884
+        },
+        {
+          "path": "/deposit-decision.js",
+          "bytes": 25301
+        },
+        {
+          "path": "/invoice-unit-identities.js",
+          "bytes": 15996
+        },
+        {
+          "path": "/cancellations-analytics.js",
+          "bytes": 10066
+        },
+        {
+          "path": "/after-sales.js",
+          "bytes": 113707
+        },
+        {
+          "path": "/customer-piece-return.js",
+          "bytes": 9996
+        },
+        {
+          "path": "/animated-number.js",
+          "bytes": 3360
+        },
+        {
+          "path": "/failed-delivery-identities.js",
+          "bytes": 7816
+        },
+        {
+          "path": "/complaint-flow.js",
+          "bytes": 88886
+        },
+        {
+          "path": "/comment-inline-edit.js",
+          "bytes": 4386
+        },
+        {
+          "path": "/copy-button.js",
+          "bytes": 3418
+        },
+        {
+          "path": "/shopify-deposit-fab.js",
+          "bytes": 5102
+        },
+        {
+          "path": "/navigation-shell.js",
+          "bytes": 11349
+        },
+        {
+          "path": "/admin-team-home.js",
+          "bytes": 15908
+        },
+        {
+          "path": "/sales-overview.js",
+          "bytes": 34233
+        },
+        {
+          "path": "/bosta-pickup.js",
+          "bytes": 25937
+        },
+        {
+          "path": "/pickup-daily-shipping.js",
+          "bytes": 21188
+        },
+        {
+          "path": "/awb-preview.js",
+          "bytes": 5416
+        },
+        {
+          "path": "/pickup-ready-return.js",
+          "bytes": 7847
+        },
+        {
+          "path": "/notification-settings.js",
+          "bytes": 36383
+        },
+        {
+          "path": "/push-navigation.js",
+          "bytes": 10983
+        },
+        {
+          "path": "/roles-permissions.js",
+          "bytes": 33678
+        },
+        {
+          "path": "/announcements.js",
+          "bytes": 45080
+        },
+        {
+          "path": "/notification-feed.js",
+          "bytes": 20813
+        },
+        {
+          "path": "/followup-reminders.js",
+          "bytes": 8736
+        },
+        {
+          "path": "/order-audit-financials.js",
+          "bytes": 4250
+        },
+        {
+          "path": "/order-audit-periods.js",
+          "bytes": 6155
+        },
+        {
+          "path": "/notification-history.js",
+          "bytes": 5323
+        },
+        {
+          "path": "/order-audit-marketing.js",
+          "bytes": 23303
+        },
+        {
+          "path": "/order-audit-insights.js",
+          "bytes": 20221
+        },
+        {
+          "path": "/shopify-sync.js",
+          "bytes": 17126
+        },
+        {
+          "path": "/supplier-return-pieces.js",
+          "bytes": 10802
+        },
+        {
+          "path": "/barcode-input.js",
+          "bytes": 3439
+        },
+        {
+          "path": "/inventory-errors.js",
+          "bytes": 30365
+        },
+        {
+          "path": "/inventory-scanner.js",
+          "bytes": 26802
+        },
+        {
+          "path": "/global-search-scanner.js",
+          "bytes": 19612
+        },
+        {
+          "path": "/warehouses.js",
+          "bytes": 30698
+        },
+        {
+          "path": "/warehouse-layout.js",
+          "bytes": 34804
+        },
+        {
+          "path": "/preprinted-labels.js",
+          "bytes": 35494
+        },
+        {
+          "path": "/inventory-units.js",
+          "bytes": 163186
+        },
+        {
+          "path": "/supplier-labels.js",
+          "bytes": 54107
+        },
+        {
+          "path": "/legacy-stock-labels.js",
+          "bytes": 11993
+        },
+        {
+          "path": "/product-stocktake.js",
+          "bytes": 16690
+        },
+        {
+          "path": "/purchase-receiving.js",
+          "bytes": 11512
+        },
+        {
+          "path": "/inventory-packs.js",
+          "bytes": 30650
+        },
+        {
+          "path": "/shopify-compact-header.js",
+          "bytes": 5774
+        },
+        {
+          "path": "/sales-scanner.js",
+          "bytes": 18030
+        },
+        {
+          "path": "/employee-followup-tour.js",
+          "bytes": 17165
+        },
+        {
+          "path": "/app-core.js",
+          "bytes": 4884286
+        },
+        {
+          "path": "/employee-followup-session.js",
+          "bytes": 24177
+        },
+        {
+          "path": "/be-button-motion.js",
+          "bytes": 4581
+        },
+        {
+          "path": "/order-status-preview.js",
+          "bytes": 17272
+        },
+        {
+          "path": "/loading-system.js",
+          "bytes": 1665
+        },
+        {
+          "path": "/designme/date-range-picker/soulia-range.js",
+          "bytes": 18727
+        },
+        {
+          "path": "/vendor/socket.io-4.7.5.min.js",
+          "bytes": 49
+        },
+        {
+          "path": "/shopify-settings.js",
+          "bytes": 11765
+        },
+        {
+          "path": "/deposit-history.js",
+          "bytes": 25097
+        },
+        {
+          "path": "/shopify-edit-approvals.js",
+          "bytes": 26520
+        },
+        {
+          "path": "/shopify-kpis.js",
+          "bytes": 31794
+        },
+        {
+          "path": "/shopify-orders-route.js",
+          "bytes": 593217
+        },
+        {
+          "path": "/followups-view-route.js",
+          "bytes": 28069
+        },
+        {
+          "path": "/invoice-views-route.js",
+          "bytes": 144601
+        },
+        {
+          "path": "/invoice-image.js",
+          "bytes": 17839
+        }
+      ],
+      "navigation": {
+        "settings": {
+          "visibleMs": 44,
+          "dataReadyMs": 55,
+          "settledMs": 309,
+          "api": [
+            "/api/settings",
+            "/api/branding/library",
+            "/api/shopify/sync/status",
+            "/api/settings/backups",
+            "/api/employee-performance/shifts",
+            "/api/employee-performance/leaves"
+          ],
+          "scripts": [
+            "/shopify-settings.js"
+          ]
+        },
+        "shopify-orders": {
+          "visibleMs": 70,
+          "dataReadyMs": 185,
+          "settledMs": 448,
+          "api": [
+            "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+            "/api/auth/update-last-seen",
+            "/api/announcements/mine",
+            "/api/announcements/config",
+            "/api/announcements"
+          ],
+          "scripts": [
+            "/deposit-history.js",
+            "/shopify-edit-approvals.js",
+            "/shopify-kpis.js",
+            "/shopify-orders-route.js"
+          ],
+          "subnav": {
+            "role": "admin",
+            "admin": true,
+            "loaded": true,
+            "tabs": [
+              {
+                "id": "sp-subnav-orders",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposits",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposit-log",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-perf",
+                "hidden": false,
+                "display": "flex"
+              }
+            ]
+          },
+          "detail": {
+            "ms": 58,
+            "api": [
+              "/api/shopify/orders/detail/o1"
+            ]
+          }
+        },
+        "movements": {
+          "visibleMs": 75,
+          "dataReadyMs": 83,
+          "settledMs": 345,
+          "api": [
+            "/api/transactions/movements-page",
+            "/api/notifications",
+            "/api/notifications/preferences"
+          ],
+          "scripts": []
+        },
+        "followups": {
+          "visibleMs": 64,
+          "dataReadyMs": 94,
+          "settledMs": 351,
+          "api": [
+            "/api/followups",
+            "/api/complaints"
+          ],
+          "scripts": [
+            "/followups-view-route.js"
+          ]
+        },
+        "reports": {
+          "visibleMs": 104,
+          "dataReadyMs": 113,
+          "settledMs": 370,
+          "api": [
+            "/api/transactions/summary-page?page=1&limit=200",
+            "/api/transactions/summary-page?page=2&limit=200",
+            "/api/transactions/summary-page?page=3&limit=200",
+            "/api/transactions/summary-page?page=4&limit=200",
+            "/api/transactions/summary-page?page=5&limit=200",
+            "/api/transactions/summary-page?page=6&limit=200"
+          ],
+          "scripts": []
+        },
+        "invoice-view": {
+          "visibleMs": 51,
+          "dataReadyMs": 51,
+          "settledMs": 309,
+          "api": [],
+          "scripts": [
+            "/invoice-views-route.js"
+          ]
+        }
+      },
+      "invoiceImage": {
+        "elapsedMs": 183,
+        "loadedOnDemand": true
+      },
+      "errors": [],
+      "shopifyLoadStack": "Error\n    at libraryLoader (<anonymous>:10:47)\n    at navigateTo (http://127.0.0.1:8081/app-core.js?v=20261109-phase7-runtime:15134:12)\n    at pptr:evaluate;one%20(D%3A%5Cwebsite%5CSouliahome%5Cbackend%5Ctest%5Cperf%5Cphase6-populated-browser.cjs%3A154%3A16):1:12"
+    },
+    {
+      "startup": {
+        "dcl": 534.9000000059605,
+        "fcp": 176,
+        "lcp": 856,
+        "interactive": 975.5999999940395,
+        "tbt": 126,
+        "domNodes": 5680,
+        "scriptMs": 114,
+        "taskMs": 963
+      },
+      "startupApi": 22,
+      "startupScripts": [
+        "/config.js",
+        "/order-status.js",
+        "/branding.js",
+        "/comment-reactions.js",
+        "/deposit-decision.js",
+        "/invoice-unit-identities.js",
+        "/cancellations-analytics.js",
+        "/customer-piece-return.js",
+        "/after-sales.js",
+        "/complaint-flow.js",
+        "/animated-number.js",
+        "/comment-inline-edit.js",
+        "/failed-delivery-identities.js",
+        "/copy-button.js",
+        "/shopify-deposit-fab.js",
+        "/navigation-shell.js",
+        "/admin-team-home.js",
+        "/sales-overview.js",
+        "/bosta-pickup.js",
+        "/pickup-daily-shipping.js",
+        "/awb-preview.js",
+        "/notification-settings.js",
+        "/push-navigation.js",
+        "/notification-feed.js",
+        "/announcements.js",
+        "/followup-reminders.js",
+        "/order-audit-insights.js",
+        "/order-audit-financials.js",
+        "/pickup-ready-return.js",
+        "/roles-permissions.js",
+        "/order-audit-periods.js",
+        "/notification-history.js",
+        "/order-audit-marketing.js",
+        "/shopify-sync.js",
+        "/supplier-return-pieces.js",
+        "/barcode-input.js",
+        "/inventory-errors.js",
+        "/global-search-scanner.js",
+        "/inventory-scanner.js",
+        "/warehouses.js",
+        "/warehouse-layout.js",
+        "/inventory-units.js",
+        "/preprinted-labels.js",
+        "/inventory-packs.js",
+        "/supplier-labels.js",
+        "/legacy-stock-labels.js",
+        "/purchase-receiving.js",
+        "/product-stocktake.js",
+        "/sales-scanner.js",
+        "/shopify-compact-header.js",
+        "/employee-followup-session.js",
+        "/employee-followup-tour.js",
+        "/app-core.js",
+        "/designme/date-range-picker/soulia-range.js",
+        "/be-button-motion.js",
+        "/loading-system.js",
+        "/order-status-preview.js",
+        "/vendor/socket.io-4.7.5.min.js"
+      ],
+      "startupScriptBytes": 6150462,
+      "totalApi": 45,
+      "api": [
+        "/api/branding",
+        "/api/auth/me",
+        "/api/warehouses",
+        "/api/transactions/startup-overview",
+        "/api/settings",
+        "/api/drafts",
+        "/api/products",
+        "/api/expenses",
+        "/api/users",
+        "/api/tags",
+        "/api/returns",
+        "/api/complaints",
+        "/api/purchase-orders",
+        "/api/supplier-returns",
+        "/api/transactions/inventory",
+        "/api/notifications/read-state",
+        "/api/notifications/history",
+        "/api/mentions",
+        "/api/auth/users-status",
+        "/api/transactions/sales-overview?year=2026&month=11",
+        "/api/employee-performance/duty-board",
+        "/api/followups",
+        "/api/settings",
+        "/api/branding/library",
+        "/api/shopify/sync/status",
+        "/api/settings/backups",
+        "/api/employee-performance/shifts",
+        "/api/employee-performance/leaves",
+        "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+        "/api/auth/update-last-seen",
+        "/api/announcements/mine",
+        "/api/announcements/config",
+        "/api/announcements",
+        "/api/shopify/orders/detail/o1",
+        "/api/transactions/movements-page",
+        "/api/notifications",
+        "/api/notifications/preferences",
+        "/api/followups",
+        "/api/complaints",
+        "/api/transactions/summary-page?page=1&limit=200",
+        "/api/transactions/summary-page?page=2&limit=200",
+        "/api/transactions/summary-page?page=3&limit=200",
+        "/api/transactions/summary-page?page=4&limit=200",
+        "/api/transactions/summary-page?page=5&limit=200",
+        "/api/transactions/summary-page?page=6&limit=200"
+      ],
+      "assets": [
+        {
+          "path": "/config.js",
+          "bytes": 38
+        },
+        {
+          "path": "/order-status.js",
+          "bytes": 11671
+        },
+        {
+          "path": "/branding.js",
+          "bytes": 16026
+        },
+        {
+          "path": "/comment-reactions.js",
+          "bytes": 8884
+        },
+        {
+          "path": "/deposit-decision.js",
+          "bytes": 25301
+        },
+        {
+          "path": "/invoice-unit-identities.js",
+          "bytes": 15996
+        },
+        {
+          "path": "/cancellations-analytics.js",
+          "bytes": 10066
+        },
+        {
+          "path": "/customer-piece-return.js",
+          "bytes": 9996
+        },
+        {
+          "path": "/after-sales.js",
+          "bytes": 113707
+        },
+        {
+          "path": "/complaint-flow.js",
+          "bytes": 88886
+        },
+        {
+          "path": "/animated-number.js",
+          "bytes": 3360
+        },
+        {
+          "path": "/comment-inline-edit.js",
+          "bytes": 4386
+        },
+        {
+          "path": "/failed-delivery-identities.js",
+          "bytes": 7816
+        },
+        {
+          "path": "/copy-button.js",
+          "bytes": 3418
+        },
+        {
+          "path": "/shopify-deposit-fab.js",
+          "bytes": 5102
+        },
+        {
+          "path": "/navigation-shell.js",
+          "bytes": 11349
+        },
+        {
+          "path": "/admin-team-home.js",
+          "bytes": 15908
+        },
+        {
+          "path": "/sales-overview.js",
+          "bytes": 34233
+        },
+        {
+          "path": "/bosta-pickup.js",
+          "bytes": 25937
+        },
+        {
+          "path": "/pickup-daily-shipping.js",
+          "bytes": 21188
+        },
+        {
+          "path": "/awb-preview.js",
+          "bytes": 5416
+        },
+        {
+          "path": "/notification-settings.js",
+          "bytes": 36383
+        },
+        {
+          "path": "/push-navigation.js",
+          "bytes": 10983
+        },
+        {
+          "path": "/notification-feed.js",
+          "bytes": 20813
+        },
+        {
+          "path": "/announcements.js",
+          "bytes": 45080
+        },
+        {
+          "path": "/followup-reminders.js",
+          "bytes": 8736
+        },
+        {
+          "path": "/order-audit-insights.js",
+          "bytes": 20221
+        },
+        {
+          "path": "/order-audit-financials.js",
+          "bytes": 4250
+        },
+        {
+          "path": "/pickup-ready-return.js",
+          "bytes": 7847
+        },
+        {
+          "path": "/roles-permissions.js",
+          "bytes": 33678
+        },
+        {
+          "path": "/order-audit-periods.js",
+          "bytes": 6155
+        },
+        {
+          "path": "/notification-history.js",
+          "bytes": 5323
+        },
+        {
+          "path": "/order-audit-marketing.js",
+          "bytes": 23303
+        },
+        {
+          "path": "/shopify-sync.js",
+          "bytes": 17126
+        },
+        {
+          "path": "/supplier-return-pieces.js",
+          "bytes": 10802
+        },
+        {
+          "path": "/barcode-input.js",
+          "bytes": 3439
+        },
+        {
+          "path": "/inventory-errors.js",
+          "bytes": 30365
+        },
+        {
+          "path": "/global-search-scanner.js",
+          "bytes": 19612
+        },
+        {
+          "path": "/inventory-scanner.js",
+          "bytes": 26802
+        },
+        {
+          "path": "/warehouses.js",
+          "bytes": 30698
+        },
+        {
+          "path": "/warehouse-layout.js",
+          "bytes": 34804
+        },
+        {
+          "path": "/inventory-units.js",
+          "bytes": 163186
+        },
+        {
+          "path": "/preprinted-labels.js",
+          "bytes": 35494
+        },
+        {
+          "path": "/inventory-packs.js",
+          "bytes": 30650
+        },
+        {
+          "path": "/supplier-labels.js",
+          "bytes": 54107
+        },
+        {
+          "path": "/legacy-stock-labels.js",
+          "bytes": 11993
+        },
+        {
+          "path": "/purchase-receiving.js",
+          "bytes": 11512
+        },
+        {
+          "path": "/product-stocktake.js",
+          "bytes": 16690
+        },
+        {
+          "path": "/sales-scanner.js",
+          "bytes": 18030
+        },
+        {
+          "path": "/shopify-compact-header.js",
+          "bytes": 5774
+        },
+        {
+          "path": "/employee-followup-session.js",
+          "bytes": 24177
+        },
+        {
+          "path": "/employee-followup-tour.js",
+          "bytes": 17165
+        },
+        {
+          "path": "/app-core.js",
+          "bytes": 4884286
+        },
+        {
+          "path": "/designme/date-range-picker/soulia-range.js",
+          "bytes": 18727
+        },
+        {
+          "path": "/be-button-motion.js",
+          "bytes": 4581
+        },
+        {
+          "path": "/loading-system.js",
+          "bytes": 1665
+        },
+        {
+          "path": "/order-status-preview.js",
+          "bytes": 17272
+        },
+        {
+          "path": "/vendor/socket.io-4.7.5.min.js",
+          "bytes": 49
+        },
+        {
+          "path": "/shopify-settings.js",
+          "bytes": 11765
+        },
+        {
+          "path": "/deposit-history.js",
+          "bytes": 25097
+        },
+        {
+          "path": "/shopify-edit-approvals.js",
+          "bytes": 26520
+        },
+        {
+          "path": "/shopify-kpis.js",
+          "bytes": 31794
+        },
+        {
+          "path": "/shopify-orders-route.js",
+          "bytes": 593217
+        },
+        {
+          "path": "/followups-view-route.js",
+          "bytes": 28069
+        },
+        {
+          "path": "/invoice-views-route.js",
+          "bytes": 144601
+        },
+        {
+          "path": "/invoice-image.js",
+          "bytes": 17839
+        }
+      ],
+      "navigation": {
+        "settings": {
+          "visibleMs": 49,
+          "dataReadyMs": 61,
+          "settledMs": 322,
+          "api": [
+            "/api/settings",
+            "/api/branding/library",
+            "/api/shopify/sync/status",
+            "/api/settings/backups",
+            "/api/employee-performance/shifts",
+            "/api/employee-performance/leaves"
+          ],
+          "scripts": [
+            "/shopify-settings.js"
+          ]
+        },
+        "shopify-orders": {
+          "visibleMs": 66,
+          "dataReadyMs": 193,
+          "settledMs": 447,
+          "api": [
+            "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A13%3A00.000Z&scope=",
+            "/api/auth/update-last-seen",
+            "/api/announcements/mine",
+            "/api/announcements/config",
+            "/api/announcements"
+          ],
+          "scripts": [
+            "/deposit-history.js",
+            "/shopify-edit-approvals.js",
+            "/shopify-kpis.js",
+            "/shopify-orders-route.js"
+          ],
+          "subnav": {
+            "role": "admin",
+            "admin": true,
+            "loaded": true,
+            "tabs": [
+              {
+                "id": "sp-subnav-orders",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposits",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposit-log",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-perf",
+                "hidden": false,
+                "display": "flex"
+              }
+            ]
+          },
+          "detail": {
+            "ms": 53,
+            "api": [
+              "/api/shopify/orders/detail/o1"
+            ]
+          }
+        },
+        "movements": {
+          "visibleMs": 56,
+          "dataReadyMs": 58,
+          "settledMs": 323,
+          "api": [
+            "/api/transactions/movements-page",
+            "/api/notifications",
+            "/api/notifications/preferences"
+          ],
+          "scripts": []
+        },
+        "followups": {
+          "visibleMs": 74,
+          "dataReadyMs": 104,
+          "settledMs": 373,
+          "api": [
+            "/api/followups",
+            "/api/complaints"
+          ],
+          "scripts": [
+            "/followups-view-route.js"
+          ]
+        },
+        "reports": {
+          "visibleMs": 92,
+          "dataReadyMs": 101,
+          "settledMs": 366,
+          "api": [
+            "/api/transactions/summary-page?page=1&limit=200",
+            "/api/transactions/summary-page?page=2&limit=200",
+            "/api/transactions/summary-page?page=3&limit=200",
+            "/api/transactions/summary-page?page=4&limit=200",
+            "/api/transactions/summary-page?page=5&limit=200",
+            "/api/transactions/summary-page?page=6&limit=200"
+          ],
+          "scripts": []
+        },
+        "invoice-view": {
+          "visibleMs": 35,
+          "dataReadyMs": 35,
+          "settledMs": 292,
+          "api": [],
+          "scripts": [
+            "/invoice-views-route.js"
+          ]
+        }
+      },
+      "invoiceImage": {
+        "elapsedMs": 154,
+        "loadedOnDemand": true
+      },
+      "errors": [],
+      "shopifyLoadStack": "Error\n    at libraryLoader (<anonymous>:10:47)\n    at navigateTo (http://127.0.0.1:8081/app-core.js?v=20261109-phase7-runtime:15134:12)\n    at pptr:evaluate;one%20(D%3A%5Cwebsite%5CSouliahome%5Cbackend%5Ctest%5Cperf%5Cphase6-populated-browser.cjs%3A154%3A16):1:12"
+    },
+    {
+      "startup": {
+        "dcl": 501.40000000596046,
+        "fcp": 168,
+        "lcp": 780,
+        "interactive": 915.1999999880791,
+        "tbt": 81,
+        "domNodes": 5680,
+        "scriptMs": 109,
+        "taskMs": 857
+      },
+      "startupApi": 22,
+      "startupScripts": [
+        "/config.js",
+        "/order-status.js",
+        "/branding.js",
+        "/comment-reactions.js",
+        "/deposit-decision.js",
+        "/invoice-unit-identities.js",
+        "/cancellations-analytics.js",
+        "/customer-piece-return.js",
+        "/after-sales.js",
+        "/complaint-flow.js",
+        "/animated-number.js",
+        "/comment-inline-edit.js",
+        "/failed-delivery-identities.js",
+        "/copy-button.js",
+        "/shopify-deposit-fab.js",
+        "/admin-team-home.js",
+        "/sales-overview.js",
+        "/navigation-shell.js",
+        "/bosta-pickup.js",
+        "/pickup-daily-shipping.js",
+        "/awb-preview.js",
+        "/pickup-ready-return.js",
+        "/notification-settings.js",
+        "/roles-permissions.js",
+        "/push-navigation.js",
+        "/announcements.js",
+        "/notification-feed.js",
+        "/order-audit-financials.js",
+        "/followup-reminders.js",
+        "/order-audit-insights.js",
+        "/order-audit-periods.js",
+        "/order-audit-marketing.js",
+        "/notification-history.js",
+        "/shopify-sync.js",
+        "/supplier-return-pieces.js",
+        "/barcode-input.js",
+        "/inventory-errors.js",
+        "/inventory-scanner.js",
+        "/global-search-scanner.js",
+        "/warehouses.js",
+        "/warehouse-layout.js",
+        "/inventory-units.js",
+        "/preprinted-labels.js",
+        "/supplier-labels.js",
+        "/inventory-packs.js",
+        "/legacy-stock-labels.js",
+        "/product-stocktake.js",
+        "/purchase-receiving.js",
+        "/sales-scanner.js",
+        "/shopify-compact-header.js",
+        "/employee-followup-tour.js",
+        "/employee-followup-session.js",
+        "/designme/date-range-picker/soulia-range.js",
+        "/be-button-motion.js",
+        "/app-core.js",
+        "/loading-system.js",
+        "/order-status-preview.js",
+        "/vendor/socket.io-4.7.5.min.js"
+      ],
+      "startupScriptBytes": 6150462,
+      "totalApi": 45,
+      "api": [
+        "/api/branding",
+        "/api/auth/me",
+        "/api/warehouses",
+        "/api/drafts",
+        "/api/transactions/startup-overview",
+        "/api/settings",
+        "/api/products",
+        "/api/expenses",
+        "/api/users",
+        "/api/tags",
+        "/api/returns",
+        "/api/complaints",
+        "/api/purchase-orders",
+        "/api/supplier-returns",
+        "/api/transactions/inventory",
+        "/api/notifications/read-state",
+        "/api/notifications/history",
+        "/api/mentions",
+        "/api/auth/users-status",
+        "/api/transactions/sales-overview?year=2026&month=11",
+        "/api/employee-performance/duty-board",
+        "/api/followups",
+        "/api/settings",
+        "/api/branding/library",
+        "/api/shopify/sync/status",
+        "/api/settings/backups",
+        "/api/employee-performance/shifts",
+        "/api/employee-performance/leaves",
+        "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A14%3A00.000Z&scope=",
+        "/api/auth/update-last-seen",
+        "/api/announcements/mine",
+        "/api/announcements/config",
+        "/api/announcements",
+        "/api/shopify/orders/detail/o1",
+        "/api/transactions/movements-page",
+        "/api/notifications",
+        "/api/notifications/preferences",
+        "/api/followups",
+        "/api/complaints",
+        "/api/transactions/summary-page?page=1&limit=200",
+        "/api/transactions/summary-page?page=2&limit=200",
+        "/api/transactions/summary-page?page=3&limit=200",
+        "/api/transactions/summary-page?page=4&limit=200",
+        "/api/transactions/summary-page?page=5&limit=200",
+        "/api/transactions/summary-page?page=6&limit=200"
+      ],
+      "assets": [
+        {
+          "path": "/config.js",
+          "bytes": 38
+        },
+        {
+          "path": "/order-status.js",
+          "bytes": 11671
+        },
+        {
+          "path": "/branding.js",
+          "bytes": 16026
+        },
+        {
+          "path": "/comment-reactions.js",
+          "bytes": 8884
+        },
+        {
+          "path": "/deposit-decision.js",
+          "bytes": 25301
+        },
+        {
+          "path": "/invoice-unit-identities.js",
+          "bytes": 15996
+        },
+        {
+          "path": "/cancellations-analytics.js",
+          "bytes": 10066
+        },
+        {
+          "path": "/customer-piece-return.js",
+          "bytes": 9996
+        },
+        {
+          "path": "/after-sales.js",
+          "bytes": 113707
+        },
+        {
+          "path": "/complaint-flow.js",
+          "bytes": 88886
+        },
+        {
+          "path": "/animated-number.js",
+          "bytes": 3360
+        },
+        {
+          "path": "/comment-inline-edit.js",
+          "bytes": 4386
+        },
+        {
+          "path": "/failed-delivery-identities.js",
+          "bytes": 7816
+        },
+        {
+          "path": "/copy-button.js",
+          "bytes": 3418
+        },
+        {
+          "path": "/shopify-deposit-fab.js",
+          "bytes": 5102
+        },
+        {
+          "path": "/admin-team-home.js",
+          "bytes": 15908
+        },
+        {
+          "path": "/sales-overview.js",
+          "bytes": 34233
+        },
+        {
+          "path": "/navigation-shell.js",
+          "bytes": 11349
+        },
+        {
+          "path": "/bosta-pickup.js",
+          "bytes": 25937
+        },
+        {
+          "path": "/pickup-daily-shipping.js",
+          "bytes": 21188
+        },
+        {
+          "path": "/awb-preview.js",
+          "bytes": 5416
+        },
+        {
+          "path": "/pickup-ready-return.js",
+          "bytes": 7847
+        },
+        {
+          "path": "/notification-settings.js",
+          "bytes": 36383
+        },
+        {
+          "path": "/roles-permissions.js",
+          "bytes": 33678
+        },
+        {
+          "path": "/push-navigation.js",
+          "bytes": 10983
+        },
+        {
+          "path": "/announcements.js",
+          "bytes": 45080
+        },
+        {
+          "path": "/notification-feed.js",
+          "bytes": 20813
+        },
+        {
+          "path": "/order-audit-financials.js",
+          "bytes": 4250
+        },
+        {
+          "path": "/followup-reminders.js",
+          "bytes": 8736
+        },
+        {
+          "path": "/order-audit-insights.js",
+          "bytes": 20221
+        },
+        {
+          "path": "/order-audit-periods.js",
+          "bytes": 6155
+        },
+        {
+          "path": "/order-audit-marketing.js",
+          "bytes": 23303
+        },
+        {
+          "path": "/notification-history.js",
+          "bytes": 5323
+        },
+        {
+          "path": "/shopify-sync.js",
+          "bytes": 17126
+        },
+        {
+          "path": "/supplier-return-pieces.js",
+          "bytes": 10802
+        },
+        {
+          "path": "/barcode-input.js",
+          "bytes": 3439
+        },
+        {
+          "path": "/inventory-errors.js",
+          "bytes": 30365
+        },
+        {
+          "path": "/inventory-scanner.js",
+          "bytes": 26802
+        },
+        {
+          "path": "/global-search-scanner.js",
+          "bytes": 19612
+        },
+        {
+          "path": "/warehouses.js",
+          "bytes": 30698
+        },
+        {
+          "path": "/warehouse-layout.js",
+          "bytes": 34804
+        },
+        {
+          "path": "/inventory-units.js",
+          "bytes": 163186
+        },
+        {
+          "path": "/preprinted-labels.js",
+          "bytes": 35494
+        },
+        {
+          "path": "/supplier-labels.js",
+          "bytes": 54107
+        },
+        {
+          "path": "/inventory-packs.js",
+          "bytes": 30650
+        },
+        {
+          "path": "/legacy-stock-labels.js",
+          "bytes": 11993
+        },
+        {
+          "path": "/product-stocktake.js",
+          "bytes": 16690
+        },
+        {
+          "path": "/purchase-receiving.js",
+          "bytes": 11512
+        },
+        {
+          "path": "/sales-scanner.js",
+          "bytes": 18030
+        },
+        {
+          "path": "/shopify-compact-header.js",
+          "bytes": 5774
+        },
+        {
+          "path": "/employee-followup-tour.js",
+          "bytes": 17165
+        },
+        {
+          "path": "/employee-followup-session.js",
+          "bytes": 24177
+        },
+        {
+          "path": "/designme/date-range-picker/soulia-range.js",
+          "bytes": 18727
+        },
+        {
+          "path": "/be-button-motion.js",
+          "bytes": 4581
+        },
+        {
+          "path": "/app-core.js",
+          "bytes": 4884286
+        },
+        {
+          "path": "/loading-system.js",
+          "bytes": 1665
+        },
+        {
+          "path": "/order-status-preview.js",
+          "bytes": 17272
+        },
+        {
+          "path": "/vendor/socket.io-4.7.5.min.js",
+          "bytes": 49
+        },
+        {
+          "path": "/shopify-settings.js",
+          "bytes": 11765
+        },
+        {
+          "path": "/deposit-history.js",
+          "bytes": 25097
+        },
+        {
+          "path": "/shopify-edit-approvals.js",
+          "bytes": 26520
+        },
+        {
+          "path": "/shopify-kpis.js",
+          "bytes": 31794
+        },
+        {
+          "path": "/shopify-orders-route.js",
+          "bytes": 593217
+        },
+        {
+          "path": "/followups-view-route.js",
+          "bytes": 28069
+        },
+        {
+          "path": "/invoice-views-route.js",
+          "bytes": 144601
+        },
+        {
+          "path": "/invoice-image.js",
+          "bytes": 17839
+        }
+      ],
+      "navigation": {
+        "settings": {
+          "visibleMs": 44,
+          "dataReadyMs": 54,
+          "settledMs": 309,
+          "api": [
+            "/api/settings",
+            "/api/branding/library",
+            "/api/shopify/sync/status",
+            "/api/settings/backups",
+            "/api/employee-performance/shifts",
+            "/api/employee-performance/leaves"
+          ],
+          "scripts": [
+            "/shopify-settings.js"
+          ]
+        },
+        "shopify-orders": {
+          "visibleMs": 169,
+          "dataReadyMs": 202,
+          "settledMs": 462,
+          "api": [
+            "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A14%3A00.000Z&scope=",
+            "/api/auth/update-last-seen",
+            "/api/announcements/mine",
+            "/api/announcements/config",
+            "/api/announcements"
+          ],
+          "scripts": [
+            "/deposit-history.js",
+            "/shopify-edit-approvals.js",
+            "/shopify-kpis.js",
+            "/shopify-orders-route.js"
+          ],
+          "subnav": {
+            "role": "admin",
+            "admin": true,
+            "loaded": true,
+            "tabs": [
+              {
+                "id": "sp-subnav-orders",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposits",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposit-log",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-perf",
+                "hidden": false,
+                "display": "flex"
+              }
+            ]
+          },
+          "detail": {
+            "ms": 59,
+            "api": [
+              "/api/shopify/orders/detail/o1"
+            ]
+          }
+        },
+        "movements": {
+          "visibleMs": 82,
+          "dataReadyMs": 92,
+          "settledMs": 356,
+          "api": [
+            "/api/transactions/movements-page",
+            "/api/notifications",
+            "/api/notifications/preferences"
+          ],
+          "scripts": []
+        },
+        "followups": {
+          "visibleMs": 64,
+          "dataReadyMs": 94,
+          "settledMs": 363,
+          "api": [
+            "/api/followups",
+            "/api/complaints"
+          ],
+          "scripts": [
+            "/followups-view-route.js"
+          ]
+        },
+        "reports": {
+          "visibleMs": 93,
+          "dataReadyMs": 95,
+          "settledMs": 353,
+          "api": [
+            "/api/transactions/summary-page?page=1&limit=200",
+            "/api/transactions/summary-page?page=2&limit=200",
+            "/api/transactions/summary-page?page=3&limit=200",
+            "/api/transactions/summary-page?page=4&limit=200",
+            "/api/transactions/summary-page?page=5&limit=200",
+            "/api/transactions/summary-page?page=6&limit=200"
+          ],
+          "scripts": []
+        },
+        "invoice-view": {
+          "visibleMs": 47,
+          "dataReadyMs": 47,
+          "settledMs": 310,
+          "api": [],
+          "scripts": [
+            "/invoice-views-route.js"
+          ]
+        }
+      },
+      "invoiceImage": {
+        "elapsedMs": 153,
+        "loadedOnDemand": true
+      },
+      "errors": [],
+      "shopifyLoadStack": "Error\n    at libraryLoader (<anonymous>:10:47)\n    at navigateTo (http://127.0.0.1:8081/app-core.js?v=20261109-phase7-runtime:15134:12)\n    at pptr:evaluate;one%20(D%3A%5Cwebsite%5CSouliahome%5Cbackend%5Ctest%5Cperf%5Cphase6-populated-browser.cjs%3A154%3A16):1:12"
+    },
+    {
+      "startup": {
+        "dcl": 501.59999999403954,
+        "fcp": 168,
+        "lcp": 820,
+        "interactive": 952.5,
+        "tbt": 118,
+        "domNodes": 5680,
+        "scriptMs": 108,
+        "taskMs": 901
+      },
+      "startupApi": 22,
+      "startupScripts": [
+        "/config.js",
+        "/order-status.js",
+        "/branding.js",
+        "/comment-reactions.js",
+        "/deposit-decision.js",
+        "/invoice-unit-identities.js",
+        "/cancellations-analytics.js",
+        "/after-sales.js",
+        "/animated-number.js",
+        "/customer-piece-return.js",
+        "/failed-delivery-identities.js",
+        "/comment-inline-edit.js",
+        "/complaint-flow.js",
+        "/copy-button.js",
+        "/shopify-deposit-fab.js",
+        "/navigation-shell.js",
+        "/admin-team-home.js",
+        "/sales-overview.js",
+        "/bosta-pickup.js",
+        "/awb-preview.js",
+        "/pickup-ready-return.js",
+        "/pickup-daily-shipping.js",
+        "/roles-permissions.js",
+        "/notification-settings.js",
+        "/announcements.js",
+        "/notification-feed.js",
+        "/push-navigation.js",
+        "/order-audit-financials.js",
+        "/followup-reminders.js",
+        "/order-audit-insights.js",
+        "/order-audit-marketing.js",
+        "/order-audit-periods.js",
+        "/notification-history.js",
+        "/shopify-sync.js",
+        "/supplier-return-pieces.js",
+        "/barcode-input.js",
+        "/inventory-errors.js",
+        "/inventory-scanner.js",
+        "/global-search-scanner.js",
+        "/warehouses.js",
+        "/preprinted-labels.js",
+        "/warehouse-layout.js",
+        "/inventory-units.js",
+        "/legacy-stock-labels.js",
+        "/product-stocktake.js",
+        "/inventory-packs.js",
+        "/supplier-labels.js",
+        "/purchase-receiving.js",
+        "/shopify-compact-header.js",
+        "/sales-scanner.js",
+        "/employee-followup-session.js",
+        "/employee-followup-tour.js",
+        "/app-core.js",
+        "/designme/date-range-picker/soulia-range.js",
+        "/be-button-motion.js",
+        "/loading-system.js",
+        "/order-status-preview.js",
+        "/vendor/socket.io-4.7.5.min.js"
+      ],
+      "startupScriptBytes": 6150462,
+      "totalApi": 45,
+      "api": [
+        "/api/branding",
+        "/api/auth/me",
+        "/api/warehouses",
+        "/api/drafts",
+        "/api/transactions/startup-overview",
+        "/api/settings",
+        "/api/products",
+        "/api/expenses",
+        "/api/users",
+        "/api/tags",
+        "/api/returns",
+        "/api/complaints",
+        "/api/purchase-orders",
+        "/api/supplier-returns",
+        "/api/transactions/inventory",
+        "/api/notifications/read-state",
+        "/api/notifications/history",
+        "/api/mentions",
+        "/api/auth/users-status",
+        "/api/transactions/sales-overview?year=2026&month=11",
+        "/api/employee-performance/duty-board",
+        "/api/followups",
+        "/api/settings",
+        "/api/branding/library",
+        "/api/shopify/sync/status",
+        "/api/settings/backups",
+        "/api/employee-performance/shifts",
+        "/api/employee-performance/leaves",
+        "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A14%3A00.000Z&scope=",
+        "/api/auth/update-last-seen",
+        "/api/announcements/mine",
+        "/api/announcements/config",
+        "/api/announcements",
+        "/api/shopify/orders/detail/o1",
+        "/api/transactions/movements-page",
+        "/api/notifications",
+        "/api/notifications/preferences",
+        "/api/followups",
+        "/api/complaints",
+        "/api/transactions/summary-page?page=1&limit=200",
+        "/api/transactions/summary-page?page=2&limit=200",
+        "/api/transactions/summary-page?page=3&limit=200",
+        "/api/transactions/summary-page?page=4&limit=200",
+        "/api/transactions/summary-page?page=5&limit=200",
+        "/api/transactions/summary-page?page=6&limit=200"
+      ],
+      "assets": [
+        {
+          "path": "/config.js",
+          "bytes": 38
+        },
+        {
+          "path": "/order-status.js",
+          "bytes": 11671
+        },
+        {
+          "path": "/branding.js",
+          "bytes": 16026
+        },
+        {
+          "path": "/comment-reactions.js",
+          "bytes": 8884
+        },
+        {
+          "path": "/deposit-decision.js",
+          "bytes": 25301
+        },
+        {
+          "path": "/invoice-unit-identities.js",
+          "bytes": 15996
+        },
+        {
+          "path": "/cancellations-analytics.js",
+          "bytes": 10066
+        },
+        {
+          "path": "/after-sales.js",
+          "bytes": 113707
+        },
+        {
+          "path": "/animated-number.js",
+          "bytes": 3360
+        },
+        {
+          "path": "/customer-piece-return.js",
+          "bytes": 9996
+        },
+        {
+          "path": "/failed-delivery-identities.js",
+          "bytes": 7816
+        },
+        {
+          "path": "/comment-inline-edit.js",
+          "bytes": 4386
+        },
+        {
+          "path": "/complaint-flow.js",
+          "bytes": 88886
+        },
+        {
+          "path": "/copy-button.js",
+          "bytes": 3418
+        },
+        {
+          "path": "/shopify-deposit-fab.js",
+          "bytes": 5102
+        },
+        {
+          "path": "/navigation-shell.js",
+          "bytes": 11349
+        },
+        {
+          "path": "/admin-team-home.js",
+          "bytes": 15908
+        },
+        {
+          "path": "/sales-overview.js",
+          "bytes": 34233
+        },
+        {
+          "path": "/bosta-pickup.js",
+          "bytes": 25937
+        },
+        {
+          "path": "/awb-preview.js",
+          "bytes": 5416
+        },
+        {
+          "path": "/pickup-ready-return.js",
+          "bytes": 7847
+        },
+        {
+          "path": "/pickup-daily-shipping.js",
+          "bytes": 21188
+        },
+        {
+          "path": "/roles-permissions.js",
+          "bytes": 33678
+        },
+        {
+          "path": "/notification-settings.js",
+          "bytes": 36383
+        },
+        {
+          "path": "/announcements.js",
+          "bytes": 45080
+        },
+        {
+          "path": "/notification-feed.js",
+          "bytes": 20813
+        },
+        {
+          "path": "/push-navigation.js",
+          "bytes": 10983
+        },
+        {
+          "path": "/order-audit-financials.js",
+          "bytes": 4250
+        },
+        {
+          "path": "/followup-reminders.js",
+          "bytes": 8736
+        },
+        {
+          "path": "/order-audit-insights.js",
+          "bytes": 20221
+        },
+        {
+          "path": "/order-audit-marketing.js",
+          "bytes": 23303
+        },
+        {
+          "path": "/order-audit-periods.js",
+          "bytes": 6155
+        },
+        {
+          "path": "/notification-history.js",
+          "bytes": 5323
+        },
+        {
+          "path": "/shopify-sync.js",
+          "bytes": 17126
+        },
+        {
+          "path": "/supplier-return-pieces.js",
+          "bytes": 10802
+        },
+        {
+          "path": "/barcode-input.js",
+          "bytes": 3439
+        },
+        {
+          "path": "/inventory-errors.js",
+          "bytes": 30365
+        },
+        {
+          "path": "/inventory-scanner.js",
+          "bytes": 26802
+        },
+        {
+          "path": "/global-search-scanner.js",
+          "bytes": 19612
+        },
+        {
+          "path": "/warehouses.js",
+          "bytes": 30698
+        },
+        {
+          "path": "/preprinted-labels.js",
+          "bytes": 35494
+        },
+        {
+          "path": "/warehouse-layout.js",
+          "bytes": 34804
+        },
+        {
+          "path": "/inventory-units.js",
+          "bytes": 163186
+        },
+        {
+          "path": "/legacy-stock-labels.js",
+          "bytes": 11993
+        },
+        {
+          "path": "/product-stocktake.js",
+          "bytes": 16690
+        },
+        {
+          "path": "/inventory-packs.js",
+          "bytes": 30650
+        },
+        {
+          "path": "/supplier-labels.js",
+          "bytes": 54107
+        },
+        {
+          "path": "/purchase-receiving.js",
+          "bytes": 11512
+        },
+        {
+          "path": "/shopify-compact-header.js",
+          "bytes": 5774
+        },
+        {
+          "path": "/sales-scanner.js",
+          "bytes": 18030
+        },
+        {
+          "path": "/employee-followup-session.js",
+          "bytes": 24177
+        },
+        {
+          "path": "/employee-followup-tour.js",
+          "bytes": 17165
+        },
+        {
+          "path": "/app-core.js",
+          "bytes": 4884286
+        },
+        {
+          "path": "/designme/date-range-picker/soulia-range.js",
+          "bytes": 18727
+        },
+        {
+          "path": "/be-button-motion.js",
+          "bytes": 4581
+        },
+        {
+          "path": "/loading-system.js",
+          "bytes": 1665
+        },
+        {
+          "path": "/order-status-preview.js",
+          "bytes": 17272
+        },
+        {
+          "path": "/vendor/socket.io-4.7.5.min.js",
+          "bytes": 49
+        },
+        {
+          "path": "/shopify-settings.js",
+          "bytes": 11765
+        },
+        {
+          "path": "/deposit-history.js",
+          "bytes": 25097
+        },
+        {
+          "path": "/shopify-edit-approvals.js",
+          "bytes": 26520
+        },
+        {
+          "path": "/shopify-kpis.js",
+          "bytes": 31794
+        },
+        {
+          "path": "/shopify-orders-route.js",
+          "bytes": 593217
+        },
+        {
+          "path": "/followups-view-route.js",
+          "bytes": 28069
+        },
+        {
+          "path": "/invoice-views-route.js",
+          "bytes": 144601
+        },
+        {
+          "path": "/invoice-image.js",
+          "bytes": 17839
+        }
+      ],
+      "navigation": {
+        "settings": {
+          "visibleMs": 44,
+          "dataReadyMs": 55,
+          "settledMs": 309,
+          "api": [
+            "/api/settings",
+            "/api/branding/library",
+            "/api/shopify/sync/status",
+            "/api/settings/backups",
+            "/api/employee-performance/shifts",
+            "/api/employee-performance/leaves"
+          ],
+          "scripts": [
+            "/shopify-settings.js"
+          ]
+        },
+        "shopify-orders": {
+          "visibleMs": 69,
+          "dataReadyMs": 184,
+          "settledMs": 447,
+          "api": [
+            "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T02%3A14%3A00.000Z&scope=",
+            "/api/auth/update-last-seen",
+            "/api/announcements/mine",
+            "/api/announcements/config",
+            "/api/announcements"
+          ],
+          "scripts": [
+            "/deposit-history.js",
+            "/shopify-edit-approvals.js",
+            "/shopify-kpis.js",
+            "/shopify-orders-route.js"
+          ],
+          "subnav": {
+            "role": "admin",
+            "admin": true,
+            "loaded": true,
+            "tabs": [
+              {
+                "id": "sp-subnav-orders",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposits",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-deposit-log",
+                "hidden": false,
+                "display": "flex"
+              },
+              {
+                "id": "sp-subnav-perf",
+                "hidden": false,
+                "display": "flex"
+              }
+            ]
+          },
+          "detail": {
+            "ms": 57,
+            "api": [
+              "/api/shopify/orders/detail/o1"
+            ]
+          }
+        },
+        "movements": {
+          "visibleMs": 77,
+          "dataReadyMs": 94,
+          "settledMs": 358,
+          "api": [
+            "/api/transactions/movements-page",
+            "/api/notifications",
+            "/api/notifications/preferences"
+          ],
+          "scripts": []
+        },
+        "followups": {
+          "visibleMs": 62,
+          "dataReadyMs": 90,
+          "settledMs": 353,
+          "api": [
+            "/api/followups",
+            "/api/complaints"
+          ],
+          "scripts": [
+            "/followups-view-route.js"
+          ]
+        },
+        "reports": {
+          "visibleMs": 91,
+          "dataReadyMs": 92,
+          "settledMs": 345,
+          "api": [
+            "/api/transactions/summary-page?page=1&limit=200",
+            "/api/transactions/summary-page?page=2&limit=200",
+            "/api/transactions/summary-page?page=3&limit=200",
+            "/api/transactions/summary-page?page=4&limit=200",
+            "/api/transactions/summary-page?page=5&limit=200",
+            "/api/transactions/summary-page?page=6&limit=200"
+          ],
+          "scripts": []
+        },
+        "invoice-view": {
+          "visibleMs": 44,
+          "dataReadyMs": 49,
+          "settledMs": 309,
+          "api": [],
+          "scripts": [
+            "/invoice-views-route.js"
+          ]
+        }
+      },
+      "invoiceImage": {
+        "elapsedMs": 154,
+        "loadedOnDemand": true
+      },
+      "errors": [],
+      "shopifyLoadStack": "Error\n    at libraryLoader (<anonymous>:10:47)\n    at navigateTo (http://127.0.0.1:8081/app-core.js?v=20261109-phase7-runtime:15134:12)\n    at pptr:evaluate;one%20(D%3A%5Cwebsite%5CSouliahome%5Cbackend%5Ctest%5Cperf%5Cphase6-populated-browser.cjs%3A154%3A16):1:12"
+    }
+  ]
+}

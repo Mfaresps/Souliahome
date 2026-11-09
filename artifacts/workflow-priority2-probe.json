@@ -1,0 +1,166 @@
+{
+  "runs": [
+    {
+      "pair": 1,
+      "orders": {
+        "visibleMs": 711.7,
+        "completeMs": 711.7,
+        "actionSyncMs": 0.6,
+        "requests": 1,
+        "bytes": 108771,
+        "endpoints": [
+          {
+            "path": "/api/shopify/orders/summary-page",
+            "duration": 137.9,
+            "bytes": 108771
+          }
+        ]
+      },
+      "drawer": {
+        "visibleMs": 23.7,
+        "completeMs": 135.5,
+        "actionSyncMs": 14.7,
+        "requests": 2,
+        "bytes": 12413,
+        "endpoints": [
+          {
+            "path": "/api/shopify/orders/detail/6aef138ed8d80699c37a79f1",
+            "duration": 6.8,
+            "bytes": 12224
+          },
+          {
+            "path": "/api/followups/shopify-order",
+            "duration": 6.7,
+            "bytes": 189
+          }
+        ]
+      },
+      "switchInvoice": {
+        "visibleMs": 14.5,
+        "completeMs": 106.3,
+        "actionSyncMs": 8.2,
+        "requests": 2,
+        "bytes": 29585,
+        "endpoints": [
+          {
+            "path": "/api/shopify/orders/detail/6aef066dd8d80699c37a09e2",
+            "duration": 8,
+            "bytes": 29396
+          },
+          {
+            "path": "/api/followups/shopify-order",
+            "duration": 6.3,
+            "bytes": 189
+          }
+        ]
+      },
+      "reopen": {
+        "visibleMs": 29.3,
+        "completeMs": 103.1,
+        "actionSyncMs": 14,
+        "requests": 3,
+        "bytes": 1091,
+        "endpoints": [
+          {
+            "path": "/api/shopify/deposit-receipts/dr_mw6mqc1i63435bd3/image",
+            "duration": 380.4,
+            "bytes": 208
+          },
+          {
+            "path": "/api/notifications",
+            "duration": 6.3,
+            "bytes": 694
+          },
+          {
+            "path": "/api/followups/shopify-order",
+            "duration": 6.7,
+            "bytes": 189
+          }
+        ]
+      },
+      "transferRefresh": {
+        "visibleMs": 0.4,
+        "completeMs": 159.8,
+        "actionSyncMs": 0.4,
+        "requests": 2,
+        "bytes": 112532,
+        "endpoints": [
+          {
+            "path": "/api/transactions/69f702b83a70dab49675736d",
+            "duration": 7.5,
+            "bytes": 3761
+          },
+          {
+            "path": "/api/shopify/orders/summary-page",
+            "duration": 136.3,
+            "bytes": 108771
+          }
+        ]
+      },
+      "pickup": {
+        "visibleMs": 727.7,
+        "completeMs": 727.7,
+        "actionSyncMs": 0.8,
+        "requests": 8,
+        "bytes": 9156659,
+        "endpoints": [
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 74.3,
+            "bytes": 972704
+          },
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 188.4,
+            "bytes": 880795
+          },
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 200.3,
+            "bytes": 538430
+          },
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 226.3,
+            "bytes": 413272
+          },
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 211.2,
+            "bytes": 397146
+          },
+          {
+            "path": "/api/transactions/summary-page",
+            "duration": 125.1,
+            "bytes": 115420
+          },
+          {
+            "path": "/api/transactions/startup-overview",
+            "duration": 288.1,
+            "bytes": 1001191
+          },
+          {
+            "path": "/api/transactions/pickup-orders",
+            "duration": 224.6,
+            "bytes": 4837701
+          }
+        ]
+      },
+      "search": 22.6,
+      "pickupData": {
+        "orders": 981,
+        "boardNodes": 1618,
+        "view": "board"
+      },
+      "revisit": {
+        "visibleMs": 95.1,
+        "completeMs": 95.4,
+        "actionSyncMs": 95.1,
+        "requests": 0,
+        "bytes": 0,
+        "endpoints": []
+      },
+      "errors": []
+    }
+  ]
+}

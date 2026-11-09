@@ -51,7 +51,7 @@ function memoryModel(rows: any[]) {
     exists: jest.fn(async (q: any) => rows.some(r => matches(r, q))),
     create: jest.fn(async (data: any) => {
       if (rows.some(r => r.batchKey === data.batchKey)) throw Object.assign(new Error('duplicate'), { code: 11000 });
-      const row = { _id: `p${rows.length + 1}`, transactionIds: [], returnTransactionIds: [], lockAt: '', ...copy(data) };
+      const row = { _id: `p${rows.length + 1}`, transactionIds: [], returnTransactionIds: [], lockAt: '', correctedAt: '', ...copy(data) };
       rows.push(row);
       return { toObject: () => copy(row) };
     }),
@@ -99,7 +99,7 @@ describe('Bosta grouped bank payout', () => {
     vault = {
       findLatestByRef: jest.fn(async (ref: string) => entries.find(e => e.ref === ref) || null),
       addSystemEntry: jest.fn(async (amount: number, vaultMethod: string, _desc: string, date: string, source: string, ref: string) => {
-        const entry = { _id: `v${entries.length + 1}`, amount, vaultMethod, date, source, ref };
+        const entry = { _id: `v${entries.length + 1}`, amount, method: vaultMethod, vaultMethod, date, source, ref };
         entries.push(entry); return entry;
       }),
     };
@@ -112,8 +112,36 @@ describe('Bosta grouped bank payout', () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it('credits exactly one net transfer for COD, prepaid fees, return fees and one transfer fee', async () => {
-    const p = await service.post(dueAt, method, 'system');
+  const confirm = (service: CarrierBatchPayoutService, date: string, amount: number, by = 'admin') =>
+    service.post(date, method, by, { amount, fee: 25, bostaRef: `WEDCOD-${date.slice(0, 10)}` });
+
+  it('does not invent a bank credit when the scheduled cashout becomes due', async () => {
+    await service.runDue();
+    expect(entries).toHaveLength(0);
+    expect(payouts).toHaveLength(0);
+    expect(rows[0].carrierSettlement.status).toBe('pending');
+    await expect(service.post(dueAt, method, 'system')).resolves.toBeNull();
+  });
+
+  it('requires a Bosta invoice number as evidence for a bank credit', async () => {
+    await expect(service.post(dueAt, method, 'admin', { amount: 1175, fee: 25 })).rejects.toThrow('فاتورة');
+    expect(entries).toHaveLength(0);
+  });
+
+  it('shows the order estimate separately from the invoice amount', async () => {
+    expect(await service.preview('2026-10-21', method)).toMatchObject({
+      mode: 'batch', state: 'awaiting-confirmation', pendingOrders: 3,
+      expected: 1200, returnFees: 30, transferFee: 25,
+    });
+    await confirm(service, dueAt, 1100);
+    expect(await service.preview('2026-10-21', method)).toMatchObject({
+      mode: 'batch', state: 'completed', pendingOrders: 3,
+      expected: 1200, amount: 1100, transferFee: 25,
+    });
+  });
+
+  it('credits exactly the confirmed transfer for COD, prepaid fees, return fees and one transfer fee', async () => {
+    const p = await confirm(service, dueAt, 1175);
     expect(entries).toEqual([expect.objectContaining({ amount: 1175, date: '2026-10-21', source: 'تحصيل' })]);
     expect(p).toMatchObject({ state: 'completed', expected: 1200, amount: 1175, fee: 25, returnFeesBooked: 30 });
     expect(p.transactionIds).toHaveLength(3);
@@ -125,23 +153,65 @@ describe('Bosta grouped bank payout', () => {
 
   it('waits until Cairo noon and rejects early manual posting too', async () => {
     jest.setSystemTime(new Date('2026-10-21T08:59:59Z'));
-    await expect(service.post(dueAt, method, 'system')).rejects.toThrow('لم يحن');
+    await expect(confirm(service, dueAt, 1175)).rejects.toThrow('لم يحن');
     expect(entries).toHaveLength(0);
     expect(payouts).toHaveLength(0);
   });
 
   it('does not credit a duplicate automated run or manual confirmation', async () => {
+    await confirm(service, dueAt, 1175);
     await service.post(dueAt, method, 'system');
-    await service.post(dueAt, method, 'system');
-    await service.post(dueAt, method, 'admin', { amount: 1175, fee: 25 });
+    await confirm(service, dueAt, 1175);
     expect(entries).toHaveLength(1);
     expect(rows[0].payments).toHaveLength(1);
-    await expect(service.post(dueAt, method, 'admin', { amount: 1500, fee: 25 })).rejects.toThrow('مختلف');
+    await expect(confirm(service, dueAt, 1500)).rejects.toThrow('مختلف');
+  });
+
+  it('books the invoice amount and leaves an order-level discrepancy open', async () => {
+    const p = await confirm(service, dueAt, 1100);
+    expect(entries).toEqual([expect.objectContaining({ amount: 1100 })]);
+    expect(p).toMatchObject({ expected: 1200, amount: 1100, fee: 25, difference: 75, adjustment: 0 });
+  });
+
+  it('records actual bank cash even when no local order belongs to the Bosta invoice', async () => {
+    rows.splice(0);
+    const p = await confirm(service, dueAt, 1000);
+    expect(p).toMatchObject({ state: 'completed', amount: 1000, expected: 0, transactionIds: [] });
+    expect(entries).toEqual([expect.objectContaining({ amount: 1000 })]);
+  });
+
+  it('corrects an old estimated batch with one linked vault delta', async () => {
+    const p = await confirm(service, dueAt, 1175);
+    const corrected = await service.reconcileCompleted(p._id, 1500, 25, 'WEDCOD21OCT26', '', 'admin');
+    expect(corrected).toMatchObject({ amount: 1500, correctedFromAmount: 1175,
+      difference: -325, bostaRef: 'WEDCOD21OCT26', correctionVaultEntryId: 'v2' });
+    expect(entries.map(e => e.amount)).toEqual([1175, 325]);
+    await service.reconcileCompleted(p._id, 1500, 25, 'WEDCOD21OCT26', '', 'admin');
+    expect(entries).toHaveLength(2);
+    await expect(service.reconcileCompleted(p._id, 1600, 25, 'OTHER', '', 'admin')).rejects.toThrow('مختلف');
+  });
+
+  it('recovers a correction entry if the payout update fails after the vault write', async () => {
+    const p = await confirm(service, dueAt, 1175);
+    const original = payoutModel.updateOne.getMockImplementation();
+    let fail = true;
+    payoutModel.updateOne.mockImplementation((q: any, change: any) => {
+      if (fail && change.$set?.correctedAt) {
+        fail = false;
+        return { exec: async () => { throw new Error('correction update failed'); } };
+      }
+      return original(q, change);
+    });
+    await expect(service.reconcileCompleted(p._id, 1500, 25, 'WEDCOD21OCT26', '', 'admin')).rejects.toThrow('correction update');
+    expect(entries.map(e => e.amount)).toEqual([1175, 325]);
+    await service.reconcileCompleted(p._id, 1500, 25, 'WEDCOD21OCT26', '', 'admin');
+    expect(entries).toHaveLength(2);
+    expect(payouts[0].amount).toBe(1500);
   });
 
   it('resumes after an order update fails without repeating the bank credit', async () => {
     transactions.finalizeCarrierPayoutOrder.mockRejectedValueOnce(new Error('temporary write failure'));
-    await expect(service.post(dueAt, method, 'system')).rejects.toThrow('temporary');
+    await expect(confirm(service, dueAt, 1175)).rejects.toThrow('temporary');
     expect(payouts[0].state).toBe('posted');
     expect(entries).toHaveLength(1);
     await service.post(dueAt, method, 'system');
@@ -151,30 +221,30 @@ describe('Bosta grouped bank payout', () => {
 
   it('keeps a fee-only balance in the wallet and nets it against the next positive batch', async () => {
     rows.splice(0, 2);
-    await service.post(dueAt, method, 'system');
+    await service.runDue();
     expect(entries).toHaveLength(0);
     expect(rows[0].deposit).toBe(1000);
     expect(rows[0].carrierSettlement.payoutId).toBeUndefined();
     const nextDue = '2026-10-22T09:00:00.000Z';
     rows.push(order('next', 500, 50, nextDue));
     jest.setSystemTime(new Date(nextDue));
-    await service.post(nextDue, method, 'system');
+    await confirm(service, nextDue, 275);
     expect(entries[0].amount).toBe(275); // 500 - 50 - 120 - 30 - 25.
     expect(entries).toHaveLength(1);
   });
 
   it('deducts return fees once across successive transfers', async () => {
-    await service.post(dueAt, method, 'system');
+    await confirm(service, dueAt, 1175);
     const nextDue = '2026-10-22T09:00:00.000Z';
     rows.push(order('next', 500, 50, nextDue));
     jest.setSystemTime(new Date(nextDue));
-    await service.post(nextDue, method, 'system');
+    await confirm(service, nextDue, 425);
     expect(entries.map(e => e.amount)).toEqual([1175, 425]);
   });
 
   it('blocks a batch awaiting a fee review', async () => {
     rows[2].carrierSettlement.status = 'review';
-    await expect(service.post(dueAt, method, 'system')).rejects.toThrow('مراجعة');
+    await expect(confirm(service, dueAt, 1175)).rejects.toThrow('مراجعة');
     expect(entries).toHaveLength(0);
   });
 
@@ -188,7 +258,7 @@ describe('Bosta grouped bank payout', () => {
       }
       return original(q, change);
     });
-    await expect(service.post(dueAt, method, 'system')).rejects.toThrow('state write');
+    await expect(confirm(service, dueAt, 1175)).rejects.toThrow('state write');
     expect(payouts[0]).toMatchObject({ state: 'ready', amount: 1175 });
     expect(entries).toHaveLength(1);
     await service.post(dueAt, method, 'system');
@@ -197,7 +267,7 @@ describe('Bosta grouped bank payout', () => {
   });
 
   it('reserves the same batch across competing workers', async () => {
-    await Promise.allSettled([service.post(dueAt, method, 'worker1'), service.post(dueAt, method, 'worker2')]);
+    await Promise.allSettled([confirm(service, dueAt, 1175, 'worker1'), confirm(service, dueAt, 1175, 'worker2')]);
     expect(payouts).toHaveLength(1);
     expect(entries).toHaveLength(1);
     expect(rows[0].payments).toHaveLength(1);
@@ -205,7 +275,7 @@ describe('Bosta grouped bank payout', () => {
 
   it('waits for a locked order rather than posting an incomplete group', async () => {
     rows[0].carrierSettleLock = dueAt;
-    await expect(service.post(dueAt, method, 'system')).rejects.toThrow('قيد تجهيز');
+    await expect(confirm(service, dueAt, 1175)).rejects.toThrow('قيد تجهيز');
     expect(entries).toHaveLength(0);
     rows[0].carrierSettleLock = '';
     await service.post(dueAt, method, 'system');

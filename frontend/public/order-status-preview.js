@@ -80,16 +80,49 @@
   function laterClose() {
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
-    closeTimer = setTimeout(close, 180);
+    closeTimer = setTimeout(close, 280);
   }
   function position() {
-    if (!active?.isConnected || !active.getClientRects().length) return close();
+    if (!active?.isConnected || !active.getClientRects().length || !popup?.isConnected) return close();
     const rect = active.getBoundingClientRect(), box = popup.getBoundingClientRect();
+    if (rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) return close();
     const margin = 10, gap = 10;
     const left = Math.max(margin, Math.min(innerWidth - box.width - margin, rect.left + (rect.width - box.width) / 2));
     const top = rect.top >= box.height + gap + margin ? rect.top - box.height - gap : rect.bottom + gap;
     popup.style.left = `${left}px`;
     popup.style.top = `${Math.max(margin, Math.min(innerHeight - box.height - margin, top))}px`;
+  }
+  function syncCopy(badge) {
+    const en = !/[\u0600-\u06ff]/.test(badge.dataset.previewLabel);
+    popup.dir = en ? 'ltr' : 'rtl';
+    popup.lang = en ? 'en' : 'ar';
+    popup.dataset.state = badge.dataset.orderState;
+    popup.querySelector('strong').textContent = badge.dataset.previewLabel;
+    popup.querySelector('.osp-copy>p').textContent = badge.dataset.previewDescription;
+    let note = popup.querySelector('.osp-note');
+    if (badge.dataset.previewNote) {
+      if (!note) {
+        note = document.createElement('p');
+        note.className = 'osp-note';
+        popup.querySelector('.osp-copy').append(note);
+      }
+      note.textContent = badge.dataset.previewNote;
+    } else note?.remove();
+  }
+  function reanchorHeader() {
+    if (active?.dataset.statePreview !== 'header') return false;
+    const card = active.closest('.pu-group[data-group-key]');
+    if (!card) return false;
+    const replacement = [...document.querySelectorAll('.pu-group[data-group-key]')]
+      .find(group => group.dataset.groupKey === card.dataset.groupKey && group.dataset.colType === card.dataset.colType)
+      ?.querySelector('.pu-group-header[data-state-preview="header"]');
+    if (!replacement || replacement.dataset.previewScene !== popup?.dataset.scene) return false;
+    active.removeAttribute('aria-describedby');
+    active = replacement;
+    active.setAttribute('aria-describedby', popup.id);
+    syncCopy(active);
+    position();
+    return popup?.isConnected || false;
   }
   function show(badge) {
     clearTimeout(openTimer);
@@ -100,24 +133,14 @@
     const scene = badge.dataset.previewScene;
     if (!scenes[scene]) return;
     active = badge;
-    const en = !/[\u0600-\u06ff]/.test(badge.dataset.previewLabel);
     popup = document.createElement('div');
     popup.id = 'order-status-preview';
     popup.className = 'order-status-preview';
     popup.dataset.state = state;
     popup.dataset.scene = scene;
-    popup.dir = en ? 'ltr' : 'rtl';
-    popup.lang = en ? 'en' : 'ar';
     popup.setAttribute('role', 'tooltip');
     popup.innerHTML = `<div class="osp-scene"><svg viewBox="0 0 240 128" aria-hidden="true">${scenes[scene]}</svg></div><div class="osp-copy"><strong></strong><p></p></div>`;
-    popup.querySelector('strong').textContent = badge.dataset.previewLabel;
-    popup.querySelector('p').textContent = badge.dataset.previewDescription;
-    if (badge.dataset.previewNote) {
-      const note = document.createElement('p');
-      note.className = 'osp-note';
-      note.textContent = badge.dataset.previewNote;
-      popup.querySelector('.osp-copy').append(note);
-    }
+    syncCopy(badge);
     document.body.append(popup);
     if (badge.dataset.statePreview !== 'header') badge.setAttribute('aria-expanded', 'true');
     badge.setAttribute('aria-describedby', popup.id);
@@ -126,7 +149,8 @@
     position();
     // Only observe while open, so table redraws cannot leave a stale preview.
     observer = new MutationObserver(() => {
-      if (!active?.isConnected || !active.getClientRects().length) close();
+      if (!active?.isConnected && !reanchorHeader()) close();
+      else if (active && !active.getClientRects().length) close();
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
@@ -175,7 +199,7 @@
       active === badge ? close() : show(badge);
     }
   }, true);
-  document.addEventListener('scroll', close, true);
+  document.addEventListener('scroll', () => { if (popup) position(); }, true);
   document.addEventListener('dragstart', close, true);
   window.addEventListener('resize', close);
   window.addEventListener('blur', close);

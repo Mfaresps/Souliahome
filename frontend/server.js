@@ -4,13 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { createStaticResponder } = require('./lib/static-response.cjs');
+const { buildRuntime } = require('./scripts/build-runtime.cjs');
 
 // Load .env manually (no extra dependencies)
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
     const [key, ...rest] = line.trim().split('=');
-    if (key && rest.length) process.env[key] = rest.join('=');
+    if (key && rest.length && process.env[key] === undefined) process.env[key] = rest.join('=');
   });
 }
 
@@ -18,6 +19,17 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:4000';
 const publicFiles = createStaticResponder(path.join(__dirname, 'public'));
+const runtimeFiles = createStaticResponder(path.join(__dirname, 'runtime'));
+let sourceStamp = '';
+function ensureRuntime() {
+  const stat = fs.statSync(path.join(__dirname, 'public', 'index.html'));
+  const stamp = `${stat.size}:${stat.mtimeMs}`;
+  if (stamp !== sourceStamp) { buildRuntime(); sourceStamp = stamp; }
+}
+ensureRuntime();
+function runtimeShell(req, res, next) {
+  try { ensureRuntime(); runtimeFiles.shell(req, res, next); } catch (error) { next(error); }
+}
 
 // Serve runtime config to the frontend
 // Browser uses relative /api paths so requests go through this proxy — never expose the internal backend URL
@@ -42,7 +54,7 @@ app.get('/version.json', (req, res) => {
 
 // Revalidate on every visit: an unchanged shell returns 304 with no body, while
 // a new release is fetched immediately. Compressed public files are reused in memory.
-app.get(['/', '/index.html'], publicFiles.shell);
+app.get(['/', '/index.html'], runtimeShell);
 
 // Proxy /api requests to backend
 const apiProxy = createProxyMiddleware({
@@ -79,6 +91,10 @@ app.get('/s/:slug', (req, res) => {
 // nginx.conf — keep the two in agreement, or dev and production disagree about staleness.
 // "no-cache" still caches; it just forces revalidation, so an unchanged asset costs a 304.
 const REVALIDATE_ASSET = /\.(svg|png|jpg|jpeg|gif|ico|webp|woff2?|ttf|eot)$/i;
+app.get(['/app-core.js', '/app-core.css', '/shopify-orders-route.js', '/invoice-views-route.js',
+  '/followups-view-route.js', '/fragments/settings.html'], (req, res, next) => {
+  try { ensureRuntime(); runtimeFiles.asset(req, res, next); } catch (error) { next(error); }
+});
 app.get(/\.(js|css|svg)$/i, publicFiles.asset);
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
@@ -87,7 +103,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 // SPA fallback
-app.get('*', publicFiles.shell);
+app.get('*', runtimeShell);
 
 // Create HTTP server explicitly so we can attach WebSocket upgrade handler
 const server = http.createServer(app);

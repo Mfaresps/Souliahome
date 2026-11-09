@@ -1,0 +1,145 @@
+﻿{
+  "mode": "read-only-live-api",
+  "endpoints": [
+    {
+      "path": "/api/branding",
+      "status": 200,
+      "bytes": 65,
+      "ms": 26
+    },
+    {
+      "path": "/api/auth/me",
+      "status": 200,
+      "bytes": 533,
+      "ms": 4
+    },
+    {
+      "path": "/api/warehouses",
+      "status": 200,
+      "bytes": 118,
+      "ms": 4
+    },
+    {
+      "path": "/api/transactions/startup-overview",
+      "status": 200,
+      "bytes": 998127,
+      "ms": 44
+    },
+    {
+      "path": "/api/settings",
+      "status": 200,
+      "bytes": 6109,
+      "ms": 4
+    },
+    {
+      "path": "/api/drafts",
+      "status": 200,
+      "bytes": 6523,
+      "ms": 4
+    },
+    {
+      "path": "/api/products",
+      "status": 200,
+      "bytes": 153379,
+      "ms": 17
+    },
+    {
+      "path": "/api/expenses",
+      "status": 200,
+      "bytes": 16714,
+      "ms": 5
+    },
+    {
+      "path": "/api/users",
+      "status": 200,
+      "bytes": 10986,
+      "ms": 4
+    },
+    {
+      "path": "/api/tags",
+      "status": 200,
+      "bytes": 2869,
+      "ms": 4
+    },
+    {
+      "path": "/api/returns",
+      "status": 200,
+      "bytes": 60880,
+      "ms": 5
+    },
+    {
+      "path": "/api/complaints",
+      "status": 200,
+      "bytes": 21009,
+      "ms": 5
+    },
+    {
+      "path": "/api/purchase-orders",
+      "status": 200,
+      "bytes": 36856,
+      "ms": 6
+    },
+    {
+      "path": "/api/supplier-returns",
+      "status": 200,
+      "bytes": 15027,
+      "ms": 4
+    },
+    {
+      "path": "/api/transactions/inventory",
+      "status": 200,
+      "bytes": 47047,
+      "ms": 35
+    },
+    {
+      "path": "/api/vault",
+      "status": 200,
+      "bytes": 1307543,
+      "ms": 118
+    },
+    {
+      "path": "/api/notifications/read-state",
+      "status": 200,
+      "bytes": 51929,
+      "ms": 14
+    },
+    {
+      "path": "/api/notifications/history",
+      "status": 200,
+      "bytes": 32843,
+      "ms": 7
+    },
+    {
+      "path": "/api/mentions",
+      "status": 200,
+      "bytes": 96457,
+      "ms": 16
+    },
+    {
+      "path": "/api/auth/users-status",
+      "status": 200,
+      "bytes": 1399,
+      "ms": 4
+    },
+    {
+      "path": "/api/transactions/sales-overview?year=2026&month=11",
+      "status": 200,
+      "bytes": 2145,
+      "ms": 22
+    },
+    {
+      "path": "/api/employee-performance/duty-board",
+      "status": 200,
+      "bytes": 525,
+      "ms": 4
+    },
+    {
+      "path": "/api/followups",
+      "status": 200,
+      "bytes": 1149876,
+      "ms": 35
+    }
+  ],
+  "totalBytes": 4018959,
+  "totalMsSequential": 391
+}

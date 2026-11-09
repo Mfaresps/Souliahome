@@ -259,7 +259,10 @@
   const panelHome = document.getElementById('notification-settings').parentElement;
   const dialog = document.createElement('dialog'); dialog.className = 'push-settings-dialog push-preferences-dialog'; dialog.setAttribute('aria-label', 'إعدادات الإشعارات');
   const close = document.createElement('button'); close.type = 'button'; close.className = 'btn btn-outline'; close.textContent = 'إغلاق'; close.addEventListener('click', () => dialog.close()); dialog.append(close);
-  dialog.addEventListener('close', () => { panelHome.prepend(document.getElementById('notification-settings')); }); document.body.append(dialog);
+  dialog.addEventListener('close', () => {
+    (document.getElementById('notification-settings-slot') || panelHome)
+      .prepend(document.getElementById('notification-settings'));
+  }); document.body.append(dialog);
   window.souliaOpenPushSettings = function () {
     if (typeof currentUser === 'undefined' || !currentUser) return;
     if (offer.open) offer.close();

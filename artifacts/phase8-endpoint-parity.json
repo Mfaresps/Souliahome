@@ -1,0 +1,21 @@
+﻿{
+  "mode": "read-only-live-parity",
+  "results": [
+    {
+      "role": "admin",
+      "followupsStatus": 200,
+      "followupsCount": 538,
+      "transactionsStatus": 200,
+      "transactionsCount": 1007,
+      "activeCount": 1027
+    },
+    {
+      "role": "staff",
+      "followupsStatus": 200,
+      "followupsCount": 538,
+      "transactionsStatus": 200,
+      "transactionsCount": 1007,
+      "activeCount": 986
+    }
+  ]
+}

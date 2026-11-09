@@ -182,6 +182,27 @@ html:has(#page-shopify-orders.active){scrollbar-gutter:stable}
 }
 #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep){background:var(--bg)}
 #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-order-row{cursor:pointer}
+/* Changed live rows can replace one table row. Keep hover immediate so a
+   stationary pointer does not make the highlight pulse. */
+#main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-order-row,
+#main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-order-row>td{transition:none}
+@keyframes spLiveOrderIn{
+  from{opacity:.35;transform:translateY(-10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes spLiveCountRise{
+  0%{transform:translateY(7px);opacity:.6}
+  65%{transform:translateY(-2px);opacity:1}
+  100%{transform:translateY(0);opacity:1}
+}
+#page-shopify-orders .sp-order-row.sp-live-arrival,
+#page-shopify-orders .sp-card.sp-live-arrival{animation:spLiveOrderIn .42s cubic-bezier(.2,.8,.25,1) both!important}
+#page-shopify-orders .spk-val bdi.sp-live-count{display:inline-block;animation:spLiveCountRise .5s cubic-bezier(.2,.8,.25,1) both}
+@media (prefers-reduced-motion:reduce){
+  #page-shopify-orders .sp-order-row.sp-live-arrival,
+  #page-shopify-orders .sp-card.sp-live-arrival,
+  #page-shopify-orders .spk-val bdi.sp-live-count{animation:none!important}
+}
 #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep):hover{background:var(--spw-frame)}
 #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected:not(.sp-day-sep){background:var(--spw-selected)}
 #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected:not(.sp-day-sep):hover{

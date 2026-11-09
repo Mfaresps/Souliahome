@@ -110,10 +110,22 @@
     const future = active.map(row => Date.parse(row.deferredUntil)).filter(at => at > now);
     if (future.length) timer = setTimeout(refresh, Math.min(2147483647, Math.max(1, Math.min(...future) - now + 30)));
   }
-  async function refresh() {
+  async function refresh(reuseRecent = false) {
     const user = syncOwner();
     if (!user || !_canAccessPage('followups') || request) return;
-    const task = api('/followups'); request = task;
+    // Dashboard already reads the same collection during startup. Its result
+    // is current for this user; socket changes still trigger a fresh read.
+    if (reuseRecent && window._followUpsLastReadUser === user &&
+        Date.now() - (window._followUpsLastReadAt || 0) < 1000 && Array.isArray(followUps)) {
+      sync(followUps);
+      return;
+    }
+    const page = typeof currentPage === 'string' ? currentPage : '';
+    const needsFull = ['followups', 'complaints', 'shopify-orders', 'invoice-view'].includes(page);
+    const task = !needsFull && typeof _readDashboardFollowUps === 'function'
+      ? _readDashboardFollowUps()
+      : (typeof _readFollowUps === 'function' ? _readFollowUps() : api('/followups'));
+    request = task;
     try { const rows = await task; if (user === account()) sync(rows); }
     catch (_) { /* The socket and next poll retry without discarding visible reminders. */ }
     finally { if (request === task) request = null; }
@@ -126,5 +138,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) void refresh(); });
   window.addEventListener('focus', refresh);
   setInterval(refresh, 60000);
-  void refresh();
+  void refresh(true);
 })();

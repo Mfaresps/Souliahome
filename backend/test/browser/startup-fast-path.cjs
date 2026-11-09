@@ -18,11 +18,13 @@ const puppeteer = require('puppeteer');
     let productsRequested = false;
     let supplierRequest = null;
     let dashboardRequests = 0;
+    let salesOverviewRequests = 0;
     let inventoryRequests = 0;
     page.on('request', request => {
       const pathname = new URL(request.url()).pathname;
       if (!pathname.startsWith('/api/')) return request.continue();
       if (pathname === '/api/transactions/dashboard') dashboardRequests++;
+      if (pathname === '/api/transactions/sales-overview') salesOverviewRequests++;
       if (pathname === '/api/transactions/inventory') inventoryRequests++;
       if (pathname === '/api/products') {
         productsRequested = true;
@@ -35,6 +37,13 @@ const puppeteer = require('puppeteer');
       let body = '[]';
       if (pathname === '/api/auth/me') body = JSON.stringify({ name: 'Test', role: 'admin', perms: [] });
       if (pathname === '/api/settings' || pathname === '/api/transactions/dashboard') body = '{}';
+      if (pathname === '/api/transactions/sales-overview') {
+        const params = new URL(request.url()).searchParams;
+        const month = `${params.get('year')}-${String(params.get('month')).padStart(2, '0')}`;
+        body = JSON.stringify({ month, timeZone: 'Africa/Cairo', totalOrders: 0, totalRevenue: 0,
+          confirmedOrders: 0, averageOrderValue: 0, today: null, days: [] });
+      }
+      if (pathname === '/api/transactions/startup-overview') body = JSON.stringify({ rows: [], activeCount: 0 });
       const respond = () => request.respond({ status: 200, contentType: 'application/json', body });
       respond();
     });
@@ -59,7 +68,8 @@ const puppeteer = require('puppeteer');
     await page.evaluate(() => navigateTo('inventory'));
     await page.waitForFunction(() => currentPage === 'inventory' && _inventoryHasLoaded, { timeout: 3000 });
     assert.equal(inventoryRequests, 1, 'inventory page reuses the startup request');
-    assert.equal(dashboardRequests, 1, 'dashboard boot reuses its prefetched request');
+    assert.equal(dashboardRequests, 0, 'dashboard boot skips the duplicate financial summary');
+    assert.equal(salesOverviewRequests, 1, 'dashboard boot requests one bounded sales overview');
     assert.deepEqual(errors, []);
     console.log('PASS: dashboard paints early and navigation waits only for its own data.');
   } finally {

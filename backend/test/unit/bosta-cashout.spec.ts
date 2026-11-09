@@ -48,8 +48,18 @@ describe('Bosta wallet and bank cashout', () => {
   it('records the wallet at noon without any individual vault posting', async () => {
     jest.setSystemTime(new Date('2026-10-21T09:00:00Z'));
     expect((await service.settleOne('abc', { trigger: 'auto', by: 'system' })).outcome).toBe('wallet');
+    expect(tx.carrierSettlement.reason).toBe('awaiting-confirmation');
     expect(collect).not.toHaveBeenCalled();
     expect(addEntry).not.toHaveBeenCalled();
+  });
+
+  it('keeps the original cashout batch when Bosta advances its next cashout date', async () => {
+    await service.settleOne('abc', { trigger: 'auto', by: 'system' });
+    jest.setSystemTime(new Date('2026-10-21T09:00:00Z'));
+    fetchDelivery.mockResolvedValue(payload('2026-10-28'));
+    await service.settleOne('abc', { trigger: 'auto', by: 'system' });
+    expect(tx.carrierSettlement.cashoutDueAt).toBe('2026-10-21T09:00:00.000Z');
+    expect(tx.carrierSettlement.reason).toBe('awaiting-confirmation');
   });
 
   it('does not invent a transfer date when Bosta has none', async () => {
@@ -124,5 +134,17 @@ describe('Bosta wallet and bank cashout', () => {
     fetchDelivery.mockResolvedValue(raw);
     expect((await service.settleOne('abc', { trigger: 'auto', by: 'system' })).outcome).toBe('wallet');
     expect(tx.carrierSettlement).toMatchObject({ net: 1249, fees: { priceAfterVat: 130 } });
+  });
+
+  it('reports a historical payout correction in the period when its vault delta was booked', async () => {
+    service.txModel = { find: () => ({ select: () => ({ lean: () => ({ exec: async () => [] }) }) }) };
+    service.payoutModel = { find: () => ({ lean: () => ({ exec: async () => [{
+      mode: 'batch', state: 'completed', date: '2026-10-21', amount: 1500,
+      correctedFromAmount: 1175, correctedAt: '2026-11-08T18:00:00.000Z',
+    }] }) }) };
+    service.statement = jest.fn().mockResolvedValue({ balance: 0 });
+    service.counts = jest.fn().mockResolvedValue({});
+    expect((await service.summary('2026-10-01', '2026-10-31')).netIn).toBe(1175);
+    expect((await service.summary('2026-11-01', '2026-11-30')).netIn).toBe(325);
   });
 });

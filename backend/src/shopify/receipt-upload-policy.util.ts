@@ -23,8 +23,9 @@ export async function compressReceipt(input: Buffer): Promise<Buffer> {
 
 /** A warning is evidence for human review, never proof that a transfer is genuine or fake. */
 export function receiptContentWarnings(ocr: { ran?: boolean; pattern?: string }):
-  Array<{ code: 'not-transfer' | 'ocr-unavailable'; orderRef: string }> {
+  Array<{ code: 'not-transfer' | 'ocr-unavailable' | 'awaiting-send'; orderRef: string }> {
   if (!ocr.ran) return [{ code: 'ocr-unavailable', orderRef: '' }];
   if (!ocr.pattern) return [{ code: 'not-transfer', orderRef: '' }];
+  if (ocr.pattern === 'ussd') return [{ code: 'awaiting-send', orderRef: '' }];
   return [];
 }

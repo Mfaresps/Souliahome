@@ -95,7 +95,10 @@
       FAILED_ATTEMPT: ['تعذّر التسليم', 'Failed Attempt'],
     };
     const shortLabel = shortLabels[key]?.[en ? 1 : 0] || label;
-    return { key, label, shortLabel, tone, carrier, note, previewKey };
+    const delayed = activeShipment && !o.cancelled && !o.shopifyCancelled
+      && o.deliverySource !== 'MANUAL' && key !== 'CANCELLED' && o.bostaIsDelayed === true
+      && ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(code);
+    return { key, label, shortLabel, tone, carrier, note, previewKey, delayed };
   }
   function escape(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -111,7 +114,8 @@
     const label = options.compact && meta.key === 'Ready' ? (/[\u0600-\u06ff]/.test(meta.label) ? 'جاهز للشحن' : 'Ready') : meta.shortLabel || meta.label;
     const preview = options.preview && previews[meta.previewKey || meta.key];
     const detail = preview ? `data-state-preview role="button" tabindex="0" aria-expanded="false" data-preview-scene="${preview[0]}" data-preview-description="${escape(preview[/[\u0600-\u06ff]/.test(meta.label) ? 1 : 2])}" data-preview-label="${escape(meta.label)}" data-preview-note="${escape(meta.note || '')}"` : `title="${escape(title)}"`;
-    return `<span class="order-state${options.compact ? ' is-compact' : ''}" data-order-state="${escape(meta.key)}" data-tone="${escape(meta.tone)}" ${detail} aria-label="${escape(title)}"><span class="order-state-dot" aria-hidden="true"></span><span class="order-state-label">${escape(label)}</span></span>`;
+    const delayLabel = /[\u0600-\u06ff]/.test(meta.label) ? 'متأخر' : 'Delayed';
+    return `<span class="order-state${options.compact ? ' is-compact' : ''}" data-order-state="${escape(meta.key)}" data-tone="${escape(meta.tone)}" ${detail} aria-label="${escape(title)}"><span class="order-state-dot" aria-hidden="true"></span><span class="order-state-label">${escape(label)}</span></span>${meta.delayed ? `<span class="order-delay-badge" title="${escape(delayLabel)}" aria-label="${escape(delayLabel)}">${escape(delayLabel)}</span>` : ''}`;
   }
   function postponements(tx) {
     const raw = tx.bostaRawResponse?.data || tx.bostaRawResponse || {};

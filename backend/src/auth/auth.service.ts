@@ -22,6 +22,7 @@ export interface AuthUserPayload {
   username: string;
   name: string;
   role: string;
+  roleId: string | null;
   phone: string;
   avatar: string;
   jobTitle: string;
@@ -55,6 +56,7 @@ export function buildAuthUserPayload(
     username: user.username || '',
     name: user.name || '',
     role: user.role || '',
+    roleId: user.roleId || null,
     phone: user.phone || '',
     avatar: user.avatar || '',
     jobTitle: user.jobTitle || '',

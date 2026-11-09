@@ -1,0 +1,54 @@
+/* Inline preview to editor transition for transaction and Shopify comments. */
+.tx-cmt-text.cie-editing,
+.sp-cmtwin .tx-cmt-text.cie-editing {
+  display: block;
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  white-space: normal;
+  animation: cie-open .18s cubic-bezier(.22,1,.36,1) both;
+}
+.cie-field { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.cie-input {
+  flex: 1; min-width: 0; resize: vertical; min-height: 64px;
+  box-sizing: border-box; padding: 8px 10px;
+  border: 1px solid var(--primary); border-radius: 7px;
+  background: var(--surface); color: var(--text);
+  font: inherit; line-height: 1.5; direction: auto;
+  outline: none; transition: box-shadow .15s ease, border-color .15s ease;
+}
+.cie-input:focus-visible { box-shadow: 0 0 0 3px var(--primary-pale); }
+.cie-input[aria-invalid="true"] { border-color: var(--red); }
+.cie-controls { display: flex; gap: 4px; flex-shrink: 0; }
+.cie-controls button {
+  display: inline-flex; justify-content: center; align-items: center;
+  gap: 4px; min-width: 32px; min-height: 32px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: .75rem; cursor: pointer;
+}
+.cie-controls button:hover { background: var(--primary-pale); }
+.cie-controls .cie-save { background: var(--primary); border-color: var(--primary); color: #fff; }
+.cie-controls .cie-save:hover { background: var(--accent); }
+.cie-controls button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cie-controls button:disabled { opacity: .6; cursor: wait; }
+.cie-controls svg { width: 15px; height: 15px; }
+.cie-error { margin: 5px 0 0; color: var(--red); font-size: .75rem; }
+.cie-error[hidden] { display: none; }
+.cie-pending .cie-save svg { animation: cie-pulse .8s ease-in-out infinite; }
+.tx-cmt-text.cie-saved { animation: cie-saved .28s ease-out; }
+@keyframes cie-open { from { opacity: .5; transform: translateY(-3px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes cie-saved { from { background: var(--primary-pale); } to { background: transparent; } }
+@keyframes cie-pulse { 50% { opacity: .35; } }
+@media (max-width: 540px) {
+  .cie-field { flex-wrap: wrap; }
+  .cie-input { flex-basis: 100%; }
+  .cie-controls { margin-inline-start: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tx-cmt-text.cie-editing, .sp-cmtwin .tx-cmt-text.cie-editing,
+  .tx-cmt-text.cie-saved, .cie-pending .cie-save svg { animation: none; }
+  .cie-input { transition: none; }
+}

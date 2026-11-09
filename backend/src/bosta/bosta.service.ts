@@ -27,6 +27,7 @@ import { BostaPickup, BostaPickupDocument } from './schemas/bosta-pickup.schema'
 import { CreatePickupDto } from './dto/create-pickup.dto';
 import { ExtendPickupDto } from './dto/extend-pickup.dto';
 import { pickupSchedule, pickupDateReason, pickupReasonMessage, pickupCarrierReason, pickupClock } from './pickup-schedule.util';
+import { bostaDelayFlag } from './bosta-delay.util';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -1021,6 +1022,7 @@ export class BostaService {
         bostaOrderId: '',
         bostaStatus: '',
         bostaStatusLabel: '',
+        bostaIsDelayed: false,
       });
     }
 
@@ -1160,6 +1162,7 @@ export class BostaService {
         bostaAwbType: '',
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
+        bostaIsDelayed: false,
         bostaShippingStatus: BOSTA_TO_SHIPPING_STATUS[statusCode] || 'Created',
         codCollectionStatus: initialCodStatus,
         // Snapshot the COD amount at creation — immutable reference for collection
@@ -1520,6 +1523,7 @@ export class BostaService {
 
     const statusLabel    = BOSTA_STATUS_LABELS[statusCode] || statusCode;
     const shippingStatus = BOSTA_TO_SHIPPING_STATUS[statusCode] || '';
+    const delayFlag = bostaDelayFlag(d, statusCode);
     const trackingUpdate = carrierTrackingUpdate(d, statusCode, statusLabel, tx.bostaOrderId || String(d._id || ''),
       bostaExceptionDetails(d), source, now, tx.bostaLastTrackingUpdate);
     const trackingChanged = trackingUpdate.key !== tx.bostaLastTrackingUpdate?.key;
@@ -1557,6 +1561,7 @@ export class BostaService {
         ...settleSchedule,
         bostaStatus: statusCode,
         bostaStatusLabel: statusLabel,
+        ...(delayFlag === null ? {} : { bostaIsDelayed: delayFlag }),
         bostaShippingStatus: shippingStatus,
         bostaLastSync: now,
         bostaRawResponse: res,

@@ -1,0 +1,49 @@
+/* One deposit decision control in the Shopify table and mobile cards. */
+#shopify-orders-table-wrap .data-table :is(th,td)[data-col="deposit"] { text-align: center; }
+#shopify-orders-table-wrap .data-table td[data-col="deposit"] .spdep-empty { display: flex; justify-content: center; width: 100%; }
+#shopify-orders-table-wrap .data-table td[data-col="deposit"] .spdep-table-deposit { justify-content: center; flex-wrap: wrap; white-space: normal; gap: 4px; }
+.spdep-fab-trigger {
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; min-width: 36px; box-sizing: border-box; padding: 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--accent);
+  font: inherit; cursor: pointer;
+}
+.spdep-fab-trigger::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #fff; box-shadow: 0 1px 3px #142a1e14;
+  transition: border-color .22s ease, background-color .22s ease, box-shadow .22s ease;
+}
+.spdep-fab-trigger:is(:hover,:focus-visible,[aria-expanded="true"])::before { border-color: color-mix(in srgb,var(--accent) 42%,var(--border)); background: var(--primary-pale); box-shadow: 0 2px 6px #142a1e14; }
+.spdep-fab-trigger:is(:hover,:focus-visible,[aria-expanded="true"]) { color: var(--primary); }
+.spdep-fab-trigger:focus-visible, .spdep-fab-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.spdep-fab-trigger svg { width: 15px; height: 15px; flex: none; transition: transform .2s cubic-bezier(.22,1,.36,1), color .22s ease; }
+.spdep-fab-trigger[aria-expanded="true"] svg { transform: rotate(45deg); }
+.spdep-fab-menu {
+  position: fixed; z-index: 1400; display: grid; gap: 3px; width: 208px;
+  box-sizing: border-box; padding: 5px; border: 1px solid var(--border);
+  border-radius: 11px; background: var(--surface); box-shadow: 0 12px 32px #142a1e24;
+}
+.spdep-fab-item {
+  display: flex; align-items: center; gap: 9px; min-height: 40px; padding: 8px 11px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--text); text-align: start; font: inherit;
+  font-size: .8rem; line-height: 1.45; cursor: pointer;
+  opacity: 0; transform: translateY(7px);
+}
+.spdep-fab-item svg { width: 17px; height: 17px; flex: none; color: var(--accent); }
+.spdep-fab-item.is-shipping svg { color: var(--muted); }
+.spdep-fab-item:hover { background: var(--primary-pale); }
+.spdep-fab-item + .spdep-fab-item { border-top: 1px solid var(--border); border-radius: 0 0 7px 7px; }
+.spdep-fab-menu.is-open .spdep-fab-item { opacity: 1; transform: none; transition: opacity .18s ease, transform .18s cubic-bezier(.22,1,.36,1); }
+.spdep-fab-menu.is-open .spdep-fab-item:nth-child(2) { transition-delay: 40ms; }
+#page-shopify-orders #sp-mobile-list .sp-mobile-deposit-options { width: auto; justify-content: flex-end; margin-inline-start: 0; }
+#page-shopify-orders #sp-mobile-list .sp-mobile-deposit-options .spdep-fab-trigger { width: 40px; height: 40px; min-width: 40px; min-height: 40px; padding: 0; border-radius: 50%; }
+#page-shopify-orders #sp-mobile-list .sp-mobile-deposit-options .spdep-fab-trigger::before { inset: 5px; }
+body.dark-mode .spdep-fab-trigger::before { background: var(--surface); border-color: var(--border); }
+body.dark-mode .spdep-fab-trigger:is(:hover,:focus-visible,[aria-expanded="true"])::before { background: var(--primary-pale); border-color: var(--accent); }
+body.dark-mode .spdep-fab-trigger:is(:hover,:focus-visible,[aria-expanded="true"]) { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .spdep-fab-trigger, .spdep-fab-trigger::before, .spdep-fab-trigger svg, .spdep-fab-menu.is-open .spdep-fab-item { transition: none; }
+  .spdep-fab-item { opacity: 1; transform: none; }
+}

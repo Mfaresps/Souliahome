@@ -8,6 +8,8 @@
 <script src="/config.js"></script>
 <script src="/order-status.js?v=20261026-submitted-deposit"></script>
 <link rel="stylesheet" href="/order-status.css?v=20261029-dashboard-status">
+<link rel="stylesheet" href="/invoice-timeline.css?v=20261109-1">
+<script src="/invoice-timeline.js?v=20261109-1"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -298,6 +300,8 @@ function renderInvoice(tx) {
 
   const statusClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? 'cancelled'
     : isStatusCompleted(tx.payStatus) ? 'paid' : 'pending';
+  const orderStatus = !isPurchase && !isReturn ? SouliaOrderStatus.resolve(tx, 'transaction', 'ar') : null;
+  const orderTimelineHtml = orderStatus ? SouliaInvoiceTimeline.eventsFor(tx, orderStatus) : '';
 
   let statusText = '';
   if (tx.cancelled || isStatusCancelled(tx.payStatus)) {
@@ -448,7 +452,7 @@ function renderInvoice(tx) {
         ${!isPurchase && tx.shipCo ? `<span class="ship-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="15" height="10" rx="1.5"/><path d="M16 9h3l3 4v3h-6z"/><circle cx="6.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>${esc(tx.shipCo)}</span>` : ''}
       </div>
     </div>
-    ${!isPurchase && !isReturn ? `<div class="inv-order-state">${SouliaOrderStatus.badge(SouliaOrderStatus.resolve(tx, 'transaction', document.documentElement.lang || 'ar'))}</div>` : ''}
+    ${orderStatus ? `<div class="inv-order-state">${SouliaOrderStatus.badge(orderStatus)}</div>` : ''}
     <!-- Status -->
     <div class="inv-status-banner ${statusClass}">
       ${statusIcon}
@@ -469,6 +473,7 @@ function renderInvoice(tx) {
           ${addrHtml}
         </div>
       </div>
+      ${orderTimelineHtml}
       <!-- Items -->
       <div class="inv-items-section">
         <div class="inv-items-header">

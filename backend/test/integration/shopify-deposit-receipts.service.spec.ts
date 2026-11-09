@@ -13,6 +13,7 @@
  * Run with: npm test -- shopify-deposit-receipts
  */
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import mongoose, { Connection, Model } from 'mongoose';
 
 export {};
@@ -86,7 +87,7 @@ function makeVault() {
   };
 }
 
-function makeOcr(result: Partial<{ amount: number | null; method: string; reference: string; confident: boolean; pattern: string; ran: boolean }> = {}) {
+function makeOcr(result: Partial<{ amount: number | null; method: string; reference: string; confident: boolean; pattern: string; ran: boolean; senderBank: string; senderHandle: string }> = {}) {
   let n = 0;
   return {
     // Unique bytes per upload, so no accidental «same image» warning between tests.
@@ -156,6 +157,29 @@ const fresh = (id: string) => orderModel.findById(id).lean().exec() as Promise<a
 
 describe('structured shipping decisions with real Mongo', () => {
   const input = { revision: 0, reasonCode: 'prefers-cod', exceptionCode: 'staff-discretion', note: 'Customer prefers COD' };
+  it.each([
+    [{ editRequest: { status: 'معلق' } }, 'شوف التعديل'],
+    [{ editRequest: { status: 'قيد التنفيذ' } }, 'شوف التعديل'],
+    [{ cancelRequest: { status: 'معلق' } }, 'طلب الإلغاء'],
+    [{ cancelled: true }, 'ملغي'],
+  ])('warns before a new deposit or shipping choice when order has %j', async (state, message) => {
+    const { receipts, shop, ocr } = setup();
+    const order = await newOrder(state);
+    const id = String(order._id);
+    await expect(receipts.uploadDraft(id, img(), STAFF)).rejects.toThrow(message);
+    expect(ocr.prepareForStorage).not.toHaveBeenCalled();
+    await expect(shop.setShipWithoutDeposit(id, true, STAFF.name, input, STAFF)).rejects.toThrow(message);
+    expect((await fresh(id)).shipWithoutDeposit).toBe(false);
+  });
+  it('stops submitting an uploaded draft if an edit request arrives before confirmation', async () => {
+    const { receipts } = setup();
+    const order = await newOrder();
+    const id = String(order._id);
+    const draft = (await receipts.uploadDraft(id, img(), STAFF)).receipt;
+    await orderModel.updateOne({ _id: order._id }, { $set: { editRequest: { status: 'معلق' } } });
+    await expect(receipts.submit(id, draft.id, { amount: 500, method: W }, STAFF)).rejects.toThrow('شوف التعديل');
+    expect((await fresh(id)).depositReceipts[0].status).toBe('مسودة');
+  });
   it('allows only one concurrent decision at a revision and persists actor/history atomically', async () => {
     const { shop, vault } = setup(); const o = await newOrder(); const id = String(o._id);
     const results = await Promise.allSettled([
@@ -294,20 +318,59 @@ describe('deposit security with real Mongo balances and ledger', () => {
     await expect(vault.cancelEntry(String(e._id),'admin')).rejects.toThrow(BadRequestException);
   });
 
-  it('blocks the same original screenshot concurrently across Shopify and manual orders', async () => {
+  it('allows unconfirmed copies, then accepts only one concurrent confirmation', async () => {
     const { receipts }=setup(); const o=await newOrder(); const file=img();
-    const results=await Promise.allSettled([
+    const drafts=await Promise.all([
       receipts.uploadDraft(String(o._id),file,STAFF), receipts.scanManualReceipt({},file,OTHER),
+    ]);
+    const results=await Promise.allSettled([
+      receipts.submit(String(o._id),drafts[0].receipt.id,{amount:500,method:'Instapay'},STAFF),
+      receipts.confirmManualReceipt(drafts[1].receipt.id,{amount:500,method:'Instapay',total:1500,confirmed:true},OTHER),
     ]);
     expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
     expect(results.filter(r=>r.status==='rejected')).toHaveLength(1);
   });
 
-  it('keeps a screenshot blocked after withdrawal and deletion of its stored image', async () => {
+  it('releases an unconfirmed draft and its legacy fingerprint on withdrawal', async () => {
     const { receipts }=setup(); const o=await newOrder(); const file=img();
     const {receipt}=await receipts.uploadDraft(String(o._id),file,STAFF);
+    const key='raw:'+crypto.createHash('sha256').update(file.buffer).digest('hex');
+    await conn.collection<{_id:string;receiptId:string;createdAt:string}>('depositreceiptidentities').insertOne({_id:key,receiptId:receipt.id,createdAt:new Date().toISOString()});
     await receipts.withdraw(String(o._id),receipt.id,STAFF);
-    await expect(receipts.uploadDraft(String(o._id),file,OTHER)).rejects.toThrow(BadRequestException);
+    expect(await conn.collection<{_id:string}>('depositreceiptidentities').findOne({_id:key})).toBeNull();
+    const retry=(await receipts.uploadDraft(String(o._id),file,OTHER)).receipt;
+    await expect(receipts.submit(String(o._id),retry.id,{amount:500,method:'Instapay'},OTHER)).resolves.toMatchObject({success:true});
+  });
+
+  it('reclaims an old draft fingerprint when a different draft is confirmed', async () => {
+    const { receipts }=setup(); const first=await newOrder(); const second=await newOrder(); const file=img();
+    const old=(await receipts.uploadDraft(String(first._id),file,STAFF)).receipt;
+    const key='raw:'+crypto.createHash('sha256').update(file.buffer).digest('hex');
+    await conn.collection<{_id:string;receiptId:string;createdAt:string}>('depositreceiptidentities').insertOne({_id:key,receiptId:old.id,createdAt:new Date().toISOString()});
+    const next=(await receipts.uploadDraft(String(second._id),file,OTHER)).receipt;
+    await receipts.submit(String(second._id),next.id,{amount:500,method:'Instapay'},OTHER);
+    expect((await conn.collection<{_id:string;receiptId:string}>('depositreceiptidentities').findOne({_id:key}))?.receiptId).toBe(next.id);
+    await expect(receipts.submit(String(first._id),old.id,{amount:500,method:'Instapay'},STAFF)).rejects.toThrow(BadRequestException);
+  });
+
+  it('recovers a fingerprint left by an interrupted confirmation', async () => {
+    const { receipts }=setup(); const first=await newOrder(); const second=await newOrder(); const file=img();
+    const old=(await receipts.uploadDraft(String(first._id),file,STAFF)).receipt;
+    const key='raw:'+crypto.createHash('sha256').update(file.buffer).digest('hex');
+    const earlier=new Date(Date.now()-3*60_000).toISOString();
+    await conn.collection<{_id:string;receiptId:string;createdAt:string;claimedAt:string;phase:string}>('depositreceiptidentities')
+      .insertOne({_id:key,receiptId:old.id,createdAt:earlier,claimedAt:earlier,phase:'claiming'});
+    const next=(await receipts.uploadDraft(String(second._id),file,OTHER)).receipt;
+    await expect(receipts.submit(String(second._id),next.id,{amount:500,method:'Instapay'},OTHER)).resolves.toMatchObject({success:true});
+  });
+
+  it('replaces an unconfirmed draft with the same image without a duplicate error', async () => {
+    const { receipts }=setup(); const order=await newOrder(); const file=img();
+    const first=(await receipts.uploadDraft(String(order._id),file,STAFF)).receipt;
+    const retry=(await receipts.uploadDraft(String(order._id),file,STAFF)).receipt;
+    expect(retry.id).not.toBe(first.id);
+    expect((await fresh(String(order._id))).depositReceipts.map((r: any)=>r.id)).toEqual([retry.id]);
+    await expect(receipts.submit(String(order._id),retry.id,{amount:500,method:'Instapay'},STAFF)).resolves.toMatchObject({success:true});
   });
 
   it('restricts history to admins and preserves registered sender details after withdrawal', async () => {
@@ -334,6 +397,34 @@ describe('deposit security with real Mongo balances and ledger', () => {
       receipts.submit(String(b._id),rb.id,{amount:500,method:'Instapay'},OTHER),
     ]);
     expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+  });
+
+  it('stores reviewed bank, operation date, and corrected transfer reference', async () => {
+    const { receipts }=setup({reference:'111111111111'});
+    const first=await newOrder();
+    const draft=(await receipts.uploadDraft(String(first._id),img(),STAFF)).receipt;
+    await receipts.submit(String(first._id),draft.id,{amount:500,method:'Instapay',senderName:'',senderBank:'ABCD',
+      transferDateText:'25 Sep 2026 03:44 PM',transferReference:'957372239566'},STAFF);
+    const saved=(await fresh(String(first._id))).depositReceipts[0];
+    expect(saved).toMatchObject({senderName:'',senderBank:'ABCD',transferDateText:'25 Sep 2026 03:44 PM',transferReference:'957372239566'});
+    const row=(await receipts.history({period:'all'},ADMIN)).rows.find((r: any)=>r.id===draft.id);
+    expect(row).toMatchObject({senderBank:'ABCD',transferDateText:'25 Sep 2026 03:44 PM',reference:'957372239566'});
+    const second=await newOrder();
+    const retry=(await receipts.uploadDraft(String(second._id),img(),OTHER)).receipt;
+    await expect(receipts.submit(String(second._id),retry.id,{amount:500,method:'Instapay',
+      transferReference:'957372239566'},OTHER)).rejects.toThrow(BadRequestException);
+  });
+
+  it('carries OCR sender address and bank from upload into the saved receipt and history', async () => {
+    const { receipts }=setup({senderHandle:'sender@instapay',senderBank:'البنك التجاري الدولي (CIB)'});
+    const order=await newOrder();
+    const draft=(await receipts.uploadDraft(String(order._id),img(),STAFF)).receipt;
+    expect(draft.ocr).toMatchObject({senderHandle:'sender@instapay',senderBank:'البنك التجاري الدولي (CIB)'});
+    await receipts.submit(String(order._id),draft.id,{amount:500,method:'Instapay'},STAFF);
+    const saved=(await fresh(String(order._id))).depositReceipts[0];
+    expect(saved).toMatchObject({senderHandle:'sender@instapay',senderBank:'البنك التجاري الدولي (CIB)'});
+    expect((await receipts.history({period:'all'},ADMIN)).rows.find((r: any)=>r.id===draft.id))
+      .toMatchObject({senderHandle:'sender@instapay',senderBank:'البنك التجاري الدولي (CIB)'});
   });
 });
 
@@ -420,6 +511,15 @@ describe('manual sale receipt storage', () => {
     expect(ocr.read).toHaveBeenCalledTimes(1);
   });
 
+  it('allows the same manual image after cancelling an unconfirmed draft', async () => {
+    const { receipts }=setup(); const file=img();
+    const first=(await receipts.scanManualReceipt({},file,STAFF)).receipt;
+    await receipts.withdrawManualReceipt(first.id,STAFF);
+    const retry=(await receipts.scanManualReceipt({},file,STAFF)).receipt;
+    await receipts.confirmManualReceipt(retry.id,{amount:500,method:'Instapay',total:1500,confirmed:true},STAFF);
+    await expect(receipts.scanManualReceipt({},file,STAFF)).rejects.toThrow(BadRequestException);
+  });
+
   it('retains image warnings and requires their acknowledgement with the employee confirmation', async () => {
     const { receipts } = setup({ ran: false, amount: null, method: '', confident: false });
     const { receipt } = await receipts.scanManualReceipt({}, img(), STAFF);
@@ -459,6 +559,7 @@ describe('receipt races and access', () => {
   it.each([
     { ran: true, pattern: '', code: 'not-transfer' },
     { ran: false, pattern: '', code: 'ocr-unavailable' },
+    { ran: true, pattern: 'ussd', code: 'awaiting-send' },
   ])('requires explicit acknowledgement and preserves $code for manager review', async ({ ran, pattern, code }) => {
     const { receipts, vault } = setup({ ran, pattern });
     const o = await newOrder();
@@ -534,7 +635,7 @@ describe('receipt races and access', () => {
     expect(rows).toHaveLength(3);
   });
 
-  it('blocks duplicate images before submission, including drafts', async () => {
+  it('blocks images already submitted in another order', async () => {
     const { receipts, ocr } = setup();
     ocr.prepareForStorage.mockImplementation(async()=>Buffer.from('same-image'));
     const o1=await newOrder(); const o2=await newOrder();
@@ -1034,10 +1135,14 @@ describe('nightly cleanup', () => {
     const { receipts } = setup();
     const o = await newOrder();
     const { receipt } = await receipts.uploadDraft(String(o._id), img(), STAFF);
+    const key='image:'+receipt.imageSha256;
+    await conn.collection<{_id:string;receiptId:string;createdAt:string}>('depositreceiptidentities')
+      .insertOne({_id:key,receiptId:receipt.id,createdAt:new Date().toISOString()});
     expect((await receipts.runCleanup(new Date())).drafts).toBe(0);
     const later = new Date(Date.now() + 25 * 3600 * 1000);
     expect((await receipts.runCleanup(later)).drafts).toBe(1);
     expect((await fresh(String(o._id))).depositReceipts).toHaveLength(0);
+    expect(await conn.collection<{_id:string}>('depositreceiptidentities').findOne({_id:key})).toBeNull();
     expect(mockR2.has(receipt.imageKey)).toBe(false);
   });
 

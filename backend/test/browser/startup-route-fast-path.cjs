@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const puppeteer = require('puppeteer');
+const ORIGIN = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
 
 // The secondary collection is deliberately left pending. Each direct route
 // must become usable from its own data without waiting for that collection.
@@ -33,7 +34,9 @@ const routes = [
       }, productsOnly);
       await page.setRequestInterception(true);
       let expensesRequested = false;
-      const routeReads = { '/api/shopify/orders': 0, '/api/transactions/pickup-orders': 0 };
+      const routeReads = { '/api/shopify/orders': 0, '/api/shopify/orders/summary-page': 0,
+        '/api/transactions/pickup-orders': 0, '/api/transactions/pickup-orders/workspace': 0,
+        '/api/transactions/movements-page': 0, '/api/transactions/summary-page': 0 };
       page.on('request', request => {
         const pathname = new URL(request.url()).pathname;
         if (!pathname.startsWith('/api/')) return request.continue();
@@ -51,12 +54,29 @@ const routes = [
         if (pathname === '/api/auth/me') body = JSON.stringify({ name: 'Test', role: productsOnly ? 'staff' : 'admin', perms: productsOnly ? ['products'] : [] });
         if (pathname === '/api/warehouse-layout') body = JSON.stringify({ warehouses: [{ code: 'MAIN', name: 'Main warehouse' }], locations: [], labelSizes: [{ id: '80x40', widthMm: 80, heightMm: 40 }] });
         if (pathname === '/api/settings' || pathname === '/api/transactions/dashboard') body = '{}';
-        if (nullTransactions && pathname === '/api/transactions') body = 'null';
-        if (nullOrders && pathname === '/api/shopify/orders') body = 'null';
+        if (pathname === '/api/transactions/startup-overview') body = JSON.stringify({ rows: [], activeCount: 0 });
+        if (pathname === '/api/transactions/movements-page') body = nullTransactions ? 'null' : JSON.stringify({
+          pageRows: [], total: 0, page: 1, pageSize: 20, transactionCount: 0, activeCount: 0,
+          tabCounts: { all: 0, sales: 0, purchase: 0, returns: 0 },
+          facets: { employee: {}, method: {}, status: {}, operation: {}, bosta: {}, pickup: {}, tags: {} },
+          kpi: { sales: 0, shipping: 0, shipLoss: 0, purchases: 0, returns: 0,
+            remainingCollection: 0, remainingSupplier: 0, pending: 0, completed: 0,
+            cancelled: 0, delivered: 0, mini: { sales: 0, purchases: 0, returns: 0 },
+            series: { sales: null, purchases: null, remainingCollection: null } }, orderIds: [],
+        });
+        if (pathname === '/api/transactions/summary-page') body = nullTransactions
+          ? 'null' : JSON.stringify({ rows: [], total: 0, page: 1, pageSize: 200 });
+        if (pathname === '/api/shopify/orders/summary-page') body = nullOrders ? 'null' : JSON.stringify({
+          rows: [], page: 1, limit: 30, total: 0, allCount: 0, pendingCount: 0, tabCount: 0,
+          filterCounts: {}, baseCount: 0, starredCount: 0, filteredIds: [], selectionRows: [],
+          depositSummary: { instapay: 0, vodafone: 0, paidCount: 0, unpaidCount: 0 },
+          panelFacets: { status: {}, staff: {}, tags: {}, comments: 0, stock: {} },
+          pendingCancelCount: 0, pendingEditCount: 0, kpiStats: null,
+        });
         return request.respond({ status: 200, contentType: 'application/json', body });
       });
 
-      await page.goto('http://127.0.0.1:8080' + url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.goto(ORIGIN + url, { waitUntil: 'domcontentloaded', timeout: 60000 });
       try {
         await page.waitForFunction(expected => currentPage === expected
           && document.querySelector('#page-' + expected)?.classList.contains('active')
@@ -90,7 +110,8 @@ const routes = [
         `${expectedPage}: first view waited for the unrelated read`);
       if (nullTransactions) {
         assert.equal(await page.evaluate(() => Array.isArray(transactions)), true, 'null transaction response must not replace the list');
-        assert.equal(await page.evaluate(() => loadFailed('transactions')), true, 'null transaction response must remain retryable');
+        assert.equal(await page.evaluate(() => !!document.querySelector('#mov-grid-list')?.textContent), true,
+          'invalid Movements response must show a retryable error');
         assert.equal(consoleErrors.some(message => message.includes("Cannot read properties of null (reading 'filter')")), false);
       }
       if (nullOrders) {
@@ -98,11 +119,19 @@ const routes = [
         assert.equal(await page.evaluate(() => Array.isArray(_shopifyOrders)), true, 'null Shopify response must not replace the list');
         assert.equal(await page.$eval('#sp-orders-loading', el => el.dataset.state), 'error');
       }
-      if (expectedPage === 'shopify-orders') assert.equal(routeReads['/api/shopify/orders'], 1,
-        'Shopify route must reuse its startup read');
-      if (expectedPage === 'pickup-orders') assert.equal(routeReads['/api/transactions/pickup-orders'], 1,
+      if (expectedPage === 'shopify-orders') {
+        assert.equal(routeReads['/api/shopify/orders/summary-page'], 1,
+          'Shopify route must request one summary page');
+        assert.equal(routeReads['/api/shopify/orders'], 0,
+          'Shopify route must not load complete orders');
+        assert.equal(routeReads['/api/transactions/summary-page'], 0,
+          'Shopify route must not load transaction history');
+      }
+      if (expectedPage === 'pickup-orders') assert.equal(routeReads['/api/transactions/pickup-orders/workspace'], 1,
         'Pick-up route must reuse its startup read');
       if (expectedPage === 'movements') {
+        assert.equal(routeReads['/api/transactions/movements-page'], 1, 'Movements must request one page');
+        assert.equal(routeReads['/api/transactions/summary-page'], 0, 'Movements must not load all summary pages');
         const timeoutCode = await page.evaluate(async () => {
           const originalSetTimeout = window.setTimeout;
           window.setTimeout = (callback, ms, ...args) =>

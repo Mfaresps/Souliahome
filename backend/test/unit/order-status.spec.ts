@@ -48,6 +48,17 @@ describe('Order lifecycle vocabulary and precedence', () => {
   it('preserves new carrier status codes without making up a known stage', () => {
     expect(orderStates.resolve({ hasShipment: true, bostaStatus: 'NEW_CARRIER_STATUS' }, 'transaction', 'en').label).toBe('NEW_CARRIER_STATUS');
   });
+  it.each(['ar', 'en'])('shows Bosta delay beside the current shipment state in %s', lang => {
+    const row = { bostaOrderId: 'b1', bostaStatus: 'IN_TRANSIT', bostaIsDelayed: true };
+    const meta = orderStates.resolve(row, 'transaction', lang);
+    expect(meta).toMatchObject({ key: 'IN_TRANSIT', delayed: true });
+    const badge = orderStates.badge(meta);
+    expect(badge).toContain('order-delay-badge');
+    expect(badge).toContain(lang === 'ar' ? 'متأخر' : 'Delayed');
+    expect(orderStates.resolve({ ...row, bostaStatus: 'DELIVERED' }, 'transaction', lang).delayed).toBe(false);
+    expect(orderStates.resolve({ ...row, cancelled: true }, 'transaction', lang).delayed).toBe(false);
+    expect(orderStates.resolve({ ...row, bostaOrderId: '' }, 'transaction', lang).delayed).toBe(false);
+  });
   it.each(['ar', 'en'])('hides old delivery exceptions after successful delivery in %s', lang => {
     const reason = 'Postponed - the customer requested postponement for another day.';
     const row = { bostaOrderId: 'b1', bostaTrackingNumber: '519265', bostaStatus: 'DELIVERED',

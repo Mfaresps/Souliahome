@@ -55,8 +55,12 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
     }));
     assert.deepEqual(await snapshot(), { counts: [5, 0, 2, 2, 1, 1, 2], shown: 5, stage: 'IN_TRANSIT' });
     assert.equal(await page.evaluate(() => _spOrderStatusKey(_shopifyOrders[3])), 'confirmed');
-    await page.evaluate(() => { transactions[0].bostaStatus = 'DELIVERED'; _rtRefreshUI({ movements: true }); });
-    await page.waitForFunction(() => !!document.querySelector('#shopify-orders-table-body [data-order-state="DELIVERED"]'));
+    await page.evaluate(() => {
+      window._previousShopifyRow = document.querySelector('#shopify-orders-table-body tr.sp-order-row');
+      transactions[0].bostaStatus = 'DELIVERED'; _rtRefreshUI({ movements: true });
+    });
+    await page.waitForFunction(() => _orderStateMeta(_shopifyOrders[3], 'shopify').key === 'DELIVERED'
+      && window._previousShopifyRow && !window._previousShopifyRow.isConnected);
     assert.equal((await snapshot()).stage, 'DELIVERED');
     await page.evaluate(() => { _spStarOnly = true; renderShopifyOrders(); });
     assert.deepEqual((await snapshot()).counts, [2, 0, 1, 1, 1, 0, 2]);
@@ -79,10 +83,18 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
     assert.equal(stockCases.unlinked.missing, 1);
     assert.equal(stockCases.emptyInventory.missing, 1);
     await page.evaluate(async () => {
-      api = async url => url === '/shopify/orders' ? _shopifyOrders
-        : url === '/transactions' ? [{ _id: 'tx4', shopifyOrderId: 's4', bostaOrderId: 'b4', bostaStatus: 'OUT_FOR_DELIVERY' }]
-        : url === '/transactions/inventory' ? [{ _id: 'p1', current: 5 }, { _id: 'p2', current: 3 }]
-        : [];
+      const rows = _shopifyOrders.filter(o => o._id !== 'o5').map(o => o._id === 'o4'
+        ? { ...o, linkedTransaction: { _id: 'tx4', shopifyOrderId: 's4', bostaOrderId: 'b4', bostaStatus: 'OUT_FOR_DELIVERY' } }
+        : o);
+      api = async url => url.startsWith('/shopify/orders/summary-page') ? {
+        rows, page: 1, limit: 30, total: 4, allCount: 5, pendingCount: 3, tabCount: 5,
+        filterCounts: { 'ship-without-deposit': 0, 'deposit-paid': 2, 'no-deposit': 2,
+          'deposit-paid-in-stock': 1, 'stock-blocked': 0 }, baseCount: 4, starredCount: 2,
+        filteredIds: ['o1', 'o2'], selectionRows: [],
+        depositSummary: { instapay: 0, vodafone: 0, paidCount: 2, unpaidCount: 2 },
+        panelFacets: { status: {}, staff: {}, tags: {}, comments: 0, stock: {} },
+        kpiStats: null, pendingCancelCount: 0, pendingEditCount: 0,
+      } : [];
       await refreshShopifyOrders();
     });
     assert.equal((await snapshot()).stage, 'OUT_FOR_DELIVERY');

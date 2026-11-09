@@ -3614,10 +3614,126 @@ keep their phone behaviour — switching them would suddenly pin Inventory's 7-t
   first name + title visible, dot overlaps the photo on the outer edge, online/offline/
   socket states, no page overflow, titles under authors in two real renderers.
 
+## Admin Dashboard — Shipping Table, Duty Card, Team Card Fitted (Nov 9, 2026)
+
+Measured in headless Chrome over the shipped page (1440/1280/1180/1024/390, ar/en, dark).
+- **Shipping table (`shipping-command-center.css`)**: it was a 780px table in a 560–660px box
+  beside the fixed 264px side column, AND a `max-height:560px` box — two scrollbars, with
+  «حالة الشحن» / «إجراءات» off-screen at every desktop width but 1440. Now: no inner vertical
+  scroll (pagination already caps 20 rows), `min-width:640`, headers wrap, 8px cell padding.
+  ⚠ **Layout is by the zone's width, not the viewport**: children query `.scc-zone` (a
+  container cannot query itself) — below 920px the side cards move under the table as a row.
+  Below 620px each order is a card (ref + actions / customer + status / carrier / date + age);
+  the age moves into the date cell via `.scc-age-inline` (JS), sorting stays in the filter.
+  ⚠ Card mode uses `td:nth-child(1…7)` — reorder the columns in `rowHTML` and update it.
+- **Duty card («مَن يستلم الأوردرات الآن»)**: a long name ran under the role tag. The name
+  wraps on its own line with the shift time at the end, the tag drops to the line below.
+  ⚠ **For employees it was crushed to ~126px**: `employee-home.css` makes `.ds-ship-side` a
+  2-column grid (for its full-width layout) and that survived inside the 264px column, so
+  names printed one letter per line. `.dashboard-v2 .scc-zone > .ds-ship-side` forces one
+  column beside the table; the ≤919px container rule (later) restores two when stacked.
+  The employee view also inherits `white-space:nowrap` on cells, so `.scc-customer` sets
+  `white-space:normal` itself — names wrap instead of pushing the table sideways.
+- **Team card («متابعة الفريق», `admin-team-home.*`)**: 741 → ~620px at 1280. The description
+  and both counting rules are one `<details class="ath-help">` line (touch-reachable; the
+  input keeps `aria-describedby`), totals are single-line tiles, and the person's 5 numbers
+  share one `.ath-stats` row. ⚠ `.ath-person-metrics>span` stays 3 — `employee-home.cjs` checks it.
+- `employee-home.cjs` already failed before this change: it calls `_syncShipAdminBits()`,
+  which no longer exists in `index.html`.
+
+## Deposit Without a Transfer Image — «إضافة عربون بدون صورة تحويل» (Nov 9, 2026)
+
+A small text link under the upload box of «إضافة عربون» opens a form with amount + vault
+(+ optional reason). It records the SAME thing as an image receipt after submit: a «معلق»
+receipt that a manager approves, and the approval is what moves the vault. Only the photo is missing.
+
+- **Who**: admin, or perm `shopify-deposit-no-image` → directly. Perm
+  `shopify-deposit-no-image-otp` → needs a manager OTP (kind `deposit-no-image`), unless
+  `settings.depositNoImageSkipOtp` is on (Settings ← الأمان, under purchase OTP). Both perms imply
+  `shopify-deposit-upload` + `shopify-orders` (`normalizeRolePermissions`). The rule lives in
+  `DepositReceiptsService.createWithoutImage`; the route `POST /shopify/orders/:id/deposit-receipts/no-image`
+  only needs a JWT.
+- ⚠ **The OTP is bound** to order (`editTxId`), amount (`itemsTotal`) and vault (`txType`), and is
+  spent once by `consumeDepositNoImageOtp` (atomic `txId: '' → receiptId`). A failed write gives it
+  back. Staff cannot edit an OTP-approved one (`editPending` refuses) — they withdraw and re-add.
+- ⚠ **`imageSha256` is `no-image:<receiptId>`, never empty.** The duplicate check and the unique
+  identity lock key on it; an empty value made every no-image receipt «the same image». `imageKey`
+  is `''` (deleteImage treats it as done). `needsReview` is always true, so auto-approve never books it.
+- Display: `noImage` → a dashed «بدون صورة تحويل» tile instead of the thumbnail (`_spReceiptPreviewHtml`),
+  a review notice with the reason, the vault note says «بدون صورة تحويل», and the transaction snapshot
+  and deposit log carry `noImage`.
+- ⚠ `frontend/scripts/build-runtime.cjs` lists route-script tags by their exact `?v=` — bump a
+  version there together with index.html, or the shell returns a 500 («Expected one route script»).
+  The running `server.js` caches that script, so it needs a restart after editing it.
+- Tests: `test/integration/deposit-no-image.service.spec.ts` (10, real Mongo scratch DB).
+  Revert-checked: an empty `imageSha256` and a non-atomic OTP spend each fail a case.
+
+## Cascade Reveal — Data Arrival Motion (Nov 9, 2026)
+
+One motion for data arriving on the three data pages: `souliaCascade(container, {count, limit})`
+and `souliaCountUp(root, selector)`, beside `revealData` in `index.html`; CSS `.ss-cascade-item`
+beside `.ss-reveal`. **Every row visible on screen** rises 4px and fades in (220ms each);
+the gap is 20ms but shrinks with the row count so the spread never exceeds 300ms
+(`SS_CASCADE_SPREAD`), and numbers inside `count` count from 0 (450ms). Done in ~half a second.
+- "Visible" = above the viewport bottom, or above the bottom of the nearest scrolling
+  ancestor when a table scrolls inside its own box (`_ssVisibleBottom`). Rows below appear
+  at once; the scan stops at the first one. Safety cap 40 rows (`SS_CASCADE_MAX`).
+  ⚠ A fixed count (the first version used 8) left the lower half of the screen popping in —
+  a day-separator row took a slot too, so only ~5 order rows moved.
+
+- ⚠ **Arrival only** — skeleton → data, or page entry. Search, filters, paging, sorting and
+  live updates repaint with no motion. Each call site detects the arrival itself:
+  employee KPIs and `sales-overview` check that a skeleton was there; the team card checks
+  `.ath-loading`; the shipping table checks for an empty `tbody`; Movements checks
+  `mov-nav-pending` (`_movCascadeReveal`); Shopify uses `_spOrdersReveal`, now also set by
+  `_setSpNavigationPending(true)`; the Shopify KPI strip checks `aria-busy` going true → false.
+- ⚠ `opacity`/`transform` on rows and cards only — **never on `.page`** (a transform there
+  becomes the containing block for `position:fixed` popovers).
+- ⚠ `souliaCountUp` rewrites **text nodes only**, so `fmtJ`'s `.amt-cur` and `<bdi>` survive,
+  and it restores the original text exactly at the end. The old `countUp` (textContent) would
+  wipe that markup — don't use it on formatted values.
+- ⚠ `#shopify-orders-table-body` is a **wrapper div**; the rows are in its `tbody`.
+- One document-level `animationend` listener removes the class, so a later
+  `display:none → block` cannot replay the entrance. Reduced motion → nothing moves or counts.
+- Verified in headless Chrome: every on-screen row animates (hidden ones skipped), spread ≤300ms, cost 0.5ms,
+  markup identical after counting, Shopify rows + 5 KPI tiles on entry and nothing on a
+  redraw, Movements entry, employee cards on arrival only, reduced motion inert.
+  `shopify-kpis.cjs` fails «today: 3 confirmed» — identical with the committed
+  `shopify-kpis.js`, so pre-existing and unrelated.
+
+### Movements revalidation reads as loading, not as half-empty rows
+On entry, `mov-nav-pending` still masks the cached figures (`visibility:hidden` on every
+cell but ref/date/client — `phase11-navigation-safety.cjs` checks it), but each masked cell
+now draws a placeholder bar (`td[data-col]::after`, `visibility:visible`), the KPI strip shows
+bars instead of a blank gap, phone/grid cards show three bars, and `#mov-nav-loading` is
+screen-reader only. ⚠ `transition:none` on the masked content is required: the items
+button, discount badge and TAG button carry `transition:all`, so they faded out late and
+floated over empty rows as ghosts — same cause as the Shopify ghosts.
+
+### Shopify KPI strip stuck on its skeleton
+Page entry draws KPI skeleton tiles (`_spkRender('loading')`). When the server reply equals
+what is already painted (`samePaint`), `_spLoadServerPage` skips `renderShopifyOrders` —
+and the KPI redraw with it — so the tiles never filled (seen on the 3rd visit with unchanged
+data). ⚠ `_setSpNavigationPending(false)` now redraws the strip whenever `#sp-kpi` is still
+`aria-busy="true"`. Verified over 3 consecutive visits.
+
+### Shopify orders jumped back to the first row on every live update
+On desktop the orders scroll inside `.sp-table-scroll`, not the window. Any repaint that is
+not a single-arrival reconcile rebuilt the wrapper with `innerHTML`, and the new box started
+at `scrollTop 0` — so a status change, an assignment or a deposit threw the reader to the
+top while scrolling. ⚠ **Every full rebuild goes through `_spRebuildOrderTable`**, which
+restores `scrollTop`/`scrollLeft` when `_spTableViewKey()` (page, tab, search, filters,
+period) is unchanged; a different view still starts at the top. Verified: live update keeps
+1200px, same-view rebuild keeps 900px, next page → 0.
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 9, 2026 | Shopify orders no longer jump to the first row on live updates (the inner table scroller kept its position only on single-arrival repaints); Movements reload shows placeholder bars instead of half-empty rows and ghost buttons | See "Cascade Reveal" → the two subsections |
+| Nov 9, 2026 | Cascade Reveal: the dashboard, Movements and Shopify orders animate data arrival (every on-screen row rises, KPI numbers count up) once, never on filters or live updates; Shopify page entry shows the table skeleton instead of hiding the old table under «جارٍ التحميل…» | See "Cascade Reveal — Data Arrival Motion" above |
+| Nov 9, 2026 | «إضافة عربون بدون صورة تحويل»: amount + vault without a photo, still approved by a manager; staff need a manager OTP unless Settings turns it off | See "Deposit Without a Transfer Image" above |
+| Nov 9, 2026 | Admin dashboard: shipping table fits without sideways or inner scroll (phone = cards), duty card names no longer spill, team card ~120px shorter | See "Admin Dashboard — Shipping Table, Duty Card, Team Card Fitted" above |
 | Oct 14, 2026 | Shopify KPI strip: the five period tabs + custom-dates bar became one calendar icon beside «Report» with a small menu | See "Shopify Orders — Period KPIs + Report Image" above |
 | Oct 14, 2026 | Header: green/grey presence dot on the avatar, first name + job title shown on phone and desktop; comment threads show each author's job title in small type under the name | See "Header Presence Dot, First Name + Job Title" above |
 | Oct 13, 2026 | Shopify orders page: period KPI strip (Today / Yesterday / Last 7 days — received, confirmed (incl. shipping without deposit), follow-up, cancelled, confirmation rate) and a «تقرير» button that makes a shareable report image + copyable text | See "Shopify Orders — Period KPIs + Report Image" above |

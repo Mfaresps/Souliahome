@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { DiscountOtpService } from './discount-otp.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -168,6 +168,29 @@ export class DiscountOtpController {
   async assertSupplierPayOtp(@Body() body: { otpId: string; amount: number }) {
     await this.otpService.assertSupplierPayOtp(body.otpId, Number(body.amount) || 0);
     return { ok: true };
+  }
+
+  @Post('deposit-no-image-request')
+  async requestDepositNoImageOtp(
+    @Body() body: { orderId?: string; orderRef?: string; client?: string; amount?: number; method?: string; reason?: string },
+    @Req() req: any,
+  ) {
+    const user = req.user || {};
+    const perms: string[] = user.perms || [];
+    if (user.role !== 'admin' && !perms.includes('shopify-deposit-no-image-otp') && !perms.includes('shopify-deposit-no-image')) {
+      throw new ForbiddenException('لا تملك صلاحية إضافة عربون بدون صورة');
+    }
+    return this.otpService.requestDepositNoImageOtp({
+      orderId: String(body.orderId || ''),
+      orderRef: String(body.orderRef || ''),
+      client: String(body.client || '').slice(0, 120),
+      amount: Number(body.amount) || 0,
+      method: String(body.method || ''),
+      reason: String(body.reason || '').slice(0, 300),
+      requestedById: user.userId || '',
+      requestedByName: user.name || '',
+      requestedByUsername: user.username || '',
+    });
   }
 
   @Post('vault-access-request')

@@ -15,7 +15,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
   page.on('request',req=>{
    const u=new URL(req.url()),local=path.join(pub,u.pathname.slice(1));
    if(u.origin==='http://soulia.test'&&u.pathname==='/')return req.respond({status:200,contentType:'text/html',body:html});
-   if(u.origin==='http://soulia.test'&&(u.pathname.endsWith('.css')||['/admin-team-home.js','/shopify-kpis.js','/shopify-edit-approvals.js','/navigation-shell.js','/order-status.js'].includes(u.pathname))&&fs.existsSync(local))return req.respond({status:200,contentType:u.pathname.endsWith('.css')?'text/css':'text/javascript',body:fs.readFileSync(local)});
+   if(u.origin==='http://soulia.test'&&(u.pathname.endsWith('.css')||['/admin-team-home.js','/sales-overview.js','/shopify-kpis.js','/shopify-edit-approvals.js','/navigation-shell.js','/order-status.js','/designme/date-range-picker/soulia-range.js'].includes(u.pathname))&&fs.existsSync(local))return req.respond({status:200,contentType:u.pathname.endsWith('.css')?'text/css':'text/javascript',body:fs.readFileSync(local)});
    if(req.resourceType()==='script')return req.respond({status:200,contentType:'text/javascript',body:'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});'});
    return req.respond({status:200,contentType:'application/json',body:'[]'});
   });
@@ -26,14 +26,25 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    qs('#app').style.display='';qs('#login-page').style.display='none';qs('#splash-screen')?.remove();
    buildSidebar=()=>{};buildNotifications=()=>{};loadDashboardTreasury=()=>{};_renderStaffDashboard=()=>{};
    window.pending={};window.hold=true;window.fail=false;
-   window.stats={totalSales:12000,netProfit:3000,totalPurchases:5000,totalDeposit:8000,lowStockCount:2,topSellers:[],lowSellers:[]};
+   window.dashboardStatsRequests=0;window.overviewRequests=0;window.teamRequests=0;
+   const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+   const month=day.slice(0,7),daysInMonth=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0).getDate();
+   window.overviewData={month,timeZone:'Africa/Cairo',totalOrders:21,totalRevenue:4200,confirmedOrders:18,averageOrderValue:233,today:day,
+    days:Array.from({length:daysInMonth},(_,i)=>({date:month+'-'+String(i+1).padStart(2,'0'),orders:i<Number(day.slice(8))?i%5+1:0,confirmedOrders:0,revenue:i<Number(day.slice(8))?500:0}))};
    window.teamData={periodLabel:'October 2026',totals:{pending:14,followUps:17,issues:3},employees:[{id:'employee-a',name:'Malak Abbas',active:true,pending:14,followUps:17,issues:3,points:104,delivered:0}]};
    window.detailData={orders:[{id:'order-a',ref:'2929',client:'Mona',status:'pending',assignedAt:new Date().toISOString()}],followUps:[]};
    window.orderData=[{_id:'order-a',ref:'2929',client:'Mona',phone:'01000000000',status:'pending',total:500,items:[{name:'Product',qty:1,price:500}],createdAt:new Date().toISOString()}];
    api=async url=>{
     const key=url.split('?')[0];let value;
-    if(key==='/transactions/dashboard')value=stats;
-    else if(key==='/employee-performance/team-workspace')value=teamData;
+    if(key==='/transactions/dashboard'){dashboardStatsRequests++;throw new Error('duplicate dashboard summary requested');}
+    if(key==='/transactions/sales-overview'){
+     overviewRequests++;
+     const params=new URLSearchParams(url.split('?')[1]||'');
+     const selected=`${params.get('year')}-${String(params.get('month')).padStart(2,'0')}`;
+     const length=new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7)),0).getDate();
+     value=selected===overviewData.month?overviewData:{...overviewData,month:selected,today:null,totalOrders:length,confirmedOrders:length,totalRevenue:length*100,averageOrderValue:100,days:Array.from({length},(_,i)=>({date:selected+'-'+String(i+1).padStart(2,'0'),orders:1,confirmedOrders:1,revenue:100}))};
+    }
+    else if(key==='/employee-performance/team-workspace'){teamRequests++;value=teamData;}
     else if(key.startsWith('/employee-performance/team-workspace/'))value=detailData;
     else if(key==='/shopify/orders')value=orderData;
     else return [];
@@ -46,34 +57,28 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
   for(const lang of ['ar','en'])for(const width of [1980,1440,390,320]){
    await page.setViewport({width,height:1000});
    await new Promise(resolve=>setTimeout(resolve,300));
-   await page.evaluate(({lang,width})=>{
+   const first=lang==='ar'&&width===1980;
+   await page.evaluate(({lang,first,width})=>{
     currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.classList.toggle('dark-mode',width===320);
-    showPage('dashboard');hideAdminTeamWorkspace();_dashStatsLoaded=false;hold=true;fail=false;
-    window.dashboardTask=loadDashboard();
-   },{lang,width});
-   assert.equal(await page.$$eval('#dash-stats .is-primary',e=>e.length),3);
-   assert.equal(await page.$$eval('#dash-stats .ds-kpi2',e=>e.length),7);
-   assert.equal(await page.$$eval('#dash-stats .ds-loading-value',e=>e.length),10);
-   assert(await page.$('#dash-admin-team .ath-loading .ath-layout'),'first load reserves employee and task layout');
+    showPage('dashboard');hold=first;fail=false;window.dashboardTask=loadDashboard();
+   },{lang,first,width});
+   assert.equal(await page.$('#dash-stats'),null,'old KPI grid is absent');
+   assert.equal(await page.$eval('#dash-sales-overview',el=>getComputedStyle(el).display!=='none'),true,'sales overview is visible');
+   assert.equal(await page.$eval('#dash-admin-team',el=>getComputedStyle(el).display!=='none'),true,'team oversight is restored below sales');
+   if(first){
+    assert.equal(await page.$$eval('#so-metrics .so-skeleton',els=>els.length),4,'initial loading reserves four metric positions');
+    await page.screenshot({path:path.join(out,'home-sales-loading-ar-1980.png')});
+    await page.evaluate(()=>release('/transactions/sales-overview'));
+   }
+   await page.evaluate(async()=>await dashboardTask);
+   assert.equal(await page.$$eval('#so-metrics .so-metric',els=>els.length),4);
+   assert(await page.$eval('#so-chart-canvas',el=>el.querySelectorAll('.so-point').length>0),'daily chart has points');
    assert(await page.$eval('#page-dashboard',e=>e.scrollWidth<=e.clientWidth+1),`home overflow ${lang}/${width}`);
-   const before=await page.$eval('#dash-stats',e=>({height:e.getBoundingClientRect().height,labels:[...e.querySelectorAll('.ds-kpi-label,.ds-kpi2-label')].map(n=>n.textContent)}));
-   await page.screenshot({path:path.join(out,`home-loading-${lang}-${width}.png`)});
-   await page.evaluate(()=>{release('/transactions/dashboard');release('/employee-performance/team-workspace');});
-   await page.waitForSelector('.ath-loading-tasks');
-   await page.waitForFunction(()=>pending['/employee-performance/team-workspace/employee-a']?.length);
-   await page.evaluate(async()=>{release('/employee-performance/team-workspace/employee-a');await dashboardTask;});
-   await page.waitForFunction(()=>document.querySelector('#dash-admin-team').getAttribute('aria-busy')==='false');
-   const after=await page.$eval('#dash-stats',e=>({height:e.getBoundingClientRect().height,labels:[...e.querySelectorAll('.ds-kpi-label,.ds-kpi2-label')].map(n=>n.textContent)}));
-   assert.deepEqual(after.labels,before.labels,'loading labels match actual metrics');
-   assert(Math.abs(after.height-before.height)<12,`KPI layout shift ${lang}/${width}: ${JSON.stringify({before:before.height,after:after.height})}`);
-   await page.evaluate(()=>{window.dashboardTask=loadDashboard();});
-   assert.equal(await page.$$eval('#dash-stats .ds-loading-value',e=>e.length),0,'refresh preserves dashboard values');
-   assert((await page.$eval('.ath-workspace',e=>e.textContent)).includes('2929'),'refresh preserves employee tasks');
-   await page.evaluate(()=>release('/employee-performance/team-workspace'));
-   await page.waitForFunction(()=>pending['/employee-performance/team-workspace/employee-a']?.length);
-   assert.equal(await page.$('.ath-loading-tasks'),null,'same employee detail refresh retains content');
-   await page.evaluate(async()=>{release('/transactions/dashboard');release('/employee-performance/team-workspace/employee-a');await dashboardTask;});
-   await page.waitForFunction(()=>document.querySelector('#dash-admin-team').getAttribute('aria-busy')==='false');
+   if(width===1440||width===390)await page.screenshot({path:path.join(out,`home-sales-ready-${lang}-${width}.png`)});
+   assert.equal(await page.evaluate(()=>teamRequests),1,'team oversight loads once without blocking sales');
+   await page.evaluate(()=>{hold=true;window.dashboardTask=loadDashboard();});
+   await page.evaluate(async()=>await dashboardTask);
+   assert.equal(await page.evaluate(()=>overviewRequests),1,'recent month is reused without another request');
    await page.evaluate(()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;_spkState='ready';_spkFilter='';window.shopTask=loadShopifyOrders();});
    await page.waitForSelector('#sp-orders-loading:not([hidden])');
    assert(await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top>=document.getElementById('sp-kpi').getBoundingClientRect().bottom),'summary stays above orders while loading');
@@ -112,10 +117,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true,'Shopify refresh retains loaded orders');
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
   }
-  await page.evaluate(async()=>{showPage('dashboard');hold=false;fail=true;await loadDashboard();});
-  assert(await page.$('.dash-refresh-error'),'failed refresh exposes retry');
-  assert.equal(await page.$$eval('#dash-stats .is-primary',e=>e.length),3,'failed refresh retains known metrics');
-  await page.evaluate(async()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;await loadShopifyOrders();});
+  await page.evaluate(async()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;hold=false;fail=true;await loadShopifyOrders();});
   assert(await page.$('#sp-orders-loading[data-state=error] button'),'first-load failure offers retry');
   await page.evaluate(async()=>{fail=false;await loadShopifyOrders();});
   assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
@@ -145,9 +147,10 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
   }),'action buttons fit the fixed column with richer order content');
   await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
   assert.equal(await page.$eval('.sp-loading-bar',e=>getComputedStyle(e).animationName),'none');
-  await page.evaluate(async()=>{showPage('dashboard');currentUser={_id:'staff',role:'staff',perms:['dashboard']};renderDashKpis({});renderDashKpiSkeleton();hideAdminTeamWorkspace();});
-  assert.equal(await page.$eval('#dash-stats',e=>getComputedStyle(e).display),'none','staff never sees admin placeholders');
+  await page.evaluate(async()=>{showPage('dashboard');currentUser={_id:'staff',role:'staff',perms:['dashboard']};renderDashWelcome(false);window.salesOverview.hide();hideAdminTeamWorkspace();});
+  assert.equal(await page.$eval('#dash-sales-overview',el=>getComputedStyle(el).display),'none','staff keeps the operational dashboard');
+  assert.equal(await page.evaluate(()=>dashboardStatsRequests),0,'dashboard never loads duplicate financial summary');
   assert.deepEqual(errors,[],'no runtime errors');
-  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, stable Shopify columns and rows, matching KPI geometry, rich actions, retained refresh content, failures/retry, hidden columns and reduced motion.');
+  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, stable Shopify columns and rows, four metric sales overview, rich actions, retained refresh content, failures/retry, hidden columns and reduced motion.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

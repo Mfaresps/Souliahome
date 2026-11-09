@@ -23,6 +23,21 @@ export class DepositReceiptEntryDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(80)
+  senderBank?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  transferDateText?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  transferReference?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(120)
   senderHandle?: string;
 
@@ -45,4 +60,26 @@ export class DepositReceiptReasonDto {
   @IsString()
   @MaxLength(300)
   reason?: string;
+}
+
+/** «إضافة عربون بدون صورة تحويل» — amount + vault, no image. `otpId` only for the OTP-gated perm. */
+export class DepositNoImageDto {
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(10_000_000)
+  amount: number;
+
+  @IsIn(DEPOSIT_VAULT_METHODS as unknown as string[])
+  method: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  otpId?: string;
 }

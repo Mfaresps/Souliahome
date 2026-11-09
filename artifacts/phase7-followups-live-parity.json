@@ -1,0 +1,24 @@
+﻿{
+  "fullCount": 1053,
+  "overviewCount": 1007,
+  "salesCount": 1007,
+  "missingSalesCount": 0,
+  "followupsCount": 538,
+  "linkedFull": 367,
+  "linkedOverview": 367,
+  "summaryPages": 6,
+  "summaryBytes": 3315737,
+  "summaryMsAggregate": 969,
+  "missingLinkedCount": 0,
+  "missingLinkedTypes": {},
+  "fieldMismatches": {
+    "_id": 0,
+    "type": 0,
+    "ref": 0,
+    "client": 0,
+    "phone": 0,
+    "cancelled": 0,
+    "createdAt": 0,
+    "date": 0
+  }
+}

@@ -1,0 +1,309 @@
+﻿{
+  "mode": "read-only-live-browser",
+  "startup": {
+    "dcl": 562.1999999880791,
+    "fcp": 1124,
+    "lcp": 1536,
+    "interactive": 1545.7999999821186,
+    "tbt": 50,
+    "domNodes": 11477,
+    "coreLoaded": true,
+    "vaultLoaded": false,
+    "scriptMs": 177,
+    "taskMs": 1486,
+    "longTaskOver50Ms": 317
+  },
+  "dashboard": {
+    "shippingKpis": [
+      "967",
+      "11",
+      "2"
+    ],
+    "followupCount": 538,
+    "unseenFollowups": 11,
+    "transactionsCount": 1007,
+    "activeTransactionCount": 1027,
+    "followupBadgeCount": 0,
+    "notificationHash": "bacc855875176b35833257386a8931ace586fb2fee07365cc88d252419d99cbb",
+    "notificationCount": 308
+  },
+  "startupCount": 24,
+  "startupApiBytes": 1541379,
+  "startupApi": [
+    {
+      "path": "/api/branding",
+      "at": 1118.9948,
+      "bytes": 65,
+      "status": 200,
+      "ms": 105
+    },
+    {
+      "path": "/api/auth/me",
+      "at": 1419.6218,
+      "bytes": 533,
+      "status": 200,
+      "ms": 354
+    },
+    {
+      "path": "/api/warehouses",
+      "at": 1602.015,
+      "bytes": 118,
+      "status": 200,
+      "ms": 385
+    },
+    {
+      "path": "/api/transactions/dashboard-overview",
+      "at": 1603.0585,
+      "bytes": 695816,
+      "status": 200,
+      "ms": 408
+    },
+    {
+      "path": "/api/settings",
+      "at": 1603.3112,
+      "bytes": 6109,
+      "status": 200,
+      "ms": 384
+    },
+    {
+      "path": "/api/drafts",
+      "at": 1603.9066,
+      "bytes": 6523,
+      "status": 200,
+      "ms": 383
+    },
+    {
+      "path": "/api/products",
+      "at": 1971.4909,
+      "bytes": 153379,
+      "status": 200,
+      "ms": 99
+    },
+    {
+      "path": "/api/expenses",
+      "at": 1971.7188,
+      "bytes": 16714,
+      "status": 200,
+      "ms": 102
+    },
+    {
+      "path": "/api/users",
+      "at": 1971.8588,
+      "bytes": 10986,
+      "status": 200,
+      "ms": 108
+    },
+    {
+      "path": "/api/tags",
+      "at": 1972.0342,
+      "bytes": 2869,
+      "status": 200,
+      "ms": 108
+    },
+    {
+      "path": "/api/returns",
+      "at": 1972.1942,
+      "bytes": 60880,
+      "status": 200,
+      "ms": 112
+    },
+    {
+      "path": "/api/complaints",
+      "at": 1972.3657,
+      "bytes": 21009,
+      "status": 200,
+      "ms": 112
+    },
+    {
+      "path": "/api/purchase-orders",
+      "at": 1972.503,
+      "bytes": 36856,
+      "status": 200,
+      "ms": 113
+    },
+    {
+      "path": "/api/supplier-returns",
+      "at": 1972.6335,
+      "bytes": 15027,
+      "status": 200,
+      "ms": 113
+    },
+    {
+      "path": "/api/transactions/inventory",
+      "at": 1972.7564,
+      "bytes": 47047,
+      "status": 200,
+      "ms": 434
+    },
+    {
+      "path": "/api/notifications/read-state",
+      "at": 1972.9367,
+      "bytes": 52116,
+      "status": 200,
+      "ms": 118
+    },
+    {
+      "path": "/api/notifications/history",
+      "at": 1973.0784,
+      "bytes": 32843,
+      "status": 200,
+      "ms": 141
+    },
+    {
+      "path": "/api/mentions",
+      "at": 1973.1925,
+      "bytes": 96457,
+      "status": 200,
+      "ms": 269
+    },
+    {
+      "path": "/api/auth/users-status",
+      "at": 1974.6346,
+      "bytes": 1399,
+      "status": 200,
+      "ms": 114
+    },
+    {
+      "path": "/api/transactions/sales-overview?year=2026&month=11",
+      "at": 1975.2707,
+      "bytes": 2145,
+      "status": 200,
+      "ms": 264
+    },
+    {
+      "path": "/api/employee-performance/duty-board",
+      "at": 1975.5288,
+      "bytes": 403,
+      "status": 200,
+      "ms": 267
+    },
+    {
+      "path": "/api/followups/dashboard-summary",
+      "at": 1975.7137,
+      "bytes": 239221,
+      "status": 200,
+      "ms": 430
+    },
+    {
+      "path": "/api/security-audit/locked-users",
+      "at": 2435.495,
+      "bytes": 1736,
+      "status": 200,
+      "ms": 25
+    },
+    {
+      "path": "/api/security-audit/logs",
+      "at": 2435.9696,
+      "bytes": 41128,
+      "status": 200,
+      "ms": 20
+    }
+  ],
+  "followups": {
+    "ms": 936,
+    "rows": 40,
+    "records": 538,
+    "hasFullComments": true,
+    "api": [
+      "/api/announcements/mine",
+      "/api/notifications",
+      "/api/followups",
+      "/api/complaints"
+    ]
+  },
+  "invoice": {
+    "linked": true,
+    "ms": 269,
+    "hydrated": true
+  },
+  "loadedScripts": [
+    "/branding.js",
+    "/config.js",
+    "/order-status.js",
+    "/comment-reactions.js",
+    "/deposit-decision.js",
+    "/invoice-unit-identities.js",
+    "/cancellations-analytics.js",
+    "/after-sales.js",
+    "/customer-piece-return.js",
+    "/failed-delivery-identities.js",
+    "/animated-number.js",
+    "/complaint-flow.js",
+    "/comment-inline-edit.js",
+    "/shopify-deposit-fab.js",
+    "/copy-button.js",
+    "/navigation-shell.js",
+    "/admin-team-home.js",
+    "/sales-overview.js",
+    "/bosta-pickup.js",
+    "/awb-preview.js",
+    "/pickup-daily-shipping.js",
+    "/pickup-ready-return.js",
+    "/notification-settings.js",
+    "/announcements.js",
+    "/push-navigation.js",
+    "/roles-permissions.js",
+    "/notification-feed.js",
+    "/followup-reminders.js",
+    "/order-audit-financials.js",
+    "/order-audit-periods.js",
+    "/order-audit-marketing.js",
+    "/order-audit-insights.js",
+    "/notification-history.js",
+    "/supplier-return-pieces.js",
+    "/shopify-sync.js",
+    "/barcode-input.js",
+    "/inventory-scanner.js",
+    "/global-search-scanner.js",
+    "/inventory-errors.js",
+    "/warehouses.js",
+    "/warehouse-layout.js",
+    "/preprinted-labels.js",
+    "/inventory-units.js",
+    "/supplier-labels.js",
+    "/inventory-packs.js",
+    "/legacy-stock-labels.js",
+    "/product-stocktake.js",
+    "/purchase-receiving.js",
+    "/sales-scanner.js",
+    "/shopify-compact-header.js",
+    "/employee-followup-session.js",
+    "/employee-followup-tour.js",
+    "/be-button-motion.js",
+    "/designme/date-range-picker/soulia-range.js",
+    "/order-status-preview.js",
+    "/loading-system.js",
+    "/app-core.js",
+    "/vendor/socket.io-4.7.5.min.js",
+    "/deposit-history.js",
+    "/shopify-edit-approvals.js",
+    "/shopify-kpis.js",
+    "/shopify-orders-route.js",
+    "/followups-view-route.js",
+    "/invoice-views-route.js"
+  ],
+  "followupInitiators": [
+    {
+      "at": 248886.790715,
+      "stack": [
+        "_apiRequest:9712",
+        "api:9675",
+        "_readDashboardFollowUps:17932",
+        "_ensureDashFollowUps:17952",
+        "_renderStaffDashboard:17978"
+      ]
+    },
+    {
+      "at": 248888.58224,
+      "stack": [
+        "_apiRequest:9712",
+        "api:9675",
+        "_readFollowUps:17918",
+        "loadFollowUps:69001",
+        "switchMainTab:67371"
+      ]
+    }
+  ],
+  "errors": [],
+  "blockedWrites": []
+}

@@ -285,6 +285,10 @@
   }
   watch(qs('#notif-list'), () => qs('#notif-panel')?.classList.contains('show'));
   watch(qs('#nc-main'), () => qs('#nc-overlay')?.classList.contains('active'));
+  const compactPanel = qs('#notif-panel');
+  if (compactPanel) new MutationObserver(() => {
+    if (!compactPanel.classList.contains('show')) qs('#notif-list')?.replaceChildren();
+  }).observe(compactPanel, { attributes: true, attributeFilter: ['class'] });
   // State changes in another tab, plus server reconciliation for another device.
   window.addEventListener('storage', event => {
     if (event.key === _notifStorageKey('notifReadIds') || event.key === _notifStorageKey('notifDismissed')) {

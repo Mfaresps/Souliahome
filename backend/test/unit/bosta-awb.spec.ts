@@ -47,6 +47,14 @@ const baseTx = { _id: 't1', bostaTrackingNumber: '77873113', bostaStatus: 'CREAT
 describe('BostaService.getAwb', () => {
   afterEach(() => jest.restoreAllMocks());
 
+  it('returns a cached A6 document without a carrier request or database update', async () => {
+    const request = jest.spyOn(https, 'request');
+    const { svc, updates } = makeService({ ...baseTx, bostaAwbBase64: PDF, bostaAwbType: 'A6' });
+    await expect(svc.getAwb('t1')).resolves.toMatchObject({ pdfBase64: PDF, awbType: 'A6' });
+    expect(request).not.toHaveBeenCalled();
+    expect(updates).toEqual([]);
+  });
+
   it('requests A6 per Bosta docs and caches it', async () => {
     const seen: any[] = [];
     stubBosta([{ status: 200, body: JSON.stringify({ success: true, data: PDF }) }], seen);

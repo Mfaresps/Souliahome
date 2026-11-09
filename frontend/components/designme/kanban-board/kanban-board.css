@@ -1,0 +1,254 @@
+/* Generated from designme.dev by scripts/sync.mjs. Edit the site, then sync. */
+/* ---------- Kanban ---------- */
+/* a sprint board: a header with the project, its people (a facepile that filters by person), a search and a Board / List
+   switch; filter chips for assignee, label and priority; then the columns. The board never scrolls sideways: under 640px it
+   shows one column at a time, picked with tabs, so the columns always fit */
+.dm-kbx{width:100%;position:relative;container:kbx/inline-size;display:flex;flex-direction:column;gap:10px}
+.dm-kbx-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.dm-kbx-sp{flex:1}
+.dm-kbx-hd{display:flex;align-items:center;gap:var(--dm-s-3);min-height:32px}
+.dm-kbx-ti{display:flex;align-items:baseline;gap:var(--dm-s-2);min-width:0}
+.dm-kbx-ti b{flex:none;font-size:14px;font-weight:500;white-space:nowrap}
+/* the summary gives way first when the header is short of room */
+.dm-kbx-ti span{min-width:0;font-size:12.5px;color:var(--dm-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the people on the board: pressing a face shows only their cards, the same filter as the Assignee chip */
+.dm-kbx-fp{display:flex;flex:none;align-items:center;padding-left:5px}
+.dm-kbx-fp button{display:grid;margin-left:-4px;border-radius:50%;transition:opacity .2s,transform .3s var(--dm-ease)}
+@media (hover:hover) and (pointer:fine){.dm-kbx-fp button:hover{transform:translateY(-1px)}}
+.dm-kbx-fp .dm-av{width:24px;height:24px;font-size:10px;box-shadow:0 0 0 2px var(--dm-stage)}
+.dm-kbx-fp button[aria-pressed="true"] .dm-av{box-shadow:0 0 0 2px var(--dm-stage),0 0 0 3.5px var(--dm-line-strong)}
+.dm-kbx-fp.dm-some button[aria-pressed="false"]{opacity:.4}
+.dm-kbx-fp button:focus-visible{outline-offset:3px;border-radius:50%}
+.dm-kbx-q{display:flex;align-items:center;gap:6px;flex:0 1 176px;min-width:136px;height:30px;padding:0 var(--dm-s-1) 0 var(--dm-s-2);border-radius:var(--dm-r-field);background:var(--dm-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-field-line) 50%,transparent);color:var(--dm-muted);transition:box-shadow var(--dm-t-fast)}
+@supports (corner-shape:squircle){.dm-kbx-q{border-radius:var(--dm-r-field-sq)}}
+.dm-kbx-q:focus-within{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-field-line-strong) 50%,transparent)}
+.dm-kbx-q input{flex:1;min-width:0;height:100%;border:0;outline:0;padding:0;background:none;font:inherit;font-size:13px;color:var(--dm-fg)}
+.dm-kbx-q input::placeholder{color:var(--dm-muted)}
+.dm-kbx-q input::-webkit-search-cancel-button{appearance:none}
+.dm-kbx-qx{width:22px;height:22px;flex:none;color:var(--dm-muted)}
+.dm-kbx-qx[hidden]{display:none}
+.dm-kbx-vw{flex:none}
+.dm-kbx-vw button{display:inline-flex;align-items:center;gap:5px}
+.dm-kbx-vw .dm-i{color:var(--dm-muted)}
+.dm-kbx-vw button[aria-pressed="true"] .dm-i{color:var(--dm-fg2)}
+/* the filter chips: grey at rest, a white tile with the dimmed edge once they filter, saying what they filter by */
+.dm-kbx-fl{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:28px}
+.dm-kbx-f .dm-v{color:var(--dm-fg);font-weight:500}
+.dm-kbx-f .dm-i:last-child{color:var(--dm-muted);margin-right:-3px}
+.dm-kbx-f[aria-expanded="true"]{background:var(--dm-hover);color:var(--dm-fg)}
+.dm-kbx-f.dm-on[aria-expanded="true"]{background:var(--dm-surface)}
+.dm-kbx-clr[hidden]{display:none}
+.dm-kbx-cnt{font-size:12.5px;color:var(--dm-muted);white-space:nowrap}
+/* the columns, and the room they keep: each has space for four cards, the most one holds as the agent fills Done, so the
+   board keeps one height while it plays, as you filter, and as a column folds away */
+.dm-kbx-bd{position:relative}
+.dm-kbx-cols{display:grid;grid-template-columns:var(--dm-kbx-gt,repeat(3,minmax(0,1fr)));gap:10px;transition:grid-template-columns var(--dm-t) var(--dm-ease)}
+.dm-kbx-c{display:flex;flex-direction:column;gap:6px;min-width:0;padding:6px 6px 8px;border-radius:var(--dm-r-card);background:color-mix(in srgb,var(--dm-fg) 3.5%,transparent);transition:background .25s,box-shadow .25s;min-height:452px}
+.dm-kbx-c.dm-over{background:var(--dm-sel);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dm-accent-mark,var(--dm-accent)) 40%,transparent)}
+.dm-kbx-ch{display:flex;align-items:center;gap:6px;height:30px;padding:0 0 0 2px;font-size:13px}
+.dm-kbx-ch b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-kbx-ch .dm-n{font-size:12px;color:var(--dm-muted);white-space:nowrap}
+.dm-kbx-ch .dm-tag{height:20px;padding:0 6px;gap:3px;cursor:default}
+.dm-kbx-ch .dm-ib{width:24px;height:24px;flex:none;color:var(--dm-muted)}
+.dm-kbx-ch .dm-ib[aria-expanded="true"]{color:var(--dm-fg)}
+@media (hover:hover) and (pointer:fine){.dm-kbx-ch .dm-ib:hover{color:var(--dm-fg)}}
+.dm-kbx-tg .dm-i{transition:transform var(--dm-t) var(--dm-ease)}
+.dm-kbx-c.dm-shut .dm-kbx-tg .dm-i{transform:rotate(-90deg)}
+.dm-kbx-list{display:flex;flex-direction:column;gap:6px;flex:1}
+.dm-kbx-none{padding:var(--dm-s-4) var(--dm-s-2);font-size:12px;color:var(--dm-muted);text-align:center}
+/* a folded column is a narrow strip with its name running down it; pressing it opens it again, and a card dropped on it
+   goes to its end */
+.dm-kbx-c.dm-shut{align-items:center;padding:6px 0;cursor:pointer}
+@media (hover:hover) and (pointer:fine){.dm-kbx-c.dm-shut:hover{background:color-mix(in srgb,var(--dm-fg) 5.5%,transparent)}}
+.dm-kbx-c.dm-shut .dm-kbx-ch{flex-direction:column;height:auto;padding:0;gap:var(--dm-s-2)}
+.dm-kbx-c.dm-shut .dm-kbx-ch b{writing-mode:vertical-rl}
+.dm-kbx-c.dm-shut :is(.dm-kbx-list,.dm-kbx-sp,.dm-kbx-cadd,.dm-kbx-cmn,.dm-kbx-none){display:none}
+/* a card: its key, priority and people on top, the title, then its labels, due date, subtasks, comments and files */
+.dm-kbx-k{position:relative;padding:var(--dm-s-2) 10px 9px;border-radius:calc(12px * var(--dm-rk));background:var(--dm-surface);box-shadow:var(--dm-shadow);display:flex;flex-direction:column;gap:5px;cursor:grab;transition:box-shadow .25s,opacity .2s;touch-action:none;user-select:none;-webkit-user-select:none}
+@media (hover:hover) and (pointer:fine){.dm-kbx-k:hover{box-shadow:var(--dm-shadow-pop)}}
+.dm-kbx-k:focus-visible{outline-offset:1px;border-radius:calc(12px * var(--dm-rk))}
+.dm-kbx-k.dm-drag{opacity:.35}
+.dm-kbx-k.dm-ghost{position:fixed;z-index:100;pointer-events:none;transform:rotate(2deg) scale(1.03);box-shadow:var(--dm-shadow-pop);cursor:grabbing}
+.dm-kbx-k1{display:flex;align-items:center;gap:6px;height:20px}
+.dm-kbx-id{font-size:11.5px;color:var(--dm-muted);white-space:nowrap}
+.dm-kbx-k .dm-t{font-size:13px;line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* a title is written in place (a new card, or a double-click on one): while you write it, it is a field, white with the
+   dimmed field edge, one step stronger while it has the focus, drawn outside the words so they keep their place */
+.dm-kbx-k .dm-t[contenteditable="true"]{display:block;outline:0;border-radius:var(--dm-r-xs);padding:0 var(--dm-s-1);margin:0 calc(-1 * var(--dm-s-1));background:var(--dm-surface);box-shadow:0 0 0 1px color-mix(in srgb,var(--dm-field-line) 50%,transparent);cursor:text;-webkit-user-select:text;user-select:text}
+.dm-kbx-k .dm-t[contenteditable="true"]:focus{box-shadow:0 0 0 1px color-mix(in srgb,var(--dm-field-line-strong) 50%,transparent)}
+.dm-kbx-m{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;min-height:20px;font-size:12px;color:var(--dm-muted)}
+.dm-kbx-m:empty{display:none}
+.dm-kbx-tags{display:flex;gap:4px}
+.dm-kbx-mt{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.dm-kbx-mt .dm-i{width:12px;height:12px}
+.dm-kbx-mt.dm-late{color:var(--dm-bad)}
+.dm-kbx-mt.dm-ok{color:var(--dm-ok)}
+/* subtasks done: a count and a thin bar, grey while there is work left and green once it is all done */
+.dm-kbx-sb{width:22px;height:3px;border-radius:2px;background:color-mix(in srgb,var(--dm-muted) 25%,transparent);overflow:hidden}
+.dm-kbx-sb i{display:block;height:100%;border-radius:inherit;background:var(--dm-fg2);transition:width .35s var(--dm-ease)}
+.dm-kbx-mt.dm-ok .dm-kbx-sb i{background:var(--dm-ok-mark)}
+/* the card's quick controls: its priority and its people open their menus, and the dots its Move to menu */
+.dm-kbx-pri,.dm-kbx-who,.dm-kbx-mv{display:inline-grid;place-items:center;flex:none;border-radius:calc(6px * var(--dm-rk));transition:background var(--dm-t-fast),color var(--dm-t-fast),opacity var(--dm-t-fast)}
+.dm-kbx-pri{width:20px;height:20px;margin:0 -2px 0 -4px}
+.dm-kbx-pri[aria-expanded="true"],.dm-kbx-who[aria-expanded="true"],.dm-kbx-mv[aria-expanded="true"]{background:var(--dm-row)}
+@media (hover:hover) and (pointer:fine){.dm-kbx-pri:hover,.dm-kbx-who:hover,.dm-kbx-mv:hover{background:var(--dm-row)}}
+.dm-kbx-who{display:inline-flex;align-items:center;height:22px;padding:0 1px 0 6px;border-radius:calc(11px * var(--dm-rk))}
+.dm-kbx-who .dm-av{width:20px;height:20px;font-size:9px;margin-left:-5px;box-shadow:0 0 0 1.5px var(--dm-surface)}
+.dm-kbx-who:empty{width:22px;padding:0;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);border-radius:50%}
+.dm-kbx-who .dm-none{display:grid;place-items:center;width:20px;height:20px;margin-left:-5px;border-radius:50%;color:var(--dm-muted);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-muted) 45%,transparent)}
+.dm-kbx-mv{width:22px;height:22px;margin-right:-4px;color:var(--dm-muted);opacity:0}
+.dm-kbx-mv[aria-expanded="true"]{opacity:1}
+@media (hover:hover) and (pointer:fine){.dm-kbx-k:is(:hover,:focus-within,.dm-open) .dm-kbx-mv{opacity:1}}
+.dm-kbx-mv[aria-expanded="true"]{color:var(--dm-fg)}
+@media (hover:hover) and (pointer:fine){.dm-kbx-mv:hover{color:var(--dm-fg)}}
+@media (pointer:coarse){.dm-kbx-mv{opacity:1}}
+/* priority, drawn as three bars that fill from the left; Urgent is the one in colour */
+.dm-kbx-pb{display:inline-flex;align-items:flex-end;gap:1.5px;width:12px;height:11px}
+.dm-kbx-pb i{flex:1;border-radius:1px;background:color-mix(in srgb,var(--dm-muted) 35%,transparent)}
+.dm-kbx-pb i:nth-child(1){height:45%}.dm-kbx-pb i:nth-child(2){height:72%}.dm-kbx-pb i:nth-child(3){height:100%}
+.dm-kbx-pb[data-p="low"] i:nth-child(1),.dm-kbx-pb[data-p="med"] i:nth-child(-n+2),.dm-kbx-pb[data-p="high"] i{background:var(--dm-fg2)}
+.dm-kbx-pb[data-p="none"] i{height:1.5px}
+.dm-kbx-pu{display:grid;place-items:center;width:12px;height:12px;border-radius:calc(3px * var(--dm-rk));background:var(--dm-bad);color:var(--dm-surface);font-size:10px;font-weight:500;line-height:1}
+/* picked cards: a checkbox on each card while any is picked, and a slightly stronger edge on the picked ones */
+.dm-kbx-sel{display:none;place-items:center;width:14px;height:14px;flex:none;border-radius:calc(4px * var(--dm-rk));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dm-muted) 80%,var(--dm-surface));color:var(--dm-on-accent,#fff);transition:background-color .2s,box-shadow .2s}
+.dm-kbx.dm-selecting .dm-kbx-sel{display:grid}
+.dm-kbx-sel .dm-i{width:10px;height:10px;opacity:0;transform:scale(.4);transition:opacity .15s,transform .3s cubic-bezier(.34,1.4,.64,1)}
+.dm-kbx-k.dm-sel .dm-kbx-sel{background:var(--dm-accent);box-shadow:inset 0 0 0 1px var(--dm-accent-mark,var(--dm-accent))}
+.dm-kbx-k.dm-sel .dm-kbx-sel .dm-i{opacity:1;transform:none}
+.dm-kbx-k.dm-sel,.dm-kbx-k.dm-open{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-pick-on) 70%,transparent),var(--dm-shadow)}
+/* the agent's card: an accent edge, what it is doing now, and a bar that fills as it works */
+.dm-kbx-k.dm-agent{box-shadow:0 0 0 1.5px var(--dm-accent-mark,var(--dm-accent)),var(--dm-shadow)}
+.dm-kbx-ag{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dm-accent-fg,var(--dm-accent))}
+.dm-kbx-ag .dm-think{color:var(--dm-accent-fg,var(--dm-accent))}
+.dm-kbx-ag .dm-s{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-kbx-ag .dm-pc{color:var(--dm-muted)}
+.dm-kbx-pr{height:3px;border-radius:2px;background:color-mix(in srgb,var(--dm-muted) 25%,transparent);overflow:hidden}
+.dm-kbx-pr i{display:block;height:100%;background:var(--dm-accent-mark,var(--dm-accent));width:0;transition:width .3s linear}
+.dm-kbx-ph{border-radius:calc(12px * var(--dm-rk));background:color-mix(in srgb,var(--dm-accent) 8%,transparent);border:1.5px dashed color-mix(in srgb,var(--dm-accent-mark,var(--dm-accent)) 50%,transparent)}
+/* nothing matches the filters: one note over the board, with a way back */
+.dm-kbx-em{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;pointer-events:none}
+.dm-kbx-em[hidden]{display:none}
+.dm-kbx-em .dm-ic{display:grid;place-items:center;width:36px;height:36px;margin-bottom:var(--dm-s-2);border-radius:var(--dm-r-in);background:var(--dm-chip);color:var(--dm-muted)}
+.dm-kbx-em b{font-size:13.5px;font-weight:500}
+.dm-kbx-em span{font-size:12.5px;color:var(--dm-muted)}
+.dm-kbx-em .dm-pill{margin-top:10px;pointer-events:auto}
+/* picked cards move together from a bar over the foot of the board */
+.dm-kbx-bk{position:absolute;left:50%;bottom:var(--dm-s-3);z-index:3;display:flex;align-items:center;gap:2px;max-width:calc(100% - 16px);padding:var(--dm-s-1) var(--dm-s-1) var(--dm-s-1) var(--dm-s-3);border-radius:calc(14px * var(--dm-rk));background:var(--dm-raised);box-shadow:var(--dm-shadow-pop);font-size:12.5px;white-space:nowrap;transform:translate(-50%,8px);opacity:0;visibility:hidden;transition:opacity .2s var(--dm-ease),transform .35s var(--dm-ease),visibility 0s .2s}
+.dm-kbx-bk.dm-on{transform:translate(-50%,0);opacity:1;visibility:visible;transition-property:opacity,transform}
+.dm-kbx-bk .dm-n{font-weight:500;margin-right:var(--dm-s-2)}
+.dm-kbx-bk .dm-l{color:var(--dm-muted);margin-right:2px}
+.dm-kbx-bk .dm-sep{width:1px;height:18px;margin:0 var(--dm-s-1);background:color-mix(in srgb,var(--dm-line) 50%,transparent)}
+.dm-kbx-bk .dm-ib{width:28px;height:28px}
+.dm-kbx-bk .dm-sh{display:none}
+/* a card's details, in a sheet over the right of the board: what it is, its fields (each opens its menu), the agent's
+   progress, a checklist you can tick and how much talk and how many files it has */
+.dm-kbx-pk{position:absolute;top:0;right:0;bottom:0;z-index:4;width:min(300px,100%);display:flex;flex-direction:column;gap:var(--dm-s-2);padding:var(--dm-s-2) var(--dm-s-2) var(--dm-s-3) var(--dm-s-4);border-radius:var(--dm-r-card);background:var(--dm-raised);box-shadow:var(--dm-shadow-pop);overflow:auto;overscroll-behavior:contain;opacity:0;visibility:hidden;transform:translateX(12px);transition:opacity .2s var(--dm-ease),transform .4s var(--dm-ease),visibility 0s .2s}
+.dm-kbx-pk.dm-on{opacity:1;visibility:visible;transform:none;transition-property:opacity,transform}
+.dm-kbx-pk-h{display:flex;align-items:center;gap:var(--dm-s-2);min-height:30px}
+.dm-kbx-pk-h .dm-ib{width:28px;height:28px}
+.dm-kbx-pk-t{font-size:14px;font-weight:500;line-height:1.4;padding-right:var(--dm-s-2)}
+.dm-kbx-pk-ag{display:flex;flex-direction:column;gap:6px;padding:var(--dm-s-2) 10px;margin-right:var(--dm-s-2);border-radius:var(--dm-r-in);background:var(--dm-accent-bg)}
+.dm-kbx-pk-ag .dm-kbx-ag{color:var(--dm-accent-fg,var(--dm-accent))}
+.dm-kbx-pk-ag .dm-pc{color:var(--dm-fg2)}
+.dm-kbx-pk-rows{display:flex;flex-direction:column}
+.dm-kbx-pk-r{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;min-height:32px;font-size:13px}
+.dm-kbx-pk-r .dm-k{color:var(--dm-muted)}
+.dm-kbx-pv{display:inline-flex;align-items:center;gap:7px;justify-self:start;max-width:100%;height:28px;padding:0 var(--dm-s-2);margin-left:calc(-1 * var(--dm-s-2));border-radius:var(--dm-r-sm);color:var(--dm-fg);white-space:nowrap;transition:background .2s}
+:where([data-dm]) button.dm-kbx-pv[aria-expanded="true"]{background:var(--dm-row)}
+@media (hover:hover) and (pointer:fine){:where([data-dm]) button.dm-kbx-pv:hover{background:var(--dm-row)}}
+.dm-kbx-pv>.dm-i{color:var(--dm-muted)}
+.dm-kbx-pv .dm-av{width:20px;height:20px;font-size:9px}
+.dm-kbx-pv .dm-avs{display:inline-flex}
+.dm-kbx-pv .dm-avs .dm-av+.dm-av{margin-left:-5px;box-shadow:0 0 0 1.5px var(--dm-raised)}
+.dm-kbx-pv.dm-late{color:var(--dm-bad)}
+.dm-kbx-pv .dm-dot{width:8px;height:8px}
+.dm-kbx-pk .dm-kbx-tags{flex-wrap:wrap}
+.dm-kbx-pk-s{display:flex;align-items:center;gap:var(--dm-s-2);padding:var(--dm-s-2) var(--dm-s-2) 2px 0;border-top:1px solid color-mix(in srgb,var(--dm-line) 50%,transparent);font-size:12px;color:var(--dm-muted)}
+.dm-kbx-pk-s b{font-weight:500;color:var(--dm-fg);font-size:13px}
+.dm-kbx-pk-s .dm-kbx-sb{width:48px}
+.dm-kbx-pk-cl{display:flex;flex-direction:column;margin:0 0 0 -6px}
+.dm-kbx-ci{display:flex;align-items:flex-start;gap:var(--dm-s-2);width:100%;padding:5px 6px;border-radius:var(--dm-r-sm);font-size:13px;line-height:1.4;text-align:left;transition:background var(--dm-t-fast),color var(--dm-t-fast)}
+@media (hover:hover) and (pointer:fine){.dm-kbx-ci:hover{background:var(--dm-row)}}
+.dm-kbx-ci:focus-visible{outline-offset:-2px}
+.dm-kbx-ci[aria-checked="true"]>span:last-child{color:var(--dm-muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--dm-muted) 60%,transparent)}
+.dm-kbx-cb{display:grid;place-items:center;width:16px;height:16px;flex:none;margin-top:1px;border-radius:5px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dm-muted) 80%,var(--dm-surface));color:var(--dm-on-accent,#fff);transition:background-color .2s,box-shadow .2s}
+.dm-kbx-cb .dm-i{width:11px;height:11px;opacity:0;transform:scale(.4);transition:opacity .15s,transform .3s cubic-bezier(.34,1.4,.64,1)}
+.dm-kbx-ci[aria-checked="true"] .dm-kbx-cb{background:var(--dm-accent);box-shadow:inset 0 0 0 1px var(--dm-accent-mark,var(--dm-accent))}
+.dm-kbx-ci[aria-checked="true"] .dm-kbx-cb .dm-i{opacity:1;transform:none}
+.dm-kbx-ci:disabled{cursor:default}
+@media (hover:hover) and (pointer:fine){.dm-kbx-ci:disabled:hover{background:none}}
+.dm-kbx-pk-f{display:flex;gap:var(--dm-s-3);padding-top:var(--dm-s-2);margin-top:auto;border-top:1px solid color-mix(in srgb,var(--dm-line) 50%,transparent);font-size:12px;color:var(--dm-muted)}
+.dm-kbx-pk-f .dm-kbx-mt .dm-i{width:13px;height:13px}
+/* the menus: Move to, a card's priority and people, a column's actions and the filters */
+.dm-kbx-mp,.dm-kbx-pm{min-width:184px}
+.dm-kbx-am,.dm-kbx-fm{min-width:208px}
+.dm-kbx-cm{min-width:196px}
+.dm-kbx-pop .dm-mi .dm-av{width:20px;height:20px;font-size:9px}
+.dm-kbx-pop .dm-mi .dm-r{margin-left:auto}
+.dm-kbx-pop .dm-mi .dm-r+.dm-ck{margin-left:0}
+.dm-kbx-pop .dm-mi>.dm-kbx-pb,.dm-kbx-pop .dm-mi>.dm-kbx-pu{margin:0 4px 0 3px}
+.dm-kbx-pop .dm-mi .dm-tag{height:18px;padding:0 6px}
+/* the list: the same cards as rows, grouped by column under a header each, in one panel that keeps the board's height */
+.dm-kbx.dm-list .dm-kbx-cols{display:flex;flex-direction:column;gap:0;border-radius:var(--dm-r-card);background:var(--dm-surface);box-shadow:var(--dm-shadow);overflow:hidden}
+.dm-kbx.dm-list .dm-kbx-c{min-height:0;padding:0;gap:0;border-radius:0;background:none;cursor:default}
+.dm-kbx.dm-list .dm-kbx-c.dm-over{background:var(--dm-sel);box-shadow:none}
+.dm-kbx.dm-list .dm-kbx-ch{height:32px;padding:0 var(--dm-s-2) 0 6px;background:var(--dm-row);box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent)}
+.dm-kbx.dm-list .dm-kbx-c+.dm-kbx-c .dm-kbx-ch{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent),inset 0 -1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent)}
+.dm-kbx.dm-list .dm-kbx-c.dm-shut{align-items:stretch}
+.dm-kbx.dm-list .dm-kbx-c.dm-shut .dm-kbx-ch{flex-direction:row;height:32px;padding:0 var(--dm-s-2) 0 6px;gap:6px}
+.dm-kbx.dm-list .dm-kbx-c.dm-shut .dm-kbx-ch b{writing-mode:horizontal-tb}
+.dm-kbx.dm-list .dm-kbx-c.dm-shut .dm-kbx-sp{display:block}
+.dm-kbx.dm-list .dm-kbx-list{gap:0}
+.dm-kbx.dm-list .dm-kbx-k{flex-direction:row;align-items:center;gap:10px;height:38px;padding:0 var(--dm-s-3) 0 var(--dm-s-3);border-radius:0;box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent)}
+.dm-kbx.dm-list .dm-kbx-k:last-child{box-shadow:none}
+@media (hover:hover) and (pointer:fine){.dm-kbx.dm-list .dm-kbx-k:hover{box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent);background:var(--dm-row)}}
+.dm-kbx.dm-list .dm-kbx-k.dm-sel,.dm-kbx.dm-list .dm-kbx-k.dm-open{background:color-mix(in srgb,var(--dm-fg) 5%,transparent)}
+.dm-kbx.dm-list .dm-kbx-k.dm-agent{box-shadow:inset 2px 0 0 var(--dm-accent-mark,var(--dm-accent)),inset 0 -1px 0 color-mix(in srgb,var(--dm-line) 50%,transparent)}
+.dm-kbx.dm-list .dm-kbx-k:focus-visible{outline-offset:-2px;border-radius:0}
+.dm-kbx.dm-list .dm-kbx-k.dm-ghost{border-radius:calc(10px * var(--dm-rk));box-shadow:var(--dm-shadow-pop)}
+.dm-kbx.dm-list .dm-kbx-k1{display:contents}
+.dm-kbx.dm-list .dm-kbx-sel{order:0}.dm-kbx.dm-list .dm-kbx-pri{order:1}.dm-kbx.dm-list .dm-kbx-id{order:2;width:52px}
+.dm-kbx.dm-list .dm-kbx-k .dm-t{order:3;flex:1;min-width:0;display:block;white-space:nowrap;text-overflow:ellipsis}
+.dm-kbx.dm-list .dm-kbx-ag{order:4;flex:none}.dm-kbx.dm-list .dm-kbx-ag .dm-s{display:none}
+.dm-kbx.dm-list .dm-kbx-pr{order:5;width:40px;flex:none}
+.dm-kbx.dm-list .dm-kbx-m{order:6;flex-wrap:nowrap}
+.dm-kbx.dm-list .dm-kbx-k1 .dm-kbx-sp{display:none}
+.dm-kbx.dm-list .dm-kbx-who{order:7}.dm-kbx.dm-list .dm-kbx-mv{order:8}
+.dm-kbx.dm-list .dm-kbx-none{padding:10px var(--dm-s-3);text-align:left}
+.dm-kbx.dm-list .dm-kbx-ph{border-radius:0;border-width:1.5px 0}
+/* a narrow board, on a phone or in a narrow card: the header stacks, one column at a time, picked with tabs that count each
+   column's cards, and the details sheet covers the board */
+.dm-kbx-bar{display:none}
+@container kbx (max-width:639px){
+  .dm-kbx-hd{flex-wrap:wrap;row-gap:var(--dm-s-2)}
+  .dm-kbx-hd .dm-kbx-sp{display:none}
+  .dm-kbx-ti{flex:1 0 auto}
+  .dm-kbx-ti span{display:none}
+  .dm-kbx-q{order:3;flex:1 1 180px;min-width:0;width:auto}
+  .dm-kbx-vw{order:4}
+  .dm-kbx-vw .dm-lb{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .dm-kbx-vw button{padding:0 9px}
+  .dm-kbx-cnt{display:none}
+  .dm-kbx:not(.dm-list) .dm-kbx-bar{display:flex;align-items:center;gap:var(--dm-s-2)}
+  .dm-kbx-tabs{flex:1;display:flex;min-width:0}
+  .dm-kbx-tabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:0;padding:0 var(--dm-s-2);white-space:nowrap}
+  .dm-kbx-tabs .dm-n{font-size:12px;color:var(--dm-muted)}
+  .dm-kbx-add{flex:none;width:30px;height:30px;color:var(--dm-muted)}
+  @media (hover:hover) and (pointer:fine){.dm-kbx-add:hover{color:var(--dm-fg)}}
+  .dm-kbx:not(.dm-list) .dm-kbx-cols{grid-template-columns:minmax(0,1fr)}
+  .dm-kbx:not(.dm-list) .dm-kbx-c:not(.dm-on){display:none}
+  .dm-kbx:not(.dm-list) .dm-kbx-ch{display:none}
+  .dm-kbx:not(.dm-list) .dm-kbx-c.dm-shut{align-items:stretch;padding:6px 6px 8px;cursor:default}
+  .dm-kbx:not(.dm-list) .dm-kbx-c.dm-shut .dm-kbx-list{display:flex}
+  .dm-kbx:not(.dm-list) .dm-kbx-c{min-height:412px}
+  .dm-kbx-k{touch-action:pan-y}
+  .dm-kbx-mv{opacity:1}
+  .dm-kbx.dm-list .dm-kbx-id,.dm-kbx.dm-list .dm-kbx-m,.dm-kbx.dm-list .dm-kbx-pr{display:none}
+  .dm-kbx-pk{width:100%}
+  .dm-kbx-bk{left:var(--dm-s-2);right:var(--dm-s-2);max-width:none;transform:translateY(8px)}
+  .dm-kbx-bk.dm-on{transform:none}
+  .dm-kbx-bk .dm-lg{display:none}
+  .dm-kbx-bk .dm-sh{display:inline}
+  .dm-kbx-bk .dm-l{display:none}
+  .dm-kbx-bk .dm-n{margin-right:auto}
+}

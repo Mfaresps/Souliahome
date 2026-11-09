@@ -1,0 +1,420 @@
+/* Designme shared core: tokens for Blueprint (default) and Soft (data-style="soft" on <html> or on any element around the components), light and dark (<html data-theme="dark">) */
+:where([data-c]) [hidden]{display:none!important}
+/* hold(): an end state centred in the height its component had */
+.held{display:flex;flex-direction:column;justify-content:center}
+/* the glide starts fast in both styles, so the field is on its way up before an opening list reaches the stage's edge */
+.glide{transform:translateY(var(--dm-gy,0px));transition:transform var(--dm-t) cubic-bezier(.22,1,.36,1)}
+/* and a list that opens under a gliding field fades in a beat after it starts to move */
+.glide>.csx-pop.open{transition-delay:.08s}
+.glide>.msc-pop.open{transition-delay:.08s,.08s,.08s,0s}
+/* Soft 2: one quiet surface per object, grey type for finished work, motion only on what is happening now */
+:root,[data-style="soft"]{
+  --dm-motion:soft;
+  --dm-page:#f7f7f7; --dm-stage:#fafafa; --dm-surface:#ffffff; --dm-raised:#ffffff;
+  --dm-fg:#171717; --dm-fg2:#525252; --dm-muted:#6a6a6a; --dm-faint:#c4c4c4; --dm-rail:#d4d4d4; --dm-line:#e8e8e8; --dm-field-line:#d4d4d4; --dm-line-strong:#858585; --dm-field-line-strong:#b3b3b3;
+  --dm-chip:#f3f3f3; --dm-hover:#ebebeb; --dm-press:#e3e3e3; --dm-wash:#f9f9f9; --dm-row:#fafafa;
+  --dm-soft:#ececec; --dm-soft-h:#e3e3e3; --dm-soft-ring:inset 0 0 0 1px rgba(0,0,0,.03),inset 0 1px 0 rgba(255,255,255,.7); --dm-dis:#a6a6a6;
+  /* disabled: text and icons take --dm-dis; a control with a fill swaps it for --dm-dis-fill (Blueprint hatches it) */
+  --dm-dis-fill:var(--dm-soft); --dm-dis-hatch:none;
+  --dm-shadow-lift:0 0 0 1px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.04),0 16px 32px -10px rgba(0,0,0,.16);
+  /* the accent has three roles: --dm-accent fills (with --dm-on-accent on top, 4.5:1), --dm-accent-fg is text and icons in the accent
+     (4.5:1 on the surface, and on the chips and tints it sits on) and --dm-accent-mark is lines, rings and chart marks (3:1). A
+     light accent like lime keeps its fills and gets a darker mark and ink-coloured text on a light page */
+  --dm-accent:#116ff8; --dm-on-accent:#ffffff; --dm-accent-fg:#0f5fd5; --dm-accent-mark:#116ff8; --dm-sel:color-mix(in srgb,var(--dm-accent) 6%,transparent);
+  /* fields (text fields, textareas, search fields, dropdown triggers) have a dimmed grey edge, --dm-field-line, that steps up
+     a little, to --dm-field-line-strong, while they have the focus. The keyboard's focus ring on every other control is 2px of
+     a stronger grey (--dm-line-strong, as --dm-focus), as an outline offset 2px, or as a 2px box-shadow ring where an outline would be clipped. Never
+     the accent and never black, and only from the keyboard (:focus-visible), so a click or a tap never shows one */
+  --dm-focus:var(--dm-line-strong);
+  --dm-ink:#1b1b1b; --dm-on-ink:#ffffff;
+  --dm-ok:#0a7034; --dm-ok-bg:#cff5db; --dm-ok-mark:#4cbb17; --dm-warn:#9a4704; --dm-warn-bg:#ffe5b8; --dm-warn-mark:#f76700; --dm-bad:#b81d23; --dm-bad-bg:#ffe8e8;
+  --dm-merge:#7c4cd4; --dm-merge-bg:#f2ecfd; --dm-add:#187633; --dm-del:#c7212c;
+  --dm-pb:#1460d0; --dm-pb-bg:#eaf2ff; --dm-pl:#6b47d6; --dm-pl-bg:#f2edff; --dm-pm:#10754a; --dm-pm-bg:#e7f8f0; --dm-pp:#994c0b; --dm-pp-bg:#fff2e6;
+  --dm-pr:#bf314d; --dm-pr-bg:#ffeef1; --dm-py:#856404; --dm-py-bg:#fffae3; --dm-pk:#b92e75; --dm-pk-bg:#fff0f7; --dm-pt:#0e747d; --dm-pt-bg:#e6f9fa;
+  /* avatars have colours of their own, the same in every style and theme: a bright fill and the initials' ink on it (4.5:1,
+     APCA Lc 60). Blue, violet, red and pink are deep enough for white; green, teal, yellow and orange are too light for white
+     and take a dark ink of their own hue. An avatar given one of these, var(--dm-av-l), takes its ink, var(--dm-av-l-ink), on its own */
+  --dm-av-b:#126fe6; --dm-av-b-ink:#ffffff; --dm-av-l:#834ff5; --dm-av-l-ink:#ffffff; --dm-av-r:#d73341; --dm-av-r-ink:#ffffff; --dm-av-k:#cf3288; --dm-av-k-ink:#ffffff;
+  --dm-av-m:#27cf86; --dm-av-m-ink:#052616; --dm-av-t:#28c9d8; --dm-av-t-ink:#042428; --dm-av-y:#e9ac1a; --dm-av-y-ink:#2a1d03; --dm-av-p:#fda154; --dm-av-p-ink:#301804;
+  --dm-ts:#2c6cb2; --dm-react:#0a738b;
+  /* every raised surface carries its own hairline edge, so nothing needs a separate ring */
+  /* soft, layered shadows: a hairline, a contact shadow and two wide, faint ones, with a faint highlight on the top edge */
+  --dm-shadow:0 0 0 1px rgba(0,0,0,.03),0 1px 1px rgba(0,0,0,.025),0 2px 4px -1px rgba(0,0,0,.03),0 8px 16px -6px rgba(0,0,0,.05),0 20px 36px -14px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.75);
+  --dm-shadow-pop:0 0 0 1px rgba(0,0,0,.035),0 1px 2px rgba(0,0,0,.03),0 4px 10px -4px rgba(0,0,0,.05),0 14px 28px -10px rgba(0,0,0,.08),0 32px 56px -24px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.75);
+  --dm-shadow-toast:0 0 0 1px rgba(0,0,0,.03),0 4px 12px rgba(0,0,0,.08);
+  --dm-hl:#fdeb9a; --dm-hl-ok:#d3f1df;
+  /* Soft is plush: every corner is scaled by --dm-rk, and larger still where the browser draws true squircles (below) */
+  --dm-rk:1.25;
+  --dm-r-card:calc(16px * var(--dm-rk));
+  /* spacing runs on a 4px scale, and corners on a small set of radii; values off the scale are still written out */
+  --dm-s-1:4px; --dm-s-2:8px; --dm-s-3:12px; --dm-s-4:16px; --dm-s-5:20px; --dm-s-6:24px; --dm-s-8:32px; --dm-r-xs:calc(4px * var(--dm-rk)); --dm-r-lg:calc(20px * var(--dm-rk)); --dm-r-in:calc(12px * var(--dm-rk)); --dm-r-sm:calc(8px * var(--dm-rk)); --dm-r-pill:999px;
+  /* fields and tags have slightly rounded corners, never pills: --dm-r-field for one-line fields and dropdown triggers, --dm-r-box
+     for boxes you write several lines in, --dm-r-tag for tags. Where the browser smooths corners (corner-shape: squircle) a
+     corner looks smaller, so each takes the larger -sq radius there to look the same size. Fields share one height and,
+     where a component is a single field, one width */
+  --dm-r-field:10px; --dm-r-field-sq:16px; --dm-r-box:14px; --dm-r-box-sq:22px; --dm-r-tag:7px; --dm-r-tag-sq:12px;
+  --dm-field-h:40px; --dm-field-w:320px;
+  --dm-sans:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --dm-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --dm-ease:cubic-bezier(.22,1,.36,1); --dm-ease-io:cubic-bezier(.65,0,.35,1);
+  --dm-t-fast:.22s; --dm-t:.45s; --dm-t-slow:.7s;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]),:root:not([data-theme="light"]) [data-style="soft"]{
+  --dm-page:#111111; --dm-stage:#1c1c1c; --dm-surface:#262626; --dm-raised:#2c2c2c;
+  --dm-fg:#f2f2f2; --dm-fg2:#c9c9c9; --dm-muted:#c0c0c0; --dm-faint:#555555; --dm-rail:#414141; --dm-line:#333333; --dm-field-line:#424242; --dm-line-strong:#808080; --dm-field-line-strong:#808080;
+  --dm-chip:#303030; --dm-hover:#373737; --dm-press:#3f3f3f; --dm-wash:#2c2c2c; --dm-row:color-mix(in srgb,var(--dm-fg) 5.5%,transparent);
+  --dm-soft:#323232; --dm-soft-h:#3a3a3a; --dm-soft-ring:inset 0 0 0 1px rgba(255,255,255,.035),inset 0 1px 0 rgba(255,255,255,.05); --dm-dis:#737373;
+  --dm-shadow-lift:0 0 0 1px rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.3),0 16px 32px -10px rgba(0,0,0,.6);
+  --dm-accent:#116ff8; --dm-on-accent:#ffffff; --dm-accent-fg:#9dc4ff; --dm-accent-mark:#3d8bff; --dm-sel:color-mix(in srgb,var(--dm-accent) 9%,transparent);
+  --dm-ink:#f2f2f2; --dm-on-ink:#161616;
+  --dm-ok:#4ee28a; --dm-ok-bg:rgba(34,214,110,.2); --dm-ok-mark:#4cbb17; --dm-warn:#ffc247; --dm-warn-bg:rgba(255,184,40,.2); --dm-warn-mark:#ffa940; --dm-bad:#ff8a8a; --dm-bad-bg:rgba(255,90,90,.14);
+  --dm-merge:#cbb8ff; --dm-merge-bg:rgba(169,139,255,.15); --dm-add:#63d998; --dm-del:#ffa9ae;
+  --dm-pb:#a0c5ff; --dm-pb-bg:rgba(90,150,255,.18); --dm-pl:#cbb9ff; --dm-pl-bg:rgba(155,125,255,.18); --dm-pm:#6ad9a7; --dm-pm-bg:rgba(70,205,150,.16); --dm-pp:#ffb57a; --dm-pp-bg:rgba(255,155,80,.17);
+  --dm-pr:#ffadbb; --dm-pr-bg:rgba(255,105,130,.17); --dm-py:#f0cd5a; --dm-py-bg:rgba(240,200,60,.15); --dm-pk:#ffa8d4; --dm-pk-bg:rgba(255,100,175,.16); --dm-pt:#5fd8df; --dm-pt-bg:rgba(60,200,210,.16);
+  --dm-ts:#8fbcff; --dm-react:#3dd0ee;
+  --dm-shadow:0 0 0 1px rgba(255,255,255,.045),0 1px 2px rgba(0,0,0,.28),0 6px 14px -6px rgba(0,0,0,.36),0 20px 36px -14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06); --dm-shadow-pop:0 0 0 1px rgba(255,255,255,.055),0 2px 4px rgba(0,0,0,.3),0 12px 24px -8px rgba(0,0,0,.45),0 32px 56px -20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07); --dm-shadow-toast:0 0 0 1px rgba(255,255,255,.05),0 4px 12px rgba(0,0,0,.4); --dm-hl:rgba(240,200,60,.3); --dm-hl-ok:rgba(60,207,126,.24); color-scheme:dark}}
+:root[data-theme="dark"],:root[data-theme="dark"] [data-style="soft"]{
+  --dm-page:#111111; --dm-stage:#1c1c1c; --dm-surface:#262626; --dm-raised:#2c2c2c;
+  --dm-fg:#f2f2f2; --dm-fg2:#c9c9c9; --dm-muted:#c0c0c0; --dm-faint:#555555; --dm-rail:#414141; --dm-line:#333333; --dm-field-line:#424242; --dm-line-strong:#808080; --dm-field-line-strong:#808080;
+  --dm-chip:#303030; --dm-hover:#373737; --dm-press:#3f3f3f; --dm-wash:#2c2c2c; --dm-row:color-mix(in srgb,var(--dm-fg) 5.5%,transparent);
+  --dm-soft:#323232; --dm-soft-h:#3a3a3a; --dm-soft-ring:inset 0 0 0 1px rgba(255,255,255,.035),inset 0 1px 0 rgba(255,255,255,.05); --dm-dis:#737373;
+  --dm-shadow-lift:0 0 0 1px rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.3),0 16px 32px -10px rgba(0,0,0,.6);
+  --dm-accent:#116ff8; --dm-on-accent:#ffffff; --dm-accent-fg:#9dc4ff; --dm-accent-mark:#3d8bff; --dm-sel:color-mix(in srgb,var(--dm-accent) 9%,transparent);
+  --dm-ink:#f2f2f2; --dm-on-ink:#161616;
+  --dm-ok:#4ee28a; --dm-ok-bg:rgba(34,214,110,.2); --dm-ok-mark:#4cbb17; --dm-warn:#ffc247; --dm-warn-bg:rgba(255,184,40,.2); --dm-warn-mark:#ffa940; --dm-bad:#ff8a8a; --dm-bad-bg:rgba(255,90,90,.14);
+  --dm-merge:#cbb8ff; --dm-merge-bg:rgba(169,139,255,.15); --dm-add:#63d998; --dm-del:#ffa9ae;
+  --dm-pb:#a0c5ff; --dm-pb-bg:rgba(90,150,255,.18); --dm-pl:#cbb9ff; --dm-pl-bg:rgba(155,125,255,.18); --dm-pm:#6ad9a7; --dm-pm-bg:rgba(70,205,150,.16); --dm-pp:#ffb57a; --dm-pp-bg:rgba(255,155,80,.17);
+  --dm-pr:#ffadbb; --dm-pr-bg:rgba(255,105,130,.17); --dm-py:#f0cd5a; --dm-py-bg:rgba(240,200,60,.15); --dm-pk:#ffa8d4; --dm-pk-bg:rgba(255,100,175,.16); --dm-pt:#5fd8df; --dm-pt-bg:rgba(60,200,210,.16);
+  --dm-ts:#8fbcff; --dm-react:#3dd0ee;
+  --dm-shadow:0 0 0 1px rgba(255,255,255,.045),0 1px 2px rgba(0,0,0,.28),0 6px 14px -6px rgba(0,0,0,.36),0 20px 36px -14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06); --dm-shadow-pop:0 0 0 1px rgba(255,255,255,.055),0 2px 4px rgba(0,0,0,.3),0 12px 24px -8px rgba(0,0,0,.45),0 32px 56px -20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.07); --dm-shadow-toast:0 0 0 1px rgba(255,255,255,.05),0 4px 12px rgba(0,0,0,.4); --dm-hl:rgba(240,200,60,.3); --dm-hl-ok:rgba(60,207,126,.24); color-scheme:dark}
+
+/* the accent's hover fill (--dm-accent-2) and tint (--dm-accent-bg) are worked out from the accent, in every style and theme, so a
+   picked accent brings its own. Hovering a filled button moves its fill away from its text colour: darker under white text,
+   lighter under dark text, so the label keeps its contrast in every style, theme and accent */
+:root,[data-style="soft"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 86%,#000);--dm-accent-bg:color-mix(in srgb,var(--dm-accent) 9%,transparent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]),:root:not([data-theme="light"]) [data-style="soft"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 84%,#fff);--dm-accent-bg:color-mix(in srgb,var(--dm-accent) 13%,transparent)}}
+:root[data-theme="dark"],:root[data-theme="dark"] [data-style="soft"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 84%,#fff);--dm-accent-bg:color-mix(in srgb,var(--dm-accent) 13%,transparent)}
+@supports (color:rgb(from red r g b)){:root,[data-style="soft"],:root:not([data-theme="light"]),:root:not([data-theme="light"]) [data-style="soft"],:root[data-theme="dark"],:root[data-theme="dark"] [data-style="soft"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 86%,rgb(from var(--dm-on-accent) calc(255 - r) calc(255 - g) calc(255 - b)))}}
+@supports not (color:rgb(from red r g b)){:root,[data-style="soft"],:root:not([data-theme="light"]),:root:not([data-theme="light"]) [data-style="soft"],:root[data-theme="dark"],:root[data-theme="dark"] [data-style="soft"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 86%,#000)}:root:not([data-style="soft"]),:root:not([data-style="soft"]):not([data-theme="light"]),:root:not([data-style="soft"])[data-theme="dark"]{--dm-accent-2:color-mix(in srgb,var(--dm-accent) 86%,#fff)}}
+/* picked things (chips, options, cards in a picker) are white tiles with a dimmed grey edge, and the picked one's edge
+   is a light step stronger, never a dark or black outline */
+:root,[data-style="soft"]{--dm-pick-line:var(--dm-rail);--dm-pick-on:var(--dm-faint)}
+
+/* Soft is plush: corners are drawn as squircles where the browser can (corner-shape), and since a squircle's corner
+   reads smaller than a round one of the same radius, the radii grow with it. Circles (spinners, loader rings, avatars,
+   dots) stay round; pills, chips, buttons and switchers are squircles too. Blueprint stays square (its corners are 0) */
+@supports (corner-shape:squircle){
+:root,[data-style="soft"]{--dm-rk:1.7}
+:root:not([data-style="soft"]){--dm-rk:1}
+:where([data-c]) *,:where([data-c]) *::before,:where([data-c]) *::after{corner-shape:squircle}
+.acx-n .s,.afx-pen,.afx-r b,.agx-now i,.alg-ph-pg,.alg-sc-knob,.alg-sc-ld,.alg-sc-n,.aln-cw-tr b,.aln-pk,.asx-lp-stop,.asx-lp-th,.asx-lp-th i,.asx-tb-dot,.atx-cmp-ok,.atx-cmp-send,.atx-cmp-x,.av,.bdg-dot,.bdg-x,.bdg-x:focus-visible,.btx-live,.bws-dots i,.ccx-fl .flag,.ccx-sw,.cmx-go,.cmx-pin,.cpx-att .fchip .rt,.cpx-att .fchip .x,.cpx-dot,.cpx-send,.ctb-n .s,.dot,.drv-ag,.drv-ring,.dtx-sl .k,.ecx-days b,.ecx-dh.t b,.erx-o i,.evr-dot,.evr-jg-arc .tr,.evr-jg-arc i,.fxp-n .ag,.hox-av,.ib,.lcx-ring,.lnx-k i,.lnx-pt,.mix-dot,.msc-c button,.ntx-n .u,.obx .obx-rw .obx-rk,.obx-ck,.obx-rk,.plx-s .n,.psx-go,.pulse,.rq-wk-c .rq-ic,.rq-wk-ring .h i,.rq-wk-ring .tr,.rq-wk-stack i,.rsu-g,.rsu-rc-nd,.rsu-rc-ok,.rsu-rc-ok i,.rsu-rp-ok,.rxx-add,.sgc-wr .e i,.spin,.ssx-ics span,.ste-go,.stx-conf i.d,.stx-st .n,.tcx[data-d="inline"] .tcb-wire i,.think i,.thp-send,.thp[data-d] .tpx-dots i,.thp[data-d] .tpx-send,.thp[data-d] .tpx-st,.tk-st .mk,.tsk-c .g,.tst-t .g,.ttp-av,.vcx-dot,.vor .vor-orb i,.vor-dot,.vor-gl,.vor-orb i,.cxm-av,.crs-dots button,.rdx-lg i,.scx-lg i.c,.cvq-lg i.c,.rgx-r i,.cpk-k,.wsx-marks span,.igx-steps i,.ths-dg i,.ths-mtx i{corner-shape:round}
+.aln-det div::before{corner-shape:round}
+.asx-lp-rg::-moz-range-thumb{corner-shape:round}
+.asx-lp-rg::-webkit-slider-thumb{corner-shape:round}
+.btx-live::after{corner-shape:round}
+.dpk-d.t::after{corner-shape:round}
+.ecx-now::before{corner-shape:round}
+.fxp-tree::-webkit-scrollbar-thumb{corner-shape:round}
+.hand::before{corner-shape:round}
+.hnx-t .ic::after{corner-shape:round}
+.ksx-s .ic::after{corner-shape:round}
+.pulse::after{corner-shape:round}
+.radar::after{corner-shape:round}
+.radar::before{corner-shape:round}
+.sgc-mo .d.e::after{corner-shape:round}
+.shx-r .ic::after{corner-shape:round}
+.stx-ok::after{corner-shape:round}
+.tmx-body::-webkit-scrollbar-thumb{corner-shape:round}
+.toggle::after{corner-shape:round}
+.afx-desk::before{corner-shape:round}
+}
+/* ---------- page shell ---------- */
+:where([data-c]) *{box-sizing:border-box}
+:where([data-c]) button,:where([data-c]) input,:where([data-c]) textarea,:where([data-c]) select{font:inherit;color:inherit}
+:where([data-c]) button{background:none;border:0;padding:0;cursor:pointer}
+/* one weight for emphasis: medium, never bold */
+:where([data-c]) b,:where([data-c]) strong{font-weight:500}
+:where([data-c]) :focus-visible{outline:2px solid var(--dm-focus);outline-offset:2px;border-radius:calc(6px * var(--dm-rk))}
+/* a field shows the focus with its own edge, which steps up to --dm-field-line-strong, so it never takes the ring as well */
+:where([data-c]) :focus-visible:is(input:not([type="checkbox"],[type="radio"],[type="range"],[type="file"],[type="button"],[type="submit"],[type="reset"]),textarea,select,[contenteditable]:not([contenteditable="false"])){outline:0}
+.stage-in{width:100%;max-width:440px;min-width:0;position:relative;container-type:inline-size}
+.card.wide .stage-in{max-width:720px}
+
+/* ---------- icons ---------- */
+.i{width:16px;height:16px;flex:none;display:inline-block;vertical-align:-3px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.i.s{width:14px;height:14px}.i.xs{width:12px;height:12px}.i.l{width:18px;height:18px}
+.brand{width:16px;height:16px;display:block;flex:none}
+.flag{width:20px;height:15px;border-radius:3px;object-fit:cover;display:block;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+
+/* ---------- primitives ---------- */
+.mono{font-family:var(--dm-mono)}
+.sp{flex:1}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--dm-muted)}.fg2{color:var(--dm-fg2)}
+.panel{background:var(--dm-surface);border-radius:var(--dm-r-card);box-shadow:var(--dm-shadow);position:relative}
+.ib{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;color:var(--dm-fg2);transition:background var(--dm-t-fast),color var(--dm-t-fast),transform .15s}
+@media (hover:hover) and (pointer:fine){.ib:hover{background:var(--dm-row);color:var(--dm-fg)}}
+.ib:active{transform:scale(.94)}
+.ib.fill{background:var(--dm-soft);box-shadow:var(--dm-soft-ring)}
+@media (hover:hover) and (pointer:fine){.ib.fill:hover{background:var(--dm-soft-h)}}
+.ib.on{background:var(--dm-accent-bg);color:var(--dm-accent-fg,var(--dm-accent))}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 var(--dm-s-3);border-radius:var(--dm-r-pill);font-size:13px;color:var(--dm-fg2);background:var(--dm-chip);white-space:nowrap;transition:background var(--dm-t-fast),color var(--dm-t-fast),box-shadow var(--dm-t-fast)}
+@media (hover:hover) and (pointer:fine){.chip:hover{background:var(--dm-hover);color:var(--dm-fg)}}
+.chip.on{background:var(--dm-surface);color:var(--dm-fg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-pick-on) 50%,transparent)}
+.chip.sm{height:24px;padding:0 9px;font-size:12px}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 14px;border-radius:var(--dm-r-pill);font-size:13px;font-weight:500;white-space:nowrap;transition:background var(--dm-t-fast),color var(--dm-t-fast),opacity var(--dm-t-fast),transform .15s}
+.pill:active{transform:scale(.97)}
+/* the primary action is the accent, with --dm-on-accent on it, so it follows the accent and stays readable in any colour */
+.pill.primary{background:var(--dm-accent);color:var(--dm-on-accent)}
+@media (hover:hover) and (pointer:fine){.pill.primary:hover{background:var(--dm-accent-2)}}
+.pill.accent{background:var(--dm-accent);color:var(--dm-on-accent)}
+.pill.accent.hl{background:var(--dm-accent-2)}
+@media (hover:hover) and (pointer:fine){.pill.accent:hover{background:var(--dm-accent-2)}}
+.pill.soft{background:var(--dm-soft);color:var(--dm-fg);box-shadow:var(--dm-soft-ring)}
+@media (hover:hover) and (pointer:fine){.pill.soft:hover{background:var(--dm-soft-h)}}
+.pill.line{background:var(--dm-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);color:var(--dm-fg)}
+.pill.ghost{color:var(--dm-fg2)}@media (hover:hover) and (pointer:fine){.pill.ghost:hover{background:var(--dm-row);color:var(--dm-fg)}}
+/* one disabled look for every control: nothing fades; its text and icons take --dm-dis, a control with a fill swaps the fill
+   for --dm-dis-fill with its quiet edge (hatched in Blueprint), one without keeps no fill, and the pointer says not-allowed */
+.pill[disabled]{opacity:1;color:var(--dm-dis);background:none;cursor:not-allowed;transform:none}
+@media (hover:hover) and (pointer:fine){.pill[disabled]:hover{opacity:1;color:var(--dm-dis);background:none;cursor:not-allowed;transform:none}}
+:where([data-c]) button:disabled{cursor:not-allowed}
+.pill:is(.accent,.primary,.soft,.line)[disabled]{background:var(--dm-dis-hatch),var(--dm-dis-fill);color:var(--dm-dis);box-shadow:var(--dm-soft-ring)}
+@media (hover:hover) and (pointer:fine){.pill:is(.accent,.primary,.soft,.line)[disabled]:hover{background:var(--dm-dis-hatch),var(--dm-dis-fill);color:var(--dm-dis);box-shadow:var(--dm-soft-ring)}}
+.pill[disabled] .kbd{background:var(--dm-chip);color:inherit}
+.pill.sm{height:28px;padding:0 11px;font-size:12.5px}
+.tag{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:var(--dm-r-tag);font-size:11.5px;font-weight:500;white-space:nowrap;background:var(--dm-chip);color:var(--dm-fg2)}
+.tag.b{background:var(--dm-pb-bg);color:var(--dm-pb)}.tag.l{background:var(--dm-pl-bg);color:var(--dm-pl)}.tag.m{background:var(--dm-pm-bg);color:var(--dm-pm)}.tag.p{background:var(--dm-pp-bg);color:var(--dm-pp)}
+.tag.r{background:var(--dm-pr-bg);color:var(--dm-pr)}.tag.y{background:var(--dm-py-bg);color:var(--dm-py)}.tag.k{background:var(--dm-pk-bg);color:var(--dm-pk)}.tag.t{background:var(--dm-pt-bg);color:var(--dm-pt)}
+.tag.ok{background:var(--dm-ok-bg);color:var(--dm-ok)}.tag.warn{background:var(--dm-warn-bg);color:var(--dm-warn)}.tag.bad{background:var(--dm-bad-bg);color:var(--dm-bad)}
+@supports (corner-shape:squircle){.tag{corner-shape:squircle;border-radius:var(--dm-r-tag-sq)}}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;display:inline-block}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 var(--dm-s-2);border-radius:var(--dm-r-pill);background:var(--dm-surface);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);font-size:12.5px;color:var(--dm-fg);white-space:nowrap}
+.fchip.lnk{cursor:pointer;transition:background var(--dm-t-fast),box-shadow var(--dm-t-fast)}
+@media (hover:hover) and (pointer:fine){.fchip.lnk:hover{background:var(--dm-row);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent)}}
+.ft{font-family:var(--dm-sans);font-size:9.5px;font-weight:500;color:var(--dm-ts);letter-spacing:.02em}
+.ft.re{color:var(--dm-react)}.ft.fg{color:var(--dm-pl)}.ft.pdf{color:var(--dm-pr)}.ft.csv{color:var(--dm-pm)}
+.kbd{font-family:inherit;font-size:11px;padding:1px 5px;border-radius:5px;background:var(--dm-chip);color:var(--dm-fg2)}
+/* on a row that is hovered, highlighted or picked, the row turns grey, so its shortcut chips turn white to stay visible */
+@media (hover:hover) and (pointer:fine){:is(.mi,.cpl-i,[role="option"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"]):is(:hover,.hl,.on,[aria-selected="true"]) .kbd{background:var(--dm-surface)}}
+@media (hover:hover) and (pointer:fine){.pill.ghost:hover .kbd{background:var(--dm-surface)}}
+.pill .kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 var(--dm-s-1);margin-right:-6px}
+/* a key hint on a filled button sits on a slightly darker well of the fill, so white text keeps its contrast */
+.pill.primary .kbd,.pill.accent .kbd{background:color-mix(in srgb,var(--dm-accent) 80%,#000);color:inherit}
+code.c{font-family:var(--dm-mono);font-size:12.5px;background:var(--dm-chip);padding:1px 5px;border-radius:5px}
+.av{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:10px;font-weight:500;color:#fff;flex:none}
+.hr{height:1px;background:var(--dm-line);border:0;margin:0}
+/* an off switch and an empty box are drawn in a grey that holds 3:1 against the surface; an accent fill keeps a hairline of the
+   accent's mark, so a light accent like lime still has an edge */
+.toggle{width:30px;height:18px;border-radius:calc(9px * var(--dm-rk));background:color-mix(in srgb,var(--dm-muted) 80%,var(--dm-surface));position:relative;flex:none;transition:background var(--dm-t-fast)}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform var(--dm-t) var(--dm-ease)}
+.toggle[aria-checked="true"]{background:var(--dm-accent);box-shadow:inset 0 0 0 1px var(--dm-accent-mark,var(--dm-accent))}
+.toggle[aria-checked="true"]::after{transform:translateX(12px);background:var(--dm-on-accent)}
+/* on a touch screen every control gets a tap area of at least 40px square, centred on it, without changing how it looks or
+   where anything sits: a clear ::before (or ::after, where a component draws with its ::before) over and around it. Where
+   two controls sit closer than that, the core script (fitHits) shrinks both areas evenly, so each tap still lands on the
+   control nearest to it. Everything here weighs nothing (:where), so a component's own position or pseudo-element wins.
+   The build checks that every selector drawing with a ::before or ::after is in the lists below */
+@media (pointer:coarse){
+  :where([data-c]) :where(button,a[href],summary,[role="button"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="option"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"],[role="slider"],label:has(input[type="checkbox"],input[type="radio"])){position:relative;--dm-hit-w:40px;--dm-hit-h:40px}
+  :where([data-c]) :where(button,a[href],summary,[role="button"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="option"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"],[role="slider"],label:has(input[type="checkbox"],input[type="radio"])):not(:where(.radar,.hand,.rtr-li:not(:last-child),.atr-kids,.bws-nav b,.rc-cap,.erx-row:not(:last-child),.rte-body.empty,.rte-hint,.afx-desk,.dtx-sl,.crx-l.add .c,.crx-l.del .c,.crx-l.ctx .c,.crx-hk.kept .crx-l.add .c,.crx-hk.undone .crx-l.del .c,.ahx-bot,.ecx-now,.ssi-or,.cmx-th>.cmx-c:first-child:has(+ .cmx-rp),.cmx-rp,.aln-ct,.aln-rows>*,.aln-av,.aln-det div,.aln-pk,.trv-r[data-k="agent"] .trv-b i,.tk-st:not(:last-child),.tmx-blk,.atx-ic))::before,:where([data-c]) :where(button,a[href],summary,[role="button"],[role="switch"],[role="checkbox"],[role="radio"],[role="tab"],[role="option"],[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"],[role="slider"],label:has(input[type="checkbox"],input[type="radio"])):where(.radar,.hand,.rtr-li:not(:last-child),.atr-kids,.bws-nav b,.rc-cap,.erx-row:not(:last-child),.rte-body.empty,.rte-hint,.afx-desk,.dtx-sl,.crx-l.add .c,.crx-l.del .c,.crx-l.ctx .c,.crx-hk.kept .crx-l.add .c,.crx-hk.undone .crx-l.del .c,.ahx-bot,.ecx-now,.ssi-or,.cmx-th>.cmx-c:first-child:has(+ .cmx-rp),.cmx-rp):not(:where(.aln-lane,.trv-g i.el,.trv-r.run:not([data-k="agent"]) .trv-b i,.trv-r[data-k="agent"] .trv-b i,.trv-b,.trv-sc,.tk-st.done:not(:last-child),.tmx-h,.tmx.live .tmx-body,.atx-ic,.toggle,.radar,.pulse,.stl-track i,.stx-ok,.aln-tr i,.afx-card .afx-open,.plx-s.edited .t,.vor-mute,.mix-mk,.hnx-t .ic,.ksx-s .ic,.shx-r .ic,.dpk-d.t,.sgc-mo .d.e,.agx-now,.btx-ask,.btx-live,.ssi-or,.rxx-r,.bdg.live .bdg-dot,.thp[data-d="deck"] .tpb-card,.crs-pv,.crs-pic,.hmx-sc))::after{content:"";position:absolute;inset:min(0px,(100% - var(--dm-hit-h)) / 2) min(0px,(100% - var(--dm-hit-w)) / 2);--dm-hit:1}
+}
+.seg2{display:inline-flex;padding:2px;background:var(--dm-chip);border-radius:var(--dm-r-pill);position:relative}
+.seg2 button{position:relative;z-index:1;height:26px;padding:0 11px;border-radius:var(--dm-r-pill);font-size:12.5px;color:var(--dm-fg2);transition:color var(--dm-t-fast)}
+.seg2 button[aria-pressed="true"]{color:var(--dm-fg)}
+.seg2 .knob{position:absolute;top:2px;bottom:2px;border-radius:var(--dm-r-pill);background:var(--dm-surface);box-shadow:0 1px 2px rgba(0,0,0,.08);transition:left var(--dm-t) var(--dm-ease),width var(--dm-t) var(--dm-ease)}
+.seg2 button:focus-visible{outline-offset:-2px;border-radius:var(--dm-r-pill)}
+/* demo stages: the component sits centred, the variant switcher sits at the foot of the stage under it */
+.stage-in:has(>.dm){align-self:stretch;display:flex}
+.dm{width:100%;min-height:328px;display:flex;flex-direction:column;align-items:center;gap:var(--dm-s-8)}
+.dm>.dm-main{margin-block:auto;width:100%;display:flex;flex-direction:column;align-items:center}
+.dm>.demo{flex:none;display:flex;justify-content:center}
+
+.bub{align-self:flex-end;max-width:85%;background:var(--dm-hover);border-radius:var(--dm-r-card);padding:9px 13px;font-size:14px;line-height:1.45}
+.msg{margin:0;font-size:14px;line-height:1.65}
+
+/* ---------- status glyphs ---------- */
+.spin{width:12px;height:12px;border-radius:50%;border:1.5px solid currentColor;border-right-color:transparent;animation:rot .8s linear infinite;flex:none;display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+.radar{position:relative;width:13px;height:13px;flex:none;display:inline-block}
+.radar::before{content:"";position:absolute;inset:3.5px;border-radius:50%;background:currentColor}
+.radar::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.3px solid currentColor;border-right-color:transparent;animation:rot .9s linear infinite}
+/* the rotating thinking mark from Soft 1, four dots turning */
+.think{width:14px;height:14px;position:relative;flex:none;display:inline-block}
+.think i{position:absolute;width:3.4px;height:3.4px;border-radius:50%;background:currentColor;left:50%;top:50%;margin:-1.7px}
+.think i:nth-child(1){transform:translate(-3.6px,-3.6px)}.think i:nth-child(2){transform:translate(3.6px,-3.6px)}.think i:nth-child(3){transform:translate(3.6px,3.6px)}.think i:nth-child(4){transform:translate(-3.6px,3.6px)}
+.think.on{animation:thinkrot 1.6s var(--dm-ease-io) infinite}
+.think.on i{animation:thinkpulse 1.6s var(--dm-ease-io) infinite}
+.think.on i:nth-child(2){animation-delay:.2s}.think.on i:nth-child(3){animation-delay:.4s}.think.on i:nth-child(4){animation-delay:.6s}
+@keyframes thinkrot{0%{transform:rotate(0)}50%{transform:rotate(90deg)}100%{transform:rotate(180deg)}}
+@keyframes thinkpulse{0%,100%{opacity:1}50%{opacity:.35}}
+/* the step that is happening now in a trace: a quiet grey dot with a soft ping */
+.pulse{position:relative;width:6px;height:6px;border-radius:50%;background:var(--dm-muted);flex:none;display:inline-block}
+.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;background:inherit;animation:ping 1.8s var(--dm-ease) infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.45}80%,100%{transform:scale(2.8);opacity:0}}
+
+/* ---------- motion ---------- */
+.shim{background:linear-gradient(90deg,var(--dm-fg) 0%,var(--dm-fg) 38%,var(--dm-faint) 50%,var(--dm-fg) 62%,var(--dm-fg) 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 2.2s linear infinite}
+@keyframes shim{from{background-position:100% 0}to{background-position:-160% 0}}
+.enter{animation:enter var(--dm-t-slow) var(--dm-ease) backwards}
+@keyframes enter{from{opacity:0;transform:translateY(6px);filter:blur(4px)}to{opacity:1;transform:none;filter:blur(0)}}
+/* the person in a preview's story: a pointer that glides to what it uses and presses it */
+.hand{position:absolute;left:0;top:0;width:18px;height:18px;z-index:30;pointer-events:none;opacity:0;color:var(--dm-fg);transition:transform .42s var(--dm-ease),opacity .16s;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.22))}
+.hand.on{opacity:1}
+.hand svg{display:block;width:18px;height:18px;transform-origin:3px 2px;transition:transform .16s var(--dm-ease)}
+.hand svg path{fill:currentColor;stroke:var(--dm-surface);stroke-width:1.4;stroke-linejoin:round}
+.hand.down svg{transform:scale(.82)}
+.hand::before{content:"";position:absolute;left:-8px;top:-9px;width:22px;height:22px;border-radius:50%;background:var(--dm-accent);opacity:0;pointer-events:none}
+.hand.down::before{animation:handtap .5s var(--dm-ease)}
+@keyframes handtap{from{opacity:.3;transform:scale(.3)}to{opacity:0;transform:scale(1.3)}}
+.pop-in{animation:popin .5s var(--dm-ease) backwards}
+@keyframes popin{from{opacity:0;transform:scale(.96);filter:blur(3px)}to{opacity:1;transform:none;filter:blur(0)}}
+.leave{animation:leave .35s var(--dm-ease) both}
+@keyframes leave{to{opacity:0;transform:translateY(-6px);filter:blur(4px)}}
+.sw{display:inline-block;transition:opacity .2s var(--dm-ease),filter .2s var(--dm-ease),transform .25s var(--dm-ease)}
+.sw.out{opacity:0;filter:blur(3px);transform:translateY(3px)}
+.fold{display:grid;grid-template-rows:1fr;transition:grid-template-rows var(--dm-t) var(--dm-ease),opacity var(--dm-t) var(--dm-ease)}
+.fold>*{overflow:hidden;min-height:0}
+/* shadows inside an open fold aren't cut off: the clip leaves room round its edge (a shut fold is invisible anyway) */
+.fold{grid-template-columns:minmax(0,1fr)}
+.fold>*{overflow:clip;overflow-clip-margin:12px;min-width:0}
+/* a shut fold is hidden as well as clear once it has folded, so Tab passes over what is inside it */
+.fold.shut{grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows var(--dm-t) var(--dm-ease),opacity var(--dm-t) var(--dm-ease),visibility 0s var(--dm-t)}
+
+/* ---------- tooltip and popover ---------- */
+.tip{position:fixed;z-index:1000;pointer-events:none;background:var(--dm-ink);color:var(--dm-on-ink);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:var(--dm-r-sm);max-width:240px;opacity:0;transform:translateY(4px);filter:blur(2px);transition:opacity .18s var(--dm-ease),transform .25s var(--dm-ease),filter .18s}
+.tip.show{opacity:1;transform:none;filter:none}
+.copied{color:var(--dm-ok)!important}
+@media (hover:hover) and (pointer:fine){.copied:hover{color:var(--dm-ok)!important}}
+.tip .kbd{background:rgba(255,255,255,.14);color:inherit;margin-left:6px}
+:root[data-theme="dark"] .tip .kbd{background:rgba(0,0,0,.1)}
+:root[data-theme="dark"] .ssx-ics span{color:#0d0d0d!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ssx-ics span{color:#0d0d0d!important}}
+/* a closed popover is hidden as well as clear, so Tab and screen readers pass over it: it shows at once as it opens, so the
+   focus can go into it, and hides once it has faded out */
+.pop{position:absolute;z-index:50;min-width:200px;background:var(--dm-raised);border-radius:calc(14px * var(--dm-rk));box-shadow:var(--dm-shadow-pop);padding:6px;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(6px) scale(.98);transform-origin:var(--dm-origin,top left);filter:blur(3px);transition:opacity .2s var(--dm-ease),transform .35s var(--dm-ease),filter .2s var(--dm-ease),visibility 0s .2s}
+.pop.open{opacity:1;visibility:visible;pointer-events:auto;transform:none;filter:none;transition-property:opacity,transform,filter}
+.pop .ph{padding:6px var(--dm-s-2) var(--dm-s-1);font-size:11.5px;color:var(--dm-muted)}
+.mi{display:flex;align-items:center;gap:10px;width:100%;padding:7px var(--dm-s-2);border-radius:calc(9px * var(--dm-rk));font-size:13px;text-align:left;color:var(--dm-fg);transition:background var(--dm-t-fast)}
+.mi.hl{background:var(--dm-row)}
+@media (hover:hover) and (pointer:fine){.mi:hover{background:var(--dm-row)}}
+/* the rows of a menu or list stand 2px apart, so two highlighted rows never touch */
+.mi+.mi,.cpl-i+.cpl-i,.six-it+.six-it{margin-top:2px}
+.mi .i{color:var(--dm-fg2)}
+.mi .d{display:block;font-size:12px;color:var(--dm-muted)}
+/* on a hovered or picked row's tint the line under an item steps up, so it keeps 4.5:1 in dark mode */
+@media (hover:hover) and (pointer:fine){.mi:is(:hover,.hl,[aria-checked="true"]) .d{color:var(--dm-fg2)}}
+.mi .r{margin-left:auto;color:var(--dm-muted);font-size:12px}
+.mi .ck{margin-left:auto;color:var(--dm-accent-fg,var(--dm-accent));opacity:0;transition:opacity var(--dm-t-fast)}
+.mi[aria-checked="true"] .ck{opacity:1}
+.mi[aria-checked="true"]{background:var(--dm-row);font-weight:500}
+.pop .sep{height:1px;background:var(--dm-line);margin:var(--dm-s-1) 2px}
+/* every list row hovers with --dm-row; an icon chip or track inside a hovered row lifts above it (white in light mode, one step lighter in dark) */
+@media (hover:hover) and (pointer:fine){:root[data-theme="dark"] :is(.alg-it:hover .alg-ic,.plx-s:hover .n,.tpx-r:hover .tr){background:var(--dm-hover)}}
+@media (prefers-color-scheme:dark){@media (hover:hover) and (pointer:fine){:root:not([data-theme="light"]) :is(.alg-it:hover .alg-ic,.plx-s:hover .n,.tpx-r:hover .tr){background:var(--dm-hover)}}}
+
+@media (prefers-reduced-motion:reduce){:where([data-c]) *,:where([data-c]) *::before,:where([data-c]) *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.shim{color:var(--dm-fg);background:none}}
+
+/* bare: components that live in the chat stream sit on the chat surface, no card */
+.card.bare .stage-in .panel:not(.keep){background:none;box-shadow:none;padding-left:0;padding-right:0;border-radius:0}
+/* chart palette, saturated */
+:root,[data-style="soft"]{--dm-c1:var(--dm-accent-mark,var(--dm-accent));--dm-c2:#7c4dff;--dm-c3:#4cbb17;--dm-c4:#f76700;--dm-c5:#ff4d6d;--dm-c6:#00a2bf}
+/* the accent as a ramp, for charts whose parts are shares of one thing: full strength, then lighter steps toward the surface */
+:root,[data-style="soft"]{--dm-a1:var(--dm-c1);--dm-a2:color-mix(in oklab,var(--dm-c1) 72%,var(--dm-surface));--dm-a3:color-mix(in oklab,var(--dm-c1) 50%,var(--dm-surface));--dm-a4:color-mix(in oklab,var(--dm-c1) 32%,var(--dm-surface))}
+:root[data-theme="dark"],:root[data-theme="dark"] [data-style="soft"]{--dm-c1:var(--dm-accent-mark,var(--dm-accent));--dm-c2:#9b7bff;--dm-c3:#5fcb2a;--dm-c4:#ffa033;--dm-c5:#ff6b85;--dm-c6:#22cce8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]),:root:not([data-theme="light"]) [data-style="soft"]{--dm-c1:var(--dm-accent-mark,var(--dm-accent));--dm-c2:#9b7bff;--dm-c3:#5fcb2a;--dm-c4:#ffa033;--dm-c5:#ff6b85;--dm-c6:#22cce8}}
+
+/* ---------- Blueprint 2 ---------- */
+/* Blueprint 2: the same components drawn as a technical sheet. Square corners, hairline edges instead of shadows,
+   a lime accent, and motion that wipes and ticks into place in short, hard beats instead of blurring in */
+:root:not([data-style="soft"]){
+  --dm-motion:bp;
+  --dm-page:#f3f3f0; --dm-stage:#fafaf8; --dm-surface:#ffffff; --dm-raised:#ffffff;
+  --dm-fg:#121212; --dm-fg2:#4a4a46; --dm-muted:#666660; --dm-faint:#bdbdb6; --dm-rail:#d2d2cb; --dm-line:#e3e3dd; --dm-field-line:#d2d2cb; --dm-line-strong:#858580; --dm-field-line-strong:#b0b0a9;
+  --dm-chip:#f1f1ed; --dm-hover:#e8e8e3; --dm-press:#dededa; --dm-wash:#f6f6f3; --dm-row:#fafaf8;
+  --dm-soft:#ebebe6; --dm-soft-h:#e1e1db; --dm-soft-ring:inset 0 0 0 1px rgba(20,20,12,.045); --dm-dis:#a3a39c;
+  --dm-accent:#d4f84a; --dm-on-accent:#121212; --dm-accent-fg:var(--dm-fg); --dm-accent-mark:#4cbb17; --dm-sel:color-mix(in srgb,var(--dm-accent) 7%,transparent);
+  --dm-ink:#121212; --dm-on-ink:#ffffff;
+  --dm-shadow:0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);
+  --dm-shadow-pop:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 12px 28px -14px rgba(20,20,12,.22);
+  --dm-shadow-toast:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 10px 24px -14px rgba(20,20,12,.24);
+  --dm-shadow-lift:0 0 0 1px color-mix(in srgb,var(--dm-fg) 50%,transparent);
+  --dm-grid:rgba(20,20,12,.09); --dm-tick:#b5b5ad;
+  --dm-dis-hatch:repeating-linear-gradient(135deg,transparent 0 4px,var(--dm-grid) 4px 5px);
+  --dm-ease:cubic-bezier(.65,0,.25,1); --dm-ease-io:cubic-bezier(.65,0,.25,1);
+  --dm-t-fast:.14s; --dm-t:.3s; --dm-t-slow:.44s;
+}
+@media (prefers-color-scheme:dark){:root:not([data-style="soft"]):not([data-theme="light"]){
+  --dm-page:#111111; --dm-stage:#1c1c1c; --dm-surface:#262626; --dm-raised:#2c2c2c;
+  --dm-fg:#f2f2f2; --dm-fg2:#c9c9c9; --dm-muted:#c0c0c0; --dm-faint:#555555; --dm-rail:#414141; --dm-line:#333333; --dm-field-line:#424242; --dm-line-strong:#80807a; --dm-field-line-strong:#808080;
+  --dm-chip:#303030; --dm-hover:#373737; --dm-press:#3f3f3f; --dm-wash:#2c2c2c; --dm-row:color-mix(in srgb,var(--dm-fg) 5.5%,transparent);
+  --dm-soft:#323232; --dm-soft-h:#3a3a3a; --dm-soft-ring:inset 0 0 0 1px rgba(255,255,255,.04); --dm-dis:#737373;
+  --dm-accent:#d4f84a; --dm-on-accent:#121212; --dm-accent-fg:#d4f84a; --dm-accent-mark:#d4f84a; --dm-sel:color-mix(in srgb,var(--dm-accent) 10%,transparent);
+  --dm-ink:#f2f2f2; --dm-on-ink:#161616;
+  --dm-shadow:0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);
+  --dm-shadow-pop:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 16px 32px -14px rgba(0,0,0,.7);
+  --dm-shadow-toast:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 12px 28px -14px rgba(0,0,0,.7);
+  --dm-shadow-lift:0 0 0 1px color-mix(in srgb,var(--dm-fg2) 50%,transparent);
+  --dm-grid:rgba(255,255,255,.07); --dm-tick:#55554f;
+  --dm-dis-hatch:repeating-linear-gradient(135deg,transparent 0 4px,var(--dm-grid) 4px 5px);
+  --dm-ease:cubic-bezier(.65,0,.25,1); --dm-ease-io:cubic-bezier(.65,0,.25,1);
+  --dm-t-fast:.14s; --dm-t:.3s; --dm-t-slow:.44s}}
+:root:not([data-style="soft"])[data-theme="dark"]{
+  --dm-page:#111111; --dm-stage:#1c1c1c; --dm-surface:#262626; --dm-raised:#2c2c2c;
+  --dm-fg:#f2f2f2; --dm-fg2:#c9c9c9; --dm-muted:#c0c0c0; --dm-faint:#555555; --dm-rail:#414141; --dm-line:#333333; --dm-field-line:#424242; --dm-line-strong:#80807a; --dm-field-line-strong:#808080;
+  --dm-chip:#303030; --dm-hover:#373737; --dm-press:#3f3f3f; --dm-wash:#2c2c2c; --dm-row:color-mix(in srgb,var(--dm-fg) 5.5%,transparent);
+  --dm-soft:#323232; --dm-soft-h:#3a3a3a; --dm-soft-ring:inset 0 0 0 1px rgba(255,255,255,.04); --dm-dis:#737373;
+  --dm-accent:#d4f84a; --dm-on-accent:#121212; --dm-accent-fg:#d4f84a; --dm-accent-mark:#d4f84a; --dm-sel:color-mix(in srgb,var(--dm-accent) 10%,transparent);
+  --dm-ink:#f2f2f2; --dm-on-ink:#161616;
+  --dm-shadow:0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent);
+  --dm-shadow-pop:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 16px 32px -14px rgba(0,0,0,.7);
+  --dm-shadow-toast:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent),0 12px 28px -14px rgba(0,0,0,.7);
+  --dm-shadow-lift:0 0 0 1px color-mix(in srgb,var(--dm-fg2) 50%,transparent);
+  --dm-grid:rgba(255,255,255,.07); --dm-tick:#55554f;
+  --dm-dis-hatch:repeating-linear-gradient(135deg,transparent 0 4px,var(--dm-grid) 4px 5px);
+  --dm-ease:cubic-bezier(.65,0,.25,1); --dm-ease-io:cubic-bezier(.65,0,.25,1);
+  --dm-t-fast:.14s; --dm-t:.3s; --dm-t-slow:.44s}
+
+/* every corner is square, only the turning loaders stay round */
+:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *)),:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *))::before,:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *))::after{border-radius:0!important}
+:root:not([data-style="soft"]) .spin:not(:where([data-style="soft"],[data-style="soft"] *)),:root:not([data-style="soft"]) .radar:not(:where([data-style="soft"],[data-style="soft"] *))::before,:root:not([data-style="soft"]) .radar:not(:where([data-style="soft"],[data-style="soft"] *))::after{border-radius:50%!important}
+:root:not([data-style="soft"]) :where([data-c],.tip,.kbx-k.ghost) svg:not(.i):not(.brand) rect:not(:where([data-style="soft"],[data-style="soft"] *)){rx:0;ry:0}
+:root:not([data-style="soft"]) :where([data-c],.tip,.kbx-k.ghost) svg:not(.i):not(.brand) :is(path,line,polyline,circle):not(:where([data-style="soft"],[data-style="soft"] *)){stroke-linecap:butt}
+/* no blur anywhere: things wipe in or cut, they never soften */
+:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *)),:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *))::before,:root:not([data-style="soft"]) :where([data-c],[data-c] *,.tip,.tip *,.kbx-k.ghost,.kbx-k.ghost *):not(:where([data-style="soft"],[data-style="soft"] *))::after{filter:none!important}
+
+/* the sheet: cards share their hairlines, every stage is drafting paper with crop marks in the corners */
+:root:not([data-style="soft"]) .seg2 .knob:not(:where([data-style="soft"],[data-style="soft"] *)){box-shadow:0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent)}
+
+/* parts: mono labels, hairline controls, hatched when disabled */
+:root:not([data-style="soft"]) .tag:not(:where([data-style="soft"],[data-style="soft"] *)){font-size:10.5px;font-weight:500;letter-spacing:.03em;text-transform:uppercase;height:19px;padding:0 6px}
+:root:not([data-style="soft"]) .kbd:not(:where([data-style="soft"],[data-style="soft"] *)){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent)}
+:root:not([data-style="soft"]) .pill.line:not(:where([data-style="soft"],[data-style="soft"] *)){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-rail) 50%,transparent)}
+@media (hover:hover) and (pointer:fine){:root:not([data-style="soft"]) .pill.line:hover:not(:where([data-style="soft"],[data-style="soft"] *)){background:var(--dm-wash);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-faint) 50%,transparent)}}
+:root:not([data-style="soft"]) .pill:active:not(:where([data-style="soft"],[data-style="soft"] *)),:root:not([data-style="soft"]) .ib:active:not(:where([data-style="soft"],[data-style="soft"] *)){transform:translateY(1px)}
+:root:not([data-style="soft"]) .chip.on:not(:where([data-style="soft"],[data-style="soft"] *)){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-pick-on) 50%,transparent)}
+:root:not([data-style="soft"]) .bub:not(:where([data-style="soft"],[data-style="soft"] *)){background:var(--dm-chip);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dm-line) 50%,transparent)}
+:root:not([data-style="soft"]) .tip:not(:where([data-style="soft"],[data-style="soft"] *)){box-shadow:none}
+
+/* motion: a top-down wipe that settles on a hard ease, stepped loaders, a blinking cursor instead of a soft ping */
+@keyframes bpin{0%{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(4px)}30%{opacity:1}100%{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes bpout{to{opacity:0;clip-path:inset(0 0 100% 0)}}
+@keyframes bpblink{0%,55%{opacity:1}56%,100%{opacity:.2}}
+:root:not([data-style="soft"]) .enter:not(:where([data-style="soft"],[data-style="soft"] *)),:root:not([data-style="soft"]) .pop-in:not(:where([data-style="soft"],[data-style="soft"] *)){animation-name:bpin;animation-duration:var(--dm-t-slow);animation-timing-function:var(--dm-ease);animation-fill-mode:backwards}
+:root:not([data-style="soft"]) .leave:not(:where([data-style="soft"],[data-style="soft"] *)){animation:bpout .26s var(--dm-ease) both}
+:root:not([data-style="soft"]) .chx-card.show:not(:where([data-style="soft"],[data-style="soft"] *)){animation:bpin .34s var(--dm-ease) backwards}
+:root:not([data-style="soft"]) .sw.out:not(:where([data-style="soft"],[data-style="soft"] *)){transform:translateY(-3px)}
+:root:not([data-style="soft"]) .pop:not(:where([data-style="soft"],[data-style="soft"] *)){transform:translateY(4px);transition-duration:.16s}
+:root:not([data-style="soft"]) .pop.open:not(:where([data-style="soft"],[data-style="soft"] *)){transform:none}
+:root:not([data-style="soft"]) .spin:not(:where([data-style="soft"],[data-style="soft"] *)){animation:rot .9s steps(8) infinite}
+:root:not([data-style="soft"]) .radar:not(:where([data-style="soft"],[data-style="soft"] *))::after{animation:rot 1s steps(8) infinite}
+:root:not([data-style="soft"]) .pulse:not(:where([data-style="soft"],[data-style="soft"] *)){animation:bpblink 1.1s steps(1,end) infinite}
+:root:not([data-style="soft"]) .pulse:not(:where([data-style="soft"],[data-style="soft"] *))::after{display:none}
+:root:not([data-style="soft"]) .btx-ask:not(:where([data-style="soft"],[data-style="soft"] *))::after{background:linear-gradient(90deg,transparent 0 40%,rgba(255,255,255,.38) 40% 46%,transparent 46%)}
+@media (hover:hover) and (pointer:fine){:root:not([data-style="soft"]) .btx-ask:hover:not(:where([data-style="soft"],[data-style="soft"] *))::after{transition:transform .5s steps(10)}}
+:root:not([data-style="soft"]) .btx-live:not(:where([data-style="soft"],[data-style="soft"] *))::after{display:none}
+:root:not([data-style="soft"]) .btx-live:not(:where([data-style="soft"],[data-style="soft"] *)){animation:bpblink 1.1s steps(1,end) infinite}
+
+/* a component card: the template renders into .stage-in */
+[data-c]{width:440px;max-width:100%;font-family:var(--dm-sans);font-size:14px;line-height:1.5;color:var(--dm-fg);-webkit-font-smoothing:antialiased}
+[data-c].wide{width:720px}

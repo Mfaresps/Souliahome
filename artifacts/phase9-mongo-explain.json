@@ -1,0 +1,130 @@
+[
+  {
+    "name": "dashboard-overview",
+    "collection": "transactions",
+    "executionMs": 5,
+    "returned": 1007,
+    "docsExamined": 1057,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"_id\":1,\"type\":1,\"carrierSettlement\":1},\"inputStage\":{\"stage\":\"COLLSCAN\",\"filter\":{\"$and\":[{\"$or\":[{\"cancelRequest.status\":{\"$eq\":\"????\"}},{\"carrierSettlement.status\":{\"$eq\":\"review\"}},{\"type\":{\"$eq\":\"??????\"}}]},{\"archived\":{\"$not\":{\"$eq\":true}}}]},\"direction\":\"forward\"}}",
+    "indexes": [
+      "_id_",
+      "supplierId_1",
+      "shopifyOrderId_1_type_1",
+      "type_1_shopifyCreatedAt_1",
+      "type_1_transactionDate_1",
+      "type_1_date_1"
+    ]
+  },
+  {
+    "name": "active-count",
+    "collection": "transactions",
+    "executionMs": 2,
+    "returned": 1027,
+    "docsExamined": 1057,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"_id\":1},\"inputStage\":{\"stage\":\"COLLSCAN\",\"filter\":{\"$and\":[{\"archived\":{\"$not\":{\"$eq\":true}}},{\"cancelled\":{\"$not\":{\"$eq\":true}}}]},\"direction\":\"forward\"}}",
+    "indexes": [
+      "_id_",
+      "supplierId_1",
+      "shopifyOrderId_1_type_1",
+      "type_1_shopifyCreatedAt_1",
+      "type_1_transactionDate_1",
+      "type_1_date_1"
+    ]
+  },
+  {
+    "name": "inventory-transactions",
+    "collection": "transactions",
+    "executionMs": 2,
+    "returned": 1027,
+    "docsExamined": 1057,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"type\":1,\"ref\":1,\"items\":1},\"inputStage\":{\"stage\":\"COLLSCAN\",\"filter\":{\"$and\":[{\"archived\":{\"$not\":{\"$eq\":true}}},{\"cancelled\":{\"$not\":{\"$eq\":true}}}]},\"direction\":\"forward\"}}",
+    "indexes": [
+      "_id_",
+      "supplierId_1",
+      "shopifyOrderId_1_type_1",
+      "type_1_shopifyCreatedAt_1",
+      "type_1_transactionDate_1",
+      "type_1_date_1"
+    ]
+  },
+  {
+    "name": "products",
+    "collection": "products",
+    "executionMs": 0,
+    "returned": 115,
+    "docsExamined": 115,
+    "keysExamined": 115,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"FETCH\",\"inputStage\":{\"stage\":\"IXSCAN\",\"keyPattern\":{\"code\":1},\"indexName\":\"code_1\",\"isMultiKey\":false,\"multiKeyPaths\":{\"code\":[]},\"isUnique\":true,\"isSparse\":false,\"isPartial\":false,\"indexVersion\":2,\"direction\":\"forward\",\"indexBounds\":{\"code\":[\"[MinKey, MaxKey]\"]}}}",
+    "indexes": [
+      "_id_",
+      "code_1",
+      "name_1",
+      "storageLocationId_1"
+    ]
+  },
+  {
+    "name": "followups-summary",
+    "collection": "followups",
+    "executionMs": 1,
+    "returned": 538,
+    "docsExamined": 538,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"SORT\",\"sortPattern\":{\"createdAt\":-1},\"memLimit\":104857600,\"type\":\"simple\",\"inputStage\":{\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"_id\":1,\"status\":1,\"createdAt\":1},\"inputStage\":{\"stage\":\"COLLSCAN\",\"direction\":\"forward\"}}}",
+    "indexes": [
+      "_id_",
+      "ticketNo_1",
+      "responsibleUsername_1"
+    ]
+  },
+  {
+    "name": "mentions",
+    "collection": "mentions",
+    "executionMs": 7,
+    "returned": 200,
+    "docsExamined": 6116,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"SUBPLAN\",\"inputStage\":{\"stage\":\"SORT\",\"sortPattern\":{\"createdAt\":-1},\"memLimit\":104857600,\"limitAmount\":200,\"type\":\"simple\",\"inputStage\":{\"stage\":\"COLLSCAN\",\"filter\":{\"$or\":[{\"targetUserId\":{\"$eq\":\"69d506d5d23d17932edc9591\"}},{\"targetUsername\":{\"$eq\":\"admin\"}}]},\"direction\":\"forward\"}}}",
+    "indexes": [
+      "_id_",
+      "targetUserId_1",
+      "read_1"
+    ]
+  },
+  {
+    "name": "manual-adjustments",
+    "collection": "inventorymovements",
+    "executionMs": 1,
+    "returned": 27,
+    "docsExamined": 1522,
+    "keysExamined": 0,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"productCode\":1,\"qtyDelta\":1},\"inputStage\":{\"stage\":\"COLLSCAN\",\"filter\":{\"sourceType\":{\"$eq\":\"manual-adjustment\"}},\"direction\":\"forward\"}}",
+    "indexes": [
+      "_id_",
+      "productCode_1_createdAt_-1",
+      "type_1_createdAt_-1",
+      "sourceTransactionId_1",
+      "by_1_createdAt_-1",
+      "movementId_1"
+    ]
+  },
+  {
+    "name": "shopify-month",
+    "collection": "shopifyorders",
+    "executionMs": 0,
+    "returned": 72,
+    "docsExamined": 72,
+    "keysExamined": 72,
+    "winningPlan": "{\"isCached\":false,\"stage\":\"PROJECTION_SIMPLE\",\"transformBy\":{\"shopifyCreatedAt\":1},\"inputStage\":{\"stage\":\"FETCH\",\"inputStage\":{\"stage\":\"IXSCAN\",\"keyPattern\":{\"shopifyCreatedAt\":1},\"indexName\":\"shopifyCreatedAt_1\",\"isMultiKey\":false,\"multiKeyPaths\":{\"shopifyCreatedAt\":[]},\"isUnique\":false,\"isSparse\":false,\"isPartial\":false,\"indexVersion\":2,\"direction\":\"forward\",\"indexBounds\":{\"shopifyCreatedAt\":[\"[\\\"2026-11-01\\\", \\\"2026-12-01\\\")\"]}}}}",
+    "indexes": [
+      "_id_",
+      "shopifyId_1",
+      "assignedToUsername_1",
+      "depositReceipts.id_1",
+      "depositReceipts.imageSha256_1",
+      "shopifyCreatedAt_1"
+    ]
+  }
+]

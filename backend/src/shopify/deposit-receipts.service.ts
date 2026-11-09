@@ -1,5 +1,6 @@
 import { notifyApproval } from '../notifications/admin-events';
 import { FollowUpsService } from '../followups/followups.service';
+import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -10,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { depositHistory, receiptSender } from './deposit-receipt-history.util';
+import { DEPOSIT_NO_PENDING_REQUESTS, depositOrderConflict } from './deposit-order-conflict.util';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model, ClientSession } from 'mongoose';
@@ -87,6 +89,7 @@ function cleanRef(ref: unknown): string {
 export class DepositReceiptsService {
   @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+  @PushOptional() @PushInject(DiscountOtpService) private readonly discountOtp?: DiscountOtpService;
 
   private readonly logger = new Logger(DepositReceiptsService.name);
   private imageLimitQueue: Promise<unknown> = Promise.resolve();
@@ -143,9 +146,10 @@ export class DepositReceiptsService {
   private async loadPendingOrder(orderId: string): Promise<ShopifyOrderDocument> {
     const order = await this.orderModel.findById(orderId).exec();
     if (!order) throw new NotFoundException('الأوردر غير موجود');
-    if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
-      throw new BadRequestException('لا يمكن تعديل عربون أوردر غير معلّق — الأوردر مؤكد أو ملغي');
-    }
+    const conflict = depositOrderConflict(order);
+    if (conflict) throw new BadRequestException(conflict);
+    if (order.status !== 'pending') throw new BadRequestException('الأوردر لم يعد معلقًا؛ راجع حالته قبل تغيير العربون');
+    if (order.receiptCancelLock) throw new BadRequestException('إلغاء الأوردر قيد التنفيذ؛ لا يمكن تغيير العربون الآن');
     return order;
   }
 
@@ -204,11 +208,12 @@ export class DepositReceiptsService {
   private async findDuplicates(sha: string, reference: string, excludeId = ''): Promise<DepositReceipt['warnings']> {
     const warnings: DepositReceipt['warnings'] = [];
     const or: any[] = [{ depositReceipts: { $elemMatch: { imageSha256: sha, status: { $in: LIVE_STATUSES } } } }];
-    if (reference) or.push({ depositReceipts: { $elemMatch: { 'ocr.reference': reference, status: { $in: LIVE_STATUSES } } } });
+    if (reference) or.push({ depositReceipts: { $elemMatch: { status: { $in: LIVE_STATUSES },
+      $or: [{ transferReference: reference }, { 'ocr.reference': reference }] } } });
     const hits: any[] = await this.orderModel.find({ $or: or }).select('ref depositReceipts').lean().exec();
     if (this.manualReceiptModel) {
       const manualOr: any[] = [{ 'receipt.imageSha256': sha }];
-      if (reference) manualOr.push({ 'receipt.ocr.reference': reference });
+      if (reference) manualOr.push({ 'receipt.transferReference': reference }, { 'receipt.ocr.reference': reference });
       const manual = await this.manualReceiptModel.find({ state: { $in: ['submitted', 'claiming', 'consumed'] },
         $or: manualOr }).select('ref receipt').lean().exec();
       hits.push(...manual.map(d => ({ ref: d.ref, depositReceipts: [d.receipt] })));
@@ -218,7 +223,7 @@ export class DepositReceiptsService {
         if (!LIVE_STATUSES.includes(r.status) || r.id === excludeId) continue;
         if (r.imageSha256 === sha && !warnings.some((w) => w.code === 'same-image')) {
           warnings.push({ code: 'same-image', orderRef: cleanRef(o.ref) });
-        } else if (reference && r.ocr?.reference === reference && !warnings.some((w) => w.code === 'same-reference')) {
+        } else if (reference && (r.transferReference ?? r.ocr?.reference) === reference && !warnings.some((w) => w.code === 'same-reference')) {
           warnings.push({ code: 'same-reference', orderRef: cleanRef(o.ref) });
         }
       }
@@ -228,14 +233,36 @@ export class DepositReceiptsService {
 
   /** Mongo's unique _id prevents cross-order and cross-process image/transfer reuse. */
   private identities() {
-    return this.orderModel.db.collection<{ _id: string; receiptId: string; createdAt: string }>('depositreceiptidentities');
+    return this.orderModel.db.collection<{ _id: string; receiptId: string; createdAt: string; claimedAt?: string; phase?: 'claiming' | 'committed' }>('depositreceiptidentities');
+  }
+
+  /** Old versions reserved a fingerprint at upload. Only an unconfirmed draft may yield that lock. */
+  private async releaseLegacyDraftIdentity(key: string, receiptId: string): Promise<boolean> {
+    const held = await this.identities().findOne({ _id: key });
+    if (!held || held.receiptId === receiptId || held.phase === 'committed') return false;
+    if (held.phase === 'claiming' && Date.now() - Date.parse(held.claimedAt || held.createdAt) < 2 * 60_000) return false;
+    const owner = held.receiptId;
+    const order = await this.orderModel.findOne({ 'depositReceipts.id': owner }).select('depositReceipts').lean().exec();
+    const orderReceipt = (order?.depositReceipts || []).find((r: DepositReceipt) => r.id === owner);
+    const manual = this.manualReceiptModel && await this.manualReceiptModel.findOne({ receiptId: owner }).select('receipt').lean().exec();
+    if (orderReceipt && orderReceipt.status !== 'مسودة') return false;
+    if (manual?.receipt && manual.receipt.status !== 'مسودة') return false;
+    const result = await this.identities().deleteOne({ _id: key, receiptId: owner,
+      ...(held.phase ? { phase: held.phase, claimedAt: held.claimedAt } : { phase: { $exists: false } }) });
+    return result.deletedCount > 0;
   }
 
   private async reserveIdentity(keys: string[], receiptId: string): Promise<void> {
     try {
       for (const key of [...new Set(keys)].sort()) {
-        await this.identities().updateOne({ _id: key, receiptId },
-          { $setOnInsert: { createdAt: new Date().toISOString() } }, { upsert: true });
+        try {
+          await this.identities().updateOne({ _id: key, receiptId },
+            { $set: { phase: 'claiming', claimedAt: new Date().toISOString() }, $setOnInsert: { createdAt: new Date().toISOString() } }, { upsert: true });
+        } catch (error) {
+          if ((error as any)?.code !== 11000 || !await this.releaseLegacyDraftIdentity(key, receiptId)) throw error;
+          await this.identities().updateOne({ _id: key, receiptId },
+            { $set: { phase: 'claiming', claimedAt: new Date().toISOString() }, $setOnInsert: { createdAt: new Date().toISOString() } }, { upsert: true });
+        }
       }
     } catch (error) {
       if ((error as any)?.code === 11000) throw new BadRequestException('صورة الإيصال أو رقم التحويل مستخدم بالفعل — لا يمكن تسجيل نفس العربون مرتين');
@@ -243,29 +270,68 @@ export class DepositReceiptsService {
     }
   }
 
-  private async releaseUnusedIdentity(receiptId: string): Promise<void> {
-    // An ambiguous write failure may have saved the receipt. Never release its protection.
-    if (await this.orderModel.exists({ 'depositReceipts.id': receiptId })) return;
-    if (this.manualReceiptModel && await this.manualReceiptModel.exists({ receiptId })) return;
-    await this.identities().deleteMany({ receiptId });
+  private async releaseDraftIdentity(receiptId: string): Promise<void> {
+    await this.identities().deleteMany({ receiptId, phase: { $ne: 'committed' } });
   }
 
-  private async reserveImage(stored: Buffer, original: Buffer, receiptId: string): Promise<string> {
-    const sha = crypto.createHash('sha256').update(stored).digest('hex');
-    const legacy = await this.orderModel.exists({ depositReceipts: { $elemMatch: { imageSha256: sha, id: { $ne: receiptId } } } });
-    const manual = this.manualReceiptModel && await this.manualReceiptModel.exists({ 'receipt.imageSha256': sha, receiptId: { $ne: receiptId } });
-    if (legacy || manual) throw new BadRequestException('هذه الصورة رُفعت بالفعل — لا يمكن استخدام نفس إيصال العربون مرة أخرى');
-    await this.reserveIdentity([`image:${sha}`, `raw:${crypto.createHash('sha256').update(original).digest('hex')}`], receiptId);
-    return sha;
+  private async assertUploadNotCommitted(sha: string, rawSha: string): Promise<void> {
+    const keys = [`image:${sha}`, `raw:${rawSha}`];
+    const held = await this.identities().find({ _id: { $in: keys } }).toArray();
+    for (const lock of held) {
+      if (lock.phase === 'committed') throw new BadRequestException('هذه الصورة مستخدمة في إيصال عربون مؤكد بالفعل');
+      const order = await this.orderModel.findOne({ 'depositReceipts.id': lock.receiptId }).select('depositReceipts').lean().exec();
+      const receipt = (order?.depositReceipts || []).find((r: DepositReceipt) => r.id === lock.receiptId);
+      const manual = this.manualReceiptModel && await this.manualReceiptModel.findOne({ receiptId: lock.receiptId }).select('receipt').lean().exec();
+      if ((receipt && receipt.status !== 'مسودة') || (manual?.receipt && manual.receipt.status !== 'مسودة')) {
+        throw new BadRequestException('هذه الصورة مستخدمة في إيصال عربون مؤكد بالفعل');
+      }
+    }
+    const order = await this.orderModel.exists({ depositReceipts: { $elemMatch: {
+      imageSha256: sha, status: { $ne: 'مسودة' } } } });
+    const manual = this.manualReceiptModel && await this.manualReceiptModel.exists({
+      'receipt.imageSha256': sha, 'receipt.status': { $ne: 'مسودة' },
+    });
+    if (order || manual) throw new BadRequestException('هذه الصورة مستخدمة في إيصال عربون مؤكد بالفعل');
   }
 
   private async reserveTransfer(r: DepositReceipt): Promise<void> {
-    const duplicates = await this.findDuplicates(r.imageSha256, r.ocr?.reference || '', r.id);
+    const duplicates = await this.findDuplicates(r.imageSha256, r.transferReference ?? r.ocr?.reference ?? '', r.id);
     if (duplicates.length) throw new BadRequestException('الإيصال أو رقم التحويل مستخدم في عربون آخر — لا يمكن اعتماده مرة ثانية');
-    const reference = String(r.ocr?.reference || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+    const reference = String(r.transferReference ?? r.ocr?.reference ?? '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
     const keys = [`image:${r.imageSha256}`];
+    if (r.rawSha256) keys.push(`raw:${r.rawSha256}`);
     if (reference) keys.push(`transfer:${crypto.createHash('sha256').update(reference).digest('hex')}`);
-    await this.reserveIdentity(keys, r.id);
+    try {
+      // Submission already committed these unique identities. Keep the existing
+      // reservation path for legacy or incomplete receipts.
+      if (r.status === 'معتمد') {
+        const uniqueKeys = [...new Set(keys)];
+        const held = await this.identities().find({ _id: { $in: uniqueKeys }, receiptId: r.id, phase: 'committed' })
+          .project({ _id: 1 }).toArray();
+        if (held.length === uniqueKeys.length) return;
+      }
+      await this.reserveIdentity(keys, r.id);
+      if (r.status !== 'مسودة') await this.commitIdentity(r.id);
+    }
+    catch (error) { await this.releaseClaimingIdentity(r.id); throw error; }
+  }
+
+  private async releaseClaimingIdentity(receiptId: string): Promise<void> {
+    const order = await this.orderModel.findOne({ 'depositReceipts.id': receiptId }).select('depositReceipts').lean().exec();
+    const receipt = (order?.depositReceipts || []).find((r: DepositReceipt) => r.id === receiptId);
+    const manual = this.manualReceiptModel && await this.manualReceiptModel.findOne({ receiptId }).select('receipt').lean().exec();
+    if (receipt && receipt.status !== 'مسودة') return;
+    if (manual?.receipt && manual.receipt.status !== 'مسودة') return;
+    await this.releaseDraftIdentity(receiptId);
+  }
+
+  private async commitIdentity(receiptId: string): Promise<void> {
+    try {
+      await this.identities().updateMany({ receiptId, phase: 'claiming' }, { $set: { phase: 'committed' } });
+    } catch (error) {
+      // The saved receipt already owns the unique fingerprint. Metadata must not make a successful confirmation look failed.
+      this.logger.warn(`Receipt identity metadata update failed (${receiptId}): ${(error as Error).message}`);
+    }
   }
 
   // ── Employee side ────────────────────────────────────────────────────────────────────────
@@ -280,26 +346,26 @@ export class DepositReceiptsService {
     const client = String(meta.client || '').slice(0, 120);
     const imageKey = receiptImageKey({ ref, client, _id: id }, businessDate().slice(0, 7), id);
     const ocr = await this.ocr.read(file.buffer);
-    let sha: string;
-    try { sha = await this.reserveImage(stored, file.buffer, id); }
-    catch (error) { await this.releaseUnusedIdentity(id); throw error; }
+    const sha = crypto.createHash('sha256').update(stored).digest('hex');
+    const rawSha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    await this.assertUploadNotCommitted(sha, rawSha256);
     const warnings = [...receiptContentWarnings(ocr), ...await this.findDuplicates(sha, ocr.reference)];
     const put = await r2PutObject(cfg, imageKey, stored, 'image/jpeg', 30_000);
-    if (!put.ok) { await this.releaseUnusedIdentity(id); throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`); }
+    if (!put.ok) throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`);
     const now = new Date().toISOString();
-    const receipt: DepositReceipt = { id, status: 'مسودة', imageKey, imageSha256: sha,
+    const receipt: DepositReceipt = { id, status: 'مسودة', imageKey, imageSha256: sha, rawSha256,
       imageBytes: stored.length, imageDeleted: false, amount: 0, method: '', ocr,
       needsReview: true, warnings, uploadedAt: now, submittedAt: '',
       submittedBy: actor.name || actor.username, submittedById: actor.id };
     try {
       await this.manualReceiptModel!.create({ receiptId: id, ownerId: actor.id, ref, client, receipt,
         expiresAt: new Date(Date.now() + DRAFT_TTL_MS).toISOString() });
-    } catch (error) { await this.releaseUnusedIdentity(id); throw error; }
+    } catch (error) { await this.deleteImage(imageKey); throw error; }
     void this.trimReceiptImages();
     return { receipt };
   }
 
-  async confirmManualReceipt(id: string, body: { amount: unknown; method: unknown; total: number; confirmed: boolean; acknowledgeImageWarning?: boolean; senderName?: string; senderHandle?: string; senderPhone?: string; screenshotTime?: string }, actor: ReceiptActor) {
+  async confirmManualReceipt(id: string, body: { amount: unknown; method: unknown; total: number; confirmed: boolean; acknowledgeImageWarning?: boolean; senderName?: string; senderBank?: string; senderHandle?: string; senderPhone?: string; transferDateText?: string; transferReference?: string; screenshotTime?: string }, actor: ReceiptActor) {
     const draft = await this.manualReceiptModel!.findOne({ receiptId: id, ownerId: actor.id,
       state: { $in: ['draft', 'submitted'] }, expiresAt: { $gt: new Date().toISOString() } }).exec();
     if (!draft) throw new BadRequestException('الإيصال غير متاح — ارفع الصورة مجددًا');
@@ -307,17 +373,24 @@ export class DepositReceiptsService {
     if (body.confirmed !== true) throw new BadRequestException('راجع بيانات الإيصال وأكّدها أولًا');
     if (!Number.isFinite(body.total) || amount > body.total + DEPOSIT_TOLERANCE) throw new BadRequestException('الديبوزت يتجاوز إجمالي المعاملة');
     const r = draft.receipt;
+    const details = receiptSender(r.status === 'مسودة' ? body :
+      { ...body, transferReference: r.transferReference ?? r.ocr?.reference ?? '' }, r);
+    const reviewed = { ...r, ...details };
     const contentWarnings = receiptContentWarnings(r.ocr);
     if (contentWarnings.length && body.acknowledgeImageWarning !== true && !r.warningAcknowledgedAt) throw new BadRequestException('أكّد مراجعة تحذير الصورة أولًا');
-    const warnings = [...contentWarnings, ...await this.findDuplicates(r.imageSha256, r.ocr.reference, r.id)];
-    await this.reserveTransfer(r);
+    const warnings = [...contentWarnings, ...await this.findDuplicates(r.imageSha256, reviewed.transferReference, r.id)];
+    await this.reserveTransfer(reviewed);
     const now = new Date().toISOString();
-    const receipt = { ...r, status: 'معلق' as const, amount, method, warnings, ...receiptSender(body, r),
+    const receipt = { ...reviewed, status: 'معلق' as const, amount, method, warnings,
       needsReview: this.needsReviewFor({ ...r, warnings }, amount, method), submittedAt: r.submittedAt || now,
       ...(contentWarnings.length ? { warningAcknowledgedAt: now, warningAcknowledgedById: actor.id } : {}) };
-    const saved = await this.manualReceiptModel!.findOneAndUpdate({ _id: draft._id,
-      state: { $in: ['draft', 'submitted'] } }, { $set: { receipt, state: 'submitted' } }, { new: true }).exec();
-    if (!saved) throw new BadRequestException('تغيّر الإيصال — أعد المحاولة');
+    let saved: ManualDepositReceiptDocument | null;
+    try {
+      saved = await this.manualReceiptModel!.findOneAndUpdate({ _id: draft._id,
+        state: { $in: ['draft', 'submitted'] } }, { $set: { receipt, state: 'submitted' } }, { new: true }).exec();
+    } catch (error) { await this.releaseClaimingIdentity(id); throw error; }
+    if (!saved) { await this.releaseClaimingIdentity(id); throw new BadRequestException('تغيّر الإيصال — أعد المحاولة'); }
+    await this.commitIdentity(id);
     this.emit('', id, 'معلق');
     return { success: true, receipt: saved.receipt };
   }
@@ -326,6 +399,7 @@ export class DepositReceiptsService {
     const draft = await this.manualReceiptModel!.findOneAndUpdate({ receiptId: id, ownerId: actor.id,
       state: { $in: ['draft', 'submitted'] } }, { $set: { state: 'withdrawn', 'receipt.imageDeleted': true } }, { new: true }).exec();
     if (!draft) throw new BadRequestException('الإيصال مستخدم أو غير متاح');
+    if (draft.receipt.status === 'مسودة') await this.releaseDraftIdentity(id);
     await this.deleteImage(draft.receipt.imageKey);
     this.emit('', id, 'مسحوب');
     return { success: true };
@@ -358,7 +432,10 @@ export class DepositReceiptsService {
     }
     return { id, amount, method, imageKey: r.imageKey, imageDeleted: false, needsReview: r.needsReview,
       submittedBy: r.submittedBy, submittedAt: r.submittedAt, reviewedBy: '', reviewedAt: '',
-      vaultTxNo: '', senderName: r.senderName ?? r.ocr?.senderName ?? '', senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '', senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '', screenshotTime: r.screenshotTime ?? r.ocr?.screenshotTime ?? '', screenshotTimeSource: r.screenshotTimeSource || r.ocr?.screenshotTimeSource || '', ocrAmount: r.ocr.amount, ocrMethod: r.ocr.method };
+      vaultTxNo: '', senderName: r.senderName ?? r.ocr?.senderName ?? '', senderBank: r.senderBank ?? r.ocr?.senderBank ?? '',
+      senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '', senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '',
+      transferDateText: r.transferDateText ?? r.ocr?.dateText ?? '', transferReference: r.transferReference ?? r.ocr?.reference ?? '',
+      screenshotTime: r.screenshotTime ?? r.ocr?.screenshotTime ?? '', screenshotTimeSource: r.screenshotTimeSource || r.ocr?.screenshotTimeSource || '', ocrAmount: r.ocr.amount, ocrMethod: r.ocr.method };
   }
 
   async releaseManualReceipt(id: string, session?: ClientSession): Promise<void> {
@@ -395,17 +472,17 @@ export class DepositReceiptsService {
   async uploadDraft(orderId: string, file: UploadedImage | undefined, actor: ReceiptActor) {
     if (!actor.id) throw new ForbiddenException('تعذّر تحديد الموظف');
     if (!file?.buffer?.length) throw new BadRequestException('لم يتم رفع صورة');
-    const stored = await this.prepareReceiptImage(file);
     const order = await this.loadPendingOrder(orderId);
+    const stored = await this.prepareReceiptImage(file);
     if (order.shipWithoutDeposit && !receiptsIn(order, 'معلق', 'معتمد').length) throw new BadRequestException('أوقف خيار شحن بدون عربون قبل إضافة إيصال');
     const cfg = await this.r2();
 
     const id = `dr_${Date.now().toString(36)}${crypto.randomBytes(4).toString('hex')}`;
     const month = businessDate().slice(0, 7);
     const imageKey = receiptImageKey(order, month, id);
-    let sha: string;
-    try { sha = await this.reserveImage(stored, file.buffer!, id); }
-    catch (error) { await this.releaseUnusedIdentity(id); throw error; }
+    const sha = crypto.createHash('sha256').update(stored).digest('hex');
+    const rawSha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    await this.assertUploadNotCommitted(sha, rawSha256);
 
     // ⚠ OCR reads the ORIGINAL upload, not the stored copy: measured on the 17 real receipts,
     //   the re-encoded JPEG lost one amount (16/17) that the original yields (17/17). Storage
@@ -414,7 +491,7 @@ export class DepositReceiptsService {
       r2PutObject(cfg, imageKey, stored, 'image/jpeg', 30_000),
       this.ocr.read(file.buffer),
     ]);
-    if (!put.ok) { await this.releaseUnusedIdentity(id); throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`); }
+    if (!put.ok) throw new BadRequestException(`تعذّر حفظ الصورة على التخزين السحابي: ${put.message}`);
 
     const warnings = [...receiptContentWarnings(ocr), ...await this.findDuplicates(sha, ocr.reference)];
     const now = new Date().toISOString();
@@ -423,13 +500,14 @@ export class DepositReceiptsService {
       status: 'مسودة',
       imageKey,
       imageSha256: sha,
+      rawSha256,
       imageBytes: stored.length,
       imageDeleted: false,
       amount: 0,
       method: '',
       ocr: {
-        amount: ocr.amount, method: ocr.method, pattern: ocr.pattern, reference: ocr.reference,
-        senderName: ocr.senderName, senderHandle: ocr.senderHandle, senderPhone: ocr.senderPhone, screenshotTime: ocr.screenshotTime, screenshotTimeSource: ocr.screenshotTimeSource, dateText: ocr.dateText, confident: ocr.confident, ran: ocr.ran, ms: ocr.ms,
+        amount: ocr.amount, amountConfidence: ocr.amountConfidence, method: ocr.method, pattern: ocr.pattern, reference: ocr.reference,
+        senderName: ocr.senderName, senderBank: ocr.senderBank, senderHandle: ocr.senderHandle, senderPhone: ocr.senderPhone, screenshotTime: ocr.screenshotTime, screenshotTimeSource: ocr.screenshotTimeSource, dateText: ocr.dateText, confident: ocr.confident, ran: ocr.ran, ms: ocr.ms,
       },
       needsReview: true,
       warnings,
@@ -442,12 +520,11 @@ export class DepositReceiptsService {
     // The uploader's earlier abandoned drafts on this order are replaced, not accumulated.
     const stale = receiptsIn(order, 'مسودة').filter((r) => r.submittedById === actor.id);
     const saved = await this.orderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, receiptCancelLock: { $in: ['', null] } },
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, ...DEPOSIT_NO_PENDING_REQUESTS, receiptCancelLock: { $in: ['', null] } },
       { $push: { depositReceipts: draft } },
       { new: true },
     ).exec();
     if (!saved) {
-      await this.releaseUnusedIdentity(id);
       await this.deleteImage(imageKey);
       throw new BadRequestException('الأوردر لم يعد معلّقاً');
     }
@@ -459,11 +536,18 @@ export class DepositReceiptsService {
     }
 
     // Serialize upload-triggered trimming so simultaneous uploads do not delete extra images.
-    void this.trimReceiptImages(stale.map(r => r.imageKey));
+    const removedStale: string[] = [];
+    for (const r of stale) {
+      if (!await this.orderModel.exists({ 'depositReceipts.id': r.id })) {
+        await this.releaseDraftIdentity(r.id);
+        removedStale.push(r.imageKey);
+      }
+    }
+    void this.trimReceiptImages(removedStale);
     return { receipt: draft, cap: depositCapFor(saved) };
   }
 
-  async submit(orderId: string, receiptId: string, body: { amount: unknown; method: unknown; acknowledgeImageWarning?: boolean; senderName?: string; senderHandle?: string; senderPhone?: string; screenshotTime?: string }, actor: ReceiptActor) {
+  async submit(orderId: string, receiptId: string, body: { amount: unknown; method: unknown; acknowledgeImageWarning?: boolean; senderName?: string; senderBank?: string; senderHandle?: string; senderPhone?: string; transferDateText?: string; transferReference?: string; screenshotTime?: string }, actor: ReceiptActor) {
     const { amount, method } = this.validateEntry(body?.amount, body?.method);
     const order = await this.loadPendingOrder(orderId);
     const r = this.findReceipt(order, receiptId);
@@ -481,18 +565,24 @@ export class DepositReceiptsService {
     }
 
     const now = new Date().toISOString();
-    const warnings = [...contentWarnings, ...await this.findDuplicates(r.imageSha256, r.ocr?.reference || '', receiptId)];
-    await this.reserveTransfer(r);
-    const saved = await this.orderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, receiptCancelLock: { $in: ['', null] }, $expr: receiptBudgetExpr(amount, receiptId), depositReceipts: { $elemMatch: { id: receiptId, status: 'مسودة' } } },
+    const details = receiptSender(body, r);
+    const reviewed = { ...r, ...details };
+    const warnings = [...contentWarnings, ...await this.findDuplicates(r.imageSha256, details.transferReference, receiptId)];
+    await this.reserveTransfer(reviewed);
+    let saved: ShopifyOrderDocument | null;
+    try { saved = await this.orderModel.findOneAndUpdate(
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, ...DEPOSIT_NO_PENDING_REQUESTS, receiptCancelLock: { $in: ['', null] }, $expr: receiptBudgetExpr(amount, receiptId), depositReceipts: { $elemMatch: { id: receiptId, status: 'مسودة' } } },
       {
         $set: {
           'depositReceipts.$.status': 'معلق',
-          'depositReceipts.$.senderName': receiptSender(body, r).senderName,
-          'depositReceipts.$.senderHandle': receiptSender(body, r).senderHandle,
-          'depositReceipts.$.senderPhone': receiptSender(body, r).senderPhone,
-          'depositReceipts.$.screenshotTime': receiptSender(body, r).screenshotTime,
-          'depositReceipts.$.screenshotTimeSource': receiptSender(body, r).screenshotTimeSource,
+          'depositReceipts.$.senderName': details.senderName,
+          'depositReceipts.$.senderBank': details.senderBank,
+          'depositReceipts.$.senderHandle': details.senderHandle,
+          'depositReceipts.$.senderPhone': details.senderPhone,
+          'depositReceipts.$.transferDateText': details.transferDateText,
+          'depositReceipts.$.transferReference': details.transferReference,
+          'depositReceipts.$.screenshotTime': details.screenshotTime,
+          'depositReceipts.$.screenshotTimeSource': details.screenshotTimeSource,
           'depositReceipts.$.amount': amount,
           'depositReceipts.$.method': method,
           'depositReceipts.$.warnings': warnings,
@@ -505,8 +595,9 @@ export class DepositReceiptsService {
         },
       },
       { new: true },
-    ).exec();
-    if (!saved) throw new BadRequestException('تعذّر الإرسال — تغيّر الإيصال أو الأوردر، أعد المحاولة');
+    ).exec(); } catch (error) { await this.releaseClaimingIdentity(receiptId); throw error; }
+    if (!saved) { await this.releaseClaimingIdentity(receiptId); throw new BadRequestException('تعذّر الإرسال — تغيّر الإيصال أو الأوردر، أعد المحاولة'); }
+    await this.commitIdentity(receiptId);
 
     await this.followUpsService?.closeConfirmationForDeposit(saved, actor.name || actor.username);
 
@@ -517,29 +608,129 @@ export class DepositReceiptsService {
     return { success: true, receipt: this.findReceipt(saved, receiptId) };
   }
 
-  async editPending(orderId: string, receiptId: string, body: { amount: unknown; method: unknown; senderName?: string; senderHandle?: string; senderPhone?: string; screenshotTime?: string }, actor: ReceiptActor) {
+  /**
+   * «إضافة عربون بدون صورة تحويل» — the same record as an image receipt after `submit`
+   * (status «معلق», waiting for the manager's approval, which is what moves the vault), only
+   * without a photo. Who may use it:
+   *   - admin, or a holder of `shopify-deposit-no-image` → directly;
+   *   - a holder of `shopify-deposit-no-image-otp` → with a manager OTP bound to this order,
+   *     amount and vault, unless `settings.depositNoImageSkipOtp` is on.
+   * ⚠ `needsReview` is always true, so auto-approve never books it — a manager looks at it.
+   */
+  async createWithoutImage(
+    orderId: string,
+    body: { amount: unknown; method: unknown; reason?: string; otpId?: string },
+    actor: ReceiptActor,
+    access: { role?: string; perms?: string[] },
+  ) {
+    if (!actor.id) throw new ForbiddenException('تعذّر تحديد الموظف');
+    const perms = access.perms || [];
+    const direct = actor.isAdmin || access.role === 'admin' || perms.includes('shopify-deposit-no-image');
+    const viaOtp = !direct && perms.includes('shopify-deposit-no-image-otp');
+    if (!direct && !viaOtp) throw new ForbiddenException('لا تملك صلاحية إضافة عربون بدون صورة');
+
+    const { amount, method } = this.validateEntry(body?.amount, body?.method);
+    const reason = String(body?.reason || '').replace(/[ -‪-‮⁦-⁩]/g, ' ').trim().slice(0, 300);
+    const order = await this.loadPendingOrder(orderId);
+    if (order.shipWithoutDeposit && !receiptsIn(order, 'معلق', 'معتمد').length) throw new BadRequestException('أوقف خيار شحن بدون عربون قبل إضافة عربون');
+    const cap = depositCapFor(order);
+    if (amount > cap + DEPOSIT_TOLERANCE) throw new BadRequestException(`المبلغ أكبر من المتبقي المسموح على الطلب (${cap} ج)`);
+
+    const id = `dr_${Date.now().toString(36)}${crypto.randomBytes(4).toString('hex')}`;
+    let auth: string = actor.isAdmin || access.role === 'admin' ? 'admin' : 'direct';
+    let releaseOtp: (() => Promise<void>) | null = null;
+    let otpId = '';
+    if (viaOtp) {
+      const settings: any = await this.settingsService.getSettings();
+      if (settings?.depositNoImageSkipOtp === true) auth = 'otp-skipped';
+      else {
+        if (!this.discountOtp) throw new BadRequestException('نظام كود التحقق غير متاح الآن');
+        otpId = String(body?.otpId || '');
+        releaseOtp = await this.discountOtp.consumeDepositNoImageOtp(otpId, String(order._id), amount, method, id);
+        auth = 'otp';
+      }
+    }
+
+    const now = new Date().toISOString();
+    const receipt: DepositReceipt = {
+      id,
+      status: 'معلق',
+      noImage: true,
+      noImageReason: reason,
+      noImageAuth: auth,
+      ...(otpId ? { noImageOtpId: otpId } : {}),
+      imageKey: '',
+      // Per-receipt placeholder: the duplicate checks and the unique identity lock key on this,
+      // so an empty value would make every no-image receipt look like the same image.
+      imageSha256: `no-image:${id}`,
+      imageBytes: 0,
+      imageDeleted: false,
+      amount,
+      method,
+      ocr: { amount: null, method: '', pattern: '', reference: '', dateText: '', confident: false, ran: false, ms: 0 },
+      needsReview: true,
+      warnings: [],
+      uploadedAt: now,
+      submittedBy: actor.name || actor.username,
+      submittedById: actor.id,
+      submittedAt: now,
+    };
+
+    let saved: ShopifyOrderDocument | null = null;
+    try {
+      saved = await this.orderModel.findOneAndUpdate(
+        { _id: order._id, status: 'pending', cancelled: { $ne: true }, ...DEPOSIT_NO_PENDING_REQUESTS, receiptCancelLock: { $in: ['', null] }, $expr: receiptBudgetExpr(amount, id) },
+        { $push: { depositReceipts: receipt } },
+        { new: true },
+      ).exec();
+    } catch (error) {
+      if (releaseOtp) await releaseOtp().catch(() => undefined);
+      throw error;
+    }
+    if (!saved) {
+      if (releaseOtp) await releaseOtp().catch(() => undefined);
+      throw new BadRequestException('تعذّر التسجيل — تغيّر الأوردر أو تجاوز المبلغ المتبقي، أعد المحاولة');
+    }
+
+    await this.followUpsService?.closeConfirmationForDeposit(saved, actor.name || actor.username);
+    await this.notifications?.enqueue('deposit', 'deposit:receipt:' + id, saved.ref, 'shopify:' + orderId, undefined, undefined,
+      { actorName: receipt.submittedBy, amount, pendingApproval: true, vaultName: method, receiptId: id });
+    this.emit(orderId, id, 'معلق');
+    await notifyApproval(this.notifications, 'approval:receipt:' + id + ':pending', saved.ref, 'shopify:' + orderId, { actorName: receipt.submittedBy, actionKey: 'deposit', status: 'pending', receiptId: id });
+    return { success: true, receipt: this.findReceipt(saved, id) };
+  }
+
+  async editPending(orderId: string, receiptId: string, body: { amount: unknown; method: unknown; senderName?: string; senderBank?: string; senderHandle?: string; senderPhone?: string; transferDateText?: string; transferReference?: string; screenshotTime?: string }, actor: ReceiptActor) {
     const { amount, method } = this.validateEntry(body?.amount, body?.method);
     const order = await this.loadPendingOrder(orderId);
     const r = this.findReceipt(order, receiptId);
     if (r.status !== 'معلق') throw new BadRequestException('لا يمكن تعديل إيصال تمت مراجعته');
     this.assertOwner(r, actor);
+    // The manager's OTP approved exactly this amount and vault — an edit would bypass it.
+    if (r.noImage && r.noImageAuth === 'otp' && !actor.isAdmin) {
+      throw new ForbiddenException('هذا العربون سُجّل بكود من المدير — اسحبه وأضفه من جديد لتغيير المبلغ أو الخزنة');
+    }
 
     const cap = depositCapFor(order, receiptId);
     if (amount > cap + DEPOSIT_TOLERANCE) {
       throw new BadRequestException(`المبلغ أكبر من المتبقي المسموح على الطلب (${cap} ج)`);
     }
+    const details = receiptSender({ ...body, transferReference: r.transferReference ?? r.ocr?.reference ?? '' }, r);
     const saved = await this.orderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, receiptCancelLock: { $in: ['', null] }, $expr: receiptBudgetExpr(amount, receiptId), depositReceipts: { $elemMatch: { id: receiptId, status: 'معلق' } } },
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, ...DEPOSIT_NO_PENDING_REQUESTS, receiptCancelLock: { $in: ['', null] }, $expr: receiptBudgetExpr(amount, receiptId), depositReceipts: { $elemMatch: { id: receiptId, status: 'معلق' } } },
       {
         $set: {
           'depositReceipts.$.amount': amount,
           'depositReceipts.$.method': method,
           'depositReceipts.$.needsReview': this.needsReviewFor(r, amount, method),
-          'depositReceipts.$.senderName': receiptSender(body, r).senderName,
-          'depositReceipts.$.senderHandle': receiptSender(body, r).senderHandle,
-          'depositReceipts.$.senderPhone': receiptSender(body, r).senderPhone,
-          'depositReceipts.$.screenshotTime': receiptSender(body, r).screenshotTime,
-          'depositReceipts.$.screenshotTimeSource': receiptSender(body, r).screenshotTimeSource,
+          'depositReceipts.$.senderName': details.senderName,
+          'depositReceipts.$.senderBank': details.senderBank,
+          'depositReceipts.$.senderHandle': details.senderHandle,
+          'depositReceipts.$.senderPhone': details.senderPhone,
+          'depositReceipts.$.transferDateText': details.transferDateText,
+          'depositReceipts.$.transferReference': details.transferReference,
+          'depositReceipts.$.screenshotTime': details.screenshotTime,
+          'depositReceipts.$.screenshotTimeSource': details.screenshotTimeSource,
           'depositReceipts.$.lastEditedBy': actor.name || actor.username,
           'depositReceipts.$.lastEditedAt': new Date().toISOString(),
         },
@@ -564,6 +755,7 @@ export class DepositReceiptsService {
         { $set: { 'depositReceipts.$.status': 'مسحوب', 'depositReceipts.$.imageDeleted': true, 'depositReceipts.$.withdrawnAt': new Date().toISOString(), 'depositReceipts.$.withdrawnBy': actor.name || actor.username } },
     ).exec();
     if (!res.modifiedCount) throw new BadRequestException('تمت مراجعة الإيصال قبل سحبه');
+    if (r.status === 'مسودة') await this.releaseDraftIdentity(receiptId);
     await this.deleteImage(r.imageKey);
     if (r.status === 'معلق') this.emit(orderId, receiptId, 'محذوف');
     return { success: true };
@@ -642,7 +834,7 @@ export class DepositReceiptsService {
       entry = await this.vaultService.addSystemEntry(
         r.amount,
         r.method,
-        `عربون مبيعات #${ref} — ${claimed.client || ''} (Shopify — إيصال تحويل)`,
+        `عربون مبيعات #${ref} — ${claimed.client || ''} (Shopify — ${r.noImage ? 'بدون صورة تحويل' : 'إيصال تحويل'})`,
         businessDate(),
         'ديبوزت مبيعات',
         ref,
@@ -663,10 +855,14 @@ export class DepositReceiptsService {
       { $set: { 'depositReceipts.$.vaultEntryId': String(entry?._id || ''), 'depositReceipts.$.vaultTxNo': entry?.txNo || '' } },
     ).exec();
 
-    await this.refreshDerived(String(claimed._id));
-    await this.followUpsService?.closeConfirmationForDeposit(claimed, admin.name || admin.username);
+    // These post-booking tasks touch separate records and have no financial
+    // dependency on each other. Keep awaiting all of them before responding.
+    await Promise.all([
+      this.refreshDerived(String(claimed._id)),
+      this.followUpsService?.closeConfirmationForDeposit(claimed, admin.name || admin.username),
+      notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId }, r.submittedById),
+    ]);
     this.emit(orderId, receiptId, 'معتمد');
-    await notifyApproval(this.notifications, 'approval:receipt:' + receiptId + ':approved', claimed.ref, 'shopify:' + orderId, { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId }, r.submittedById);
     return { success: true, vaultEntryId: String(entry?._id || ''), vaultTxNo: entry?.txNo || '' };
   }
 
@@ -844,6 +1040,7 @@ export class DepositReceiptsService {
     if ('status' in r && r.status === 'مسودة' && (!actor.id || r.submittedById !== actor.id)) {
       throw new ForbiddenException('مسودة الإيصال خاصة بموظفها');
     }
+    if ((r as any).noImage) throw new NotFoundException('هذا العربون مسجّل بدون صورة تحويل');
     if (r.imageDeleted) throw new NotFoundException('صورة الإيصال حُذفت من التخزين');
     const cfg = await this.r2();
     const res = await r2GetObjectBuffer(cfg, r.imageKey);
@@ -887,6 +1084,7 @@ export class DepositReceiptsService {
           ? await this.manualReceiptModel.updateOne(filter, { $set: { state: 'withdrawn', 'receipt.imageDeleted': true } }).exec()
           : await this.manualReceiptModel.deleteOne(filter).exec();
         if (!('modifiedCount' in result ? result.modifiedCount : result.deletedCount)) continue;
+        if (d.receipt.status === 'مسودة') await this.releaseDraftIdentity(d.receiptId);
         await this.deleteImage(d.receipt.imageKey);
         if (d.receipt.submittedAt) this.emit('', d.receiptId, 'مسحوب');
         summary.drafts++;
@@ -904,7 +1102,12 @@ export class DepositReceiptsService {
         { _id: o._id },
         { $pull: { depositReceipts: { id: { $in: old.map((r) => r.id) }, status: 'مسودة' } } },
       ).exec();
-      for (const r of old) { await this.deleteImage(r.imageKey); summary.drafts++; }
+      for (const r of old) {
+        if (await this.orderModel.exists({ 'depositReceipts.id': r.id })) continue;
+        await this.releaseDraftIdentity(r.id);
+        await this.deleteImage(r.imageKey);
+        summary.drafts++;
+      }
     }
 
     // 2. Images of rejected / voided receipts.

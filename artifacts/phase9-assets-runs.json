@@ -1,0 +1,3835 @@
+{
+  "pairs": 1,
+  "runs": [
+    {
+      "pair": 1,
+      "mode": "cold",
+      "startup": {
+        "dcl": 385.59999999403954,
+        "fcp": 408,
+        "lcp": 1448,
+        "interactive": 1694.5999999940395,
+        "domNodes": 11642,
+        "heap": 13712683,
+        "longTasks": [
+          {
+            "start": 425.5,
+            "duration": 54
+          },
+          {
+            "start": 491.90000000596046,
+            "duration": 89
+          },
+          {
+            "start": 595.2999999821186,
+            "duration": 186
+          },
+          {
+            "start": 964.5,
+            "duration": 86
+          },
+          {
+            "start": 1623.4000000059605,
+            "duration": 70
+          }
+        ],
+        "tbt": 235,
+        "followups": 538,
+        "transactions": 1007,
+        "resources": [
+          {
+            "path": "/app-core.js",
+            "duration": 148,
+            "transferBytes": 1297724,
+            "decodedBytes": 4887238,
+            "responseEnd": 189
+          },
+          {
+            "path": "/app-core.css",
+            "duration": 43,
+            "transferBytes": 322969,
+            "decodedBytes": 1404087,
+            "responseEnd": 76
+          },
+          {
+            "path": "/inventory-units.js",
+            "duration": 214,
+            "transferBytes": 43915,
+            "decodedBytes": 163186,
+            "responseEnd": 258
+          },
+          {
+            "path": "/after-sales.js",
+            "duration": 133,
+            "transferBytes": 32912,
+            "decodedBytes": 113707,
+            "responseEnd": 174
+          },
+          {
+            "path": "/complaint-flow.js",
+            "duration": 135,
+            "transferBytes": 26674,
+            "decodedBytes": 88886,
+            "responseEnd": 176
+          },
+          {
+            "path": "/inventory-units.css",
+            "duration": 187,
+            "transferBytes": 15903,
+            "decodedBytes": 82194,
+            "responseEnd": 230
+          },
+          {
+            "path": "/pickup-workspace.css",
+            "duration": 75,
+            "transferBytes": 12970,
+            "decodedBytes": 77933,
+            "responseEnd": 111
+          },
+          {
+            "path": "/supplier-labels.js",
+            "duration": 215,
+            "transferBytes": 16656,
+            "decodedBytes": 54107,
+            "responseEnd": 259
+          },
+          {
+            "path": "/employee-home.css",
+            "duration": 46,
+            "transferBytes": 9458,
+            "decodedBytes": 53962,
+            "responseEnd": 79
+          },
+          {
+            "path": "/vendor/socket.io-4.7.5.min.js",
+            "duration": 202,
+            "transferBytes": 15250,
+            "decodedBytes": 49993,
+            "responseEnd": 913
+          },
+          {
+            "path": "/announcements.js",
+            "duration": 173,
+            "transferBytes": 13281,
+            "decodedBytes": 45080,
+            "responseEnd": 215
+          },
+          {
+            "path": "/notification-settings.js",
+            "duration": 171,
+            "transferBytes": 10285,
+            "decodedBytes": 36383,
+            "responseEnd": 212
+          },
+          {
+            "path": "/preprinted-labels.js",
+            "duration": 209,
+            "transferBytes": 10611,
+            "decodedBytes": 35494,
+            "responseEnd": 254
+          },
+          {
+            "path": "/warehouse-layout.js",
+            "duration": 205,
+            "transferBytes": 10922,
+            "decodedBytes": 34804,
+            "responseEnd": 250
+          },
+          {
+            "path": "/sales-overview.js",
+            "duration": 155,
+            "transferBytes": 9401,
+            "decodedBytes": 34233,
+            "responseEnd": 197
+          },
+          {
+            "path": "/roles-permissions.js",
+            "duration": 173,
+            "transferBytes": 9922,
+            "decodedBytes": 33678,
+            "responseEnd": 215
+          },
+          {
+            "path": "/warehouses.js",
+            "duration": 199,
+            "transferBytes": 9298,
+            "decodedBytes": 30698,
+            "responseEnd": 243
+          },
+          {
+            "path": "/inventory-packs.js",
+            "duration": 219,
+            "transferBytes": 10360,
+            "decodedBytes": 30650,
+            "responseEnd": 263
+          },
+          {
+            "path": "/inventory-errors.js",
+            "duration": 194,
+            "transferBytes": 9001,
+            "decodedBytes": 30365,
+            "responseEnd": 237
+          },
+          {
+            "path": "/shopify-workspace.css",
+            "duration": 237,
+            "transferBytes": 5750,
+            "decodedBytes": 29032,
+            "responseEnd": 284
+          },
+          {
+            "path": "/inventory-scanner.js",
+            "duration": 196,
+            "transferBytes": 8809,
+            "decodedBytes": 26802,
+            "responseEnd": 239
+          },
+          {
+            "path": "/after-sales.css",
+            "duration": 129,
+            "transferBytes": 6330,
+            "decodedBytes": 26418,
+            "responseEnd": 169
+          },
+          {
+            "path": "/reports-refined.css",
+            "duration": 80,
+            "transferBytes": 4917,
+            "decodedBytes": 26408,
+            "responseEnd": 118
+          },
+          {
+            "path": "/bosta-pickup.js",
+            "duration": 169,
+            "transferBytes": 7773,
+            "decodedBytes": 25937,
+            "responseEnd": 211
+          },
+          {
+            "path": "/settings-responsive.css",
+            "duration": 59,
+            "transferBytes": 5225,
+            "decodedBytes": 25700,
+            "responseEnd": 93
+          },
+          {
+            "path": "/deposit-decision.js",
+            "duration": 92,
+            "transferBytes": 8827,
+            "decodedBytes": 25301,
+            "responseEnd": 131
+          },
+          {
+            "path": "/employee-followup-session.js",
+            "duration": 232,
+            "transferBytes": 7697,
+            "decodedBytes": 24177,
+            "responseEnd": 278
+          },
+          {
+            "path": "/design-system.css",
+            "duration": 234,
+            "transferBytes": 5908,
+            "decodedBytes": 23375,
+            "responseEnd": 280
+          },
+          {
+            "path": "/order-audit-marketing.js",
+            "duration": 180,
+            "transferBytes": 7481,
+            "decodedBytes": 23303,
+            "responseEnd": 223
+          },
+          {
+            "path": "/supplier-labels.css",
+            "duration": 212,
+            "transferBytes": 4847,
+            "decodedBytes": 22161,
+            "responseEnd": 256
+          },
+          {
+            "path": "/pickup-daily-shipping.js",
+            "duration": 168,
+            "transferBytes": 6770,
+            "decodedBytes": 21188,
+            "responseEnd": 210
+          },
+          {
+            "path": "/notification-feed.js",
+            "duration": 175,
+            "transferBytes": 6820,
+            "decodedBytes": 20813,
+            "responseEnd": 217
+          },
+          {
+            "path": "/picking-scan.css",
+            "duration": 74,
+            "transferBytes": 4771,
+            "decodedBytes": 20787,
+            "responseEnd": 111
+          },
+          {
+            "path": "/complaint-flow.css",
+            "duration": 130,
+            "transferBytes": 4893,
+            "decodedBytes": 20683,
+            "responseEnd": 171
+          },
+          {
+            "path": "/order-audit-insights.js",
+            "duration": 179,
+            "transferBytes": 6924,
+            "decodedBytes": 20221,
+            "responseEnd": 221
+          },
+          {
+            "path": "/global-search-scanner.js",
+            "duration": 197,
+            "transferBytes": 6575,
+            "decodedBytes": 19612,
+            "responseEnd": 241
+          },
+          {
+            "path": "/deposit-entry-compact.css",
+            "duration": 70,
+            "transferBytes": 3932,
+            "decodedBytes": 18841,
+            "responseEnd": 106
+          },
+          {
+            "path": "/designme/date-range-picker/soulia-range.js",
+            "duration": 241,
+            "transferBytes": 6449,
+            "decodedBytes": 18727,
+            "responseEnd": 288
+          },
+          {
+            "path": "/sales-scanner.js",
+            "duration": 224,
+            "transferBytes": 6801,
+            "decodedBytes": 18030,
+            "responseEnd": 269
+          },
+          {
+            "path": "/navigation-shell.css",
+            "duration": 46,
+            "transferBytes": 4671,
+            "decodedBytes": 17765,
+            "responseEnd": 79
+          },
+          {
+            "path": "/order-status-preview.js",
+            "duration": 258,
+            "transferBytes": 5422,
+            "decodedBytes": 17272,
+            "responseEnd": 291
+          },
+          {
+            "path": "/employee-followup-tour.js",
+            "duration": 233,
+            "transferBytes": 5857,
+            "decodedBytes": 17165,
+            "responseEnd": 279
+          },
+          {
+            "path": "/shopify-sync.js",
+            "duration": 185,
+            "transferBytes": 6380,
+            "decodedBytes": 17126,
+            "responseEnd": 228
+          },
+          {
+            "path": "/product-stocktake.js",
+            "duration": 221,
+            "transferBytes": 5854,
+            "decodedBytes": 16690,
+            "responseEnd": 265
+          },
+          {
+            "path": "/shopify-cards.css",
+            "duration": 65,
+            "transferBytes": 3592,
+            "decodedBytes": 16190,
+            "responseEnd": 101
+          },
+          {
+            "path": "/branding.js",
+            "duration": 40,
+            "transferBytes": 5773,
+            "decodedBytes": 16026,
+            "responseEnd": 72
+          },
+          {
+            "path": "/invoice-unit-identities.js",
+            "duration": 124,
+            "transferBytes": 5696,
+            "decodedBytes": 15996,
+            "responseEnd": 164
+          },
+          {
+            "path": "/admin-team-home.js",
+            "duration": 155,
+            "transferBytes": 5746,
+            "decodedBytes": 15908,
+            "responseEnd": 196
+          },
+          {
+            "path": "/preprinted-labels.css",
+            "duration": 209,
+            "transferBytes": 3659,
+            "decodedBytes": 15738,
+            "responseEnd": 254
+          },
+          {
+            "path": "/order-audit-layout.css",
+            "duration": 77,
+            "transferBytes": 3418,
+            "decodedBytes": 15534,
+            "responseEnd": 115
+          },
+          {
+            "path": "/employee-followup-session.css",
+            "duration": 227,
+            "transferBytes": 3783,
+            "decodedBytes": 15483,
+            "responseEnd": 273
+          },
+          {
+            "path": "/warehouses.css",
+            "duration": 199,
+            "transferBytes": 3888,
+            "decodedBytes": 15386,
+            "responseEnd": 243
+          },
+          {
+            "path": "/announcements.css",
+            "duration": 58,
+            "transferBytes": 4175,
+            "decodedBytes": 14268,
+            "responseEnd": 92
+          },
+          {
+            "path": "/sales-overview.css",
+            "duration": 50,
+            "transferBytes": 3410,
+            "decodedBytes": 13922,
+            "responseEnd": 83
+          },
+          {
+            "path": "/shopify-responsive.css",
+            "duration": 71,
+            "transferBytes": 3416,
+            "decodedBytes": 13806,
+            "responseEnd": 107
+          },
+          {
+            "path": "/notification-settings.css",
+            "duration": 52,
+            "transferBytes": 3086,
+            "decodedBytes": 13771,
+            "responseEnd": 86
+          },
+          {
+            "path": "/order-audit-insights.css",
+            "duration": 78,
+            "transferBytes": 3136,
+            "decodedBytes": 13110,
+            "responseEnd": 115
+          },
+          {
+            "path": "/scan-station-redesign.css",
+            "duration": 81,
+            "transferBytes": 2648,
+            "decodedBytes": 12903,
+            "responseEnd": 119
+          },
+          {
+            "path": "/approvals-compact.css",
+            "duration": 74,
+            "transferBytes": 3337,
+            "decodedBytes": 12651,
+            "responseEnd": 111
+          },
+          {
+            "path": "/roles-permissions.css",
+            "duration": 57,
+            "transferBytes": 3280,
+            "decodedBytes": 12612,
+            "responseEnd": 91
+          },
+          {
+            "path": "/shopify-order-peek.css",
+            "duration": 65,
+            "transferBytes": 3292,
+            "decodedBytes": 12133,
+            "responseEnd": 100
+          },
+          {
+            "path": "/legacy-stock-labels.js",
+            "duration": 218,
+            "transferBytes": 4647,
+            "decodedBytes": 11993,
+            "responseEnd": 263
+          },
+          {
+            "path": "/order-audit-marketing.css",
+            "duration": 77,
+            "transferBytes": 3319,
+            "decodedBytes": 11771,
+            "responseEnd": 114
+          },
+          {
+            "path": "/order-status.js",
+            "duration": 90,
+            "transferBytes": 4171,
+            "decodedBytes": 11671,
+            "responseEnd": 123
+          },
+          {
+            "path": "/warehouse-workspace.css",
+            "duration": 202,
+            "transferBytes": 3205,
+            "decodedBytes": 11553,
+            "responseEnd": 246
+          },
+          {
+            "path": "/purchase-receiving.js",
+            "duration": 222,
+            "transferBytes": 4484,
+            "decodedBytes": 11512,
+            "responseEnd": 267
+          },
+          {
+            "path": "/navigation-shell.js",
+            "duration": 155,
+            "transferBytes": 4316,
+            "decodedBytes": 11349,
+            "responseEnd": 196
+          },
+          {
+            "path": "/push-navigation.js",
+            "duration": 175,
+            "transferBytes": 3857,
+            "decodedBytes": 10983,
+            "responseEnd": 217
+          },
+          {
+            "path": "/supplier-return-pieces.js",
+            "duration": 190,
+            "transferBytes": 4219,
+            "decodedBytes": 10802,
+            "responseEnd": 233
+          },
+          {
+            "path": "/inventory-packs.css",
+            "duration": 215,
+            "transferBytes": 2960,
+            "decodedBytes": 10269,
+            "responseEnd": 259
+          },
+          {
+            "path": "/cancellations-analytics.js",
+            "duration": 128,
+            "transferBytes": 3694,
+            "decodedBytes": 10066,
+            "responseEnd": 168
+          },
+          {
+            "path": "/deposit-decision.css",
+            "duration": 85,
+            "transferBytes": 2991,
+            "decodedBytes": 10013,
+            "responseEnd": 125
+          },
+          {
+            "path": "/customer-piece-return.js",
+            "duration": 137,
+            "transferBytes": 4039,
+            "decodedBytes": 9996,
+            "responseEnd": 178
+          },
+          {
+            "path": "/window-system.css",
+            "duration": 239,
+            "transferBytes": 2519,
+            "decodedBytes": 9340,
+            "responseEnd": 285
+          },
+          {
+            "path": "/notification-feed.css",
+            "duration": 76,
+            "transferBytes": 2643,
+            "decodedBytes": 9134,
+            "responseEnd": 114
+          },
+          {
+            "path": "/followup-reminders.js",
+            "duration": 176,
+            "transferBytes": 3768,
+            "decodedBytes": 9009,
+            "responseEnd": 218
+          },
+          {
+            "path": "/deposit-history.css",
+            "duration": 50,
+            "transferBytes": 2755,
+            "decodedBytes": 8937,
+            "responseEnd": 84
+          },
+          {
+            "path": "/comment-reactions.js",
+            "duration": 88,
+            "transferBytes": 3267,
+            "decodedBytes": 8884,
+            "responseEnd": 123
+          },
+          {
+            "path": "/admin-team-home.css",
+            "duration": 46,
+            "transferBytes": 2566,
+            "decodedBytes": 8740,
+            "responseEnd": 79
+          },
+          {
+            "path": "/shopify-kpis.css",
+            "duration": 59,
+            "transferBytes": 3129,
+            "decodedBytes": 8605,
+            "responseEnd": 93
+          },
+          {
+            "path": "/designme/date-range-picker/soulia-range.css",
+            "duration": 239,
+            "transferBytes": 2325,
+            "decodedBytes": 8400,
+            "responseEnd": 285
+          },
+          {
+            "path": "/warehouse-layout.css",
+            "duration": 199,
+            "transferBytes": 2567,
+            "decodedBytes": 8044,
+            "responseEnd": 243
+          },
+          {
+            "path": "/shopify-edit-approvals.css",
+            "duration": 51,
+            "transferBytes": 2287,
+            "decodedBytes": 7881,
+            "responseEnd": 85
+          },
+          {
+            "path": "/pickup-kanban-refine.css",
+            "duration": 233,
+            "transferBytes": 1886,
+            "decodedBytes": 7850,
+            "responseEnd": 279
+          },
+          {
+            "path": "/followup-trail.css",
+            "duration": 64,
+            "transferBytes": 2345,
+            "decodedBytes": 7848,
+            "responseEnd": 99
+          },
+          {
+            "path": "/pickup-ready-return.js",
+            "duration": 169,
+            "transferBytes": 3139,
+            "decodedBytes": 7847,
+            "responseEnd": 211
+          },
+          {
+            "path": "/failed-delivery-identities.js",
+            "duration": 137,
+            "transferBytes": 3482,
+            "decodedBytes": 7816,
+            "responseEnd": 178
+          },
+          {
+            "path": "/order-status-preview.css",
+            "duration": 46,
+            "transferBytes": 2281,
+            "decodedBytes": 7582,
+            "responseEnd": 79
+          },
+          {
+            "path": "/dashboard-clarity.css",
+            "duration": 238,
+            "transferBytes": 2075,
+            "decodedBytes": 7225,
+            "responseEnd": 284
+          },
+          {
+            "path": "/deposit-transfer.css",
+            "duration": 51,
+            "transferBytes": 1923,
+            "decodedBytes": 6749,
+            "responseEnd": 85
+          },
+          {
+            "path": "/global-search-scanner.css",
+            "duration": 197,
+            "transferBytes": 2248,
+            "decodedBytes": 6670,
+            "responseEnd": 240
+          },
+          {
+            "path": "/invoice-unit-identities.css",
+            "duration": 93,
+            "transferBytes": 2151,
+            "decodedBytes": 6636,
+            "responseEnd": 133
+          },
+          {
+            "path": "/order-audit-periods.js",
+            "duration": 180,
+            "transferBytes": 2393,
+            "decodedBytes": 6155,
+            "responseEnd": 223
+          },
+          {
+            "path": "/login-space.css",
+            "duration": 64,
+            "transferBytes": 2385,
+            "decodedBytes": 6131,
+            "responseEnd": 98
+          },
+          {
+            "path": "/pickup-daily-shipping.css",
+            "duration": 52,
+            "transferBytes": 1881,
+            "decodedBytes": 5922,
+            "responseEnd": 86
+          },
+          {
+            "path": "/shopify-compact-header.js",
+            "duration": 226,
+            "transferBytes": 2344,
+            "decodedBytes": 5774,
+            "responseEnd": 272
+          },
+          {
+            "path": "/cancellations-analytics.css",
+            "duration": 128,
+            "transferBytes": 1814,
+            "decodedBytes": 5570,
+            "responseEnd": 168
+          },
+          {
+            "path": "/order-status.css",
+            "duration": 45,
+            "transferBytes": 2015,
+            "decodedBytes": 5525,
+            "responseEnd": 77
+          },
+          {
+            "path": "/awb-preview.js",
+            "duration": 167,
+            "transferBytes": 2473,
+            "decodedBytes": 5416,
+            "responseEnd": 208
+          },
+          {
+            "path": "/branding.css",
+            "duration": 58,
+            "transferBytes": 1674,
+            "decodedBytes": 5357,
+            "responseEnd": 93
+          },
+          {
+            "path": "/notification-history.js",
+            "duration": 182,
+            "transferBytes": 2403,
+            "decodedBytes": 5323,
+            "responseEnd": 225
+          },
+          {
+            "path": "/shopify-compact-header.css",
+            "duration": 224,
+            "transferBytes": 1825,
+            "decodedBytes": 5278,
+            "responseEnd": 269
+          },
+          {
+            "path": "/purchase-receiving.css",
+            "duration": 222,
+            "transferBytes": 1659,
+            "decodedBytes": 5257,
+            "responseEnd": 267
+          },
+          {
+            "path": "/shopify-deposit-fab.js",
+            "duration": 153,
+            "transferBytes": 2109,
+            "decodedBytes": 5102,
+            "responseEnd": 194
+          },
+          {
+            "path": "/customer-service-layout.css",
+            "duration": 166,
+            "transferBytes": 1695,
+            "decodedBytes": 4999,
+            "responseEnd": 207
+          },
+          {
+            "path": "/employee-followup-tour.css",
+            "duration": 229,
+            "transferBytes": 1711,
+            "decodedBytes": 4857,
+            "responseEnd": 275
+          },
+          {
+            "path": "/preparation-location-flip.css",
+            "duration": 204,
+            "transferBytes": 1578,
+            "decodedBytes": 4826,
+            "responseEnd": 248
+          },
+          {
+            "path": "/legacy-stock-labels.css",
+            "duration": 190,
+            "transferBytes": 1574,
+            "decodedBytes": 4781,
+            "responseEnd": 233
+          },
+          {
+            "path": "/startup-experience.css",
+            "duration": 77,
+            "transferBytes": 1845,
+            "decodedBytes": 4697,
+            "responseEnd": 115
+          },
+          {
+            "path": "/be-button-motion.js",
+            "duration": 255,
+            "transferBytes": 1592,
+            "decodedBytes": 4581,
+            "responseEnd": 287
+          },
+          {
+            "path": "/metrics-strip.css",
+            "duration": 234,
+            "transferBytes": 1624,
+            "decodedBytes": 4495,
+            "responseEnd": 280
+          },
+          {
+            "path": "/comment-inline-edit.js",
+            "duration": 140,
+            "transferBytes": 1780,
+            "decodedBytes": 4386,
+            "responseEnd": 181
+          },
+          {
+            "path": "/order-audit-financials.js",
+            "duration": 178,
+            "transferBytes": 1909,
+            "decodedBytes": 4250,
+            "responseEnd": 220
+          },
+          {
+            "path": "/otp-audit.css",
+            "duration": 227,
+            "transferBytes": 1446,
+            "decodedBytes": 4244,
+            "responseEnd": 272
+          },
+          {
+            "path": "/transaction-mobile-card.css",
+            "duration": 226,
+            "transferBytes": 1380,
+            "decodedBytes": 4158,
+            "responseEnd": 272
+          },
+          {
+            "path": "/shopify-receipt-peek.css",
+            "duration": 69,
+            "transferBytes": 1500,
+            "decodedBytes": 4008,
+            "responseEnd": 105
+          },
+          {
+            "path": "/data-loading.css",
+            "duration": 79,
+            "transferBytes": 1682,
+            "decodedBytes": 3973,
+            "responseEnd": 117
+          },
+          {
+            "path": "/shopify-deposit-fab.css",
+            "duration": 70,
+            "transferBytes": 1467,
+            "decodedBytes": 3837,
+            "responseEnd": 106
+          },
+          {
+            "path": "/comment-thread.css",
+            "duration": 81,
+            "transferBytes": 1357,
+            "decodedBytes": 3778,
+            "responseEnd": 119
+          },
+          {
+            "path": "/order-audit-financials.css",
+            "duration": 77,
+            "transferBytes": 1443,
+            "decodedBytes": 3636,
+            "responseEnd": 114
+          },
+          {
+            "path": "/product-stocktake.css",
+            "duration": 190,
+            "transferBytes": 1344,
+            "decodedBytes": 3443,
+            "responseEnd": 234
+          },
+          {
+            "path": "/barcode-input.js",
+            "duration": 192,
+            "transferBytes": 1808,
+            "decodedBytes": 3439,
+            "responseEnd": 236
+          },
+          {
+            "path": "/copy-button.js",
+            "duration": 154,
+            "transferBytes": 1653,
+            "decodedBytes": 3418,
+            "responseEnd": 195
+          },
+          {
+            "path": "/animated-number.js",
+            "duration": 139,
+            "transferBytes": 1606,
+            "decodedBytes": 3360,
+            "responseEnd": 179
+          },
+          {
+            "path": "/bosta-pickup.css",
+            "duration": 162,
+            "transferBytes": 1389,
+            "decodedBytes": 3342,
+            "responseEnd": 203
+          },
+          {
+            "path": "/comment-reactions.css",
+            "duration": 64,
+            "transferBytes": 1411,
+            "decodedBytes": 3285,
+            "responseEnd": 99
+          },
+          {
+            "path": "/inventory-responsive.css",
+            "duration": 71,
+            "transferBytes": 1260,
+            "decodedBytes": 3187,
+            "responseEnd": 107
+          },
+          {
+            "path": "/products-mobile.css",
+            "duration": 70,
+            "transferBytes": 1286,
+            "decodedBytes": 3160,
+            "responseEnd": 106
+          },
+          {
+            "path": "/shopify-sync.css",
+            "duration": 183,
+            "transferBytes": 1413,
+            "decodedBytes": 3088,
+            "responseEnd": 226
+          },
+          {
+            "path": "/inventory-scanner.css",
+            "duration": 193,
+            "transferBytes": 1284,
+            "decodedBytes": 2794,
+            "responseEnd": 237
+          },
+          {
+            "path": "/comment-inline-edit.css",
+            "duration": 81,
+            "transferBytes": 1268,
+            "decodedBytes": 2603,
+            "responseEnd": 120
+          },
+          {
+            "path": "/shopify-tabs.css",
+            "duration": 64,
+            "transferBytes": 1104,
+            "decodedBytes": 2580,
+            "responseEnd": 99
+          },
+          {
+            "path": "/customer-piece-return.css",
+            "duration": 136,
+            "transferBytes": 1158,
+            "decodedBytes": 2390,
+            "responseEnd": 176
+          },
+          {
+            "path": "/sales-scanner.css",
+            "duration": 222,
+            "transferBytes": 1167,
+            "decodedBytes": 2285,
+            "responseEnd": 268
+          },
+          {
+            "path": "/followup-reminders.css",
+            "duration": 177,
+            "transferBytes": 1186,
+            "decodedBytes": 2204,
+            "responseEnd": 219
+          },
+          {
+            "path": "/interface-motion.css",
+            "duration": 74,
+            "transferBytes": 981,
+            "decodedBytes": 2121,
+            "responseEnd": 110
+          },
+          {
+            "path": "/awb-preview.css",
+            "duration": 72,
+            "transferBytes": 994,
+            "decodedBytes": 1692,
+            "responseEnd": 109
+          },
+          {
+            "path": "/loading-system.js",
+            "duration": 252,
+            "transferBytes": 1027,
+            "decodedBytes": 1665,
+            "responseEnd": 291
+          },
+          {
+            "path": "/pickup-ready-return.css",
+            "duration": 73,
+            "transferBytes": 965,
+            "decodedBytes": 1610,
+            "responseEnd": 110
+          },
+          {
+            "path": "/supplier-return-pieces.css",
+            "duration": 188,
+            "transferBytes": 890,
+            "decodedBytes": 1578,
+            "responseEnd": 231
+          },
+          {
+            "path": "/text-shimmer.css",
+            "duration": 83,
+            "transferBytes": 890,
+            "decodedBytes": 1498,
+            "responseEnd": 122
+          },
+          {
+            "path": "/copy-button.css",
+            "duration": 82,
+            "transferBytes": 892,
+            "decodedBytes": 1481,
+            "responseEnd": 121
+          },
+          {
+            "path": "/r2-meter.css",
+            "duration": 59,
+            "transferBytes": 862,
+            "decodedBytes": 1123,
+            "responseEnd": 93
+          },
+          {
+            "path": "/version.json",
+            "duration": 150,
+            "transferBytes": 355,
+            "decodedBytes": 55,
+            "responseEnd": 861
+          },
+          {
+            "path": "/config.js",
+            "duration": 88,
+            "transferBytes": 338,
+            "decodedBytes": 38,
+            "responseEnd": 120
+          }
+        ],
+        "scriptMs": 143.3,
+        "taskMs": 2128,
+        "layoutMs": 253.7,
+        "styleMs": 227.2,
+        "dataReadyMs": 1697.1,
+        "domCounters": {
+          "documents": 6,
+          "nodes": 49313,
+          "jsEventListeners": 2383
+        }
+      },
+      "startupCount": 34,
+      "startupApiBytes": 1542091,
+      "startupRealCount": 26,
+      "startupRealBytes": 1542075,
+      "api": [
+        {
+          "path": "/api/branding",
+          "at": 251516.878026,
+          "initiator": "script",
+          "stack": [
+            "refresh:77",
+            ":201",
+            ":202"
+          ],
+          "status": 200,
+          "headerMs": 46.1,
+          "browserWaitMs": 5.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 42.3,
+          "transferBytes": 351,
+          "bytes": 65
+        },
+        {
+          "path": "/api/auth/me",
+          "at": 251517.1469,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "checkAuth:10505"
+          ],
+          "status": 200,
+          "headerMs": 15.6,
+          "browserWaitMs": 6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 8.3,
+          "transferBytes": 796,
+          "bytes": 533
+        },
+        {
+          "path": "/api/warehouses",
+          "at": 251517.161415,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "load:19"
+          ],
+          "status": 200,
+          "headerMs": 12.4,
+          "browserWaitMs": 5.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 7.8,
+          "transferBytes": 380,
+          "bytes": 118
+        },
+        {
+          "path": "/api/drafts",
+          "at": 251517.178593,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_fetchDraftsFromServer:24299"
+          ],
+          "status": 200,
+          "headerMs": 95.9,
+          "browserWaitMs": 8.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 12.6,
+          "transferBytes": 6788,
+          "bytes": 6523
+        },
+        {
+          "path": "/api/transactions/dashboard-overview",
+          "at": 251517.217555,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadTransactionOverview:15769"
+          ],
+          "status": 200,
+          "headerMs": 161.7,
+          "browserWaitMs": 63.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 84.6,
+          "transferBytes": 696084,
+          "bytes": 695816
+        },
+        {
+          "path": "/api/settings",
+          "at": 251517.217804,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15894"
+          ],
+          "status": 200,
+          "headerMs": 59.1,
+          "browserWaitMs": 10.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 13.1,
+          "transferBytes": 6374,
+          "bytes": 6109
+        },
+        {
+          "path": "/api/products",
+          "at": 251517.392833,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "options.transactionMode.loadTransactionOverview.dashboard:15890"
+          ],
+          "status": 200,
+          "headerMs": 241,
+          "browserWaitMs": 53.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 239.7,
+          "transferBytes": 153647,
+          "bytes": 153379
+        },
+        {
+          "path": "/api/expenses",
+          "at": 251517.393065,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15893"
+          ],
+          "status": 200,
+          "headerMs": 226.7,
+          "browserWaitMs": 20.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 208.8,
+          "transferBytes": 16980,
+          "bytes": 16714
+        },
+        {
+          "path": "/api/users",
+          "at": 251517.393328,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "getUserList:15888"
+          ],
+          "status": 200,
+          "headerMs": 226.8,
+          "browserWaitMs": 26.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 214.4,
+          "transferBytes": 11252,
+          "bytes": 10986
+        },
+        {
+          "path": "/api/tags",
+          "at": 251517.394025,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15898"
+          ],
+          "status": 200,
+          "headerMs": 285.1,
+          "browserWaitMs": 51.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 240.2,
+          "transferBytes": 3133,
+          "bytes": 2869
+        },
+        {
+          "path": "/api/returns",
+          "at": 251517.394251,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15899"
+          ],
+          "status": 200,
+          "headerMs": 285.4,
+          "browserWaitMs": 55.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 244.2,
+          "transferBytes": 61146,
+          "bytes": 60880
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251517.394445,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15900"
+          ],
+          "status": 200,
+          "headerMs": 285.4,
+          "browserWaitMs": 60.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 249.7,
+          "transferBytes": 21275,
+          "bytes": 21009
+        },
+        {
+          "path": "/api/purchase-orders",
+          "at": 251517.394607,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15901"
+          ],
+          "status": 200,
+          "headerMs": 285.5,
+          "browserWaitMs": 49,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 258.8,
+          "transferBytes": 37122,
+          "bytes": 36856
+        },
+        {
+          "path": "/api/supplier-returns",
+          "at": 251517.394858,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15902"
+          ],
+          "status": 200,
+          "headerMs": 285.6,
+          "browserWaitMs": 49,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 263.6,
+          "transferBytes": 15293,
+          "bytes": 15027
+        },
+        {
+          "path": "/api/transactions/inventory",
+          "at": 251517.395044,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15903"
+          ],
+          "status": 200,
+          "headerMs": 470.8,
+          "browserWaitMs": 109.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 348.6,
+          "transferBytes": 47313,
+          "bytes": 47047
+        },
+        {
+          "path": "/api/notifications/read-state",
+          "at": 251517.414722,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "window.souliaSyncNotificationAccount:65"
+          ],
+          "status": 200,
+          "headerMs": 297.4,
+          "browserWaitMs": 64.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 285.3,
+          "transferBytes": 52382,
+          "bytes": 52116
+        },
+        {
+          "path": "/api/notifications/history",
+          "at": 251517.472315,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "window.souliaRefreshNotificationHistory:23"
+          ],
+          "status": 200,
+          "headerMs": 239.5,
+          "browserWaitMs": 57.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 224.7,
+          "transferBytes": 33109,
+          "bytes": 32843
+        },
+        {
+          "path": "/api/mentions",
+          "at": 251517.472526,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "refreshMentionsFromServer:13783"
+          ],
+          "status": 200,
+          "headerMs": 244.2,
+          "browserWaitMs": 65.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 239.6,
+          "transferBytes": 96724,
+          "bytes": 96457
+        },
+        {
+          "path": "/api/shipping/sync/6ae8770e42a4ab2ecae2ba2f",
+          "at": 251517.505041,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 113.6,
+          "browserWaitMs": 75.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 74.9,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/auth/users-status",
+          "at": 251517.509582,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "syncUsersStatus:12217"
+          ],
+          "status": 200,
+          "headerMs": 201.3,
+          "browserWaitMs": 34.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 181.7,
+          "transferBytes": 1663,
+          "bytes": 1399
+        },
+        {
+          "path": "/api/transactions/sales-overview?year=2026&month=11",
+          "at": 251517.537557,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "fetchMonth:406"
+          ],
+          "status": 200,
+          "headerMs": 320.9,
+          "browserWaitMs": 64,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 187,
+          "transferBytes": 2409,
+          "bytes": 2145
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251517.538132,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 320,
+          "browserWaitMs": 30.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 185.7,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/followups/dashboard-summary",
+          "at": 251517.538568,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readDashboardFollowUps:17942"
+          ],
+          "status": 200,
+          "headerMs": 327,
+          "browserWaitMs": 37.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 198.4,
+          "transferBytes": 239489,
+          "bytes": 239221
+        },
+        {
+          "path": "/api/shipping/sync/6aee15c3d8d80699c373b4ae",
+          "at": 251517.624861,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 3,
+          "browserWaitMs": 2.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2.7,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef25a9d8d80699c37b0866",
+          "at": 251517.628382,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 3.7,
+          "browserWaitMs": 1.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 0.9,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef25dfd8d80699c37b0ccb",
+          "at": 251517.632869,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 46.6,
+          "browserWaitMs": 2.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2.8,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef2dd7d8d80699c37b5d8f",
+          "at": 251517.704975,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 7.7,
+          "browserWaitMs": 2.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 3.5,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef2e13d8d80699c37b6242",
+          "at": 251517.757586,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 108.8,
+          "browserWaitMs": 2.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 1.7,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef98ccd8d80699c37f3888",
+          "at": 251518.511723,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 42.8,
+          "browserWaitMs": 3.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 3.5,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/security-audit/locked-users",
+          "at": 251518.519848,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadSecurityPanel:59597"
+          ],
+          "status": 200,
+          "headerMs": 35.7,
+          "browserWaitMs": 10.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 30.1,
+          "transferBytes": 2000,
+          "bytes": 1736
+        },
+        {
+          "path": "/api/security-audit/logs",
+          "at": 251518.520033,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadSecurityPanel:59598"
+          ],
+          "status": 200,
+          "headerMs": 35.3,
+          "browserWaitMs": 8.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 29,
+          "transferBytes": 41394,
+          "bytes": 41128
+        },
+        {
+          "path": "/api/shipping/sync/6aef98ccd8d80699c37f388c",
+          "at": 251518.557513,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 7.7,
+          "browserWaitMs": 1.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 1.2,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/announcements/mine",
+          "at": 251518.653955,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadMine:75"
+          ],
+          "status": 200,
+          "headerMs": 9.5,
+          "browserWaitMs": 7.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 8.8,
+          "transferBytes": 261,
+          "bytes": 2
+        },
+        {
+          "path": "/api/notifications",
+          "at": 251519.159946,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "sync:251"
+          ],
+          "status": 200,
+          "headerMs": 12.2,
+          "browserWaitMs": 6.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 9.1,
+          "transferBytes": 957,
+          "bytes": 694
+        },
+        {
+          "path": "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T12%3A14%3A00.000Z&scope=",
+          "at": 251519.982662,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9669",
+            "_spLoadServerPage:1229"
+          ],
+          "status": 200,
+          "headerMs": 265.1,
+          "browserWaitMs": 250.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 264.4,
+          "transferBytes": 109095,
+          "bytes": 108771
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251520.729124,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 60.2,
+          "browserWaitMs": 13.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 45.5,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/transactions/movements-page",
+          "at": 251520.913404,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "renderMovementsServer:28247",
+            "renderMovements:27700"
+          ],
+          "status": 201,
+          "headerMs": 228.7,
+          "browserWaitMs": 202.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 228,
+          "transferBytes": 119928,
+          "bytes": 119603
+        },
+        {
+          "path": "/api/followups",
+          "at": 251521.648762,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readFollowUps:17928"
+          ],
+          "status": 200,
+          "headerMs": 122,
+          "browserWaitMs": 53.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 98.6,
+          "transferBytes": 1150146,
+          "bytes": 1149876
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251521.668163,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadComplaints:67337"
+          ],
+          "status": 200,
+          "headerMs": 53.5,
+          "browserWaitMs": 15.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 37.2,
+          "transferBytes": 206,
+          "bytes": 21009
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251522.149869,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 56.9,
+          "browserWaitMs": 7.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 37,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T12%3A14%3A00.000Z&scope=",
+          "at": 251522.407683,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9669",
+            "_spLoadServerPage:1229"
+          ],
+          "status": 200,
+          "headerMs": 175.3,
+          "browserWaitMs": 143.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 171.1,
+          "transferBytes": 263,
+          "bytes": 108771
+        },
+        {
+          "path": "/api/transactions/movements-page",
+          "at": 251523.088183,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "renderMovementsServer:28247",
+            "renderMovements:27700"
+          ],
+          "status": 201,
+          "headerMs": 228.2,
+          "browserWaitMs": 198.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 227.5,
+          "transferBytes": 119928,
+          "bytes": 119603
+        },
+        {
+          "path": "/api/followups",
+          "at": 251523.351226,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readFollowUps:17928"
+          ],
+          "status": 200,
+          "headerMs": 141.6,
+          "browserWaitMs": 45.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 120.1,
+          "transferBytes": 1150146,
+          "bytes": 1149876
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251523.371615,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadComplaints:67337"
+          ],
+          "status": 200,
+          "headerMs": 82.8,
+          "browserWaitMs": 13.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 66.5,
+          "transferBytes": 206,
+          "bytes": 21009
+        }
+      ],
+      "routes": {
+        "orders": {
+          "ms": 736.9,
+          "nodes": 16102,
+          "heap": 18153509,
+          "started": 3137.199999988079
+        },
+        "dashboardReturn1": {
+          "ms": 234.6,
+          "nodes": 16102,
+          "heap": 15098712,
+          "started": 3877.5
+        },
+        "movements": {
+          "ms": 431.8,
+          "nodes": 20366,
+          "heap": 18107797,
+          "started": 4113.4000000059605
+        },
+        "dashboardReturn2": {
+          "ms": 265.4,
+          "nodes": 20368,
+          "heap": 19560073,
+          "started": 4570.699999988079
+        },
+        "followups": {
+          "ms": 398.4,
+          "nodes": 25798,
+          "heap": 22391016,
+          "started": 4849.199999988079
+        },
+        "dashboardReturn3": {
+          "ms": 292.3,
+          "nodes": 25798,
+          "heap": 18092720,
+          "started": 5261.5999999940395
+        },
+        "ordersReturn": {
+          "ms": 643.6,
+          "nodes": 25798,
+          "heap": 21647375,
+          "started": 5555.299999982119
+        },
+        "movementsReturn": {
+          "ms": 313.3,
+          "nodes": 25798,
+          "heap": 23137696,
+          "started": 6230.699999988079
+        },
+        "followupsReturn": {
+          "ms": 334.1,
+          "nodes": 25798,
+          "heap": 22084750,
+          "started": 6551.9000000059605
+        }
+      },
+      "errors": []
+    },
+    {
+      "pair": 1,
+      "mode": "warm",
+      "startup": {
+        "dcl": 283.2000000178814,
+        "fcp": 192,
+        "lcp": 888,
+        "interactive": 862.2000000178814,
+        "domNodes": 11345,
+        "heap": 19760115,
+        "longTasks": [
+          {
+            "start": 449.60000002384186,
+            "duration": 102
+          },
+          {
+            "start": 701.3000000119209,
+            "duration": 90
+          },
+          {
+            "start": 872.7000000178814,
+            "duration": 87
+          }
+        ],
+        "tbt": 92,
+        "followups": 538,
+        "transactions": 1007,
+        "resources": [
+          {
+            "path": "/app-core.css",
+            "duration": 32,
+            "transferBytes": 300,
+            "decodedBytes": 1404087,
+            "responseEnd": 61
+          },
+          {
+            "path": "/inventory-units.css",
+            "duration": 131,
+            "transferBytes": 300,
+            "decodedBytes": 82194,
+            "responseEnd": 168
+          },
+          {
+            "path": "/pickup-workspace.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 77933,
+            "responseEnd": 74
+          },
+          {
+            "path": "/employee-home.css",
+            "duration": 37,
+            "transferBytes": 300,
+            "decodedBytes": 53962,
+            "responseEnd": 66
+          },
+          {
+            "path": "/vendor/socket.io-4.7.5.min.js",
+            "duration": 146,
+            "transferBytes": 300,
+            "decodedBytes": 49993,
+            "responseEnd": 665
+          },
+          {
+            "path": "/shopify-workspace.css",
+            "duration": 162,
+            "transferBytes": 300,
+            "decodedBytes": 29032,
+            "responseEnd": 202
+          },
+          {
+            "path": "/after-sales.css",
+            "duration": 103,
+            "transferBytes": 300,
+            "decodedBytes": 26418,
+            "responseEnd": 138
+          },
+          {
+            "path": "/reports-refined.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 26408,
+            "responseEnd": 78
+          },
+          {
+            "path": "/settings-responsive.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 25700,
+            "responseEnd": 71
+          },
+          {
+            "path": "/design-system.css",
+            "duration": 161,
+            "transferBytes": 300,
+            "decodedBytes": 23375,
+            "responseEnd": 201
+          },
+          {
+            "path": "/supplier-labels.css",
+            "duration": 147,
+            "transferBytes": 300,
+            "decodedBytes": 22161,
+            "responseEnd": 186
+          },
+          {
+            "path": "/picking-scan.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 20787,
+            "responseEnd": 76
+          },
+          {
+            "path": "/complaint-flow.css",
+            "duration": 106,
+            "transferBytes": 300,
+            "decodedBytes": 20683,
+            "responseEnd": 140
+          },
+          {
+            "path": "/deposit-entry-compact.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 18841,
+            "responseEnd": 74
+          },
+          {
+            "path": "/navigation-shell.css",
+            "duration": 37,
+            "transferBytes": 300,
+            "decodedBytes": 17765,
+            "responseEnd": 66
+          },
+          {
+            "path": "/shopify-cards.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 16190,
+            "responseEnd": 73
+          },
+          {
+            "path": "/preprinted-labels.css",
+            "duration": 146,
+            "transferBytes": 300,
+            "decodedBytes": 15738,
+            "responseEnd": 185
+          },
+          {
+            "path": "/order-audit-layout.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 15534,
+            "responseEnd": 78
+          },
+          {
+            "path": "/employee-followup-session.css",
+            "duration": 158,
+            "transferBytes": 300,
+            "decodedBytes": 15483,
+            "responseEnd": 198
+          },
+          {
+            "path": "/warehouses.css",
+            "duration": 139,
+            "transferBytes": 300,
+            "decodedBytes": 15386,
+            "responseEnd": 177
+          },
+          {
+            "path": "/announcements.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 14268,
+            "responseEnd": 71
+          },
+          {
+            "path": "/sales-overview.css",
+            "duration": 39,
+            "transferBytes": 300,
+            "decodedBytes": 13922,
+            "responseEnd": 68
+          },
+          {
+            "path": "/shopify-responsive.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 13806,
+            "responseEnd": 74
+          },
+          {
+            "path": "/notification-settings.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 13771,
+            "responseEnd": 70
+          },
+          {
+            "path": "/order-audit-insights.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 13110,
+            "responseEnd": 77
+          },
+          {
+            "path": "/scan-station-redesign.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 12903,
+            "responseEnd": 78
+          },
+          {
+            "path": "/approvals-compact.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 12651,
+            "responseEnd": 76
+          },
+          {
+            "path": "/roles-permissions.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 12612,
+            "responseEnd": 71
+          },
+          {
+            "path": "/shopify-order-peek.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 12133,
+            "responseEnd": 73
+          },
+          {
+            "path": "/order-audit-marketing.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 11771,
+            "responseEnd": 77
+          },
+          {
+            "path": "/warehouse-workspace.css",
+            "duration": 144,
+            "transferBytes": 300,
+            "decodedBytes": 11553,
+            "responseEnd": 182
+          },
+          {
+            "path": "/inventory-packs.css",
+            "duration": 150,
+            "transferBytes": 300,
+            "decodedBytes": 10269,
+            "responseEnd": 189
+          },
+          {
+            "path": "/deposit-decision.css",
+            "duration": 59,
+            "transferBytes": 300,
+            "decodedBytes": 10013,
+            "responseEnd": 93
+          },
+          {
+            "path": "/window-system.css",
+            "duration": 162,
+            "transferBytes": 300,
+            "decodedBytes": 9340,
+            "responseEnd": 203
+          },
+          {
+            "path": "/notification-feed.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 9134,
+            "responseEnd": 76
+          },
+          {
+            "path": "/deposit-history.css",
+            "duration": 40,
+            "transferBytes": 300,
+            "decodedBytes": 8937,
+            "responseEnd": 69
+          },
+          {
+            "path": "/admin-team-home.css",
+            "duration": 37,
+            "transferBytes": 300,
+            "decodedBytes": 8740,
+            "responseEnd": 66
+          },
+          {
+            "path": "/shopify-kpis.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 8605,
+            "responseEnd": 71
+          },
+          {
+            "path": "/designme/date-range-picker/soulia-range.css",
+            "duration": 164,
+            "transferBytes": 300,
+            "decodedBytes": 8400,
+            "responseEnd": 205
+          },
+          {
+            "path": "/warehouse-layout.css",
+            "duration": 144,
+            "transferBytes": 300,
+            "decodedBytes": 8044,
+            "responseEnd": 182
+          },
+          {
+            "path": "/shopify-edit-approvals.css",
+            "duration": 40,
+            "transferBytes": 300,
+            "decodedBytes": 7881,
+            "responseEnd": 70
+          },
+          {
+            "path": "/pickup-kanban-refine.css",
+            "duration": 161,
+            "transferBytes": 300,
+            "decodedBytes": 7850,
+            "responseEnd": 201
+          },
+          {
+            "path": "/followup-trail.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 7848,
+            "responseEnd": 73
+          },
+          {
+            "path": "/order-status-preview.css",
+            "duration": 29,
+            "transferBytes": 300,
+            "decodedBytes": 7582,
+            "responseEnd": 58
+          },
+          {
+            "path": "/dashboard-clarity.css",
+            "duration": 162,
+            "transferBytes": 300,
+            "decodedBytes": 7225,
+            "responseEnd": 202
+          },
+          {
+            "path": "/deposit-transfer.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 6749,
+            "responseEnd": 70
+          },
+          {
+            "path": "/global-search-scanner.css",
+            "duration": 138,
+            "transferBytes": 300,
+            "decodedBytes": 6670,
+            "responseEnd": 176
+          },
+          {
+            "path": "/invoice-unit-identities.css",
+            "duration": 81,
+            "transferBytes": 300,
+            "decodedBytes": 6636,
+            "responseEnd": 115
+          },
+          {
+            "path": "/login-space.css",
+            "duration": 42,
+            "transferBytes": 300,
+            "decodedBytes": 6131,
+            "responseEnd": 72
+          },
+          {
+            "path": "/pickup-daily-shipping.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 5922,
+            "responseEnd": 70
+          },
+          {
+            "path": "/cancellations-analytics.css",
+            "duration": 101,
+            "transferBytes": 300,
+            "decodedBytes": 5570,
+            "responseEnd": 136
+          },
+          {
+            "path": "/order-status.css",
+            "duration": 30,
+            "transferBytes": 300,
+            "decodedBytes": 5525,
+            "responseEnd": 59
+          },
+          {
+            "path": "/branding.css",
+            "duration": 42,
+            "transferBytes": 300,
+            "decodedBytes": 5357,
+            "responseEnd": 72
+          },
+          {
+            "path": "/shopify-compact-header.css",
+            "duration": 154,
+            "transferBytes": 300,
+            "decodedBytes": 5278,
+            "responseEnd": 194
+          },
+          {
+            "path": "/purchase-receiving.css",
+            "duration": 152,
+            "transferBytes": 300,
+            "decodedBytes": 5257,
+            "responseEnd": 191
+          },
+          {
+            "path": "/customer-service-layout.css",
+            "duration": 118,
+            "transferBytes": 300,
+            "decodedBytes": 4999,
+            "responseEnd": 154
+          },
+          {
+            "path": "/employee-followup-tour.css",
+            "duration": 159,
+            "transferBytes": 300,
+            "decodedBytes": 4857,
+            "responseEnd": 199
+          },
+          {
+            "path": "/preparation-location-flip.css",
+            "duration": 145,
+            "transferBytes": 300,
+            "decodedBytes": 4826,
+            "responseEnd": 184
+          },
+          {
+            "path": "/legacy-stock-labels.css",
+            "duration": 134,
+            "transferBytes": 300,
+            "decodedBytes": 4781,
+            "responseEnd": 172
+          },
+          {
+            "path": "/startup-experience.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 4697,
+            "responseEnd": 78
+          },
+          {
+            "path": "/metrics-strip.css",
+            "duration": 162,
+            "transferBytes": 300,
+            "decodedBytes": 4495,
+            "responseEnd": 202
+          },
+          {
+            "path": "/otp-audit.css",
+            "duration": 157,
+            "transferBytes": 300,
+            "decodedBytes": 4244,
+            "responseEnd": 196
+          },
+          {
+            "path": "/transaction-mobile-card.css",
+            "duration": 158,
+            "transferBytes": 300,
+            "decodedBytes": 4158,
+            "responseEnd": 197
+          },
+          {
+            "path": "/shopify-receipt-peek.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 4008,
+            "responseEnd": 74
+          },
+          {
+            "path": "/data-loading.css",
+            "duration": 45,
+            "transferBytes": 300,
+            "decodedBytes": 3973,
+            "responseEnd": 78
+          },
+          {
+            "path": "/shopify-deposit-fab.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 3837,
+            "responseEnd": 74
+          },
+          {
+            "path": "/comment-thread.css",
+            "duration": 46,
+            "transferBytes": 300,
+            "decodedBytes": 3778,
+            "responseEnd": 79
+          },
+          {
+            "path": "/order-audit-financials.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 3636,
+            "responseEnd": 77
+          },
+          {
+            "path": "/product-stocktake.css",
+            "duration": 134,
+            "transferBytes": 300,
+            "decodedBytes": 3443,
+            "responseEnd": 172
+          },
+          {
+            "path": "/bosta-pickup.css",
+            "duration": 118,
+            "transferBytes": 300,
+            "decodedBytes": 3342,
+            "responseEnd": 154
+          },
+          {
+            "path": "/comment-reactions.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 3285,
+            "responseEnd": 73
+          },
+          {
+            "path": "/inventory-responsive.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 3187,
+            "responseEnd": 74
+          },
+          {
+            "path": "/products-mobile.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 3160,
+            "responseEnd": 74
+          },
+          {
+            "path": "/shopify-sync.css",
+            "duration": 130,
+            "transferBytes": 300,
+            "decodedBytes": 3088,
+            "responseEnd": 167
+          },
+          {
+            "path": "/inventory-scanner.css",
+            "duration": 137,
+            "transferBytes": 300,
+            "decodedBytes": 2794,
+            "responseEnd": 175
+          },
+          {
+            "path": "/comment-inline-edit.css",
+            "duration": 46,
+            "transferBytes": 300,
+            "decodedBytes": 2603,
+            "responseEnd": 79
+          },
+          {
+            "path": "/shopify-tabs.css",
+            "duration": 42,
+            "transferBytes": 300,
+            "decodedBytes": 2580,
+            "responseEnd": 72
+          },
+          {
+            "path": "/customer-piece-return.css",
+            "duration": 109,
+            "transferBytes": 300,
+            "decodedBytes": 2390,
+            "responseEnd": 144
+          },
+          {
+            "path": "/sales-scanner.css",
+            "duration": 154,
+            "transferBytes": 300,
+            "decodedBytes": 2285,
+            "responseEnd": 194
+          },
+          {
+            "path": "/followup-reminders.css",
+            "duration": 125,
+            "transferBytes": 300,
+            "decodedBytes": 2204,
+            "responseEnd": 162
+          },
+          {
+            "path": "/interface-motion.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 2121,
+            "responseEnd": 76
+          },
+          {
+            "path": "/awb-preview.css",
+            "duration": 43,
+            "transferBytes": 300,
+            "decodedBytes": 1692,
+            "responseEnd": 75
+          },
+          {
+            "path": "/pickup-ready-return.css",
+            "duration": 44,
+            "transferBytes": 300,
+            "decodedBytes": 1610,
+            "responseEnd": 76
+          },
+          {
+            "path": "/supplier-return-pieces.css",
+            "duration": 133,
+            "transferBytes": 300,
+            "decodedBytes": 1578,
+            "responseEnd": 170
+          },
+          {
+            "path": "/text-shimmer.css",
+            "duration": 46,
+            "transferBytes": 300,
+            "decodedBytes": 1498,
+            "responseEnd": 79
+          },
+          {
+            "path": "/copy-button.css",
+            "duration": 46,
+            "transferBytes": 300,
+            "decodedBytes": 1481,
+            "responseEnd": 79
+          },
+          {
+            "path": "/r2-meter.css",
+            "duration": 41,
+            "transferBytes": 300,
+            "decodedBytes": 1123,
+            "responseEnd": 72
+          },
+          {
+            "path": "/version.json",
+            "duration": 94,
+            "transferBytes": 355,
+            "decodedBytes": 55,
+            "responseEnd": 613
+          },
+          {
+            "path": "/branding.js",
+            "duration": 25,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 53
+          },
+          {
+            "path": "/config.js",
+            "duration": 27,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 55
+          },
+          {
+            "path": "/be-button-motion.js",
+            "duration": 177,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 206
+          },
+          {
+            "path": "/order-status.js",
+            "duration": 33,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 62
+          },
+          {
+            "path": "/order-status-preview.js",
+            "duration": 177,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 206
+          },
+          {
+            "path": "/comment-reactions.js",
+            "duration": 42,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 73
+          },
+          {
+            "path": "/loading-system.js",
+            "duration": 173,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 206
+          },
+          {
+            "path": "/deposit-decision.js",
+            "duration": 81,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 115
+          },
+          {
+            "path": "/invoice-unit-identities.js",
+            "duration": 99,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 133
+          },
+          {
+            "path": "/cancellations-analytics.js",
+            "duration": 103,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 138
+          },
+          {
+            "path": "/after-sales.js",
+            "duration": 104,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 138
+          },
+          {
+            "path": "/complaint-flow.js",
+            "duration": 106,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 141
+          },
+          {
+            "path": "/customer-piece-return.js",
+            "duration": 109,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 144
+          },
+          {
+            "path": "/failed-delivery-identities.js",
+            "duration": 110,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 145
+          },
+          {
+            "path": "/animated-number.js",
+            "duration": 111,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 146
+          },
+          {
+            "path": "/comment-inline-edit.js",
+            "duration": 111,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 146
+          },
+          {
+            "path": "/copy-button.js",
+            "duration": 112,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 147
+          },
+          {
+            "path": "/shopify-deposit-fab.js",
+            "duration": 113,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 148
+          },
+          {
+            "path": "/app-core.js",
+            "duration": 114,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 149
+          },
+          {
+            "path": "/navigation-shell.js",
+            "duration": 114,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 150
+          },
+          {
+            "path": "/admin-team-home.js",
+            "duration": 114,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 150
+          },
+          {
+            "path": "/sales-overview.js",
+            "duration": 115,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 150
+          },
+          {
+            "path": "/bosta-pickup.js",
+            "duration": 118,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 154
+          },
+          {
+            "path": "/pickup-daily-shipping.js",
+            "duration": 120,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 156
+          },
+          {
+            "path": "/awb-preview.js",
+            "duration": 120,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 156
+          },
+          {
+            "path": "/pickup-ready-return.js",
+            "duration": 120,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 156
+          },
+          {
+            "path": "/notification-settings.js",
+            "duration": 122,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 158
+          },
+          {
+            "path": "/roles-permissions.js",
+            "duration": 122,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 158
+          },
+          {
+            "path": "/announcements.js",
+            "duration": 122,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 158
+          },
+          {
+            "path": "/push-navigation.js",
+            "duration": 125,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 161
+          },
+          {
+            "path": "/notification-feed.js",
+            "duration": 125,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 162
+          },
+          {
+            "path": "/followup-reminders.js",
+            "duration": 126,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 162
+          },
+          {
+            "path": "/order-audit-financials.js",
+            "duration": 126,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 163
+          },
+          {
+            "path": "/order-audit-insights.js",
+            "duration": 127,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 164
+          },
+          {
+            "path": "/order-audit-marketing.js",
+            "duration": 129,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 166
+          },
+          {
+            "path": "/order-audit-periods.js",
+            "duration": 130,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 167
+          },
+          {
+            "path": "/notification-history.js",
+            "duration": 130,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 167
+          },
+          {
+            "path": "/shopify-sync.js",
+            "duration": 130,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 167
+          },
+          {
+            "path": "/supplier-return-pieces.js",
+            "duration": 134,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 171
+          },
+          {
+            "path": "/barcode-input.js",
+            "duration": 134,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 172
+          },
+          {
+            "path": "/inventory-errors.js",
+            "duration": 135,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 172
+          },
+          {
+            "path": "/inventory-scanner.js",
+            "duration": 137,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 175
+          },
+          {
+            "path": "/global-search-scanner.js",
+            "duration": 138,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 176
+          },
+          {
+            "path": "/warehouses.js",
+            "duration": 139,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 177
+          },
+          {
+            "path": "/warehouse-layout.js",
+            "duration": 146,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 184
+          },
+          {
+            "path": "/inventory-units.js",
+            "duration": 146,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 184
+          },
+          {
+            "path": "/preprinted-labels.js",
+            "duration": 147,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 185
+          },
+          {
+            "path": "/supplier-labels.js",
+            "duration": 149,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 188
+          },
+          {
+            "path": "/inventory-packs.js",
+            "duration": 150,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 188
+          },
+          {
+            "path": "/legacy-stock-labels.js",
+            "duration": 150,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 189
+          },
+          {
+            "path": "/product-stocktake.js",
+            "duration": 150,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 189
+          },
+          {
+            "path": "/purchase-receiving.js",
+            "duration": 153,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 193
+          },
+          {
+            "path": "/sales-scanner.js",
+            "duration": 154,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 193
+          },
+          {
+            "path": "/shopify-compact-header.js",
+            "duration": 154,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 194
+          },
+          {
+            "path": "/employee-followup-session.js",
+            "duration": 158,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 198
+          },
+          {
+            "path": "/employee-followup-tour.js",
+            "duration": 159,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 199
+          },
+          {
+            "path": "/designme/date-range-picker/soulia-range.js",
+            "duration": 164,
+            "transferBytes": 300,
+            "decodedBytes": 0,
+            "responseEnd": 205
+          }
+        ],
+        "scriptMs": 69.1,
+        "taskMs": 1089.2,
+        "layoutMs": 36.6,
+        "styleMs": 186.8,
+        "dataReadyMs": 866.7,
+        "domCounters": {
+          "documents": 12,
+          "nodes": 89516,
+          "jsEventListeners": 1824
+        }
+      },
+      "startupCount": 32,
+      "startupApiBytes": 1541395,
+      "startupRealCount": 24,
+      "startupRealBytes": 1541379,
+      "api": [
+        {
+          "path": "/api/branding",
+          "at": 251523.806496,
+          "initiator": "script",
+          "stack": [
+            "refresh:77",
+            ":201",
+            ":202"
+          ],
+          "status": 200,
+          "headerMs": 39.7,
+          "browserWaitMs": 4.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 26.1,
+          "transferBytes": 351,
+          "bytes": 65
+        },
+        {
+          "path": "/api/auth/me",
+          "at": 251523.955119,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "checkAuth:10505"
+          ],
+          "status": 200,
+          "headerMs": 43.2,
+          "browserWaitMs": 6.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 25.5,
+          "transferBytes": 205,
+          "bytes": 533
+        },
+        {
+          "path": "/api/warehouses",
+          "at": 251523.987397,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "load:19"
+          ],
+          "status": 200,
+          "headerMs": 26,
+          "browserWaitMs": 5.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 12.8,
+          "transferBytes": 204,
+          "bytes": 118
+        },
+        {
+          "path": "/api/drafts",
+          "at": 251524.015932,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_fetchDraftsFromServer:24299"
+          ],
+          "status": 200,
+          "headerMs": 62.9,
+          "browserWaitMs": 6.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 8.8,
+          "transferBytes": 206,
+          "bytes": 6523
+        },
+        {
+          "path": "/api/notifications/read-state",
+          "at": 251524.044487,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "window.souliaSyncNotificationAccount:65"
+          ],
+          "status": 200,
+          "headerMs": 77.4,
+          "browserWaitMs": 22,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 76.6,
+          "transferBytes": 206,
+          "bytes": 52116
+        },
+        {
+          "path": "/api/transactions/dashboard-overview",
+          "at": 251524.074723,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadTransactionOverview:15769"
+          ],
+          "status": 200,
+          "headerMs": 90.9,
+          "browserWaitMs": 63.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 89.3,
+          "transferBytes": 207,
+          "bytes": 695816
+        },
+        {
+          "path": "/api/settings",
+          "at": 251524.074964,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15894"
+          ],
+          "status": 200,
+          "headerMs": 40,
+          "browserWaitMs": 8.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 37.2,
+          "transferBytes": 206,
+          "bytes": 6109
+        },
+        {
+          "path": "/api/products",
+          "at": 251524.186308,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "options.transactionMode.loadTransactionOverview.dashboard:15890"
+          ],
+          "status": 200,
+          "headerMs": 156.3,
+          "browserWaitMs": 37.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 142.4,
+          "transferBytes": 207,
+          "bytes": 153379
+        },
+        {
+          "path": "/api/expenses",
+          "at": 251524.186536,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15893"
+          ],
+          "status": 200,
+          "headerMs": 142.8,
+          "browserWaitMs": 17.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 122.9,
+          "transferBytes": 206,
+          "bytes": 16714
+        },
+        {
+          "path": "/api/users",
+          "at": 251524.186721,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "getUserList:15888"
+          ],
+          "status": 200,
+          "headerMs": 159.9,
+          "browserWaitMs": 41.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 147.4,
+          "transferBytes": 206,
+          "bytes": 10986
+        },
+        {
+          "path": "/api/tags",
+          "at": 251524.1869,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15898"
+          ],
+          "status": 200,
+          "headerMs": 160.6,
+          "browserWaitMs": 43.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 153.1,
+          "transferBytes": 205,
+          "bytes": 2869
+        },
+        {
+          "path": "/api/returns",
+          "at": 251524.187078,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15899"
+          ],
+          "status": 200,
+          "headerMs": 162.7,
+          "browserWaitMs": 49.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 157.7,
+          "transferBytes": 206,
+          "bytes": 60880
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251524.187273,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15900"
+          ],
+          "status": 200,
+          "headerMs": 173.3,
+          "browserWaitMs": 56,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 163.4,
+          "transferBytes": 206,
+          "bytes": 21009
+        },
+        {
+          "path": "/api/purchase-orders",
+          "at": 251524.18745,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15901"
+          ],
+          "status": 200,
+          "headerMs": 180.6,
+          "browserWaitMs": 46.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 169,
+          "transferBytes": 206,
+          "bytes": 36856
+        },
+        {
+          "path": "/api/supplier-returns",
+          "at": 251524.187625,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15902"
+          ],
+          "status": 200,
+          "headerMs": 181.3,
+          "browserWaitMs": 31.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 172.9,
+          "transferBytes": 206,
+          "bytes": 15027
+        },
+        {
+          "path": "/api/transactions/inventory",
+          "at": 251524.187802,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":15903"
+          ],
+          "status": 200,
+          "headerMs": 342.3,
+          "browserWaitMs": 96.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 243.3,
+          "transferBytes": 206,
+          "bytes": 47047
+        },
+        {
+          "path": "/api/notifications/history",
+          "at": 251524.226104,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "window.souliaRefreshNotificationHistory:23"
+          ],
+          "status": 200,
+          "headerMs": 173.2,
+          "browserWaitMs": 53.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 168.8,
+          "transferBytes": 206,
+          "bytes": 32843
+        },
+        {
+          "path": "/api/mentions",
+          "at": 251524.226315,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "refreshMentionsFromServer:13783"
+          ],
+          "status": 200,
+          "headerMs": 194.4,
+          "browserWaitMs": 55.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 175.5,
+          "transferBytes": 207,
+          "bytes": 96457
+        },
+        {
+          "path": "/api/shipping/sync/6ae8770e42a4ab2ecae2ba2f",
+          "at": 251524.252427,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 76.3,
+          "browserWaitMs": 38.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 37.6,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/auth/users-status",
+          "at": 251524.254492,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "syncUsersStatus:12217"
+          ],
+          "status": 200,
+          "headerMs": 139.8,
+          "browserWaitMs": 32.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 130.8,
+          "transferBytes": 205,
+          "bytes": 1399
+        },
+        {
+          "path": "/api/transactions/sales-overview?year=2026&month=11",
+          "at": 251524.2565,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "fetchMonth:406"
+          ],
+          "status": 200,
+          "headerMs": 172.9,
+          "browserWaitMs": 67.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 167.9,
+          "transferBytes": 205,
+          "bytes": 2145
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251524.25677,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 162.4,
+          "browserWaitMs": 39.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 143.3,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/followups/dashboard-summary",
+          "at": 251524.256975,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readDashboardFollowUps:17942"
+          ],
+          "status": 200,
+          "headerMs": 172.2,
+          "browserWaitMs": 37.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 166.6,
+          "transferBytes": 207,
+          "bytes": 239221
+        },
+        {
+          "path": "/api/shipping/sync/6aee15c3d8d80699c373b4ae",
+          "at": 251524.347261,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 8.5,
+          "browserWaitMs": 1.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 1.4,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef25a9d8d80699c37b0866",
+          "at": 251524.383154,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 8.6,
+          "browserWaitMs": 2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2.2,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef25dfd8d80699c37b0ccb",
+          "at": 251524.399066,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 20.4,
+          "browserWaitMs": 1.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 1.3,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef2dd7d8d80699c37b5d8f",
+          "at": 251524.434078,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 103.8,
+          "browserWaitMs": 1.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 1.5,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef2e13d8d80699c37b6242",
+          "at": 251524.713412,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 22.4,
+          "browserWaitMs": 2.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/security-audit/locked-users",
+          "at": 251524.717234,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadSecurityPanel:59597"
+          ],
+          "status": 200,
+          "headerMs": 32.9,
+          "browserWaitMs": 9.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 28.9,
+          "transferBytes": 205,
+          "bytes": 1736
+        },
+        {
+          "path": "/api/security-audit/logs",
+          "at": 251524.717426,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadSecurityPanel:59598"
+          ],
+          "status": 200,
+          "headerMs": 32.4,
+          "browserWaitMs": 8.9,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 28.5,
+          "transferBytes": 206,
+          "bytes": 41128
+        },
+        {
+          "path": "/api/shipping/sync/6aef98ccd8d80699c37f3888",
+          "at": 251524.750893,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 12.4,
+          "browserWaitMs": 2.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2.1,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shipping/sync/6aef98ccd8d80699c37f388c",
+          "at": 251524.792727,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_bostaAutoSync:33503"
+          ],
+          "status": 200,
+          "headerMs": 3.9,
+          "browserWaitMs": 2.8,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 2.6,
+          "transferBytes": 66,
+          "bytes": 2
+        },
+        {
+          "path": "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T12%3A15%3A00.000Z&scope=",
+          "at": 251525.00073,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9669",
+            "_spLoadServerPage:1229"
+          ],
+          "status": 200,
+          "headerMs": 188.7,
+          "browserWaitMs": 156.6,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 187.8,
+          "transferBytes": 109095,
+          "bytes": 108771
+        },
+        {
+          "path": "/api/announcements/mine",
+          "at": 251525.662854,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadMine:75"
+          ],
+          "status": 200,
+          "headerMs": 22.9,
+          "browserWaitMs": 8.7,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 11.6,
+          "transferBytes": 203,
+          "bytes": 2
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251525.847593,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 55.3,
+          "browserWaitMs": 8.1,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 36.6,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/notifications",
+          "at": 251525.990742,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "sync:251"
+          ],
+          "status": 200,
+          "headerMs": 18.1,
+          "browserWaitMs": 6.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 9.5,
+          "transferBytes": 205,
+          "bytes": 694
+        },
+        {
+          "path": "/api/transactions/movements-page",
+          "at": 251526.058984,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "renderMovementsServer:28247",
+            "renderMovements:27700"
+          ],
+          "status": 201,
+          "headerMs": 284.4,
+          "browserWaitMs": 240,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 279.5,
+          "transferBytes": 119928,
+          "bytes": 119603
+        },
+        {
+          "path": "/api/followups",
+          "at": 251526.883708,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readFollowUps:17928"
+          ],
+          "status": 200,
+          "headerMs": 98.9,
+          "browserWaitMs": 48.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 82.6,
+          "transferBytes": 208,
+          "bytes": 1149876
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251526.901174,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadComplaints:67337"
+          ],
+          "status": 200,
+          "headerMs": 34.1,
+          "browserWaitMs": 14.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 31.4,
+          "transferBytes": 206,
+          "bytes": 21009
+        },
+        {
+          "path": "/api/employee-performance/duty-board",
+          "at": 251527.385109,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            ":18193"
+          ],
+          "status": 200,
+          "headerMs": 42.6,
+          "browserWaitMs": 6.3,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 31.8,
+          "transferBytes": 666,
+          "bytes": 403
+        },
+        {
+          "path": "/api/shopify/orders/summary-page?page=1&limit=30&tab=pending&search=&dateFrom=&dateTo=&statusFilter=&columnStatus=&starred=0&panel=%7B%22deposit%22%3A%22%22%2C%22stock%22%3A%5B%5D%2C%22status%22%3A%5B%5D%2C%22staff%22%3A%5B%5D%2C%22tags%22%3A%5B%5D%2C%22hasComments%22%3Afalse%7D&kpiFilter=&kpiFrom=2026-11-08T22%3A00%3A00.000Z&kpiTo=2026-11-09T22%3A00%3A00.000Z&kpiPrevFrom=2026-11-07T22%3A00%3A00.000Z&kpiPrevTo=2026-11-08T12%3A15%3A00.000Z&scope=",
+          "at": 251527.600354,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9669",
+            "_spLoadServerPage:1229"
+          ],
+          "status": 200,
+          "headerMs": 176.3,
+          "browserWaitMs": 148.5,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 175.8,
+          "transferBytes": 263,
+          "bytes": 108771
+        },
+        {
+          "path": "/api/transactions/movements-page",
+          "at": 251528.290619,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "renderMovementsServer:28247",
+            "renderMovements:27700"
+          ],
+          "status": 201,
+          "headerMs": 232.9,
+          "browserWaitMs": 200.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 232.2,
+          "transferBytes": 119928,
+          "bytes": 119603
+        },
+        {
+          "path": "/api/followups",
+          "at": 251528.563906,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "_readFollowUps:17928"
+          ],
+          "status": 200,
+          "headerMs": 142.6,
+          "browserWaitMs": 46.4,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 120.9,
+          "transferBytes": 208,
+          "bytes": 1149876
+        },
+        {
+          "path": "/api/complaints",
+          "at": 251528.583857,
+          "initiator": "script",
+          "stack": [
+            "_apiRequest:9712",
+            "api:9675",
+            "loadComplaints:67337"
+          ],
+          "status": 200,
+          "headerMs": 88.8,
+          "browserWaitMs": 14.2,
+          "downloadMs": 0,
+          "serverTiming": null,
+          "totalMs": 69.5,
+          "transferBytes": 206,
+          "bytes": 21009
+        }
+      ],
+      "routes": {
+        "orders": {
+          "ms": 813.8,
+          "nodes": 15805,
+          "heap": 29277347,
+          "started": 1223.300000011921
+        },
+        "dashboardReturn1": {
+          "ms": 249.1,
+          "nodes": 16002,
+          "heap": 31046093,
+          "started": 2042.300000011921
+        },
+        "movements": {
+          "ms": 476.5,
+          "nodes": 20250,
+          "heap": 33884655,
+          "started": 2296.800000011921
+        },
+        "dashboardReturn2": {
+          "ms": 325.5,
+          "nodes": 20252,
+          "heap": 35303863,
+          "started": 2807.100000023842
+        },
+        "followups": {
+          "ms": 420.9,
+          "nodes": 25682,
+          "heap": 24465816,
+          "started": 3145.800000011921
+        },
+        "dashboardReturn3": {
+          "ms": 231.1,
+          "nodes": 25682,
+          "heap": 25911691,
+          "started": 3573.100000023842
+        },
+        "ordersReturn": {
+          "ms": 654.5,
+          "nodes": 25682,
+          "heap": 29230283,
+          "started": 3808.800000011921
+        },
+        "movementsReturn": {
+          "ms": 322.4,
+          "nodes": 25698,
+          "heap": 30565397,
+          "started": 4501.800000011921
+        },
+        "followupsReturn": {
+          "ms": 336.9,
+          "nodes": 25698,
+          "heap": 36286341,
+          "started": 4825.700000017881
+        }
+      },
+      "errors": []
+    }
+  ]
+}

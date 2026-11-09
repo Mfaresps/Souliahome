@@ -1,0 +1,146 @@
+/* Pickup board: compact, neutral lanes inspired by the DesignMe kanban layout.
+   State stays visible in the order details, progress and shipping action. */
+@media screen {
+  #main > #page-pickup-orders {
+    --pu-lane: color-mix(in srgb, var(--text) 4%, var(--surface));
+    --pu-lane-line: color-mix(in srgb, var(--text) 10%, var(--surface));
+  }
+
+  #main #page-pickup-orders .pu-page-header { margin-bottom: 14px !important; }
+  #main #page-pickup-orders .pu-board-kpis {
+    gap: 0; margin-bottom: 12px; overflow: hidden;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+  }
+  #main #page-pickup-orders .pu-bkpi,
+  #main #page-pickup-orders .pu-bkpi.bkpi-ready {
+    border: 0; border-inline-end: 1px solid var(--border); border-radius: 0;
+    background: transparent; padding: 7px 10px;
+  }
+  #main #page-pickup-orders .pu-bkpi:last-child { border-inline-end: 0; }
+  #main #page-pickup-orders .pu-bkpi-icon { color: var(--muted); }
+  #main #page-pickup-orders .pu-bkpi-label { color: var(--muted); font-size: 11px; font-weight: 600; }
+  #main #page-pickup-orders .pu-bkpi-val { font-size: 17px; font-weight: 700; }
+  #main #page-pickup-orders .pu-bkpi-sub { font-size: 11px; }
+
+  #main #page-pickup-orders #pu-board-filters-row {
+    gap: 6px; padding: 6px; margin-bottom: 12px; border-radius: 9px;
+  }
+  #main #page-pickup-orders #pu-board-filters-row :is(.pu-filter-bar-search,.pu-filter-date-grp,.pu-filter-shipco,.pu-filter-clear),
+  #main #page-pickup-orders #pu-sync-bosta-btn {
+    min-height: 34px; border-radius: 7px;
+  }
+  #main #page-pickup-orders #pu-board-search { height: 32px; }
+
+  #main #page-pickup-orders .pu-board-3col { gap: 10px; }
+  #main #page-pickup-orders .pu-board-col,
+  #main #page-pickup-orders .pu-col-ready,
+  #main #page-pickup-orders .pu-col-prep {
+    border: 0; border-radius: 14px; background: var(--pu-lane); box-shadow: none;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-header,
+  #main #page-pickup-orders .pu-col-ready .pu-board-col-header,
+  #main #page-pickup-orders .pu-col-shipped .pu-board-col-header {
+    min-height: 58px; height: auto; grid-template-rows: auto auto; gap: 2px;
+    padding: 9px 10px 6px; border: 0; border-radius: 14px 14px 0 0;
+    background: transparent;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-header-left {
+    grid-template-columns: 16px minmax(0,1fr) auto; gap: 6px;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-header-left>svg {
+    width: 14px; height: 14px; color: var(--muted);
+  }
+  #main #page-pickup-orders .pu-board-col-header-left>[data-i18n] {
+    font-size: 13px; font-weight: 650;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-col-count {
+    min-width: 0; width: auto; height: auto; padding: 0; border: 0;
+    border-radius: 0; background: transparent; color: var(--muted);
+    font-size: 12px; font-weight: 500;
+  }
+  #main #page-pickup-orders .pu-board-col-header>div:last-child { gap: 4px !important; }
+  #main #page-pickup-orders .pu-board-col-header>div:last-child>[data-i18n] { font-size: 11px !important; }
+  #main #page-pickup-orders .pu-board-col-header [id$="-col-amt"] {
+    font-size: 11px !important; font-weight: 600; color: var(--muted) !important;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-search,
+  #main #page-pickup-orders .pu-col-ready .pu-board-col-search {
+    min-height: 39px; height: 39px; padding: 3px 7px;
+    border: 0; background: transparent;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-search input {
+    min-height: 32px; height: 32px; border-color: var(--pu-lane-line);
+    border-radius: 7px; background: var(--surface);
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-search svg { inset-inline-end: 16px; }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-body,
+  #main #page-pickup-orders .pu-col-ready .pu-board-col-body,
+  #main #page-pickup-orders .pu-board-col .pu-pending-actions-bar {
+    border: 0; border-radius: 0; background: transparent;
+  }
+  #main #page-pickup-orders .pu-board-col .pu-board-col-body {
+    padding: 5px 6px 8px; gap: 7px; scrollbar-gutter: auto;
+  }
+  #main #page-pickup-orders .pu-board-col-body > .pu-group + .pu-group::before { display: none; }
+  #main #page-pickup-orders .pu-board-col .pu-pending-actions-bar { padding: 4px 6px 6px; gap: 4px; }
+  #main #page-pickup-orders .pu-col-pending .pu-pt-create-btn,
+  #main #page-pickup-orders .pu-pt-bulk-btn {
+    min-height: 32px; padding: 5px 7px; border: 1px solid var(--pu-lane-line);
+    border-radius: 7px; background: var(--surface); color: var(--text);
+    font-size: 11px; font-weight: 600; box-shadow: none;
+  }
+  #main #page-pickup-orders .pu-pt-bulk-btn { color: var(--muted); }
+  #main #page-pickup-orders .pu-group,
+  #main #page-pickup-orders .pu-stage-card {
+    border: 1px solid var(--pu-lane-line); border-radius: 11px;
+    background: var(--surface); box-shadow: 0 1px 2px #00000012;
+  }
+  #main #page-pickup-orders .pu-group:hover {
+    transform: none; border-color: color-mix(in srgb, var(--text) 22%, var(--surface));
+    box-shadow: 0 3px 10px #00000014;
+  }
+  #main #page-pickup-orders .pu-stage-card .pu-group-accent { height: 0; flex-basis: 0; }
+  #main #page-pickup-orders .pu-stage-card .pu-group-header { padding: 9px 10px; }
+  #main #page-pickup-orders .pu-stage-card .pu-prep-content { gap: 5px; }
+  #main #page-pickup-orders .pu-stage-card .pu-ref-hero { color: var(--text); font-size: 12px; font-weight: 650; }
+  #main #page-pickup-orders .pu-stage-card .pu-prep-order-count,
+  #main #page-pickup-orders .pu-stage-card .pu-daily-count {
+    min-width: 0; min-height: 0; padding: 4px 7px; gap: 4px;
+    border: 1px solid var(--pu-lane-line); border-radius: 6px;
+    background: var(--pu-lane); color: var(--text);
+  }
+  #main #page-pickup-orders .pu-stage-card :is(.pu-prep-order-count,.pu-daily-count)>bdi {
+    color: var(--text); font-size: 15px; font-weight: 700;
+  }
+  #main #page-pickup-orders .pu-stage-card :is(.pu-prep-order-count,.pu-daily-count)>span {
+    color: var(--muted); font-size: 10px; font-weight: 500;
+  }
+  #main #page-pickup-orders .pu-stage-card .pu-prep-meta>span {
+    background: var(--pu-lane); border-radius: 4px;
+  }
+  #main #page-pickup-orders .pu-stage-card .pu-group-footer {
+    padding: 6px 8px; background: transparent; border-top-color: var(--border);
+  }
+  #main #page-pickup-orders .pu-stage-card .pu-prep-open,
+  #main #page-pickup-orders .pu-stage-card .pu-prep-move {
+    background: var(--pu-lane); color: var(--text); border-color: var(--pu-lane-line);
+  }
+  #main #page-pickup-orders .pu-ready-actions { padding: 6px; background: transparent; border-color: var(--pu-lane-line); }
+  #main #page-pickup-orders .pu-ready-actions .bp-request-button { width: 100%; box-shadow: none; }
+  #main #page-pickup-orders .pu-order-card { box-shadow: none; }
+  #main #page-pickup-orders .pu-order-card:hover { box-shadow: 0 2px 8px #00000012; }
+
+  @media (max-width: 1100px) {
+    #main #page-pickup-orders .pu-board-kpis { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+    #main #page-pickup-orders .pu-bkpi:nth-child(3) { border-inline-end: 0; }
+    #main #page-pickup-orders .pu-bkpi:nth-child(n+4) { border-top: 1px solid var(--border); }
+  }
+  @media (max-width: 600px) {
+    #main #page-pickup-orders .pu-board-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    #main #page-pickup-orders .pu-bkpi:nth-child(3) { border-inline-end: 1px solid var(--border); }
+    #main #page-pickup-orders .pu-bkpi:nth-child(even) { border-inline-end: 0; }
+    #main #page-pickup-orders .pu-bkpi:nth-child(n+3) { border-top: 1px solid var(--border); }
+    #main #page-pickup-orders .pu-bkpi:last-child { grid-column: 1 / -1; }
+    #main #page-pickup-orders .pu-board-col .pu-board-col-body { max-height: 60svh; }
+  }
+}

@@ -59,26 +59,38 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
       trigger.textContent = 'Open order';
       document.body.appendChild(trigger);
       trigger.focus();
+      window.peekOpenedAt = performance.now();
       openSpOrderPeek('order-1');
-      window.peekImmediate = {
-        title: qs('#sp-pk-title')?.textContent,
-        item: qs('#sp-peek .sp-pk-item-n')?.textContent,
-        loading: !!qs('#sp-peek .sp-pk-fu-skel')
-      };
     });
-    await page.waitForSelector('#sp-peek .sp-pk-close');
-    assert.match(await page.evaluate(() => peekImmediate.title), /2913/, 'Order identity paints before follow-up fetch');
-    assert.match(await page.evaluate(() => peekImmediate.item), /Test Product/, 'Order items paint before follow-up fetch');
-    assert.equal(await page.evaluate(() => peekImmediate.loading), true, 'Only follow-up section uses a loading placeholder');
+    /* The window opens once its data is in (≤ SP_PEEK_OPEN_WAIT), at its final size — it
+       no longer paints a partial window and re-draws it (owner request, Nov 9, 2026). */
+    await page.waitForSelector('#sp-peek.is-open .sp-pk-close');
+    const opened = await page.evaluate(() => ({
+      title: qs('#sp-pk-title')?.textContent,
+      item: qs('#sp-peek .sp-pk-item-n')?.textContent,
+      loading: !!qs('#sp-peek .sp-pk-fu-skel'),
+      ms: performance.now() - peekOpenedAt
+    }));
+    assert.match(opened.title, /2913/, 'Order identity is in the window when it opens');
+    assert.match(opened.item, /Test Product/, 'Order items are in the window when it opens');
+    assert.equal(opened.loading, false, 'Follow-ups are already loaded when the window opens');
+    assert.ok(opened.ms < 1000, 'The window opens within a second (' + Math.round(opened.ms) + 'ms)');
     assert.equal(await page.evaluate(() => {
       const panel = qs('#sp-peek .sp-peek');
       return panel.scrollWidth > panel.clientWidth + 1;
     }), false, 'Order window stays within the viewport width');
     await page.evaluate(() => Promise.all([_spEnsureFollowUps(false), _spEnsureFollowUps(false)]));
     assert.equal(await page.evaluate(() => peekFetches), 1, 'Concurrent order windows share one follow-up request');
-    assert.equal(await page.evaluate(() => getComputedStyle(qs('#sp-peek .sp-peek')).transitionDuration.includes('0.18s')), true,
-      'Order window uses shared motion duration');
-    await page.waitForFunction(() => document.activeElement?.classList.contains('sp-pk-close'));
+    // Desktop entrance: calm fade (220ms) + rise (280ms) — owner request, Nov 9, 2026.
+    assert.equal(await page.evaluate(() => /0\.22s/.test(getComputedStyle(qs('#sp-peek .sp-peek')).transitionDuration)), true,
+      'Order window uses the calm entrance duration');
+    // Focus starts on the window itself — not on «×», which drew a focus ring on every open.
+    await page.waitForFunction(() => document.activeElement === qs('#sp-peek .sp-peek'));
+    assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('sp-pk-close')), false,
+      'Opening does not focus the close button');
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => qs('#sp-peek .sp-peek').contains(document.activeElement) && document.activeElement !== qs('#sp-peek .sp-peek')), true,
+      'First Tab lands on a control inside the order window');
     await page.evaluate(() => {
       const controls = [...document.querySelectorAll('#sp-peek .sp-peek a[href], #sp-peek .sp-peek button:not([disabled]), #sp-peek .sp-peek summary')]
         .filter(el => el.getClientRects().length);

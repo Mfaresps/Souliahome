@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Date range picker, Designme</title>
+<link rel="stylesheet" href="../core/core.css">
+<link rel="stylesheet" href="date-range-picker.css">
+</head>
+<!-- Add data-style="soft" to <html> for the Soft style, and data-theme="dark" for dark mode -->
+<body style="min-height:100vh;display:grid;place-items:center;padding:40px;background:var(--stage,#fafafa)">
+<main class="stage-inner">
+<div class="card wide" data-c="date-range-picker">
+  <div class="stage-in">
+    <div class="drx panel">
+      <div class="drx-side"><button class="drx-p" data-p="7">Last 7 days</button><button class="drx-p" data-p="30">Last 30 days</button><button class="drx-p" data-p="q">This quarter</button><button class="drx-p" data-p="sp">Since pricing launch</button></div>
+      <div class="drx-main">
+        <div class="drx-top"><div class="drx-in"><span class="muted">From</span><b class="drx-a">–</b></div><svg class="i xs"><use href="#i-right"/></svg><div class="drx-in"><span class="muted">To</span><b class="drx-b">–</b></div><span class="drx-n muted"></span></div>
+        <div class="drx-cals"><div class="drx-cal" data-o="0"></div><div class="drx-cal" data-o="1"></div></div>
+        <div class="drx-f"><button class="pill ghost sm drx-clr">Clear</button><button class="pill primary sm drx-ok" disabled>Apply</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script src="../core/core.js"></script>
+<script src="date-range-picker.js"></script>
+</body>
+</html>

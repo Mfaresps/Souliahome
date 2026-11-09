@@ -1,0 +1,79 @@
+{
+  "performance": {
+    "rows": 5000,
+    "mounted": 20,
+    "renderMs": 79
+  },
+  "inspections": [
+    {
+      "width": 1440,
+      "lang": "en",
+      "dark": false,
+      "findings": [
+        {
+          "level": "WARN",
+          "id": "tiny-text",
+          "width": 1440,
+          "message": "93% of the text is under 13px.",
+          "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "lang": "ar",
+      "dark": false,
+      "findings": [
+        {
+          "level": "WARN",
+          "id": "tiny-text",
+          "width": 1440,
+          "message": "93% of the text is under 13px.",
+          "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "lang": "en",
+      "dark": false,
+      "findings": [
+        {
+          "level": "WARN",
+          "id": "tiny-text",
+          "width": 1024,
+          "message": "93% of the text is under 13px.",
+          "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "dark": false,
+      "findings": [
+        {
+          "level": "WARN",
+          "id": "tiny-text",
+          "width": 390,
+          "message": "68% of the text is under 13px.",
+          "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "lang": "ar",
+      "dark": true,
+      "findings": [
+        {
+          "level": "WARN",
+          "id": "tiny-text",
+          "width": 390,
+          "message": "68% of the text is under 13px.",
+          "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
+        }
+      ]
+    }
+  ]
+}

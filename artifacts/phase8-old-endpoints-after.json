@@ -1,0 +1,464 @@
+﻿{
+  "mode": "read-only-live",
+  "followups": {
+    "route": "/followups",
+    "count": 538,
+    "bytes": 1149876,
+    "apiMs": 75,
+    "candidateBytes": 239221,
+    "fields": [
+      {
+        "key": "comments",
+        "bytes": 692952
+      },
+      {
+        "key": "escalationBaseline",
+        "bytes": 26362
+      },
+      {
+        "key": "reason",
+        "bytes": 23864
+      },
+      {
+        "key": "status",
+        "bytes": 23778
+      },
+      {
+        "key": "responsibleId",
+        "bytes": 23672
+      },
+      {
+        "key": "shopifyOrderId",
+        "bytes": 23158
+      },
+      {
+        "key": "createdAt",
+        "bytes": 21520
+      },
+      {
+        "key": "updatedAt",
+        "bytes": 21520
+      },
+      {
+        "key": "responsibleUsername",
+        "bytes": 20042
+      },
+      {
+        "key": "resolution",
+        "bytes": 18320
+      },
+      {
+        "key": "_id",
+        "bytes": 18292
+      },
+      {
+        "key": "clientName",
+        "bytes": 18235
+      },
+      {
+        "key": "clientPhone",
+        "bytes": 15827
+      },
+      {
+        "key": "ticketNo",
+        "bytes": 15646
+      },
+      {
+        "key": "responsibleName",
+        "bytes": 15455
+      },
+      {
+        "key": "transactionId",
+        "bytes": 12872
+      },
+      {
+        "key": "cancelledByName",
+        "bytes": 11578
+      },
+      {
+        "key": "escalationLevel",
+        "bytes": 11298
+      },
+      {
+        "key": "cancelledById",
+        "bytes": 10696
+      },
+      {
+        "key": "orderRef",
+        "bytes": 10222
+      },
+      {
+        "key": "cancelReason",
+        "bytes": 10150
+      },
+      {
+        "key": "cancelled",
+        "bytes": 9947
+      },
+      {
+        "key": "reasonOther",
+        "bytes": 9684
+      },
+      {
+        "key": "notified",
+        "bytes": 9643
+      },
+      {
+        "key": "assignSource",
+        "bytes": 9185
+      },
+      {
+        "key": "autoTrigger",
+        "bytes": 8908
+      },
+      {
+        "key": "lastCarrierAction",
+        "bytes": 8703
+      },
+      {
+        "key": "autoSource",
+        "bytes": 8531
+      },
+      {
+        "key": "carrierUpdate",
+        "bytes": 8158
+      },
+      {
+        "key": "comment",
+        "bytes": 7850
+      },
+      {
+        "key": "closedAt",
+        "bytes": 5967
+      },
+      {
+        "key": "tags",
+        "bytes": 5918
+      },
+      {
+        "key": "__v",
+        "bytes": 4842
+      },
+      {
+        "key": "deferReminderSent",
+        "bytes": 4614
+      },
+      {
+        "key": "orderOutcome",
+        "bytes": 4527
+      },
+      {
+        "key": "deferNote",
+        "bytes": 4123
+      },
+      {
+        "key": "deferredUntil",
+        "bytes": 3850
+      },
+      {
+        "key": "deferReason",
+        "bytes": 3246
+      },
+      {
+        "key": "commentReactions",
+        "bytes": 2254
+      },
+      {
+        "key": "cancelledAt",
+        "bytes": 378
+      }
+    ],
+    "query": {
+      "executionMs": 2,
+      "docsExamined": 538,
+      "keysExamined": 0,
+      "returned": 538
+    }
+  },
+  "transactions": {
+    "route": "/transactions/startup-overview",
+    "count": 1007,
+    "activeCount": 1027,
+    "bytes": 999957,
+    "apiMs": 89,
+    "candidateBytes": 727436,
+    "carrierSettlementFields": [
+      {
+        "key": "snapshotBefore",
+        "bytes": 43693
+      },
+      {
+        "key": "fees",
+        "bytes": 40399
+      },
+      {
+        "key": "priceChanges",
+        "bytes": 32936
+      },
+      {
+        "key": "scheduledAt",
+        "bytes": 12642
+      },
+      {
+        "key": "deliveredAt",
+        "bytes": 12138
+      },
+      {
+        "key": "collectPaymentId",
+        "bytes": 11961
+      },
+      {
+        "key": "walletDepositedAt",
+        "bytes": 11520
+      },
+      {
+        "key": "readAt",
+        "bytes": 11433
+      },
+      {
+        "key": "dueAt",
+        "bytes": 11088
+      },
+      {
+        "key": "deliveryId",
+        "bytes": 10982
+      },
+      {
+        "key": "cashoutDueAt",
+        "bytes": 10721
+      },
+      {
+        "key": "trackingNumber",
+        "bytes": 8935
+      },
+      {
+        "key": "reason",
+        "bytes": 8770
+      },
+      {
+        "key": "scheduledCashoutDueAt",
+        "bytes": 7784
+      },
+      {
+        "key": "varianceKind",
+        "bytes": 7620
+      },
+      {
+        "key": "vaultMethod",
+        "bytes": 7514
+      },
+      {
+        "key": "finalizedPayoutId",
+        "bytes": 7296
+      },
+      {
+        "key": "settledAt",
+        "bytes": 6560
+      },
+      {
+        "key": "status",
+        "bytes": 6143
+      },
+      {
+        "key": "payoutId",
+        "bytes": 5928
+      },
+      {
+        "key": "collectNet",
+        "bytes": 5895
+      },
+      {
+        "key": "shipSavingAdd",
+        "bytes": 5894
+      },
+      {
+        "key": "trigger",
+        "bytes": 5571
+      },
+      {
+        "key": "carrier",
+        "bytes": 5491
+      },
+      {
+        "key": "carrierCod",
+        "bytes": 5302
+      },
+      {
+        "key": "shipLossAdd",
+        "bytes": 5297
+      },
+      {
+        "key": "billedShip",
+        "bytes": 5200
+      },
+      {
+        "key": "remaining",
+        "bytes": 5045
+      },
+      {
+        "key": "approvedFees",
+        "bytes": 5040
+      },
+      {
+        "key": "variance",
+        "bytes": 5008
+      },
+      {
+        "key": "phase",
+        "bytes": 4646
+      },
+      {
+        "key": "limitUsed",
+        "bytes": 4624
+      },
+      {
+        "key": "shortfallVaultEntryId",
+        "bytes": 4616
+      },
+      {
+        "key": "collectVaultEntryId",
+        "bytes": 4528
+      },
+      {
+        "key": "shortfall",
+        "bytes": 4444
+      },
+      {
+        "key": "settledBy",
+        "bytes": 4428
+      },
+      {
+        "key": "bookDate",
+        "bytes": 4100
+      },
+      {
+        "key": "net",
+        "bytes": 4006
+      },
+      {
+        "key": "error",
+        "bytes": 3604
+      }
+    ],
+    "fields": [
+      {
+        "key": "carrierSettlement",
+        "bytes": 366502
+      },
+      {
+        "key": "deliveredAt",
+        "bytes": 41268
+      },
+      {
+        "key": "createdAt",
+        "bytes": 40280
+      },
+      {
+        "key": "bostaLastSync",
+        "bytes": 34732
+      },
+      {
+        "key": "_id",
+        "bytes": 34238
+      },
+      {
+        "key": "bostaOrderId",
+        "bytes": 31508
+      },
+      {
+        "key": "bostaTrackingNumber",
+        "bytes": 30295
+      },
+      {
+        "key": "client",
+        "bytes": 29245
+      },
+      {
+        "key": "shippedAt",
+        "bytes": 28090
+      },
+      {
+        "key": "shopifyOrderId",
+        "bytes": 27789
+      },
+      {
+        "key": "pickupStatus",
+        "bytes": 27562
+      },
+      {
+        "key": "bostaStatus",
+        "bytes": 27066
+      },
+      {
+        "key": "deliverySource",
+        "bytes": 26258
+      },
+      {
+        "key": "date",
+        "bytes": 25417
+      },
+      {
+        "key": "payStatus",
+        "bytes": 25190
+      },
+      {
+        "key": "phone",
+        "bytes": 23554
+      },
+      {
+        "key": "cancelRequest",
+        "bytes": 23259
+      },
+      {
+        "key": "type",
+        "bytes": 23161
+      },
+      {
+        "key": "failedDelivery",
+        "bytes": 23126
+      },
+      {
+        "key": "cancelled",
+        "bytes": 19107
+      },
+      {
+        "key": "pickupDate",
+        "bytes": 18971
+      },
+      {
+        "key": "remaining",
+        "bytes": 16400
+      },
+      {
+        "key": "deposit",
+        "bytes": 16311
+      },
+      {
+        "key": "shipCo",
+        "bytes": 16064
+      },
+      {
+        "key": "shipmentAttempts",
+        "bytes": 14783
+      },
+      {
+        "key": "ref",
+        "bytes": 14131
+      },
+      {
+        "key": "shipIssueState",
+        "bytes": 13089
+      },
+      {
+        "key": "bostaDeliveryException",
+        "bytes": 4783
+      }
+    ],
+    "query": {
+      "executionMs": 3,
+      "docsExamined": 1057,
+      "keysExamined": 0,
+      "returned": 1007
+    }
+  }
+}

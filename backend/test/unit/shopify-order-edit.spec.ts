@@ -591,10 +591,10 @@ describe('Shopify order edit — التعليقات مطابقة لنظام ال
     expect(extractFn(src, '_spCommentKey')).toContain('!choosingMention');
   });
 
-  it('التعديل يستخدم نفس شكل ومفاتيح startEditInvComment', () => {
+  it('التعديل يستخدم محرر التعليقات المشترك مع حفظ وإلغاء', () => {
     const fn = extractFn(src, '_spStartEditComment');
-    expect(fn).toContain('tx-cmt-edit-row');
-    expect(fn).toContain('tx-cmt-edit-input');
+    expect(fn).toContain('CommentInlineEdit.open');
+    expect(fn).toContain('_spSaveCommentEdit(commentId)');
     expect(fn).toContain("ivCmtSave");
   });
 

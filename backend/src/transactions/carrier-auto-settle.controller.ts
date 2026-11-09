@@ -63,8 +63,8 @@ export class CarrierAutoSettleController {
 
   @RequirePerms('carrier-settle-view')
   @Get('payouts/preview')
-  payoutPreview(@Query('date') date: string) {
-    return this.svc.payoutPreview(date);
+  payoutPreview(@Query('date') date: string, @Query('vaultMethod') vaultMethod?: string) {
+    return this.svc.payoutPreview(date, vaultMethod);
   }
 
   @RequirePerms('carrier-settle-approve')
@@ -82,6 +82,15 @@ export class CarrierAutoSettleController {
       },
       this.by(req),
     );
+  }
+
+  @RequirePerms('carrier-settle-approve')
+  @Post('payouts/:id/reconcile')
+  reconcilePayout(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    return this.svc.reconcilePayout(this.id(id), {
+      amount: Number(body?.amount), fee: Number(body?.fee),
+      bostaRef: String(body?.bostaRef || ''), note: String(body?.note || ''),
+    }, this.by(req));
   }
 
   @Roles('admin')

@@ -69,6 +69,18 @@ export class UsersService {
     const update: Record<string, unknown> = { ...data };
     // Don't allow changing username via update
     delete update.username;
+    delete update.roleId;
+    delete update.roleAssignedAt;
+    // A changed per-user access grant overrides the assigned role. Existing user
+    // forms submit unchanged role/perms alongside profile fields, so compare first.
+    if (data.role !== undefined || data.perms !== undefined) {
+      const current = await this.userModel.findById(id).select('role perms roleId').lean().exec();
+      if (current?.roleId && ((data.role !== undefined && data.role !== current.role)
+        || (data.perms !== undefined && [...data.perms].sort().join('\0') !== [...(current.perms || [])].sort().join('\0')))) {
+        update.roleId = null;
+        update.roleAssignedAt = null;
+      }
+    }
     if (data.password && data.password.length >= 6) {
       update.password = await bcrypt.hash(data.password, 10);
       update.plainPassword = data.password;

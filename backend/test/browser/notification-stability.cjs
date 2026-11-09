@@ -76,14 +76,20 @@ const outputDir = path.resolve(__dirname, '../../../artifacts/notification-stabi
         return {
           sameCard: card === main.querySelector('[data-notification-id]'),
           sameImage: image === card.querySelector('img'), samePanelImage: panelImage === panel.querySelector('img'),
+          panelEmpty: panel.children.length === 0,
           loaded: image.complete && image.parentNode.classList.contains('has-photo'),
           sameFocus: document.activeElement === card, before, after: measure(),
           amount: strong?.textContent, weight: strong && getComputedStyle(strong).fontWeight,
         };
       });
       assert.equal(result.sameCard, true); assert.equal(result.sameImage, true); assert.equal(result.samePanelImage, true);
-      assert.equal(result.loaded, true); assert.equal(result.sameFocus, true);
-      assert.deepEqual(result.after, result.before); assert.equal(result.amount, '1,250.50'); assert(Number(result.weight) >= 700);
+      assert.equal(result.loaded, true); assert.equal(result.sameFocus, true); assert.equal(result.panelEmpty, true);
+      // The entrance animation can move the modal by a subpixel while the card
+      // and scroll position remain unchanged.
+      assert(Math.abs(result.after[0] - result.before[0]) < 2.5);
+      assert(Math.abs(result.after[1] - result.before[1]) < 2.5);
+      assert.deepEqual(result.after.slice(2), result.before.slice(2));
+      assert.equal(result.amount, '1,250.50'); assert(Number(result.weight) >= 700);
       // A decision updates the existing card; new receipts insert without replacing its photo.
       rows[0].title = 'Request Approved'; rows[0].body = 'Malak Abbas · Deposit approval · EGP 1,250.50 · Approved';
       await page.evaluate(() => { window.stablePhoto = document.querySelector('#nc-main img'); });

@@ -1,0 +1,128 @@
+{
+  "runs": [
+    {
+      "pair": 1,
+      "orders": {
+        "visibleMs": 554.6,
+        "completeMs": 554.6,
+        "actionSyncMs": 0.8,
+        "requests": 1,
+        "bytes": 108971,
+        "endpoints": [
+          {
+            "path": "/api/shopify/orders/summary-page",
+            "duration": 160.5,
+            "bytes": 108971
+          }
+        ]
+      },
+      "drawer": {
+        "visibleMs": 21,
+        "completeMs": 144.3,
+        "actionSyncMs": 10.2,
+        "requests": 2,
+        "bytes": 15363,
+        "endpoints": [
+          {
+            "path": "/api/shopify/orders/detail/6aef138ed8d80699c37a79f1",
+            "duration": 7.8,
+            "bytes": 12224
+          },
+          {
+            "path": "/api/followups/shopify-order",
+            "duration": 32.2,
+            "bytes": 3139
+          }
+        ]
+      },
+      "switchInvoice": {
+        "visibleMs": 113.7,
+        "completeMs": 188,
+        "actionSyncMs": 4.6,
+        "requests": 3,
+        "bytes": 81839,
+        "endpoints": [
+          {
+            "path": "/api/shopify/deposit-receipts/dr_mw8ir65j815247d2/image",
+            "duration": 475.9,
+            "bytes": 50261
+          },
+          {
+            "path": "/api/shopify/orders/detail/6aef066dd8d80699c37a09e2",
+            "duration": 9.1,
+            "bytes": 29396
+          },
+          {
+            "path": "/api/followups/shopify-order",
+            "duration": 26.9,
+            "bytes": 2182
+          }
+        ]
+      },
+      "reopen": {
+        "visibleMs": 43.3,
+        "completeMs": 124.4,
+        "actionSyncMs": 24.6,
+        "requests": 0,
+        "bytes": 0,
+        "endpoints": []
+      },
+      "transferRefresh": {
+        "visibleMs": 0.5,
+        "completeMs": 219.2,
+        "actionSyncMs": 0.4,
+        "requests": 2,
+        "bytes": 112732,
+        "endpoints": [
+          {
+            "path": "/api/transactions/69f702b83a70dab49675736d",
+            "duration": 7.2,
+            "bytes": 3761
+          },
+          {
+            "path": "/api/shopify/orders/summary-page",
+            "duration": 182.2,
+            "bytes": 108971
+          }
+        ]
+      },
+      "pickup": {
+        "visibleMs": 382.6,
+        "completeMs": 382.7,
+        "actionSyncMs": 28,
+        "requests": 2,
+        "bytes": 3982399,
+        "endpoints": [
+          {
+            "path": "/api/transactions/pickup-orders/workspace",
+            "duration": 221.6,
+            "bytes": 2981208
+          },
+          {
+            "path": "/api/transactions/startup-overview",
+            "duration": 73,
+            "bytes": 1001191
+          }
+        ]
+      },
+      "search": 24.8,
+      "pickupData": {
+        "orders": 981,
+        "boardNodes": 1618,
+        "view": "board"
+      },
+      "revisit": {
+        "visibleMs": 73.1,
+        "completeMs": 73.4,
+        "actionSyncMs": 73,
+        "requests": 0,
+        "bytes": 0,
+        "endpoints": []
+      },
+      "statusParity": null,
+      "errors": [
+        "HTTP 404 http://127.0.0.1:8080/api/shopify/deposit-receipts/dr_mw6mqc1i63435bd3/image"
+      ]
+    }
+  ]
+}

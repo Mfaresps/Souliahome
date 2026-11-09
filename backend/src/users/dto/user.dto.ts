@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsArray,
   IsIn,
+  Matches,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -26,6 +27,11 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   readonly phone?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+  readonly email?: string;
 
   @IsString()
   @IsOptional()
@@ -62,6 +68,11 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   readonly phone?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^$|^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+  readonly email?: string;
 
   @IsString()
   @IsOptional()

@@ -1,0 +1,199 @@
+/* Local to shipping. The application shell, fonts and theme remain SOULIA's.
+ * Desktop: fluid operations column + 264px responsibility column + 16px gap. */
+.dashboard-v2 .scc-zone {
+  --scc-green: #247454;
+  --scc-blue: #426783;
+  --scc-amber: #946019;
+  --scc-red: #ad4545;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px;
+  gap: 16px;
+  align-items: start;
+  container-type: inline-size;
+}
+.scc-zone #dash-staff-section { display: contents; }
+.scc-zone .scc-loading { grid-column: 1 / -1; color: var(--ds-muted); font-size: 13px; }
+.scc-zone .scc-loading > div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.scc-zone .scc-loading i { height: 100px; background: var(--ds-bg); border: 1px solid var(--ds-border); border-radius: 9px; }
+.scc-zone .scc-heading, .scc-zone .scc-kpis, .scc-zone .scc-pipeline { grid-column: 1 / -1; min-width: 0; }
+.scc-zone .scc-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0 0; }
+.scc-zone .scc-heading h3 { font-size: 20px; font-weight: 650; letter-spacing: -.3px; margin: 0; color: var(--ds-text); }
+.scc-zone .scc-heading p { font-size: 12px; color: var(--ds-muted); margin: 4px 0 0; }
+.scc-zone .scc-heading > button { flex-shrink: 0; }
+.scc-zone .scc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.scc-zone .scc-kpis:not(:has(> :nth-child(4))) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scc-zone button, .scc-zone input, .scc-zone select { font-family: inherit; }
+.scc-zone [data-tone="shipping"] { --scc-tone: var(--scc-blue); }
+.scc-zone [data-tone="delivered"] { --scc-tone: var(--scc-green); }
+.scc-zone [data-tone="ready"] { --scc-tone: var(--scc-amber); }
+.scc-zone [data-tone="issue"] { --scc-tone: var(--scc-red); }
+.scc-zone .scc-kpi { border: 1px solid var(--ds-border); border-radius: 9px; background: var(--ds-surface); padding: 13px 16px; text-align: start; cursor: pointer; color: var(--ds-text); display: grid; gap: 5px; min-width: 0; transition: border-color .15s, background .15s; }
+.scc-zone .scc-kpi-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 550; }
+.scc-zone .scc-kpi-label svg { width: 17px; height: 17px; color: var(--scc-tone); stroke-width: 1.8; }
+.scc-zone .scc-kpi strong { font-size: 29px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.scc-zone .scc-kpi-note { font-size: 12px; color: var(--ds-muted); }
+.scc-zone .scc-kpi:hover, .scc-zone .scc-kpi[aria-pressed="true"] { border-color: var(--scc-tone); background: color-mix(in srgb, var(--scc-tone) 4%, var(--ds-surface)); }
+.scc-zone :is(button, a, input, select, [tabindex]):focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 3px; }
+.scc-zone .scc-pipeline { border: 1px solid var(--ds-border); background: var(--ds-surface); border-radius: 9px; padding: 14px 16px 0; }
+.scc-zone .scc-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.scc-zone .scc-section-heading h4 { margin: 0; font-size: 14px; font-weight: 650; color: var(--ds-text); }
+.scc-zone .scc-section-heading > span { font-size: 12px; color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.scc-zone .scc-distribution { display: flex; height: 7px; gap: 3px; background: var(--ds-bg); border-radius: 3px; margin-top: 14px; }
+.scc-zone .scc-distribution button { flex-basis: 0; border: 0; border-radius: 2px; background: var(--scc-tone); min-width: 4px; padding: 0; cursor: pointer; }
+.scc-zone .scc-distribution [data-ship-stage="Preparing"], .scc-zone .scc-distribution [data-ship-stage="waiting"], .scc-zone .scc-distribution [data-ship-stage="other"] { background: var(--ds-muted); opacity: .55; }
+.scc-zone .scc-distribution [data-ship-stage="Shipped"] { opacity: .6; }
+.scc-zone .scc-distribution [data-ship-stage="IN_TRANSIT"] { opacity: .8; }
+.scc-zone .scc-stages { display: flex; overflow-x: auto; scrollbar-width: thin; gap: 4px; padding-top: 7px; }
+.scc-zone .scc-stages button { display: flex; align-items: center; justify-content: center; gap: 9px; flex: 1 0 auto; min-height: 45px; background: transparent; color: var(--ds-muted); border: 0; border-bottom: 2px solid transparent; padding: 9px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.scc-zone .scc-stages strong { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ds-text); }
+.scc-zone .scc-stages button:hover { background: var(--ds-bg); }
+.scc-zone .scc-stages [aria-pressed="true"] { border-bottom-color: var(--ds-accent); color: var(--ds-text); }
+.dashboard-v2 .scc-zone .scc-main { grid-column: 1; min-width: 0; padding: 16px 0 0; overflow: hidden; border-radius: 9px; box-shadow: none; }
+.scc-zone .scc-main > .scc-section-heading { padding-inline: 16px; }
+.dashboard-v2 .scc-zone .ds-ship-side { grid-column: 2; grid-row: 4; width: auto; min-width: 0; gap: 12px; align-self: start; }
+.dashboard-v2 .scc-zone .ds-ship-side > * { flex: none; }
+.dashboard-v2 .scc-zone .ds-ship-side .ds-card { padding: 16px; border-radius: 9px; box-shadow: none; height: auto; }
+.scc-zone .ds-section-title { font-size: 14px; margin-bottom: 12px; }
+.scc-zone .scc-filters { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)) auto; align-items: end; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--ds-border); }
+.scc-zone .scc-filters label { display: grid; gap: 5px; min-width: 0; margin: 0; }
+.scc-zone .scc-filters label.scc-search { grid-column: 1 / -1; }
+.scc-zone .scc-filters label > span { font-size: 11px; color: var(--ds-muted); }
+.scc-zone .scc-filters :is(input, select:not(.fsel-native)) { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; padding: 0 9px; border: 1px solid var(--ds-border); border-radius: 6px; background: var(--ds-surface); color: var(--ds-text); font-size: 12px; margin: 0; }
+.scc-zone .scc-filters select { appearance: auto; background-image: none !important; }
+.scc-zone .scc-filters .fsel { display: block; min-width: 0; width: 100%; }
+.scc-zone .scc-filters .fsel-btn { width: 100%; height: 36px; justify-content: flex-start; text-align: start; border-radius: 6px; background: var(--ds-surface); font-size: 12px; gap: 8px; }
+.scc-zone .scc-filters .fsel-caret { width: 12px; height: 12px; }
+.scc-filter-panel .fsel-list { min-width: 0; max-width: 100%; overflow-x: hidden; overflow-y: auto; }
+.scc-filter-panel .fsel-opt { box-sizing: border-box; min-width: 0; max-width: 100%; min-height: 36px; font-size: 13px; text-align: start; }
+.scc-filter-panel .fsel-opt-lbl { white-space: normal; overflow-wrap: anywhere; }
+.scc-filter-panel .fsel-opt:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; background: var(--bg-alt); }
+.scc-filter-panel .fsel-search input { font-size: 13px; }
+.scc-filter-panel:not(.show) { pointer-events: none; }
+.scc-zone #scc-reset { background: none; border: 0; color: var(--ds-muted); min-height: 36px; font-size: 12px; cursor: pointer; padding: 5px; }
+.scc-zone #scc-data-state { margin: 0; padding-inline: 16px; font-size: 12px; color: var(--scc-amber); }
+.scc-zone #scc-data-state:empty { display: none; }
+/* One scrollbar at most: pages already cap the list at 20 rows, so the box never
+   scrolls vertically — the page does. Sideways scroll is a last resort only. */
+.scc-zone .scc-table-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.scc-zone .scc-table { width: 100%; min-width: 640px; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.scc-zone .scc-table th { position: sticky; top: 0; background: var(--ds-surface); z-index: 1; font-size: 11px; font-weight: 500; color: var(--ds-muted); padding: 9px 8px; text-align: start; white-space: normal; line-height: 1.35; vertical-align: bottom; border-bottom: 1px solid var(--ds-border); }
+.scc-zone .scc-table th button { color: inherit; background: none; border: 0; padding: 0; font-size: inherit; cursor: pointer; }
+.scc-zone .scc-table td { padding: 10px 8px; border-bottom: 1px solid var(--ds-border); color: var(--ds-text); vertical-align: middle; height: 52px; box-sizing: border-box; }
+.scc-zone .scc-table tr:last-child td { border-bottom: 0; }
+.scc-zone .scc-table tbody tr:hover { background: var(--ds-bg); }
+.scc-zone .scc-table .scc-number { text-align: end; font-variant-numeric: tabular-nums; }
+/* Names wrap to a second line rather than forcing sideways scroll or an ellipsis. */
+.scc-zone .scc-table .scc-customer { min-width: 84px; max-width: 170px; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.scc-zone .scc-order-link { border: 0; background: none; color: var(--ds-accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 0; white-space: nowrap; }
+.scc-zone .scc-order-link:hover, .scc-zone .scc-tracking:hover { text-decoration: underline; }
+.scc-zone .scc-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.scc-zone .scc-tracking { display: block; font-size: 11px; color: var(--ds-muted); margin-top: 2px; text-decoration: none; }
+.scc-zone .scc-status-cell { display: flex; gap: 4px 5px; flex-wrap: wrap; align-items: center; min-width: 108px; }
+.scc-zone .scc-status-cell .order-state { font-size: 11px; }
+.scc-zone :is(.order-delay-badge,.ds-period-btn) { font-size: 11px; }
+/* Status badge colors come from order-status.css, shared with Transactions. */
+.scc-zone .scc-extras, .scc-zone .scc-actions { display: flex; align-items: center; gap: 5px; }
+.scc-zone .scc-extras { flex-wrap: wrap; }
+.scc-zone .scc-actions { justify-content: end; }
+.scc-zone .scc-actions :is(.dd-toggle,.ds-ship-bosta-btn) { min-width: 30px; width: 30px; height: 30px; }
+.scc-zone .ds-ship-action svg { animation: none; }
+.scc-zone .scc-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--ds-border); font-size: 12px; color: var(--ds-muted); }
+.scc-zone .scc-pagination > div { display: flex; gap: 6px; }
+.scc-zone .scc-pagination button, .scc-zone .scc-empty button, .scc-zone .scc-manage-team { border: 1px solid var(--ds-border); border-radius: 6px; background: var(--ds-surface); color: var(--ds-text); padding: 7px 10px; font-size: 12px; cursor: pointer; }
+.scc-zone .scc-pagination button:disabled { opacity: .4; cursor: default; }
+.scc-zone .scc-empty { padding: 44px 20px; text-align: center; color: var(--ds-text); font-size: 14px; }
+.scc-zone .scc-empty p { font-size: 12px; color: var(--ds-muted); }
+.scc-zone .scc-attention-row { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 45px; border: 0; border-bottom: 1px solid var(--ds-border); background: none; padding: 10px 0; text-align: start; color: var(--ds-text); font-size: 12px; cursor: pointer; }
+.scc-zone .scc-attention-row > span:first-child { flex: 1; }
+.scc-zone .scc-attention-row strong { font-variant-numeric: tabular-nums; color: var(--scc-tone, var(--ds-text)); font-size: 14px; font-weight: 600; }
+.scc-zone .scc-attention-row:hover { background: var(--ds-bg); }
+.scc-zone #dash-attn { border: 0; border-radius: 0; padding: 0; }
+.scc-zone .scc-quiet { margin: 12px 0 0; font-size: 11px; color: var(--ds-muted); line-height: 1.65; }
+.scc-zone #dash-duty-admin .dy-p { display: grid; grid-template-columns: 8px 1fr auto; padding: 9px 0; background: none; border: none; border-bottom: 1px solid var(--ds-border); border-radius: 0; gap: 5px 8px; }
+.scc-zone #dash-duty-admin .dy-name { font-size: 12px; }
+.scc-zone #dash-duty-admin .dy-tag { font-size: 11px; padding: 2px 5px; }
+.scc-zone #dash-duty-admin :is(.dy-strip-lbl,.dy-you) { font-size: 11px; }
+.scc-zone .scc-shift { grid-column: 2 / -1; color: var(--ds-muted); font-size: 11px; }
+.scc-zone .scc-manage-team { width: 100%; margin-top: 14px; }
+.dd-menu-portal button[data-scc-action] { width: 100%; text-align: start; border: 0; background: transparent; font: inherit; color: inherit; }
+.dd-menu-portal button[data-scc-action]:hover, .dd-menu-portal button[data-scc-action]:focus-visible { background: var(--bg-alt); outline: 2px solid var(--primary); outline-offset: -2px; }
+.scc-zone [hidden] { display: none !important; }
+body.dark-mode .scc-zone { --scc-green: #7cc6a2; --scc-blue: #9bbbd6; --scc-amber: #e6bf77; --scc-red: #f09c9c; }
+@media (max-width: 1150px) {
+  .dashboard-v2 .scc-zone { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-v2 .scc-zone .ds-ship-side { grid-column: 1; grid-row: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .dashboard-v2 .scc-zone { gap: 12px; }
+  .scc-zone .scc-heading { align-items: start; flex-direction: column; }
+  .scc-zone .scc-heading h3 { font-size: 18px; }
+  .scc-zone .scc-kpis, .scc-zone .scc-kpis:not(:has(> :nth-child(4))) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .scc-zone .scc-kpi { padding: 11px 12px; }
+  .scc-zone .scc-kpi strong { font-size: 25px; }
+  .scc-zone .scc-kpi-label, .scc-zone .scc-kpi-note { font-size: 11px; }
+  .scc-zone .scc-pipeline { padding-inline: 12px; }
+  .scc-zone .scc-filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .scc-zone .scc-filters :is(input, select:not(.fsel-native), .fsel-btn), .scc-zone .scc-pagination button, .scc-zone .scc-manage-team { min-height: 44px; }
+  .scc-filter-panel .fsel-opt, .scc-filter-panel .fsel-search input { min-height: 44px; }
+  .dashboard-v2 .scc-zone .ds-ship-side { grid-template-columns: minmax(0, 1fr); }
+}
+@media (pointer: coarse) {
+  .scc-zone .scc-actions :is(.dd-toggle,.ds-ship-bosta-btn), .scc-zone .scc-order-link { min-height: 44px; min-width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .scc-zone * { transition: none !important; } }
+
+/* Beside the table the side column is ONE column, for every role. ⚠ employee-home.css
+   makes .ds-ship-side a 2-column grid for its full-width layout; inside this 264px
+   column that left «مَن يستلم الأوردرات الآن» ~126px and printed names one letter per
+   line. Same specificity, this file loads later — and the container rule below, later
+   still, restores two columns when the side cards sit under the table. */
+.dashboard-v2 .scc-zone > .ds-ship-side { display: grid; grid-template-columns: minmax(0, 1fr); }
+
+/* ── Layout by the zone's own width, not the viewport (Nov 9, 2026) ──────────
+   The table needs ~640px. Beside the 264px side column that only holds when the
+   zone is ≥ 920px wide; below that, the side cards move under the table as a row
+   instead of squeezing it into sideways scroll. Children query .scc-zone (the
+   zone cannot query itself). */
+@container (max-width: 919px) {
+  .dashboard-v2 .scc-zone .scc-main { grid-column: 1 / -1; }
+  .dashboard-v2 .scc-zone .ds-ship-side { grid-column: 1 / -1; grid-row: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@container (max-width: 600px) {
+  .dashboard-v2 .scc-zone .ds-ship-side { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Phone width: each order is a card, so status and actions are never off-screen.
+   Sorting stays available from the «ترتيب الطلبات» filter. */
+@container (max-width: 620px) {
+  .scc-zone .scc-table-scroll { overflow: visible; }
+  .scc-zone .scc-table, .scc-zone .scc-table tbody { display: block; min-width: 0; width: 100%; }
+  .scc-zone .scc-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .scc-zone .scc-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "ref actions" "cust status" "carrier carrier" "when when"; align-items: center; gap: 4px 10px; padding: 10px 14px; border-bottom: 1px solid var(--ds-border); }
+  .scc-zone .scc-table tbody tr:last-child { border-bottom: 0; }
+  .scc-zone .scc-table td { display: block; padding: 0; border: 0; height: auto; min-width: 0; }
+  .scc-zone .scc-table td:nth-child(1) { grid-area: ref; }
+  .scc-zone .scc-table td:nth-child(2) { grid-area: cust; max-width: none; font-weight: 500; }
+  .scc-zone .scc-table td:nth-child(3) { grid-area: carrier; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; color: var(--ds-muted); font-size: 11px; }
+  .scc-zone .scc-table td:nth-child(3) .scc-tracking { margin: 0; }
+  .scc-zone .scc-table td:nth-child(4) { grid-area: when; color: var(--ds-muted); font-size: 11px; }
+  .scc-zone .scc-table td:nth-child(5) { display: none; }
+  .scc-zone .scc-table td:nth-child(6) { grid-area: status; justify-self: end; }
+  .scc-zone .scc-table td:nth-child(6) .scc-status-cell { min-width: 0; justify-content: flex-end; }
+  .scc-zone .scc-table td:nth-child(7) { grid-area: actions; }
+  .scc-zone .scc-table .scc-age-inline { display: inline; }
+}
+.scc-zone .scc-age-inline { display: none; }
+
+/* «مَن يستلم الأوردرات الآن» at 264px: the name gets the whole first line and
+   wraps rather than running under the tag; the shift time sits at the end of
+   that line and the role tag drops to its own line under the name. */
+.scc-zone #dash-duty-section .ds-section-title { flex-wrap: nowrap; }
+.scc-zone #dash-duty-section .ds-section-title > span:not(.ds-live-dot) { min-width: 0; }
+.scc-zone #dash-duty-section .ds-section-title > :is(svg, .ds-live-dot) { flex-shrink: 0; }
+.scc-zone #dash-duty-admin .dy-p { grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; min-width: 0; }
+.scc-zone #dash-duty-admin .dy-name { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.45; }
+.scc-zone #dash-duty-admin .scc-shift { grid-column: 3; grid-row: 1; white-space: nowrap; }
+.scc-zone #dash-duty-admin .dy-tag { grid-column: 2 / -1; grid-row: 2; justify-self: start; margin-inline-start: 0; max-width: 100%; white-space: normal; line-height: 1.4; }
+.scc-zone #dash-duty-admin .dy-p.is-me { padding-inline: 8px; border-radius: 6px; }
+.scc-zone #dash-duty-admin .dy-more { min-width: 0; }
+.scc-zone #dash-duty-admin .dy-chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }

@@ -37,5 +37,6 @@ describe('receipt upload protection', () => {
     expect(receiptContentWarnings({ ran: false, pattern: '' })).toEqual([{ code: 'ocr-unavailable', orderRef: '' }]);
     expect(receiptContentWarnings({ ran: true, pattern: 'instapay' })).toEqual([]);
     expect(receiptContentWarnings({ ran: true, pattern: 'wallet-app' })).toEqual([]);
+    expect(receiptContentWarnings({ ran: true, pattern: 'ussd' })).toEqual([{ code: 'awaiting-send', orderRef: '' }]);
   });
 });

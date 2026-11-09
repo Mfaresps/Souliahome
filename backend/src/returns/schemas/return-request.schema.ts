@@ -180,3 +180,4 @@ export class ReturnRequest {
 
 export const ReturnRequestSchema =
   SchemaFactory.createForClass(ReturnRequest);
+ReturnRequestSchema.index({ status: 1, createdAt: 1 });

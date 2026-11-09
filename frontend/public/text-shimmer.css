@@ -1,0 +1,43 @@
+/* Text Shimmer adapted from Hirael (MIT): https://github.com/MohammadShehadeh/hirael */
+@keyframes soulia-text-shimmer {
+  from { background-position: 100% center, 0 0; }
+  to { background-position: 0% center, 0 0; }
+}
+
+[data-slot="text-shimmer"] {
+  --shimmer-duration: 2s;
+  --shimmer-spread: 2em;
+  display: inline-block;
+  background-image:
+    linear-gradient(90deg,
+      transparent calc(50% - var(--shimmer-spread)),
+      var(--text, currentColor) 50%,
+      transparent calc(50% + var(--shimmer-spread))),
+    linear-gradient(currentColor, currentColor);
+  background-size: 250% 100%, auto;
+  background-repeat: no-repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: soulia-text-shimmer var(--shimmer-duration) linear infinite;
+}
+
+[data-slot="text-shimmer"]:dir(rtl) { animation-direction: reverse; }
+
+/* Keep the startup label's existing entrance while the highlight continues. */
+#splash-screen .startup-status[data-slot="text-shimmer"] {
+  animation: startupFade .58s ease-out .16s both,
+    soulia-text-shimmer var(--shimmer-duration) linear infinite;
+}
+#splash-screen .startup-status[data-slot="text-shimmer"]:dir(rtl) {
+  animation-direction: normal, reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="text-shimmer"] {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  #splash-screen .startup-status[data-slot="text-shimmer"] { animation: none; }
+}

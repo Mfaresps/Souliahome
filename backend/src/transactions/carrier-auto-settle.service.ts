@@ -221,7 +221,8 @@ export class CarrierAutoSettleService {
       });
       const base: Record<string, any> = this.statementBase(tx, pricing, decision, ctx.trigger, vaultMethod, limit);
       // Review rows still belong to their scheduled batch, so it cannot post around them.
-      base.cashoutDueAt = bostaCashoutDueAt(raw);
+      base.cashoutDueAt = cs?.cashoutDueAt && Date.parse(cs.cashoutDueAt) <= Date.now()
+        ? cs.cashoutDueAt : bostaCashoutDueAt(raw);
       if (pricing?.isDelivered) base.phase = 'wallet';
       const nums = { net: decision.net, fees: decision.fees, variance: decision.variance };
 
@@ -239,14 +240,15 @@ export class CarrierAutoSettleService {
       }
 
       // Order settlement only records Bosta's wallet. A batch owns the bank credit.
-      const dueAt = bostaCashoutDueAt(raw);
+      const dueAt = base.cashoutDueAt;
       const delivery = raw?.data || raw;
       const feeOnly = Number(tx.remaining || 0) === 0;
       const depositedAt = delivery?.wallet?.cashCycle?.deposited_at || cs?.walletDepositedAt
         || (feeOnly ? pricing?.deliveredAt || tx.deliveredAt || new Date().toISOString() : '');
       await this.writeStatement(txId, {
         ...base, status: 'pending', phase: 'wallet', error: '',
-        reason: !dueAt ? 'cashout-date-missing' : !depositedAt ? 'wallet-not-deposited' : 'awaiting-cashout',
+        reason: !dueAt ? 'cashout-date-missing' : !depositedAt ? 'wallet-not-deposited'
+          : Date.now() >= Date.parse(dueAt) ? 'awaiting-confirmation' : 'awaiting-cashout',
         walletDepositedAt: depositedAt, cashoutDueAt: dueAt,
         dueAt: dueAt && Date.parse(dueAt) > Date.now() ? dueAt : new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         approvedFees: ctx.trigger === 'approve' ? decision.fees : cs?.approvedFees,
@@ -287,6 +289,7 @@ export class CarrierAutoSettleService {
       }
       const due = await this.txModel
         .find({ 'carrierSettlement.status': 'pending', 'carrierSettlement.dueAt': { $lte: nowIso },
+          'carrierSettlement.reason': { $ne: 'awaiting-confirmation' },
           ...(!settings?.autoSettleEnabled ? { 'carrierSettlement.phase': 'wallet' } : {}) })
         .select('_id').limit(DUE_PER_RUN).lean().exec();
       for (const d of due) {
@@ -492,7 +495,14 @@ export class CarrierAutoSettleService {
     const sum = (f: (cs: any) => number) => r2(inWin.reduce((s, t) => s + (f(t.carrierSettlement) || 0), 0));
     const stmt = await this.statement();
     const batchPayouts: any[] = await this.payoutModel.find({ mode: 'batch', state: { $in: ['posted', 'completed'] } }).lean().exec();
-    const batchNet = r2(batchPayouts.filter(p => inDateWindow(p.date, from, to)).reduce((s, p) => s + p.amount, 0));
+    // A historical correction is a separate vault entry dated when it was booked. Keep the
+    // period summary aligned with the vault journal instead of rewriting old period cash flow.
+    const batchNet = r2(batchPayouts.reduce((s, p) => {
+      const original = p.correctedAt ? Number(p.correctedFromAmount || 0) : Number(p.amount || 0);
+      const delta = p.correctedAt ? r2(Number(p.amount || 0) - original) : 0;
+      return s + (inDateWindow(p.date, from, to) ? original : 0)
+        + (p.correctedAt && inDateWindow(p.correctionBookedDate || p.correctedAt, from, to) ? delta : 0);
+    }, 0));
     const counts = await this.counts();
     const settings: any = await this.settingsService.getSettings();
     return {
@@ -537,7 +547,7 @@ export class CarrierAutoSettleService {
       this.payoutModel.find({}).lean().exec(),
     ]);
 
-    type Line = { date: string; at: string; kind: string; ref: string; txId?: string; party?: string; in: number; out: number; payoutId?: string; note?: string; batch?: boolean };
+    type Line = { date: string; at: string; kind: string; ref: string; txId?: string; party?: string; in: number; out: number; payoutId?: string; note?: string; batch?: boolean; bostaRef?: string; fee?: number; state?: string; correctedAt?: string; correctedFromAmount?: number };
     const lines: Line[] = [];
     for (const t of settledTx as any[]) {
       const cs = t.carrierSettlement;
@@ -556,7 +566,9 @@ export class CarrierAutoSettleService {
     for (const p of payouts as any[]) {
       if (p.mode === 'batch' && !['posted', 'completed'].includes(p.state)) continue;
       const at = `${p.date}T23:59:58`;
-      lines.push({ date: p.date, at, kind: 'payout', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.amount), note: p.vaultMethod, ...(p.mode === 'batch' ? { batch: true } : {}) });
+      lines.push({ date: p.date, at, kind: 'payout', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.amount), note: p.vaultMethod,
+        bostaRef: p.bostaRef || '', fee: r2(p.fee || 0), state: p.state || '', correctedAt: p.correctedAt || '',
+        correctedFromAmount: r2(p.correctedFromAmount || 0), ...(p.mode === 'batch' ? { batch: true } : {}) });
       if (p.fee > 0) lines.push({ date: p.date, at: `${p.date}T23:59:59`, kind: 'transfer-fee', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(p.fee) });
       if (p.adjustment) lines.push({ date: p.date, at: `${p.date}T23:59:59.5`, kind: 'adjustment', ref: p.payoutNo, payoutId: String(p._id), in: 0, out: r2(-p.adjustment) });
     }
@@ -594,8 +606,16 @@ export class CarrierAutoSettleService {
   }
 
   /** Expected figure for a transfer about to be recorded — the dialog shows it before the click. */
-  async payoutPreview(date: string) {
+  async payoutPreview(date: string, method?: string) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) throw new BadRequestException('تاريخ غير صالح');
+    if (method && SETTLE_VAULTS.includes(method)) {
+      const existing: any = await this.payoutModel.findOne({ batchKey: date + ':' + method }).select('_id').lean().exec();
+      const queued = await this.txModel.exists({ 'carrierSettlement.phase': 'wallet',
+        'carrierSettlement.status': 'pending', 'carrierSettlement.cashoutDueAt': { $regex: '^' + date },
+        'carrierSettlement.vaultMethod': method });
+      const firstBatch: any = await this.payoutModel.findOne({ mode: 'batch' }).sort({ date: 1 }).select('date').lean().exec();
+      if (existing || queued || (firstBatch?.date && date >= firstBatch.date)) return this.batchPayout.preview(date, method);
+    }
     const upTo = await this.statement(undefined, date);
     const lastLine = upTo.lines[upTo.lines.length - 1];
     return {
@@ -612,16 +632,19 @@ export class CarrierAutoSettleService {
   ) {
     const date = String(dto.date || '');
     const amount = r2(Number(dto.amount));
-    const fee = r2(Math.max(0, Number(dto.fee ?? 0)));
+    const fee = r2(Number(dto.fee ?? 0));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('تاريخ التحويل غير صالح');
     if (!(amount > 0)) throw new BadRequestException('اكتب المبلغ الذي وصل');
+    if (!(Number.isFinite(fee) && fee >= 0)) throw new BadRequestException('رسوم التحويل غير صالحة');
     if (!SETTLE_VAULTS.includes(dto.vaultMethod)) throw new BadRequestException('اختر الخزنة التي وصل لها التحويل');
 
     const batch: any = await this.payoutModel.findOne({ batchKey: date + ':' + dto.vaultMethod }).lean().exec();
     const queued: any = await this.txModel.findOne({ 'carrierSettlement.phase': 'wallet',
       'carrierSettlement.status': 'pending', 'carrierSettlement.cashoutDueAt': { $regex: '^' + date },
       'carrierSettlement.vaultMethod': dto.vaultMethod }).lean().exec();
-    if (batch || queued) {
+    const firstBatch: any = await this.payoutModel.findOne({ mode: 'batch' }).sort({ date: 1 }).select('date').lean().exec();
+    if (batch || queued || (firstBatch?.date && date >= firstBatch.date)) {
+      if (!String(dto.bostaRef || '').trim()) throw new BadRequestException('اكتب رقم فاتورة تحويل بوسطة');
       const dueAt = queued?.carrierSettlement?.cashoutDueAt || bostaCashoutDueAt({ wallet: { cashout: { next_cashout_date: date } } });
       if (Date.now() < Date.parse(dueAt)) throw new BadRequestException('موعد تحويل هذه الدفعة لم يحن بعد');
       return this.batchPayout.post(dueAt, dto.vaultMethod, by, { amount, fee,
@@ -680,6 +703,10 @@ export class CarrierAutoSettleService {
     });
     this.emit('settlement:changed', { payoutNo });
     return doc.toObject();
+  }
+
+  async reconcilePayout(id: string, dto: { amount: number; fee: number; bostaRef: string; note?: string }, by: string) {
+    return this.batchPayout.reconcileCompleted(id, dto.amount, dto.fee, dto.bostaRef, dto.note || '', by);
   }
 
   async deletePayout(id: string) {

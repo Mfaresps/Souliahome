@@ -1,19 +1,26 @@
 import { BadRequestException } from '@nestjs/common';
 import { normalizeReceiptPhone } from './receipt-phone.util';
+import { toLatinDigits } from '../shared/digits.util';
 
 export function receiptSender(body: any, receipt: any) {
   const senderName = String(body.senderName ?? receipt.senderName ?? receipt.ocr?.senderName ?? '').trim();
+  const senderBank = String(body.senderBank ?? receipt.senderBank ?? receipt.ocr?.senderBank ?? '').trim();
   const senderHandle = String(body.senderHandle ?? receipt.senderHandle ?? receipt.ocr?.senderHandle ?? '').replace(/\s/g, '').toLowerCase();
   const rawPhone = body.senderPhone ?? receipt.senderPhone ?? receipt.ocr?.senderPhone ?? '';
   const senderPhone = normalizeReceiptPhone(rawPhone);
   if (String(rawPhone).trim() && !senderPhone) throw new BadRequestException('راجع رقم هاتف المرسل: أدخل رقم محمول مصري كامل');
-  if (senderName.length > 120 || senderHandle.length > 120 || (senderHandle && !/^[a-z0-9._+-]+@instapay$/.test(senderHandle))) {
+  if (senderName.length > 120 || senderBank.length > 80 || senderHandle.length > 120 || (senderHandle && !/^[a-z0-9._+-]+@instapay$/.test(senderHandle))) {
     throw new BadRequestException('راجع اسم المحوّل وعنوان InstaPay');
   }
   const screenshotTime = String(body.screenshotTime ?? receipt.screenshotTime ?? receipt.ocr?.screenshotTime ?? '').trim();
   if (screenshotTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(screenshotTime)) throw new BadRequestException('راجع وقت الشاشة بصيغة HH:mm');
   const screenshotTimeSource = body.screenshotTime != null && screenshotTime !== receipt.ocr?.screenshotTime ? 'reviewed' : (receipt.screenshotTimeSource || receipt.ocr?.screenshotTimeSource || '');
-  return { senderName, senderHandle, senderPhone, screenshotTime, screenshotTimeSource };
+  const transferDateText = toLatinDigits(String(body.transferDateText ?? receipt.transferDateText ?? receipt.ocr?.dateText ?? '').trim());
+  const transferReference = toLatinDigits(String(body.transferReference ?? receipt.transferReference ?? receipt.ocr?.reference ?? '').trim()).replace(/\s+/g, '');
+  if (transferDateText.length > 80 || (transferReference && !/^[a-z0-9][a-z0-9/_-]{5,59}$/i.test(transferReference))) {
+    throw new BadRequestException('راجع تاريخ العملية ومرجع التحويل كما يظهران في الإيصال');
+  }
+  return { senderName, senderBank, senderHandle, senderPhone, screenshotTime, screenshotTimeSource, transferDateText, transferReference };
 }
 
 const day = (date: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
@@ -25,15 +32,20 @@ export function depositHistory(orders: any[], transactions: any[], manual: any[]
     if (!r?.id || r.status === 'مسودة' || !r.submittedAt || records.has(r.id)) return;
     const date = new Date(r.submittedAt);
     if (!Number.isFinite(date.getTime())) return;
+    const rawSenderName = String(r.senderName ?? r.ocr?.senderName ?? '');
+    const rawSenderBank = String(r.senderBank ?? r.ocr?.senderBank ?? '');
+    const logoOnly = /^[A-Z]{3,4}$/.test(rawSenderName) && (!rawSenderBank || rawSenderBank === rawSenderName);
     records.set(r.id, { id: r.id, source, orderId: String(parent._id || ''), orderNumber: String(parent.ref || parent.orderNumber || ''),
       client: String(parent.client || parent.customerName || ''), status: status || r.status || 'معتمد', amount: Number(r.amount) || 0,
       method: String(r.method || ''), submittedAt: date.toISOString(), submittedDay: day(date), submittedBy: String(r.submittedBy || ''),
       reviewedAt: String(r.reviewedAt || ''), reviewedBy: String(r.reviewedBy || ''),
-      senderName: String(r.senderName ?? r.ocr?.senderName ?? ''), senderHandle: String(r.senderHandle ?? r.ocr?.senderHandle ?? ''),
+      senderName: logoOnly ? '' : rawSenderName, senderBank: rawSenderBank || (logoOnly ? rawSenderName : ''),
+      senderHandle: String(r.senderHandle ?? r.ocr?.senderHandle ?? ''),
       senderPhone: normalizeReceiptPhone(r.senderPhone ?? r.ocr?.senderPhone ?? ''),
       screenshotTime: String(r.screenshotTime ?? r.ocr?.screenshotTime ?? ''),
       screenshotTimeSource: String(r.screenshotTimeSource || r.ocr?.screenshotTimeSource || ''),
-      reference: String(r.ocr?.reference || ''), imageDeleted: !!r.imageDeleted, vaultTxNo: String(r.vaultTxNo || '') });
+      reference: String(r.transferReference ?? r.ocr?.reference ?? ''), transferDateText: String(r.transferDateText ?? r.ocr?.dateText ?? ''),
+      imageDeleted: !!r.imageDeleted || !!r.noImage, noImage: !!r.noImage, vaultTxNo: String(r.vaultTxNo || '') });
   }
   orders.forEach(o => (o.depositReceipts || []).forEach((r: any) => add(o, r, 'shopify')));
   transactions.forEach(t => (t.depositReceipts || []).forEach((r: any) => {

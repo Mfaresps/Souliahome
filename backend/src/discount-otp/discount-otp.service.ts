@@ -719,6 +719,103 @@ export class DiscountOtpService {
     }
   }
 
+  /**
+   * «إضافة عربون بدون صورة تحويل» by a staff member holding `shopify-deposit-no-image-otp`.
+   * The code is bound to the order (editTxId), the amount (itemsTotal) and the vault (txType),
+   * and is spent once by `consumeDepositNoImageOtp` — a verified code cannot record two deposits.
+   */
+  async requestDepositNoImageOtp(args: {
+    orderId: string; orderRef: string; client: string; amount: number; method: string; reason: string;
+    requestedById: string; requestedByName: string; requestedByUsername: string;
+  }): Promise<{ otpId: string; expiresAt: string }> {
+    if (!args.orderId) throw new BadRequestException('الأوردر غير محدد');
+    if (!(args.amount > 0)) throw new BadRequestException('المبلغ غير صحيح');
+    if (!args.method) throw new BadRequestException('اختر الخزنة');
+
+    const now = new Date();
+    const ttlMin = await this.getTtlMin();
+    const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
+    const otp = this.generateOtp();
+
+    const doc = await this.createOtpDocument({
+      otp,
+      discountAmount: 0,
+      itemsTotal: Math.round(args.amount * 100) / 100,
+      client: args.client || '',
+      txType: args.method,
+      txRef: String(args.orderRef || '').replace(/^#+/, ''),
+      requestedById: args.requestedById,
+      requestedByName: args.requestedByName,
+      requestedByUsername: args.requestedByUsername,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'unused',
+      attempts: 0,
+      thresholdAtRequest: 0,
+      kind: 'deposit-no-image',
+      editTxId: args.orderId,
+      requestReason: String(args.reason || '').slice(0, 300),
+    });
+
+    try {
+      const users = await this.usersService.findAll();
+      const admins = users.filter((u: any) => u.role === 'admin');
+      const text =
+        // Line 1 must be the code: the notification card reads it from «🔐 كود التحقق».
+        `🔐 كود التحقق: ${otp}` +
+        `\nطلب إضافة عربون بدون صورة تحويل يحتاج موافقتك` +
+        `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
+        `\nالأوردر: #${doc.txRef || '-'}` +
+        `\nالعميل: ${args.client || '-'}` +
+        `\nالمبلغ: EGP ${doc.itemsTotal}` +
+        `\nالخزنة: ${args.method}` +
+        (args.reason ? `\nالسبب: ${args.reason}` : '') +
+        `\nصالح حتى: ${expiresAt.toISOString()}`;
+      const rows = admins.map((a: any) => ({
+        targetUserId: String(a._id),
+        targetUsername: (a.username || '').toLowerCase(),
+        targetName: a.name || '',
+        fromUserId: 'system',
+        // Its own sender: «نظام التحقق» is the discount card, which reads line 1 as the code.
+        fromName: 'نظام عربون بدون صورة',
+        txId: String(doc._id),
+        txRef: doc.txRef || '',
+        commentId: 0,
+        commentText: text,
+      }));
+      this.pushMentions(await this.mentionsService.createMany(rows) as any[]);
+    } catch {
+      // notification failure must not break OTP creation
+    }
+
+    return { otpId: String(doc._id), expiresAt: expiresAt.toISOString() };
+  }
+
+  /**
+   * Spends a verified deposit-no-image code once. Atomic: only a code that was verified, is for
+   * this order/amount/vault and has not been spent yet matches. Returns a release function so a
+   * failed recording gives the code back instead of wasting the manager's approval.
+   */
+  async consumeDepositNoImageOtp(otpId: string, orderId: string, amount: number, method: string, receiptId: string): Promise<() => Promise<void>> {
+    if (!otpId || !/^[a-f0-9]{24}$/.test(otpId)) throw new BadRequestException('يلزم كود تحقق من المدير لإضافة عربون بدون صورة');
+    const doc = await this.otpModel.findById(otpId).lean().exec();
+    if (!doc || doc.kind !== 'deposit-no-image') throw new BadRequestException('كود التحقق غير صحيح');
+    if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه بعد');
+    if (doc.txId) throw new BadRequestException('تم استخدام كود التحقق بالفعل — اطلب كوداً جديداً');
+    if (doc.editTxId !== orderId) throw new BadRequestException('كود التحقق صادر لأوردر آخر');
+    if (Math.abs((doc.itemsTotal || 0) - amount) > 0.005) throw new BadRequestException('المبلغ لا يطابق كود التحقق — اطلب كوداً جديداً');
+    if (doc.txType !== method) throw new BadRequestException('الخزنة لا تطابق كود التحقق — اطلب كوداً جديداً');
+    const claimed = await this.otpModel.findOneAndUpdate(
+      { _id: otpId, kind: 'deposit-no-image', status: 'used', txId: { $in: ['', null] } },
+      { $set: { txId: receiptId } },
+      { new: true },
+    ).exec();
+    if (!claimed) throw new BadRequestException('تم استخدام كود التحقق بالفعل — اطلب كوداً جديداً');
+    return async () => {
+      await this.otpModel.updateOne({ _id: otpId, txId: receiptId }, { $set: { txId: '' } }).exec();
+    };
+  }
+
   async requestVaultAccessOtp(args: VaultAccessOtpArgs): Promise<{ otpId: string; expiresAt: string }> {
     const now = new Date();
     const ttlMin = await this.getTtlMin();

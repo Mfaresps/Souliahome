@@ -1,0 +1,40 @@
+/* R2 storage meter — used vs remaining space, split by what the files are.
+   Adapted from Hirael Meter (MIT): https://hirael.com/components/data/meter */
+#stg-r2-card .r2-meter{
+  --r2-backups:var(--primary);
+  --r2-receipts:#1565c0;
+  --r2-other:#94a3b8;
+  margin:0 0 14px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)
+}
+body.dark-mode #stg-r2-card .r2-meter{--r2-backups:var(--accent);--r2-receipts:#60a5fa;--r2-other:#64748b}
+#stg-r2-card .r2-meter[hidden]{display:none}
+.r2-meter-header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:8px;font-size:.82rem}
+.r2-meter-label{font-weight:600;color:var(--text)}
+.r2-meter-value{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.r2-meter-value bdi{unicode-bidi:isolate}
+/* Segments follow the page direction: they fill from the start edge in RTL and LTR alike. */
+.r2-meter-track{display:flex;height:10px;width:100%;overflow:hidden;border-radius:999px;background:var(--surface2)}
+.r2-meter-seg{height:100%;width:0;flex:none;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.r2-meter-seg.is-backups{background:var(--r2-backups)}
+.r2-meter-seg.is-receipts{background:var(--r2-receipts)}
+.r2-meter-seg.is-other{background:var(--r2-other)}
+/* A hairline between two filled segments, so adjacent colours never blur into one. */
+.r2-meter-seg + .r2-meter-seg{box-shadow:inset 1px 0 0 var(--surface)}
+.r2-meter[data-tone="warning"] .r2-meter-value{color:var(--orange)}
+
+.r2-meter-legend{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px 16px}
+.r2-meter-row{display:grid;grid-template-columns:10px 1fr auto;align-items:center;column-gap:7px;font-size:.78rem;min-width:0}
+.r2-meter-dot{width:9px;height:9px;border-radius:3px;background:var(--r2-other)}
+.r2-meter-row.is-backups .r2-meter-dot{background:var(--r2-backups)}
+.r2-meter-row.is-receipts .r2-meter-dot{background:var(--r2-receipts)}
+.r2-meter-row.is-free .r2-meter-dot{background:transparent;box-shadow:inset 0 0 0 1.5px var(--border)}
+.r2-meter-row-label{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r2-meter-row-size{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.r2-meter-row-sub{grid-column:2 / -1;color:var(--muted);font-size:.72rem}
+.r2-meter-row-size bdi,.r2-meter-row-sub bdi{unicode-bidi:isolate}
+.r2-meter-row.is-warn .r2-meter-row-size,.r2-meter-row.is-warn .r2-meter-row-sub{color:var(--orange)}
+.r2-meter-hint{margin:8px 0 0;color:var(--muted);font-size:.73rem;line-height:1.5}
+.r2-meter-hint[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.r2-meter-seg{transition:none}}
+.r2-meter-fail{grid-column:1 / -1;color:var(--orange);font-size:.78rem;line-height:1.5}
+.r2-meter-fail span{color:var(--muted)}

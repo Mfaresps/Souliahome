@@ -19,6 +19,16 @@ import {
   normalizeR2AccountId,
 } from '../shared/r2-uploader.util';
 
+/** Bucket storage split by what the files are. `partial` = the listing hit its page cap. */
+export interface R2Usage {
+  capacityBytes: number;
+  totalBytes: number;
+  backups: { bytes: number; count: number };
+  receipts: { bytes: number; count: number };
+  other: { bytes: number; count: number };
+  partial: boolean;
+}
+
 /**
  * Seeded into a brand-new settings document. Derived from the carrier registry so the two can
  * never drift — adding a carrier there is enough.
@@ -505,6 +515,8 @@ export class SettingsService {
 
   /** Folder inside the bucket. Fixed, so listing and pruning know where to look. */
   private static readonly R2_PREFIX = 'backups/';
+  /** Cloudflare's monthly free Standard storage (decimal GB, as Cloudflare bills it). */
+  private static readonly R2_FREE_BYTES = 10e9;
 
   /**
    * Uploads a backup file to the cloud, then prunes old ones.
@@ -544,7 +556,11 @@ export class SettingsService {
       }
 
       const key = `${SettingsService.R2_PREFIX}${filename}`;
-      const put = await r2PutObject(cfg, key, body);
+      // ⚠ The deadline scales with the file. A fixed 120s needs ≥7 Mbps of upload for a 107 MB
+      // backup, so a normal office line timed out every night («انتهت مهلة الاتصال بـ R2»).
+      // Budget: 128 KB/s (~1 Mbps), at least 2 minutes, at most 1 hour.
+      const timeoutMs = Math.min(3600000, Math.max(120000, Math.ceil(body.length / (128 * 1024)) * 1000));
+      const put = await r2PutObject(cfg, key, body, 'application/json', timeoutMs);
       if (!put.ok) {
         const msg = `فشل الرفع: ${put.message}`;
         this.logger.error(`R2 upload failed for ${filename}: ${put.message}`);
@@ -603,11 +619,16 @@ export class SettingsService {
     success: boolean;
     message: string;
     files: { name: string; sizeBytes: number; date: string }[];
+    usage?: R2Usage | null;
   }> {
     const cfg = await this.getR2Config();
     if (!cfg) return { success: false, message: 'إعدادات R2 غير مكتملة', files: [] };
 
-    const res = await r2ListObjects(cfg, SettingsService.R2_PREFIX);
+    // Usage reads the whole bucket; a failure there must not hide the backups list.
+    const [res, usage] = await Promise.all([
+      r2ListObjects(cfg, SettingsService.R2_PREFIX),
+      this.getR2Usage(cfg).catch(() => null),
+    ]);
     if (!res.ok) return { success: false, message: res.message, files: [] };
 
     const files = res.objects
@@ -619,7 +640,37 @@ export class SettingsService {
       }))
       .sort((a, b) => (a.name < b.name ? 1 : -1));
 
-    return { success: true, message: 'ok', files };
+    return { success: true, message: 'ok', files, usage };
+  }
+
+  /**
+   * Bytes stored in the bucket, split by folder, against the 10 GB free allowance.
+   * Images, backups and any other file share one allowance, so the panel needs all three.
+   * 100 pages = 100,000 objects — above the 50,000 receipt-image ceiling plus backups.
+   */
+  private async getR2Usage(cfg: R2Config): Promise<R2Usage | null> {
+    const res = await r2ListObjects(cfg, '', 100);
+    if (!res.ok) return null;
+    const usage: R2Usage = {
+      capacityBytes: SettingsService.R2_FREE_BYTES,
+      totalBytes: 0,
+      backups: { bytes: 0, count: 0 },
+      receipts: { bytes: 0, count: 0 },
+      other: { bytes: 0, count: 0 },
+      partial: !!res.truncated,
+    };
+    for (const o of res.objects) {
+      const size = Number(o.size) || 0;
+      const bucket = o.key.startsWith(SettingsService.R2_PREFIX)
+        ? usage.backups
+        : o.key.startsWith('deposit-receipts/')
+          ? usage.receipts
+          : usage.other;
+      bucket.bytes += size;
+      bucket.count += 1;
+      usage.totalBytes += size;
+    }
+    return usage;
   }
 
   /**

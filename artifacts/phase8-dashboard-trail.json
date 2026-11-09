@@ -1,0 +1,19 @@
+{
+  "mode": "read-only-dashboard-follow-up-detail",
+  "detail": {
+    "loaded": true,
+    "commentsLoaded": true,
+    "commentCount": 3
+  },
+  "requests": [
+    {
+      "path": "/api/followups/6af0d714b64ac4870330aff0",
+      "at": 3450.2676,
+      "bytes": 3716,
+      "status": 200,
+      "ms": 61
+    }
+  ],
+  "errors": [],
+  "blockedWrites": []
+}

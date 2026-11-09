@@ -87,6 +87,10 @@ export class DiscountOtp {
 
   @Prop({ default: 0 })
   thresholdAtRequest: number;
+
+  /** deposit-no-image: the reason the employee typed (shown in the OTP log and to the manager). */
+  @Prop({ default: '' })
+  requestReason: string;
 }
 
 export const DiscountOtpSchema = SchemaFactory.createForClass(DiscountOtp);

@@ -34,6 +34,13 @@
     transform var(--ui-window-duration) var(--ui-window-ease);
 }
 #sp-peek.is-open .sp-peek{opacity:1;transform:translateY(var(--sp-pk-drag-y,0px))}
+/* Desktop order window: a calm entrance — fade, short rise and a hint of scale, eased out
+   (the phone sheet keeps its slide + drag). Must stay after the two rules above. */
+@media(min-width:601px){
+  #sp-peek .sp-peek{transform:translateY(12px) scale(.98);
+    transition:opacity 220ms ease-out,transform 280ms cubic-bezier(.16,1,.3,1)}
+  #sp-peek.is-open .sp-peek{transform:none}
+}
 #sp-peek .sp-pk-body.is-in>*{animation:none!important}
 #shopify-edit-modal{animation:uiWindowBackdropEnter var(--ui-window-duration) var(--ui-window-ease) both!important}
 #shopify-edit-modal>[role="dialog"],
@@ -69,7 +76,7 @@ dialog[open]::backdrop{animation:uiWindowBackdropEnter var(--ui-window-duration)
   --ui-action-hover:var(--spw-frame,var(--surface2));
 }
 #sp-peek :is(.sp-pk-x,.sp-ct-btn,.sp-pk-copy,.sp-pk-add-comment,.sp-pk-empty button,
-  .sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.sp-pk-tg-go,.spdep-add,.dd-info-button,.sp-pk-link){
+  .sp-pk-trail-btn,.sp-pk-fu-other,.sp-pk-tg-go,.spdep-add,.dd-info-button,.sp-pk-link){
   font-family:inherit;font-size:13px;font-weight:650;line-height:1.4;border-radius:var(--ui-action-radius);
   transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease,transform 120ms ease;
 }
@@ -78,22 +85,21 @@ dialog[open]::backdrop{animation:uiWindowBackdropEnter var(--ui-window-duration)
 #sp-peek .sp-pk-contact.is-compact .sp-ct-btn{width:40px;height:40px;min-height:40px;padding:0;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-ink,var(--text))}
 #sp-peek .sp-pk-contact.is-compact .sp-ct-btn:hover{background:var(--ui-action-hover);border-color:var(--accent)}
 #sp-peek .sp-pk-copy{width:32px;height:32px;min-height:32px;border:1px solid transparent;opacity:1}
-#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link){min-height:40px;padding:8px 12px;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-ink,var(--text));box-shadow:none}
-#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link):hover{background:var(--ui-action-hover);border-color:var(--accent);color:var(--spw-ink,var(--text))}
+#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-fu-other,.dd-info-button,.sp-pk-link){min-height:40px;padding:8px 12px;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--spw-ink,var(--text));box-shadow:none}
+#sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-fu-other,.dd-info-button,.sp-pk-link):hover{background:var(--ui-action-hover);border-color:var(--accent);color:var(--spw-ink,var(--text))}
 #sp-peek .sp-pk-fu .sp-pk-empty.is-row>button{max-width:none;min-height:40px;font-size:13px;white-space:nowrap}
 #sp-peek .sp-pk-add-comment{justify-content:flex-start;min-height:42px;padding:8px 10px;border:1px solid var(--ui-action-border);background:var(--bg);color:var(--accent)}
 #sp-peek .sp-pk-add-comment:hover{background:var(--ui-action-hover);border-color:var(--accent)}
+/* «إضافة عربون آخر» is a secondary step beside a section title, not the window's main
+   action: a quiet text action, so it never outweighs the receipt it sits above. */
 #sp-peek .spdep-add{
-  height:40px!important;min-height:40px!important;padding:8px 12px;
-  border:1px solid color-mix(in srgb,var(--accent) 28%,var(--ui-action-border));
-  border-radius:var(--ui-action-radius);
-  background:color-mix(in srgb,var(--accent) 9%,var(--bg));
-  color:var(--accent);box-shadow:none;font-size:13px!important;
+  height:30px!important;min-height:30px!important;padding:0 8px;gap:5px;
+  flex:none;width:auto;white-space:nowrap;
+  border:0;border-radius:8px;background:transparent;
+  color:var(--accent);box-shadow:none;font-size:12.5px!important;font-weight:600;
 }
-#sp-peek .spdep-add:hover{
-  filter:none;border-color:var(--accent);
-  background:color-mix(in srgb,var(--accent) 15%,var(--bg));
-}
+#sp-peek .spdep-add svg{width:15px;height:15px;flex:none}
+#sp-peek .spdep-add:hover{filter:none;background:var(--primary-pale)}
 #sp-peek .sp-pk-decision-card{padding:0}
 #sp-peek .sp-pk-decision-card .dd-summary--compact{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -123,8 +129,9 @@ dialog[open]::backdrop{animation:uiWindowBackdropEnter var(--ui-window-duration)
 @media(pointer:coarse),(max-width:600px){
   #sp-peek :is(.sp-pk-x,.sp-pk-tg-go),#sp-peek .sp-pk-contact.is-compact .sp-ct-btn,
   #sp-peek .sp-pk-copy{width:44px;height:44px;min-height:44px}
-  #sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-history-more,.sp-pk-fu-other,.dd-info-button,.sp-pk-link,.sp-pk-add-comment,.spdep-add){min-height:44px!important}
-  #sp-peek .spdep-add{height:44px!important}
+  #sp-peek :is(.sp-pk-empty button,.sp-pk-trail-btn,.sp-pk-fu-other,.dd-info-button,.sp-pk-link,.sp-pk-add-comment){min-height:44px!important}
+  /* Touch keeps a 40px target, but it is transparent, so it still reads as a text action. */
+  #sp-peek .spdep-add{height:40px!important;min-height:40px!important}
   #sp-peek .sp-pk-decision-card .dd-summary--compact{align-items:stretch;flex-direction:column;gap:10px}
   #sp-peek .dd-summary-actions{flex-wrap:wrap}
 }

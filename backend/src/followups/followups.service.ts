@@ -449,6 +449,28 @@ export class FollowUpsService implements OnModuleInit {
     return this.model.find().sort({ createdAt: -1 }).lean();
   }
 
+  /** The Orders invoice drawer needs only the tickets linked to its order. */
+  async findForShopifyOrder(shopifyOrderId: string, ref: string) {
+    const normalizedRef = (value: unknown) => String(value ?? '').trim().replace(/^#+/, '').toLowerCase();
+    const id = String(shopifyOrderId || '').trim();
+    const reference = normalizedRef(ref);
+    if (!id && !reference) return [];
+    const rows = await this.findAll();
+    return rows.filter(row => (id && String(row.shopifyOrderId || '') === id)
+      || (reference && normalizedRef(row.orderRef) === reference));
+  }
+
+  /** Dashboard badges, notifications, and timed reminders only. The Follow-ups
+   * page keeps using findAll so comments and action history remain available. */
+  findDashboardSummary() {
+    return this.model.find().select([
+      '_id', 'ticketNo', 'orderRef', 'transactionId', 'shopifyOrderId',
+      'clientName', 'responsibleId', 'responsibleName', 'reason', 'status',
+      'autoSource', 'assignSource', 'orderOutcome', 'cancelled', 'createdAt',
+      'deferredUntil', 'deferReason',
+    ].join(' ')).sort({ createdAt: -1 }).lean().exec();
+  }
+
   findById(id: string) {
     return this.model.findById(id).lean();
   }

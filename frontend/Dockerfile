@@ -1,3 +1,9 @@
+FROM node:22-alpine AS runtime-assets
+WORKDIR /app
+COPY public ./public
+COPY scripts/build-runtime.cjs ./scripts/build-runtime.cjs
+RUN node scripts/build-runtime.cjs
+
 FROM nginx:alpine
 
 # Build identity — injected by CI (Jenkins passes --build-arg BUILD_NUMBER=${BUILD_NUMBER}).
@@ -7,6 +13,7 @@ ARG APP_VERSION=1.0
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY public /usr/share/nginx/html
+COPY --from=runtime-assets /app/runtime/ /usr/share/nginx/html/
 
 # version.json is what the running app polls to detect a new deploy. It is written at
 # image-build time (not committed) so every rebuild necessarily produces a new value —

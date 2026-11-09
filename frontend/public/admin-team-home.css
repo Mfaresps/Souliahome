@@ -80,3 +80,85 @@ body.dark-mode .admin-team-home :is(h3,h4,bdi,.ath-person-name,.ath-note p,.ath-
 body.dark-mode .admin-team-home :is(.ath-header p,.ath-period-help,.ath-totals span,.ath-totals small,.ath-person-header small,.ath-person-header>span,.ath-performance,.ath-person-metrics>span,.ath-task-main p,.ath-preview-note,.ath-empty,.ath-controls label){color:var(--muted)}
 body.dark-mode .admin-team-home .ath-filters button[aria-pressed=true]{background:var(--accent);color:var(--bg)}
 body.dark-mode .admin-team-home :is(.ath-totals .is-issue,.ath-error){background:color-mix(in srgb,#ef4444 12%,var(--bg));border-color:color-mix(in srgb,#ef4444 30%,var(--border));color:#fca5a5}
+
+/* Compact team oversight: keep all context and actions, reduce repeated padding. */
+.dashboard-v2 .admin-team-home{padding:12px;margin-bottom:12px;border-radius:10px}
+.dashboard-v2 .admin-team-home .ath-header{gap:8px}
+.dashboard-v2 .admin-team-home .ath-header h3{font-size:16px}
+.dashboard-v2 .admin-team-home .ath-header p{margin-top:2px;line-height:1.45}
+.dashboard-v2 .admin-team-home .ath-controls{gap:6px}
+.dashboard-v2 .admin-team-home .ath-controls label{gap:3px;font-size:11px}
+.dashboard-v2 .admin-team-home :is(.ath-controls input,.ath-controls button){min-height:32px;padding:5px 9px;border-radius:6px}
+.dashboard-v2 .admin-team-home .ath-period-help{margin-top:6px;line-height:1.45}
+.dashboard-v2 .admin-team-home .ath-totals{gap:8px;margin:8px 0}
+.dashboard-v2 .admin-team-home .ath-totals>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:start;align-items:center;gap:3px 10px;padding:8px 10px;border-radius:7px}
+.dashboard-v2 .admin-team-home .ath-totals bdi{font-size:21px;font-weight:650;font-variant-numeric:tabular-nums}
+.dashboard-v2 .admin-team-home .ath-totals small{grid-column:1/-1;line-height:1.4}
+.dashboard-v2 .admin-team-home .ath-layout{grid-template-columns:220px minmax(0,1fr);gap:10px}
+.dashboard-v2 .admin-team-home :is(.ath-employees,.ath-workspace){padding:10px;border-radius:8px}
+.dashboard-v2 .admin-team-home .ath-employees-title{margin-bottom:6px}
+.dashboard-v2 .admin-team-home .ath-employee-list{gap:5px;max-height:380px;overflow-x:hidden}
+.dashboard-v2 .admin-team-home .ath-person{padding:7px 9px;gap:3px;min-height:48px;border-radius:6px}
+.dashboard-v2 .admin-team-home .ath-issue-badge{padding:1px 5px}
+.dashboard-v2 .admin-team-home .ath-person-header{gap:6px}
+.dashboard-v2 .admin-team-home .ath-person-header h4{font-size:14px}
+.dashboard-v2 .admin-team-home .ath-performance{gap:6px;margin:7px 0}
+.dashboard-v2 .admin-team-home .ath-performance>span{padding:4px 8px;border-radius:5px}
+.dashboard-v2 .admin-team-home .ath-performance bdi{font-size:14px;font-variant-numeric:tabular-nums}
+.dashboard-v2 .admin-team-home .ath-person-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.dashboard-v2 .admin-team-home .ath-person-metrics>span{flex-direction:row;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border-radius:6px}
+.dashboard-v2 .admin-team-home .ath-person-metrics bdi{font-size:17px;font-variant-numeric:tabular-nums}
+.dashboard-v2 .admin-team-home .ath-filters{gap:5px;margin:8px 0}
+.dashboard-v2 .admin-team-home .ath-filters button{min-height:30px;padding:4px 9px;border-radius:6px}
+.dashboard-v2 .admin-team-home .ath-tasks{gap:6px;max-height:340px;overflow-x:hidden}
+.dashboard-v2 .admin-team-home .ath-task{display:grid;grid-template-columns:minmax(115px,.35fr) minmax(0,1fr);align-items:center;gap:4px 12px;padding:7px 9px;border-radius:7px}
+.dashboard-v2 .admin-team-home .ath-task-top{justify-content:flex-start;gap:4px 6px}
+.dashboard-v2 .admin-team-home .ath-task-top strong{font-size:14px;font-variant-numeric:tabular-nums}
+.dashboard-v2 .admin-team-home .ath-task-top>span{font-size:11px;padding:1px 5px}
+.dashboard-v2 .admin-team-home .ath-task-main{margin:0;gap:6px}
+.dashboard-v2 .admin-team-home .ath-task-main button{min-height:30px;padding:4px 8px;border-radius:6px}
+.dashboard-v2 .admin-team-home .ath-context{grid-column:1/-1;gap:6px 16px;margin-top:2px;padding-top:5px}
+.dashboard-v2 .admin-team-home .ath-note p{margin-top:1px;line-height:1.5}
+.dashboard-v2 .admin-team-home .ath-schedule{gap:1px;line-height:1.5}
+.dashboard-v2 .admin-team-home .ath-preview-note{margin-top:6px;line-height:1.45}
+.dashboard-v2 .admin-team-home .ath-loading-tasks .ath-task{min-height:70px}
+.dashboard-v2 .admin-team-home .ath-loading .ath-person{min-height:48px;gap:6px}
+@media(max-width:700px){
+  .dashboard-v2 .admin-team-home .ath-layout{grid-template-columns:minmax(0,1fr)}
+  .dashboard-v2 .admin-team-home .ath-employee-list{max-height:155px}
+  .dashboard-v2 .admin-team-home .ath-person-counts{font-size:11px}
+  .dashboard-v2 .admin-team-home .ath-totals{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dashboard-v2 .admin-team-home .ath-totals>div{grid-template-columns:minmax(0,1fr);padding:7px}
+  .dashboard-v2 .admin-team-home .ath-totals>div:last-child{grid-column:auto}
+  .dashboard-v2 .admin-team-home .ath-totals bdi{font-size:19px}
+  .dashboard-v2 .admin-team-home .ath-person-metrics>span{flex-direction:column;align-items:flex-start;gap:2px}
+  .dashboard-v2 .admin-team-home .ath-task{grid-template-columns:minmax(0,1fr);gap:3px}
+}
+@media(pointer:coarse){
+  .dashboard-v2 .admin-team-home :is(button,.ath-controls input){min-height:44px}
+}
+
+/* Nov 9, 2026 — the card was ~740px tall at 1280px. The explanation and the
+   counting rules are one collapsible line (touch-reachable, unlike a title),
+   the team totals are single-line tiles, and the selected person's five numbers
+   share one row instead of two stacked blocks. Nothing is removed. */
+.ath-heading{min-width:0;flex:1 1 320px}
+.ath-help{margin-top:3px;font-size:12px;color:#526171;line-height:1.5}
+.ath-help>summary{cursor:pointer;list-style:none;display:inline}
+.ath-help>summary::-webkit-details-marker{display:none}
+.ath-help-more{color:var(--primary);font-size:11px;white-space:nowrap;text-decoration:underline dotted;text-underline-offset:3px}
+.ath-help[open] .ath-help-more{opacity:.7}
+.ath-help>summary:focus-visible{outline:2px solid #236443;outline-offset:2px;border-radius:4px}
+.ath-help .ath-period-help{margin:6px 0 0;max-width:72ch}
+body.dark-mode .admin-team-home .ath-help{color:var(--muted)}
+body.dark-mode .admin-team-home .ath-help-more{color:var(--accent)}
+.dashboard-v2 .admin-team-home .ath-totals>div{grid-template-columns:minmax(0,1fr) auto;padding:7px 10px}
+.dashboard-v2 .admin-team-home .ath-stats{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin:7px 0 0}
+.dashboard-v2 .admin-team-home .ath-stats .ath-performance{display:contents;margin:0}
+.dashboard-v2 .admin-team-home .ath-stats .ath-person-metrics{display:contents}
+.dashboard-v2 .admin-team-home .ath-stats :is(.ath-performance,.ath-person-metrics)>span{flex:1 1 104px;min-width:0;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:6px;font-size:11px;line-height:1.35}
+.dashboard-v2 .admin-team-home .ath-stats .ath-performance>span{background:#e9eef5;border:1px solid transparent}
+.dashboard-v2 .admin-team-home .ath-stats bdi{font-size:15px;font-weight:650;font-variant-numeric:tabular-nums}
+body.dark-mode .dashboard-v2 .admin-team-home .ath-stats .ath-performance>span{background:var(--surface2)}
+.dashboard-v2 .admin-team-home .ath-tasks{max-height:300px}
+.dashboard-v2 .admin-team-home .ath-employee-list{max-height:330px}

@@ -22,23 +22,36 @@ export interface DepositReceipt {
   id: string;
   status: 'مسودة' | 'معلق' | 'معتمد' | 'مرفوض' | 'ملغي' | 'مُسترد' | 'مسحوب';
   senderName?: string;
+  senderBank?: string;
   senderHandle?: string;
   senderPhone?: string;
+  transferDateText?: string;
+  transferReference?: string;
   screenshotTime?: string;
   screenshotTimeSource?: string;
   imageKey: string;
   imageSha256: string;
+  rawSha256?: string;
+  /** «عربون بدون صورة تحويل» — recorded with amount + vault only. imageKey is '' and
+   *  imageSha256 is a per-receipt placeholder, so it never collides in the duplicate checks. */
+  noImage?: boolean;
+  noImageReason?: string;
+  /** How the no-image entry was authorised: 'admin' | 'direct' | 'otp' | 'otp-skipped'. */
+  noImageAuth?: string;
+  noImageOtpId?: string;
   imageBytes: number;
   imageDeleted: boolean;
   amount: number;
   method: string;
   ocr: {
     senderName?: string;
+    senderBank?: string;
     senderHandle?: string;
     senderPhone?: string;
     screenshotTime?: string;
     screenshotTimeSource?: string;
     amount: number | null;
+    amountConfidence?: number;
     method: string;
     pattern: string;
     reference: string;
@@ -49,7 +62,7 @@ export interface DepositReceipt {
   };
   needsReview: boolean;
   /** Non-blocking warnings shown to the manager (reused image / reused transfer reference). */
-  warnings: Array<{ code: 'same-image' | 'same-reference' | 'not-transfer' | 'ocr-unavailable'; orderRef: string }>;
+  warnings: Array<{ code: 'same-image' | 'same-reference' | 'not-transfer' | 'ocr-unavailable' | 'awaiting-send'; orderRef: string }>;
   warningAcknowledgedAt?: string;
   warningAcknowledgedById?: string;
   uploadedAt: string;
@@ -469,6 +482,7 @@ export class ShopifyOrder {
 }
 
 export const ShopifyOrderSchema = SchemaFactory.createForClass(ShopifyOrder);
+ShopifyOrderSchema.index({ shopifyCreatedAt: 1 });
 // The receipt-image route and the duplicate checks look a receipt up by id / hash across orders.
 ShopifyOrderSchema.index({ 'depositReceipts.id': 1 });
 ShopifyOrderSchema.index({ 'depositReceipts.imageSha256': 1 });

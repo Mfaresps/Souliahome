@@ -1,4 +1,6 @@
 import { setCommentReaction } from '../shared/comment-reactions';
+import { buildMovementsPage, MovementsState } from './movements-page.util';
+import { maskTransactionsForRole } from './purchase-mask.util';
 import { notifyApproval } from '../notifications/admin-events';
 import { pickingExceptions } from '../inventory-units/picking-exceptions';
 import { resetPickupPreparation } from '../inventory-units/pickup-preparation-reset';
@@ -76,6 +78,7 @@ import {
 import { inDateWindow, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
 import { buildCancelledProducts } from './cancellation-products';
 import { buildOrderArrivalTrend } from './order-arrival-trend';
+import { buildSalesOverview, cairoToday, mongoCairoDay, salesOverviewMonth } from './sales-overview';
 import { normalizeCity } from '../shared/normalize-city.util';
 import {
   ShipZone,
@@ -742,13 +745,178 @@ export class TransactionsService {
     bostaRawResponse: 0,
     bostaStatusIgnoredEvents: 0,
     bostaTrackingEvents: 0,
+    bostaAwbBase64: 0,
+    bostaAwbType: 0,
   } as const;
 
-  async findAll(page?: number, limit?: number): Promise<Record<string, any>[]> {
+  // The Pick-Up workspace groups every sale but reads financial and shipment
+  // history only from the existing full transaction detail endpoint on demand.
+  private static readonly PICKUP_WORKSPACE_EXCLUDED_FIELDS = {
+    ...TransactionsService.LIST_EXCLUDED_FIELDS,
+    editHistory: 0,
+    carrierSettlement: 0,
+    pickupHistory: 0,
+    payments: 0,
+    deposits: 0,
+    deliveryAuditLog: 0,
+    afterSalesEvents: 0,
+    bostaAwbPrints: 0,
+    pickingExceptions: 0,
+    bostaShippedAddress: 0,
+  } as const;
+
+  // The browser's list and dashboard never need the cached PDF or full audit trails.
+  // Keep this projection independent of the legacy list contract below.
+  private static readonly SUMMARY_FIELDS = [
+    '_id', 'type', 'ref', 'date', 'transactionDate', 'createdAt', 'updatedAt',
+    'client', 'phone', 'notes', 'employee', 'total', 'itemsTotal', 'deposit',
+    'initialDeposit', 'remaining', 'discount', 'discountCode', 'discountCodeId',
+    'discountCodeType', 'manualDiscount', 'manualDiscountType', 'shipCost',
+    'actualShipCost', 'shipLoss', 'shipSaving', 'depMethod', 'collectMethod',
+    'payment', 'payStatus', 'cancelled', 'cancelReason', 'cancelRequest', 'tags',
+    'items', 'supplier', 'supplierId', 'warehouseCode', 'bostaOrderId',
+    'bostaTrackingNumber', 'bostaStatus', 'bostaStatusLabel', 'bostaLastSync',
+    'bostaAwbPrints', 'pickupStatus', 'pickupRef', 'pickupDate', 'shippingAddress',
+    'shippingCity', 'shippingGov', 'shippingBostaCity', 'shipCo', 'shipZone',
+    'carrierCode', 'carrierSettlement', 'afterSales', 'shipmentAttempts',
+    'shippedAt', 'deliveredAt', 'deliverySource', 'bostaDeliveryException',
+    'shopifyOrderId', 'creditApplied', 'writeOff', 'deposits', 'payments',
+    'depositReceipts', 'invoiceImageUrl', 'invoiceImages', 'failedDelivery',
+    'externalFulfillment', 'codCollectionStatus', 'collectedAt', 'collectNote',
+    'addressChangeConflict', 'shopifyCancelConflict', 'shipIssueState',
+    'bostaIsDelayed', 'shipWithoutDeposit', 'prepChecked', 'depositDecision',
+    'bostaShippingStatus', 'codCollectedAmount', 'codCollectionMethod',
+    'comments', 'editHistory', 'shipTariff', 'prepShipCo', 'prepNote',
+  ].join(' ');
+
+  private static readonly OVERVIEW_FIELDS = [
+    '_id', 'type', 'ref', 'date', 'createdAt', 'client', 'phone', 'deposit',
+    'remaining', 'payStatus', 'cancelled', 'cancelRequest', 'carrierSettlement',
+    'bostaOrderId', 'bostaTrackingNumber', 'bostaStatus', 'bostaLastSync',
+    'bostaDeliveryException', 'pickupStatus', 'pickupDate', 'shippedAt',
+    'deliveredAt', 'deliverySource', 'shipmentAttempts', 'shopifyOrderId',
+    'shipIssueState', 'failedDelivery', 'shipCo', 'bostaIsDelayed',
+  ].join(' ');
+
+  // Keep every existing overview row and scalar used by Dashboard and the
+  // Follow-ups order search. Only the large carrier audit object is narrowed.
+  private static readonly DASHBOARD_OVERVIEW_FIELDS =
+    TransactionsService.OVERVIEW_FIELDS.replace('carrierSettlement', [
+      'carrierSettlement.status', 'carrierSettlement.reason',
+      'carrierSettlement.variance', 'carrierSettlement.readAt',
+      'carrierSettlement.remaining', 'carrierSettlement.deliveredAt',
+      'carrierSettlement.fees.sizeName',
+    ].join(' '));
+
+  async findSummaryPage(options: {
+    page?: number; limit?: number; search?: string; type?: string;
+    status?: string; from?: string; to?: string; sort?: string;
+  }, canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; total: number; page: number; pageSize: number }> {
+    const page = Number.isSafeInteger(options.page) && options.page! > 0 ? options.page! : 1;
+    const pageSize = Number.isSafeInteger(options.limit) && options.limit! > 0
+      ? Math.min(options.limit!, 200) : 50;
+    const filter: Record<string, any> = { archived: { $ne: true } };
+    if (!canSeePurchases) filter.type = { $nin: ['مشتريات', 'مرتجع مشتريات'] };
+    if (options.type) {
+      filter.type = canSeePurchases ? options.type : { $eq: options.type, $nin: ['مشتريات', 'مرتجع مشتريات'] };
+    }
+    if (options.status) filter.payStatus = options.status;
+    const and: Record<string, any>[] = [];
+    if (options.from || options.to) {
+      const window: Record<string, string> = {};
+      if (options.from && /^\d{4}-\d{2}-\d{2}$/.test(options.from)) window.$gte = options.from;
+      if (options.to && /^\d{4}-\d{2}-\d{2}$/.test(options.to)) window.$lte = options.to + '\uffff';
+      if (Object.keys(window).length) and.push({ $or: [
+        { transactionDate: window },
+        { transactionDate: { $in: ['', null] }, date: window },
+      ] });
+    }
+    if (options.search) {
+      const term = String(options.search).trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (term) and.push({ $or: ['ref', 'client', 'phone', 'notes', 'bostaTrackingNumber']
+        .map(field => ({ [field]: { $regex: term, $options: 'i' } })) });
+    }
+    if (and.length) filter.$and = and;
+    const sorts: Record<string, Record<string, 1 | -1>> = {
+      newest: { createdAt: -1, _id: -1 }, oldest: { createdAt: 1, _id: 1 },
+      'date-desc': { date: -1, _id: -1 }, 'date-asc': { date: 1, _id: 1 },
+      'amount-desc': { total: -1, _id: -1 }, 'amount-asc': { total: 1, _id: 1 },
+    };
+    const sort = sorts[options.sort || 'newest'] || sorts.newest;
+    const [rows, total] = await Promise.all([
+      this.transactionModel.find(filter).select(TransactionsService.SUMMARY_FIELDS)
+        .slice('editHistory', 1).sort(sort).skip((page - 1) * pageSize).limit(pageSize).lean().exec(),
+      this.transactionModel.countDocuments(filter).exec(),
+    ]);
+    return { rows: rows.map(({ editHistory, ...row }) => ({
+      ...row, hasEditHistory: Array.isArray(editHistory) && editHistory.length > 0,
+    })), total, page, pageSize };
+  }
+
+  async findStartupOverview(canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; activeCount: number }> {
+    const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
+    const [rows, activeCount] = await Promise.all([
+      this.transactionModel.find({ archived: { $ne: true }, ...visibility, $or: [
+        { type: 'مبيعات' }, { 'cancelRequest.status': 'معلق' },
+        { 'carrierSettlement.status': 'review' },
+      ] }).select(TransactionsService.OVERVIEW_FIELDS).lean().exec(),
+      this.transactionModel.countDocuments({ archived: { $ne: true }, cancelled: { $ne: true }, ...visibility }).exec(),
+    ]);
+    return { rows, activeCount };
+  }
+
+  /** Same visibility, rows, and active count as startup-overview, with only
+   * Dashboard-needed carrier settlement fields. The original endpoint stays
+   * available to existing consumers. */
+  async findDashboardOverview(canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; activeCount: number }> {
+    const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
+    const [rows, activeCount] = await Promise.all([
+      this.transactionModel.find({ archived: { $ne: true }, ...visibility, $or: [
+        { type: 'مبيعات' }, { 'cancelRequest.status': 'معلق' },
+        { 'carrierSettlement.status': 'review' },
+      ] }).select(TransactionsService.DASHBOARD_OVERVIEW_FIELDS).lean().exec(),
+      this.transactionModel.countDocuments({ archived: { $ne: true }, cancelled: { $ne: true }, ...visibility }).exec(),
+    ]);
+    return { rows, activeCount };
+  }
+
+  async findMovementsPage(state: MovementsState, role: string | undefined, canSeePurchases: boolean) {
+    const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
+    const [rows, returns, supplierReturns] = await Promise.all([
+      this.transactionModel.find({ archived: { $ne: true }, ...visibility })
+        .select(TransactionsService.SUMMARY_FIELDS).slice('editHistory', 1)
+        .sort({ createdAt: -1, _id: -1 }).lean().exec(),
+      this.returnRequestModel.find().lean().exec(),
+      this.supplierReturnModel.find().select('status reversal returnDate createdAt total').lean().exec(),
+    ]);
+    const summaries = maskTransactionsForRole(rows.map(({ editHistory, ...row }) => ({
+      ...row, hasEditHistory: Array.isArray(editHistory) && editHistory.length > 0,
+    })), role);
+    return buildMovementsPage(summaries, returns, supplierReturns, state);
+  }
+
+  async findMovementCustomerHistory(id: string, role: string | undefined) {
+    const current = await this.transactionModel.findById(id).select('_id type phone client').lean().exec();
+    if (!current || current.type !== 'مبيعات') return [];
+    const rows = await this.transactionModel.find({ type: 'مبيعات', archived: { $ne: true } })
+      .select('_id type phone client ref date transactionDate createdAt total').lean().exec();
+    const key = (tx: { phone?: string; client?: string }) => {
+      const digits = String(tx.phone || '').replace(/\D/g, '');
+      return digits.length >= 10 ? digits.slice(-10) : String(tx.client || '').trim().toLowerCase();
+    };
+    const currentKey = key(current);
+    if (!currentKey) return [];
+    const history = rows.filter(row => String(row._id) !== String(current._id) && key(row) === currentKey)
+      .sort((a, b) => new Date(b.transactionDate || b.date || (b as any).createdAt || 0).getTime()
+        - new Date(a.transactionDate || a.date || (a as any).createdAt || 0).getTime());
+    return maskTransactionsForRole(history, role);
+  }
+
+  async findAll(page?: number, limit?: number, canSeePurchases = true): Promise<Record<string, any>[]> {
     const query = this.transactionModel
-      .find({ archived: { $ne: true } })
+      .find({ archived: { $ne: true }, ...(canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } }) })
       .select(TransactionsService.LIST_EXCLUDED_FIELDS)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1, _id: -1 });
     if (limit && limit > 0) {
       const skip = ((page || 1) - 1) * limit;
       query.skip(skip).limit(limit);
@@ -3880,6 +4048,108 @@ export class TransactionsService {
     });
   }
 
+  async getSalesOverview(year?: number, month?: number) {
+    const cairo = cairoToday();
+    const selectedYear = year ?? Number(cairo.slice(0, 4));
+    const selectedMonth = month ?? Number(cairo.slice(5, 7));
+    const { start, next, broadStart, broadEnd } = salesOverviewMonth(selectedYear, selectedMonth);
+    const inBroadRange = (field: string) => ({ [field]: { $gte: broadStart, $lt: broadEnd } });
+    const number = (field: string) => ({ $convert: { input: field, to: 'double', onError: 0, onNull: 0 } });
+    const productRevenue = { $cond: [
+      { $ne: [number('$itemsTotal'), 0] }, number('$itemsTotal'),
+      { $subtract: [number('$total'), number('$shipCost')] },
+    ] };
+    const active = { $and: [{ $ne: ['$cancelled', true] }, { $ne: ['$archived', true] }] };
+    const saleDay = { $ifNull: [
+      mongoCairoDay('$shopifyCreatedAt'),
+      { $ifNull: [mongoCairoDay('$transactionDate'), mongoCairoDay('$date')] },
+    ] };
+    const txCollection = this.transactionModel.collection.name;
+    const shopifyCollection = this.shopifyOrderModel.collection.name;
+
+    // Shopify arrivals form the order cohort. Confirmation stays on the arrival day.
+    // Revenue is aggregated separately by invoice date, as in getReports().
+    const shopifyPipeline: any[] = [
+      { $match: inBroadRange('shopifyCreatedAt') },
+      { $set: { day: mongoCairoDay('$shopifyCreatedAt') } },
+      { $match: { day: { $gte: start, $lt: next } } },
+      { $lookup: {
+        from: txCollection, let: { orderId: '$shopifyId' },
+        pipeline: [
+          { $match: { $expr: { $and: [
+            { $eq: ['$shopifyOrderId', '$$orderId'] }, { $eq: ['$type', 'مبيعات'] },
+          ] } } },
+          { $project: { _id: 0, active } },
+        ], as: 'sales',
+      } },
+      { $project: {
+        day: 1,
+        confirmed: { $cond: [{ $anyElementTrue: ['$sales.active'] }, 1, 0] },
+      } },
+      { $group: {
+        _id: '$day', receivedOrders: { $sum: 1 },
+        confirmedOrders: { $sum: '$confirmed' },
+      } },
+    ];
+
+    // Manual invoices, deleted sources, and sources missing an arrival timestamp count once.
+    // A linked source with its own timestamp is counted by the Shopify aggregate above.
+    const orphanPipeline: any[] = [
+      { $match: { type: 'مبيعات', $or: [
+        inBroadRange('shopifyCreatedAt'), inBroadRange('transactionDate'), inBroadRange('date'),
+      ] } },
+      { $set: { day: saleDay } },
+      { $match: { day: { $gte: start, $lt: next } } },
+      { $lookup: {
+        from: shopifyCollection, localField: 'shopifyOrderId', foreignField: 'shopifyId', as: 'sourceOrder',
+      } },
+      { $match: { $or: [
+        { sourceOrder: { $eq: [] } },
+        { 'sourceOrder.shopifyCreatedAt': { $in: ['', null] } },
+      ] } },
+      { $group: {
+        _id: { $cond: [
+          { $and: [{ $ne: ['$shopifyOrderId', null] }, { $ne: ['$shopifyOrderId', ''] }] },
+          { $concat: ['shopify:', '$shopifyOrderId'] }, { $toString: '$_id' },
+        ] },
+        day: { $min: '$day' }, confirmed: { $max: { $cond: [active, 1, 0] } },
+      } },
+      { $group: {
+        _id: '$day', receivedOrders: { $sum: 1 },
+        confirmedOrders: { $sum: '$confirmed' },
+      } },
+    ];
+
+    // Report revenue uses the invoice's business date, including timestamped date strings.
+    // This indexed range reads only the selected month and returns one bucket per day.
+    const revenuePipeline: any[] = [
+      { $match: { type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true }, date: { $gte: start, $lt: next } } },
+      { $group: {
+        _id: { $substrBytes: ['$date', 0, 10] },
+        activeSales: { $sum: 1 }, grossRevenue: { $sum: productRevenue },
+      } },
+    ];
+
+    // getReports() filters approved returns by UTC createdAt bounds.
+    const returnsFrom = new Date(`${start}T00:00:00.000Z`);
+    const returnsTo = new Date(`${next}T00:00:00.000Z`);
+    const returnsPipeline: any[] = [
+      { $match: {
+        status: 'معتمد', createdAt: { $gte: returnsFrom, $lt: returnsTo },
+        $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }],
+      } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, amount: { $sum: number('$total') } } },
+    ];
+
+    const [shopifyRows, orphanRows, revenueRows, returnRows] = await Promise.all([
+      this.shopifyOrderModel.aggregate(shopifyPipeline).exec(),
+      this.transactionModel.aggregate(orphanPipeline).exec(),
+      this.transactionModel.aggregate(revenuePipeline).exec(),
+      this.returnRequestModel.aggregate(returnsPipeline).exec(),
+    ]);
+    return buildSalesOverview(selectedYear, selectedMonth, [...shopifyRows, ...orphanRows, ...revenueRows], returnRows);
+  }
+
   async getDashboard(expenseTotal = 0): Promise<DashboardData> {
     const [inventory, transactions, products, approvedReturns, supplierReturnsTotal, supplierPayables, recentTransactions] = await Promise.all([
       this.getInventory(),
@@ -5550,6 +5820,16 @@ export class TransactionsService {
     return this.transactionModel
       .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
       .select(TransactionsService.LIST_EXCLUDED_FIELDS)
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+  }
+
+  /** Smaller grouped-board feed; GET /pickup-orders remains unchanged. */
+  async findPickupWorkspaceOrders() {
+    return this.transactionModel
+      .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
+      .select(TransactionsService.PICKUP_WORKSPACE_EXCLUDED_FIELDS)
       .sort({ createdAt: -1 })
       .lean()
       .exec();

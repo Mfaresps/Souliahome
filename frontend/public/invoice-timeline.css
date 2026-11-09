@@ -1,0 +1,19 @@
+/* Hirael Timeline structure adapted to the standalone invoice. */
+.invoice-timeline{border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+.invoice-timeline-heading{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border);background:#f8fafc}
+.invoice-timeline-heading svg{width:16px;height:16px;color:var(--primary);flex:none}
+.invoice-timeline-heading h2{font-size:.84rem;font-weight:700;margin:0;color:var(--text)}
+.invoice-timeline-list{list-style:none;margin:0;padding:14px 16px 6px}
+.invoice-timeline-item{position:relative;display:flex;align-items:flex-start;gap:12px;padding-bottom:17px;min-width:0}
+.invoice-timeline-item:not(:last-child)::before{content:'';position:absolute;inset-inline-start:11px;top:24px;bottom:0;width:1px;background:var(--border)}
+.invoice-timeline-dot{position:relative;z-index:1;display:grid;place-items:center;flex:none;width:24px;height:24px;border:1px solid #d1d5db;border-radius:50%;background:#fff;color:#64748b}
+.invoice-timeline-dot svg{width:13px;height:13px}
+.invoice-timeline-item[data-tone="success"] .invoice-timeline-dot{color:#15803d;border-color:#86efac;background:#f0fdf4}
+.invoice-timeline-item[data-tone="info"] .invoice-timeline-dot{color:#2563eb;border-color:#93c5fd;background:#eff6ff}
+.invoice-timeline-item[data-tone="warning"] .invoice-timeline-dot{color:#a16207;border-color:#fcd34d;background:#fffbeb}
+.invoice-timeline-item[data-tone="destructive"] .invoice-timeline-dot{color:#dc2626;border-color:#fca5a5;background:#fef2f2}
+.invoice-timeline-content{min-width:0;flex:1;padding-top:2px}
+.invoice-timeline-title{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0;color:var(--text);font-size:12px;font-weight:600;line-height:1.4}
+.invoice-timeline-time{display:block;margin-top:3px;color:var(--muted);font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums}
+.invoice-timeline-current{border-radius:99px;padding:1px 7px;background:#eff6ff;color:#1d4ed8;font-size:.65rem;font-weight:700}
+@media print{.invoice-timeline{break-inside:avoid}.invoice-timeline-item{break-inside:avoid}}

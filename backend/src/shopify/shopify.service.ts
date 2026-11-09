@@ -39,6 +39,7 @@ import {
   DEPOSIT_TOLERANCE,
   receiptsIn,
   round2,
+  visibleReceipts,
 } from './deposit-receipts.util';
 import { DepositReceiptsService } from './deposit-receipts.service';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
@@ -66,6 +67,7 @@ import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnaps
 import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 import { DEPOSIT_REASONS, DEPOSIT_EXCEPTIONS, validateDepositDecision, depositDecisionReport } from './deposit-decision.util';
 import { depositFromShopifyNote } from './shopify-note-deposit.util';
+import { DEPOSIT_NO_PENDING_REQUESTS, depositOrderConflict } from './deposit-order-conflict.util';
 
 @Injectable()
 export class ShopifyService {
@@ -251,6 +253,9 @@ export class ShopifyService {
       }
 
       // Arrival has one push event; the order remains pending for review.
+      // Tell open Orders workspaces to revalidate their current page after the
+      // saved order (including its assignment/deposit summary) is visible.
+      this.emit('shopify:order-created', { id: String(order._id) });
       const itemCount = items.reduce((sum, item) => sum + item.qty, 0);
       await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total, itemCount, assignedUserId: order.assignedTo || undefined });
       return { saved: true, id: String(order._id) };
@@ -914,6 +919,320 @@ export class ShopifyService {
     return this.shopifyOrderModel.find({ status: 'pending' }).sort({ createdAt: -1 }).lean() as any;
   }
 
+  /** Full single-order read for the workspace. The caller applies receipt visibility. */
+  async getOrderDetail(orderId: string): Promise<ShopifyOrderDocument> {
+    if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
+    const order = await this.shopifyOrderModel.findById(orderId).lean();
+    if (!order) throw new NotFoundException('Order not found');
+    return order as ShopifyOrderDocument;
+  }
+
+  /**
+   * Read-only, paged workspace feed. The legacy GET /orders response is deliberately
+   * unchanged: other screens and external consumers still use its full documents.
+   */
+  async getOrdersSummaryPage(query: Record<string, string>, actorId: string) {
+    const page = Math.max(1, Math.min(100000, Number.parseInt(query.page || '1', 10) || 1));
+    const limit = Math.max(1, Math.min(100, Number.parseInt(query.limit || '30', 10) || 30));
+    const tab = query.tab === 'all' ? 'all' : 'pending';
+    const search = String(query.search || '').trim().toLocaleLowerCase();
+    const from = query.dateFrom ? new Date(query.dateFrom) : null;
+    const to = query.dateTo ? new Date(query.dateTo) : null;
+    const statusFilter = String(query.statusFilter || '');
+    const columnStatus = String(query.columnStatus || '');
+    const starred = query.starred === '1';
+    const kpiFilter = String(query.kpiFilter || '');
+    const kpiFrom = query.kpiFrom ? new Date(query.kpiFrom).getTime() : NaN;
+    const kpiTo = query.kpiTo ? new Date(query.kpiTo).getTime() : NaN;
+    const kpiPrevFrom = query.kpiPrevFrom ? new Date(query.kpiPrevFrom).getTime() : NaN;
+    const kpiPrevTo = query.kpiPrevTo ? new Date(query.kpiPrevTo).getTime() : NaN;
+    const selectedPanel = (() => { try { return JSON.parse(query.panel || '{}'); } catch { return {}; } })();
+    const panel = {
+      deposit: String(selectedPanel.deposit || ''),
+      stock: Array.isArray(selectedPanel.stock) ? selectedPanel.stock.map(String) : [],
+      status: Array.isArray(selectedPanel.status) ? selectedPanel.status.map(String) : [],
+      staff: Array.isArray(selectedPanel.staff) ? selectedPanel.staff.map(String) : [],
+      tags: Array.isArray(selectedPanel.tags) ? selectedPanel.tags.map(String) : [],
+      hasComments: selectedPanel.hasComments === true,
+    };
+    // Exclude the Shopify webhook archive and append-only audit histories before
+    // reading the collection. Only the requested page is serialized to the client.
+    const [rawOrders, inventory, sales, followUps] = await Promise.all([
+      this.shopifyOrderModel.find().select('-rawData -editHistory -editRequestHistory -assignmentHistory -localItemsBaseline -commentReactions -depositDecisionHistory').lean(),
+      this.transactionsService.getInventory(),
+      this.txModel.find({ type: 'مبيعات' }).select('_id ref client phone total cancelled shopifyOrderId pickupStatus bostaStatus bostaOrderId deliverySource shipCo payStatus shipmentAttempts createdAt').lean(),
+      this.followUpsService?.findAll() || Promise.resolve([]),
+    ]);
+    const orders = rawOrders.map(order => visibleReceipts(order as any, actorId) as any);
+    const createdMs = (order: any) => {
+      for (const value of [order.shopifyCreatedAt, order.createdAt]) {
+        if (!value) continue;
+        const ms = new Date(value).getTime();
+        if (Number.isFinite(ms)) return ms;
+      }
+      return -Infinity;
+    };
+    const invByCode = new Map<string, any>(), invByName = new Map<string, any>();
+    for (const product of inventory as any[]) {
+      if (product.code) invByCode.set(String(product.code), product);
+      if (product._id) invByCode.set(String(product._id), product);
+      if (product.name) invByName.set(String(product.name).trim().toLowerCase(), product);
+    }
+    const stockBlock = (order: any) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      if (!items.length) return { missing: 0, short: 0 };
+      let missing = 0, short = 0;
+      const needed = new Map<string, { product: any; qty: number }>();
+      for (const item of items) {
+        if (!item.productId) { missing++; continue; }
+        const product = (item.code && item.code !== 'SHOPIFY' ? invByCode.get(String(item.code)) : null)
+          || invByCode.get(String(item.productId))
+          || invByName.get(String(item.shopifyName || item.name || '').trim().toLowerCase());
+        if (!product) { missing++; continue; }
+        const key = String(product._id || product.code || item.productId);
+        const old = needed.get(key);
+        needed.set(key, { product, qty: (old?.qty || 0) + (Number(item.qty) || 0) });
+      }
+      for (const { product, qty } of needed.values()) {
+        const available = product.warehouseBalances ? Number(product.warehouseBalances.MAIN || 0) : Number(product.current || 0);
+        if (available < qty) short++;
+      }
+      return { missing, short };
+    };
+    const deposit = (order: any) => {
+      const receipts = Array.isArray(order.depositReceipts) ? order.depositReceipts : [];
+      const approved = receipts.filter((r: any) => r.status === 'معتمد');
+      const pending = receipts.filter((r: any) => r.status === 'معلق');
+      const legacy = order.status === 'approved' && !receipts.length ? Number(order.depositAmount) || 0 : 0;
+      return { amount: round2(approved.reduce((n: number, r: any) => n + (Number(r.amount) || 0), 0) + legacy), pending };
+    };
+    const recorded = (o: any) => { const d = deposit(o); return d.amount > 0 || d.pending.length > 0; };
+    const statusKey = (o: any) => {
+      if (o.cancelled) return 'void';
+      if (o.cancelRequest?.status === 'معلق') return 'cancel-req';
+      if (o.shopifyCancelled || ['ملغي', 'محذوف'].includes(o.payStatus)) return 'void';
+      const cancelledConfirmation = [...(followupById.get(String(o._id)) || []),
+        ...(followupById.get(String(o.shopifyId || '')) || []),
+        ...(followupByRef.get(String(o.ref || '').trim().replace(/^#+/, '').toLowerCase()) || [])]
+        .some((ticket: any) => !ticket.cancelled && !ticket.orderOutcome
+          && ticket.reason === 'عملية تأكيد الطلب' && ticket.autoSource !== 'shipping-issue'
+          && ticket.status === 'العميل ألغى الطلب');
+      if (cancelledConfirmation) return 'void';
+      if (o.status === 'rejected') return 'rejected';
+      if (o.status === 'approved' || o.confirmationApproved || o.shipWithoutDeposit || recorded(o)) return 'confirmed';
+      return 'contact';
+    };
+    const confirmation = (o: any) => {
+      const tags = String(o.tags || '').toLowerCase().split(',').map((x: string) => x.trim());
+      if (o.cancelled || o.shopifyCancelled || tags.includes('cancelled')) return 'cancelled';
+      if (o.status === 'rejected') return 'rejected';
+      const d = deposit(o);
+      if (d.amount > 0) return 'deposit-paid';
+      if (d.pending.some((r: any) => Number(r.amount) > 0)) return 'deposit-review';
+      if (o.shipWithoutDeposit && !recorded(o)) return 'no-deposit';
+      if (tags.includes('needs_support')) return 'attention';
+      if (tags.includes('confirmed') || o.confirmationApproved || o.status === 'approved') return 'easy';
+      return 'attention';
+    };
+    const filterKeys = ['ship-without-deposit', 'deposit-paid', 'no-deposit', 'deposit-paid-in-stock', 'stock-blocked'];
+    const matchesCard = (o: any, key: string) => {
+      const block = stockBlock(o);
+      if (key === 'ship-without-deposit') return !o.cancelled && !!o.shipWithoutDeposit && !recorded(o);
+      if (key === 'deposit-paid') return !o.cancelled && recorded(o);
+      if (key === 'no-deposit') return !o.cancelled && !recorded(o);
+      if (key === 'deposit-paid-in-stock') return !o.cancelled && o.status === 'pending' && recorded(o) && !block.missing && !block.short;
+      if (key === 'stock-blocked') return !o.cancelled && o.status === 'pending' && !!(block.missing || block.short);
+      return true;
+    };
+    const matchesPanel = (o: any) => {
+      const d = deposit(o), block = stockBlock(o);
+      if (panel.deposit === 'paid' && d.amount <= 0) return false;
+      if (panel.deposit === 'none' && d.amount > 0) return false;
+      if (panel.deposit === 'review' && !d.pending.length) return false;
+      if (panel.stock.length && (o.status !== 'pending' || o.cancelled || !panel.stock.some((key: string) => key === 'short' ? block.short : key === 'missing' ? block.missing : !block.short && !block.missing))) return false;
+      if (panel.status.length && !panel.status.includes(statusKey(o))) return false;
+      if (panel.staff.length && !panel.staff.includes(o.assignedTo ? String(o.assignedTo) : '__none')) return false;
+      if (panel.tags.length && !panel.tags.some((tag: string) => String(o.tags || '').toLowerCase().split(',').map((x: string) => x.trim()).includes(tag.toLowerCase()))) return false;
+      if (panel.hasComments && !(Array.isArray(o.comments) && o.comments.length)) return false;
+      return true;
+    };
+    const normalized = (v: unknown) => String(v || '')
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x660))
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x6f0))
+      .normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0610-\u061A]/g, '')
+      .replace(/[\u0622\u0623\u0625]/g, '\u0627').replace(/\u0649/g, '\u064A')
+      .replace(/\u0640/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const refKey = (v: unknown) => String(v || '').trim().replace(/^#+/, '').toLowerCase();
+    const scopeActive = !!query.scope;
+    const scopeTickets: any[] = (() => { try { const value = JSON.parse(query.scope || '[]'); return Array.isArray(value) ? value : []; } catch { return []; } })();
+    const scopeIds = new Set(scopeTickets.map(ticket => String(ticket.shopifyOrderId || '')).filter(Boolean));
+    const scopeRefs = new Set(scopeTickets.map(ticket => refKey(ticket.orderRef)).filter(Boolean));
+    const salesById = new Map((sales as any[]).map(tx => [String(tx._id), tx]));
+    for (const ticket of scopeTickets) {
+      const linked = salesById.get(String(ticket.transactionId || ''));
+      if (linked?.shopifyOrderId) scopeIds.add(String(linked.shopifyOrderId));
+    }
+    const followupByRef = new Map<string, any[]>(), followupById = new Map<string, any[]>();
+    for (const ticket of followUps as any[]) {
+      const ref = refKey(ticket.orderRef);
+      if (ref) followupByRef.set(ref, [...(followupByRef.get(ref) || []), ticket]);
+      const id = String(ticket.shopifyOrderId || '');
+      if (id) followupById.set(id, [...(followupById.get(id) || []), ticket]);
+    }
+    const settled = new Set(['تم حل المشكلة', 'تمت المتابعة', 'تمت عملية التأكيد', 'العميل ألغى الطلب']);
+    const bucket = (o: any) => {
+      if (o.cancelled || o.status === 'rejected') return 'cancelled';
+      if (deposit(o).amount > 0) return 'deposit';
+      if (o.shipWithoutDeposit === true || o.status === 'approved') return 'nodep';
+      const tickets = [...(followupById.get(String(o.shopifyOrderId || '')) || []), ...(followupByRef.get(refKey(o.ref)) || [])];
+      if (tickets.some(ticket => !ticket.cancelled && !settled.has(ticket.status))) return 'followup';
+      return 'open';
+    };
+    const kpiStats = (start: number, end: number) => {
+      const result: Record<string, number | null> = { received: 0, deposit: 0, nodep: 0, followup: 0, cancelled: 0, open: 0 };
+      for (const o of orders) {
+        const ms = createdMs(o);
+        if (!(ms >= start && ms < end)) continue;
+        result.received!++;
+        const key = bucket(o);
+        result[key]!++;
+      }
+      result.confirmed = (result.deposit || 0) + (result.nodep || 0);
+      result.rate = result.received ? Math.round(result.confirmed / result.received * 100) : null;
+      return result;
+    };
+    const queryText = normalized(search).replace(/^#+/, '').trim();
+    const base = orders.filter(o => {
+      if (tab === 'pending' && o.status !== 'pending') return false;
+      if (scopeActive && !scopeIds.has(String(o._id)) && !scopeIds.has(String(o.shopifyId || '')) && !scopeRefs.has(refKey(o.ref))) return false;
+      const ms = createdMs(o);
+      if (from && Number.isFinite(from.getTime()) && ms < from.getTime()) return false;
+      if (to && Number.isFinite(to.getTime()) && ms >= to.getTime() + 86400000) return false;
+      if (!queryText) return true;
+      const items = Array.isArray(o.items) ? o.items : [];
+      const hay = [o.ref, o.client, o.tags, ...items.flatMap((i: any) => [i.name, i.shopifyName, i.code === 'SHOPIFY' ? '' : i.code])].map(normalized).join(' | ');
+      if (hay.includes(queryText)) return true;
+      const digits = queryText.replace(/\D/g, '');
+      return digits.length >= 3 && digits.length === queryText.replace(/[\s+\-()]/g, '').length && normalized(o.phone || o.clientPhone).replace(/\D/g, '').includes(digits);
+    });
+    const matchesKpi = (o: any) => {
+      if (!kpiFilter) return true;
+      const ms = createdMs(o);
+      if (!(ms >= kpiFrom && ms < kpiTo)) return false;
+      const value = bucket(o);
+      if (kpiFilter === 'received') return true;
+      if (kpiFilter === 'confirmed' || kpiFilter === 'rate') return value === 'deposit' || value === 'nodep';
+      return value === kpiFilter;
+    };
+    const cardBase = base.filter(o => matchesPanel(o) && matchesKpi(o));
+    const filterCounts = Object.fromEntries(filterKeys.map(key => [key, cardBase.filter(o => matchesCard(o, key)).length]));
+    const panelBase = base.filter(o => (!statusFilter || matchesCard(o, statusFilter)) && (!starred || !!o.starred) && matchesKpi(o));
+    const panelFacets = {
+      status: Object.fromEntries(['contact', 'confirmed', 'rejected', 'cancel-req', 'void'].map(key => [key, panelBase.filter(o => statusKey(o) === key).length])),
+      staff: Object.fromEntries([...new Set(panelBase.map(o => o.assignedTo ? String(o.assignedTo) : '__none'))].map(key => {
+        const row = panelBase.find(o => (o.assignedTo ? String(o.assignedTo) : '__none') === key);
+        return [key, { name: row?.assignedToName || '', count: panelBase.filter(o => (o.assignedTo ? String(o.assignedTo) : '__none') === key).length }];
+      })),
+      tags: Object.fromEntries([...new Set(panelBase.flatMap(o => String(o.tags || '').split(',').map((tag: string) => tag.trim().toLowerCase()).filter(Boolean)))].map(key => [key,
+        { name: panelBase.flatMap(o => String(o.tags || '').split(',').map((tag: string) => tag.trim())).find((tag: string) => tag.toLowerCase() === key) || key,
+          count: panelBase.filter(o => String(o.tags || '').split(',').map((tag: string) => tag.trim().toLowerCase()).includes(key)).length }])),
+      comments: panelBase.filter(o => Array.isArray(o.comments) && o.comments.length).length,
+      stock: { short: panelBase.filter(o => o.status === 'pending' && !o.cancelled && stockBlock(o).short).length,
+        missing: panelBase.filter(o => o.status === 'pending' && !o.cancelled && stockBlock(o).missing).length,
+        ok: panelBase.filter(o => o.status === 'pending' && !o.cancelled && !stockBlock(o).short && !stockBlock(o).missing).length },
+    };
+    let filtered = panelBase.filter(o => matchesPanel(o) && (!columnStatus || confirmation(o) === columnStatus));
+    const collator = new Intl.Collator('en', { numeric: true });
+    filtered.sort((a, b) => {
+      const delta = createdMs(b) - createdMs(a);
+      if (delta) return delta;
+      for (const key of ['ref', 'shopifyId', '_id']) {
+        const cmp = collator.compare(String(b[key] || ''), String(a[key] || ''));
+        if (cmp) return cmp;
+      }
+      return 0;
+    });
+    const total = filtered.length;
+    const actualPage = Math.min(page, Math.max(1, Math.ceil(total / limit)));
+    const depositSummary = { instapay: 0, vodafone: 0, paidCount: 0, unpaidCount: 0 };
+    for (const o of filtered) {
+      if (o.cancelled) continue;
+      const d = deposit(o);
+      if (d.amount > 0) {
+        depositSummary.paidCount++;
+        const receipts = (o.depositReceipts || []).filter((r: any) => r.status === 'معتمد');
+        for (const r of receipts) {
+          if (r.method === 'Instapay') depositSummary.instapay += Number(r.amount) || 0;
+          if (r.method === 'فودافون كاش') depositSummary.vodafone += Number(r.amount) || 0;
+        }
+        if (o.status === 'approved' && !(o.depositReceipts || []).length) {
+          if (o.depositMethod === 'Instapay') depositSummary.instapay += Number(o.depositAmount) || 0;
+          if (o.depositMethod === 'فودافون كاش') depositSummary.vodafone += Number(o.depositAmount) || 0;
+        }
+      } else depositSummary.unpaidCount++;
+    }
+    const phoneKey = (value: unknown) => { const digits = String(value || '').replace(/\D/g, ''); return digits.length >= 10 ? digits.slice(-10) : ''; };
+    const customerCounts = new Map<string, Set<string>>();
+    const bump = (phone: unknown, id: string) => {
+      const key = phoneKey(phone); if (!key) return;
+      if (!customerCounts.has(key)) customerCounts.set(key, new Set());
+      customerCounts.get(key)!.add(id);
+    };
+    for (const tx of sales as any[]) if (!tx.cancelled) bump(tx.phone, tx.shopifyOrderId ? 'so:' + tx.shopifyOrderId : 'tx:' + tx._id);
+    for (const o of orders) if (!o.cancelled) bump(o.phone || o.clientPhone, 'so:' + (o.shopifyId || o._id));
+    const byShopifyId = new Map((sales as any[]).filter(tx => tx.shopifyOrderId).map(tx => [String(tx.shopifyOrderId), tx]));
+    const siblingsByPhone = new Map<string, any[]>();
+    const addSibling = (phone: unknown, value: any) => {
+      const key = phoneKey(phone); if (!key) return;
+      siblingsByPhone.set(key, [...(siblingsByPhone.get(key) || []), value]);
+    };
+    for (const o of orders) if (!o.cancelled && o.status === 'pending')
+      addSibling(o.phone || o.clientPhone, { id: o._id, ref: o.ref, kind: 'shopify', client: o.client, total: Number(o.total) || 0, stage: 'pending' });
+    for (const tx of sales as any[]) {
+      if (tx.cancelled) continue;
+      const code = String(tx.bostaStatus || '').trim().toUpperCase();
+      const tracked = tx.bostaOrderId && !['VALIDATION_ERROR', 'DELETED'].includes(code);
+      const stage = code === 'DELIVERED' ? 'Delivered' : tx.deliverySource === 'MANUAL' ? 'Shipped'
+        : tracked ? (!code || code === 'CREATED' ? 'Ready' : 'Shipped') : tx.pickupStatus || 'Pending';
+      if (['Pending', 'Preparing', 'Ready'].includes(stage))
+        addSibling(tx.phone, { id: tx._id, ref: tx.ref, kind: 'tx', client: tx.client, total: Number(tx.total) || 0, stage });
+    }
+    const rows = filtered.slice((actualPage - 1) * limit, actualPage * limit).map(o => {
+      // The list never needs the OCR record, audit trails, or private image key.
+      const receipts = (o.depositReceipts || []).map((r: any) => ({ id: r.id, status: r.status, amount: r.amount, method: r.method,
+        imageDeleted: r.imageDeleted, submittedById: r.submittedById, submittedBy: r.submittedBy,
+        submittedAt: r.submittedAt, reviewedAt: r.reviewedAt, workflow: r.workflow, needsReview: r.needsReview }));
+      return { ...o, depositReceipts: receipts,
+        customerOrderCount: customerCounts.get(phoneKey(o.phone || o.clientPhone))?.size || 0,
+        unshippedSiblings: (siblingsByPhone.get(phoneKey(o.phone || o.clientPhone)) || []).filter(x => String(x.id) !== String(o._id)),
+        linkedTransaction: byShopifyId.get(String(o.shopifyId || '')) || null };
+    });
+    const assignmentCounts: Record<string, number> = {};
+    for (const order of orders) {
+      if (order.status !== 'pending' || order.cancelled || !order.assignedTo) continue;
+      const key = String(order.assignedTo);
+      assignmentCounts[key] = (assignmentCounts[key] || 0) + 1;
+    }
+    return { rows, page: actualPage, limit, total, allCount: orders.length,
+      pendingCount: orders.filter(o => o.status === 'pending').length, tabCount: tab === 'pending' ? orders.filter(o => o.status === 'pending').length : orders.length,
+      filterCounts, baseCount: cardBase.length, assignmentCounts,
+      starredCount: cardBase.filter(o => (!statusFilter || matchesCard(o, statusFilter)) && !!o.starred).length,
+      filteredIds: filtered.filter(o => o.status === 'pending' && !o.cancelled).map(o => String(o._id)),
+      selectionRows: filtered.filter(o => o.status === 'pending' && !o.cancelled).map(o => {
+        const byMethod: Record<string, number> = {};
+        for (const receipt of o.depositReceipts || []) if (receipt.status === 'معتمد')
+          byMethod[receipt.method] = round2((byMethod[receipt.method] || 0) + (Number(receipt.amount) || 0));
+        if (o.status === 'approved' && !(o.depositReceipts || []).length && o.depositMethod)
+          byMethod[o.depositMethod] = Number(o.depositAmount) || 0;
+        return { _id: o._id, status: o.status, cancelled: o.cancelled, total: o.total, byMethod };
+      }),
+      depositSummary, panelFacets,
+      kpiStats: Number.isFinite(kpiFrom) && Number.isFinite(kpiTo) ? { ...kpiStats(kpiFrom, kpiTo), prevReceived: kpiStats(kpiPrevFrom, kpiPrevTo).received } : null,
+      pendingCancelCount: orders.filter(o => o.cancelRequest?.status === 'معلق').length,
+      pendingEditCount: orders.filter(o => o.editRequest?.status === 'معلق').length,
+    };
+  }
+
   // جلب كل الأوردرات
   async getAllOrders(): Promise<ShopifyOrderDocument[]> {
     return this.shopifyOrderModel.find().sort({ createdAt: -1 }).lean() as any;
@@ -993,7 +1312,7 @@ export class ShopifyService {
       id: r.id,
       amount: r.amount,
       method: r.method,
-      note: 'عربون — إيصال تحويل معتمد',
+      note: r.noImage ? 'عربون — بدون صورة تحويل (معتمد)' : 'عربون — إيصال تحويل معتمد',
       date: r.reviewedAt || now.toISOString(),
       by: r.submittedBy,
       source: 'deposit-receipt',
@@ -1011,6 +1330,8 @@ export class ShopifyService {
       method: r.method,
       imageKey: r.imageKey,
       imageDeleted: !!r.imageDeleted,
+      noImage: !!r.noImage,
+      noImageReason: r.noImageReason || '',
       needsReview: !!r.needsReview,
       submittedBy: r.submittedBy,
       submittedAt: r.submittedAt,
@@ -1018,8 +1339,11 @@ export class ShopifyService {
       reviewedAt: r.reviewedAt || '',
       vaultTxNo: r.vaultTxNo || '',
       senderName: r.senderName ?? r.ocr?.senderName ?? '',
+      senderBank: r.senderBank ?? r.ocr?.senderBank ?? '',
       senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '',
       senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '',
+      transferDateText: r.transferDateText ?? r.ocr?.dateText ?? '',
+      transferReference: r.transferReference ?? r.ocr?.reference ?? '',
       screenshotTime: r.screenshotTime ?? r.ocr?.screenshotTime ?? '',
       screenshotTimeSource: r.screenshotTimeSource || r.ocr?.screenshotTimeSource || '',
       ocrAmount: r.ocr?.amount ?? null,
@@ -1913,9 +2237,13 @@ export class ShopifyService {
   /** Save the explicit shipping choice without booking money or changing receipt totals. */
   async setShipWithoutDeposit(orderId: string, enabled: boolean, by = '', input: any = {}, actor: any = {}) {
     if (typeof enabled !== 'boolean') throw new BadRequestException('enabled must be a boolean');
-    const decision = enabled ? validateDepositDecision(input, true) : null;
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
+    if (enabled) {
+      const conflict = depositOrderConflict(order);
+      if (conflict) throw new BadRequestException(conflict);
+    }
+    const decision = enabled ? validateDepositDecision(input, true) : null;
     const revision = input.revision ?? (order.depositDecisionRevision || 0);
     if (!Number.isInteger(revision) || revision < 0) throw new BadRequestException('إصدار القرار غير صحيح');
     if (revision !== (order.depositDecisionRevision || 0)) throw new BadRequestException('تغيّر قرار العربون. حدّث الطلب وأعد المحاولة');
@@ -1924,6 +2252,7 @@ export class ShopifyService {
     const updated = await this.shopifyOrderModel.findOneAndUpdate(
       {
         _id: orderId, status: 'pending', cancelled: { $ne: true },
+        ...(enabled ? DEPOSIT_NO_PENDING_REQUESTS : {}),
         $and: [revision === 0 ? { $or: [{ depositDecisionRevision: 0 }, { depositDecisionRevision: { $exists: false } }] } : { depositDecisionRevision: revision }],
         receiptCancelLock: { $in: ['', null] },
         ...(enabled ? {

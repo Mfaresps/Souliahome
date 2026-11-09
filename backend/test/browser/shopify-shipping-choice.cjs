@@ -16,9 +16,10 @@ function fn(name) {
 const render = new Function(`
   const currentLang='ar',_spShippingSwitchBusy=new Set(),hasPerm=()=>true,esc=v=>v,t=key=>({spDepWithout:'بدون عربون',spShipWithoutDeposit:'شحن بدون عربون',spDepUpload:'إضافة عربون'}[key]||key);
   const _spReceiptJs=JSON.stringify,_spDepositOf=o=>({deposit:0,pending:[]});
-  ${['_spDepIcon','_spHasDepositRecorded','_spCanAddDeposit','_spCanChooseShipping','_spShipsWithoutDeposit','_spShippingSwitchHtml','_spMobileDepositActionHtml','_spDepositCellHtml','_spDepositAddButtonHtml','_spDepositCardClass','_spDepositNeedsFollowup','_spMobileDepositSummaryHtml'].map(fn).join('\n')}
+  ${['_spDepIcon','_spHasDepositRecorded','_spCanAddDeposit','_spCanChooseShipping','_spShipsWithoutDeposit','_spShippingSwitchHtml','_spMobileDepositActionHtml','_spDepositCellHtml','_spDepositFabHtml','_spDepositCardClass','_spDepositNeedsFollowup','_spMobileDepositSummaryHtml'].map(fn).join('\n')}
   const o={_id:'o1',status:'pending',shipWithoutDeposit:true};
-  return {desktop:_spDepositCellHtml(o),mobile:_spMobileDepositActionHtml(o),summary:_spMobileDepositSummaryHtml(o),cardClass:_spDepositCardClass(o)};
+  const off={...o,shipWithoutDeposit:false};
+  return {desktop:_spDepositCellHtml(o),mobile:_spMobileDepositActionHtml(o),summary:_spMobileDepositSummaryHtml(o),cardClass:_spDepositCardClass(o),offDesktop:_spDepositCellHtml(off),offMobile:_spMobileDepositActionHtml(off)};
 `)();
 async function verifyRealtime(browser) {
   const server=http.createServer(),ioServer=new Server(server,{cors:{origin:true}});
@@ -80,10 +81,10 @@ async function verifyRealtime(browser) {
   const browser=await puppeteer.launch({headless:true});
   try {
     const page=await browser.newPage();
-    const styles=[...src.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/gi)].map(m=>m[0]).join('\n');
+    const styles=[...src.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/gi)].map(m=>m[0]).join('\n')+'<style>'+fs.readFileSync(path.resolve(__dirname,'../../../frontend/public/shopify-deposit-fab.css'),'utf8')+'</style>';
     for(const width of [1440,390,320]) {
       await page.setViewport({width,height:800});
-      await page.setContent(`<html dir="rtl"><head>${styles}</head><body style="padding:16px"><table><tbody><tr><td style="width:240px">${render.desktop}</td></tr></tbody></table><div id="sp-mobile-list" style="display:flex;margin-top:20px;width:${width<500?width-32:360}px"><div class="sp-card ${render.cardClass}"><div class="sp-card-top"><b>#2770</b><span>EGP 870</span><div class="sp-card-menu"><button class="dd-toggle">⋮</button></div></div><div class="sp-card-subline">Aya Abdelnaby · الجمعة · 2 صنف</div>${render.summary}${render.mobile}<div class="sp-card-actions-row"><div class="sp-card-actions"><button class="spdep-quick-add">✉</button></div><span class="sp-card-assignee-chip"><span class="sp-assignee-avatar">G</span></span><a class="sp-card-vrobo-link">تواصل</a><a class="sp-card-shopify-link">View order</a></div></div><div class="sp-card sp-card-deposit-paid" id="paid-card">عربون مدفوع</div></div></body></html>`);
+      await page.setContent(`<html dir="rtl"><head>${styles}</head><body id="page-shopify-orders" style="padding:16px"><table><tbody><tr><td style="width:240px">${render.desktop}</td></tr><tr id="off-row"><td style="width:240px">${render.offDesktop}</td></tr></tbody></table><div id="sp-mobile-list" style="display:flex;margin-top:20px;width:${width<500?width-32:360}px"><div class="sp-card ${render.cardClass}"><div class="sp-card-top"><b>#2770</b><span>EGP 870</span><div class="sp-card-menu"><button class="dd-toggle">⋮</button></div></div><div class="sp-card-subline">Aya Abdelnaby · الجمعة · 2 صنف</div>${render.summary}${render.mobile}<div class="sp-card-actions-row"><div class="sp-card-actions"><button>✉</button></div><span class="sp-card-assignee-chip"><span class="sp-assignee-avatar">G</span></span><a class="sp-card-vrobo-link">تواصل</a><a class="sp-card-shopify-link">View order</a></div></div><div class="sp-card" id="off-card">${render.offMobile}</div><div class="sp-card sp-card-deposit-paid" id="paid-card">عربون مدفوع</div></div></body></html>`);
       const metrics=await page.evaluate(()=>[...document.querySelectorAll('[role=switch]')].map(el=>{
         const r=el.getBoundingClientRect();
         return {width:r.width,height:r.height,right:r.right,left:r.left,checked:el.getAttribute('aria-checked'),color:getComputedStyle(el).color,overflow:el.scrollWidth>el.clientWidth+1};
@@ -93,11 +94,11 @@ async function verifyRealtime(browser) {
       assert(metrics[1].height>=44,'mobile touch target');
       const card=await page.evaluate(()=>{
         const el=document.querySelector('.sp-card'),style=getComputedStyle(el),paid=getComputedStyle(document.querySelector('#paid-card'));
-        const plus=el.querySelector('.spdep-quick-add'),rect=plus.getBoundingClientRect();
-        return {switches:el.querySelectorAll('[role=switch]').length,disabled:plus.disabled,plusWidth:rect.width,plusHeight:rect.height,background:style.backgroundImage,paidBackground:paid.backgroundImage,border:style.borderInlineStartColor,paidBorder:paid.borderInlineStartColor,overflow:el.scrollWidth>el.clientWidth+1,footerHeights:[...el.querySelectorAll('.sp-card-actions-row button,.sp-card-actions-row a')].map(b=>b.getBoundingClientRect().height),menuSize:el.querySelector('.dd-toggle').getBoundingClientRect().height};
+        const off=document.querySelector('#off-card'),fab=off.querySelector('.spdep-fab-trigger'),rect=fab.getBoundingClientRect();
+        return {switches:el.querySelectorAll('[role=switch]').length,offTriggers:off.querySelectorAll('.spdep-fab-trigger').length,fabWidth:rect.width,fabHeight:rect.height,background:style.backgroundImage,paidBackground:paid.backgroundImage,border:style.borderInlineStartColor,paidBorder:paid.borderInlineStartColor,overflow:el.scrollWidth>el.clientWidth+1,offOverflow:off.scrollWidth>off.clientWidth+1,footerHeights:[...el.querySelectorAll('.sp-card-actions-row button,.sp-card-actions-row a')].map(b=>b.getBoundingClientRect().height),menuSize:el.querySelector('.dd-toggle').getBoundingClientRect().height};
       });
-      assert.equal(card.switches,1);assert.equal(card.disabled,true);
-      assert(card.plusWidth>=44&&card.plusHeight>=44);assert.equal(card.overflow,false);
+      assert.equal(card.switches,1);assert.equal(card.offTriggers,1);
+      assert(card.fabWidth>=40&&card.fabHeight>=40);assert.equal(card.overflow,false);assert.equal(card.offOverflow,false);
       assert.equal(card.background,card.paidBackground);assert.equal(card.border,card.paidBorder);
       assert(card.footerHeights.every(h=>h>=36));assert.equal(card.menuSize,36);
       console.log(`PASS RTL layout and switch at ${width}px`);

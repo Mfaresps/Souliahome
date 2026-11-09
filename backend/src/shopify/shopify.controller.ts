@@ -20,11 +20,12 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { createHash } from 'crypto';
 import { Request as ExpressRequest, Response } from 'express';
 import { ShopifyService } from './shopify.service';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, ReceiptActor } from './deposit-receipts.service';
 import { DepositAutoApproveService } from './deposit-auto-approve.service';
-import { DepositReceiptEntryDto, DepositReceiptReasonDto } from './dto/deposit-receipt.dto';
+import { DepositNoImageDto, DepositReceiptEntryDto, DepositReceiptReasonDto } from './dto/deposit-receipt.dto';
 import { visibleReceipts } from './deposit-receipts.util';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -122,6 +123,33 @@ export class ShopifyController {
     return (await this.shopifyService.getPendingOrders()).map(o => visibleReceipts(o, actorOf(req).id));
   }
 
+  // The workspace reads one lightweight page. Keep GET /orders unchanged for
+  // existing integrations and exports that still consume the complete list.
+  @Get('orders/summary-page')
+  @UseGuards(JwtAuthGuard)
+  async getSummaryPage(@Query() query: Record<string, string>, @Request() req: any,
+    @Res({ passthrough: true }) res: Response) {
+    const result = await this.shopifyService.getOrdersSummaryPage(query, actorOf(req).id);
+    // Revalidate on every visit so financial and payment indicators remain live.
+    // The browser can reuse unchanged bytes after a 304 response.
+    const etag = `"${createHash('sha1').update(JSON.stringify(result)).digest('hex')}"`;
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+    res.setHeader('ETag', etag);
+    if (req.headers['if-none-match'] === etag) {
+      res.status(304);
+      return;
+    }
+    return result;
+  }
+
+  @Get('orders/detail/:id')
+  @UseGuards(JwtAuthGuard)
+  async getOrderDetail(@Param('id') id: string, @Request() req: any,
+    @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Cache-Control', 'private, no-store');
+    return visibleReceipts(await this.shopifyService.getOrderDetail(id), actorOf(req).id);
+  }
+
   // جلب كل الأوردرات
   @Get('orders')
   @UseGuards(JwtAuthGuard)
@@ -194,6 +222,18 @@ export class ShopifyController {
   )
   async uploadDepositReceipt(@Param('id') id: string, @UploadedFile() file: any, @Request() req: any) {
     return this.depositReceipts.uploadDraft(id, file, actorOf(req));
+  }
+
+  /**
+   * «إضافة عربون بدون صورة تحويل». The guard is in the service: admin and
+   * `shopify-deposit-no-image` record directly; `shopify-deposit-no-image-otp` needs a verified
+   * manager OTP (`otpId`) unless settings.depositNoImageSkipOtp is on. Declared before
+   * `:rid/...` routes on purpose (static segment).
+   */
+  @Post('orders/:id/deposit-receipts/no-image')
+  @UseGuards(JwtAuthGuard)
+  async addDepositWithoutImage(@Param('id') id: string, @Body() body: DepositNoImageDto, @Request() req: any) {
+    return this.depositReceipts.createWithoutImage(id, body, actorOf(req), { role: req.user?.role, perms: req.user?.perms || [] });
   }
 
   @Patch('orders/:id/deposit-receipts/:rid/submit')

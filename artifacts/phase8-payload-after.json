@@ -1,0 +1,244 @@
+﻿{
+  "mode": "read-only-live",
+  "followups": {
+    "route": "/followups/dashboard-summary",
+    "count": 538,
+    "bytes": 239221,
+    "apiMs": 42,
+    "candidateBytes": 239221,
+    "fields": [
+      {
+        "key": "reason",
+        "bytes": 23864
+      },
+      {
+        "key": "status",
+        "bytes": 23778
+      },
+      {
+        "key": "responsibleId",
+        "bytes": 23672
+      },
+      {
+        "key": "shopifyOrderId",
+        "bytes": 23158
+      },
+      {
+        "key": "createdAt",
+        "bytes": 21520
+      },
+      {
+        "key": "_id",
+        "bytes": 18292
+      },
+      {
+        "key": "clientName",
+        "bytes": 18235
+      },
+      {
+        "key": "ticketNo",
+        "bytes": 15646
+      },
+      {
+        "key": "responsibleName",
+        "bytes": 15455
+      },
+      {
+        "key": "transactionId",
+        "bytes": 12872
+      },
+      {
+        "key": "orderRef",
+        "bytes": 10222
+      },
+      {
+        "key": "cancelled",
+        "bytes": 9947
+      },
+      {
+        "key": "assignSource",
+        "bytes": 9185
+      },
+      {
+        "key": "autoSource",
+        "bytes": 8531
+      },
+      {
+        "key": "orderOutcome",
+        "bytes": 4527
+      },
+      {
+        "key": "deferredUntil",
+        "bytes": 3850
+      },
+      {
+        "key": "deferReason",
+        "bytes": 3246
+      }
+    ],
+    "query": {
+      "executionMs": 1,
+      "docsExamined": 538,
+      "keysExamined": 0,
+      "returned": 538
+    }
+  },
+  "transactions": {
+    "route": "/transactions/dashboard-overview",
+    "count": 1007,
+    "activeCount": 1027,
+    "bytes": 695816,
+    "apiMs": 47,
+    "candidateBytes": 695816,
+    "carrierSettlementFields": [
+      {
+        "key": "deliveredAt",
+        "bytes": 12138
+      },
+      {
+        "key": "readAt",
+        "bytes": 11433
+      },
+      {
+        "key": "fees",
+        "bytes": 8779
+      },
+      {
+        "key": "reason",
+        "bytes": 8770
+      },
+      {
+        "key": "status",
+        "bytes": 6143
+      },
+      {
+        "key": "remaining",
+        "bytes": 5045
+      },
+      {
+        "key": "variance",
+        "bytes": 5008
+      }
+    ],
+    "fields": [
+      {
+        "key": "carrierSettlement",
+        "bytes": 62340
+      },
+      {
+        "key": "deliveredAt",
+        "bytes": 41268
+      },
+      {
+        "key": "createdAt",
+        "bytes": 40280
+      },
+      {
+        "key": "bostaLastSync",
+        "bytes": 34732
+      },
+      {
+        "key": "_id",
+        "bytes": 34238
+      },
+      {
+        "key": "bostaOrderId",
+        "bytes": 31508
+      },
+      {
+        "key": "bostaTrackingNumber",
+        "bytes": 30295
+      },
+      {
+        "key": "client",
+        "bytes": 29245
+      },
+      {
+        "key": "shippedAt",
+        "bytes": 28090
+      },
+      {
+        "key": "shopifyOrderId",
+        "bytes": 27789
+      },
+      {
+        "key": "pickupStatus",
+        "bytes": 27562
+      },
+      {
+        "key": "bostaStatus",
+        "bytes": 27066
+      },
+      {
+        "key": "deliverySource",
+        "bytes": 26258
+      },
+      {
+        "key": "date",
+        "bytes": 25417
+      },
+      {
+        "key": "payStatus",
+        "bytes": 25190
+      },
+      {
+        "key": "phone",
+        "bytes": 23554
+      },
+      {
+        "key": "cancelRequest",
+        "bytes": 23259
+      },
+      {
+        "key": "type",
+        "bytes": 23161
+      },
+      {
+        "key": "failedDelivery",
+        "bytes": 23126
+      },
+      {
+        "key": "cancelled",
+        "bytes": 19107
+      },
+      {
+        "key": "pickupDate",
+        "bytes": 18971
+      },
+      {
+        "key": "remaining",
+        "bytes": 16400
+      },
+      {
+        "key": "deposit",
+        "bytes": 16311
+      },
+      {
+        "key": "shipCo",
+        "bytes": 16064
+      },
+      {
+        "key": "shipmentAttempts",
+        "bytes": 14783
+      },
+      {
+        "key": "ref",
+        "bytes": 14131
+      },
+      {
+        "key": "shipIssueState",
+        "bytes": 13089
+      },
+      {
+        "key": "bostaDeliveryException",
+        "bytes": 4783
+      }
+    ],
+    "query": {
+      "executionMs": 7,
+      "docsExamined": 1057,
+      "keysExamined": 0,
+      "returned": 1007
+    }
+  }
+}
