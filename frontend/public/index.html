@@ -108356,11 +108356,15 @@ function _spTableViewKey() {
 /** On desktop the orders scroll inside .sp-table-scroll, not the window. Rebuilding the
  *  wrapper replaces that box, and a new box starts at scrollTop 0 — so every live update
  *  (a status change, an assignment, a deposit) threw the reader back to the first row.
- *  ⚠ Every full rebuild of the table goes through this, never a bare innerHTML. */
+ *  ⚠ Every full rebuild of the table goes through this, never a bare innerHTML.
+ *  ⚠ Scroll is preserved on same VIEW (page/search/filters), not just when data is identical,
+ *    so paging, filtering, or searching still preserves where the user scrolled. */
 function _spRebuildOrderTable(wrap, html) {
   const box = wrap.querySelector('.sp-table-scroll');
   const viewKey = _spTableViewKey();
-  const keep = box && wrap.dataset.spView === viewKey ? { top: box.scrollTop, left: box.scrollLeft } : null;
+  // Preserve scroll within the SAME view (page, search, filters) — not tied to data snapshot
+  const isSameView = wrap.dataset.spView === viewKey;
+  const keep = box && isSameView ? { top: box.scrollTop, left: box.scrollLeft } : null;
   wrap.innerHTML = html;
   wrap.dataset.spView = viewKey;
   const next = keep && wrap.querySelector('.sp-table-scroll');
