@@ -11,9 +11,9 @@
   function fit() {
     const page=document.querySelector('#main>.page.active');
     if(active!==page){observer.disconnect();release();active=page;
-      if(page){observer.observe(page);page.querySelectorAll('.sp-sticky-head,.cs-sticky-head,.mov-unified-panel,#shopify-pagination,#mov-pagination').forEach(el=>observer.observe(el));}
+      if(page){observer.observe(page);page.querySelectorAll('.sp-sticky-head,.cs-sticky-head,.inv-sticky-head,.mov-unified-panel,#shopify-pagination,#mov-pagination,#inv-pagination').forEach(el=>observer.observe(el));}
     }
-    const selector=page?.id==='page-shopify-orders'?'#shopify-orders-table-wrap .sp-table-scroll':page?.id==='page-movements'?'#mov-table-wrap .ent-table-scroll':page?.id==='page-complaints'?'#fu-orders-section .fu-table-wrap>.overflow-x,#cmp-complaints-section .cmp-table-wrap>.overflow-x':null;
+    const selector=page?.id==='page-shopify-orders'?'#shopify-orders-table-wrap .sp-table-scroll':page?.id==='page-movements'?'#mov-table-wrap .ent-table-scroll':page?.id==='page-inventory'?'#inv-panel-list>.table-card>.overflow-x':page?.id==='page-complaints'?'#fu-orders-section .fu-table-wrap>.overflow-x,#cmp-complaints-section .cmp-table-wrap>.overflow-x':null;
     const target=selector?[...page.querySelectorAll(selector)].find(el=>el.getClientRects().length):null;
     if(innerWidth<=768||!target){release();return;}
     if(box!==target){release();box=target;}

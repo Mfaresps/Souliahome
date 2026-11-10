@@ -1,4 +1,4 @@
-/* Pickup lanes grow with their content without internal scrollbars or clipped cards. */
+/* Only Shipped scrolls after four cards; other pickup lanes keep their natural height. */
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -69,18 +69,46 @@ const output = path.resolve(__dirname, '../../../artifacts/pickup-board-viewport
           columns: getComputedStyle(board).gridTemplateColumns.split(' ').length,
           overflowX: document.documentElement.scrollWidth > innerWidth,
           scrollHeight: document.documentElement.scrollHeight,
+          locked: document.documentElement.classList.contains('pu-page-locked'),
+          pageOverflow: getComputedStyle(document.documentElement).overflowY,
+          boardViewBottom: qs('#pu-board-view').getBoundingClientRect().bottom,
           lanes: [...board.querySelectorAll('.pu-board-col-body')].map(el => ({ height: el.clientHeight, scrollHeight: el.scrollHeight, overflow: getComputedStyle(el).overflowY })),
         };
       });
       measurements.push(result);
       if ([1920, 1024, 390].includes(width)) await page.screenshot({ path: path.join(output, `natural-${lang}-${width}.png`) });
       assert.equal(result.overflowX, false, `no horizontal overflow at ${width}x${height}`);
-      assert(result.lanes.every(lane => lane.height >= 90), `usable lane bodies at ${width}x${height}: ${JSON.stringify(result)}`);
-      assert(result.lanes.every(lane => lane.scrollHeight <= lane.height + 1 && lane.overflow === 'visible'), `no internal scrollbars at ${width}x${height}: ${JSON.stringify(result)}`);
+      assert(result.locked && result.pageOverflow === 'hidden', `page scrolling is locked at ${width}x${height}`);
+      assert(result.pageBottom <= height && result.boardViewBottom <= height, `board stays inside the viewport at ${width}x${height}: ${JSON.stringify(result)}`);
+      await page.evaluate(() => window.scrollTo(0, 200));
+      assert.equal(await page.evaluate(() => scrollY), 0, `page cannot scroll at ${width}x${height}`);
+      assert(result.lanes.every(lane => lane.height > 0), `usable lane bodies at ${width}x${height}: ${JSON.stringify(result)}`);
+      assert(result.lanes[3].scrollHeight > result.lanes[3].height && result.lanes[3].overflow === 'auto', `Shipped scrolls at ${width}x${height}`);
+      assert(await page.$eval('#pu-shipped-col', el => {
+        el.scrollTop = 0;
+        const cards = [...el.querySelectorAll(':scope > .pu-daily-group, :scope > .pu-group')], bottom = el.getBoundingClientRect().bottom;
+        return cards[4].getBoundingClientRect().top >= bottom - 9;
+      }), `Shipped shows at most four cards within the available height at ${width}x${height}`);
+      await page.$eval('#pu-shipped-col', el => { el.scrollTop = el.scrollHeight; });
       assert(await page.$eval('#pu-shipped-col', el => {
         const last = el.lastElementChild;
         return !last || last.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1;
       }), `last shipped card fits inside its lane at ${width}x${height}`);
+    }
+    await page.setViewport({ width: 1920, height: 1256 });
+    for (const count of [4, 5, 1, 0]) {
+      await page.evaluate(count => {
+        window.shippedLayoutOrders ||= _pickupOrders;
+        const prep = shippedLayoutOrders.filter(order => order.pickupStatus === 'Preparing');
+        _pickupOrders = [...prep, ...shippedLayoutOrders.filter(order => order.pickupStatus === 'Shipped').slice(0, count)];
+        transactions = _pickupOrders;
+        renderPickupBoard();
+      }, count);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const state = await page.$eval('#pu-shipped-col', el => ({ scroll: el.classList.contains('pu-shipped-scroll'), overflow: el.scrollHeight > el.clientHeight + 1, tab: el.tabIndex }));
+      assert.equal(state.scroll, count > 4, `scroll activates only after four cards (${count})`);
+      assert.equal(state.overflow, count > 4, `no clipping for ${count} cards`);
+      if (count > 4) assert.equal(state.tab, 0, 'scrollable shipped list is keyboard focusable');
     }
     await page.setViewport({ width: 1920, height: 1080 });
     await page.evaluate(() => {
@@ -96,9 +124,13 @@ const output = path.resolve(__dirname, '../../../artifacts/pickup-board-viewport
       await page.evaluate(mode => puSwitchView(mode), mode);
       await new Promise(resolve => setTimeout(resolve, 100));
       assert.equal(await page.$eval('#pu-board-view', el => !!el.getClientRects().length), mode === 'board', `${mode} view switches correctly`);
+      assert.equal(await page.evaluate(() => document.documentElement.classList.contains('pu-page-locked')), mode === 'board', `page lock follows ${mode} view`);
     }
+    await page.evaluate(() => navigateTo('dashboard'));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(await page.evaluate(() => document.documentElement.classList.contains('pu-page-locked')), false, 'page scroll lock is released on navigation');
     fs.writeFileSync(path.join(output, 'natural.json'), JSON.stringify(measurements, null, 2));
     assert.deepEqual(errors, []);
-    console.log(`PASS pickup board: natural content height, no internal scrollbars, no unnecessary short-page scrollbar, all cards visible, view switching, Arabic and landscape (${measurements.length} sizes)`);
+    console.log(`PASS pickup board: no page scrolling, content stays within viewport, Shipped scrolls internally with at most four cards, 0/1/4/5 thresholds, last card reachable, view switching and navigation cleanup (${measurements.length} sizes)`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

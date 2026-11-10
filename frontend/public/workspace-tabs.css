@@ -24,6 +24,20 @@
   #main #page-movements>.ui-tabs-shell{grid-column:1;grid-row:1}
   #main #page-reports .rep-page-header>.ui-tabs-shell{grid-column:1;grid-row:1;align-self:center;margin:6px}
   #main #page-shopify-orders .sp-subnav-shell{margin:0}
+  /* Integration providers contain a logo, description and connection status.
+     Size these tabs from their content instead of the compact single-line height. */
+  #main #page-settings .ui-tabs-shell:has(>#stg-provider-tabs){width:100%}
+  #main #page-settings #stg-provider-tabs.ui-tabs{flex:1 1 auto;width:100%;align-items:stretch}
+  #main #page-settings #stg-provider-tabs.ui-tabs>.ui-tab{
+    flex:1 1 0;min-width:0;min-height:84px!important;height:auto!important;
+    justify-content:flex-start;gap:10px;padding:10px!important;text-align:start;white-space:normal;
+  }
+  #main #page-settings #stg-provider-tabs.ui-tabs>.ui-tab>span:last-child{overflow-wrap:anywhere}
+  @media(max-width:640px){
+    #main #page-settings #stg-provider-tabs.ui-tabs>.ui-tab{
+      flex-direction:column;justify-content:center;gap:6px;padding:10px 4px!important;text-align:center;
+    }
+  }
   @media(max-width:768px),(pointer:coarse){
     :root{--ui-tab-height:44px}
     #main .ui-tabs-shell{width:100%}

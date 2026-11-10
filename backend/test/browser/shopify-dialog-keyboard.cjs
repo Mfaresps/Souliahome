@@ -81,9 +81,11 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
     }), false, 'Order window stays within the viewport width');
     await page.evaluate(() => Promise.all([_spEnsureFollowUps(false), _spEnsureFollowUps(false)]));
     assert.equal(await page.evaluate(() => peekFetches), 1, 'Concurrent order windows share one follow-up request');
-    // Desktop entrance: calm fade (220ms) + rise (280ms) — owner request, Nov 9, 2026.
-    assert.equal(await page.evaluate(() => /0\.22s/.test(getComputedStyle(qs('#sp-peek .sp-peek')).transitionDuration)), true,
-      'Order window uses the calm entrance duration');
+    // The invoice uses a brief fade; data loading never adds a rise animation.
+    assert.equal(await page.evaluate(() => {
+      const style = getComputedStyle(qs('#sp-peek .sp-peek'));
+      return style.transitionDuration === '0.12s' && style.transitionProperty === 'opacity';
+    }), true, 'Order window appears without a delayed transform');
     // Focus starts on the window itself — not on «×», which drew a focus ring on every open.
     await page.waitForFunction(() => document.activeElement === qs('#sp-peek .sp-peek'));
     assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('sp-pk-close')), false,
@@ -99,7 +101,7 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
     await page.keyboard.press('Tab');
     const peekTab = await page.evaluate(() => ({
       active: document.activeElement?.outerHTML.slice(0, 180),
-      first: [...document.querySelectorAll('#sp-peek .sp-peek a[href], #sp-peek .sp-peek button:not([disabled]), #sp-peek .sp-peek input:not([disabled]), #sp-peek .sp-peek select:not([disabled]), #sp-peek .sp-peek textarea:not([disabled]), #sp-peek .sp-peek [tabindex]:not([tabindex="-1"])')]
+      first: [...document.querySelectorAll('#sp-peek .sp-peek a[href], #sp-peek .sp-peek button:not([disabled]), #sp-peek .sp-peek summary, #sp-peek .sp-peek input:not([disabled]), #sp-peek .sp-peek select:not([disabled]), #sp-peek .sp-peek textarea:not([disabled]), #sp-peek .sp-peek [tabindex]:not([tabindex="-1"])')]
         .find(el => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden')?.outerHTML.slice(0, 180)
     }));
     assert.equal(peekTab.active, peekTab.first, 'Tab wraps within order details');

@@ -4,6 +4,66 @@
   --data-motion-ease: cubic-bezier(.22, .61, .36, 1);
 }
 
+/* Shimmer is the only data-arrival effect on these workspaces. */
+#main > [data-loading-style="shimmer"].active,
+[data-loading-style="shimmer"] :is(.ss-reveal,.ss-reveal-stagger > *,.ss-cascade-item,.rep-tab-panel,.sp-order-row,.sp-card,.spk-tile,.sup-card2,.cp-client-card,.fu-card,.fu-kpi-pill,.prod-grid-card,.prod-list-row,.txn-card,.txn-item-row,#tx-fields,#tx-items,#tx-summary),
+#page-shopify-orders :is(#sp-orders-tab-content,#sp-mobile-list,#shopify-orders-table-wrap,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content),
+#page-complaints :is(#fu-panel,#cmp-panel),
+#page-suppliers :is(#sup-panel-cards,#sup-panel-payments) {
+  animation: none !important;
+}
+[data-loading-style="shimmer"] :is(.ss-reveal,.ss-reveal-stagger > *,.ss-cascade-item) { opacity: 1 !important; transform: none !important; }
+#main[data-pending-route] > .page.active:not(.ss-pending-page) { display: none !important; }
+#main[data-pending-route] > .page.ss-pending-page { display: block !important; animation: none !important; }
+#page-loading-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ss-field-placeholder { display: inline-block; max-width: 100%; border-radius: 4px; vertical-align: middle; }
+.ss-masked { position: relative; color: transparent !important; }
+.ss-masked > * { visibility: hidden !important; }
+.ss-masked > .ss-slot-placeholder { position: absolute !important; inset: 2px 0; visibility: visible !important; border-radius: 4px; }
+.ss-control-host { position: relative; }
+.ss-control-hidden { visibility: hidden !important; }
+.ss-control-placeholder { position: absolute !important; border-radius: 7px; pointer-events: none; }
+#prod-table .ss-placeholder-row td { height: 66px; }
+#fu-table .ss-placeholder-row td { height: 44px; }
+.sup-loading-value { display: inline-block; width: 64px; height: 14px; vertical-align: middle; }
+.rep-loading-plot > .ss-skeleton { width: 100%; height: 185px; border-radius: 8px; }
+@media(max-width:768px) { .rep-loading-plot > .ss-skeleton { height: 140px; } }
+
+/* Inventory reserves its summary before stock arrives; unchanged refreshes keep rows. */
+@media screen {
+  html:has(#page-inventory.active) { scrollbar-gutter: stable; }
+  #app:has(#page-inventory.active) { display: flow-root; }
+  #page-inventory .ui-viewport-table { height: var(--ui-table-room); }
+  #page-inventory.inv-loading :is(.kpi-val,[id^="inv-count-"],#inv-results-count,#inv-pagination) { visibility: hidden; }
+  #page-inventory.inv-load-error :is([id^="inv-count-"],#inv-results-count,#inv-pagination) { visibility: hidden; }
+  #page-inventory.inv-loading .kpi-val { position: relative; }
+  #page-inventory.inv-loading .kpi-val::after {
+    content: ''; visibility: visible; position: absolute; inset: 25% 20%;
+    border-radius: 5px; background: var(--border);
+  }
+  #page-inventory .inv-loading-row td { height: 74px; }
+  #page-inventory .inv-loading-bar { display: block; width: 70%; height: 12px; border-radius: 5px; }
+  #page-inventory .inv-loading-card { min-height: 130px; padding: 16px; display: grid; align-content: center; gap: 16px; }
+}
+
+/* Shopify sub-tabs reserve the actual receipt, history and employee slots. */
+.sp-subtab-bar { display:block;max-width:100%;width:70%;height:12px;border-radius:5px; }
+.spdep-loading-card { pointer-events:none;min-width:0;padding:12px;box-sizing:border-box;overflow:hidden; }
+.spdep-loading-receipt { display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;margin-block:12px; }
+.spdep-loading-receipt>div { display:flex;flex-direction:column;gap:12px; }
+.spdep-loading-actions { display:flex;justify-content:flex-end;gap:8px; }
+#sp-perf-kpi-row .kpi-val>.ss-skeleton { width:64px;height:30px; }
+#sp-perf-kpi-row .kpi-icon>.ss-skeleton { width:20px;height:20px; }
+#sp-perf-table .ss-placeholder-row td { height:48px;padding:8px 10px; }
+.sp-perf-loading-card .sp-card-top>.ss-skeleton { width:40%;height:22px; }
+.sp-perf-loading-card .sp-card-subline { margin-block:8px; }
+.dep-log-loading-bar { display:block;width:75%;max-width:140px;height:12px;border-radius:5px; }
+.dep-log-kpi strong>.dep-log-loading-bar { width:85px;height:25px;margin-block:5px; }
+.dep-log-progress-bar { display:block;width:100%;height:3px;border-radius:2px; }
+.dep-log-loading-card { display:flex;align-items:center;gap:10px;pointer-events:none; }
+.dep-log-loading-card>.dlc-vault { width:32px;height:32px;flex:none; }
+.dep-log-loading-copy { display:flex;flex-direction:column;gap:8px;flex:1; }
+.dep-log-loading-card>.dep-log-loading-bar { width:64px;height:20px; }
 /* Neutral placeholders share the same palette as the loaded work surfaces. */
 body:not(.dark-mode) :is(.ss-skeleton,.iu-skeleton) {
   position: relative;
@@ -37,6 +97,7 @@ body.dark-mode .iu-skeleton::after {
 @keyframes data-sheen {
   to { transform: translate3d(115%, 0, 0); }
 }
+[data-loading-style="shimmer"] .ss-skeleton::after { animation-duration: 1.6s; }
 
 /* Values and rows fade into their allocated space without shifting the page. */
 @keyframes ss-reveal {

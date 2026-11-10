@@ -49,6 +49,7 @@ import { inDateWindow } from '../shared/date-window.util';
 import type { MovementsState } from './movements-page.util';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, UploadedImage, ReceiptActor } from '../shopify/deposit-receipts.service';
 import { ConfirmManualDepositReceiptDto } from './dto/manual-deposit-receipt.dto';
+import { cachedRead } from '../shared/read-cache.util';
 
 @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('transactions')
@@ -164,12 +165,13 @@ export class TransactionsController {
     @Query('to') to?: string,
     @Query('sort') sort?: string,
     @Req() req?: { user?: { role?: string; perms?: string[] } },
+    @Query('snapshot') snapshot?: string,
   ) {
     const canSeePurchases = req?.user?.role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
     const result = await this.transactionsService.findSummaryPage({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
-      search, type, status, from, to, sort,
+      search, type, status, from, to, sort, snapshot,
     }, canSeePurchases);
     return { ...result, rows: maskTransactionsForRole(result.rows, req?.user?.role) };
   }
@@ -240,7 +242,10 @@ export class TransactionsController {
 
   @Get('inventory')
   async getInventory() {
-    return this.transactionsService.getInventory();
+    // Display only: every open tab asks for this, and it walks the whole transaction
+    // history. Shared for 5s and cleared by any write — see shared/read-cache.util.ts.
+    // Internal callers (oversell guard, movement log) still call getInventory() directly.
+    return cachedRead('inventory', 5000, () => this.transactionsService.getInventory());
   }
 
   @Get('reports')

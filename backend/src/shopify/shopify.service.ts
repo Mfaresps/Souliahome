@@ -1,4 +1,5 @@
 import { setCommentReaction } from '../shared/comment-reactions';
+import { cachedRead } from '../shared/read-cache.util';
 import { notifyApproval } from '../notifications/admin-events';
 import { shopifyChangeEvent } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -964,12 +965,14 @@ export class ShopifyService {
     };
     // Exclude the Shopify webhook archive and append-only audit histories before
     // reading the collection. Only the requested page is serialized to the client.
-    const [rawOrders, inventory, sales, followUps] = await Promise.all([
+    // Share source reads across staff and filter/page changes. Receipt visibility
+    // stays below the cache so one employee can never receive another's drafts.
+    const [rawOrders, inventory, sales, followUps] = await cachedRead('shopify-workspace-sources', 3000, () => Promise.all([
       this.shopifyOrderModel.find().select('-rawData -editHistory -editRequestHistory -assignmentHistory -localItemsBaseline -commentReactions -depositDecisionHistory').lean(),
-      this.transactionsService.getInventory(),
+      cachedRead('inventory', 5000, () => this.transactionsService.getInventory()),
       this.txModel.find({ type: 'مبيعات' }).select('_id ref client phone total cancelled shopifyOrderId pickupStatus bostaStatus bostaOrderId deliverySource shipCo payStatus shipmentAttempts createdAt').lean(),
-      this.followUpsService?.findAll() || Promise.resolve([]),
-    ]);
+      this.followUpsService?.findDashboardSummary() || Promise.resolve([]),
+    ]));
     const orders = rawOrders.map(order => visibleReceipts(order as any, actorId) as any);
     const createdMs = (order: any) => {
       for (const value of [order.shopifyCreatedAt, order.createdAt]) {
@@ -1238,6 +1241,14 @@ export class ShopifyService {
       pendingCancelCount: orders.filter(o => o.cancelRequest?.status === 'معلق').length,
       pendingEditCount: orders.filter(o => o.editRequest?.status === 'معلق').length,
     };
+  }
+
+  // Fetch only the orders that have a receipt waiting in the review queue.
+  async getDepositReviewOrders(): Promise<Record<string, any>[]> {
+    return this.shopifyOrderModel.find({ depositReceipts: { $elemMatch: {
+      status: 'معلق', $or: [{ 'workflow.version': { $ne: 2 } }, { 'workflow.stage': 'requested' }],
+    } } }).select('-rawData -editHistory -editRequestHistory -assignmentHistory -localItemsBaseline')
+      .sort({ createdAt: -1 }).lean() as any;
   }
 
   // جلب كل الأوردرات

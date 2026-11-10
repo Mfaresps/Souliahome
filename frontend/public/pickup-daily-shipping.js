@@ -1,4 +1,61 @@
 /* Daily dispatch groups are a view of shipment registration, not a pickupStatus mutation. */
+// Keep four complete dispatch cards visible, measuring their actual wrapped content.
+(() => {
+  const lane = document.getElementById?.('pu-shipped-col');
+  if (!lane) return;
+  const page = document.getElementById('page-pickup-orders');
+  const boardView = document.getElementById('pu-board-view');
+  const main = document.getElementById('main');
+  let frame = 0;
+  const watched = new Set();
+  const resize = new ResizeObserver(schedule);
+  resize.observe(lane);
+  [page, main, ...page.querySelectorAll('.pu-page-header,.pu-board-kpis,#pu-board-filters-row,#pu-load-state')].forEach(el => resize.observe(el));
+  function fit() {
+    const locked = page.classList.contains('active') && !!boardView.getClientRects().length;
+    document.documentElement.classList.toggle('pu-page-locked', locked);
+    page.classList.toggle('pu-board-locked', locked);
+    if (locked) {
+      const top = page.getBoundingClientRect().top + scrollY;
+      const room = Math.max(0, Math.floor(innerHeight - top - (parseFloat(getComputedStyle(main).paddingBottom) || 0) - 2)) + 'px';
+      if (page.style.getPropertyValue('--pu-page-room') !== room) page.style.setProperty('--pu-page-room', room);
+      if (scrollY) window.scrollTo({ top: 0, behavior: 'instant' });
+    } else page.style.removeProperty('--pu-page-room');
+    const cards = [...lane.children].filter(el => el.matches('.pu-daily-group, .pu-group'));
+    const first = new Set(cards.slice(0, 4));
+    watched.forEach(el => { if (!first.has(el)) { resize.unobserve(el); watched.delete(el); } });
+    first.forEach(el => { if (!watched.has(el)) { resize.observe(el); watched.add(el); } });
+    const scrollable = cards.length > 4;
+    lane.classList.toggle('pu-shipped-scroll', scrollable);
+    if (!scrollable) {
+      lane.style.removeProperty('--pu-shipped-max');
+      lane.removeAttribute('tabindex');
+      lane.removeAttribute('role');
+      lane.removeAttribute('aria-label');
+      return;
+    }
+    lane.tabIndex = 0;
+    lane.setAttribute('role', 'region');
+    lane.setAttribute('aria-label', lane.closest('.pu-col-shipped').querySelector('[data-i18n="puColShipped"]').textContent);
+    if (!lane.getClientRects().length) return;
+    const style = getComputedStyle(lane);
+    const height = [...first].reduce((sum, el) => sum + el.getBoundingClientRect().height, 0)
+      + 3 * (parseFloat(style.rowGap) || 0) + (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    const value = Math.ceil(height) + 'px';
+    if (lane.style.getPropertyValue('--pu-shipped-max') !== value) lane.style.setProperty('--pu-shipped-max', value);
+  }
+  function schedule() {
+    if (!frame) frame = requestAnimationFrame(() => { frame = 0; fit(); });
+  }
+  new MutationObserver(schedule).observe(lane, { childList: true });
+  new MutationObserver(schedule).observe(page, { attributes: true, attributeFilter: ['class'] });
+  new MutationObserver(schedule).observe(boardView, { attributes: true, attributeFilter: ['style'] });
+  new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  main.addEventListener('transitionend', event => { if (event.target === main) schedule(); });
+  window.addEventListener('resize', schedule);
+  schedule();
+})();
+
 function _puDailyText(ar, en) { return currentLang === 'en' ? en : ar; }
 const _puDailyDateFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' });
 function _puDailyDay(value) {

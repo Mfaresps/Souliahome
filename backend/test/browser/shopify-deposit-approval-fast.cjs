@@ -57,7 +57,7 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
           return { success: true, vaultEntryId: 'vault-1', vaultTxNo: 'SAL-001' };
         }
         if (url.endsWith('/deposit-receipts/receipt-2/approve')) throw new Error('Approval failed');
-        if (url === '/shopify/orders') {
+        if (url === '/shopify/orders/deposit-review') {
           orderFetches++;
           const snapshot = _shopifyOrders.map(order => ({ ...order, depositReceipts: order.depositReceipts.map(receipt => ({ ...receipt })) }));
           if (holdNextOrderFetch) {
@@ -69,6 +69,8 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
         return [];
       };
       renderSpDepositReview();
+      _spDepositReviewIds = new Set(['order-1']);
+      _spDepositReviewToken = localStorage.getItem('token');
       window.oldRefresh = loadShopifyOrders();
     });
     assert.equal(await page.$$eval('.spdep-review-card', cards => cards.length), 1);
@@ -89,7 +91,7 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
       empty: qs('.spdep-review').textContent.includes(t('spDepReviewEmpty')),
       countHidden: qs('#sp-subnav-deposits-n').hidden,
       toast: qs('#toast-container .toast.success')?.textContent.trim(),
-      refreshPending: !!_spOrdersRequest,
+      refreshPending: !!_spDepositReviewRequest,
       calls: approvalCalls,
     }));
     assert.deepEqual(approved, {
@@ -97,7 +99,7 @@ const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
       toast: 'تم اعتماد العربون', refreshPending: true, calls: 1,
     });
     await page.evaluate(() => releaseOrders());
-    await page.waitForFunction(() => orderFetches >= 2 && !_spOrdersRequest);
+    await page.waitForFunction(() => orderFetches >= 2 && !_spDepositReviewRequest);
     assert.equal(await page.$$eval('.spdep-review-card', cards => cards.length), 0);
 
     await page.evaluate(() => {

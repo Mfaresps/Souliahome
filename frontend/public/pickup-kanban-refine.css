@@ -4,6 +4,15 @@
   /* Keep the main area's top margin inside the app instead of adding it to
      the body's viewport minimum height and creating an empty page scrollbar. */
   #app:has(#page-pickup-orders.active) { display: flow-root; }
+  html.pu-page-locked, html.pu-page-locked body { overflow: hidden; overscroll-behavior: none; }
+  #main > #page-pickup-orders.pu-board-locked {
+    display: flex; flex-direction: column; height: var(--pu-page-room);
+    min-height: 0;
+  }
+  #main > #page-pickup-orders.pu-board-locked > * { flex-shrink: 0; }
+  #main #page-pickup-orders.pu-board-locked #pu-board-view {
+    flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain;
+  }
 
   #main > #page-pickup-orders {
     --pu-lane: color-mix(in srgb, var(--text) 4%, var(--surface));
@@ -88,6 +97,21 @@
   #main #page-pickup-orders .pu-board-col .pu-board-col-body {
     flex: 0 0 auto; min-height: 90px; max-height: none; overflow: visible;
     padding: 5px 6px 8px; gap: 7px; scrollbar-gutter: auto;
+  }
+  #main #page-pickup-orders #pu-shipped-col.pu-shipped-scroll {
+    max-height: var(--pu-shipped-max); overflow-x: hidden; overflow-y: auto;
+    scrollbar-gutter: stable; overscroll-behavior-y: contain;
+  }
+  #main #page-pickup-orders #pu-shipped-col > :is(.pu-daily-group, .pu-group) { flex-shrink: 0; }
+  @media (min-width: 1401px) {
+    #main #page-pickup-orders.pu-board-locked .pu-board-3col {
+      height: 100%; grid-auto-rows: minmax(0, 1fr);
+    }
+    #main #page-pickup-orders.pu-board-locked .pu-board-col { max-height: 100%; }
+    #main #page-pickup-orders.pu-board-locked .pu-board-col .pu-board-col-body {
+      flex-shrink: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
   }
   #main #page-pickup-orders .pu-board-col-body > .pu-group + .pu-group::before { display: none; }
   #main #page-pickup-orders .pu-board-col .pu-pending-actions-bar { padding: 4px 6px 6px; gap: 4px; }

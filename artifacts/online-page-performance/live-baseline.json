@@ -1,0 +1,89 @@
+{
+  "origin": "https://admin.soulia.store",
+  "scope": "Unauthenticated login shell only",
+  "results": [
+    {
+      "label": "cold",
+      "settledMs": 3875,
+      "domContentLoadedMs": 3030,
+      "loadMs": 3048,
+      "requests": 167,
+      "cached": 0,
+      "networkBytes": 2450383,
+      "largest": [
+        {
+          "path": "/app-core.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 1290683
+        },
+        {
+          "path": "/app-core.css",
+          "status": 200,
+          "disk": false,
+          "bytes": 323089
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 94110
+        },
+        {
+          "path": "/inventory-units.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 43583
+        },
+        {
+          "path": "/favicon.png",
+          "status": 200,
+          "disk": false,
+          "bytes": 33597
+        }
+      ]
+    },
+    {
+      "label": "warm",
+      "settledMs": 1484,
+      "domContentLoadedMs": 795,
+      "loadMs": 813,
+      "requests": 165,
+      "cached": 0,
+      "networkBytes": 20635,
+      "largest": [
+        {
+          "path": "/api/drafts",
+          "status": 401,
+          "disk": false,
+          "bytes": 322
+        },
+        {
+          "path": "/api/branding",
+          "status": 200,
+          "disk": false,
+          "bytes": 265
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 142
+        },
+        {
+          "path": "/app-core.css",
+          "status": 304,
+          "disk": false,
+          "bytes": 125
+        },
+        {
+          "path": "/app-core.js",
+          "status": 304,
+          "disk": false,
+          "bytes": 125
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

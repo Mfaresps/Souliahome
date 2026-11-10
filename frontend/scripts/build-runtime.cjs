@@ -97,28 +97,55 @@ function splitAppScript(html) {
     + html.slice(end + '</script>'.length);
 }
 
+// Replace every hand-written ?v= on a local .js/.css with a hash of the file that is actually
+// served (runtime/ wins over public/, as in the Dockerfile). nginx caches only "?v=h-<hash>"
+// URLs for a year without asking the server again, so the version must change whenever the
+// content does — a hand-kept label cannot promise that (app-core.js kept one label across
+// many edits). A file that cannot be found keeps its label and stays on "no-cache".
+function stampContentVersions(html) {
+  const crypto = require('node:crypto');
+  const hashes = new Map();
+  const hashOf = (rel) => {
+    if (hashes.has(rel)) return hashes.get(rel);
+    let hash = null;
+    for (const dir of [outputDir, path.join(frontendDir, 'public')]) {
+      const file = path.join(dir, rel);
+      if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+        hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 12);
+        break;
+      }
+    }
+    hashes.set(rel, hash);
+    return hash;
+  };
+  return html.replace(/(["'(=])(\/?)([A-Za-z0-9_\-./]+\.(?:js|css))\?v=[A-Za-z0-9_.\-]+/g,
+    (whole, lead, slash, rel) => {
+      if (rel.includes('..')) return whole;
+      const hash = hashOf(rel);
+      return hash ? `${lead}${slash}${rel}?v=h-${hash}` : whole;
+    });
+}
+
 function buildRuntime() {
   let html = fs.readFileSync(sourcePath, 'utf8');
   html = extractBlock(html, /<style>\r?\n\*,\*::before,\*::after/, '</style>', 'app-core.css',
     `<link rel="stylesheet" href="/app-core.css?v=${version}">`);
   html = splitAppScript(html);
-  const invoiceScript = '<script src="/invoice-image.js?v=20261029-purchase-access"></script>';
-  if (html.indexOf(invoiceScript) < 0 || html.indexOf(invoiceScript) !== html.lastIndexOf(invoiceScript))
-    throw new Error('Expected one invoice image script');
-  html = html.replace(invoiceScript, '');
-  for (const script of [
-    '<script src="/shopify-kpis.js?v=20261109-cascade"></script>',
-    '<script src="/deposit-history.js?v=20261109-noimage"></script>',
-    '<script src="/shopify-edit-approvals.js?v=20261103-compact-order-mark"></script>',
-  ]) {
-    if (html.indexOf(script) < 0 || html.indexOf(script) !== html.lastIndexOf(script))
-      throw new Error(`Expected one route script: ${script}`);
-    html = html.replace(script, '');
-  }
-  const settingsScript = '<script src="/shopify-settings.js?v=20261020-connection-status"></script>';
-  if (html.indexOf(settingsScript) < 0 || html.indexOf(settingsScript) !== html.lastIndexOf(settingsScript))
-    throw new Error('Expected one Settings integrations script');
-  html = html.replace(settingsScript, '');
+  // These scripts load on demand from the route loader, so their eager tag is removed from
+  // the served shell. Matched by FILE NAME with any ?v= — matching the exact label broke the
+  // whole local shell (a 500) every time someone bumped a version in index.html only. The
+  // served version is a content hash anyway (stampContentVersions), so the label is irrelevant.
+  const removeOneScript = (file, label) => {
+    const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`<script src="/${escaped}(?:\\?v=[^"]*)?"></script>`, 'g');
+    const found = html.match(pattern) || [];
+    if (found.length !== 1) throw new Error(`Expected one ${label}: /${file} (found ${found.length})`);
+    html = html.replace(pattern, '');
+  };
+  removeOneScript('invoice-image.js', 'invoice image script');
+  for (const file of ['shopify-kpis.js', 'deposit-history.js', 'shopify-edit-approvals.js'])
+    removeOneScript(file, 'route script');
+  removeOneScript('shopify-settings.js', 'Settings integrations script');
 
   const open = '<div class="page" id="page-settings">';
   const close = '</div><!-- /page-settings -->';
@@ -136,6 +163,7 @@ function buildRuntime() {
   html = html.slice(0, contentStart) + '\r\n<!-- Settings content loads on first visit. -->\r\n'
     + close + '\r\n' + shellPanel + html.slice(end + close.length);
   if (!html.includes(shellPanel)) throw new Error('Missing push preferences shell panel');
+  html = stampContentVersions(html);
   writeIfChanged(path.join(outputDir, 'index.html'), html);
   return { sourceBytes: Buffer.byteLength(fs.readFileSync(sourcePath)),
     runtimeBytes: Buffer.byteLength(html) };

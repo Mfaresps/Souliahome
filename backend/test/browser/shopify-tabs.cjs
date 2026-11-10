@@ -21,7 +21,7 @@ const css = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1];
     await page.addStyleTag({content: css});
     for (const file of ['shopify-tabs.css', 'shopify-responsive.css', 'shopify-compact-header.css'])
       await page.addStyleTag({path: path.join(root, file)});
-    await page.addScriptTag({content: 'window.qs=s=>document.querySelector(s); window.admin=true;window.isAdmin=()=>admin;window._spServerEnabled=false;window.renderPerformanceDashboard=()=>{};window.renderSpDepositReview=()=>{};window.renderSpDepositHistory=()=>{};window._depLogUrl=()=>"#shopify-orders/deposit-log";' + functions + ';_initShopifySubnav();'});
+    await page.addScriptTag({content: 'window.qs=s=>document.querySelector(s); window.admin=true;window.isAdmin=()=>admin;window._spServerEnabled=false;window.renderPerformanceDashboard=()=>{};window.renderSpDepositReview=()=>{};window.loadShopifyOrders=()=>renderSpDepositReview();window.renderSpDepositHistory=()=>{};window._depLogUrl=()=>"#shopify-orders/deposit-log";' + functions + ';_initShopifySubnav();'});
     for (const dir of ['ltr', 'rtl']) {
       for (const width of [320, 390, 768, 1440]) {
         await page.setViewport({width, height: 800});

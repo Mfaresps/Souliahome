@@ -88,6 +88,8 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    assert.equal(await page.evaluate(()=>overviewRequests),1,'recent month is reused without another request');
    await page.evaluate(()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;_spkState='ready';_spkFilter='';_setSpNavigationPending(true);window.shopTask=loadShopifyOrders();});
    await page.waitForSelector('#sp-orders-loading:not([hidden])');
+   assert.equal(await page.$('.sp-loading-day,.sp-loading-card-day'),null,'unknown date groups are not drawn as a clipped loading row');
+   assert(await page.$$eval('#shopify-orders-table-wrap,#sp-mobile-list',els=>els.every(el=>getComputedStyle(el).display==='none')),'cached orders stay hidden behind the loading placeholders');
    assert(await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top>=document.getElementById('sp-kpi').getBoundingClientRect().bottom),'summary stays above orders while loading');
    assert.equal(await page.$$eval('#sp-kpi .spk-lbl',els=>els.length),5);
    assert.equal(await page.$$eval('#sp-kpi .spk-tile:disabled',els=>els.length),5,'unknown metrics cannot apply filters');
@@ -98,7 +100,6 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
     : null);
   const loadingRows=loadingColumns?await page.evaluate(()=>({
    header:document.querySelector('.sp-orders-loading-table thead tr').getBoundingClientRect().height,
-   day:document.querySelector('.sp-orders-loading-table .sp-loading-day').getBoundingClientRect().height,
    order:document.querySelector('.sp-orders-loading-table tbody tr:not(.sp-loading-day)').getBoundingClientRect().height,
   })):null;
   const statusHeading=loadingColumns?await page.$eval('.sp-loading-status-head',el=>{
@@ -130,7 +131,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
     assert(Math.abs(realColumns[i].left-loadingColumns[i].left)<=2,`column ${realColumns[i].id} moves ${lang}/${width}: ${loadingColumns[i].left} -> ${realColumns[i].left}`);
     assert(Math.abs(realColumns[i].width-loadingColumns[i].width)<=2,`column ${realColumns[i].id} changes width ${lang}/${width}: ${loadingColumns[i].width} -> ${realColumns[i].width}`);
    }
-   for(const row of ['header','day','order'])assert(Math.abs(realRows[row]-loadingRows[row])<=2,`${row} changes height ${lang}/${width}: ${loadingRows[row]} -> ${realRows[row]}`);
+   for(const row of ['header','order'])assert(Math.abs(realRows[row]-loadingRows[row])<=2,`${row} changes height ${lang}/${width}: ${loadingRows[row]} -> ${realRows[row]}`);
   }
    await page.screenshot({path:path.join(out,`shopify-ready-${lang}-${width}.png`)});
    await page.evaluate(()=>{window.shopTask=loadShopifyOrders();});
@@ -167,10 +168,39 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
   }),'action buttons fit the fixed column with richer order content');
   await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
   assert.equal(await page.$eval('.sp-loading-bar',e=>getComputedStyle(e).animationName),'none');
+  for(const lang of ['en','ar']){
+   await page.setViewport({width:1440,height:1000});
+   await page.evaluate(lang=>{
+    currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';showPage('movements');
+    renderMovements=()=>{};fail=false;
+    qs('#mov-table-wrap').style.display='block';
+    const headers=[...qs('#mov-table thead').querySelectorAll('th')];
+    qs('#mov-table tbody').innerHTML=Array.from({length:6},(_,i)=>'<tr>'+headers.map(th=>{
+     const col=th.dataset.col;
+     const value=col==='ref'?'#3098':col==='date'?'Yesterday at 03:01 AM':col==='client'?'<span style="visibility:visible">Cached customer</span>':'EGP 450';
+     return `<td${col?' data-col="'+col+'"':''}>${value}</td>`;
+    }).join('')+'</tr>').join('');
+    qs('#mov-type-dd-count').textContent='1,068';qs('#mov-results-count').textContent='1,068 of 1,068';
+    _setMovNavigationPending(true);
+   },lang);
+   await new Promise(resolve=>setTimeout(resolve,100));
+   const pending=await page.evaluate(()=>({
+    cells:[...qs('#mov-table tbody tr').children].map(el=>({col:el.dataset.col,hidden:getComputedStyle(el).visibility==='hidden',placeholder:getComputedStyle(el,'::after').content,barVisible:getComputedStyle(el,'::after').visibility==='visible'})),
+    customerHidden:getComputedStyle(qs('#mov-table td[data-col="client"] span')).visibility==='hidden',
+    countsHidden:['mov-type-dd-count','mov-results-count'].every(id=>getComputedStyle(qs('#'+id)).visibility==='hidden'),
+   }));
+   assert(pending.cells.every(cell=>cell.hidden&&cell.barVisible&&cell.placeholder!=='none'),`all cached fields have loading placeholders ${lang}: ${JSON.stringify(pending)}`);
+   assert(pending.customerHidden&&pending.countsHidden,`customer and old counts stay masked ${lang}: ${JSON.stringify(pending)}`);
+   await page.screenshot({path:path.join(out,`movements-loading-${lang}-1440.png`)});
+   await page.evaluate(()=>_setMovNavigationPending(false));
+   await new Promise(resolve=>setTimeout(resolve,100));
+   const revealed=await page.evaluate(()=>({visibility:getComputedStyle(qs('#mov-table td[data-col="ref"]')).visibility,pending:qs('#page-movements').className}));
+   assert(revealed.visibility==='visible',`rows are revealed after loading: ${JSON.stringify(revealed)}`);
+  }
   await page.evaluate(async()=>{showPage('dashboard');currentUser={_id:'staff',role:'staff',perms:['dashboard']};renderDashWelcome(false);window.salesOverview.hide();hideAdminTeamWorkspace();});
   assert.equal(await page.$eval('#dash-sales-overview',el=>getComputedStyle(el).display),'none','staff keeps the operational dashboard');
   assert.equal(await page.evaluate(()=>dashboardStatsRequests),0,'dashboard never loads duplicate financial summary');
   assert.deepEqual(errors,[],'no runtime errors');
-  console.log('PASS loading pages: Arabic/English, 1980/1440/390/320px, dark mode, stable Shopify columns and rows, four metric sales overview, rich actions, retained refresh content, failures/retry, hidden columns and reduced motion.');
+  console.log('PASS loading pages: all cached movement fields and counts masked together; Shopify has no date-band fragment or visible cached table; Arabic/English, 1980/1440/390/320px, dark mode, stable columns and rows, failures/retry and reduced motion.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

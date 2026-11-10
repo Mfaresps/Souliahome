@@ -25,6 +25,8 @@ services:
       MONGODB_URI: mongodb://soulia:soulia_secret_2024@mongodb:27017/soulia?authSource=admin
       JWT_SECRET: soulia_jwt_super_secret_key_2024
       PORT: 3000
+      PERFORMANCE_LOG_ENABLED: ${PERFORMANCE_LOG_ENABLED:-false}
+      SLOW_REQUEST_MS: ${SLOW_REQUEST_MS:-500}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}

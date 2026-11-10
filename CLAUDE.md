@@ -3744,6 +3744,67 @@ does the page scroll again. ⚠ `_doNavigateTo` removes the class as soon as ano
 chosen, and calls `_spFitOrderTable()` at its end — leaving the class set would freeze every
 other page. Phones (cards, no table box) are never locked.
 
+## Live Felt Slower Than Local — 240 Revalidations per Page Open (Nov 10, 2026)
+
+Measured on admin.soulia.store: every page open sent **240 requests**, all `304` (unchanged),
+each 95–375ms. The live server already speaks HTTP/2 (~72ms connect), so the cost was the
+round trips themselves: every `.js/.css` was `no-cache`, i.e. "ask the server first". Locally
+a round trip is ~0ms, which is why it never showed there.
+
+- `scripts/build-runtime.cjs` → `stampContentVersions()` rewrites every local `.js/.css`
+  `?v=<label>` in the served `index.html` to **`?v=h-<sha256 of the served file, 12 hex>`**
+  (runtime/ wins over public/, as in the Dockerfile).
+- `nginx.conf` `map $arg_v` gives only those `h-` URLs `max-age=31536000, immutable`;
+  everything else stays `no-cache`.
+- ⚠ **Hand-written `?v=` labels no longer decide anything on live** — the hash changes
+  whenever the file does. They were unsafe for long caching anyway: `app-core.js` kept one
+  label across many edits. A URL built inside JS (e.g. `inventory-units.css` in
+  `inventory-units.js`) is not stamped and keeps `no-cache`.
+- ⚠ Never give a long cache to a URL that is not content-hashed.
+- Not verified with `nginx -t` (no Docker on the dev machine) — check the first deploy.
+- **Still open:** some actions re-run the whole `loadAllData()` (~15 requests) after a
+  write; that is the next cost on live.
+
+### Live events started a request storm (same day)
+A second Network capture showed `startup-overview` (146kB, 1.3–4s each) requested again
+and again, overlapping, and `shopify/orders/summary-page` cancelled and resent in a loop.
+Locally there are no webhooks and one user, so no events, so it never showed.
+- `refreshTransactionOverviewSoon`: every `tx:*` event started a new overview 250ms later
+  even while one was in flight, and a result that overlapped an event was discarded and
+  fetched again. Now **one in flight, at most one per `TX_OVERVIEW_MIN_GAP` (5s)**; events
+  during a request mark it dirty → exactly one follow-up. A stale result is still not applied.
+- `_spScheduleLiveOrderRefresh`: a live event **no longer aborts** a loading page (an abort
+  does not stop the server's work). It waits for it, then runs one follow-up, ≥2s apart.
+- Simulated with the shipped functions: 30 events / 30s at 3s latency → 6 overview requests
+  and 11 Shopify page requests, max 1 concurrent each, 0 aborts.
+
+### Phase 1 server load (same day)
+- **Indexes** — reads that were full collection scans:
+  - `Transaction`:
+    - `bostaOrderId` and `bostaTrackingNumber`: **every Bosta webhook** looks the transaction up by one of them.
+    - `ref`.
+    - `carrierSettlement.status`: the minute cron.
+    - `pickupStatus`.
+    - `createdAt`.
+    - `updatedAt+_id`: the 15-second Shopify sync scan filters **and** sorts on it.
+  - `FollowUp`:
+    - `shopifyOrderId`, `transactionId` and `orderRef`.
+    - `reason+status`.
+    - Why: `reconcileCustomerCancellations` runs one `updateMany` per customer cancellation **ever recorded**, every minute.
+  - Confirmed created by booting `dist/main.js` on a scratch database.
+- **`GET /transactions/inventory` is cached for display only** (`shared/read-cache.util.ts`):
+  - Single flight, 5-second TTL.
+  - A middleware in `main.ts` clears it at the start **and** at the finish of every non-GET request (webhooks included).
+  - ⚠ **Internal callers still call `getInventory()` directly** (the oversell guard, a movement's qtyBefore, Shopify approval). Never route a value a write decides on through `cachedRead`.
+  - 5 cases in `test/unit/read-cache.spec.ts`. Revert-checked: dropping the clear fails 4.
+- **Not changed:**
+  - The push dispatch cron runs every second, but it is one indexed query, so it is cheap.
+  - `loadAllData()` after an action has only 2 callers: the refresh button and the bulk carrier-statement settle. Both are deliberate.
+- ⚠ **Pre-existing, unrelated:**
+  - Seed data holds a duplicate product name («Ribbon Storage»), so `dist/main.js` on an **empty** database stops at the seed step.
+  - `transactions.service.spec.ts`: 67 tests fail on a mock with no `.db` (`requireWarehouse`).
+  - `followup-order-outcome.spec.ts`: 2 tests fail; `_fuRenderCommentThread` is missing from `index.html`.
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |

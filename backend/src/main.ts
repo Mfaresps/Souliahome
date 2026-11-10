@@ -3,17 +3,24 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
 import { NextFunction, Request, Response } from 'express';
+import { invalidateReadCachesOnWrite } from './shared/read-cache.middleware';
+import { installPerformanceLogging } from './shared/performance-logging';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // مطلوب للتحقق من Shopify webhook signature
   });
+  installPerformanceLogging(app.getHttpAdapter().getInstance());
 
   // Strip trailing whitespace/newlines from URL (Shopify sometimes sends %0A)
   app.use((req: Request, _res: Response, next: NextFunction) => {
     req.url = req.url.replace(/(\r\n|\r|\n|%0D%0A|%0A|%0D)+$/gi, '');
     next();
   });
+
+  // Any write may change what a cached read screen shows (shared/read-cache.util.ts).
+  // Clear at the start (a read that begins mid-write is not kept past it) and at the end.
+  app.use(invalidateReadCachesOnWrite);
 
   app.setGlobalPrefix('api');
   app.enableCors({

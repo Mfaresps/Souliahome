@@ -170,3 +170,12 @@ export class FollowUp {
 }
 
 export const FollowUpSchema = SchemaFactory.createForClass(FollowUp);
+// Every minute `reconcileCustomerCancellations` runs one updateMany per customer
+// cancellation ever recorded, matching siblings by order link — with no index that is one
+// full scan of this collection per cancellation, per minute, growing forever. The order
+// links are also how the invoice, Shopify quick view and follow-up page find a ticket.
+// Indexes only speed reads up — they never change a query's result (Nov 10, 2026).
+FollowUpSchema.index({ shopifyOrderId: 1 });
+FollowUpSchema.index({ transactionId: 1 });
+FollowUpSchema.index({ orderRef: 1 });
+FollowUpSchema.index({ reason: 1, status: 1 });

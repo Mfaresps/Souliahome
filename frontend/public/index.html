@@ -47,7 +47,7 @@
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
-  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261109-cascade', depositHistory:'/deposit-history.js?v=20261109-noimage', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261110-items-request', invoiceImage:'/invoice-image.js?v=20261029-purchase-access'};
+  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261110-field-shimmer', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261110-items-request', invoiceImage:'/invoice-image.js?v=20261029-purchase-access'};
   var tasks = {};
   window.souliaLibraryReady = function (name) {
     if (tasks[name]) return tasks[name];
@@ -254,20 +254,26 @@ h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
 #main > .page.active{animation:pageEnter .15s var(--ease-out)}
 #page-reports,#page-users,#page-clients,#page-approvals,#page-suppliers,#page-expenses,#page-transaction,#page-supplier-profile{max-width:1400px;margin:0 auto;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
 #page-complaints,#page-movements,#page-inventory,#page-products,#page-settings,#page-vault,#page-categories,#page-category-profile,#page-collection-profile{margin:0;padding:16px 20px;border:1px solid var(--border);border-radius:12px;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.05)}
-#page-movements.mov-nav-pending #mov-table tbody td:not([data-col="ref"]):not([data-col="date"]):not([data-col="client"]),
-#page-movements.mov-nav-pending #mov-table tbody td[data-col="ref"] .badge,
-#page-movements.mov-nav-pending #mov-table tbody td[data-col="ref"] .mov-reship-tag,
+#page-movements.mov-nav-pending #mov-table tbody td *,
 #page-movements.mov-nav-pending [id^="mov-count-"],
+#page-movements.mov-nav-pending #mov-type-dd-count,
+#page-movements.mov-nav-pending #mov-results-count,
 #page-movements.mov-nav-pending #mov-pagination{visibility:hidden}
 #page-movements.mov-nav-pending #mov-table tbody tr{pointer-events:none;background:var(--bg)!important;opacity:1!important}
-/* Revalidation skeleton. The cached figures stay masked (they may be stale), but each
-   masked place now shows a placeholder bar, so the page reads as loading rather than as
-   half-empty rows and a blank KPI gap. transition:none stops controls with
+/* Mask every cached field together until the fresh page is ready. Keep cell borders
+   and dimensions visible so loading never looks like a partially populated ledger.
+   transition:none stops controls with
    `transition:all` (items button, discount badge, TAG) fading out late as ghosts. */
 #page-movements.mov-nav-pending :is(#mov-table tbody,#mov-kpi-strip,#mov-grid-list,#mov-mobile-list) *{transition:none!important}
-#page-movements.mov-nav-pending #mov-table tbody td[data-col]:not([data-col="ref"]):not([data-col="date"]):not([data-col="client"]){position:relative}
-#page-movements.mov-nav-pending #mov-table tbody td[data-col]:not([data-col="ref"]):not([data-col="date"]):not([data-col="client"])::after{
+#page-movements.mov-nav-pending #mov-table tbody td{position:relative;visibility:hidden;color:transparent!important;text-shadow:none!important}
+#page-movements.mov-nav-pending #mov-table tbody td *{visibility:hidden!important}
+#page-movements.mov-nav-pending #mov-table tbody td::before{content:'';visibility:visible;position:absolute;inset-inline:0;bottom:0;border-bottom:1px solid var(--border);pointer-events:none}
+#page-movements.mov-nav-pending #mov-table tbody td::after{
   content:'';visibility:visible;position:absolute;top:50%;inset-inline-start:10px;width:min(62%,80px);height:10px;margin-top:-5px;border-radius:6px;background:#e5e7eb}
+#page-movements.mov-nav-pending #mov-table tbody td[data-col="ref"]::after{width:min(62%,56px)}
+#page-movements.mov-nav-pending #mov-table tbody td:is([data-col="date"],[data-col="client"])::after{width:min(72%,112px)}
+#page-movements.mov-nav-pending #mov-table tbody td:first-child:not([data-col])::after{
+  content:'';visibility:visible;position:absolute;top:50%;left:50%;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:3px;background:var(--border)}
 #page-movements.mov-nav-pending :is(.mov-kpi-stat-val,.mov-kpi-chart,.kpi-val){position:relative;visibility:hidden}
 #page-movements.mov-nav-pending :is(.mov-kpi-chart,.kpi-val)::after{content:'';visibility:visible;position:absolute;inset-block:28%;inset-inline:0 18%;border-radius:6px;background:#e5e7eb}
 #page-movements.mov-nav-pending :is(#mov-grid-list,#mov-mobile-list)>*>*{visibility:hidden}
@@ -277,7 +283,7 @@ h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
   background-position:left 16px top 18px,left 16px top 44px,left 16px top 68px}
 html[dir="rtl"] #page-movements.mov-nav-pending :is(#mov-grid-list,#mov-mobile-list)>*{
   background-position:right 16px top 18px,right 16px top 44px,right 16px top 68px}
-body.dark-mode #page-movements.mov-nav-pending #mov-table tbody td[data-col]::after,
+body.dark-mode #page-movements.mov-nav-pending #mov-table tbody td::after,
 body.dark-mode #page-movements.mov-nav-pending :is(.mov-kpi-chart,.kpi-val)::after{background:var(--border)}
 body.dark-mode #page-movements.mov-nav-pending :is(#mov-grid-list,#mov-mobile-list)>*{
   background-image:linear-gradient(var(--border) 0 0),linear-gradient(var(--border) 0 0),linear-gradient(var(--border) 0 0)}
@@ -16826,9 +16832,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/comment-reactions.css?v=20261029-smile-plus">
 <script src="/comment-reactions.js?v=20261029-smile-plus"></script>
 <link rel="stylesheet" href="/followup-trail.css?v=20261110-neutral-cards">
-<link rel="stylesheet" href="/shopify-order-peek.css?v=20261110-address-align">
+<link rel="stylesheet" href="/shopify-order-peek.css?v=20261110-instant-shimmer">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261109-card-preview">
-<link rel="stylesheet" href="/shopify-responsive.css?v=20261110-inline-tabs">
+<link rel="stylesheet" href="/shopify-responsive.css?v=20261110-loading-consistency">
 <link rel="stylesheet" href="/shopify-deposit-fab.css?v=20261109-white-plus">
 <link rel="stylesheet" href="/products-mobile.css?v=20261022">
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261110-previous-deposit">
@@ -16846,14 +16852,14 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/order-audit-insights.css?v=20261021-5">
 <link rel="stylesheet" href="/order-audit-layout.css?v=20261021-2">
 <link rel="stylesheet" href="/startup-experience.css?v=20261102-8">
-<link rel="stylesheet" href="/data-loading.css?v=20261103-neutral-loading">
+<link rel="stylesheet" href="/data-loading.css?v=20261110-shopify-subtabs">
 <link rel="stylesheet" href="/scan-station-redesign.css?v=20261102-larger-compact-photos">
 <link rel="stylesheet" href="/reports-refined.css?v=20261103-1">
 <link rel="stylesheet" href="/comment-thread.css?v=20261110-neutral-cards">
 <link rel="stylesheet" href="/comment-inline-edit.css?v=20261109-1">
 <link rel="stylesheet" href="/copy-button.css?v=20261109-1">
 <link rel="stylesheet" href="/text-shimmer.css?v=20261108-1">
-<script src="/loading-system.js?v=20261102-2" defer></script>
+<script src="/loading-system.js?v=20261110-field-shimmer" defer></script>
 </head>
 <body>
 <div id="splash-screen" role="status" aria-live="polite">
@@ -17438,7 +17444,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Transaction (new) -->
-<div class="page" id="page-transaction" oninput="markTxDirty()" onchange="markTxDirty()">
+<div class="page" id="page-transaction" data-loading-style="shimmer" oninput="markTxDirty()" onchange="markTxDirty()">
 
 <!-- ── Offline queue (المعاملات المعلقة) — hidden entirely when the queue is empty ──
      Was a full nav page; it is a transient state of THIS page, so it lives here now. -->
@@ -18766,7 +18772,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Clients -->
-<div class="page" id="page-clients">
+<div class="page" id="page-clients" data-loading-style="shimmer">
 <div id="clients-list-view">
 <div class="page-header">
   <div><h2 class="page-title" data-i18n="clients">العملاء</h2><p class="page-subtitle" data-i18n="clientsSubtitle">إدارة بيانات العملاء وسجل مشترياتهم</p></div>
@@ -18812,7 +18818,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
 <!-- Products -->
 <div class="page" id="page-barcodes"></div>
-<div class="page" id="page-products">
+<div class="page" id="page-products" data-loading-style="shimmer">
 <div class="prod-sticky-head">
 <div class="page-header">
 <div><h2 class="page-title" data-i18n="products">الأصناف</h2><p class="page-subtitle" data-i18n="productsSubtitle">إدارة قائمة المنتجات وأسعارها ومستوياتها</p></div>
@@ -19079,7 +19085,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Suppliers -->
-<div class="page" id="page-suppliers">
+<div class="page" id="page-suppliers" data-loading-style="shimmer">
 <div class="sup-page-toolbar">
 <div class="page-header">
 <div><h2 class="page-title" data-i18n="suppliers">الموردون</h2><p class="page-subtitle" data-i18n="suppliersSubtitle">قائمة موردي المنتجات وبياناتهم</p></div>
@@ -19448,7 +19454,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Complaints -->
-<div class="page" id="page-complaints">
+<div class="page" id="page-complaints" data-loading-style="shimmer">
 
 <div class="cs-sticky-head">
 <!-- Page header -->
@@ -20018,7 +20024,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div><!-- /#page-approvals -->
 
 <!-- Reports -->
-<div class="page" id="page-reports">
+<div class="page" id="page-reports" data-loading-style="shimmer">
 
 <!-- Reports Page Header: title + tabs + filter all in one unified bar -->
 <div class="rep-page-header">
@@ -21350,7 +21356,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Shopify Orders -->
-<div class="page" id="page-shopify-orders">
+<div class="page" id="page-shopify-orders" data-loading-style="shimmer">
 <div class="sp-sticky-head">
   <div id="shopify-page-header" class="sp-compact-header">
     <h2 style="margin:0;font-size:1.3rem;display:flex;align-items:center;gap:8px">Orders <svg viewBox="0 0 110 125" height="22" width="20" style="display:block;flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><image href="/shopify-glyph-color-2026-65613845c170.svg" width="110" height="125"/></svg></h2>
@@ -23871,10 +23877,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 </div>
 
-<script src="/deposit-history.js?v=20261109-noimage"></script>
+<script src="/deposit-history.js?v=20261110-shimmer"></script>
 <link rel="stylesheet" href="/deposit-decision.css?v=20261110-small-reason">
 <script src="/deposit-decision.js?v=20261110-small-reason"></script>
-<script src="/shopify-kpis.js?v=20261109-cascade"></script>
+<script src="/shopify-kpis.js?v=20261110-field-shimmer"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261020-returns2">
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
@@ -23893,7 +23899,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/shopify-deposit-fab.js?v=20261109-follow-redraw"></script>
 <script src="/shipping-command-center.js?v=20261109-cascade"></script>
 <script src="/navigation-history.js?v=20261110-2"></script>
-<script src="/clients-profile.js?v=20261110-order-ordinal"></script>
+<script src="/clients-profile.js?v=20261110-instant-history"></script>
 <script>
 const qs = (s, p) => (p || document).querySelector(s);
 const qsa = (s, p) => [...(p || document).querySelectorAll(s)];
@@ -32494,6 +32500,7 @@ function revealData(el, opts = {}) {
   if (!el) return;
   const cls = opts.stagger ? 'ss-reveal-stagger' : 'ss-reveal';
   el.classList.remove('ss-reveal', 'ss-reveal-stagger');
+  if (el.closest?.('[data-loading-style="shimmer"]')) { el.style.willChange = ''; return; }
   if (window.matchMedia('(prefers-reduced-motion:reduce)').matches) {
     el.style.willChange = '';
     return;
@@ -32535,6 +32542,7 @@ function _ssVisibleBottom(el) {
 }
 function souliaCascade(container, opts = {}) {
   if (typeof container === 'string') container = qs(container);
+  if (container?.closest?.('[data-loading-style="shimmer"]')) return;
   if (!container || window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
   // Every row the user can SEE takes part — a fixed count left the lower half of the
   // screen popping in at once. Rows are in document order, so the first one below
@@ -32575,6 +32583,7 @@ document.addEventListener('animationend', e => {
 const _SS_NUM_RE = /\d[\d,]*(?:\.\d+)?/g;
 function souliaCountUp(root, selector, duration = 450) {
   if (typeof root === 'string') root = qs(root);
+  if (root?.closest?.('[data-loading-style="shimmer"]')) return;
   if (!root || window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
   const jobs = [];
   const targets = root.matches?.(selector) ? [root] : root.querySelectorAll(selector);
@@ -33743,11 +33752,22 @@ function api(path, options = {}) {
   const method = String(options.method || 'GET').toUpperCase();
   // Share concurrent JSON reads only. No response is retained after completion.
   // Writes separate the read batches so a refresh after saving always goes to the server.
-  if (method !== 'GET' && method !== 'HEAD') {
+  // Presence tracking and filter queries cannot change an order or its stock.
+  const displayUnchanged = method === 'POST' && ['/auth/update-last-seen', '/transactions/movements-page']
+    .includes(path.split('?')[0].replace(/\/+$/, ''));
+  if (method !== 'GET' && method !== 'HEAD' && !displayUnchanged) {
     _apiWriteRevision++;
     _apiPendingReads.clear();
     if (/^\/followups(?:\/|$)/.test(path) && typeof _spPeekFuCache !== 'undefined') _spPeekFuCache.clear();
-    return _apiRequest(path, options).finally(() => _apiPendingReads.clear());
+    return _apiRequest(path, options).then(result => {
+      if (/^\/transactions(?:\/|$)/.test(path)) {
+        const tx = result?.tx || result?.transaction || result;
+        if (tx?._id) _recordTransactionSummaryChange(tx);
+        const deleted = method === 'DELETE' && /^\/transactions\/([^/?]+)(?:\?|$)/.exec(path);
+        if (deleted) _recordTransactionSummaryChange({ _id: decodeURIComponent(deleted[1]) }, true);
+      }
+      return result;
+    }).finally(() => _apiPendingReads.clear());
   }
   const shareable = options.deduplicate !== false && method === 'GET' && typeof structuredClone === 'function'
     && Object.keys(options).every(key => ['method', 'background', 'headers'].includes(key));
@@ -34606,6 +34626,7 @@ async function showApp() {
   _transactionSummariesComplete = false;
   _transactionActiveCount = null;
   _transactionSummaryTask = null;
+  _transactionSummaryChanges = null;
   window.souliaPushAppReady = false;
   qs('#login-page').style.display = 'none'; qs('#app').style.display = 'block';
   /* ⚠ قبل أي رسم للبيانات. لو اتنادت بعد loadAllData الأرقام هتبان لجزء من
@@ -34635,10 +34656,10 @@ async function showApp() {
   const routeCriticalCollections = {
     'clients': [4],
     'barcodes': [0, 4, 12],
-    'movements': [0, 1, 2, 4, 12],
+    'movements': [0, 2, 4, 12],
     'invoice-view': [0, 1, 2, 4, 11, 12],
-    'pickup-orders': [0, 1, 4, 12],
-    'shopify-orders': [0, 1, 4, 5, 6, 12],
+    'pickup-orders': [0, 4, 12],
+    'shopify-orders': [0, 4, 5, 6, 12],
   };
   const fastRouteBoot = !fastDashboardBoot && !localStorage.getItem('soulia_tx_tags')
     && _canAccessPage(requestedRoute) && routeCriticalCollections[requestedRoute];
@@ -34650,7 +34671,7 @@ async function showApp() {
     window._startupRouteData = { path, promise, token: localStorage.getItem('token'), startedAt: Date.now() };
   }
   const transactionRoutes = new Set(['transaction',
-    'pickup-orders', 'approvals', 'reports']);
+    'approvals', 'reports']);
   await loadAllData({
     fastDashboardBoot,
     criticalIndices: fastRouteBoot ? routeCriticalCollections[requestedRoute] : null,
@@ -39282,7 +39303,7 @@ let _pendingStartupRoute = null;
 let _pendingTransactionRoute = null;
 let _pendingShopifyRoute = null;
 const _transactionDependentPages = new Set(['transaction',
-  'approvals', 'reports', 'products',
+  'approvals', 'reports',
   'supplier-profile', 'expenses', 'vault', 'complaints']);
 const _startupPageDependencies = {
   transaction: [0, 2, 12],
@@ -39320,6 +39341,7 @@ function _mountSettingsPage() {
   return _settingsPageTask;
 }
 function _navCancelPending(page) {
+  if (qs('#main')?.dataset?.pendingRoute !== page) window.SouliaLoading?.clearRoute();
   if (_pendingShopifyRoute?.page !== page) _pendingShopifyRoute = null;
   if (_pendingTransactionRoute?.page !== page) _pendingTransactionRoute = null;
   if (_pendingStartupRoute?.page !== page) _pendingStartupRoute = null;
@@ -39334,53 +39356,65 @@ function navigateTo(page, updateHash = true) {
   }
   if (!_requirePageAccess(page)) return;
   _navCancelPending(page);
+  const startupRequests = (_startupPageDependencies[page] || [])
+    .map(index => window._startupResourceReady?.[index]).filter(Boolean);
+  startupRequests.forEach(request => request.start?.());
+  // Load independent route prerequisites together, including while its code loads.
+  const summaryRequest = _transactionDependentPages.has(page) && !_transactionSummariesComplete && !loadFailed('transactions')
+    ? loadTransactionSummaries({ forceFull: true }) : null;
+  summaryRequest?.catch(() => {});
   if (window.__SOULIA_SPLIT_SHOPIFY__ && !window.__SOULIA_SHOPIFY_LOADED__
       && ['shopify-orders', 'approvals', 'movements', 'invoice-view', 'transaction',
         'followups', 'complaints', 'reports'].includes(page)) {
+    if (_pendingShopifyRoute?.page === page) return;
     const intent = { page, updateHash };
     _pendingShopifyRoute = intent;
+    window.SouliaLoading?.route(page);
     const endWait = _headerRefresh.begin();
     window.souliaLibraryReady('shopifyOrders').then(ready => {
       endWait();
       if (_pendingShopifyRoute !== intent) return;
       _pendingShopifyRoute = null;
       if (ready && currentUser) navigateTo(page, updateHash);
-      else if (!ready) toast(currentLang === 'en' ? 'Unable to load this page. Please retry.' : 'تعذّر تحميل الصفحة. حاول مجددًا.', true);
+      else if (!ready) { window.SouliaLoading?.clearRoute(page); toast(currentLang === 'en' ? 'Unable to load this page. Please retry.' : 'تعذّر تحميل الصفحة. حاول مجددًا.', true); }
     });
     return;
   }
   _pendingShopifyRoute = null;
   if (page !== 'settings') _pendingLazySettings = null;
   if (_transactionDependentPages.has(page) && !_transactionSummariesComplete && !loadFailed('transactions')) {
-    _pendingTransactionRoute = { page, updateHash };
+    if (_pendingTransactionRoute?.page === page) return;
+    const intent = { page, updateHash, token: localStorage.getItem('token') };
+    _pendingTransactionRoute = intent;
+    window.SouliaLoading?.route(page);
     const endWait = _headerRefresh.begin();
-    loadTransactionSummaries({ forceFull: true }).then(rows => {
+    summaryRequest.then(rows => {
       endWait();
-      const pending = _pendingTransactionRoute;
-      if (!pending || !currentUser || !localStorage.getItem('token')) return;
+      if (_pendingTransactionRoute !== intent || !currentUser || intent.token !== localStorage.getItem('token')) return;
       _pendingTransactionRoute = null;
       transactions = rows;
       buildSidebar(); buildNotifications();
-      navigateTo(pending.page, pending.updateHash);
+      navigateTo(intent.page, intent.updateHash);
     }).catch(error => {
       endWait();
+      if (_pendingTransactionRoute !== intent || intent.token !== localStorage.getItem('token')) return;
       _pendingTransactionRoute = null;
-      toast(error.message || t('loadFailedTitle'), true);
+      window.SouliaLoading?.clearRoute(page);
+      if (error.name !== 'AbortError') toast(t('loadFailedTitle'), true);
     });
     return;
   }
-  const startupRequests = (_startupPageDependencies[page] || [])
-    .map(index => window._startupResourceReady?.[index]).filter(Boolean);
-  startupRequests.forEach(request => request.start?.());
   if (startupRequests.some(request => !request.settled)) {
-    _pendingStartupRoute = { page, updateHash };
+    if (_pendingStartupRoute?.page === page) return;
+    const intent = { page, updateHash };
+    _pendingStartupRoute = intent;
+    window.SouliaLoading?.route(page);
     const endStartupWait = _headerRefresh.begin();
     Promise.allSettled(startupRequests.map(request => request.promise)).then(() => {
       endStartupWait();
-      const pending = _pendingStartupRoute;
-      if (!pending || !currentUser || pending.page !== page) return;
+      if (_pendingStartupRoute !== intent || !currentUser) return;
       _pendingStartupRoute = null;
-      navigateTo(pending.page, pending.updateHash);
+      navigateTo(intent.page, intent.updateHash);
     });
     return;
   }
@@ -39412,6 +39446,7 @@ function navigateTo(page, updateHash = true) {
 }
 function _doNavigateTo(page, updateHash = true) {
   if (!_requirePageAccess(page)) return;
+  window.SouliaLoading?.clearRoute();
   _navCancelPending(page);
   // A .fx-sort-menu left open is portaled onto <body> while open (see _positionFxMenu) —
   // close it before leaving, or it survives as an orphan on whichever page loads next.
@@ -39969,6 +40004,13 @@ let _transactionSummariesComplete = false;
 let _transactionActiveCount = null;
 let _transactionSummaryTask = null;
 let _transactionLiveRevision = 0;
+let _transactionSummaryChanges = null;
+function _recordTransactionSummaryChange(tx, removed = false) {
+  const id = String(tx?._id || tx?.id || '');
+  if (!_transactionSummaryChanges || !id) return;
+  const previous = _transactionSummaryChanges.get(id);
+  _transactionSummaryChanges.set(id, removed || tx.archived ? null : { ...previous, ...tx });
+}
 
 async function loadTransactionOverview({ dashboard = false } = {}) {
   let result;
@@ -40005,80 +40047,123 @@ function loadTransactionSummaries({ forceFull = false } = {}) {
     return renderMovementsServer().then(() => transactions);
   }
   if (_transactionSummaryTask) return _transactionSummaryTask;
+  const token = localStorage.getItem('token');
+  const changes = new Map();
+  _transactionSummaryChanges = changes;
+  const commit = rows => {
+    if (token !== localStorage.getItem('token')) {
+      const error = new Error('Session changed'); error.name = 'AbortError'; throw error;
+    }
+    const merged = new Map(rows.map(tx => [String(tx._id), tx]));
+    // Preserve local saves and live patches received after this read began.
+    for (const [id, patch] of changes) {
+      if (patch === null) merged.delete(id);
+      else merged.set(id, { ...merged.get(id), ...patch });
+    }
+    const result = [...merged.values()].filter(tx => !tx.archived);
+    _transactionSummariesComplete = true;
+    _transactionActiveCount = result.filter(tx => !tx.cancelled).length;
+    transactions = result;
+    return result;
+  };
   const task = (async () => {
     const pageSize = TRANSACTION_SUMMARY_PAGE_SIZE;
     for (let attempt = 0; attempt < 3; attempt++) {
-      const token = localStorage.getItem('token');
-      const writeRevision = _apiWriteRevision;
-      const liveRevision = _transactionLiveRevision;
       let first;
-      try { first = await api(`/transactions/summary-page?page=1&limit=${pageSize}`); }
+      try { first = await api(`/transactions/summary-page?page=1&limit=${pageSize}&snapshot=new`); }
       catch (error) {
+        if (error.status === 409 && attempt < 2) continue;
         if (error.status !== 404) throw error;
         first = await api('/transactions');
       }
+      if (token !== localStorage.getItem('token')) {
+        const error = new Error('Session changed'); error.name = 'AbortError'; throw error;
+      }
       if (Array.isArray(first)) {
-        if (token !== localStorage.getItem('token') || writeRevision !== _apiWriteRevision ||
-            liveRevision !== _transactionLiveRevision) {
-          if (attempt < 2) continue;
-          throw new Error('Transaction list changed while loading; retry');
-        }
-        _transactionSummariesComplete = true;
-        _transactionActiveCount = first.filter(tx => !tx.cancelled).length;
-        transactions = first;
-        return first;
+        return commit(first);
       }
       if (!first || !Array.isArray(first.rows) || !Number.isFinite(first.total))
         throw new TypeError('Invalid transaction summary page');
       const pages = Math.ceil(first.total / pageSize);
-      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) =>
-        api(`/transactions/summary-page?page=${i + 2}&limit=${pageSize}`)));
-      if (rest.some(part => !part || !Array.isArray(part.rows) || part.total !== first.total))
-        throw new Error('Transaction list changed while loading; retry');
+      const snapshot = first.snapshot ? '&snapshot=' + encodeURIComponent(first.snapshot) : '';
+      let rest;
+      try {
+        rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) =>
+          api(`/transactions/summary-page?page=${i + 2}&limit=${pageSize}${snapshot}`)));
+      } catch (error) {
+        if (error.status === 409 && attempt < 2) continue;
+        throw error;
+      }
+      const changed = rest.some(part => !part || !Array.isArray(part.rows) || part.total !== first.total
+        || first.snapshot && part.snapshot !== first.snapshot);
+      if (changed) {
+        if (attempt < 2) continue;
+        throw new Error(t('loadFailedTitle'));
+      }
       const rows = [first, ...rest].flatMap(part => part.rows);
       const unique = [...new Map(rows.map(tx => [String(tx._id), tx])).values()];
-      if (unique.length !== first.total || token !== localStorage.getItem('token') ||
-          writeRevision !== _apiWriteRevision || liveRevision !== _transactionLiveRevision) {
+      if (unique.length !== first.total) {
         if (attempt < 2) continue;
-        throw new Error('Transaction list changed while loading; retry');
+        throw new Error(t('loadFailedTitle'));
       }
-      _transactionSummariesComplete = true;
-      _transactionActiveCount = unique.filter(tx => !tx.cancelled).length;
-      transactions = unique;
-      return unique;
+      return commit(unique);
     }
   })();
   const shared = task.finally(() => {
     if (_transactionSummaryTask === shared) _transactionSummaryTask = null;
+    if (_transactionSummaryChanges === changes) _transactionSummaryChanges = null;
   });
   _transactionSummaryTask = shared;
   return _transactionSummaryTask;
 }
 
+/* ⚠ One overview request at a time, at most one every TX_OVERVIEW_MIN_GAP ms.
+   On live this request takes 1–4s, and every tx:* event used to start another one 250ms
+   later while the first was still running — and a result that overlapped an event was
+   thrown away and fetched again. With webhooks and several staff online that became a
+   continuous stream of 146kB requests from every open tab, which slowed the server for
+   everyone. Events that arrive mid-flight now mark it dirty and cause ONE follow-up. */
+const TX_OVERVIEW_MIN_GAP = 5000;
 let _transactionOverviewRefreshTimer = null;
+let _txOverviewInFlight = false;
+let _txOverviewDirty = false;
+let _txOverviewLastAt = 0;
 function refreshTransactionOverviewSoon() {
-  if (_transactionSummariesComplete || !currentUser || _transactionOverviewRefreshTimer) return;
+  if (_transactionSummariesComplete || !currentUser) return;
+  if (_txOverviewInFlight) { _txOverviewDirty = true; return; }
+  if (_transactionOverviewRefreshTimer) return;
+  const wait = Math.max(250, _txOverviewLastAt + TX_OVERVIEW_MIN_GAP - Date.now());
   _transactionOverviewRefreshTimer = setTimeout(async () => {
     _transactionOverviewRefreshTimer = null;
     if (_transactionSummariesComplete || !currentUser) return;
     const liveRevision = _transactionLiveRevision;
+    _txOverviewInFlight = true;
+    _txOverviewDirty = false;
     try {
       const rows = await loadTransactionOverview({ dashboard: currentPage === 'dashboard' && !isAdminBriefingEnabled() });
-      if (liveRevision !== _transactionLiveRevision) {
-        refreshTransactionOverviewSoon();
-        return;
+      // A newer event was merged into `transactions` while this ran; applying the older
+      // rows would hide it until the follow-up below, so skip and let that one apply.
+      if (liveRevision === _transactionLiveRevision && !_transactionSummariesComplete && currentUser) {
+        transactions = rows;
+        buildSidebar(); buildNotifications();
+        if (currentPage === 'dashboard') _renderStaffDashboard(isAdmin());
       }
-      if (_transactionSummariesComplete || !currentUser) return;
-      transactions = rows;
-      buildSidebar(); buildNotifications();
-      if (currentPage === 'dashboard') _renderStaffDashboard(isAdmin());
     } catch (_) { /* the next event or page entry retries */ }
-  }, 250);
+    finally {
+      _txOverviewInFlight = false;
+      _txOverviewLastAt = Date.now();
+      if (_txOverviewDirty || liveRevision !== _transactionLiveRevision) {
+        _txOverviewDirty = false;
+        refreshTransactionOverviewSoon();
+      }
+    }
+  }, wait);
 }
 
 async function loadAllData(options = {}) {
   const loadRun = ++_loadAllDataRun;
   const accountToken = localStorage.getItem('token');
+  const transactionRevision = _transactionLiveRevision;
   try {
     /* ⚠ كل هذه الطلبات مستقلّة — لا واحد منها يحتاج نتيجة الآخر. كانت الأربعة الأولى
        متوازية ثم **سبعة متتالية**، كلٌّ ينتظر سابقه بلا أي سبب، فيدفع المستخدم ثمن
@@ -40138,6 +40223,18 @@ async function loadAllData(options = {}) {
           if (loadRun !== _loadAllDataRun || accountToken !== localStorage.getItem('token')) return value;
           // Publish each collection as soon as its own request finishes.
           if (index === 0) products = value || [];
+          else if (index === 1 && Array.isArray(value) && !_transactionSummariesComplete
+              && transactionRevision === _transactionLiveRevision) {
+            // The page may already have painted newer, complete rows. Fill only
+            // missing entries; a late overview must not replace page data.
+            const existing = new Map(transactions.map(row => [String(row._id), row]));
+            transactions = value.map(row => {
+              const id = String(row._id), current = existing.get(id);
+              existing.delete(id);
+              return current ? { ...row, ...current } : row;
+            }).concat([...existing.values()]);
+            buildSidebar(); buildNotifications();
+          }
           else if (index === 2) suppliers = value || [];
           else if (index === 3) expenses = value || [];
           else if (index === 8) returnRequests = value || [];
@@ -48809,16 +48906,24 @@ function renderDraftsDrawer() {
 let _inventoryHasLoaded = false;
 let _inventoryStartupConsumed = false;
 let _inventoryPageRendered = false;
-async function loadInventory() {
+let _inventoryLoading = false;
+let _inventoryLoadRequest = null;
+function loadInventory() {
+  if (_inventoryLoadRequest) return _inventoryLoadRequest;
+  _inventoryLoadRequest = _loadInventory().finally(() => { _inventoryLoadRequest = null; });
+  return _inventoryLoadRequest;
+}
+async function _loadInventory() {
   const startupRequest = window._startupResourceReady?.[12];
   const useStartupRequest = !!startupRequest && !_inventoryStartupConsumed;
   if (useStartupRequest) _inventoryStartupConsumed = true;
   const hasInventory = _inventoryHasLoaded || (Array.isArray(inventoryCache) && inventoryCache.length > 0);
-  if (hasInventory && !useStartupRequest && !_inventoryPageRendered) renderInventory();
-  else if (!hasInventory) renderTableSkeleton(qs('#inv-table tbody'), 11);
+  if (!_inventoryPageRendered) { _inventoryLoading = true; renderInventory(); }
   try {
-    inventoryCache = useStartupRequest
+    const rows = useStartupRequest
       ? await startupRequest.promise : await api('/transactions/inventory');
+    if (!Array.isArray(rows)) throw new TypeError('Invalid inventory response');
+    inventoryCache = rows;
     if (!useStartupRequest) clearLoadFailed('inventory');
     _inventoryHasLoaded = !loadFailed('inventory');
   }
@@ -48826,9 +48931,20 @@ async function loadInventory() {
     markLoadFailed('inventory');
     toast(t('errLoadInventory', { v: e.message }), true);
   }
+  // The stock actions are registered by the remaining page scripts. Paint the
+  // first real rows after those scripts, rather than adding their buttons later.
+  if (document.readyState === 'loading') await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
+  _inventoryLoading = false;
   if (loadFailed('inventory') && !hasInventory) {
     const tbody = qs('#inv-table tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="11">${loadErrorState('inventory', 'loadInventory()')}</td></tr>`;
+    const error = loadErrorState('inventory', 'loadInventory()');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="12">${error}</td></tr>`;
+    const mobile = qs('#inv-mobile-list'); if (mobile) mobile.innerHTML = error;
+    qs('#page-inventory')?.classList.remove('inv-loading');
+    qs('#page-inventory')?.classList.add('inv-load-error');
+    qs('#page-inventory')?.setAttribute('aria-busy', 'false');
+    qsa('#inv-summary-cards .kpi-val').forEach(value => { value.textContent = '—'; });
+    _inventoryMarkup.delete(qs('#inv-summary-cards'));
     return;
   }
   if (!Object.keys(productCollectionMap).length) { loadProductCollectionMap().catch(() => {}); }
@@ -50276,8 +50392,13 @@ function _fxInRange(val, minS, maxS) {
 }
 
 function renderInventory() {
-  _inventoryPageRendered = true;
   const inv = window.SouliaWarehouses?.inventoryRows(Array.isArray(inventoryCache) ? inventoryCache : []) || (Array.isArray(inventoryCache) ? inventoryCache : []);
+  const loading = (typeof _inventoryLoading !== 'undefined' && _inventoryLoading)
+    || (typeof _inventoryHasLoaded !== 'undefined' && !_inventoryHasLoaded && !inv.length && !_inventoryPageRendered);
+  if (!loading) _inventoryPageRendered = true;
+  qs('#page-inventory')?.classList.remove('inv-load-error');
+  qs('#page-inventory')?.classList.toggle('inv-loading', loading);
+  qs('#page-inventory')?.setAttribute('aria-busy', String(loading));
   const totalItems = inv.length;
   const totalStock = inv.reduce((s, r) => s + (r.current || 0), 0);
   const totalValue = inv.reduce((s, r) => s + ((r.current || 0) * (r.sellPrice || 0)), 0);
@@ -50303,13 +50424,20 @@ function renderInventory() {
     kpiData.push({ id:'inv_ok',   val: fmtN(okCount),    label: t('invAvailable'), color: '#10b981', icon: ICON('success') });
     kpiData.push({ id:'inv_low',  val: fmtN(lowCount),   label: t('invLow'),       color: '#f59e0b', icon: ICON('warning') });
     kpiData.push({ id:'inv_zero', val: fmtN(zeroCount),  label: t('invOut'),       color: '#ef4444', icon: ICON('error') });
-    kpiEl.innerHTML = kpiData.map(k => `
+    _setInventoryMarkup(kpiEl, kpiData.map(k => `
       <div class="kpi" style="position:relative">
         <button class="ds-kpi-info-btn" title="${escHtml(t('kpiFieldDetails'))}" onclick="event.stopPropagation();openInvKpiExplain('${k.id}')" style="position:absolute;top:6px;inset-inline-end:6px">i</button>
         <div class="kpi-icon">${k.icon}</div>
         <div class="kpi-val">${k.val}</div>
         <div class="kpi-label">${k.label}</div>
-      </div>`).join('');
+      </div>`).join(''));
+  }
+
+  if (loading) {
+    const bar = '<span class="ss-skeleton inv-loading-bar" aria-hidden="true"></span>';
+    _setInventoryMarkup(qs('#inv-tbody'), `<tr class="inv-loading-row">${`<td>${bar}</td>`.repeat(12)}</tr>`.repeat(6));
+    _setInventoryMarkup(qs('#inv-mobile-list'), `<div class="inv-product-card inv-loading-card" aria-hidden="true">${bar.repeat(3)}</div>`.repeat(3));
+    return;
   }
 
   // Update tab counts
@@ -50378,7 +50506,7 @@ function renderInventory() {
 
   const tbody = qs('#inv-tbody');
   if (tbody) {
-    tbody.innerHTML = pageData.length ? pageData.map((r, i) => {
+    _setInventoryMarkup(tbody, pageData.length ? pageData.map((r, i) => {
       const key = r.code || r.name;
       const inactiveCls = r.isActive === false ? ' is-inactive-row' : '';
       return `<tr class="inv-row${inactiveCls}" data-key="${esc(key)}" style="animation-delay:${Math.min(i,20)*18}ms">
@@ -50389,14 +50517,14 @@ function renderInventory() {
         <td class="inv-activation-cell" onclick="openInventoryDetail('${esc(key)}')">${activationBadge(r)}</td>
         <td onclick="openInventoryDetail('${esc(key)}')">${statusBadgeOld(r)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="12" style="padding:0">${_invEmptyHtml}</td></tr>`;
+    }).join('') : `<tr><td colspan="12" style="padding:0">${_invEmptyHtml}</td></tr>`);
   }
 
   /* Mobile Card List */
   const mobileList = qs('#inv-mobile-list');
   if (mobileList) {
     const isAdminUser = isAdmin();
-    mobileList.innerHTML = pageData.length ? pageData.map((r, i) => {
+    _setInventoryMarkup(mobileList, pageData.length ? pageData.map((r, i) => {
       const key = r.code || r.name;
       /* `status` stays raw Arabic — it is used as a CSS class name
          (`#page-inventory .inv-status-badge.متوفر{...}`). `statusLabel` is the visible text. */
@@ -50419,12 +50547,21 @@ function renderInventory() {
         </div>
         ${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}
       </div>`;
-    }).join('') : _invEmptyHtml;
+    }).join('') : _invEmptyHtml);
   }
 
   // Hide buy price column from staff
   if (!isAdmin()) { qsa('.inv-buyprice-col').forEach(el => el.style.display = 'none'); }
   renderPagination('inv-pagination', total, invPage, INV_PAGE_SIZE, 'setInvPage');
+}
+
+const _inventoryMarkup = new WeakMap();
+function _setInventoryMarkup(element, markup) {
+  if (!element) return;
+  const prior = _inventoryMarkup.get(element);
+  if (prior?.markup === markup && prior.first === element.firstChild) return;
+  element.innerHTML = markup;
+  _inventoryMarkup.set(element, { markup, first: element.firstChild });
 }
 
 function openInventoryDetail(key) {
@@ -68173,7 +68310,7 @@ function renderSuppliers() {
     const pill = !txs.length
       ? `<span class="sup-pill empty">${t('supNoInvoicesPill')}</span>`
       : _pending
-        ? `<span class="sup-pill empty" role="status">${t('loading')}</span>`
+        ? `<span class="sup-pill empty" role="status" aria-label="${escHtml(t('loading'))}"><span class="ss-skeleton sup-loading-value" aria-hidden="true"></span></span>`
       : hasDebt
         ? `<span class="sup-pill debt">${t('supDebtPill', { n: fmtN(pendingCount) })}</span>`
         : `<span class="sup-pill paid">${t('supPaidPill')}</span>`;
@@ -68197,7 +68334,7 @@ function renderSuppliers() {
         <!-- escHtml, not esc: this lands inside a double-quoted attribute and the server error text
              may contain quotes — esc() does not encode them and would truncate the row's HTML. -->
         ${_pending
-          ? `<div class="sup-stat" aria-busy="true"><span class="sup-stat-val" aria-label="${escHtml(t('loading'))}">—</span><span class="sup-stat-label">${t('supStatRemaining')}</span></div>`
+          ? `<div class="sup-stat" aria-busy="true"><span class="sup-stat-val" aria-label="${escHtml(t('loading'))}"><span class="ss-skeleton sup-loading-value" aria-hidden="true"></span></span><span class="sup-stat-label">${t('supStatRemaining')}</span></div>`
           : `<div class="sup-stat"${_derived ? ` title="${escHtml(_supDebtDerivedTip())}"` : ''}><span class="sup-stat-val" style="color:${hasDebt ? 'var(--red)' : 'var(--green)'}">${_derived ? '~' : ''}${hasDebt ? fmtJ(totalRemaining) : fmtJ(totalPaid)}</span><span class="sup-stat-label">${hasDebt ? t('supStatRemaining') : t('supStatPaid')}${_derived ? ' <span style="color:var(--red);font-weight:700">⚠</span>' : ''}</span></div>`}
       </div>` : ''}
       <div class="sup-card2-actions">
@@ -76844,7 +76981,10 @@ async function loadReports() {
   const stats = qs('#rep-stats');
   const hadReport = !!currentReportData;
   stats?.querySelector('.ss-refresh-error')?.remove();
-  if (!hadReport) renderSkeleton(stats, { variant: 'cards', cards: 4 });
+  if (!hadReport) {
+    renderReportKPIs({}, true);
+    if (stats) stats.inert = true;
+  }
   stats?.setAttribute('aria-busy', 'true');
   const from = qs('#rep-from')?.value;
   const to = qs('#rep-to')?.value;
@@ -76877,6 +77017,7 @@ async function loadReports() {
     if (hadReport) stats?.insertAdjacentHTML('beforeend', error);
     else if (stats) stats.innerHTML = error;
   } finally {
+    if (!hadReport && stats) stats.inert = false;
     stats?.setAttribute('aria-busy', 'false');
   }
 }
@@ -77944,7 +78085,8 @@ function stepRepTrendHover(event) {
   const current = Number(plot?.dataset.activeIndex ?? repTrendRows.length - 1);
   setRepTrendHoverIndex(current + (event.key === 'ArrowRight' ? 1 : -1));
 }
-function renderReportAdvancedSummary(r) {
+function renderReportAdvancedSummary(r, loading = false) {
+  const placeholder = (width = '90px', height = 20) => `<span class="ss-skeleton ss-field-placeholder" style="width:${width};height:${height}px" aria-hidden="true"></span>`;
   const en = currentLang === 'en';
   const sales = Number(r.totalSales) || 0;
   const net = Number(r.netProfit) || 0;
@@ -77996,26 +78138,26 @@ function renderReportAdvancedSummary(r) {
         <div><span class="rep-advanced-kicker">${en ? 'Sales activity' : 'حركة المبيعات'}</span>
           <h4 id="rep-advanced-trend-title">${en ? 'Sales and purchases trend' : 'اتجاه المبيعات والمشتريات'}</h4>
           <p>${en ? 'Latest 30 days within the selected period' : 'آخر ٣٠ يومًا ضمن الفترة المحددة'}</p></div>
-        <strong><bdi>${fmtJ(sales)}</bdi></strong>
+        <strong><bdi>${loading ? placeholder('120px',26) : fmtJ(sales)}</bdi></strong>
       </div>
       <div class="rep-advanced-legend" role="group" aria-label="${en ? 'Visible series' : 'السلاسل الظاهرة'}">
         <button class="rep-advanced-toggle" type="button" data-rep-series="sales" aria-pressed="${repTrendVisible.sales}" onclick="setRepTrendVisible('sales')"><i class="rep-advanced-swatch"></i>${en ? 'Sales' : 'المبيعات'}</button>
         <button class="rep-advanced-toggle" type="button" data-rep-series="purchases" aria-pressed="${repTrendVisible.purchases}" onclick="setRepTrendVisible('purchases')"><i class="rep-advanced-swatch rep-advanced-swatch--purchases"></i>${en ? 'Purchases' : 'المشتريات'}</button>
       </div>
-      ${chart}
+      ${loading ? `<div class="rep-advanced-plot rep-loading-plot"><div class="ss-skeleton"></div><div class="rep-advanced-axis"><span>${placeholder('48px',11)}</span><span>${placeholder('48px',11)}</span></div></div>` : chart}
     </section>
     <div class="rep-advanced-side">
       <section class="rep-advanced-margin" aria-label="${en ? 'Net profit margin' : 'هامش صافي الربح'}">
         <span class="rep-advanced-kicker">${en ? 'Sales to profit' : 'من المبيعات إلى الربح'}</span>
         <h4>${en ? 'Net profit margin' : 'هامش صافي الربح'}</h4>
-        <div class="rep-advanced-margin-value"><strong>${margin == null ? '—' : `${fmtN(Math.round(margin * 10) / 10)}%`}</strong><span>${en ? 'of sales' : 'من المبيعات'}</span></div>
+        <div class="rep-advanced-margin-value"><strong>${loading ? placeholder('76px',36) : margin == null ? '—' : `${fmtN(Math.round(margin * 10) / 10)}%`}</strong><span>${en ? 'of sales' : 'من المبيعات'}</span></div>
         <div class="rep-advanced-meter" role="img" aria-label="${escHtml(en ? 'Net profit margin' : 'هامش صافي الربح')}: ${margin == null ? '—' : `${fmtN(Math.round(margin * 10) / 10)}%`}"><span style="width:${marginBar}%"></span></div>
-        <p>${en ? 'Net profit' : 'صافي الربح'} <bdi>${fmtJ(net)}</bdi></p>
+        <p>${en ? 'Net profit' : 'صافي الربح'} <bdi>${loading ? placeholder() : fmtJ(net)}</bdi></p>
       </section>
       <section class="rep-advanced-customer" aria-label="${en ? 'Top customer' : 'أفضل عميل'}">
         <span class="rep-advanced-kicker">${en ? 'Customer concentration' : 'توزيع المبيعات على العملاء'}</span>
         <h4>${en ? 'Top customer' : 'أفضل عميل'}</h4>
-        ${bestCustomer ? `<strong>${esc(bestCustomer.name || (en ? 'Unnamed customer' : 'عميل بلا اسم'))}</strong>
+        ${loading ? `<strong>${placeholder('120px',22)}</strong><p>${placeholder('90px',14)}</p>` : bestCustomer ? `<strong>${esc(bestCustomer.name || (en ? 'Unnamed customer' : 'عميل بلا اسم'))}</strong>
           <p><bdi>${fmtJ(customerRevenue)}</bdi> · ${fmtN(Math.round(customerShare * 10) / 10)}% ${en ? 'of sales' : 'من المبيعات'}</p>`
           : `<p>${en ? 'No customer sales in this period.' : 'لا توجد مبيعات عملاء في هذه الفترة.'}</p>`}
       </section>
@@ -78023,7 +78165,7 @@ function renderReportAdvancedSummary(r) {
   </div>`;
 }
 
-function renderReportKPIs(r) {
+function renderReportKPIs(r, loading = false) {
   const kpis = [
     { id:'rep_sales',       val:fmtJ(r.totalSales) },
     { id:'rep_orders',      val:fmtN(r.orderCount || 0) },
@@ -78056,7 +78198,7 @@ function renderReportKPIs(r) {
         <span class="rep-kpi-label">${esc(label)}</span>
         <button type="button" class="ds-kpi-info-btn" title="${escHtml(t('repKpiExplain'))}" aria-label="${escHtml(t('repKpiExplain') + ': ' + label)}" onclick="event.stopPropagation();openRepKpiExplain('${k.id}')">i</button>
       </div>
-      <div class="rep-kpi-value"><bdi>${k.val}</bdi></div>
+      <div class="rep-kpi-value"><bdi>${loading ? '<span class="ss-skeleton ss-field-placeholder" style="width:90px;height:28px" aria-hidden="true"></span>' : k.val}</bdi></div>
       <div class="rep-kpi-foot">
         <span>${esc(reportKpiModule(k.id))}</span>
         ${drill ? `<span class="rep-kpi-drill-hint" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>` : ''}
@@ -78069,7 +78211,7 @@ function renderReportKPIs(r) {
         <h3 id="rep-kpi-heading-${group.id}">${group.title}</h3>
         <p>${group.note}</p>
       </div>
-      ${group.id === 'overview' ? renderReportAdvancedSummary(r) : ''}
+      ${group.id === 'overview' ? renderReportAdvancedSummary(r, loading) : ''}
       <div class="rep-kpi-grid">${group.keys.map(key => renderCard(byId.get(key))).join('')}</div>
     </section>`).join('');
 }
@@ -94547,6 +94689,7 @@ function _captureRowPositions(container, keyAttr) {
 }
 function _playRowReorder(container, keyAttr, prevTops) {
   if (!container || !prevTops || !prevTops.size) return;
+  if (container.closest?.('[data-loading-style="shimmer"]')) return;
   // Respect the OS "reduce motion" setting — this is decorative movement.
   if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   container.querySelectorAll(`[${keyAttr}]`).forEach(el => {
@@ -94592,11 +94735,18 @@ function _fuMarkAllSeen() { const s = _fuGetSeenIds(); followUps.forEach(f => { 
 function _fuUpdateBadges() { const count = _fuUnseenCount(); const b = qs('#fu-tab-badge'); if (b) { b.textContent = count; b.style.display = count > 0 ? 'inline-block' : 'none'; } buildSidebar(); }
 
 async function loadFollowUps({ reuseRecent = false } = {}) {
+  const host = qs('#fu-orders-section');
+  const firstLoad = !followUps.length && !_fuRenderedSnapshot;
+  if (firstLoad && host?.getAttribute('aria-busy') !== 'true') {
+    host?.setAttribute('aria-busy', 'true');
+    window.SouliaLoading?.followups();
+  }
   // A brief, revision-bound reuse window makes a quick return instant. Explicit
   // loads and any write or real-time change still read from the server.
   const cached = reuseRecent && isAdmin() && _followUpsFullCache?.key === _followUpsCacheKey()
     && Date.now() - _followUpsFullCache.at < 5000 ? _followUpsFullCache.rows : null;
   const rows = await fetchOr('followups', cached ? Promise.resolve(cached) : _readFollowUps(), []);
+  host?.setAttribute('aria-busy', 'false');
   const nextSnapshot = JSON.stringify(rows);
   const unchanged = nextSnapshot === _fuRenderedSnapshot && _fuRenderedLang === currentLang
     && !!qs('#fu-tbody')?.children.length;
@@ -103298,6 +103448,7 @@ let _puSecondaryAt = 0;
 
 // One shared row per order, used by the board, tables and open workspace.
 function _puMergeLiveTransaction(fresh, removed = false) {
+  _recordTransactionSummaryChange(fresh, removed);
   const id = String(fresh?._id || fresh?.id || '');
   if (!id) return;
   const existing = _pickupOrders.find(o => String(o._id) === id);
@@ -104250,7 +104401,7 @@ function switchShopifySubnav(tab, skipHash) {
     panel.setAttribute('aria-hidden', String(panel !== activePanel));
     panel.tabIndex = 0;
   }
-  if (previousTab !== tab && activePanel?.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (previousTab !== tab && activePanel?.animate && !activePanel.closest?.('[data-loading-style="shimmer"]') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     activePanel._spTabAnimation = activePanel.animate(
       // Keep table geometry fixed while the viewport fitter measures it.
       [{ opacity: .6 }, { opacity: 1 }],
@@ -104265,10 +104416,7 @@ function switchShopifySubnav(tab, skipHash) {
   if (kpiStrip) kpiStrip.style.display = tab === 'orders' ? '' : 'none';
   if (tab === 'perf') renderPerformanceDashboard();
   if (tab === 'deposits') {
-    // The review queue needs every pending receipt, including OCR and warning data.
-    // Fetch the legacy full documents only when an admin opens this sub-tab.
-    if (_spServerEnabled) loadShopifyOrders();
-    else renderSpDepositReview();
+    loadShopifyOrders();
   }
   if (tab === 'orders' && previousTab === 'deposits' && _spServerEnabled)
     _spLoadServerPage(true).catch(() => {});
@@ -104463,24 +104611,60 @@ function _perfTrendHtml(current, previous, period) {
   return `<span class="perf-trend ${cls}" title="${esc(title)}">${arrow} ${diff > 0 ? '+' : ''}${pct}%</span>`;
 }
 
+let _perfLoadSequence = 0, _perfPaintedKey = '';
+const _perfLoadRequests = new Map();
+function _perfShowLoading() {
+  const bar = '<span class="ss-skeleton sp-subtab-bar" aria-hidden="true"></span>';
+  const labels = ['Active Employees — Customer Service', 'Total Points — ' + _perfPeriodLabel(_perfPeriod), 'Deposit Rate — ' + _perfPeriodLabel(_perfPeriod)];
+  const kpi = qs('#sp-perf-kpi-row');
+  if (kpi) kpi.innerHTML = labels.map(label => `<div class="kpi"><div class="kpi-icon">${bar}</div><div class="kpi-val">${bar}</div><div class="kpi-label">${esc(label)}</div></div>`).join('');
+  const table = qs('#sp-perf-table');
+  if (table && window.SouliaLoading) window.SouliaLoading.table(table, 6);
+  else qs('#sp-perf-table-body').innerHTML = Array.from({length:6}, () => `<tr>${Array.from({length:11}, () => `<td>${bar}</td>`).join('')}</tr>`).join('');
+  const mobile = qs('#sp-perf-mobile-list');
+  if (mobile) mobile.innerHTML = Array.from({length:4}, () => `<div class="sp-card sp-perf-loading-card"><div class="sp-card-top">${bar}${bar}</div><div class="sp-card-subline">${bar}</div><div class="sp-card-subline">${bar}</div><div class="sp-card-subline">${bar}</div></div>`).join('');
+}
 async function renderPerformanceDashboard() {
   const tbody = qs('#sp-perf-table-body');
   const kpiRow = qs('#sp-perf-kpi-row');
   const mobileList = qs('#sp-perf-mobile-list');
   if (!tbody) return;
+  const sequence = ++_perfLoadSequence;
+  const token = localStorage.getItem('token');
+  const key = JSON.stringify([token, _perfPeriod, _perfPeriodKey]);
+  const host = qs('#sp-perf-dashboard-content');
+  host?.querySelector('.sp-perf-load-error')?.remove();
+  host?.setAttribute('aria-busy', 'true');
+  if (_perfPaintedKey !== key) _perfShowLoading();
   let rows = [], meta = null;
   try {
     // The envelope carries the resolved window so the header states exactly what is
     // being counted, rather than the client re-deriving "this month" a second time.
     const qp = '?period=' + encodeURIComponent(_perfPeriod)
       + (_perfPeriodKey ? '&periodKey=' + encodeURIComponent(_perfPeriodKey) : '');
-    const res = await api('/employee-performance/dashboard' + qp);
+    if (!_perfLoadRequests.has(key)) {
+      const request = api('/employee-performance/dashboard' + qp);
+      _perfLoadRequests.set(key, request);
+      request.finally(() => { if (_perfLoadRequests.get(key) === request) _perfLoadRequests.delete(key); }).catch(() => {});
+    }
+    const res = await _perfLoadRequests.get(key);
+    if (sequence !== _perfLoadSequence || token !== localStorage.getItem('token')) return;
     rows = res?.rows || [];
     meta = res || null;
+    _perfPaintedKey = key;
   } catch (e) {
+    if (sequence !== _perfLoadSequence || token !== localStorage.getItem('token')) return;
+    if (_perfPaintedKey === key) {
+      host?.insertAdjacentHTML('afterbegin', `<div class="spdep-warning sp-perf-load-error" role="alert">${esc(t('loadFailedTitle'))}</div>`);
+      return;
+    }
     tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--red)">Failed to load performance data</td></tr>`;
-    if (mobileList) mobileList.innerHTML = '';
+    if (mobileList) mobileList.innerHTML = `<div class="sp-perf-load-error" role="alert">${esc(t('loadFailedTitle'))}</div>`;
+    kpiRow?.querySelectorAll('.kpi-val').forEach(el => { el.textContent = '—'; });
+    kpiRow?.querySelectorAll('.ss-skeleton').forEach(el => el.remove());
     return;
+  } finally {
+    if (sequence === _perfLoadSequence) host?.setAttribute('aria-busy', 'false');
   }
 
   // Keep the server's own resolution of the window — including the canonical key it
@@ -105106,7 +105290,9 @@ function _spShowOrdersLoading() {
     return `<td data-col="${col.id}">${content}</td>`;
   }).join('');
   const card = `<article class="sp-orders-loading-card"><div class="sp-loading-card-head"><div class="sp-loading-card-identity"><div class="sp-loading-ref">${bar('is-star')}${bar('is-ref')}${bar('is-card-status')}</div><div class="sp-loading-card-meta">${bar('is-name')}${bar('is-time')}</div></div><div class="sp-loading-card-money">${bar('is-amount')}${bar('is-menu')}</div></div><div class="sp-loading-card-status">${bar('is-status')}</div><div class="sp-loading-card-options">${bar('is-products')}${bar('is-deposit-amount')}</div><div class="sp-loading-card-foot">${bar('is-action')}${hasPerm('shopify-prepare-ship')?bar('is-prepare'):''}${bar('is-action')}${bar('is-contact')}</div></article>`;
-  loading.innerHTML = `<div class="sp-orders-loading-cards" aria-hidden="true"><div class="sp-loading-card-day">${bar('is-day-label')}</div>${card.repeat(3)}</div><div class="sp-orders-loading-table" aria-hidden="true"><div class="sp-loading-table-scroll"><table style="min-width:${_spVisibleMinWidth()}px"><thead><tr><th style="width:${SP_COL_W_FIXED}px">${bar('is-check')}</th>${cols.map(col=>`<th data-col="${col.id}" style="width:${SP_COL_W[col.id]}px">${col.id === 'status' ? _spStatusFilterHeaderHtml(true) : esc(headerKeys[col.id] ? t(headerKeys[col.id]) : (currentLang==='en'?col.en:col.ar))}</th>`).join('')}</tr></thead><tbody><tr class="sp-loading-day"><td colspan="${cols.length+1}"><span class="sp-loading-day-content">${bar('is-day-label')}${bar('is-day-date')}</span></td></tr>${`<tr><td>${bar('is-check')}</td>${cells}</tr>`.repeat(6)}</tbody></table></div></div>`;
+  // Day groups belong to the response. Before it arrives, show complete placeholder
+  // rows rather than a narrow date-band fragment above the order placeholders.
+  loading.innerHTML = `<div class="sp-orders-loading-cards" aria-hidden="true">${card.repeat(3)}</div><div class="sp-orders-loading-table" aria-hidden="true"><div class="sp-loading-table-scroll"><table style="min-width:${_spVisibleMinWidth()}px"><thead><tr><th style="width:${SP_COL_W_FIXED}px">${bar('is-check')}</th>${cols.map(col=>`<th data-col="${col.id}" style="width:${SP_COL_W[col.id]}px">${col.id === 'status' ? _spStatusFilterHeaderHtml(true) : esc(headerKeys[col.id] ? t(headerKeys[col.id]) : (currentLang==='en'?col.en:col.ar))}</th>`).join('')}</tr></thead><tbody>${`<tr><td>${bar('is-check')}</td>${cells}</tr>`.repeat(6)}</tbody></table></div></div>`;
   loading.setAttribute('aria-label', t('spOrdersLoading'));
   loading.dataset.state = 'loading';
   loading.hidden = false;
@@ -105185,15 +105371,34 @@ function _spScheduleLiveOrderRefresh(arrivalId) {
   if (arrivalId) _spLiveArrivalIds.add(String(arrivalId));
   _spInvalidateOrderDetails();
   clearTimeout(_spLiveRefreshTimer);
+  const wait = Math.max(350, _spLiveLastAt + SP_LIVE_MIN_GAP - Date.now());
   _spLiveRefreshTimer = setTimeout(() => {
     _spLiveRefreshTimer = null;
-    if (currentPage === 'shopify-orders' && _spSubnavTab === 'orders') {
-      const arrivalIds = new Set(_spLiveArrivalIds);
-      _spLiveArrivalIds.clear();
-      _spLoadServerPage(true, arrivalIds).catch(() => {});
+    if (currentPage !== 'shopify-orders' || _spSubnavTab !== 'orders') return;
+    /* ⚠ Never abort a page that is still loading because of a live event. On live the
+       request takes 1–4s; aborting it on every event meant the list never finished
+       loading while the server kept doing the work it was no longer waiting for. Let it
+       land (one event behind), then run ONE follow-up for everything that came meanwhile. */
+    const inFlight = _spServerRequest;
+    if (inFlight) {
+      if (!_spLiveWaiting) {
+        _spLiveWaiting = true;
+        inFlight.promise.catch(() => {}).finally(() => {
+          _spLiveWaiting = false;
+          _spScheduleLiveOrderRefresh();
+        });
+      }
+      return;
     }
-  }, 350);
+    const arrivalIds = new Set(_spLiveArrivalIds);
+    _spLiveArrivalIds.clear();
+    _spLiveLastAt = Date.now();
+    _spLoadServerPage(true, arrivalIds).catch(() => {});
+  }, wait);
 }
+var SP_LIVE_MIN_GAP = 2000;
+var _spLiveLastAt = 0;
+var _spLiveWaiting = false;
 function _spEnsureFullOrder(id) {
   const key = String(id);
   if (_spFullOrderCache.has(key) && !_spStaleOrderDetails.has(key)) return Promise.resolve(_spFullOrderCache.get(key));
@@ -105309,6 +105514,7 @@ function _spLoadServerPage(force = false, arrivalIds = null) {
   return promise;
 }
 function loadShopifyOrders() {
+  if (currentPage === 'shopify-orders' && _spSubnavTab === 'deposits') return _spLoadDepositReview();
   if (currentPage === 'shopify-orders' && _spSubnavTab === 'orders') {
     _spServerEnabled = true;
     return _spLoadServerPage(true);
@@ -106784,11 +106990,14 @@ function _spPeekStatePill(o) {
   return _orderStateBadge(o, 'shopify');
 }
 
+function _spPeekFuSkeletonHtml() {
+  return `<div class="sp-pk-fu-skel" role="status" aria-busy="true" aria-label="${escHtml(currentLang === 'en' ? 'Loading follow-up' : 'جارٍ تحميل المتابعة')}">${Array.from({length:3}, () => `<div class="sp-pk-skel-row"><span class="ss-skeleton sp-pk-skel-avatar"></span><div class="sp-pk-skel-copy"><span class="ss-skeleton"></span><span class="ss-skeleton"></span></div></div>`).join('')}</div>`;
+}
 function _spPeekFuHtml(o) {
   const isEn = currentLang === 'en';
   const title = `<div class="sp-pk-sec-h">${_SP_PK_ICO.route}<span>${isEn ? 'Follow-up' : 'المتابعة'}</span></div>`;
   if (_spPeekFuState === 'loading') {
-    return `${title}<div class="sp-pk-fu-skel" aria-label="${escHtml(isEn ? 'Loading' : 'جارٍ التحميل')}"><span></span><span></span><span></span></div>`;
+    return title + _spPeekFuSkeletonHtml();
   }
   if (_spPeekFuState === 'error') {
     return `${title}<div class="sp-pk-empty is-err"><div>${isEn ? 'Could not load follow-ups.' : 'تعذّر تحميل المتابعات.'}</div>
@@ -107281,10 +107490,7 @@ function _spPeekRender() {
   const o = _spPeekId && _spOrderById(_spPeekId);
   if (!panel) return;
   if (!o) { closeSpOrderPeek(); return; }
-  /* ⚠ A re-render of the SAME order (a comment arrived, follow-ups loaded) keeps the
-     scroll position and does not animate. Switching to another order — e.g. a sibling
-     from «اشحنهم معاً» — starts at the top and fades the cards in, so the change of
-     order is visible rather than a silent swap of numbers. */
+  // Background data paints without replaying the entrance or resizing animation.
   const same = panel.dataset.order === String(o._id);
   panel.querySelectorAll('.spdep-peek-details').forEach(_spPeekDetailsToggle);
   const html = _spPeekHtml(o);
@@ -107297,11 +107503,18 @@ function _spPeekRender() {
   const body = panel.querySelector('.sp-pk-body');
   const keep = same && body ? body.scrollTop : 0;
   const focused = document.activeElement;
-  _spPeekMorph(() => {
+  {
     panel.classList.remove('is-loading');
     panel.dataset.order = String(o._id);
     const template = document.createElement('template');
     template.innerHTML = html;
+    const header = template.content.querySelector('.sp-pk-head');
+    const previousHeader = same && panel.querySelector('.sp-pk-head');
+    if (header) {
+      const markup = header.outerHTML;
+      if (previousHeader?._spRenderedHtml === markup) header.replaceWith(previousHeader);
+      else header._spRenderedHtml = markup;
+    }
     const payment = template.content.querySelector('.spdep-payment-card');
     const previousPayment = same && panel.querySelector('.spdep-payment-card');
     if (payment) {
@@ -107319,10 +107532,9 @@ function _spPeekRender() {
     const nb = panel.querySelector('.sp-pk-body');
     if (nb) {
       nb.scrollTop = keep;
-      if (!same) nb.classList.add('is-in');
     }
     _spPeekScrollTrail(historyState);
-  });
+  }
 }
 
 
@@ -107370,13 +107582,14 @@ function _spPeekRefreshFu() {
   const host = qs('#sp-pk-fu');
   const o = _spPeekId && _spOrderById(_spPeekId);
   if (!host || !o) return;
+  const html = _spPeekFuHtml(o);
+  if (host._spRenderedHtml === html) return;
   const statePill = qs('#sp-pk-title .order-state');
   if (statePill) statePill.outerHTML = _spPeekStatePill(o);
   const historyState = _spPeekHistoryState(host);
-  _spPeekMorph(() => {
-    host.innerHTML = _spPeekFuHtml(o);
-    _spPeekScrollTrail(historyState, host);
-  });
+  host.innerHTML = html;
+  host._spRenderedHtml = html;
+  _spPeekScrollTrail(historyState, host);
 }
 
 async function _spPeekLoadFu(force) {
@@ -107454,15 +107667,20 @@ let _spPeekOpenSerial = 0;
 function _spPeekPendingHtml(order) {
   const en = currentLang === 'en';
   const ref = String(order?.ref || '').replace(/^#+/, '');
+  const bar = (width = '100%', height = 12) => `<span class="ss-skeleton sp-pk-field-skeleton" style="width:${width};height:${height}px" aria-hidden="true"></span>`;
   return `<div class="sp-pk-grip" aria-hidden="true"></div><header class="sp-pk-head">
     <div class="sp-pk-head-row"><div class="sp-pk-head-main">
-      <div class="sp-pk-ref" id="sp-pk-title"><bdi>#${esc(ref || '—')}</bdi></div>
-      ${order?.client ? `<div class="sp-pk-client"><bdi>${esc(order.client)}</bdi></div>` : ''}
+      <div class="sp-pk-ref" id="sp-pk-title">${ref ? `<bdi>#${esc(ref)}</bdi>` : bar('90px',22)}</div>
+      <div class="sp-pk-sub">${bar('160px')}</div>
     </div><div class="sp-pk-head-acts"><button type="button" class="sp-pk-x sp-pk-close ui-action ui-action--secondary ui-action--icon"
       onclick="closeSpOrderPeek()" aria-label="${escHtml(en ? 'Close' : 'إغلاق')}">×</button></div></div>
-  </header><div class="sp-pk-body" role="status" aria-live="polite" aria-busy="true">
-    <section class="sp-pk-sec"><div class="sp-pk-sec-h">${esc(en ? 'Loading order details' : 'جارٍ تحميل تفاصيل الأوردر')}</div>
-      <div class="sp-pk-fu-skel" aria-hidden="true"><span></span><span></span><span></span></div></section></div>`;
+    <div class="sp-pk-cust-top"><span class="ss-skeleton sp-pk-av"></span><div class="sp-pk-cust-id">${order?.client ? esc(order.client) : bar('140px',18)}${bar('110px')}</div></div>
+  </header><div class="sp-pk-body" role="status" aria-label="${escHtml(en ? 'Loading order' : 'جارٍ تحميل الطلب')}" aria-busy="true">
+    <div class="sp-pk-column"><section class="sp-pk-sec sp-pk-items-section"><div class="sp-pk-sec-h">${_SP_PK_ICO.bag}<span>${en ? 'Items' : 'الأصناف'}</span></div>
+      <ul class="sp-pk-items">${Array.from({length:3}, () => `<li class="sp-pk-item"><span class="sp-pk-img ss-skeleton"></span><div class="sp-pk-item-txt">${bar('85%')}${bar('60%',10)}</div>${bar('20px')}</li>`).join('')}</ul></section>
+      <section class="sp-pk-sec spdep-payment-card"><div class="sp-pk-sec-h">${_SP_PK_ICO.wallet}<span>${en ? 'Payment' : 'الدفع'}</span></div><div class="sp-pk-paysum">
+      ${[en ? 'Total' : 'الإجمالي', en ? 'Deposit' : 'العربون', en ? 'Remaining' : 'المتبقي'].map(label => `<div class="sp-pk-paysum-c"><small>${label}</small>${bar('70%',18)}</div>`).join('')}</div></section></div>
+    <div class="sp-pk-column"><section class="sp-pk-sec sp-pk-fu"><div class="sp-pk-sec-h">${_SP_PK_ICO.route}<span>${en ? 'Follow-up' : 'المتابعة'}</span></div>${_spPeekFuSkeletonHtml()}</section></div></div>`;
 }
 async function openSpOrderPeek(orderId) {
   if (!_requirePageAccess('shopify-orders')) return;
@@ -107483,6 +107701,7 @@ async function openSpOrderPeek(orderId) {
     ov = document.createElement('div');
     ov.id = 'sp-peek';
     ov.className = 'sp-peek-overlay';
+    ov.dataset.loadingStyle = 'shimmer';
     ov.innerHTML = '<aside class="sp-peek" role="dialog" aria-modal="true" aria-labelledby="sp-pk-title" tabindex="-1"></aside>';
     /* mousedown, not click: a text selection that ends on the backdrop must not close it. */
     ov.addEventListener('mousedown', e => { if (e.target === ov) closeSpOrderPeek(); });
@@ -107493,53 +107712,43 @@ async function openSpOrderPeek(orderId) {
   document.addEventListener('keydown', _spPeekKey, true);
   ov.setAttribute('dir', document.dir || 'rtl');
   _spPeekId = key;
-  _spPeekFuRows = null;
-  _spPeekFuOrderId = '';
-  /* Cached follow-ups paint at once; _spPeekLoadFu refreshes them behind. */
-  _spPeekFuState = 'loading';
-  /* ⚠ Open at the FINAL size. The window used to appear with partial content (pending
-     skeleton, follow-up placeholder) and then be re-drawn twice as the full order and the
-     follow-ups arrived — each re-draw changed its height, which read as a harsh, jumpy
-     opening with a scrollbar flashing in and out. Both requests now run together and the
-     panel is shown once they are in, or after SP_PEEK_OPEN_WAIT ms at most; the backdrop
-     dims at once so the click is acknowledged. Anything that lands later slides in via
-     _spPeekMorph. */
-  ov.classList.add('is-pending');
-  let detailError = null, detailDone = !(needsDetail && !cachedFull);
-  const detail = detailDone ? null : _spEnsureFullOrder(key)
-    .then(() => { detailDone = true; }, e => { detailDone = true; detailError = e || new Error(''); });
-  // The list row already carries what the follow-up lookup needs, so both run in parallel.
-  const fu = !detail || summary
-    ? _spPeekLoadFu(false)
-    : detail.then(() => (!detailError && _spPeekId === key ? _spPeekLoadFu(false) : null));
-  await Promise.race([Promise.all([detail, fu]), new Promise(r => setTimeout(r, SP_PEEK_OPEN_WAIT))]);
-  if (serial !== _spPeekOpenSerial || _spPeekId !== key) return;
-  if (detailError) { closeSpOrderPeek(); toast(detailError.message || t('spLoadFailed'), true); return; }
-  if (detailDone) _spPeekRender();
+  const revision = JSON.stringify([localStorage.getItem('token'), _followUpsLiveRevision]);
+  const cachedFu = _spPeekFuCache.get(key);
+  const globalFresh = _spFuFetchedAt && Date.now() - _spFuFetchedAt < 60000;
+  const freshFu = cachedFu?.revision === revision && Date.now() - cachedFu.at < 30000;
+  _spPeekFuRows = globalFresh && (cachedFull || summary) ? _spFollowUpsFor(cachedFull || summary) : freshFu ? cachedFu.rows : null;
+  _spPeekFuOrderId = _spPeekFuRows ? key : '';
+  _spPeekFuState = _spPeekFuRows ? 'ready' : 'loading';
+  // Use the list's existing customer, products and payment data immediately.
+  // Detail, follow-ups and customer history never gate the first frame.
+  if (cachedFull || summary) _spPeekRender();
   else {
     const panel = ov.querySelector('.sp-peek');
     panel.dataset.order = '';
-    // Slow connection: hold a near-final height so the full order grows it a little, not 4×.
     panel.classList.add('is-loading');
     panel.innerHTML = _spPeekPendingHtml(summary);
   }
-  // Commit the closed position before the next frame so the panel starts its
-  // transition on the first frame without waiting through two frames.
-  ov.querySelector('.sp-peek').getBoundingClientRect();
-  requestAnimationFrame(() => { if (!ov._closing) { ov.classList.add('is-open'); ov.classList.remove('is-pending'); } });
+  ov.classList.add('is-open');
+  ov.classList.remove('is-pending');
   /* Focus the window itself, not «×»: a focused close button drew a focus ring on every
      open, as if it were selected. Keyboard users still land inside the dialog — the first
      Tab reaches the first control (see _spTrapDialogTab) and Escape still closes. */
-  setTimeout(() => qs('#sp-peek .sp-peek')?.focus({ preventScroll: true }), 40);
-  if (!detailDone) {
-    await detail;
+  requestAnimationFrame(() => {
+    if (serial === _spPeekOpenSerial && _spPeekId === key && !ov._closing)
+      ov.querySelector('.sp-peek')?.focus({ preventScroll: true });
+  });
+  const detail = needsDetail && !cachedFull ? _spEnsureFullOrder(key).then(() => {
     if (serial !== _spPeekOpenSerial || _spPeekId !== key) return;
-    if (detailError) { closeSpOrderPeek(); toast(detailError.message || t('spLoadFailed'), true); return; }
     _spPeekRender();
-  }
+  }).catch(error => {
+    if (serial !== _spPeekOpenSerial || _spPeekId !== key) return;
+    if (!summary) closeSpOrderPeek();
+    toast(error.message || t('spLoadFailed'), true);
+  }) : null;
+  const fu = summary || cachedFull ? _spPeekLoadFu(false)
+    : Promise.resolve(detail).then(() => serial === _spPeekOpenSerial && _spPeekId === key ? _spPeekLoadFu(false) : null);
+  await Promise.all([detail, fu]);
 }
-/** Longest the order window waits for its data before showing (ms). */
-const SP_PEEK_OPEN_WAIT = 450;
 
 /* Close after the shared window transition so the panel leaves smoothly.
    Rapid close and reduced-motion remove it immediately because a zero-duration
@@ -108477,7 +108686,7 @@ function _spOpenOrderFromTableRow(event, id) {
 }
 
 function _spReconcileLiveChildren(host, nextHost, arrivalIds) {
-  const motion = arrivalIds.size && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motion = arrivalIds.size && !host.closest?.('[data-loading-style="shimmer"]') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const previousPositions = new Map();
   if (motion) [...host.children].forEach(node => {
     const rect = node.getBoundingClientRect();
@@ -109546,7 +109755,7 @@ function _spApplyApprovedReceipt(orderId, receiptId, result, refresh = true) {
 function _spRefreshAfterReceiptApproval() {
   // A socket-triggered refresh may already be in flight with older data.
   // Follow it with one request that starts after the successful PATCH.
-  const inFlight = _spOrdersRequest;
+  const inFlight = _spDepositReviewRequest || _spOrdersRequest;
   void (async () => {
     if (inFlight) await inFlight;
     await loadShopifyOrders();
@@ -109761,11 +109970,63 @@ let _spReceiptImageUrl = '';
 
 let _spDepSelectedIds = new Set();
 
+let _spDepositReviewIds = null, _spDepositReviewRequest = null, _spDepositReviewToken = '';
+function _spLoadDepositReview() {
+  if (!isAdmin()) return Promise.resolve([]);
+  const token = localStorage.getItem('token');
+  if (_spDepositReviewToken !== token) {
+    _spDepositReviewIds = null; _spDepositReviewRequest = null; _spDepositReviewToken = token;
+  }
+  if (_spDepositReviewRequest) return _spDepositReviewRequest;
+  _spReceiptLoadError = '';
+  const approvalRevision = _spReceiptApprovalRevision;
+  const task = (async () => {
+    try {
+      let rows;
+      try { rows = await api('/shopify/orders/deposit-review'); }
+      catch (error) { if (error.status !== 404) throw error; rows = await api('/shopify/orders'); }
+      if (token !== localStorage.getItem('token')) return [];
+      if (!Array.isArray(rows)) throw new TypeError('Invalid deposit review response');
+      rows.forEach(order => _spMergeReceiptApprovals(order, approvalRevision));
+      const merged = new Map(_shopifyOrders.map(o => [String(o._id), o]));
+      rows.forEach(o => merged.set(String(o._id), o));
+      _shopifyOrders = [...merged.values()];
+      _spDepositReviewIds = new Set(rows.map(o => String(o._id)));
+      const count = rows.reduce((sum, order) => sum + (order.depositReceipts || []).filter(receipt =>
+        receipt.status === 'معلق' && (receipt.workflow?.version !== 2 || receipt.workflow.stage === 'requested')).length, 0);
+      const badge = qs('#sp-subnav-deposits-n');
+      if (badge) { badge.textContent = String(count); badge.hidden = !count; }
+      return rows;
+    } catch (error) {
+      if (token === localStorage.getItem('token')) _spReceiptLoadError = error.message || t('spLoadFailed');
+      return [];
+    } finally {
+      if (token === localStorage.getItem('token')) {
+        _spDepositReviewRequest = null;
+        if (currentPage === 'shopify-orders' && _spSubnavTab === 'deposits') renderSpDepositReview();
+      }
+    }
+  })();
+  _spDepositReviewRequest = task;
+  if (_spDepositReviewIds === null) renderSpDepositReview();
+  else qs('#sp-deposits-tab-content')?.setAttribute('aria-busy', 'true');
+  return task;
+}
+function _spDepositReviewSkeletonHtml() {
+  const bar = (width, height = 12) => `<span class="ss-skeleton sp-subtab-bar" style="width:${width};height:${height}px" aria-hidden="true"></span>`;
+  return `<div class="spdep-review-grid" aria-hidden="true">${Array.from({length:4}, () => `<section class="spdep-review-card spdep-loading-card"><div class="spdep-review-order">${bar('65px',18)}${bar('45%')}</div><div class="spdep-loading-receipt">${bar('72px',96)}<div>${bar('100px',20)}${bar('70%')}${bar('85%')}${bar('55%')}</div></div><div class="spdep-loading-actions">${bar('42%',34)}${bar('42%',34)}</div></section>`).join('')}</div>`;
+}
 function renderSpDepositReview() {
   if (!isAdmin()) return;
   const host = qs('#sp-deposits-tab-content');
   if (!host) return;
-  const rows = _shopifyOrders.flatMap(o => (o.depositReceipts || []).filter(r => r.status === 'معلق' && (r.workflow?.version !== 2 || r.workflow.stage === 'requested')).map(r => ({o,r})));
+  const pending = _spDepositReviewIds === null && !!_spDepositReviewRequest;
+  host.setAttribute('aria-busy', String(!!_spDepositReviewRequest));
+  if (pending) {
+    host.innerHTML = `<div class="spdep-review"><div class="sp-pk-sec-h"><span>${esc(t('spDepTab'))}</span></div>${_spDepositReviewSkeletonHtml()}</div>`;
+    return;
+  }
+  const rows = _shopifyOrders.filter(o => !_spDepositReviewIds || _spDepositReviewIds.has(String(o._id))).flatMap(o => (o.depositReceipts || []).filter(r => r.status === 'معلق' && (r.workflow?.version !== 2 || r.workflow.stage === 'requested')).map(r => ({o,r})));
   /* الاختيار يتابع مجموعة الإيصالات المعروضة فعلياً — تحديث الصفحة قد يحذف
      إيصالاً اعتُمد أو سُحب من مكان آخر (الفاتورة، لوحة الطلب). */
   const liveIds = new Set(rows.map(({r}) => r.id));
@@ -109922,7 +110183,9 @@ async function _spDepRunBulkApprove(picked) {
 }
 
 function _spRefreshReceiptViews() {
-  const n = _shopifyOrders.reduce((s,o) => s + (o.depositReceipts || []).filter(r => r.status === 'معلق' && (r.workflow?.version !== 2 || r.workflow.stage === 'requested')).length, 0);
+  const queue = _spSubnavTab === 'deposits' && _spDepositReviewIds
+    ? _shopifyOrders.filter(order => _spDepositReviewIds.has(String(order._id))) : _shopifyOrders;
+  const n = queue.reduce((s,o) => s + (o.depositReceipts || []).filter(r => r.status === 'معلق' && (r.workflow?.version !== 2 || r.workflow.stage === 'requested')).length, 0);
   const badge = qs('#sp-subnav-deposits-n');
   if (badge) { badge.textContent = String(n); badge.hidden = !n; }
   if (_spSubnavTab === 'deposits') renderSpDepositReview();
@@ -114258,16 +114521,9 @@ function _spFollowUpMarkHtml(o, size) {
    `_spPeekFuHtml` renders; this is a one-line digest of its newest row, not a
    second data source. Clicking it opens the real trail (openFuCommentPopup),
    the one write path — this is display-only. */
-/* `compact` — once a deposit is actually approved on the order, the full note
-   text is dropped from the outside of the card: the deposit is the thing that
-   matters at a glance for a paid order, and a two-line comment preview under it
-   competed with that reading. An order still awaiting its deposit keeps the
-   full preview, because for THAT order the follow-up note is very often the
-   reason it hasn't paid yet — exactly what the card should surface first.
-   Compact mode keeps a small icon-only control (same slot/size as the comment
-   and follow-up-marker buttons) so the trail stays one click away either way;
-   it never disappears, only the inline text does. */
-function _spFuLastEntryHtml(o, compact) {
+/* Payment state only changes the payment controls. Keep the latest follow-up's
+   author, time and text visible on paid and unpaid mobile cards alike. */
+function _spFuLastEntryHtml(o) {
   const list = (typeof _spFollowUpsFor === 'function') ? _spFollowUpsFor(o) : [];
   if (!list.length) return '';
   const latest = list.flatMap(f => (Array.isArray(f.comments) ? f.comments : []).map(comment => ({ f, comment })))
@@ -114287,12 +114543,6 @@ function _spFuLastEntryHtml(o, compact) {
     ? '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/>'
     : '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'}
   </svg>`;
-  const title = `${esc(last.authorName || '—')} — ${esc(bodyTxt)}`;
-  if (compact) {
-    return `<span class="sp-cmt-slot"><button type="button" class="sp-fu-last-ic${isCall ? ' is-call' : ''}"
-      title="${escHtml(title)}" aria-label="${escHtml(title)}"
-      onclick="event.stopPropagation();_spPeekOpenTrail('${esc(String(f._id))}')">${icon}</button></span>`;
-  }
   return `<button type="button" class="sp-card-fu-last${isCall ? ' is-call' : ''}" title="${escHtml(`${last.authorName || '—'} — ${bodyTxt} — ${whenFull}`)}" onclick="event.stopPropagation();_spPeekOpenTrail('${esc(String(f._id))}')">
     ${icon}
     <span class="sp-card-fu-last-b"><span class="sp-card-comment-meta"><b dir="auto">${esc(last.authorName || '—')}</b><span class="sp-card-followup-badge">${isEn ? 'Follow-up' : 'متابعة'}</span><time title="${escHtml(whenFull)}">${esc(when)}</time></span><span class="sp-card-comment-text" dir="auto">${esc(bodyTxt)}</span></span>
@@ -114384,7 +114634,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js?v=20261029-permissions"></script>
-<script src="/pickup-daily-shipping.js?v=20261029-group-previews"></script>
+<script src="/pickup-daily-shipping.js?v=20261110-board-scroll-lock"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261029-reactions"></script>
@@ -114440,8 +114690,8 @@ function _spRenderHistoryTab() {
 <script src="/employee-followup-session.js?v=task-clarity-20261026-ten-minute-reminder"></script>
 <link rel="stylesheet" href="/employee-followup-tour.css?v=20261026-visible-help-color">
 <script src="/employee-followup-tour.js?v=20261026-ten-minute-reminder"></script>
-<link rel="stylesheet" href="/design-system.css?v=20261110-no-page-scroll">
-<link rel="stylesheet" href="/pickup-kanban-refine.css?v=20261109-1">
+<link rel="stylesheet" href="/design-system.css?v=20261110-smaller-new">
+<link rel="stylesheet" href="/pickup-kanban-refine.css?v=20261110-board-scroll-lock">
 <link rel="stylesheet" href="/metrics-strip.css?v=20261029-green-kpis">
 <link rel="stylesheet" href="/shopify-workspace.css?v=20261109-live-order">
 <link rel="stylesheet" href="/dashboard-clarity.css?v=20261103-neutral-surfaces">
@@ -114515,14 +114765,14 @@ function _spRenderHistoryTab() {
 })();
 </script>
 <link rel="stylesheet" href="/compact-pages.css?v=20261110-expenses-users">
-<link rel="stylesheet" href="/workspace-tabs.css?v=20261110-1">
+<link rel="stylesheet" href="/workspace-tabs.css?v=20261110-provider-height">
 <link rel="stylesheet" href="/order-density.css?v=20261110-compact-dates">
 <script src="/workspace-tabs.js?v=20261110-suppliers-tabs"></script>
 <link rel="stylesheet" href="/export-menu.css?v=20261110-compact-exports">
 <script src="/export-menu.js?v=20261110-compact-exports"></script>
 <link rel="stylesheet" href="/account-menu.css?v=20261110-official-socials">
 <script src="/account-menu.js?v=20261110-official-socials"></script>
-<script src="/table-viewport.js?v=20261110-1"></script>
+<script src="/table-viewport.js?v=20261110-inventory-loading"></script>
 <link rel="stylesheet" href="/clients-profile.css?v=20261110-4">
 </body>
 </html>

@@ -104,6 +104,16 @@ window.SouliaClients = (() => {
     }).finally(() => { if (epoch === dataEpoch) loading = null; });
     return loading;
   }
+  function showLoading() {
+    const host = $('#clients-grid'); if (!host) return;
+    const isList = $('#clients-view-mode')?.value === 'list';
+    const bar = (width='70%',height=14,cls='') => `<span class="ss-skeleton ss-field-placeholder ${cls}" style="width:${width};height:${height}px" aria-hidden="true"></span>`;
+    host.className = isList ? 'cp-list' : 'cp-client-grid';
+    host.setAttribute('aria-busy','true');
+    host.innerHTML = isList
+      ? `<div class="cp-table-scroll"><table class="cp-table"><thead><tr><th></th><th>${tr('العميل','Client')}</th><th>${tr('التقييم','Assessment')}</th><th>${tr('نجاح الاستلام','Delivery success')}</th><th>${tr('المتبقي','Due')}</th></tr></thead><tbody>${`<tr><td>${bar('16px',16)}</td><td>${bar('140px',18)}<small>${bar('110px',12)}</small></td><td>${bar('110px',24)}</td><td>${bar('44px',18)}</td><td>${bar('70px',18)}</td></tr>`.repeat(6)}</tbody></table></div>`
+      : `<article class="cp-client-card" aria-hidden="true"><div class="cp-card-top"><span class="cp-avatar ss-skeleton"></span><div><span class="cp-client-name">${bar('140px',18)}</span><small class="cp-name-orders">${bar('80px',12)}</small><small>${bar('110px',12)}</small></div>${bar('16px',16)}</div><span class="cp-badge">${bar('110px',16)}</span><footer>${bar('140px',12)}</footer></article>`.repeat(6);
+  }
   async function renderList() {
     if (!$('#clients-list-view')) return;
     syncAccount();
@@ -116,10 +126,13 @@ window.SouliaClients = (() => {
     }
     serial++; profile = null; view(false);
     const host = $('#clients-grid');
-    if (!loadedAt && !rows.length) host.innerHTML = `<div class="cp-empty" role="status">${tr('جارٍ تحميل العملاء…', 'Loading clients…')}</div>`;
+    if (!loadedAt && !rows.length) {
+      showLoading();
+    }
     const epoch = dataEpoch;
     try { await load(); }
-    catch (error) { if (epoch === dataEpoch) host.innerHTML = failure(error.message); return; }
+    catch (error) { if (epoch === dataEpoch) { host.innerHTML = failure(error.message); host.setAttribute('aria-busy', 'false'); } return; }
+    if (epoch === dataEpoch) host.setAttribute('aria-busy', 'false');
     if (epoch !== dataEpoch || currentPage !== 'clients' || routeKey()) return;
     const tokens = normalizeUiSearch($('#clients-search')?.value || '').split(/\s+/).filter(Boolean);
     const debt = $('#clients-has-remaining')?.value;
@@ -310,6 +323,7 @@ window.SouliaClients = (() => {
       if (!p || !host.isConnected || panel.dataset.order !== String(order._id)) return;
       const html = orderSummaryContent(p, order);
       if (host.innerHTML !== html) host.innerHTML = html;
+      host.setAttribute('aria-busy', 'false');
       const link = panel.querySelector('.sp-pk-client [data-cp-customer]');
       if (link) link.href = pathFor(p);
     };
@@ -335,7 +349,10 @@ window.SouliaClients = (() => {
     } catch {
       if (orderSummaries.get(reference) !== entry) return;
       entry.retryAt = Date.now() + 10000;
-      if (!entry.data && host.isConnected) host.innerHTML = `<span class="cp-badge cp-neutral">${tr('غير متاح', 'Unavailable')}</span>`;
+      if (!entry.data && host.isConnected) {
+        host.innerHTML = `<span class="cp-badge cp-neutral">${tr('غير متاح', 'Unavailable')}</span>`;
+        host.setAttribute('aria-busy', 'false');
+      }
     }
   }
   function scheduleOrderSummary(delay = 200) {
@@ -393,7 +410,7 @@ window.SouliaClients = (() => {
     syncAccount();
     const entry = orderSummaryEntry(order);
     const p = entry.data || !entry.force && cached('order:shopify:' + order._id);
-    return `<span class="cp-order-evidence" role="status" aria-atomic="true" aria-label="${tr('سجل استلام العميل', 'Customer delivery history')}">${p ? orderSummaryContent(p, order) : `<span class="cp-badge cp-neutral">${tr('سجل العميل', 'Customer history')}</span>`}</span>`;
+    return `<span class="cp-order-evidence" role="status" aria-busy="${!p}" aria-atomic="true" aria-label="${tr('سجل استلام العميل', 'Customer delivery history')}">${p ? orderSummaryContent(p, order) : '<span class="ss-skeleton cp-history-placeholder" aria-hidden="true"></span>'}</span>`;
   }
   document.addEventListener('click', event => {
     if (event.target.closest('a') && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
@@ -479,7 +496,7 @@ window.SouliaClients = (() => {
       'followup:changed', 'complaint:changed']
       .forEach(event => connection.on(event, changed));
   }
-  return { renderList, open, orderEvidence, orderSummary, bindSocket, customerLink,
+  return { renderList, showLoading, open, orderEvidence, orderSummary, bindSocket, customerLink,
     captureNavigationState(url = location.href) {
       const parts = new URL(url, location.href).hash.slice(1).split('/');
       let reference = ''; try { if (parts[1] === 'profile') reference = decodeURIComponent(parts.slice(2).join('/')); } catch (_) {}

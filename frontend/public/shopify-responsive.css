@@ -46,6 +46,7 @@
 .sp-table-scroll-hint{display:none;align-items:center;gap:6px;margin:0;padding:8px 12px;color:var(--muted);background:var(--surface);font-size:.74rem;border-bottom:1px solid var(--border)}
 #shopify-orders-table-wrap[data-scrollable="true"] .sp-table-scroll-hint{display:flex}
 #sp-orders-loading[hidden]{display:none!important}
+#page-shopify-orders.sp-nav-pending :is(#shopify-orders-table-wrap,#sp-mobile-list,#shopify-pagination){display:none!important}
 #sp-orders-tab-content:has(>#sp-orders-loading:not([hidden]))>:is(#shopify-orders-table-wrap,#sp-mobile-list,#shopify-pagination){display:none!important}
 .sp-orders-loading-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:6px 10px}
 .sp-loading-card-day{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-height:20px;margin:3px 0 0;padding:3px 2px}

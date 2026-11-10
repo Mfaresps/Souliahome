@@ -47,7 +47,7 @@ it('excludes inactive products from inventory shortage counts and filters, and k
   const source = html.slice(html.indexOf('function renderInventory()'), html.indexOf('function openInventoryDetail('));
   const elements = new Map<string, any>();
   const element = (selector: string) => {
-    if (!elements.has(selector)) elements.set(selector, { innerHTML: '', textContent: '', value: '', style: {}, closest: () => null, querySelectorAll: () => [] });
+    if (!elements.has(selector)) elements.set(selector, { innerHTML: '', textContent: '', value: '', style: {}, classList: { toggle() {}, remove() {} }, setAttribute() {}, closest: () => null, querySelectorAll: () => [] });
     return elements.get(selector);
   };
   const c: any = {

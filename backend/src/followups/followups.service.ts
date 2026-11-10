@@ -455,9 +455,15 @@ export class FollowUpsService implements OnModuleInit {
     const id = String(shopifyOrderId || '').trim();
     const reference = normalizedRef(ref);
     if (!id && !reference) return [];
-    const rows = await this.findAll();
-    return rows.filter(row => (id && String(row.shopifyOrderId || '') === id)
-      || (reference && normalizedRef(row.orderRef) === reference));
+    const matches: Record<string, unknown>[] = [];
+    if (id) matches.push({ shopifyOrderId: id });
+    if (reference) {
+      // Preserve legacy references with leading hashes, whitespace and letter case,
+      // without fetching every ticket and its entire conversation into Node.
+      const escaped = reference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      matches.push({ orderRef: new RegExp(`^\\s*#*${escaped}\\s*$`, 'i') });
+    }
+    return this.model.find({ $or: matches }).sort({ createdAt: -1 }).lean();
   }
 
   /** Dashboard badges, notifications, and timed reminders only. The Follow-ups

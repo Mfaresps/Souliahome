@@ -142,6 +142,13 @@ export class ShopifyController {
     return result;
   }
 
+  @Get('orders/deposit-review')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async getDepositReview(@Request() req: any) {
+    return (await this.shopifyService.getDepositReviewOrders()).map(o => visibleReceipts(o, actorOf(req).id));
+  }
+
   @Get('orders/detail/:id')
   @UseGuards(JwtAuthGuard)
   async getOrderDetail(@Param('id') id: string, @Request() req: any,

@@ -74,12 +74,18 @@ function summary(rows, received = rows.length) {
         window.__keptRow = document.querySelector(selector);
       }, summary([first, second]), width);
       assert.equal(await page.evaluate(() => !!window.__keptRow), true, `${width}: initial row`);
+      // Let the initial layout/header observers settle before measuring the live patch.
+      await new Promise(resolve => setTimeout(resolve, 350));
+      await page.evaluate(() => {
+        const selector = innerWidth < 600 ? '#sp-mobile-list [data-sp-order-id]' : '#shopify-orders-table-body tr[data-sp-order-id]';
+        window.__keptRow = document.querySelector(selector);
+      });
       await page.evaluate(next => {
         window.__liveSummary = next;
         window.__socketEvents['shopify:order-created']({ id: 'cccccccccccccccccccccccc' });
         window.__socketEvents['shopify:order-created']({ id: 'cccccccccccccccccccccccc' });
       }, summary([incoming, first, second]));
-      await page.waitForFunction(() => document.querySelector('.spk-tile.is-received .spk-val bdi')?.dataset.animatedNumberFinal === '3', { timeout: 5000 }).catch(async error => {
+      await page.waitForFunction(() => document.querySelector('.spk-tile.is-received .spk-val bdi')?.textContent.trim() === '3', { timeout: 5000 }).catch(async error => {
         const state = await page.evaluate(() => ({ calls: window.__liveCalls, page: currentPage,
           serverKey: _spServerKey, livePaint: _spLivePaint, rows: _shopifyOrders.map(o => o._id),
           kpi: document.querySelector('.spk-tile.is-received .spk-val bdi')?.outerHTML,
@@ -97,10 +103,10 @@ function summary(rows, received = rows.length) {
       assert.deepEqual(result.ids, [incoming._id, first._id, second._id], `${width}: ordered rows`);
       assert.equal(result.preserved, true, `${width}: unchanged row retained`);
       assert.equal(result.calls, 2, `${width}: one initial request and one deduplicated live request`);
-      assert.equal(result.animated, true, `${width}: new row animates`);
+      assert.equal(result.animated, false, `${width}: new row appears directly without arrival motion`);
       assert.deepEqual(errors, [], `${width}: browser errors`);
       await page.close();
     }
-    console.log('PASS: new Shopify order animates its count and row, preserves existing DOM, and coalesces live requests on desktop and mobile.');
+    console.log('PASS: new Shopify order and final count appear directly, existing DOM is preserved, and live requests coalesce on desktop and mobile.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

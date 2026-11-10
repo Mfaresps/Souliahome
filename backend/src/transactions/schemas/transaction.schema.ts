@@ -882,4 +882,21 @@ TransactionSchema.index({ shopifyOrderId: 1, type: 1 });
 TransactionSchema.index({ type: 1, shopifyCreatedAt: 1 });
 TransactionSchema.index({ type: 1, transactionDate: 1 });
 TransactionSchema.index({ type: 1, date: 1 });
+// Lookups that ran as a full collection scan on every call (Nov 10, 2026):
+// - bostaOrderId / bostaTrackingNumber: every Bosta webhook (one per status change per
+//   shipment) finds its transaction by one of these.
+// - ref: invoice-number lookups (uniqueness checks, vault back-references, search).
+// - carrierSettlement.status: the auto-settle cron queries it every minute.
+// - pickupStatus: the Pick-Up board and its filters.
+// - createdAt: newest-first sorting of every list.
+// - updatedAt+_id: the Shopify sync scan (every 15s) filters AND sorts on these.
+// Plain (non-unique) on purpose: a ref repeats across types (sales-2254 / purchase-2254).
+// Indexes only speed reads up — they never change a query's result.
+TransactionSchema.index({ bostaOrderId: 1 });
+TransactionSchema.index({ bostaTrackingNumber: 1 });
+TransactionSchema.index({ ref: 1 });
+TransactionSchema.index({ 'carrierSettlement.status': 1 });
+TransactionSchema.index({ pickupStatus: 1 });
+TransactionSchema.index({ createdAt: -1 });
+TransactionSchema.index({ updatedAt: 1, _id: 1 });
 restrictInventoryParentDeletion(TransactionSchema, ['origin.purchaseTransactionId', 'assignment.transactionId'], ['transactionId']);

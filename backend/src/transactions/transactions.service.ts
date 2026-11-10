@@ -1,4 +1,6 @@
 import { setCommentReaction } from '../shared/comment-reactions';
+import { randomUUID } from 'node:crypto';
+import { cachedRead } from '../shared/read-cache.util';
 import { buildMovementsPage, MovementsState } from './movements-page.util';
 import { maskTransactionsForRole } from './purchase-mask.util';
 import { notifyApproval } from '../notifications/admin-events';
@@ -808,10 +810,12 @@ export class TransactionsService {
       'carrierSettlement.fees.sizeName',
     ].join(' '));
 
+  private summarySnapshots = new Map<string, { at: number; signature: string; rows: Record<string, any>[] }>();
+
   async findSummaryPage(options: {
     page?: number; limit?: number; search?: string; type?: string;
-    status?: string; from?: string; to?: string; sort?: string;
-  }, canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; total: number; page: number; pageSize: number }> {
+    status?: string; from?: string; to?: string; sort?: string; snapshot?: string;
+  }, canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; total: number; page: number; pageSize: number; snapshot?: string }> {
     const page = Number.isSafeInteger(options.page) && options.page! > 0 ? options.page! : 1;
     const pageSize = Number.isSafeInteger(options.limit) && options.limit! > 0
       ? Math.min(options.limit!, 200) : 50;
@@ -843,6 +847,33 @@ export class TransactionsService {
       'amount-desc': { total: -1, _id: -1 }, 'amount-asc': { total: 1, _id: 1 },
     };
     const sort = sorts[options.sort || 'newest'] || sorts.newest;
+    if (options.snapshot) {
+      // A browser loading the complete index must page through one immutable list.
+      // Live inserts/archives must not shift offsets or change totals between pages.
+      this.summarySnapshots ||= new Map();
+      const signature = JSON.stringify([canSeePurchases, filter, sort]);
+      const now = Date.now();
+      for (const [key, value] of this.summarySnapshots)
+        if (now - value.at > 120000) this.summarySnapshots.delete(key);
+      let key = options.snapshot;
+      if (key === 'new') {
+        const snapshot = await cachedRead(`transaction-summary:${signature}`, 3000, async () => {
+          const data = await this.transactionModel.find(filter).select(TransactionsService.SUMMARY_FIELDS)
+            .slice('editHistory', 1).sort(sort).lean().exec();
+          return { key: randomUUID(), at: Date.now(), signature, rows: data.map(({ editHistory, ...row }) => ({
+            ...row, hasEditHistory: Array.isArray(editHistory) && editHistory.length > 0,
+          })) };
+        });
+        key = snapshot.key;
+        this.summarySnapshots.set(key, snapshot);
+        while (this.summarySnapshots.size > 16) this.summarySnapshots.delete(this.summarySnapshots.keys().next().value!);
+      }
+      const snapshot = this.summarySnapshots.get(key);
+      if (!snapshot || snapshot.signature !== signature)
+        throw new ConflictException('Transaction summary snapshot expired');
+      return { rows: snapshot.rows.slice((page - 1) * pageSize, page * pageSize), total: snapshot.rows.length,
+        page, pageSize, snapshot: key };
+    }
     const [rows, total] = await Promise.all([
       this.transactionModel.find(filter).select(TransactionsService.SUMMARY_FIELDS)
         .slice('editHistory', 1).sort(sort).skip((page - 1) * pageSize).limit(pageSize).lean().exec(),
@@ -855,13 +886,13 @@ export class TransactionsService {
 
   async findStartupOverview(canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; activeCount: number }> {
     const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
-    const [rows, activeCount] = await Promise.all([
+    const [rows, activeCount] = await cachedRead(`startup-overview:${canSeePurchases}`, 3000, () => Promise.all([
       this.transactionModel.find({ archived: { $ne: true }, ...visibility, $or: [
         { type: 'مبيعات' }, { 'cancelRequest.status': 'معلق' },
         { 'carrierSettlement.status': 'review' },
       ] }).select(TransactionsService.OVERVIEW_FIELDS).lean().exec(),
       this.transactionModel.countDocuments({ archived: { $ne: true }, cancelled: { $ne: true }, ...visibility }).exec(),
-    ]);
+    ]));
     return { rows, activeCount };
   }
 
@@ -870,25 +901,26 @@ export class TransactionsService {
    * available to existing consumers. */
   async findDashboardOverview(canSeePurchases: boolean): Promise<{ rows: Record<string, any>[]; activeCount: number }> {
     const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
-    const [rows, activeCount] = await Promise.all([
+    const [rows, activeCount] = await cachedRead(`dashboard-overview:${canSeePurchases}`, 3000, () => Promise.all([
       this.transactionModel.find({ archived: { $ne: true }, ...visibility, $or: [
         { type: 'مبيعات' }, { 'cancelRequest.status': 'معلق' },
         { 'carrierSettlement.status': 'review' },
       ] }).select(TransactionsService.DASHBOARD_OVERVIEW_FIELDS).lean().exec(),
       this.transactionModel.countDocuments({ archived: { $ne: true }, cancelled: { $ne: true }, ...visibility }).exec(),
-    ]);
+    ]));
     return { rows, activeCount };
   }
 
   async findMovementsPage(state: MovementsState, role: string | undefined, canSeePurchases: boolean) {
     const visibility = canSeePurchases ? {} : { type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
-    const [rows, returns, supplierReturns] = await Promise.all([
+    // Cache source rows, never a user's filters, exclusions or role masking.
+    const [rows, returns, supplierReturns] = await cachedRead(`movements-sources:${canSeePurchases}`, 3000, () => Promise.all([
       this.transactionModel.find({ archived: { $ne: true }, ...visibility })
         .select(TransactionsService.SUMMARY_FIELDS).slice('editHistory', 1)
         .sort({ createdAt: -1, _id: -1 }).lean().exec(),
       this.returnRequestModel.find().lean().exec(),
       this.supplierReturnModel.find().select('status reversal returnDate createdAt total').lean().exec(),
-    ]);
+    ]));
     const summaries = maskTransactionsForRole(rows.map(({ editHistory, ...row }) => ({
       ...row, hasEditHistory: Array.isArray(editHistory) && editHistory.length > 0,
     })), role);
@@ -5827,12 +5859,12 @@ export class TransactionsService {
 
   /** Smaller grouped-board feed; GET /pickup-orders remains unchanged. */
   async findPickupWorkspaceOrders() {
-    return this.transactionModel
+    return cachedRead('pickup-workspace', 3000, () => this.transactionModel
       .find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true } })
       .select(TransactionsService.PICKUP_WORKSPACE_EXCLUDED_FIELDS)
       .sort({ createdAt: -1 })
       .lean()
-      .exec();
+      .exec());
   }
 
   /** Generate a unified group reference: RRR-DDMON (e.g. 104-08MAY) */

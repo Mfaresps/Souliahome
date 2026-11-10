@@ -301,10 +301,10 @@ function _spkRender(state) {
         /* A share of one total — a single-hue meter, not a categorical colour. */
         `<div class="spk-meter" aria-hidden="true"><i style="width:${s.rate || 0}%"></i></div>`)}
     </div>`;
-  // Cascade Reveal: the tiles rise and their figures count up once, when they replace the skeleton.
+  // Shimmer workspaces reveal their final figures immediately.
   if (arriving && _spkState !== 'error') window.souliaCascade?.(host.querySelector('.spk-grid'), { count: '.spk-val' });
   const previousReceived = typeof _spLivePaint === 'undefined' ? NaN : _spLivePaint?.previousReceived;
-  if (Number.isFinite(previousReceived) && s.received > previousReceived) {
+  if (Number.isFinite(previousReceived) && s.received > previousReceived && !host.closest('[data-loading-style="shimmer"]')) {
     const value = host.querySelector('.spk-tile.is-received .spk-val bdi');
     if (value && window.AnimatedNumber?.set) {
       window.AnimatedNumber.set(value, s.received, { startValue: previousReceived, duration: 650 });

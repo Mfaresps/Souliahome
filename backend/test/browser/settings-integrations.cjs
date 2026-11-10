@@ -24,4 +24,28 @@ assert.deepEqual(await page.$$eval('[data-connection-provider]',els=>els.map(el=
 await page.evaluate(async()=>{api=async url=>url.includes('shopify')?{adminApiConfigured:true,adminApiReachable:false,webhookConfigured:true}:{success:false,state:'error'};await stgRefreshProviderConnections(true);});
 assert.deepEqual(await page.$$eval('[data-connection-provider]',els=>els.map(el=>el.dataset.state)),['webhook','error','disconnected']);
 await page.evaluate(()=>{stgSetProviderConnectionState('shopify','connected');stgSetProviderConnectionState('bosta','connected');stgSetProviderConnectionState('cloudflare','unconfigured');});
+// Include the shared tabs layer: its compact height must not clip rich provider tabs.
+await page.addStyleTag({path:path.join(root,'workspace-tabs.css')});
+await page.addScriptTag({path:path.join(root,'workspace-tabs.js')});
+for(const width of [320,390,768,1440])for(const dir of ['ltr','rtl']){
+  await page.setViewport({width,height:1000});
+  await page.evaluate(dir=>{
+    document.documentElement.dir=dir;currentLang=dir==='rtl'?'ar':'en';
+    const english={shopify:'Store & order webhooks',bosta:'Shipping, tracking & settlement',cloudflare:'Storage & backups'};
+    document.querySelectorAll('#stg-provider-tabs [data-provider]').forEach(button=>{
+      const hint=button.querySelector('small');hint.dataset.arHint ||= hint.textContent;
+      hint.textContent=dir==='ltr'?english[button.dataset.provider]:hint.dataset.arHint;
+    });
+  },dir);
+  await new Promise(resolve=>setTimeout(resolve,250));
+  const clipped=await page.$$eval('#stg-provider-tabs [data-provider]',buttons=>buttons.flatMap(button=>{
+    const box=button.getBoundingClientRect(),track=button.parentElement.getBoundingClientRect();
+    return [...button.querySelectorAll('img,strong,small,.stg-provider-connection')].filter(el=>{
+      if(!el.getClientRects().length)return false;
+      const r=el.getBoundingClientRect();
+      return r.top<box.top-1||r.bottom>box.bottom+1||r.left<box.left-1||r.right>box.right+1||r.top<track.top-1||r.bottom>track.bottom+1;
+    }).map(el=>({provider:button.dataset.provider,element:el.tagName,text:el.textContent}));
+  }));
+  assert.deepEqual(clipped,[],`${width}/${dir}: logos, labels and statuses fit the provider tabs`);
+}
 await page.setViewport({width:1440,height:1000});await page.evaluate(()=>{currentLang='ar';document.documentElement.dir='rtl';stgSetIntegrationProvider('shopify');document.activeElement?.blur();});await new Promise(r=>setTimeout(r,400));await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/integrations-tabs-desktop.png'),fullPage:true});await page.setViewport({width:390,height:844});await new Promise(r=>setTimeout(r,400));await page.screenshot({path:path.resolve(__dirname,'../../../artifacts/integrations-tabs-mobile.png'),fullPage:true});assert.deepEqual(errors,[]);console.log('PASS: connection states, cached checks with no configuration writes, three providers, original logos, RTL/LTR at four sizes, retained input identities and unsaved values, zero API calls, persistence, search, keyboard and data navigation.');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -52,7 +52,7 @@ function renderSpDepositHistory(readUrl=false) {
     ${input('min','min','number')}${input('max','max','number')}${input('sender','sender')}${input('search','search')}${input('screenshotTime','screenTime','time')}
     <label class="dep-log-field"><span>${L('status')}</span><select id="dep-log-status" onchange="_depLogFilter('status',this.value)"><option value="">${L('allStatuses')}</option>${['معلق','معتمد','مرفوض','ملغي','مُسترد','مسحوب'].map(s=>`<option value="${esc(s)}" ${_depLogState.status===s?'selected':''}>${esc(s==='مسحوب'?_depLogText('withdrawn'):_spReceiptStatus(s))}</option>`).join('')}</select></label></div>
     <button class="btn btn-outline dep-log-reset" onclick="_depLogState={period:'today',page:'1'};history.replaceState(null,'',_depLogUrl());renderSpDepositHistory()">${L('reset')}</button></div>
-    <div id="dep-log-error" class="dep-log-error" role="alert" hidden></div><div id="dep-log-progress" role="status" aria-live="polite">${L('loading')}</div>
+    <div id="dep-log-error" class="dep-log-error" role="alert" hidden></div><div id="dep-log-progress" role="status" aria-label="${L('loading')}"><span class="ss-skeleton dep-log-progress-bar" aria-hidden="true"></span></div>
     <div id="dep-log-results"></div><footer id="dep-log-pagination" class="dep-log-pagination"></footer></section>`;
   _depLogLoad();
 }
@@ -189,9 +189,17 @@ function _depLogBackgroundRefresh(){
   _depLogFinancialSnapshot=snapshot;clearTimeout(_depLogBackgroundTimer);
   _depLogBackgroundTimer=setTimeout(()=>_depLogLoad(true),400);
 }
+function _depLogShowLoading() {
+  const bar = '<span class="ss-skeleton dep-log-loading-bar" aria-hidden="true"></span>';
+  qs('#dep-log-summary').innerHTML = ['count','sum','pending','approved'].map(key => `<div class="dep-log-kpi"><small>${esc(_depLogText(key))}</small><strong>${bar}</strong></div>`).join('');
+  const columns = ['transfer','screenTime','order','amount','person','employee','approver','status','details'];
+  qs('#dep-log-results').innerHTML = `<div class="dep-log-loading" aria-hidden="true"><div class="dep-log-table-wrap"><table class="dep-log-table"><thead><tr>${columns.map(key => `<th>${esc(_depLogText(key))}</th>`).join('')}</tr></thead><tbody>${Array.from({length:6}, () => `<tr>${columns.map(() => `<td>${bar}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="dep-log-cards">${Array.from({length:4}, () => `<div class="dlc dep-log-loading-card"><div class="dlc-vault ss-skeleton"></div><div class="dep-log-loading-copy">${bar}${bar}${bar}</div>${bar}</div>`).join('')}</div></div>`;
+}
 async function _depLogLoad(silent=false) {
   if(_spSubnavTab!=='deposit-log'||!isAdmin()||!qs('#dep-log-results'))return;
   const sequence=++_depLogSequence, progress=qs('#dep-log-progress');progress.hidden=!!silent;qs('#dep-log-error').hidden=true;
+  qs('#sp-deposit-log-content').setAttribute('aria-busy','true');
+  if(!qs('#dep-log-results').children.length)_depLogShowLoading();
   const query=new URLSearchParams();_depLogFields.forEach(k=>{if(_depLogState[k])query.set(k,_depLogState[k]);});
   try{
     const key=query.toString();
@@ -222,6 +230,6 @@ async function _depLogLoad(silent=false) {
     }).join('');
     qs('#dep-log-results').innerHTML=data.rows.length?`<div class="dep-log-table-wrap"><table class="dep-log-table"><thead><tr>${columns.map(k=>`<th scope="col">${L(k)}</th>`).join('')}</tr></thead>${groups.map(([label,rows])=>`<tbody class="dep-log-group"><tr class="dep-log-group-title"><th colspan="${columns.length}" scope="rowgroup">${L(label)}<span>${rows.length}</span></th></tr>${renderRows(rows)}</tbody>`).join('')}</table></div>${_depLogCardsHtml(data.rows,linkOf)}`:`<div class="dep-log-empty">${L('empty')}</div>`;
     qs('#dep-log-pagination').innerHTML=`<span>${data.total} · ${data.page} / ${data.pages}</span><div><button class="btn btn-outline" ${data.page<=1?'disabled':''} onclick="_depLogPage(${data.page-1})">${L('previous')}</button><button class="btn btn-outline" ${data.page>=data.pages?'disabled':''} onclick="_depLogPage(${data.page+1})">${L('next')}</button></div>`;
-  }catch(error){if(sequence!==_depLogSequence||_spSubnavTab!=='deposit-log')return;const e=qs('#dep-log-error');e.textContent=error.message||String(error);e.hidden=false;}
-  finally{if(sequence===_depLogSequence&&_spSubnavTab==='deposit-log')progress.hidden=true;}
+  }catch(error){if(sequence!==_depLogSequence||_spSubnavTab!=='deposit-log')return;const e=qs('#dep-log-error');e.textContent=error.message||String(error);e.hidden=false;if(qs('#dep-log-results .dep-log-loading')){qs('#dep-log-results').replaceChildren();qs('#dep-log-summary').querySelectorAll('strong').forEach(el=>el.textContent='—');}}
+  finally{if(sequence===_depLogSequence){progress.hidden=true;qs('#sp-deposit-log-content')?.setAttribute('aria-busy','false');}}
 }

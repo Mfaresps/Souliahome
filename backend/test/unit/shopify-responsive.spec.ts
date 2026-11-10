@@ -14,9 +14,11 @@ function fixture(existing: any[] = []) {
     qs: (selector: string) => selector === '#sp-orders-tab-content' ? host : selector === '#sp-orders-loading' ? loading : null,
     _shopifyOrders: existing, _initShopifySubnav: jest.fn(), _getHiddenSpCols: () => new Set(),
     SP_COL_W_FIXED: 34, SP_COL_W: { ref: 132, total: 128 },
+    _spVisibleMinWidth: () => 294,
     SP_COLS: [{ id: 'ref', ar: 'الطلب', en: 'Order' }, { id: 'total', ar: 'الإجمالي', en: 'Total' }], api,
     t: (key: string) => key, tf: () => '', esc: (value: string) => value,
-    hasPerm: () => false, currentLang: 'ar',
+    hasPerm: () => false, currentLang: 'ar', currentPage: 'dashboard',
+    takeStartupRouteData: api, _spReceiptApprovalRevision: 0, _spMergeReceiptApprovals: jest.fn(),
     _spkRender: jest.fn(), _spSyncAuditPaymentRows: jest.fn(), _spRefreshReceiptViews: jest.fn(),
     renderShopifyOrders: render, buildSidebar: jest.fn(), localStorage: { getItem: () => 'seen', setItem: jest.fn() },
     _spSubnavTab: 'orders', console: { error: jest.fn() },
@@ -34,6 +36,7 @@ it('deduplicates order requests and treats an empty result as a loaded page', as
   const first = env.context.loadShopifyOrders();
   expect(env.loading.hidden).toBe(false);
   expect(env.loading.innerHTML).toContain('sp-orders-loading-cards');
+  expect(env.loading.innerHTML).not.toContain('sp-loading-day');
   expect(env.context.loadShopifyOrders()).toBe(first);
   release([]); await first;
   expect(env.api).toHaveBeenCalledTimes(1);

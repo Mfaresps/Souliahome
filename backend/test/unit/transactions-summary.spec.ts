@@ -1,4 +1,5 @@
 import { TransactionsService } from '../../src/transactions/transactions.service';
+import { invalidateReadCaches } from '../../src/shared/read-cache.util';
 
 function makeService(rows: Record<string, any>[] = [], total = rows.length) {
   const query = {
@@ -16,6 +17,42 @@ function makeService(rows: Record<string, any>[] = [], total = rows.length) {
 }
 
 describe('Transaction summary reads', () => {
+  beforeEach(() => invalidateReadCaches());
+
+  it('keeps paginated snapshots stable across live inserts and archives', async () => {
+    const rows = Array.from({ length: 205 }, (_, i) => ({ _id: String(i), editHistory: i === 0 ? [{}] : [] }));
+    const { service, model, query } = makeService(rows);
+    const first = await service.findSummaryPage({ limit: 200, snapshot: 'new' }, true);
+    expect(first.rows).toHaveLength(200);
+    expect(first).toMatchObject({ total: 205, page: 1 });
+    expect(first.rows[0]).toEqual({ _id: '0', hasEditHistory: true });
+    expect(first.snapshot).toBeTruthy();
+    expect(query.skip).not.toHaveBeenCalled();
+    expect(model.countDocuments).not.toHaveBeenCalled();
+    // A write invalidates new reads, but cannot shift an already-started snapshot.
+    invalidateReadCaches();
+    query.exec.mockResolvedValue([{ _id: 'new' }, ...rows.slice(2)]);
+    const next = await service.findSummaryPage({ page: 2, limit: 200, snapshot: first.snapshot }, true);
+    expect(next.rows.map(row => row._id)).toEqual(['200', '201', '202', '203', '204']);
+    expect(next.total).toBe(205);
+    expect(model.find).toHaveBeenCalledTimes(1);
+    const fresh = await service.findSummaryPage({ limit: 200, snapshot: 'new' }, true);
+    expect(fresh.snapshot).not.toBe(first.snapshot);
+    expect(fresh.total).toBe(204);
+    expect(fresh.rows[0]._id).toBe('new');
+  });
+
+  it('shares concurrent snapshots and rejects tokens for other permissions or filters', async () => {
+    const { service, model } = makeService([{ _id: 'one' }]);
+    const [first, shared] = await Promise.all([
+      service.findSummaryPage({ snapshot: 'new' }, true), service.findSummaryPage({ snapshot: 'new' }, true),
+    ]);
+    expect(shared.snapshot).toBe(first.snapshot);
+    expect(model.find).toHaveBeenCalledTimes(1);
+    await expect(service.findSummaryPage({ snapshot: first.snapshot }, false)).rejects.toThrow('snapshot expired');
+    await expect(service.findSummaryPage({ snapshot: first.snapshot, search: 'different' }, true)).rejects.toThrow('snapshot expired');
+    await expect(service.findSummaryPage({ snapshot: 'missing' }, true)).rejects.toThrow('snapshot expired');
+  });
   it('applies purchase visibility before skip and excludes AWB from the projection', async () => {
     const { service, model, query } = makeService([{ _id: 'one' }], 301);
     const result = await service.findSummaryPage({ page: 2, limit: 200, sort: 'oldest' }, false);

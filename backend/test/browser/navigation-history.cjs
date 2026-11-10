@@ -205,7 +205,7 @@ const profiles = buildClientProfiles(txs, []);
       window.__originalSummaryRead = loadTransactionSummaries;
       loadTransactionSummaries = () => new Promise(resolve => { window.__finishOldRoute = resolve; });
       _transactionSummariesComplete = false;
-      navigateTo('products'); navigateTo('clients');
+      navigateTo('reports'); navigateTo('clients');
     });
     await page.waitForFunction(() => currentPage === 'clients' && location.hash === '#clients');
     await page.evaluate(txs => { window.__finishOldRoute(txs); loadTransactionSummaries = window.__originalSummaryRead; _transactionSummariesComplete = true; }, txs);

@@ -34,13 +34,16 @@ const routes = [
       }, productsOnly);
       await page.setRequestInterception(true);
       let expensesRequested = false;
-      const routeReads = { '/api/shopify/orders': 0, '/api/shopify/orders/summary-page': 0,
+      const routeReads = { '/api/transactions/startup-overview': 0, '/api/shopify/orders': 0, '/api/shopify/orders/summary-page': 0,
         '/api/transactions/pickup-orders': 0, '/api/transactions/pickup-orders/workspace': 0,
         '/api/transactions/movements-page': 0, '/api/transactions/summary-page': 0 };
       page.on('request', request => {
         const pathname = new URL(request.url()).pathname;
         if (!pathname.startsWith('/api/')) return request.continue();
         if (pathname in routeReads) routeReads[pathname]++;
+        // A slow overview must not hold these independently paged workspaces.
+        if (pathname === '/api/transactions/startup-overview'
+            && ['movements', 'pickup-orders', 'shopify-orders'].includes(expectedPage)) return;
         if (pathname === '/api/test-stall') return;
         if (pathname === '/api/test-unavailable') return request.respond({
           status: 502, contentType: 'application/json',
@@ -127,8 +130,12 @@ const routes = [
         assert.equal(routeReads['/api/transactions/summary-page'], 0,
           'Shopify route must not load transaction history');
       }
-      if (expectedPage === 'pickup-orders') assert.equal(routeReads['/api/transactions/pickup-orders/workspace'], 1,
-        'Pick-up route must reuse its startup read');
+      if (expectedPage === 'pickup-orders') {
+        assert.equal(routeReads['/api/transactions/pickup-orders/workspace'], 1,
+          'Pick-up route must reuse its startup read');
+        assert.equal(routeReads['/api/transactions/summary-page'], 0,
+          'Pick-up must not download transaction history before opening');
+      }
       if (expectedPage === 'movements') {
         assert.equal(routeReads['/api/transactions/movements-page'], 1, 'Movements must request one page');
         assert.equal(routeReads['/api/transactions/summary-page'], 0, 'Movements must not load all summary pages');
