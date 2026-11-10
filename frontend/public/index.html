@@ -1434,13 +1434,15 @@ body.dark-mode .pm-desc-lang-btn.is-on{color:var(--bg)}
 .pm-sel-panel{position:fixed;z-index:1400;background:var(--bg);border:1px solid var(--border);
   border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
   padding:5px;opacity:0;transform:scale(.97) translateY(-4px);pointer-events:none;
-  transition:opacity .16s ease,transform .16s ease;display:flex;flex-direction:column;min-width:0}
+  transition:opacity .16s ease,transform .16s ease;display:flex;flex-direction:column;min-width:0;
+  box-sizing:border-box;max-width:calc(100vw - 16px);overflow:hidden}
 .pm-sel-panel.show{opacity:1;transform:none;pointer-events:auto}
 body.dark-mode .pm-sel-panel{background:var(--surface);box-shadow:0 12px 40px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.25)}
 .pm-sel-search{flex-shrink:0;margin:1px 1px 5px;padding:6px 9px;font-family:inherit;font-size:.78rem;
-  color:var(--text);background:var(--bg-alt);border:1px solid var(--border);border-radius:7px;outline:none}
+  color:var(--text);background:var(--bg-alt);border:1px solid var(--border);border-radius:7px;outline:none;
+  box-sizing:border-box;min-width:0;max-width:calc(100% - 2px)}
 .pm-sel-search:focus{border-color:var(--primary)}
-.pm-sel-list{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.pm-sel-list{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;min-height:0;min-width:0;max-width:100%;box-sizing:border-box}
 .pm-sel-list::-webkit-scrollbar{width:5px}
 .pm-sel-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 /* قاعدة واحدة للخيار (flex يخدم الحالتين: بأيقونة وبدونها) — لا تُضَف قاعدة
@@ -1448,12 +1450,12 @@ body.dark-mode .pm-sel-panel{background:var(--surface);box-shadow:0 12px 40px rg
 .pm-sel-opt{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;
   padding:7px 10px;border:0;background:none;font-family:inherit;font-size:.8rem;
   color:var(--text);text-align:start;border-radius:7px;cursor:pointer;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  min-width:0;max-width:100%;flex-shrink:0;white-space:normal;overflow-wrap:anywhere;overflow:hidden;text-overflow:clip}
 .pm-sel-opt:hover,.pm-sel-opt.is-active{background:var(--primary-pale)}
 .pm-sel-opt.is-selected{color:var(--primary);font-weight:600}
 .pm-sel-opt.is-placeholder{color:var(--muted)}
 .pm-sel-opt:disabled{opacity:.45;cursor:not-allowed}
-.pm-sel-optlbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-sel-optlbl{flex:1;min-width:0;overflow:hidden;text-overflow:clip;white-space:normal;overflow-wrap:anywhere}
 .pm-sel-empty{padding:10px;font-size:.76rem;color:var(--muted);text-align:center}
 /* أيقونة الخامة: تُرسم بـ currentColor فترث لون النص والوضع الليلي وحالة الاختيار تلقائياً. */
 .pm-mat-ic{width:16px;height:16px;flex-shrink:0;opacity:.75}
@@ -2434,6 +2436,7 @@ body.dark-mode .rv-tag.is-cold{background:rgba(208,59,59,.2);color:#f0a5a5}
 .search-wrap > svg{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:15px;height:15px}
 .search-wrap button svg{position:static;transform:none;pointer-events:auto}
 .search-wrap input{padding-right:36px;width:100%}
+#global-search::-webkit-search-cancel-button,#global-search::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
 .filter-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px}
 .search-input{max-width:280px;position:relative}
 .search-input input{padding-right:34px}
@@ -11522,6 +11525,7 @@ input[type="date"].date-filter-icon.sdp-open{outline:none;border-color:var(--pri
    ═══════════════════════════════════════════════════════════ */
 .sdp-panel{position:fixed;z-index:9999;width:268px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-lg);padding:12px;font-family:var(--font-app);direction:ltr;text-align:left;opacity:0;transform:translateY(-4px);transition:opacity var(--motion-fast),transform var(--motion-fast);pointer-events:none}
 .sdp-panel.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.sdp-panel[popover]{inset:auto;margin:0;box-sizing:border-box;color:var(--text)}
 .sdp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .sdp-title{font-size:.86rem;font-weight:600;color:var(--text);letter-spacing:var(--ls-latin);white-space:nowrap}
 .sdp-nav{display:flex;gap:4px}
@@ -12518,20 +12522,19 @@ input.is-invalid,select.is-invalid,textarea.is-invalid{
   border-color:#ef4444 !important;
   box-shadow:0 0 0 3px rgba(239,68,68,.12) !important;
   background:#fef2f2 !important;
-  animation:fieldShake .35s cubic-bezier(.36,.07,.19,.97) both, fieldGlow 1.4s ease-out;
 }
 input.is-valid,select.is-valid,textarea.is-valid{
   border-color:#10b981 !important;
   box-shadow:0 0 0 3px rgba(16,185,129,.1) !important;
 }
 .field-error-msg{
-  display:inline-flex;align-items:center;gap:4px;
+  display:none;align-items:center;gap:4px;
   margin-top:4px;font-size:.72rem;font-weight:600;color:#dc2626;
   opacity:0;transform:translateY(-2px);
   transition:opacity .2s,transform .2s;
   pointer-events:none;
 }
-.field-error-msg.show{opacity:1;transform:translateY(0)}
+.field-error-msg.show{display:inline-flex;opacity:1;transform:translateY(0)}
 .field-error-msg svg{width:12px;height:12px;flex-shrink:0}
 .field-success-icon{
   position:absolute;top:50%;left:10px;transform:translateY(-50%);
@@ -12541,20 +12544,6 @@ input.is-valid,select.is-valid,textarea.is-valid{
 [dir="rtl"] .field-success-icon,html[dir="rtl"] .field-success-icon{left:auto;right:10px}
 .field-wrap.has-success .field-success-icon{opacity:1}
 .field-wrap.has-success input,.field-wrap.has-success select,.field-wrap.has-success textarea{padding-inline-start:34px}
-@keyframes fieldShake{
-  10%,90%{transform:translateX(-1px)}
-  20%,80%{transform:translateX(2px)}
-  30%,50%,70%{transform:translateX(-3px)}
-  40%,60%{transform:translateX(3px)}
-}
-@keyframes fieldGlow{
-  0%{box-shadow:0 0 0 6px rgba(239,68,68,.22)}
-  60%{box-shadow:0 0 0 4px rgba(239,68,68,.14)}
-  100%{box-shadow:0 0 0 3px rgba(239,68,68,.12)}
-}
-@media(prefers-reduced-motion:reduce){
-  input.is-invalid,select.is-invalid,textarea.is-invalid{animation:none}
-}
 @media(max-width:480px){
   .field-error-msg{font-size:.68rem}
 }
@@ -13932,12 +13921,6 @@ body.dark-mode .pu-col-ready .pu-ref-hero{color:#fde68a;background:linear-gradie
 /* card drop-in animation */
 @keyframes pu-card-drop-in{0%{transform:translateY(-18px) scale(.92);opacity:0}60%{transform:translateY(2px) scale(1.02);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
 .pu-group.pu-landing{animation:pu-card-drop-in .5s cubic-bezier(.34,1.56,.64,1) both}
-/* First paint of the board: cards ease up in sequence instead of snapping in all at once.
-   Applied only on the initial load (see _puStaggerIn) — re-renders fire on every keystroke,
-   tick and drop, where re-animating would read as flicker. --pu-i is the per-card index. */
-@keyframes pu-stagger-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.pu-stagger-in{animation:pu-stagger-in .34s cubic-bezier(.22,.9,.32,1) both;animation-delay:calc(var(--pu-i,0) * 45ms)}
-@media (prefers-reduced-motion:reduce){.pu-stagger-in{animation:none}}
 /* quick summary tooltip */
 .pu-quick-tip{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:9px 12px;font-size:.76rem;line-height:1.55;color:var(--text);pointer-events:none;max-width:280px;opacity:0;transform:translateY(4px);transition:opacity .14s,transform .14s}
 .pu-quick-tip.show{opacity:1;transform:translateY(0)}
@@ -16808,7 +16791,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 .mov-compact-menu .dd-item{white-space:normal}
 
 </style>
-<link rel="stylesheet" href="/navigation-shell.css?v=20261110-route-back">
+<link rel="stylesheet" href="/navigation-shell.css?v=20261110-service-navigation">
 <link rel="stylesheet" href="/employee-home.css?v=20261028-staff-presence">
 <link rel="stylesheet" href="/admin-team-home.css?v=20261109-compact2">
 <link rel="stylesheet" href="/sales-overview.css?v=20261109-navigation-freshness">
@@ -16983,7 +16966,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <div class="header-search">
 <div class="search-wrap">
   <svg class="search-icon-btn" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
-  <input type="text" id="global-search" placeholder="بحث: صنف، عميل، مرجع، مورد…" data-i18n-placeholder="globalSearchPlaceholder" data-i18n-aria-label="globalSearchAria" oninput="debouncedGlobalSearch(this.value);toggleSearchClear(this.value)" onfocus="if(!this.value) renderRecentSearches();else handleGlobalSearch(this.value)" onkeydown="handleSearchKeydown(event)" autocomplete="off" aria-label="بحث شامل" role="combobox" aria-autocomplete="list" aria-controls="search-dropdown" aria-expanded="false">
+  <input type="search" id="global-search" placeholder="بحث: صنف، عميل، مرجع، مورد…" data-i18n-placeholder="globalSearchPlaceholder" data-i18n-aria-label="globalSearchAria" oninput="debouncedGlobalSearch(this.value);toggleSearchClear(this.value)" onfocus="if(!this.value) renderRecentSearches();else handleGlobalSearch(this.value)" onkeydown="handleSearchKeydown(event)" autocomplete="off" aria-label="بحث شامل" role="combobox" aria-autocomplete="list" aria-controls="search-dropdown" aria-expanded="false">
   <button class="search-clear" id="search-clear-btn" onclick="clearGlobalSearch()" title="مسح البحث" data-i18n-title="gsClearSearch" tabindex="-1" aria-label="مسح" data-i18n-aria-label="gsClear">
     <svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
   </button>
@@ -18318,7 +18301,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Movements -->
-<div class="page" id="page-movements">
+<div class="page" id="page-movements" data-loading-style="shimmer">
 
 <div class="page-header" id="mov-page-header">
   <h2 class="page-title" data-i18n="movements">سجل المعاملات</h2>
@@ -19760,6 +19743,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div><!-- end cmp-complaints-section -->
 
 </div><!-- end page-complaints -->
+<section class="page" id="page-complaint-detail" aria-label="Complaint file">
+  <article id="complaint-workspace" class="cf-case-page" aria-labelledby="cf-case-title"></article>
+</section>
 
 <!-- Follow-up Order Modal -->
 <div id="fu-modal-overlay" style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
@@ -20575,7 +20561,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 
 <!-- Pick-Up Orders – Split Screen Board -->
-<div class="page" id="page-pickup-orders">
+<div class="page" id="page-pickup-orders" data-loading-style="shimmer">
 
   <!-- Header -->
   <div class="page-header pu-page-header">
@@ -20792,7 +20778,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           ondrop="puBoardDrop(event,'ready')">
         </div>
         <div class="pu-ready-actions">
-          <button type="button" class="bp-request-button" onclick="openBostaPickup(this)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4h12v13H3zM15 9h4l3 4v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span data-i18n="puRequestBostaPickup">طلب استلام من بوسطة</span><span class="bp-ready-count" id="pu-ready-pickup-count" aria-live="polite">0</span></button>
+          <button type="button" class="bp-request-button" onclick="openBostaPickup(this)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4h12v13H3zM15 9h4l3 4v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><span data-i18n="puRequestBostaPickup">طلب استلام</span><span class="bp-ready-count" id="pu-ready-pickup-count" aria-live="polite">0</span></button>
         </div>
       </div>
 
@@ -23885,10 +23871,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/invoice-unit-identities.js?v=20261022-preview-identity"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
 <script src="/cancellations-analytics.js?v=20261030-details"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261103-neutral-surfaces">
-<script src="/after-sales.js?v=20261110-approvals-launcher"></script>
-<link rel="stylesheet" href="/complaint-flow.css?v=20261103-neutral-surfaces">
-<script src="/complaint-flow.js?v=20261029-6"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261110-smooth-request">
+<script src="/after-sales.js?v=20261110-smooth-request"></script>
+<link rel="stylesheet" href="/complaint-flow.css?v=20261110-inline-solution">
+<script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261020-1"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
@@ -24028,7 +24014,8 @@ function closeDatePicker() {
   _sdpInput?.classList.remove('sdp-open');
   _sdpPanel = null; _sdpInput = null; _sdpView = null;
   p.classList.remove('show');
-  setTimeout(() => p.remove(), 200);
+  if (p.hasAttribute('popover')) { p.hidePopover(); p.remove(); }
+  else setTimeout(() => p.remove(), 200);
 }
 
 /* The panel skeleton is built ONCE per open; month changes only rewrite
@@ -24131,9 +24118,11 @@ function _sdpPosition() {
 
 function openDatePicker(input) {
   if (window.innerWidth <= 768) return false;   // let the native picker win
+  if (input.disabled) return false;
   if (_sdpInput === input) { closeDatePicker(); return true; }
   // closeAllMenus() also closes any open picker, so this covers both.
   closeAllMenus();
+  if (typeof _pmSelClose === 'function') _pmSelClose();
 
   _sdpInput = input;
   input.classList.add('sdp-open');   // highlight the field while its panel is open
@@ -24142,7 +24131,12 @@ function openDatePicker(input) {
 
   _sdpPanel = document.createElement('div');
   _sdpPanel.className = 'sdp-panel';
-  document.body.appendChild(_sdpPanel);
+  _sdpPanel.setAttribute('role','dialog');
+  _sdpPanel.setAttribute('aria-label','Choose date');
+  const dialogHost = input.closest('dialog[open]');
+  if (dialogHost && typeof _sdpPanel.showPopover === 'function') _sdpPanel.setAttribute('popover','manual');
+  (dialogHost || document.body).appendChild(_sdpPanel);
+  if (_sdpPanel.hasAttribute('popover')) _sdpPanel.showPopover();
   _sdpBuild();      // skeleton once — nodes stay stable across month changes
   _sdpRender();
   // Width animates over .15s; anchor to the final geometry, not the
@@ -24226,7 +24220,7 @@ document.addEventListener('click', e => {
   if (inp && window.innerWidth > 768) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && _sdpPanel) closeDatePicker();
+  if (e.key === 'Escape' && _sdpPanel) { e.preventDefault(); const input=_sdpInput; closeDatePicker(); input?.focus({preventScroll:true}); return; }
   // Keyboard users reach the field by Tab, never by pointerdown — open there too
   if (e.key === 'Enter' || e.key === ' ') {
     const inp = e.target.closest?.('input[type="date"].sdp-input');
@@ -24470,6 +24464,12 @@ function _logBundleDiscAction(action, opts = {}) {
   if (_bundleDiscAuditLog.length > 200) _bundleDiscAuditLog.length = 200;
 }
 let txDirty = false;
+let _txRouteScope = '';
+let _txRouteResetRequested = false;
+let _txRouteScroll = null;
+let _txReferenceFetchedAt = 0;
+let _txReferenceRevision = '';
+let _txReferenceRequest = null;
 let _txSaving = false; // true while confirmTxSave is in progress — suppresses false stock warnings
 let _pendingNavPage = null;
 let txComments = []; // Array of {text, type, employee, timestamp}
@@ -25334,6 +25334,8 @@ const JOB_TEMPLATES = {
 };
 
 const NAV_ICONS = {
+  followups:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  customerComplaints:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM12 7v4m0 3h.01"/></svg>',
   barcodes:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/><path d="M8 8v8m3-8v8m3-8v8m3-8v8"/></svg>',
   dashboard:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/></svg>',
   transaction:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
@@ -25395,6 +25397,7 @@ const NAV_ITEMS = [
   // (see switchMainTab/_doNavigateTo) — hidden so it doesn't get a second
   // sidebar row, but present so hasPerm()/validPages lookups by id resolve.
   {id:'followups',label:'متابعة الطلبات',labelEn:'Order Follow-ups',icon:'',perm:'complaints',hidden:true},
+  {id:'complaint-detail',label:'ملف الشكوى',labelEn:'Complaint file',icon:NAV_ICONS.customerComplaints,perm:'complaints',hidden:true},
 ];
 
 const TRANSLATIONS = {
@@ -30762,7 +30765,7 @@ const TRANSLATIONS = {
   puBulkNoneMatched:{ar:'لم يُعثر على أي طلب مطابق',en:'No matching order found'},
   /* Send-group-to-Bosta flow (puGroupSendToBosta) */
   puGrpBostaEmpty:{ar:'لا توجد طلبات في هذه المجموعة',en:'No orders in this group'},
-  puRequestBostaPickup:{ar:'طلب استلام من بوسطة',en:'Request Bosta pickup'},
+  puRequestBostaPickup:{ar:'طلب استلام',en:'Request pickup'},
   puGrpBostaNotReady:{ar:'{n} طلب ليس في حالة Ready to Ship — لا يمكن الإرسال',en:'{n} order(s) not in Ready to Ship status — cannot send'},
   puGrpBostaAllSent:{ar:'كل الطلبات في هذه المجموعة مرسلة بالفعل لـ Bosta',en:'All orders in this group have already been sent to Bosta'},
   puGrpBostaConfirm:{ar:'إرسال {n} طلب{extra} من المجموعة {g} إلى Bosta للشحن؟',en:'Send {n} order(s){extra} from group {g} to Bosta for shipping?'},
@@ -31210,7 +31213,8 @@ function renderEmptyState(opts) {
 function refreshComplaintsSectionTitle() {
   const titleEl = qs('#complaints-section-title');
   if (!titleEl) return;
-  if (settings && settings.complaintsTitle) titleEl.textContent = settings.complaintsTitle;
+  if (['complaints', 'followups'].includes(currentPage)) titleEl.textContent = t(currentPage === 'followups' ? 'csTabFollowups' : 'csTabComplaints');
+  else if (settings && settings.complaintsTitle) titleEl.textContent = settings.complaintsTitle;
   else titleEl.textContent = t('complaintsPageTitle');
 }
 
@@ -31851,6 +31855,9 @@ const _NAV_FALLBACK = {
 /* اسم الصفحة كما يراه المستخدم في القائمة الجانبية — لا نخترع أسماء جديدة، فالزر
    يجب أن يسمّي المكان بنفس الاسم الذي يعرفه المستخدم منه. */
 function _navPageLabel(page) {
+  if (page === 'complaint-detail') return qs('#cf-case-title')?.textContent || (currentLang === 'en' ? 'Complaint file' : 'ملف الشكوى');
+  if (page === 'complaints') return t('csTabComplaints');
+  if (page === 'followups') return t('csTabFollowups');
   const nav = NAV_ITEMS.find(n => n.id === page);
   if (nav) return (currentLang === 'en' && nav.labelEn) ? nav.labelEn : nav.label;
   const k = { 'invoice-view': 'ivInvoice', 'supplier-profile': 'suppliers', 'category-profile': 'categories', 'collection-profile': 'categories', followups: 'navFollowUps', userhub: 'profile' }[page];
@@ -31868,6 +31875,7 @@ function _navSnapshot(page, url = location.href) {
   const snap = { page, url, label: _navPageLabel(page), restore: null };
   const parts = new URL(url, location.href).hash.slice(1).split('/');
   const segment = n => { try { return decodeURIComponent(parts[n] || ''); } catch (_) { return ''; } };
+  if (page === 'complaint-detail') { const id=segment(2)||window._complaintViewId; snap.restore=()=>{window._complaintViewId=id;}; }
   const active = qs('#page-' + (page === 'followups' ? 'complaints' : page === 'roles' ? 'users' : page));
   const fields = active ? [...active.querySelectorAll('input[id],select[id]')]
     .filter(el => /search|filter|query|date|sort|period|view-mode|(?:^|[-_])(?:from|to)(?:$|[-_])/i.test(el.id) && el.type !== 'password')
@@ -33301,11 +33309,20 @@ function _fieldValue(el) {
   if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? '1' : '';
   return (el.value == null ? '' : String(el.value)).trim();
 }
+function _fieldValidationMessage(el) {
+  const en = currentLang === 'en';
+  if (!_fieldValue(el)) return en ? 'Required' : 'مطلوب';
+  if (el.type === 'number' && Number(el.value) === 0 && el.dataset.requireNonzero === 'true') return en ? 'Enter a value other than zero' : 'أدخل قيمة غير الصفر';
+  if (el.willValidate && !el.validity.valid) return el.validationMessage || (en ? 'Check this value' : 'راجع قيمة هذا الحقل');
+  return '';
+}
 function _fieldGetMsgEl(el) {
   let msg = el._errorMsgEl;
   if (msg && msg.isConnected) return msg;
   msg = document.createElement('div');
   msg.className = 'field-error-msg';
+  msg.id = `field-validation-${++_fieldGetMsgEl.nextId}`;
+  msg.setAttribute('aria-live', 'polite');
   msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>مطلوب</span>';
   // Insert right after the field (or its wrapper)
   const host = el.closest('.field-wrap') || el;
@@ -33313,23 +33330,23 @@ function _fieldGetMsgEl(el) {
   el._errorMsgEl = msg;
   return msg;
 }
+_fieldGetMsgEl.nextId = 0;
 function markInvalid(el, customMsg) {
   if (!el) return;
   el.classList.remove('is-valid');
-  // Restart shake by removing then re-adding the class on next frame
-  el.classList.remove('is-invalid');
-  void el.offsetWidth;
   el.classList.add('is-invalid');
   el.setAttribute('aria-invalid', 'true');
   const msg = _fieldGetMsgEl(el);
-  if (customMsg) msg.querySelector('span').textContent = customMsg;
+  const message = customMsg || _fieldValidationMessage(el) || (currentLang === 'en' ? 'Check this value' : 'راجع قيمة هذا الحقل');
+  if (msg.querySelector('span').textContent !== message) msg.querySelector('span').textContent = message;
+  const describedBy = new Set((el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean));
+  describedBy.add(msg.id);
+  el.setAttribute('aria-describedby', [...describedBy].join(' '));
   msg.classList.add('show');
 }
 function markValid(el) {
   if (!el) return;
-  el.classList.remove('is-invalid');
-  el.removeAttribute('aria-invalid');
-  if (el._errorMsgEl) el._errorMsgEl.classList.remove('show');
+  clearValidation(el);
   // Only show green check if explicitly opted-in via data-show-success
   if (el.dataset.showSuccess === 'true') el.classList.add('is-valid');
 }
@@ -33337,7 +33354,12 @@ function clearValidation(el) {
   if (!el) return;
   el.classList.remove('is-invalid', 'is-valid');
   el.removeAttribute('aria-invalid');
-  if (el._errorMsgEl) el._errorMsgEl.classList.remove('show');
+  if (el._errorMsgEl) {
+    el._errorMsgEl.classList.remove('show');
+    const describedBy = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== el._errorMsgEl.id);
+    if (describedBy.length) el.setAttribute('aria-describedby', describedBy.join(' '));
+    else el.removeAttribute('aria-describedby');
+  }
 }
 function validateRequired(scopeEl) {
   const scope = scopeEl || document;
@@ -33346,9 +33368,9 @@ function validateRequired(scopeEl) {
   let invalidCount = 0;
   fields.forEach(el => {
     if (el.offsetParent === null && el.type !== 'hidden') return; // skip hidden
-    const v = _fieldValue(el);
-    if (!v || (el.type === 'number' && Number(v) === 0 && el.dataset.requireNonzero === 'true')) {
-      markInvalid(el);
+    const message = _fieldValidationMessage(el);
+    if (message) {
+      markInvalid(el, message);
       invalidCount++;
       if (!firstInvalid) firstInvalid = el;
     } else {
@@ -33361,29 +33383,44 @@ function validateRequired(scopeEl) {
   }
   return { ok: invalidCount === 0, firstInvalid, invalidCount };
 }
-// Global delegated listeners — auto-validate on blur, recover on input/change
-document.addEventListener('blur', (e) => {
+// Required fields stay neutral until a save attempt. Blur only revisits an existing error.
+document.addEventListener('click', (e) => {
+  const button = e.target.closest?.('button,input[type=submit],input[type=image]');
+  if (button?.form && ['submit', 'image'].includes(button.type) && !button.disabled) button.form.dataset.validationAttempted = 'true';
+}, true);
+document.addEventListener('invalid', (e) => {
   const el = e.target;
-  if (!el || !el.matches) return;
-  if (!(el.matches('[required], [data-required="true"]'))) return;
-  const submitValidatedForm = el.closest('form[data-validation-on-submit]');
-  if (submitValidatedForm && !submitValidatedForm.dataset.validationAttempted) return;
-  if (el.disabled) return;
-  if (!_fieldValue(el)) markInvalid(el);
+  if (el.form?.dataset.validationAttempted && !el.disabled) markInvalid(el, _fieldValidationMessage(el));
+}, true);
+document.addEventListener('reset', (e) => {
+  const form = e.target;
+  queueMicrotask(() => {
+    if (e.defaultPrevented) return;
+    delete form.dataset.validationAttempted;
+    form.querySelectorAll('input,select,textarea').forEach(clearValidation);
+  });
+}, true);
+function _fieldUpdateShownError(el) {
+  if (!el?.classList?.contains('is-invalid')) return;
+  if (el.disabled || !el.required && el.dataset.required !== 'true' && !_fieldValue(el)) { clearValidation(el); return; }
+  const message = _fieldValidationMessage(el);
+  if (message) markInvalid(el, message);
+  else markValid(el);
+}
+document.addEventListener('blur', (e) => {
+  _fieldUpdateShownError(e.target);
 }, true);
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (!el || !el.classList) return;
   if (el.closest('#page-transaction') && typeof autosaveDraftDebounced === 'function') autosaveDraftDebounced();
-  if (!el.classList.contains('is-invalid')) return;
-  if (_fieldValue(el)) markValid(el);
+  _fieldUpdateShownError(el);
 }, true);
 document.addEventListener('change', (e) => {
   const el = e.target;
   if (!el || !el.classList) return;
   if (el.closest('#page-transaction') && typeof autosaveDraftDebounced === 'function') autosaveDraftDebounced();
-  if (!el.classList.contains('is-invalid')) return;
-  if (_fieldValue(el)) markValid(el);
+  _fieldUpdateShownError(el);
 }, true);
 // Initial draft load from server on startup
 window.addEventListener('DOMContentLoaded', () => { try { initDrafts(); } catch(_) {} });
@@ -34837,21 +34874,30 @@ function connectSocket() {
   const __socketUrl = window.__ENV__?.API_BASE_URL || location.origin;
   socket = io(__socketUrl, { auth: { token, device: (typeof __myDevice !== 'undefined' ? __myDevice : null) } });
   window.SouliaClients?.bindSocket(socket);
+  const refreshShopifyFromEvent = () => {
+    // These workspaces use their own feeds. Keep the saved Orders page and mark
+    // it stale rather than replacing it with the full legacy list while away.
+    if (_spServerEnabled && ['movements', 'pickup-orders'].includes(currentPage)) {
+      _spScheduleLiveOrderRefresh();
+      return Promise.resolve();
+    }
+    return loadShopifyOrders();
+  };
   socket.on('shopify:shipping-choice-changed', _spApplyShippingChoice);
   socket.on('connect', () => {
-    if (_shopifyOrders.length || currentAuditData) loadShopifyOrders();
+    if (_shopifyOrders.length || currentAuditData) refreshShopifyFromEvent();
   });
-  socket.on('shopify:deposit-changed', () => { loadShopifyOrders(); });
-  socket.on('shopify:order-cancel-conflict', () => { loadShopifyOrders(); });
-  socket.on('shopify:phone-changed', () => { loadShopifyOrders(); });
-  socket.on('shopify:client-changed', () => { loadShopifyOrders(); });
+  socket.on('shopify:deposit-changed', refreshShopifyFromEvent);
+  socket.on('shopify:order-cancel-conflict', refreshShopifyFromEvent);
+  socket.on('shopify:phone-changed', refreshShopifyFromEvent);
+  socket.on('shopify:client-changed', refreshShopifyFromEvent);
   socket.on('shopify:edit-changed', async () => {
-    await loadShopifyOrders();
+    await refreshShopifyFromEvent();
     buildSidebar();
     if (currentPage === 'approvals') renderApprovals();
     if (currentPage === 'invoice-view') renderInvoiceViewPage();
   });
-  socket.on('shopify:items-changed', () => { loadShopifyOrders(); });
+  socket.on('shopify:items-changed', refreshShopifyFromEvent);
   socket.on('shopify:order-created', (payload) => {
     if (payload?.id) _spScheduleLiveOrderRefresh(String(payload.id));
   });
@@ -36487,24 +36533,32 @@ function buildSidebar() {
       const word = draftCount === 1 ? 'مسودة' : (draftCount === 2 ? 'مسودتان' : 'مسودات');
       badge = ` <span class="nav-badge" title="لديك ${draftCount} ${word} محفوظة — اضغط لفتح صفحة المعاملات ثم زر المسودات">+${draftCount}</span>`;
     }
-    // "خدمة العملاء" opens straight to متابعة الطلبات (the busier tab) rather
-    // than the شكاوى tab — targets the 'followups' alias id (see NAV_ITEMS /
-    // _doNavigateTo), which renders the same #page-complaints div/sidebar row.
+    // Customer Service is a disclosure; its children own the destination routes.
     const _navTargetId = n.id === 'complaints' ? 'followups' : n.id;
-    const _navActive = currentPage === n.id || currentPage === _navTargetId;
+    const _navActive = currentPage === n.id || currentPage === _navTargetId || n.id === 'complaints' && currentPage === 'complaint-detail';
+    if (n.id === 'complaints') {
+      const open = _customerServiceNavOpen;
+      html += `<a class="nav-item nav-parent${_navActive?' active':''}${open?' is-open':''}" data-page="complaints" href="#complaints" role="button" aria-controls="nav-sub-complaints" aria-expanded="${open}" onclick="handleCustomerServiceNavClick(event)" onkeydown="if(event.key===' '){event.preventDefault();this.click()}"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span><svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></a>`;
+      html += `<div class="nav-sub${open?' is-open':''}" id="nav-sub-complaints" ${open?'':'hidden'}>`+[
+        ['followups','csTabFollowups',NAV_ICONS.followups,fuUnseenCount],
+        ['complaints','csTabComplaints',NAV_ICONS.customerComplaints,pendingCmpCount],
+      ].map(([page,label,icon,count])=>{const active=currentPage===page||page==='complaints'&&currentPage==='complaint-detail';return `<a class="nav-sub-item${active?' active':''}" data-cs-sub="${page}" href="#${page}" ${active?'aria-current="page"':''} onclick="handleNavClick(event,'${page}')"><span class="nav-sub-icon" aria-hidden="true">${icon}</span><span>${esc(t(label))}</span>${count>0?`<span class="nav-sub-badge">${count}</span>`:''}</a>`;}).join('')+'</div>';
+      return;
+    }
     // التقارير: صف أب يفتح قائمة فرعية بتبويباته، كل تبويب برابط مستقل.
     // Only the tabs this user may actually open are listed — an unreachable row
     // in the sidebar reads as a missing feature rather than a missing permission.
     if (n.id === 'reports') {
       const subTabs = REPORT_TABS.filter(t => canViewReportTab(t.id));
       if (subTabs.length) {
-        const open = _reportsNavOpen || _navActive;
-        html += `<a class="nav-item nav-parent${_navActive ? ' active' : ''}${open ? ' is-open' : ''}" data-page="${n.id}" href="#${_pageSlug(n.id)}" onclick="handleReportsNavClick(event)"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span><svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></a>`;
-        html += `<div class="nav-sub${open ? ' is-open' : ''}" id="nav-sub-reports">`
+        const open = _reportsNavOpen;
+        html += `<a class="nav-item nav-parent${_navActive ? ' active' : ''}${open ? ' is-open' : ''}" data-page="${n.id}" href="#${_pageSlug(n.id)}" role="button" aria-controls="nav-sub-reports" aria-expanded="${open}" onclick="handleReportsNavClick(event)" onkeydown="if(event.key===' '){event.preventDefault();this.click()}"><span>${n.icon}</span><span>${esc(navLabel(n))}${badge}</span><svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></a>`;
+        html += `<div class="nav-sub${open ? ' is-open' : ''}" id="nav-sub-reports" ${open?'':'hidden'}>`
           + subTabs.map(t => {
               const sub = t.id === REPORT_TABS[0].id ? 'reports' : 'reports/' + t.id;
               const act = _navActive && activeReportTab === t.id;
-              return `<a class="nav-sub-item${act ? ' active' : ''}" data-rep-sub="${t.id}" href="#${sub}" onclick="handleReportSubNavClick(event,'${t.id}')">${esc(reportTabLabel(t.id))}</a>`;
+              const icon = qs(`#page-reports [data-rep-tab="${t.id}"] svg`)?.outerHTML || NAV_ICONS.reports;
+              return `<a class="nav-sub-item${act ? ' active' : ''}" data-rep-sub="${t.id}" href="#${sub}" onclick="handleReportSubNavClick(event,'${t.id}')"><span class="nav-sub-icon" aria-hidden="true">${icon}</span><span>${esc(reportTabLabel(t.id))}</span></a>`;
             }).join('')
           + `</div>`;
         return;
@@ -36527,29 +36581,37 @@ function handleNavClick(e, page) {
   }
 }
 
-/* ── التقارير: صف أب + قائمة فرعية ──────────────────────────────────────────
-   ⚠ The parent row still NAVIGATES; it is not a pure disclosure toggle. A row
-   labelled التقارير that only expands a list is a dead end for the user who
-   simply wants the reports page — so the click opens the page AND expands. The
-   submenu is then collapsed only by leaving the page or by clicking the row
-   again while already on it. */
+/* Parent rows disclose choices; only a child selection changes the route. */
 let _reportsNavOpen = false;
+let _customerServiceNavOpen = false;
+function _syncSidebarGroup(id, open) {
+  const parent = qs(`#sidebar .nav-parent[data-page="${id}"]`);
+  parent?.classList.toggle('is-open', open);
+  parent?.setAttribute('aria-expanded', String(open));
+  const submenu = qs('#nav-sub-' + id);
+  submenu?.classList.toggle('is-open', open);
+  if (submenu) submenu.hidden = !open;
+  qsa('#nav-sub-complaints [data-cs-sub]').forEach(row => {
+    const active = row.dataset.csSub === currentPage || row.dataset.csSub === 'complaints' && currentPage === 'complaint-detail';
+    row.classList.toggle('active', active);
+    if (active) row.setAttribute('aria-current', 'page'); else row.removeAttribute('aria-current');
+  });
+}
+function handleCustomerServiceNavClick(e) {
+  if (e.ctrlKey || e.metaKey || e.button === 1) return;
+  e.preventDefault();
+  if (!hasPerm('complaints')) return;
+  if (window.innerWidth > 768 && document.body.classList.contains('sidebar-collapsed')) toggleSidebar();
+  _customerServiceNavOpen = !_customerServiceNavOpen;
+  _syncSidebarGroup('complaints', _customerServiceNavOpen);
+}
 function handleReportsNavClick(e) {
   if (e.ctrlKey || e.metaKey || e.button === 1) return; // let the browser open a new tab
   e.preventDefault();
   if (window.innerWidth > 768 && document.body.classList.contains('sidebar-collapsed')) toggleSidebar();
-  if (currentPage === 'reports') {
-    // Already here — the click can only mean "collapse/expand the list".
-    _reportsNavOpen = !_reportsNavOpen;
-    const parent = qs('#sidebar .nav-parent[data-page="reports"]');
-    const sub = qs('#nav-sub-reports');
-    parent?.classList.toggle('is-open', _reportsNavOpen);
-    sub?.classList.toggle('is-open', _reportsNavOpen);
-    return;
-  }
-  _reportsNavOpen = true;
-  navigateTo('reports');
-  closeSidebar();
+  if (!hasPerm('reports') || !REPORT_TABS.some(tab => canViewReportTab(tab.id))) return;
+  _reportsNavOpen = !_reportsNavOpen;
+  _syncSidebarGroup('reports', _reportsNavOpen);
 }
 function handleReportSubNavClick(e, tab) {
   if (e.ctrlKey || e.metaKey || e.button === 1) return;
@@ -36603,9 +36665,18 @@ function setupMobileNavFab() {
   const ICON_DASHBOARD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
   if (hasPerm('complaints')) {
     if (iconSlot) iconSlot.innerHTML = ICON_COMPLAINTS;
-    if (labelSlot) labelSlot.textContent = 'خدمة العملاء';
-    btn.setAttribute('aria-label', 'خدمة العملاء');
-    btn.onclick = () => navigateTo('followups');
+    if (labelSlot) labelSlot.textContent = currentLang === 'en' ? 'Customer Service' : 'خدمة العملاء';
+    btn.setAttribute('aria-label', currentLang === 'en' ? 'Customer Service' : 'خدمة العملاء');
+    btn.onclick = () => {
+      if (!hasPerm('complaints')) return;
+      _customerServiceNavOpen = true;
+      buildSidebar();
+      qs('#sidebar').classList.add('open');
+      qs('#sidebar-overlay').style.display = 'block';
+      _syncSidebarGroup('complaints', true);
+      if (typeof syncSidebarToggle === 'function') syncSidebarToggle();
+      qs('#nav-sub-complaints a')?.focus();
+    };
   } else {
     if (iconSlot) iconSlot.innerHTML = ICON_DASHBOARD;
     if (labelSlot) labelSlot.textContent = 'إحصائيات';
@@ -39244,7 +39315,7 @@ const _SLUG_TO_PAGE_ID = (() => {
   return m;
 })();
 /** Internal page id → the slug that should appear in the URL. */
-function _pageSlug(page) { return _PAGE_URL_SLUG[page] || page; }
+function _pageSlug(page) { return page === 'complaint-detail' && window._complaintViewId ? 'complaints/view/' + encodeURIComponent(window._complaintViewId) : _PAGE_URL_SLUG[page] || page; }
 /** Slug from the URL → internal page id (accepts both current and legacy slugs). */
 function _pageIdFromSlug(slug) { return slug === 'supplier-labels' ? 'barcodes' : _SLUG_TO_PAGE_ID[slug] || slug; }
 function _canonicalWarehouseHash(hash) {
@@ -39273,7 +39344,8 @@ window.SouliaNavigation?.install({
     if (!parts[0] && ['sale','purchase','return','tx'].some(key => parsed.searchParams.get(key))) page = 'movements';
     if (page === 'movements' && parts[1] === 'orders' && parts[2] === 'view') page = 'invoice-view';
     if (parts[0] === 'complaints' && parts[1] === 'fu') page = 'followups';
-    return { page, detail: page === 'invoice-view' || page.endsWith('-profile') || page === 'clients' && parts[1] === 'profile'
+    if (parts[0] === 'complaints' && parts[1] === 'view') page = 'complaint-detail';
+    return { page, detail: page === 'invoice-view' || page === 'complaint-detail' || page.endsWith('-profile') || page === 'clients' && parts[1] === 'profile'
       || parts[0] === 'complaints' && (parts[1] === 'view' || parts[2] === 'view') };
   },
   snapshot: _navSnapshot,
@@ -39356,11 +39428,13 @@ function navigateTo(page, updateHash = true) {
   }
   if (!_requirePageAccess(page)) return;
   _navCancelPending(page);
-  const startupRequests = (_startupPageDependencies[page] || [])
+  const resumeTransaction = page === 'transaction' && !pendingMovementReturn && _canResumeTransactionPage();
+  const needsTransactionIndex = _transactionDependentPages.has(page) && !resumeTransaction;
+  const startupRequests = (resumeTransaction ? [] : _startupPageDependencies[page] || [])
     .map(index => window._startupResourceReady?.[index]).filter(Boolean);
   startupRequests.forEach(request => request.start?.());
   // Load independent route prerequisites together, including while its code loads.
-  const summaryRequest = _transactionDependentPages.has(page) && !_transactionSummariesComplete && !loadFailed('transactions')
+  const summaryRequest = needsTransactionIndex && !_transactionSummariesComplete && !loadFailed('transactions')
     ? loadTransactionSummaries({ forceFull: true }) : null;
   summaryRequest?.catch(() => {});
   if (window.__SOULIA_SPLIT_SHOPIFY__ && !window.__SOULIA_SHOPIFY_LOADED__
@@ -39382,7 +39456,7 @@ function navigateTo(page, updateHash = true) {
   }
   _pendingShopifyRoute = null;
   if (page !== 'settings') _pendingLazySettings = null;
-  if (_transactionDependentPages.has(page) && !_transactionSummariesComplete && !loadFailed('transactions')) {
+  if (needsTransactionIndex && !_transactionSummariesComplete && !loadFailed('transactions')) {
     if (_pendingTransactionRoute?.page === page) return;
     const intent = { page, updateHash, token: localStorage.getItem('token') };
     _pendingTransactionRoute = intent;
@@ -39446,6 +39520,7 @@ function navigateTo(page, updateHash = true) {
 }
 function _doNavigateTo(page, updateHash = true) {
   if (!_requirePageAccess(page)) return;
+  if (currentPage === 'complaint-detail' && page !== currentPage) window.ComplaintFlow?.leave();
   window.SouliaLoading?.clearRoute();
   _navCancelPending(page);
   // A .fx-sort-menu left open is portaled onto <body> while open (see _positionFxMenu) —
@@ -39453,8 +39528,12 @@ function _doNavigateTo(page, updateHash = true) {
   try { _closeAllFxSortMenus(); } catch(_) {}
   // Tear down pull-to-refresh when leaving Movements
   if (currentPage === 'movements' && page !== 'movements') {
+    _saveMovementsRouteScroll();
     try { window.movementsPTR?.detach(); } catch(_) {}
   }
+  if (currentPage === 'transaction' && page !== 'transaction' && _canResumeTransactionPage())
+    _txRouteScroll = { scope: _txRouteScope, x: scrollX, y: scrollY };
+  if (currentPage === 'pickup-orders' && page !== 'pickup-orders') _savePickupRouteScroll();
   // مغادرة اللوحة بعد الترحيب تصفّر العلم — رجوع لاحق في نفس الجلسة يعرض
   // العنوان العادي، لا الترحيب تاني (مرة واحدة لكل دخول، لا لكل جلسة).
   if (currentPage === 'dashboard' && page !== 'dashboard') _dashWelcomeActive = false;
@@ -39470,17 +39549,15 @@ function _doNavigateTo(page, updateHash = true) {
   const el = qs('#page-' + _domPage);
   if (el) el.classList.add('active');
   if (_domPage === 'users') syncUsersWorkspaceTab(page);
-  qsa('#sidebar .nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === _domPage));
+  qsa('#sidebar .nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === (_domPage === 'complaint-detail' ? 'complaints' : _domPage)));
   // مغادرة التقارير تطوي قائمتها الفرعية — قائمة مفتوحة تحت صفحة أخرى تدّعي
   // أنك ما زلت داخلها. The rebuild in onPageEnter re-opens it on the way back.
-  if (page !== 'reports') _reportsNavOpen = false;
-  const _repParent = qs('#sidebar .nav-parent[data-page="reports"]');
-  const _repSub = qs('#nav-sub-reports');
-  const _repOpen = page === 'reports';
-  if (_repParent) _repParent.classList.toggle('is-open', _repOpen);
-  if (_repSub) _repSub.classList.toggle('is-open', _repOpen);
+  _reportsNavOpen = page === 'reports';
+  _customerServiceNavOpen = ['complaints', 'followups', 'complaint-detail'].includes(page);
+  _syncSidebarGroup('reports', _reportsNavOpen);
+  _syncSidebarGroup('complaints', _customerServiceNavOpen);
   try { _syncReportSubnav(); } catch (_) {}
-  updateMobileNav(_domPage);
+  updateMobileNav(_domPage === 'complaint-detail' ? 'complaints' : _domPage);
   const _slug = _pageSlug(page);
   if (updateHash && location.hash !== '#' + _slug) history.pushState(null, '', '#' + _slug);
   // Track requests started by this route. Fast pages never show the delayed bar.
@@ -39707,7 +39784,8 @@ window.allowUnload = allowUnload;
 
 function txDirtyConfirmLeave() {
   qs('#tx-dirty-overlay').style.display = 'none';
-  txDirty = false;
+  // Discard must remain explicit now that ordinary route returns retain the form.
+  resetTx();
   if (_pendingNavPage) { const pending = _pendingNavPage; _pendingNavPage = null; if (pending.onConfirm) pending.onConfirm(); else _doNavigateTo(pending.page, pending.updateHash); }
 }
 function txDirtyCancel() {
@@ -39760,6 +39838,7 @@ function goCreateTransaction(txKind) {
     toast('لا تملك صلاحية «معاملة جديدة»', true);
     return;
   }
+  _txRouteResetRequested = true;
   navigateTo('transaction');
   closeSidebar();
   setTimeout(() => setTxType(txKind), 0);
@@ -39771,7 +39850,18 @@ function onPageEnter(page) {
     case 'transaction': {
       const pmr = pendingMovementReturn;
       pendingMovementReturn = null;
-      initTxPage();
+      if (!pmr && _canResumeTransactionPage()) {
+        _refreshTransactionReferences();
+        const saved = _txRouteScroll;
+        if (saved?.scope === _txRouteScope && !window.SouliaNavigation?.shouldRoutePop())
+          requestAnimationFrame(() => {
+            if (currentPage === 'transaction' && _txRouteScope === saved.scope)
+              window.scrollTo({ left: saved.x, top: saved.y, behavior: 'instant' });
+          });
+      } else {
+        if (pmr) _txRouteResetRequested = true;
+        initTxPage();
+      }
       if (pmr) applyReturnRequestPrefill(pmr.txId, pmr.asExchange);
       renderPendingSyncPage(); // offline-queue panel — stays hidden when the queue is empty
       break;
@@ -39788,7 +39878,6 @@ function onPageEnter(page) {
       break;
     }
     case 'movements': {
-      _movServerKey = '';
       if (!_movLegacyFallback) _transactionSummariesComplete = false;
       localStorage.setItem('mov_seen_count', String(_transactionActiveCount ?? transactions.filter(t => !t.cancelled).length));
       const _movSubTab = location.hash.slice(1).split('/')[1] || 'list';
@@ -39796,8 +39885,8 @@ function onPageEnter(page) {
       const _activeTab = _validMovTabs.includes(_movSubTab) ? _movSubTab : 'list';
       switchMovTab(_activeTab, null, true);
       if (_activeTab === 'list') {
-        _setMovNavigationPending(true);
-        renderMovements();
+        if (_movLegacyFallback) renderMovements();
+        else renderMovementsServer({ navigation: true });
       }
       buildSidebar();
       try { window.movementsPTR?.attach(); } catch(_) {}
@@ -39855,7 +39944,7 @@ function onPageEnter(page) {
       break;
     case 'expenses': renderExpenses(); break;
     case 'csp': loadCspPage().catch(e => toast(t('errorPrefix',{v:e.message}), true)); break;
-    case 'pickup-orders': loadPickupOrders().catch(e => toast('خطأ: ' + e.message, true)); break;
+    case 'pickup-orders': loadPickupOrders({ navigation: true }).catch(e => toast('خطأ: ' + e.message, true)); break;
     case 'shopify-orders': {
       _initShopifySubnav();
       const _spParts = location.hash.slice(1).split('?')[0].split('/');
@@ -39863,17 +39952,17 @@ function onPageEnter(page) {
       const _spActiveTab = ((_spSubTab === 'perf' || _spSubTab === 'deposits' || _spSubTab === 'deposit-log') && isAdmin()) ? _spSubTab : 'orders';
       _spSubnavTab = _spActiveTab;
       if (_spActiveTab === 'orders' || _spActiveTab === 'deposits') {
-        if (_spActiveTab === 'orders') _setSpNavigationPending(true);
-        loadShopifyOrders();
+        loadShopifyOrders({ navigation: true });
       }
       buildSidebar();
       switchShopifySubnav(_spActiveTab, true);
       break;
     }
+    case 'complaint-detail': window.ComplaintFlow?.enter(); break;
     case 'complaints':
     case 'followups': {
       switchMainTab(page === 'followups' ? 'fu' : 'cmp', true);
-      loadComplaints().catch(e => toast('خطأ: ' + e.message, true));
+      if (page === 'complaints') loadComplaints().catch(e => toast('خطأ: ' + e.message, true));
       /* No _pmEnhanceSelects() pass here: every filter select on this page is owned by
          the .fsel system (initFilterSelects(), called from renderFollowUps() and
          renderComplaints()). This call used to run first — loadComplaints() is async, so
@@ -43107,7 +43196,62 @@ function movementStatusCell(tx) {
 }
 
 /* Transaction Page */
+function _transactionFormScope() {
+  return JSON.stringify([localStorage.getItem('token'), currentUser?._id || '',
+    currentUser?.role || '', [...(currentUser?.perms || [])].sort()]);
+}
+function _canResumeTransactionPage() {
+  return !_txRouteResetRequested && _txRouteScope === _transactionFormScope()
+    && !!qs('#tx-fields')?.childElementCount;
+}
+function _transactionReferenceRevision() {
+  return JSON.stringify([_transactionFormScope(), _apiWriteRevision, _transactionLiveRevision]);
+}
+function _rememberTransactionPageReady() {
+  _txRouteScope = _transactionFormScope();
+  _txRouteScroll = null;
+  _txReferenceFetchedAt = Date.now();
+  _txReferenceRevision = _transactionReferenceRevision();
+}
+function _refreshTransactionReferences() {
+  const scope = _transactionFormScope(), revision = _transactionReferenceRevision();
+  if (_txReferenceRequest?.scope === scope) return _txReferenceRequest.task;
+  if (_txReferenceRevision === revision && Date.now() - _txReferenceFetchedAt < 30000)
+    return Promise.resolve();
+  const paths = ['/products', '/suppliers', '/transactions/inventory'];
+  const task = Promise.allSettled(paths.map(path => api(path, { background: true }))).then(results => {
+    // A late response must never overwrite reference data from a newer save or account.
+    if (scope !== _transactionFormScope() || revision !== _transactionReferenceRevision()) return;
+    let failed = false;
+    results.forEach((result, index) => {
+      if (result.status !== 'fulfilled' || !Array.isArray(result.value)) { failed = true; return; }
+      if (index === 0) products = result.value;
+      else if (index === 1) suppliers = result.value;
+      else { inventoryCache = result.value; _inventoryHasLoaded = true; }
+    });
+    _txReferenceFetchedAt = failed ? 0 : Date.now();
+    _txReferenceRevision = revision;
+    // Future picker/search actions use these arrays. Do not re-render entered
+    // quantities, prices, customer fields or a scanner while someone is typing.
+    if (failed && currentPage === 'transaction') toast(t('loadFailedTitle'), true);
+  }).finally(() => { if (_txReferenceRequest?.task === task) _txReferenceRequest = null; });
+  _txReferenceRequest = { scope, task };
+  return task;
+}
 function initTxPage() {
+  const accountChanged = !!_txRouteScope && _txRouteScope !== _transactionFormScope();
+  if (accountChanged) {
+    // Never unlock an old account's draft using the new account's credentials.
+    activeDraftId = null;
+    purchaseUnlocked = false;
+    _pendingPurchaseOtpId = '';
+    txType = 'مبيعات';
+    qsa('#tx-type-selector .type-btn').forEach(button => button.classList.toggle('active', button.dataset.type === txType));
+    sessionStorage.removeItem('_txPageSnap');
+  }
+  if (accountChanged || _txRouteResetRequested) resetTx();
+  _txRouteResetRequested = false;
+  _txRouteScope = '';
   window.SalesScanner?.reset();
   txItems = []; txDiscount = 0; txDiscountType = 'fixed'; txAppliedCodeId = ''; txAppliedCode = ''; txAppliedCodes = []; txComments = []; txDirty = false; _discSuggestions = []; _dsbDismissed = false; _discRemovedForReapply = {};
 
@@ -43122,6 +43266,7 @@ function initTxPage() {
       qsa('#tx-type-selector .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === txType));
     }
     deserializeTxForm(_savedSnap);
+    _rememberTransactionPageReady();
     return;
   }
 
@@ -43132,6 +43277,7 @@ function initTxPage() {
   const _pwSel = qs('#tx-payment'); if (_pwSel) _pwSel.value = '';
   renderPayMethodBtns();
   setTimeout(_applyDefaultShipCo, 0);
+  _rememberTransactionPageReady();
 }
 
 function setTxType(type, opts) {
@@ -48376,8 +48522,10 @@ function resetTx() {
   // Release draft lock and detach when wiping the form
   if (activeDraftId) _serverReleaseDraftLock(activeDraftId);
   activeDraftId = null;
+  txComments = [];
+  sessionStorage.removeItem('_txPageSnap');
   renderActiveDraftPill();
-  renderTxFields(); renderTxItems(); calcTxSummary();
+  renderTxFields(); renderTxItems(); calcTxSummary(); renderTxComments();
   _refreshDiscBtnLock();
   const _pwR = qs('#pay-method-btns'); if (_pwR) _pwR._userPicked = false;
   const _pwRSel = qs('#tx-payment'); if (_pwRSel) _pwRSel.value = '';
@@ -48387,6 +48535,7 @@ function resetTx() {
     _applyDefaultDepMethod();
     setTimeout(_applyDefaultShipCo, 0);
   }
+  txDirty = false;
 }
 
 /* ============================================================
@@ -52343,10 +52492,31 @@ function _renderMovementsServerKpis(result) {
 let _movLegacyFallback = false;
 let _movServerResponse = null;
 let _movServerKey = '';
+let _movServerQueryKey = '';
+let _movServerFetchedAt = 0;
+let _movServerError = '';
+let _movementsRouteScroll = null;
+const MOV_ROUTE_REUSE_MS = 30000;
 let _movServerRequest = null;
 let _movServerPaintPresentation = '';
 let _movServerPaintDataSignature = '';
 let _movServerVisibleQueryKey = '';
+function _saveMovementsRouteScroll() {
+  const box = qs('#mov-table-wrap .ent-table-scroll');
+  _movementsRouteScroll = { queryKey: _movServerQueryKey, x: scrollX, y: scrollY,
+    left: box?.scrollLeft || 0, top: box?.scrollTop || 0 };
+}
+function _restoreMovementsRouteScroll(queryKey) {
+  const saved = _movementsRouteScroll;
+  // Browser Back has its own historical scroll snapshot and takes precedence.
+  if (!saved || saved.queryKey !== queryKey || window.SouliaNavigation?.shouldRoutePop()) return;
+  requestAnimationFrame(() => {
+    if (currentPage !== 'movements' || _movServerQueryKey !== queryKey) return;
+    const box = qs('#mov-table-wrap .ent-table-scroll');
+    if (box) { box.scrollLeft = saved.left; box.scrollTop = saved.top; }
+    window.scrollTo({ left: saved.x, top: saved.y, behavior: 'instant' });
+  });
+}
 function _setMovNavigationPending(pending) {
   const page = qs('#page-movements');
   if (!page) return;
@@ -52363,14 +52533,6 @@ function _setMovNavigationPending(pending) {
   if (message) message.textContent = pending ? t('loading') : '';
   if (message) message.hidden = !pending;
 }
-/** Cascade Reveal on page entry only — paging, filters and live updates repaint instantly.
- *  Whichever list the view mode shows (table / grid / phone cards) is the one that rises. */
-function _movCascadeReveal() {
-  const list = ['#mov-table tbody', '#mov-grid-list', '#mov-mobile-list']
-    .map(sel => qs(sel)).find(el => el?.getClientRects().length);
-  if (list) souliaCascade(list);
-  souliaCountUp('#mov-kpi-strip', '.mov-kpi-stat-val, .kpi-val');
-}
 function _paintMovementsServerIfChanged(result, state, queryKey) {
   if (currentPage !== 'movements') return;
   // A second caller can reuse the same response (for example a write handler
@@ -52383,7 +52545,9 @@ function _paintMovementsServerIfChanged(result, state, queryKey) {
       && _movServerPaintDataSignature === dataSignature) return;
   _paintMovementsServer(result);
   _movServerPaintPresentation = presentation;
-  _movServerPaintDataSignature = dataSignature;
+  // Row renderers can normalize their transaction objects while painting.
+  // Remember that final state so merely returning does not rebuild every row.
+  _movServerPaintDataSignature = JSON.stringify(result);
   _movServerVisibleQueryKey = queryKey;
 }
 function _movServerState() {
@@ -52399,15 +52563,28 @@ function _movServerState() {
     recentUpdates: Object.fromEntries(_movRecentlyUpdatedIds),
   };
 }
-function renderMovementsServer() {
+function renderMovementsServer({ navigation = false } = {}) {
   const state = _movServerState();
   const fromInput = qs('#mov-from'), toInput = qs('#mov-to');
   if (fromInput) fromInput.value = state.dateFrom;
   if (toInput) toInput.value = state.dateTo;
-  const key = JSON.stringify([localStorage.getItem('token'), _apiWriteRevision, _transactionLiveRevision, state]);
+  const accountToken = localStorage.getItem('token');
+  const scope = [accountToken, currentUser?.role || '', !!currentUser?.perms?.includes('purchase-view')];
+  const revision = [scope, _apiWriteRevision, _transactionLiveRevision];
+  const key = JSON.stringify([...revision, state]);
   const { recentUpdates, ...queryState } = state;
-  const queryKey = JSON.stringify([localStorage.getItem('token'), queryState]);
-  if (_movServerKey === key && _movServerResponse) {
+  const queryKey = JSON.stringify([scope, queryState]);
+  const cachedView = !!_movServerResponse && _movServerQueryKey === queryKey;
+  if (navigation) {
+    _setMovNavigationPending(!cachedView);
+    if (cachedView) {
+      qs('#page-movements')?.classList.remove('mov-nav-error');
+      _paintMovementsServerIfChanged(_movServerResponse, state, queryKey);
+      _restoreMovementsRouteScroll(queryKey);
+    }
+  }
+  if (_movServerKey === key && cachedView && !_movServerError
+      && (!navigation || Date.now() - _movServerFetchedAt < MOV_ROUTE_REUSE_MS)) {
     _paintMovementsServerIfChanged(_movServerResponse, state, queryKey);
     return Promise.resolve(_movServerResponse);
   }
@@ -52418,23 +52595,35 @@ function renderMovementsServer() {
   const timeoutId = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
   const body = JSON.stringify(state);
   const task = _apiRequest('/transactions/movements-page', {
-    method: 'POST', body, signal: controller.signal,
+    method: 'POST', body, signal: controller.signal, background: navigation && cachedView,
   }).then(result => {
     if (!result || !Array.isArray(result.pageRows) || !Number.isFinite(result.total)
         || !Number.isFinite(result.activeCount) || !result.tabCounts || !result.facets
         || !result.kpi || !Array.isArray(result.orderIds))
       throw new TypeError('Invalid Movements page response');
-    if (_movServerRequest?.key !== key || controller.signal.aborted) return null;
-    _movServerKey = key;
+    if (_movServerRequest?.key !== key || controller.signal.aborted
+        || accountToken !== localStorage.getItem('token') || scope[1] !== (currentUser?.role || '')
+        || scope[2] !== !!currentUser?.perms?.includes('purchase-view')) return null;
+    const resolvedState = { ...state, page: result.page };
+    const { recentUpdates: resolvedUpdates, ...resolvedQuery } = resolvedState;
+    const resolvedQueryKey = JSON.stringify([scope, resolvedQuery]);
+    _movServerKey = JSON.stringify([...revision, resolvedState]);
     _movServerResponse = result;
+    _movServerQueryKey = resolvedQueryKey;
+    _movServerFetchedAt = Date.now();
+    _movServerError = '';
     movPage = result.page;
-    const arriving = !!qs('#page-movements.mov-nav-pending');
-    _paintMovementsServerIfChanged(result, state, queryKey);
+    // A completed read is useful on return even if another route is now open.
+    if (currentPage !== 'movements') return result;
+    _paintMovementsServerIfChanged(result, resolvedState, resolvedQueryKey);
+    qs('#page-movements')?.classList.remove('mov-nav-error');
     _setMovNavigationPending(false);
-    if (arriving) _movCascadeReveal();
     return result;
   }).catch(error => {
-    if (controller.signal.aborted && !timedOut) return null;
+    if (controller.signal.aborted && !timedOut || accountToken !== localStorage.getItem('token')
+        || scope[1] !== (currentUser?.role || '') || scope[2] !== !!currentUser?.perms?.includes('purchase-view')) return null;
+    _movServerError = error.message || t('loadFailedTitle');
+    if (currentPage !== 'movements') return null;
     _setMovNavigationPending(false);
     if (error.status === 404) {
       _movLegacyFallback = true;
@@ -52443,6 +52632,11 @@ function renderMovementsServer() {
         if (currentPage === 'movements') renderMovementsLegacy();
         return null;
       });
+    }
+    if (_movServerResponse && _movServerQueryKey === queryKey) {
+      qs('#page-movements')?.classList.remove('mov-nav-error');
+      toast(_movServerError, true);
+      return null;
     }
     const empty = loadErrorState('transactions', 'renderMovements()');
     const table = qs('#mov-table tbody'); if (table) table.innerHTML = `<tr><td colspan="16">${empty}</td></tr>`;
@@ -52456,8 +52650,13 @@ function renderMovementsServer() {
   });
   _movServerRequest = { key, task, controller };
   const table = qs('#mov-table tbody');
-  if (table && _movServerVisibleQueryKey !== queryKey)
-    table.innerHTML = `<tr><td colspan="16" style="padding:24px;text-align:center">${esc(t('loading'))}</td></tr>`;
+  if (table && _movServerVisibleQueryKey !== queryKey) {
+    if (window.SouliaLoading?.table) window.SouliaLoading.table(qs('#mov-table'), Math.min(6, movPerPage));
+    else table.innerHTML = `<tr><td colspan="16" style="padding:24px;text-align:center">${esc(t('loading'))}</td></tr>`;
+    // The DOM no longer contains the last snapshot. Reverting a failed filter
+    // must paint that snapshot again instead of reusing the loading/error row.
+    _movServerVisibleQueryKey = '';
+  }
   return task;
 }
 function _paintMovementsServer(result) {
@@ -66382,6 +66581,13 @@ function _pmEnhanceSelects(root) {
 }
 
 /** يزامن نص الزر وحالته مع الـ <select> الأصلي. */
+function _pmSelectIcon(sel, value) {
+  if (sel.dataset.icons === 'material') return _pmMaterialIcon(value);
+  if (sel.dataset.icons === 'complaint-solution') return window.ComplaintFlow?.solutionIcon?.(value) || '';
+  if (sel.dataset.icons === 'complaint-category') return window.ComplaintFlow?.categoryIcon?.(value) || '';
+  if (sel.dataset.icons === 'after-sales') return window.AfterSales?.selectIcon?.(value) || '';
+  return '';
+}
 function _pmSelSyncBtn(wrap) {
   const sel = wrap.querySelector('select');
   const txt = wrap.querySelector('.pm-sel-txt');
@@ -66392,10 +66598,10 @@ function _pmSelSyncBtn(wrap) {
   txt.textContent = label || t('optChoose');
   // الخيار الفارغ (— اختر —) يُعرض بلون خافت كـ placeholder.
   txt.classList.toggle('is-empty', !sel.value);
-  // أيقونة الخامة المختارة تظهر داخل الزر أيضاً، لا في اللوحة وحدها.
-  const oldIc = btn.querySelector('.pm-mat-ic');
+  // The selected value uses the same icon as its option in the named icon set.
+  const oldIc = btn.querySelector('.pm-mat-ic,.pm-select-icon');
   if (oldIc) oldIc.remove();
-  const icHtml = sel.dataset.icons === 'material' ? _pmMaterialIcon(sel.value) : '';
+  const icHtml = _pmSelectIcon(sel, sel.value);
   if (icHtml) btn.insertAdjacentHTML('afterbegin', icHtml);
   btn.disabled = sel.disabled;
   if (sel.disabled) _pmSelClose();
@@ -66423,6 +66629,7 @@ function _pmSelOpen1(wrap) {
   if (dialogHost) {
     panel.dir = dialogHost.dir || document.documentElement.dir;
     if (dialogHost.classList.contains('cf-dialog')) panel.classList.add('cf-select-panel');
+    if (dialogHost.classList.contains('as-dialog')) panel.classList.add('as-select-panel');
     // A body portal sits behind a modal dialog. A popover inside the dialog
     // stays interactive in the top layer and escapes its scrolling/clipping.
     if (typeof panel.showPopover === 'function') panel.setAttribute('popover', 'manual');
@@ -66450,8 +66657,8 @@ function _pmSelOpen1(wrap) {
       + (i === sel.selectedIndex ? ' is-selected' : '')
       + (o.value ? '' : ' is-placeholder');
     const optLabel = o.textContent.trim();
-    // القوائم الموسومة data-icons="material" تعرض أيقونة الخامة قبل اسمها.
-    const optIcon = sel.dataset.icons === 'material' ? _pmMaterialIcon(o.value) : '';
+    // Keep icons decorative; the visible option label remains its accessible name.
+    const optIcon = _pmSelectIcon(sel, o.value);
     if (optIcon) {
       b.innerHTML = optIcon + '<span class="pm-sel-optlbl"></span>';
       b.querySelector('.pm-sel-optlbl').textContent = optLabel;   // textContent يمنع حقن HTML من اسم الخيار
@@ -66513,7 +66720,8 @@ function _pmSelOpen1(wrap) {
 /** يضع اللوحة تحت الزر، أو فوقه إن ضاقت المساحة أسفل الشاشة. */
 function _pmSelPosition(panel, btn) {
   const r = btn.getBoundingClientRect();
-  panel.style.width = r.width + 'px';
+  const width = Math.min(r.width, Math.max(0, window.innerWidth - 16));
+  panel.style.width = width + 'px';
   const below = window.innerHeight - r.bottom - 8;
   const above = r.top - 8;
   const flip = below < 180 && above > below;
@@ -66521,8 +66729,14 @@ function _pmSelPosition(panel, btn) {
   panel.style.maxHeight = max + 'px';
   const list = panel.querySelector('.pm-sel-list');
   const sea = panel.querySelector('.pm-sel-search');
-  if (list) list.style.maxHeight = (max - (sea ? 44 : 10)) + 'px';
-  panel.style.left = r.left + 'px';
+  // Only the list scrolls. Include the frame and the search field's actual
+  // size so borders/padding never create a second scrollbar on the panel.
+  const style = getComputedStyle(panel);
+  const frame = ['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum,key)=>sum+(parseFloat(style[key])||0),0);
+  const searchStyle = sea ? getComputedStyle(sea) : null;
+  const searchHeight = sea ? sea.offsetHeight+(parseFloat(searchStyle.marginTop)||0)+(parseFloat(searchStyle.marginBottom)||0) : 0;
+  if (list) list.style.maxHeight = Math.max(0,max-frame-searchHeight) + 'px';
+  panel.style.left = Math.max(8,Math.min(r.left,window.innerWidth-width-8)) + 'px';
   if (flip) { panel.style.top = ''; panel.style.bottom = (window.innerHeight - r.top + 4) + 'px'; }
   else { panel.style.bottom = ''; panel.style.top = (r.bottom + 4) + 'px'; }
 }
@@ -93076,6 +93290,11 @@ async function loadComplaints() {
 
 let _fuTabLoadPromise = null;
 function switchMainTab(tab, skipHash, deferLoad = false) {
+  const targetPage = tab === 'fu' ? 'followups' : 'complaints';
+  if (!skipHash && currentPage !== targetPage) { navigateTo(targetPage); return; }
+  const page = qs('#page-complaints');
+  if (page) page.dataset.customerServicePage = targetPage;
+  refreshComplaintsSectionTitle();
   const fuSection = qs('#fu-orders-section');
   const cmpSection = qs('#cmp-complaints-section');
   const btnFu = qs('#main-tab-fu');
@@ -93522,17 +93741,14 @@ async function copyComplaintNo(no) {
 // Entry point for a complaint deep link. Loads complaints first when the slug
 // can't be resolved yet (hard refresh lands here before any fetch has run).
 async function openComplaintBySlug(slug, openDetail = false) {
-  navigateTo('complaints');
-  let id = _resolveCmpSlug(slug);
+  if (!_requirePageAccess('complaint-detail')) return;
+  let id = /^[a-f\d]{24}$/i.test(slug) ? slug : _resolveCmpSlug(slug);
   if (!id) {
     try { await loadComplaints(); } catch (_) {}
     id = _resolveCmpSlug(slug);
   }
   if (!id) { toast(t('cmpNotFound', { slug }), true); return; }
-  setTimeout(() => {
-    if (typeof switchMainTab === 'function') switchMainTab('cmp');
-    setTimeout(() => highlightComplaintById(id, openDetail), 150);
-  }, 100);
+  return window.ComplaintFlow?.open(id);
 }
 function buildComplaintShareText(c) {
   const lines = [
@@ -93607,13 +93823,8 @@ function renderComplaints() {
   const accepted = complaints.filter(c => c.status === 'مقبول').length;
   const rejected = complaints.filter(c => c.status === 'مرفوض').length;
   const highPriority = complaints.filter(c => c.status === 'معلق' && c.priority === 'عالية').length;
-  qs('#cmp-kpi').innerHTML = [
-    { label: t('cmpKpiTotal'), val: total, cls: '', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
-    { label: t('cmpTabPending'), val: pending, cls: '', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>' },
-    { label: t('cmpTabAccepted'), val: accepted, cls: '', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' },
-    { label: t('cmpTabRejected'), val: rejected, cls: '', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
-    { label: t('cmpKpiHighPending'), val: highPriority, cls: highPriority > 0 ? 'st-alert' : '', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' },
-  ].map(s => `<div class="cmp-stat ${s.cls}"><div class="cmp-stat-icon">${s.icon}</div><div><div class="cmp-stat-val">${fmtN(s.val)}</div><div class="cmp-stat-label">${esc(s.label)}</div></div></div>`).join('');
+  // Counts are presented once in the status/summary strip.
+  qs('#cmp-kpi').replaceChildren();
 
   // Status tab counts
   const fuCount = complaints.filter(c => c.inFollowUp).length;
@@ -98396,6 +98607,7 @@ function puSwitchView(mode) {
   qs('#pu-view-board-btn')?.classList.toggle('active', mode === 'board');
   qs('#pu-view-table-btn')?.classList.toggle('active', mode === 'table');
   qs('#pu-view-ready-btn')?.classList.toggle('active', mode === 'ready');
+  if (!_puOrdersLoaded && _puOrdersRequest) { _puShowOrdersLoading(); return; }
   if (mode === 'board')      renderPickupBoard();
   else if (mode === 'ready') renderReadyToShipTable();
   else renderPickupRuns();
@@ -98598,16 +98810,6 @@ function _puBuildPrepGroupCard(grp) {
  *
  * @param {Element|null} col Column body whose direct children should animate in.
  */
-let _puDidFirstBoardPaint = false;
-function _puStaggerIn(col) {
-  if (!col || _puDidFirstBoardPaint) return;
-  [...col.children].forEach((child, i) => {
-    // Already animating from an earlier column pass in this same render — don't restart it.
-    if (child.classList.contains('pu-stagger-in')) return;
-    child.style.setProperty('--pu-i', i);
-    child.classList.add('pu-stagger-in');
-  });
-}
 
 // ── Main board renderer ───────────────────────────────────────
 function renderPickupBoard() {
@@ -98767,13 +98969,6 @@ function renderPickupBoard() {
       shippedFiltered.forEach(g => fragment.appendChild(_puDailyGroupCard(g)));
       shippedCol.replaceChildren(fragment);
     }
-  }
-  // Soften the first paint, then latch so later re-renders stay instant. Latch only once orders
-  // actually exist — an early render before the fetch resolves would otherwise spend the
-  // animation on empty columns and leave the real first paint unanimated.
-  if (_pickupOrders.length) {
-    [pendingCol, prepCol, readyCol, shippedCol].forEach(_puStaggerIn);
-    _puDidFirstBoardPaint = true;
   }
 }
 
@@ -103431,6 +103626,12 @@ async function _puRefreshOrders() {
 let _puOrdersRequest = null;
 let _puOrdersLoaded = false;
 let _puOrdersFetchedAt = 0;
+let _puOrdersScope = '';
+let _puOrdersRequestScope = '';
+let _puOrdersError = false;
+let _puOrdersNeedsPaint = true;
+let _puPaintedLiveRevision = -1;
+let _puRouteScroll = null;
 let _puOrdersWriteRevision = -1;
 let _puOrdersLiveRevision = -1;
 let _puLiveRevision = 0;
@@ -103535,6 +103736,8 @@ function _puPaintCurrentView() {
   else renderPickupRuns();
   if (typeof _puDailyRefreshOpenGroup === 'function') _puDailyRefreshOpenGroup();
   scroll.forEach(([el, top]) => { el.scrollTop = top; });
+  _puOrdersNeedsPaint = false;
+  _puPaintedLiveRevision = _puLiveRevision;
 }
 
 function _puQueueLivePaint() {
@@ -103567,35 +103770,103 @@ function _puQueueLivePaint() {
 function _puRefreshSecondary() {
   if (_puSecondaryRequest || Date.now() - _puSecondaryAt < 30000) return;
   _puSecondaryAt = Date.now();
+  const pickupState = () => JSON.stringify([
+    typeof _bostaPickupRequestsKnown !== 'undefined' && _bostaPickupRequestsKnown,
+    typeof _bostaPickupRequests !== 'undefined' ? _bostaPickupRequests : [],
+  ]);
+  const before = pickupState();
   _puSecondaryRequest = Promise.allSettled([
-    typeof refreshBostaPickupRequests === 'function' ? refreshBostaPickupRequests({ background: true }).then(() => _puQueueLivePaint()) : Promise.resolve(),
+    typeof refreshBostaPickupRequests === 'function' ? refreshBostaPickupRequests({ background: true })
+      .then(() => { if (before !== pickupState()) _puQueueLivePaint(); }) : Promise.resolve(),
     _puSyncShippedBostaStatuses(),
   ]).finally(() => { _puSecondaryRequest = null; });
 }
 
+function _pickupRouteScope() {
+  return JSON.stringify([localStorage.getItem('token'), currentUser?._id || '',
+    currentUser?.role || '', [...(currentUser?.perms || [])].sort()]);
+}
+function _savePickupRouteScroll() {
+  if (!_puOrdersLoaded || _puOrdersScope !== _pickupRouteScope()) return;
+  const page = qs('#page-pickup-orders');
+  _puRouteScroll = { scope: _puOrdersScope, x: scrollX, y: scrollY,
+    containers: [...page.querySelectorAll('[id], .overflow-x, .pu-table-wrap')]
+      .filter(el => el.clientHeight && (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth))
+      .map(el => ({ el, top: el.scrollTop, left: el.scrollLeft })) };
+}
+function _restorePickupRouteScroll() {
+  const saved = _puRouteScroll;
+  if (!saved || saved.scope !== _puOrdersScope || window.SouliaNavigation?.shouldRoutePop()) return;
+  requestAnimationFrame(() => {
+    if (currentPage !== 'pickup-orders' || saved.scope !== _puOrdersScope) return;
+    saved.containers.forEach(({ el, top, left }) => {
+      if (el.isConnected) { el.scrollTop = top; el.scrollLeft = left; }
+    });
+    window.scrollTo({ left: saved.x, top: saved.y, behavior: 'instant' });
+  });
+}
+function _puShowOrdersLoading() {
+  const card = `<div class="pu-group pu-loading-card" aria-hidden="true">
+    <span class="ss-skeleton" style="width:60%;height:18px"></span>
+    <span class="ss-skeleton" style="width:85%;height:12px"></span>
+    <span class="ss-skeleton" style="width:45%;height:12px"></span></div>`;
+  ['pu-pending-col', 'pu-prep-col', 'pu-ready-col', 'pu-shipped-col'].forEach(id => {
+    const col = qs('#' + id); if (col) col.innerHTML = card.repeat(2);
+  });
+  ['#pu-ready-tbl', '#pu-runs-table'].forEach(selector => {
+    const table = qs(selector); if (table) window.SouliaLoading?.table(table, 6);
+  });
+}
 function loadPickupOrders(options = {}) {
   _puSyncPermissions();
   if (!_requirePageAccess('pickup-orders')) return Promise.resolve(null);
-  if (_puOrdersRequest) return _puOrdersRequest;
-  if (!options.force && _puOrdersLoaded && Date.now() - _puOrdersFetchedAt < 1500
+  const scope = _pickupRouteScope();
+  if (_puOrdersScope && _puOrdersScope !== scope) {
+    _pickupOrders = []; _puPrepGroups = []; _puOrdersLoaded = false;
+    _puDirtyCards.clear(); _puDraftBases.clear(); _puRemoteConflicts.clear(); _puLiveRows.clear();
+    _puPendingSelected.clear(); _puGroupCollapsed = {}; _puRouteScroll = null;
+    _puOrdersNeedsPaint = true; _puOrdersError = false;
+  }
+  _puOrdersScope = scope;
+  if (options.navigation && _puOrdersLoaded) {
+    if (_puOrdersNeedsPaint || _puPaintedLiveRevision !== _puLiveRevision) {
+      _puPopulateShipCoFilter();
+      _puPaintCurrentView();
+    }
+    _restorePickupRouteScroll();
+  }
+  if (_puOrdersRequest && _puOrdersRequestScope === scope) return _puOrdersRequest;
+  if (!options.force && !_puOrdersError && _puOrdersLoaded
+      && Date.now() - _puOrdersFetchedAt < (options.navigation ? 30000 : 1500)
       && _puOrdersWriteRevision === _apiWriteRevision && _puOrdersLiveRevision === _puLiveRevision) {
     return Promise.resolve(_pickupOrders);
   }
-  _puOrdersRequest = _loadPickupOrders(options).finally(() => { _puOrdersRequest = null; });
+  const task = _loadPickupOrders({ ...options, background: options.background || options.navigation && _puOrdersLoaded, scope })
+    .finally(() => { if (_puOrdersRequest === task) _puOrdersRequest = null; });
+  _puOrdersRequestScope = scope;
+  _puOrdersRequest = task;
   return _puOrdersRequest;
 }
 
-async function _loadPickupOrders({ background = false } = {}) {
+async function _loadPickupOrders({ background = false, scope = _pickupRouteScope(), force = false } = {}) {
   const revision = _puLiveRevision;
   const writeRevision = _apiWriteRevision;
   const state = qs('#pu-load-state');
+  const wasLoaded = _puOrdersLoaded;
+  const before = JSON.stringify([_pickupOrders, [..._puRemoteConflicts]]);
   if (state) {
     state.hidden = _puOrdersLoaded;
     state.textContent = t('loading');
     state.dataset.state = 'loading';
   }
+  if (!wasLoaded) {
+    qs('#page-pickup-orders')?.setAttribute('aria-busy', 'true');
+    _puShowOrdersLoading();
+  }
   try {
     const rows = await takeStartupRouteData('/transactions/pickup-orders/workspace', { background });
+    if (scope !== _pickupRouteScope() || scope !== _puOrdersScope) return null;
+    if (!Array.isArray(rows)) throw new TypeError('Invalid pickup orders response');
     const byId = new Map(rows.map(row => [String(row._id), row]));
     // A response started before a socket update must not move that order backwards.
     _puLiveRows.forEach((entry, id) => {
@@ -103614,10 +103885,15 @@ async function _loadPickupOrders({ background = false } = {}) {
     _puOrdersFetchedAt = Date.now();
     _puOrdersWriteRevision = writeRevision;
     _puOrdersLiveRevision = revision;
+    _puOrdersError = false;
     if (state) state.hidden = true;
     _puLoadPrepGroups(_pickupOrders);
-    _puPopulateShipCoFilter();
-    _puPaintCurrentView();
+    const changed = !wasLoaded || before !== JSON.stringify([_pickupOrders, [..._puRemoteConflicts]]);
+    if (changed || force) _puOrdersNeedsPaint = true;
+    if (currentPage === 'pickup-orders' && _puOrdersNeedsPaint) {
+      _puPopulateShipCoFilter();
+      _puPaintCurrentView();
+    }
     // Sync pickupStatus back into the global transactions array so movements table updates
     if (Array.isArray(transactions)) {
       const txById = new Map(transactions.map(tx => [String(tx._id), tx]));
@@ -103644,13 +103920,19 @@ async function _loadPickupOrders({ background = false } = {}) {
     if (_pucoGroupKey) _puQueueLivePaint();
     return _pickupOrders;
   } catch(e) {
+    if (scope !== _pickupRouteScope() || scope !== _puOrdersScope) return null;
+    _puOrdersError = true;
     if (state && !_puOrdersLoaded) {
+      _puPaintCurrentView();
       state.hidden = false;
       state.dataset.state = 'error';
       state.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="loadPickupOrders()">${esc(t('loadFailedRetry'))}</button>`;
     }
-    if (!background) toast(t('puDataLoadError',{v:e.message}), true);
+    if (!background || currentPage === 'pickup-orders') toast(t('puDataLoadError',{v:e.message}), true);
     return null;
+  } finally {
+    if (scope === _pickupRouteScope() && scope === _puOrdersScope)
+      qs('#page-pickup-orders')?.setAttribute('aria-busy', 'false');
   }
 }
 
@@ -105310,6 +105592,11 @@ let _spServerEnabled = false;
 let _spServerPainting = false;
 let _spServerResponse = null;
 let _spServerKey = '';
+let _spServerViewKey = '';
+let _spServerFetchedAt = 0;
+let _spServerPaintKey = '';
+let _spServerLiveRevision = 0;
+const SP_ROUTE_REUSE_MS = 30000;
 let _spServerPaintLang = '';
 let _spServerPaintInventory = null;
 let _spServerPaintTransactionCount = -1;
@@ -105319,7 +105606,7 @@ function _setSpNavigationPending(pending, failed = false) {
   if (!page) return;
   page.classList.toggle('sp-nav-pending', pending || failed);
   page.setAttribute('aria-busy', String(pending));
-  // Entering the page draws the skeleton, not the previous visit's table hidden
+  // An uncached view draws the skeleton, not the previous visit's table hidden
   // under a «Loading…» line: visibility:hidden left a blank page, and controls with
   // `transition:all` (⋮, discount badge, items button) faded out late as ghost rows.
   // The skeleton takes the table's place (shopify-responsive.css removes it).
@@ -105367,6 +105654,8 @@ function _spInvalidateOrderDetails() {
   }
 }
 function _spScheduleLiveOrderRefresh(arrivalId) {
+  // Events received on another route invalidate reuse when Orders is revisited.
+  _spServerLiveRevision++;
   if (!_spServerEnabled || currentPage !== 'shopify-orders' || _spSubnavTab !== 'orders') return;
   if (arrivalId) _spLiveArrivalIds.add(String(arrivalId));
   _spInvalidateOrderDetails();
@@ -105442,11 +105731,48 @@ function _spServerQuery() {
     }))) : '',
   }).toString();
 }
-function _spLoadServerPage(force = false, arrivalIds = null) {
+function _spServerReadKey(query = _spServerQuery()) {
+  return JSON.stringify([localStorage.getItem('token'), _apiWriteRevision,
+    _transactionLiveRevision, _spServerLiveRevision, query]);
+}
+function _spServerViewKeyFor(query = _spServerQuery()) {
+  // The moving KPI comparison minute changes freshness, not the selected view.
+  const params = new URLSearchParams(query);
+  params.delete('kpiPrevTo');
+  return JSON.stringify([localStorage.getItem('token'), params.toString()]);
+}
+function _spCanReuseServerPage() {
+  return !!_spServerResponse && _spServerViewKey === _spServerViewKeyFor();
+}
+function _spRestoreServerPage() {
+  if (!_spCanReuseServerPage()) return false;
+  const loading = qs('#sp-orders-loading'); if (loading) loading.hidden = true;
+  _setSpNavigationPending(false);
+  if (_spServerPaintKey !== _spServerKey || _spServerPaintLang !== currentLang
+      || _spServerPaintInventory !== inventoryCache || _spServerPaintTransactionCount !== transactions.length
+      || _spServerPaintUser !== currentUser) {
+    _spServerPainting = true;
+    try {
+      renderShopifyOrders();
+      _spServerPaintKey = _spServerKey;
+      _spServerPaintLang = currentLang;
+      _spServerPaintInventory = inventoryCache;
+      _spServerPaintTransactionCount = transactions.length;
+      _spServerPaintUser = currentUser;
+    } finally { _spServerPainting = false; }
+  } else _spRevealOrders();
+  localStorage.setItem('shopify_seen_count', String(_spServerResponse.pendingCount));
+  requestAnimationFrame(_spFitOrderTable);
+  return true;
+}
+function _spLoadServerPage(force = false, arrivalIds = null, { background = false } = {}) {
   if (force) { clearTimeout(_spServerSearchTimer); clearTimeout(_spLiveRefreshTimer); _spLiveRefreshTimer = null;
     _spInvalidateOrderDetails(); }
-  const key = JSON.stringify([localStorage.getItem('token'), _apiWriteRevision, _transactionLiveRevision, _spServerQuery()]);
-  const priorResponse = _spServerKey === key ? _spServerResponse : null;
+  const query = _spServerQuery();
+  const accountToken = localStorage.getItem('token');
+  const viewKey = _spServerViewKeyFor(query);
+  const key = _spServerReadKey(query);
+  const priorResponse = _spServerViewKey === viewKey ? _spServerResponse : null;
   const priorSnapshot = priorResponse ? JSON.stringify(priorResponse) : '';
   if (!force && _spServerKey === key && _spServerResponse) {
     _spServerPainting = true;
@@ -105456,19 +105782,28 @@ function _spLoadServerPage(force = false, arrivalIds = null) {
   if (_spServerRequest?.key === key) return _spServerRequest.promise;
   _spServerRequest?.controller.abort();
   const controller = new AbortController();
-  const promise = api('/shopify/orders/summary-page?' + _spServerQuery(), { signal: controller.signal }).then(result => {
+  const promise = api('/shopify/orders/summary-page?' + query, { signal: controller.signal, background }).then(result => {
     if (!result || !Array.isArray(result.rows) || !Number.isFinite(result.total))
       throw new TypeError('Invalid Shopify orders summary page');
     if (!_spServerEnabled || _spServerRequest?.key !== key || controller.signal.aborted
-        || currentPage !== 'shopify-orders' || _spSubnavTab !== 'orders') return null;
+        || accountToken !== localStorage.getItem('token')) return null;
     _spServerResponse = result;
     _spServerKey = key;
+    _spServerViewKey = viewKey;
+    _spServerFetchedAt = Date.now();
+    _spServerPaintKey = '';
     _spReceiptLoadError = '';
     _shopifyOrders = result.rows;
-    localStorage.setItem('shopify_seen_count', String(result.pendingCount));
     shopifyPage = result.page;
     _spOrdersReveal = _spOrdersReveal || !_spOrdersLoaded;
     _spOrdersLoaded = true;
+    // Retain a response that finishes while another route is open. Paint and
+    // mark it seen only when the user actually returns to Orders.
+    if (currentPage !== 'shopify-orders' || _spSubnavTab !== 'orders') {
+      buildSidebar();
+      return result;
+    }
+    localStorage.setItem('shopify_seen_count', String(result.pendingCount));
     if (typeof _spkRender === 'function') _spkState = 'ready';
     const loading = qs('#sp-orders-loading'); if (loading) loading.hidden = true;
     const samePaint = priorResponse && priorSnapshot === JSON.stringify(result)
@@ -105490,6 +105825,7 @@ function _spLoadServerPage(force = false, arrivalIds = null) {
       }
       finally { _spServerPainting = false; _spLivePaint = null; }
     } else _spRevealOrders(); // unchanged rows still arrive from behind the skeleton
+    _spServerPaintKey = key;
     _setSpNavigationPending(false);
     buildSidebar();
     if (_spPeekId) _spEnsureFullOrder(_spPeekId).then(() => {
@@ -105497,26 +105833,37 @@ function _spLoadServerPage(force = false, arrivalIds = null) {
     }).catch(() => {});
     return result;
   }).catch(error => {
-    if (controller.signal.aborted) return null;
+    if (controller.signal.aborted || accountToken !== localStorage.getItem('token')) return null;
     if (error.status === 404) {
       _spServerEnabled = false;
       return _loadShopifyOrders().finally(() => _setSpNavigationPending(false, !!_spReceiptLoadError));
     }
-    _setSpNavigationPending(false, true);
     console.error('Shopify orders page failed:', error);
     _spReceiptLoadError = error.message || t('spLoadFailed');
-    const loading = qs('#sp-orders-loading');
-    if (loading) { loading.hidden = false; loading.dataset.state = 'error'; }
-    toast(error.message || t('spLoadFailed'), true);
+    if (currentPage === 'shopify-orders' && _spSubnavTab === 'orders') {
+      if (_spCanReuseServerPage()) {
+        _setSpNavigationPending(false);
+        const loading = qs('#sp-orders-loading'); if (loading) loading.hidden = true;
+      } else _setSpNavigationPending(false, true);
+      toast(error.message || t('spLoadFailed'), true);
+    }
     return null;
   }).finally(() => { if (_spServerRequest?.key === key) _spServerRequest = null; });
   _spServerRequest = { key, controller, promise };
   return promise;
 }
-function loadShopifyOrders() {
+function loadShopifyOrders({ navigation = false } = {}) {
   if (currentPage === 'shopify-orders' && _spSubnavTab === 'deposits') return _spLoadDepositReview();
   if (currentPage === 'shopify-orders' && _spSubnavTab === 'orders') {
     _spServerEnabled = true;
+    if (navigation) {
+      if (_spRestoreServerPage()) {
+        const fresh = _spServerKey === _spServerReadKey() && !_spReceiptLoadError
+          && Date.now() - _spServerFetchedAt < SP_ROUTE_REUSE_MS;
+        return fresh ? Promise.resolve(_spServerResponse) : _spLoadServerPage(true, null, { background: true });
+      }
+      _setSpNavigationPending(true);
+    }
     return _spLoadServerPage(true);
   }
   if (_spOrdersRequest) return _spOrdersRequest;
@@ -110597,7 +110944,7 @@ function _spReceiptNoticeHtml(r) {
   const receiptWarnings=r.warnings||[];
   const warnings=receiptWarnings.map(_spReceiptWarningText);
   if(r.warningAcknowledgedAt) warnings.push(t('spDepWarningSkipped'));
-  const review=r.status==='معلق' && (r.needsReview || r.ocr?.amount==null || !!manual);
+  const review=r.status==='معلق' && (r.needsReview || r.ocr?.amount===null || !!manual);
   const manualScanNote = manual && r.warningAcknowledgedAt && receiptWarnings.some(w=>w.code==='ocr-unavailable');
   const duplicate=receiptWarnings.some(w=>w.code==='same-image' || w.code==='same-ref');
   const parts = manualScanNote
@@ -110607,8 +110954,10 @@ function _spReceiptNoticeHtml(r) {
   return `<div class="spdep-notice ${review?'is-review':''} ${duplicate?'is-duplicate':''}" role="note">${_spDepIcon(warnings.length?'image':manual?'edit':'image')}<span>${parts.map(esc).join(' · ')}</span></div>`;
 }
 function _spReceiptManualNote(r, amount = r.amount, method = r.method) {
-  const manualAmount = Number(amount)>0 && (r.ocr?.amount == null || Math.abs(Number(amount)-Number(r.ocr.amount))>.005);
-  const manualVault = !!method && (!r.ocr?.method || method!==r.ocr.method);
+  // Summary responses omit OCR. Missing fields are unknown until details arrive;
+  // explicit null/empty results and actual differences still identify manual entry.
+  const manualAmount = r.ocr?.amount!==undefined && Number(amount)>0 && (r.ocr.amount == null || Math.abs(Number(amount)-Number(r.ocr.amount))>.005);
+  const manualVault = r.ocr?.method!==undefined && !!method && (!r.ocr.method || method!==r.ocr.method);
   if (manualAmount && manualVault) return t('spDepManualBoth');
   if (manualAmount) return t(r.ocr?.amount == null ? 'spDepManualAmount' : 'spDepChangedAmount');
   if (manualVault) return t(!r.ocr?.method ? 'spDepManualVault' : 'spDepChangedVault');
@@ -114627,7 +114976,7 @@ function _spRenderHistoryTab() {
 
 // ===================== End Shopify Orders =====================
 </script>
-<script src="/navigation-shell.js?v=20261110-route-back"></script>
+<script src="/navigation-shell.js?v=20261110-complaint-page"></script>
 <script src="/admin-team-home.js?v=20261109-cascade"></script>
 <script src="/sales-overview.js?v=20261109-cascade"></script>
 <script src="/shopify-edit-approvals.js?v=20261103-compact-order-mark"></script>
@@ -114767,7 +115116,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/compact-pages.css?v=20261110-expenses-users">
 <link rel="stylesheet" href="/workspace-tabs.css?v=20261110-provider-height">
 <link rel="stylesheet" href="/order-density.css?v=20261110-compact-dates">
-<script src="/workspace-tabs.js?v=20261110-suppliers-tabs"></script>
+<script src="/workspace-tabs.js?v=20261110-service-navigation"></script>
 <link rel="stylesheet" href="/export-menu.css?v=20261110-compact-exports">
 <script src="/export-menu.js?v=20261110-compact-exports"></script>
 <link rel="stylesheet" href="/account-menu.css?v=20261110-official-socials">

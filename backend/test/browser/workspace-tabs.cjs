@@ -6,7 +6,6 @@ const groups=[
   ['inventory','#page-inventory .ui-tabs',['#inv-tab-list','#inv-tab-log']],
   ['products','#page-products .prod-tabs',['#prod-tab-items','#prod-tab-drafts']],
   ['suppliers','#sup-tabs',['#sup-tab-cards','#sup-tab-payments']],
-  ['complaints','#page-complaints .cs-main-tabs',['#main-tab-fu','#main-tab-cmp']],
   ['approvals','#page-approvals .ui-tabs',['#appr-tab-approvals-btn','#appr-tab-hub-btn','#appr-tab-otp-btn']],
   ['users','.users-workspace-tabs',['#users-tab-accounts','#users-tab-roles']],
   ['csp','.csp-header-actions',['#csp-tab-browse-btn','#csp-tab-manage-btn']]

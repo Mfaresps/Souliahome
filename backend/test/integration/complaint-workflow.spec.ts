@@ -42,8 +42,19 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     await mongo.connection.collection('transactions').insertOne(sale);
   });
   const dueAt = () => new Date(Date.now()+86400000).toISOString();
-  const createBody = () => ({ operationKey:String(oid()), transactionId:String(sale._id), description:'Two affected products', items:[{lineIndex:0,qty:1},{lineIndex:1,qty:1}] });
+  const createBody = () => ({ operationKey:String(oid()), transactionId:String(sale._id), categoryGroup:'مشكلة في المنتج', description:'Two affected products', items:[{lineIndex:0,qty:1,issueType:'wrong_color',issueDescription:'Ordered white, received beige'},{lineIndex:1,qty:1,issueType:'wrong_size',issueDescription:'Ordered large, received small'}] });
   const create = (body: any = createBody()) => service.create(body, 'Owner', actor.userId);
+  it('requires an issue category on new complaints through both the service and HTTP API', async () => {
+    for (const categoryGroup of [undefined, '', '   ']) {
+      const body={...createBody(),categoryGroup};
+      await expect(create(body)).rejects.toThrow('نوع المشكلة');
+      const response=await fetch(base+'/complaints',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+      expect(response.status).toBe(400);
+    }
+    expect(await Model.countDocuments()).toBe(0);
+    const row=await create({...createBody(),categoryGroup:' مشكلة في المنتج '});
+    expect(row.categoryGroup).toBe('مشكلة في المنتج');
+  });
   const step = (row: any, action: string, extra: any = {}) => service.workflow(String(row._id), { operationKey:String(oid()),expectedRevision:row.workflow?.revision||0, action, note:'Documented action', dueAt:dueAt(), ...extra }, actor);
   async function execution(row: any, kind = 'exchange', workflow: any = {}) {
     const linked: any = { _id:oid(),originalTransactionId:String(sale._id),requestKind:kind,items:row.items,
@@ -56,6 +67,43 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     expect(String(a._id)).toBe(String(b._id));expect(await Model.countDocuments()).toBe(1);expect(a.items.map((i:any)=>i.qty)).toEqual([1,1]);
     await expect(create({...body,description:'changed'})).rejects.toThrow();
     expect(a.surveyToken).toBeUndefined();
+  });
+  it('stores separate product issues and derives an invoice-based summary without a general description', async () => {
+    const body:any=createBody();delete body.description;body.items[0].name='Forged name';body.items[0].issueDescription='  Ordered white, received beige  ';
+    const response=await fetch(base+'/complaints',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    expect(response.status).toBe(201);
+    const saved:any=await response.json(),row=await Model.findById(saved._id).lean();
+    expect(row.items.map(i=>[i.name,i.issueType,i.issueDescription])).toEqual([['Product A','wrong_color','Ordered white, received beige'],['Product B','wrong_size','Ordered large, received small']]);
+    expect(row.additionalDescription).toBe('');expect(row.description).toContain('Product A × 1: لون مختلف');expect(row.description).toContain('Product B × 1: مقاس غير صحيح');expect(row.description).not.toContain('Forged');
+    const workspace=await service.workspace(saved._id,'ar');expect(workspace.items).toEqual(row.items);
+  });
+  it('rejects invalid quantities or missing product issues through the service and HTTP without writing a case', async () => {
+    const valid=createBody().items[0];
+    const invalid=[{...valid,qty:4},{...valid,qty:0},{...valid,qty:1.5},{...valid,qty:'1'},{...valid,issueType:undefined},{...valid,issueType:'unsupported'},{...valid,issueDescription:undefined},{...valid,issueDescription:'  '},{...valid,issueDescription:'x'.repeat(2001)},null];
+    for(const item of invalid){
+      const body={...createBody(),items:[item]};await expect(create(body)).rejects.toThrow();
+      const response=await fetch(base+'/complaints',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});expect(response.status).toBe(400);
+    }
+    await expect(create({...createBody(),items:[valid,valid]})).rejects.toThrow();
+    await expect(create({...createBody(),transactionId:undefined,clientName:'Customer',phone:'01000000000'})).rejects.toThrow('فاتورة');
+    expect(await Model.countDocuments()).toBe(0);
+  });
+  it('edits each product issue within invoice limits and preserves other product details atomically', async () => {
+    let row:any=await create();
+    await expect(step(row,'items',{items:[{...createBody().items[0],qty:4}]})).rejects.toThrow('كمية');
+    let stored:any=await Model.findById(row._id).lean();expect(stored.items).toEqual(row.items);expect(stored.workflow.revision).toBe(0);
+    row=await step(row,'items',{items:[{...createBody().items[0],qty:3,issueType:'missing',issueDescription:'All three were missing'},createBody().items[1]]});
+    stored=await Model.findById(row._id).lean();expect(stored.items[0]).toMatchObject({qty:3,issueType:'missing',issueDescription:'All three were missing'});expect(stored.items[1]).toMatchObject(createBody().items[1]);expect(stored.description).toContain('All three were missing');
+    await service.update(String(row._id),{description:'Additional warehouse instructions'},'Owner');
+    stored=await Model.findById(row._id).lean();expect(stored.additionalDescription).toBe('Additional warehouse instructions');expect(stored.description).toContain('All three were missing');
+  });
+  it('keeps legacy item complaints readable and retains their original notes when product issues are added', async () => {
+    let row:any=await create();
+    const legacyItems=row.items.map(({issueType,issueDescription,...item}:any)=>item);
+    await Model.updateOne({_id:row._id},{$set:{items:legacyItems,description:'Original legacy issue'},$unset:{additionalDescription:''}});
+    row=await service.workspace(String(row._id),'en');expect(row.description).toBe('Original legacy issue');expect(row.items[0].issueType).toBeUndefined();
+    row=await step(row,'items',{items:createBody().items});
+    expect(row.additionalDescription).toBe('Original legacy issue');expect(row.items[0].issueDescription).toBe('Ordered white, received beige');
   });
   it('accepts omitted or blank action details while preserving required execution evidence',async()=>{
     let row:any=await create();
@@ -72,13 +120,24 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
     await expect(step(row,'close',{outcome:'resolved',customerConfirmed:true,note:''})).rejects.toThrow('سبب الإغلاق');
     await expect(step(row,'comment',{note:'   '})).rejects.toThrow('نص الملاحظة');
   });
+  it('preserves follow-up dates and contact details on audit notes without duplicating retries', async () => {
+    let row:any=await create();const date=dueAt();
+    row=await step(row,'plan',{solution:'support',dueAt:date,note:'Call to explain the care instructions'});
+    expect(row.workflow.history.at(-1)).toMatchObject({action:'plan',solution:'support',note:'Call to explain the care instructions',dueAt:date});
+    const command:any={operationKey:String(oid()),expectedRevision:row.workflow.revision,action:'contact',channel:'whatsapp',contactResult:'no_answer',dueAt:date,note:'Customer requested a later call'};
+    row=await service.workflow(String(row._id),command,actor);const count=row.workflow.history.length;
+    expect(row.workflow.history.at(-1)).toMatchObject({action:'contact',channel:'whatsapp',contactResult:'no_answer',note:command.note,dueAt:date});
+    expect(row.workflow.contacts.at(-1)).toMatchObject({channel:'whatsapp',result:'no_answer',note:command.note,dueAt:date});
+    row=await service.workflow(String(row._id),command,actor);expect(row.workflow.history).toHaveLength(count);expect(row.workflow.contacts).toHaveLength(1);
+    const workspace=await service.workspace(String(row._id),'en');expect(workspace.workflow.history.at(-1).dueAt).toBe(date);
+  });
   it('requires contact information without an invoice and validates line quantities', async () => {
     await expect(create({description:'No contact'})).rejects.toThrow();
     await expect(create({...createBody(),items:[{lineIndex:0,qty:5}]})).rejects.toThrow();
     await expect(create({...createBody(),items:[{lineIndex:0,qty:1,unitIds:[String(oid()),String(oid())]}]})).rejects.toThrow();
-    const row=await create({description:'General service issue',clientName:'Test',phone:'01000000000'});expect(row.workflow.ownerId).toBe(actor.userId);
+    const row=await create({description:'General service issue',categoryGroup:'مشكلة في المنتج',clientName:'Test',phone:'01000000000'});expect(row.workflow.ownerId).toBe(actor.userId);
     await mongo.connection.collection('transactions').updateOne({_id:sale._id},{$unset:{phone:''}});
-    const linked=await step(row,'items',{transactionId:String(sale._id),items:[{lineIndex:0,qty:1}]});
+    const linked=await step(row,'items',{transactionId:String(sale._id),items:[createBody().items[0]]});
     expect(linked.phone).toBe('01000000000');
   });
   it('returns a compact list and a complete workspace with one detail read', async () => {
@@ -397,7 +456,7 @@ describe('Complaint lifecycle with isolated transactional storage', () => {
   it('links duplicates only to a primary complaint of the same customer/order',async()=>{
     const primary=await create(),duplicate=await create();
     const closed=await step(duplicate,'close',{outcome:'duplicate',duplicateId:String(primary._id)});expect(closed.workflow.duplicateId).toBe(String(primary._id));
-    const other=await create({clientName:'Other',phone:'01111111111',description:'Unrelated complaint'});
+    const other=await create({clientName:'Other',phone:'01111111111',categoryGroup:'مشكلة في المنتج',description:'Unrelated complaint'});
     await expect(step(other,'close',{outcome:'duplicate',duplicateId:String(primary._id)})).rejects.toThrow();
   });
   it('requires cancellation before unlinking execution and supports a new plan afterwards',async()=>{

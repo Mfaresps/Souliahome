@@ -8,6 +8,8 @@
 #main > [data-loading-style="shimmer"].active,
 [data-loading-style="shimmer"] :is(.ss-reveal,.ss-reveal-stagger > *,.ss-cascade-item,.rep-tab-panel,.sp-order-row,.sp-card,.spk-tile,.sup-card2,.cp-client-card,.fu-card,.fu-kpi-pill,.prod-grid-card,.prod-list-row,.txn-card,.txn-item-row,#tx-fields,#tx-items,#tx-summary),
 #page-shopify-orders :is(#sp-orders-tab-content,#sp-mobile-list,#shopify-orders-table-wrap,#sp-deposits-tab-content,#sp-deposit-log-content,#sp-perf-dashboard-content),
+#page-movements :is(#mov-panel-list,#mov-panel-archive,#mov-panel-collections,#mov-table tbody > tr,#mov-mobile-list > *,#mov-grid-list > *),
+#page-pickup-orders :is(#pu-board-view,#pu-table-view,#pu-ready-view,.pu-stagger-in),
 #page-complaints :is(#fu-panel,#cmp-panel),
 #page-suppliers :is(#sup-panel-cards,#sup-panel-payments) {
   animation: none !important;
@@ -17,6 +19,16 @@
 #main[data-pending-route] > .page.ss-pending-page { display: block !important; animation: none !important; }
 #page-loading-status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ss-field-placeholder { display: inline-block; max-width: 100%; border-radius: 4px; vertical-align: middle; }
+/* Transaction placeholders use the real table columns. The legacy cached-value
+   mask must not hide their shimmer or draw another bar over the same cell. */
+#mov-table .ss-placeholder-row td { height: 44px; }
+#page-movements.mov-nav-pending #mov-table .ss-placeholder-row td { visibility: visible; }
+#page-movements.mov-nav-pending #mov-table .ss-placeholder-row td .ss-skeleton { visibility: visible !important; }
+#page-movements.mov-nav-pending #mov-table .ss-placeholder-row td::before,
+#page-movements.mov-nav-pending #mov-table .ss-placeholder-row td::after { content: none !important; }
+#page-pickup-orders .pu-loading-card { display: grid; gap: 14px; padding: 18px; min-height: 120px; pointer-events: none; }
+#page-pickup-orders #pu-load-state[data-state="loading"]::before { content: none; }
+#page-pickup-orders .ss-placeholder-row td { height: 44px; }
 .ss-masked { position: relative; color: transparent !important; }
 .ss-masked > * { visibility: hidden !important; }
 .ss-masked > .ss-slot-placeholder { position: absolute !important; inset: 2px 0; visibility: visible !important; border-radius: 4px; }

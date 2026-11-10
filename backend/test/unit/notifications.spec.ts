@@ -7,6 +7,7 @@ import { ShopifyService } from '../../src/shopify/shopify.service';
 import { createHmac } from 'crypto';
 
 const admin = { userId: '507f1f77bcf86cd799439011', role: 'admin', isActive: true };
+const ACTIVE_TYPES = TYPES.filter(type => type !== 'shopifyChange');
 const subscription = { endpoint: 'https://web.push.apple.com/test', keys: { p256dh: Buffer.alloc(65, 4).toString('base64url'), auth: Buffer.alloc(16).toString('base64url') } };
 function setup(role = 'admin') {
   let account: any = { userId: admin.userId, preferences: { ...DEFAULTS, enabled: true }, subscriptions: [subscription] };
@@ -31,6 +32,27 @@ function setup(role = 'admin') {
   return { service, push, account, accounts, jobs, users, stored, inbox, historyRows };
 }
 describe('Web Push settings, security and delivery', () => {
+  it('disables routine Shopify changes even for an administrator with a stored opt-in', async () => {
+    const { service, account, users, accounts, jobs, inbox } = setup();
+    account.preferences.shopifyChange = true;
+    expect(eligible(admin, account.preferences, 'shopifyChange')).toBe(false);
+    await service.enqueue('shopifyChange', 'shopify:update:legacy', '3106', 'shopify:order');
+    expect(users.find).not.toHaveBeenCalled();
+    expect(accounts.findOne).not.toHaveBeenCalled();
+    expect(inbox.updateOne).not.toHaveBeenCalled();
+    expect(jobs.updateOne).not.toHaveBeenCalled();
+    const settings = await service.settings(admin);
+    expect(settings.preferences.shopifyChange).toBe(false);
+    expect(settings.allowedTypes).not.toContain('shopifyChange');
+  });
+  it('discards a Shopify change queued by an earlier version before looking up recipients', async () => {
+    const { service, users, accounts, jobs, push } = setup();
+    await (service as any).dispatchJob({ _id: 'old-job', type: 'shopifyChange' });
+    expect(jobs.updateOne).toHaveBeenCalledWith({ _id: 'old-job' }, { $set: { done: true } });
+    expect(users.findOne).not.toHaveBeenCalled();
+    expect(accounts.findOne).not.toHaveBeenCalled();
+    expect(push.sendNotification).not.toHaveBeenCalled();
+  });
   it.each(['en', 'ar'] as const)('persists and queues one group notification in %s when the same batch is retried', async language => {
     const { service, account, stored, historyRows } = setup();
     account.language = language;
@@ -255,7 +277,7 @@ describe('Web Push settings, security and delivery', () => {
     account.preferences.enabled = false;
     await service.enqueue('announcement', 'master-off', '', 'announcement:' + admin.userId, [admin.userId]); expect(stored.size).toBe(1);
   });
-  it.each(TYPES.filter(type => !(MANDATORY_TYPES as readonly string[]).includes(type)))('respects independent %s preferences and master', async type => {
+  it.each(ACTIVE_TYPES.filter(type => !(MANDATORY_TYPES as readonly string[]).includes(type)))('respects independent %s preferences and master', async type => {
     const { service, account, stored } = setup(type === 'performance' ? 'staff' : 'admin');
     account.preferences[type] = false;
     await service.enqueue(type, 'off', '100'); expect(stored.size).toBe(0);
@@ -276,7 +298,7 @@ describe('Web Push settings, security and delivery', () => {
     expect(validateSubscription(subscription)).toEqual(subscription);
     expect(() => validateSubscription({ ...subscription, keys: { p256dh: 'bad', auth: 'bad' } })).toThrow();
   });
-  it.each(TYPES)('deduplicates durable %s events and excludes private payload data', async type => {
+  it.each(ACTIVE_TYPES)('deduplicates durable %s events and excludes private payload data', async type => {
     const { service, stored } = setup(type === 'performance' ? 'staff' : 'admin');
     const recipient = ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined;
     const recordId = (type === 'performance' ? 'performance:' : type === 'otp' ? 'otp:' : 'tx:') + admin.userId;
@@ -405,7 +427,7 @@ describe('SOULIA notification message formats', () => {
     const state = await service.settings(admin); expect(state.language).toBe('en'); expect(state.preferences).toEqual({ ...DEFAULTS, enabled: true });
     expect(() => validatePreferences({ language: 'fr' })).toThrow();
   });
-  it.each(TYPES)('sends English %s titles and bodies for English recipients', async type => {
+  it.each(ACTIVE_TYPES)('sends English %s titles and bodies for English recipients', async type => {
     const { service, account, stored } = setup(type === 'performance' ? 'staff' : 'admin'); account.language = 'en';
     if (type === 'performance') jest.spyOn(service as any, 'employeeLanguage').mockResolvedValue('en');
     await service.enqueue(type, 'english', '2638', type === 'performance' ? 'performance:' + admin.userId : type === 'otp' ? 'otp:' + admin.userId : '', ['mention', 'performance', 'orderEdit'].includes(type) ? admin.userId : undefined, 'FAILED_ATTEMPT', { pointDelta: 2, actorName: 'Ahmed Ali', amount: 500, expiresAt: new Date(Date.now() + 60000).toISOString() });

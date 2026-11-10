@@ -1,7 +1,6 @@
 import { setCommentReaction } from '../shared/comment-reactions';
 import { cachedRead } from '../shared/read-cache.util';
 import { notifyApproval } from '../notifications/admin-events';
-import { shopifyChangeEvent } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FollowUpsService } from '../followups/followups.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
@@ -649,7 +648,6 @@ export class ShopifyService {
         );
       }
       // rawData يُحفظ دائماً — هو أرشيف ما أرسلته شوبيفاي، لا مصدر قرار
-      const pushChange = shopifyChangeEvent(order.rawData, orderData);
       order.rawData = orderData;
 
       // الإجمالي قد يتغيّر بتعديل شوبيفاي، فتتغيّر نسبة العربون المعتمد منه — يُعاد الاشتقاق
@@ -745,7 +743,6 @@ export class ShopifyService {
       }
 
       this.logger.log(`🔄 تحديث أوردر Shopify: ${order.ref}`);
-      try { if (pushChange.fields.length) await this.notifications?.enqueue('shopifyChange', 'shopify:update:' + pushChange.fingerprint, order.ref, 'shopify:' + order._id, undefined, undefined, { changedFields: pushChange.fields }); } catch { /* Keep the successful webhook result. */ }
       return { updated: true };
     } catch (err) {
       this.logger.error(`❌ خطأ في تحديث الأوردر: ${err.message}`);

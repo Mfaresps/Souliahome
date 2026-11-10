@@ -138,16 +138,20 @@ describe('Shopify modification detection', () => {
     expect(shopifyChangeEvent(original, changed).fingerprint).toBe(event.fingerprint);
     expect(shopifyChangeEvent(changed, changed).fields).toEqual([]);
   });
-  it('detects frozen-order financial changes even when the local total remains unchanged', async () => {
+  it('keeps Shopify updates and value conflicts without queuing routine notifications', async () => {
     const service: any = Object.create(ShopifyService.prototype);
     const order: any = { _id: id, ref: '2771', status: 'approved', total: 100, rawData: original, save: jest.fn(async () => {}), markModified: jest.fn() };
     service.shopifyOrderModel = { findOne: async () => order };
     service.mapItems = async () => [];
     service.txModel = { findOne: () => ({ select: () => ({ lean: async () => null }) }), updateOne: async () => ({}) };
     service.notifications = { enqueue: jest.fn(async () => {}) }; service.logger = { log: jest.fn(), error: jest.fn(), warn: jest.fn() }; service.emit = jest.fn();
-    await service.handleOrderUpdate({ ...original, total_price: '200', line_items: [{ ...original.line_items[0], quantity: 2 }] });
+    const changed = { ...original, total_price: '200', line_items: [{ ...original.line_items[0], quantity: 2 }] };
+    expect(await service.handleOrderUpdate(changed)).toEqual({ updated: true });
     expect(order.total).toBe(100);
-    expect(service.notifications.enqueue).toHaveBeenCalledWith('shopifyChange', expect.any(String), '2771', 'shopify:' + id, undefined, undefined, { changedFields: expect.arrayContaining(['price', 'quantity']) });
+    expect(order.rawData).toBe(changed);
+    expect(order.save).toHaveBeenCalled();
+    expect(service.emit).toHaveBeenCalledWith('shopify:value-conflict', expect.objectContaining({ ref: '2771' }));
+    expect(service.notifications.enqueue).not.toHaveBeenCalled();
     service.notifications.enqueue.mockClear();
     await service.handleOrderUpdate(order.rawData); expect(service.notifications.enqueue).not.toHaveBeenCalled();
   });

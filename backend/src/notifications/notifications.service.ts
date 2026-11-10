@@ -11,7 +11,7 @@ import { COMMENT_REACTION_LABELS, CommentReactionAdded } from '../shared/comment
 
 export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
 export type NotificationType = typeof TYPES[number];
-export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: true, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, deliveryPostponed: true, delivered: true, mention: true };
+export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: false, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, deliveryPostponed: true, delivered: true, mention: true };
 const TITLES = { deliveryPostponed: 'تأجيل الاستلام بطلب العميل', orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
 const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', deliveryPostponed: 'Delivery Postponed by Customer', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
@@ -169,12 +169,13 @@ export function validatePreferences(value: any) {
 // unknown key, and any value stored before this rule is ignored here.
 export const MANDATORY_TYPES = ['announcement'] as const;
 export function eligible(user: any, preferences: any, type: NotificationType, receiptRecipientId?: string) {
+  if (type === 'shopifyChange') return false;
   const ownReceiptDecision = type === 'approval' && !!receiptRecipientId && receiptRecipientId === String(user?._id || user?.userId || '');
   return ['admin', 'staff', 'viewer'].includes(user?.role) && (!(ADMIN_TYPES as readonly string[]).includes(type) || user.role === 'admin' || ownReceiptDecision) && user.isActive !== false && preferences?.enabled === true && ((MANDATORY_TYPES as readonly string[]).includes(type) || preferences[type] === true);
 }
 
 function historyScope(userId: string, role: string) {
-  return { userId, ...(role !== 'admin' ? { $and: [{ $or: [
+  return { userId, type: { $ne: 'shopifyChange' }, ...(role !== 'admin' ? { $and: [{ $or: [
     { type: { $nin: [...ADMIN_TYPES] } }, { type: 'approval', receiptRecipientId: userId },
   ] }] } : {}) };
 }
@@ -244,12 +245,12 @@ export class NotificationsService implements OnModuleInit {
   async settings(user: any) {
     this.authorize(user);
     const account: any = await this.accounts.findOne({ userId: user.userId });
-    return { preferences: { ...DEFAULTS, ...account?.preferences }, configured: this.configured,
+    return { preferences: { ...DEFAULTS, ...account?.preferences, shopifyChange: false }, configured: this.configured,
       publicKey: this.configured ? this.publicKey || process.env.VAPID_PUBLIC_KEY : null, devices: (account?.subscriptions || []).length,
       configurationIssue: this.configurationIssue || null,
       language: user.role === 'admin' ? account?.language || null : await this.employeeLanguage(),
       employeeLanguage: await this.employeeLanguage(), languageManaged: user.role !== 'admin',
-      allowedTypes: user.role === 'admin' ? [...TYPES] : [...STAFF_TYPES] };
+      allowedTypes: (user.role === 'admin' ? [...TYPES] : [...STAFF_TYPES]).filter(type => type !== 'shopifyChange') };
   }
   async preferences(user: any, body: any) {
     this.authorize(user);
@@ -360,6 +361,8 @@ export class NotificationsService implements OnModuleInit {
     await this.inbox.updateMany({ userId, recordId: 'mention:' + mentionId }, { $set: { readAt: new Date() } });
   }
   async enqueue(type: NotificationType, eventId: string, ref: string, recordId = '', onlyUser?: string | string[], deliveryStatus?: string, details: NotificationDetails = {}) {
+    // Routine Shopify updates do not create inbox entries, recipient lookups or push jobs.
+    if (type === 'shopifyChange') return;
     try {
       // The new-deposit notification already tells admins that review is required.
       if (type === 'approval' && details.actionKey === 'deposit' && details.status === 'pending') return;
@@ -562,6 +565,9 @@ export class NotificationsService implements OnModuleInit {
   }
 
   private async dispatchJob(job: any) {
+        if (job.type === 'shopifyChange') {
+          await this.jobs.updateOne({ _id: job._id }, { $set: { done: true } }); return;
+        }
         if (job.type === 'deposit' && /^deposit:receipt:/.test(job.eventId || '')) {
           const id = createHash('sha256').update(JSON.stringify([job.userId, job.eventId])).digest('hex');
           const current = await this.inbox.findOne({ _id: id as any, userId: job.userId });

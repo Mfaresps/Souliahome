@@ -15,6 +15,20 @@ afterAll(async () => {
   if (connection) { if (!/^soulia_test_push_\d+_\d+$/.test(connection.name)) throw new Error('Unsafe scratch database'); await connection.dropDatabase(); await connection.close(); }
 });
 beforeEach(async () => { await connection.collection('notificationinbox').deleteMany({}); await connection.collection('notificationaccounts').deleteMany({}); await connection.collection('notificationjobs').deleteMany({}); await connection.collection('notificationpointchanges').deleteMany({}); await connection.collection('employeeperformancelogs').deleteMany({}); });
+it('excludes old Shopify change notifications from history, pagination and unread counts', async () => {
+  const entries = Array.from({ length: 55 }, (_, index) => ({
+    _id: index.toString(16).padStart(64, '0') as any, eventId: 'shopify:update:old-' + index, userId: user.userId, type: 'shopifyChange',
+    title: 'Shopify Order Updated', ref: '3106', createdAt: new Date(Date.now() + index), readAt: null,
+  }));
+  await connection.collection('notificationinbox').insertMany(entries);
+  const keepId = 'f'.repeat(64) as any;
+  await connection.collection('notificationinbox').insertOne({ _id: keepId, eventId: 'order:new', userId: user.userId, type: 'order', title: 'New order', createdAt: new Date(), readAt: null });
+  const history = await service.history(user);
+  expect(history.items.map(item => item._id)).toEqual([keepId]);
+  expect(history.unread).toBe(1);
+  expect(history.next).toBe('');
+  expect(await connection.collection('notificationinbox').countDocuments({ type: 'shopifyChange' })).toBe(55);
+});
 it('hides branding in old inbox entries without modifying stored records or destinations', async () => {
   const entry = { _id: 'a'.repeat(64) as any, userId: user.userId, type: 'order', title: '🛍️ طلب جديد · SOULIA', body: 'الطلب #2906', ref: '2906', url: '/?pushRecord=tx:2906', createdAt: new Date(), readAt: null };
   await connection.collection('notificationinbox').insertOne(entry);
@@ -167,7 +181,7 @@ it('retains normal notifications for unassigned orders and never personalizes an
     expect(JSON.parse(job.payload).body).toContain('New Order Received');
   }
 });
-it.each(['otp', 'approval', 'shopifyChange', 'security'] as const)('deduplicates concurrent admin %s events and dispatches them only once', async type => {
+it.each(['otp', 'approval', 'security'] as const)('deduplicates concurrent admin %s events and dispatches them only once', async type => {
   await service.preferences(user, { enabled: true, language: 'en' }); await service.subscribe(user, sub);
   const id = new Types.ObjectId();
   const expiresAt = new Date(Date.now() + 60000).toISOString();

@@ -86,6 +86,33 @@ const publicDir = path.resolve(__dirname, '../../../frontend/public');
       }));
       assert.equal(dataRules.vaultOnly, true); assert.equal(dataRules.empty, ''); assert.equal(dataRules.edited, '');
       assert.equal(dataRules.pendingWarning, true, 'warnings remain visible until approval');
+      const noticeRules=await page.evaluate(()=>{
+        const recognized={status:'معلق',amount:300,method:'فودافون كاش',needsReview:false,ocr:{amount:300,method:'فودافون كاش'},warnings:[]};
+        // The order summary deliberately omits OCR; its detail response follows later.
+        const summary={status:recognized.status,amount:recognized.amount,method:recognized.method,needsReview:false};
+        const notice=receipt=>_spReceiptNoticeHtml(receipt);
+        return {
+          summary:notice(summary),recognized:notice(recognized),
+          amountOnly:notice({...recognized,ocr:{amount:300}}),
+          vaultOnly:notice({...recognized,ocr:{method:'فودافون كاش'}}),
+          manual:notice({...recognized,ocr:{amount:null,method:''}}),
+          changedAmount:notice({...recognized,amount:400}),
+          changedVault:notice({...recognized,method:'Instapay'}),
+          review:notice({...summary,needsReview:true}),
+          duplicate:notice({...summary,warnings:[{code:'same-image',orderRef:'2719'}]}),
+          manualAmountLabel:t('spDepManualAmount'),manualVaultLabel:t('spDepManualVault'),
+        };
+      });
+      assert.equal(noticeRules.summary,'','summary data must not flash an invented amount/vault warning while details load');
+      assert.equal(noticeRules.recognized,'','matching recognized values need no warning');
+      assert.equal(noticeRules.amountOnly,'','omitted vault recognition is unknown, not manual entry');
+      assert.equal(noticeRules.vaultOnly,'','omitted amount recognition is unknown, not a scan failure');
+      assert(noticeRules.manual.includes('spdep-notice'),'confirmed manual entry remains visible');
+      assert(noticeRules.changedAmount.includes('spdep-notice'),'a real amount change remains visible');
+      assert(noticeRules.changedVault.includes('spdep-notice'),'a real vault change remains visible');
+      assert(noticeRules.review.includes('is-review'),'an explicit review flag still shows its notice');
+      assert(noticeRules.duplicate.includes('is-duplicate')&&noticeRules.duplicate.includes('2719'),'duplicate evidence remains visible without OCR');
+      assert(!noticeRules.duplicate.includes(noticeRules.manualAmountLabel)&&!noticeRules.duplicate.includes(noticeRules.manualVaultLabel),'missing OCR must not add invented manual-entry claims to real warnings');
       await page.focus('.spdep-peek-details>summary'); await page.keyboard.press('Enter');
       assert.equal(await page.$eval('.spdep-peek-details', el => el.open), false, 'keyboard collapses details');
       assert.deepEqual(errors, []);

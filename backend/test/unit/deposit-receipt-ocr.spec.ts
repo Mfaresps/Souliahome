@@ -170,4 +170,26 @@ describe('receipt OCR on original uploads', () => {
     expect(await service.read(image)).toMatchObject({ amount: 120, method: '', confident: false, ran: true });
     expect(w.recognize.mock.calls.every(call => call[0] === image)).toBe(true);
   });
+  it.each([
+    ['To:\nInsta pay', 'Instapay'],
+    ['To:\nlnstapay', 'Instapay'],
+    ['To Mobile Wallet', 'فودافون كاش'],
+    ['To\n01012345678', ''],
+  ])('recovers a low-contrast photographed destination %s without changing the amount', async (destination, method) => {
+    image = await sharp({ create: { width: 400, height: 800, channels: 3, background: '#a0a0a0' } })
+      .composite([{ input: Buffer.from('<svg width="400" height="800"><path d="M60 480h280v80H60z" fill="#787878"/></svg>') }])
+      .png().toBuffer();
+    const initial = 'Your transaction was successful\n500 EGP\nFrom\ncustomer@instapay\nTo\n01012345678\nMore Details';
+    const recovered = `Your transaction was successful\n500.5 EGP\nFrom\ncustomer@instapay\n${destination}\n01012345678\nMore Details`;
+    const w = worker(); (createWorker as jest.Mock).mockResolvedValue(w);
+    w.recognize.mockResolvedValueOnce({ data: { text: initial } })
+      .mockResolvedValueOnce({ data: { text: initial } })
+      .mockResolvedValue({ data: { text: recovered } });
+    expect(await service.read(image)).toMatchObject({ amount: 500, method, confident: !!method, ran: true });
+    const prepared = w.recognize.mock.calls[2][0] as Buffer;
+    expect((await sharp(prepared).metadata()).width).toBe(1200);
+    const stats = await sharp(prepared).stats();
+    expect(stats.channels[0].max - stats.channels[0].min).toBeGreaterThan(200);
+    expect(w.recognize.mock.calls.length).toBe(method ? 3 : 4);
+  });
 });

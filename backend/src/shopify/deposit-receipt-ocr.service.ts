@@ -167,15 +167,17 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
   /**
    * An InstaPay receipt whose destination could not be read. InstaPay prints the recipient's
    * address in light grey («vkswr3420@instapay»), which colour OCR returns as fragments, so only
-   * the sender's address is seen and the vault stays blank. A black/white pass at a high
-   * threshold turns light grey into solid text. Only the vault is taken from it — never the
+   * the sender's address is seen and the vault stays blank. Photographed screens need contrast
+   * normalization before thresholding; a fixed threshold can erase their entire grey background.
+   * First retain the grey detail, then try a black/white pass. Only the vault is taken — never the
    * amount — and only when the pass recognises the same InstaPay receipt.
    */
   private async recoverInstapayDestination(worker: Worker, image: Buffer, expired: () => boolean): Promise<ParsedReceipt['method']> {
-    for (const level of [215, 200]) {
+    for (const level of [null, 215]) {
       if (expired()) return '';
       try {
-        const prepared = await sharp(image).rotate().grayscale().threshold(level).png().toBuffer();
+        const preparation = sharp(image).rotate().resize({ width: 1200 }).grayscale().normalise();
+        const prepared = await (level == null ? preparation : preparation.threshold(level)).png().toBuffer();
         const reading = parseReceiptRecognition((await worker.recognize(prepared, undefined, { blocks: true })).data);
         if (reading.pattern === 'instapay' && reading.method) return reading.method;
       } catch { /* One preparation failing leaves the next. */ }

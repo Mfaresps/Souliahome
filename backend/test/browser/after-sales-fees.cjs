@@ -70,7 +70,7 @@ const output = path.join(root, 'artifacts/after-sales-fees'); fs.mkdirSync(outpu
       await page.setViewport({width,height:1000});
       await page.evaluate(async lang => {currentLang=lang;await AfterSales.create(testInvoice._id);},lang);
       await page.$eval('[data-as-qty]',e=>{e.value='1';e.dispatchEvent(new Event('change',{bubbles:true}));});
-      await page.click('[data-as-unit]');
+      await page.click('.as-unit-details>summary');await page.click('[data-as-unit]');
       await page.type('[name=feeBasis]','Agreed cost');
       await expectRefund('450');
       await page.select('[name=fulfillmentChannel]','direct');

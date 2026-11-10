@@ -1,0 +1,102 @@
+{
+  "origin": "https://admin.soulia.store",
+  "build": "55",
+  "scope": "Unauthenticated login shell only",
+  "results": [
+    {
+      "label": "cold",
+      "settledMs": 3349,
+      "domContentLoadedMs": 2518,
+      "loadMs": 2535,
+      "requests": 167,
+      "cached": 0,
+      "networkResponses": 167,
+      "networkBytes": 2463456,
+      "largest": [
+        {
+          "path": "/app-core.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 1293350,
+          "cache": "public, max-age=31536000, immutable"
+        },
+        {
+          "path": "/app-core.css",
+          "status": 200,
+          "disk": false,
+          "bytes": 323140,
+          "cache": "public, max-age=31536000, immutable"
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 94994,
+          "cache": "public, no-cache, must-revalidate"
+        },
+        {
+          "path": "/inventory-units.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 43603,
+          "cache": "public, max-age=31536000, immutable"
+        },
+        {
+          "path": "/favicon.png",
+          "status": 200,
+          "disk": false,
+          "bytes": 33597,
+          "cache": "no-cache"
+        }
+      ]
+    },
+    {
+      "label": "warm",
+      "settledMs": 1190,
+      "domContentLoadedMs": 477,
+      "loadMs": 496,
+      "requests": 165,
+      "cached": 0,
+      "networkResponses": 12,
+      "networkBytes": 1833,
+      "largest": [
+        {
+          "path": "/api/drafts",
+          "status": 401,
+          "disk": false,
+          "bytes": 323,
+          "cache": null
+        },
+        {
+          "path": "/api/branding",
+          "status": 200,
+          "disk": false,
+          "bytes": 265,
+          "cache": "no-store"
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 142,
+          "cache": "public, no-cache, must-revalidate"
+        },
+        {
+          "path": "/deposit-transfer.css",
+          "status": 304,
+          "disk": false,
+          "bytes": 123,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/customer-service-layout.css",
+          "status": 304,
+          "disk": false,
+          "bytes": 123,
+          "cache": "no-cache"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

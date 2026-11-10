@@ -43,6 +43,14 @@ body{font-variant-numeric:lining-nums tabular-nums}
 #sidebar .nav-item.active:before{inset-inline-start:-12px}
 #sidebar .nav-bottom-group{padding:7px 12px}
 #sidebar .nav-sub-item{padding-block:5px;font-size:.76rem;color:var(--shell-nav-text)}
+#sidebar .nav-sub{transition:none}
+#sidebar .nav-sub-item:has(.nav-sub-icon)::before{display:none}
+#sidebar .nav-sub-item .nav-sub-icon{display:inline-flex;align-items:center;flex:0 0 15px;color:var(--shell-muted)}
+#sidebar .nav-sub-item .nav-sub-icon svg{display:block;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#sidebar .nav-sub-item.active .nav-sub-icon{color:inherit}
+#sidebar .nav-sub-badge{margin-inline-start:auto;padding:1px 5px;border-radius:5px;background:var(--primary-pale);color:var(--accent);font-size:11px;line-height:1.4;font-variant-numeric:tabular-nums}
+/* Customer Service children are separate route views, selected from the sidebar. */
+#page-complaints .cs-main-tabs{display:none!important}
 body.sidebar-collapsed .shell-nav-section{margin-bottom:3px}
 body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
 .shell-breadcrumb{max-width:min(460px,38vw);overflow:hidden;font-size:.8rem}

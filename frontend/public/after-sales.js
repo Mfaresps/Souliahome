@@ -23,6 +23,17 @@
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 13-5-5 5-5M4 8h10a6 6 0 0 1 0 12h-3"/></svg>';
   }
+  function formIcon(name) {
+    const paths={box:'M21 8l-9 5-9-5m9 5v9M3 8l9-5 9 5v10l-9 4-9-4V8Z',wallet:'M20 8V5a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v12H5a2 2 0 0 1-2-2V6m17 7h-5v4h5',note:'M8 3H5v18h14V7l-4-4H8Zm6 0v5h5M7 12h8m-8 4h6',calendar:'M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z',truck:'M14 7h4l4 5v6h-3m-5 0H9m-6 0H2V4h12v14M7 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm12 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM14 12h8',warehouse:'m3 10 9-7 9 7v11H3V10Zm5 11V11h8v10M8 15h8',check:'m5 12 4 4L19 6',plus:'M12 5v14M5 12h14',user:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3',alert:'M12 8v5m0 4h.01M10 3 2 19h20L14 3h-4Z',back:'m14 6-6 6 6 6',close:'m6 6 12 12M6 18 18 6'};
+    if(name==='return'||name==='exchange')return operationIcon(name).replace('<svg ','<svg class="as-form-icon pm-select-icon" ');
+    return `<svg class="as-form-icon pm-select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.box}"/></svg>`;
+  }
+  function selectIcon(value) {
+    return formIcon(({bosta:'truck',direct:'warehouse','customer-choice':'user',defect:'alert','wrong-item':'box'})[value]||value);
+  }
+  function requestSelect(name,label,options) {
+    return `<div class="as-field"><span id="as-label-${name}">${label}</span><select name="${name}" data-icons="after-sales" aria-labelledby="as-label-${name}">${Object.entries(options).map(([value,text])=>`<option value="${value}">${text}</option>`).join('')}</select></div>`;
+  }
   function operationIconButton(caseId, kind, detail='') {
     const label=tr(kind==='exchange'?'استبدال':'استرجاع',kind==='exchange'?'Exchange':'Return');
     const description=[label,detail].filter(Boolean).join(' · ');
@@ -115,6 +126,28 @@
   const stage = (v,kind) => v==='approved'&&kind==='return'?tr('معتمد — بانتظار سحب المرتجع','Approved — awaiting return collection'):({ requested:tr('بانتظار الموافقة','Awaiting approval'), approved:tr('معتمد — متابعة التجهيز','Approved — track preparation'), shipping:tr('قيد الشحن والاستلام','Shipping / receiving'), settlement:tr('بانتظار التسوية','Awaiting settlement'), closed:tr('مكتمل','Completed'), cancelled:tr('ملغي / مرفوض','Cancelled / rejected') }[v] || v);
   const reasonLabel = v => ({ 'customer-choice':tr('رغبة العميل','Customer preference'),defect:tr('عيب في المنتج','Product defect'),'wrong-item':tr('خطأ في المنتج المرسل','Wrong item sent') }[v]||v);
   const actionLabel = v => ({'step-rolled-back':tr('التراجع عن خطوة','Step undone'),'shipment-created':tr('إنشاء بوليصة بوسطة','Bosta waybill created'),'carrier-status':tr('تحديث حالة بوسطة','Bosta status updated'),requested:tr('تسجيل الطلب','Request submitted'),approved:tr('اعتماد الطلب','Request approved'),cancelled:tr('إلغاء الطلب','Case cancelled'),'shipment-requested':tr('طلب شحنة بوسطة','Bosta shipment requested'),'shipment-linked':tr('مطابقة البوليصة','Shipment reconciled'),'received-and-inspected':tr('استلام وفحص المرتجع','Return received and inspected'),'replacement-delivered':tr('تأكيد تسليم البديل','Replacement delivered'),'settlement:refund':tr('رد المبلغ للعميل','Customer refunded'),'settlement:collection':tr('تحصيل فرق العميل','Customer difference collected'),'settlement:carrier':tr('تسوية بوسطة','Carrier settled'),exception:tr('تسجيل مشكلة','Issue recorded'),'exception-resolved':tr('معالجة المشكلة','Issue resolved')}[v]||v);
+  const reduceMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let entrance=null,resizeMotion=null,closingMotion=null;
+  function cancelDialogClose(){if(closingMotion){const pending=closingMotion;closingMotion=null;pending.animation.cancel();}dialog?.classList.remove('as-is-closing');if(dialog)window.SouliaMotion?.cancelClose(dialog);}
+  function enterDialog(delay=0){
+    cancelDialogClose();entrance?.cancel();entrance=null;
+    if(reduceMotion())return;
+    const animation=dialog.animate([{opacity:0,transform:'translateY(6px) scale(.99)'},{opacity:1,transform:'none'}],{duration:200,delay,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});
+    entrance=animation;animation.finished.then(()=>{if(entrance===animation)entrance=null;}).catch(()=>{});
+  }
+  function closeDialog(){
+    if(typeof _pmSelClose==='function')_pmSelClose();
+    if(!dialog?.open)return Promise.resolve();
+    if(closingMotion)return closingMotion.task;
+    serial++; // A late invoice/case response must not cancel the user's close.
+    const style=getComputedStyle(dialog),opacity=style.opacity,transform=style.transform,height=dialog.offsetHeight+'px',width=dialog.offsetWidth+'px';
+    entrance?.cancel();entrance=null;resizeMotion?.cancel();resizeMotion=null;
+    if(reduceMotion()){dialog.close();return Promise.resolve();}
+    dialog.classList.add('as-is-closing');
+    const pending={animation:dialog.animate([{opacity,transform,height,width},{opacity:0,transform:'translateY(4px) scale(.99)',height,width}],{duration:140,easing:'ease-in'})};
+    pending.task=pending.animation.finished.catch(()=>{}).then(()=>{if(closingMotion!==pending)return;closingMotion=null;dialog.close();});
+    closingMotion=pending;return pending.task;
+  }
   let dialog, serial = 0, busy = false, activeCase, activeInvoice, quoteSerial = 0, caseReturn = null;
   let complaintOrigin=null,suspendedView=null,activeCaseOwner='';
   const navigationOwner=()=>String(currentUser?._id||currentUser?.userId||'');
@@ -127,16 +160,16 @@
     if(!complaintOrigin)return;
     el('.as-close')?.setAttribute('aria-label',tr('رجوع لملف الشكوى','Back to complaint'));
     const nav=document.createElement('div');nav.className='as-complaint-nav';nav.dataset.asComplaintNav='';
-    nav.innerHTML=`<button type="button" class="btn btn-outline" data-as-back-complaint><span aria-hidden="true">${tr('→','←')}</span> ${tr('رجوع لملف الشكوى','Back to complaint')}</button><span><bdi>${esc(complaintOrigin.complaintNo||'')}</bdi><small>${tr('الشكوى / الاستبدال والاسترجاع','Complaint / returns and exchanges')}</small></span>`;
+    nav.innerHTML=`<button type="button" class="btn btn-outline" data-as-back-complaint><span class="as-back-icon">${formIcon('back')}</span> ${tr('رجوع لملف الشكوى','Back to complaint')}</button><span><bdi>${esc(complaintOrigin.complaintNo||'')}</bdi><small>${tr('الشكوى / الاستبدال والاسترجاع','Complaint / returns and exchanges')}</small></span>`;
     nav.querySelector('button').onclick=backToComplaint;head.appendChild(nav);
   }
   function backToComplaint(){
     if(busy||!complaintOrigin)return;
     const origin=complaintOrigin;
-    suspendedView={key:originKey(origin),owner:navigationOwner(),serial,top:el('.as-body')?.scrollTop||0};
-    // Open the destination before closing this dialog: the backdrop stays continuous.
+    suspendedView={key:originKey(origin),owner:navigationOwner(),serial,top:(el('.as-create-content')||el('.as-body'))?.scrollTop||0};
+    // Restore the complaint document before dismissing the execution overlay.
     const task=window.ComplaintFlow?.resume(origin.complaintId);
-    if(document.querySelector('.cf-dialog[open]')){serial++;suspendedView.serial=serial;dialog.close();}
+    if(document.querySelector('#page-complaint-detail.active')||document.querySelector('.cf-dialog[open]')){closeDialog();suspendedView.serial=serial;}
     return task;
   }
   function fromComplaint(origin){
@@ -144,24 +177,31 @@
     const next={...origin,owner:navigationOwner()},key=originKey(next);
     const resume=suspendedView&&suspendedView.owner===next.owner&&suspendedView.key===key&&suspendedView.serial===serial&&dialog?.querySelector('form');
     complaintOrigin=next;
-    if(resume){const top=suspendedView.top;suspendedView=null;showComplaintNavigation();dialog.showModal();el('.as-body').scrollTop=top;el('[data-as-back-complaint]')?.focus({preventScroll:true});return;}
+    if(resume){const top=suspendedView.top;suspendedView=null;showComplaintNavigation();if(!dialog.open)dialog.showModal();enterDialog();(el('.as-create-content')||el('.as-body')).scrollTop=top;el('[data-as-back-complaint]')?.focus({preventScroll:true});return;}
     if(suspendedView?.key===key)caseReturn={id:String(origin.caseId),top:suspendedView.top};
     suspendedView=null;
     return origin.caseId?open(origin.caseId,true):create(origin.invoiceId,origin.kind,origin);
   }
   function show(title, subtitle, html) {
     serial++;
-    if (!dialog) { dialog = document.createElement('dialog'); dialog.className = 'as-dialog'; document.body.appendChild(dialog); dialog.addEventListener('cancel', e => { if (busy||complaintOrigin){e.preventDefault();if(!busy)backToComplaint();} }); }
+    cancelDialogClose();
+    if (!dialog) { dialog = document.createElement('dialog'); dialog.className = 'as-dialog'; document.body.appendChild(dialog); dialog.addEventListener('cancel', e => { e.preventDefault();if(!busy){if(complaintOrigin)backToComplaint();else closeDialog();} }); }
     const wasOpen = dialog.open;
+    const previousHeight=wasOpen?dialog.offsetHeight:0,previousWidth=wasOpen?dialog.offsetWidth:0;
+    resizeMotion?.cancel();resizeMotion=null;
     dialog.dir = tr('rtl','ltr'); dialog.setAttribute('aria-labelledby','as-title');
     dialog.innerHTML = `<header class="as-head"><div><h2 id="as-title">${esc(title)}</h2><p>${esc(subtitle || '')}</p></div><button type="button" class="as-close" aria-label="${tr('إغلاق','Close')}">×</button></header><div class="as-body"><div data-as-message role="status"></div>${html}</div>`;
     dialog.classList.toggle('as-compact', !!dialog.querySelector('form') && !dialog.querySelector('.as-grid, [data-as-report-results]'));
-    dialog.querySelector('.as-close').onclick = () => { if (!busy){if(complaintOrigin)backToComplaint();else dialog.close();} };
+    dialog.classList.toggle('as-create-dialog',!!dialog.querySelector('[data-as-create],[data-as-create-loading]'));
+    dialog.querySelector('.as-close').onclick = () => { if (!busy){if(complaintOrigin)backToComplaint();else closeDialog();} };
     showComplaintNavigation();
     if (!dialog.open) dialog.showModal();
-    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      const inside=wasOpen||!!complaintOrigin,target=inside?dialog.querySelector('.as-body'):dialog;
-      target.animate?.([{ opacity: complaintOrigin ? .65 : 0, transform: inside ? 'translateY(4px)' : 'scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: inside ? 140 : 200, easing: 'ease-out' });
+    if(!wasOpen)enterDialog(dialog.querySelector('[data-as-create-loading]')?100:0);
+    else if(!reduceMotion()){
+      const nextHeight=dialog.offsetHeight,nextWidth=dialog.offsetWidth;
+      const enteringVisible=!entrance||Number(entrance.currentTime)>=(entrance.effect?.getTiming().delay||0);
+      if(enteringVisible&&(Math.abs(nextHeight-previousHeight)>1||Math.abs(nextWidth-previousWidth)>1)){resizeMotion=dialog.animate([{height:previousHeight+'px',width:previousWidth+'px'},{height:nextHeight+'px',width:nextWidth+'px'}],{duration:200,easing:'cubic-bezier(.2,.8,.2,1)'});resizeMotion.finished.catch(()=>{});}
+      if(!entrance)dialog.querySelector('.as-body').animate?.([{opacity:0},{opacity:1}],{duration:160,easing:'ease-out'});
     }
     return serial;
   }
@@ -371,28 +411,24 @@
   async function create(invoiceId, kind = 'return', complaint = null) {
     if (!allowed('transaction')) return;
     if(!complaint||complaintOrigin?.complaintId!==complaint.complaintId){complaintOrigin=complaint?{...complaint,invoiceId,kind,owner:navigationOwner()}:null;suspendedView=null;}
-    const version = show(tr('طلب استرجاع أو استبدال','Return or exchange request'), '', tr('جارٍ تحميل الفاتورة…','Loading invoice…'));
+    const version = show(kind==='exchange'?tr('طلب استبدال منتج','Product exchange request'):tr('طلب استرجاع منتج','Product return request'), '', `<div class="as-request-loading" data-as-create-loading role="status">${tr('جارٍ تحميل الفاتورة…','Loading invoice…')}</div>`);
     try {
       const data = await api('/after-sales/invoice/' + encodeURIComponent(invoiceId));
       if (version !== serial || !dialog.open) return;
       activeInvoice = data.invoice; activeCase = null;
       const tx = data.invoice;
       show(tr('طلب خدمة ما بعد البيع','After-sales request'), '#' + tx.ref + ' · ' + tx.client,
-        `<form data-as-create><div class="as-banner" data-as-path-description></div><div class="as-grid"><div><section class="as-card"><h3>${tr('الطلب والسبب','Request and reason')}</h3><div class="as-two"><label class="as-field">${tr('نوع الطلب','Request type')}<select name="kind"><option value="return">${tr('استرجاع','Return')}</option><option value="exchange">${tr('استبدال','Exchange')}</option></select></label><label class="as-field">${tr('السبب','Reason')}<select name="reason"><option value="customer-choice">${tr('رغبة العميل','Customer preference')}</option><option value="defect">${tr('عيب / ديفوه','Defect')}</option><option value="wrong-item">${tr('خطأ في المنتج المرسل','Wrong item sent')}</option></select></label></div><p class="as-muted">${tr('الديفوه وخطأ الشركة بدون رسوم شحن على العميل. مهلة الطلب تُحسب من الاستلام.','Defects and company errors carry no customer shipping fee. Eligibility starts at delivery.')}</p></section>
-        <section class="as-card"><h3>${tr('القطع المطلوبة من الفاتورة','Items from the original invoice')}</h3>${tx.items.map((line,i) => {
+        `<form data-as-create><div class="as-create-content"><p class="as-request-hint" data-as-path-description></p><section class="as-request-controls"><div class="as-request-fields">${requestSelect('kind',tr('نوع الطلب','Request type'),{return:tr('استرجاع','Return'),exchange:tr('استبدال','Exchange')})}${requestSelect('reason',tr('سبب الطلب','Request reason'),{'customer-choice':tr('رغبة العميل','Customer preference'),defect:tr('عيب في المنتج','Product defect'),'wrong-item':tr('منتج مرسل بالخطأ','Wrong item sent')})}${requestSelect('fulfillmentChannel',tr('طريقة التنفيذ','Fulfillment method'),{bosta:tr('شحن','Shipment'),direct:tr('تسليم بالمخزن','Warehouse handover')})}</div><div class="as-request-policy"><span>${tr('عيب المنتج أو خطأ الإرسال بدون رسوم على العميل.','No customer fee for defects or wrong items.')}</span>${tx.deliveredAt?`<span class="as-request-date">${formIcon('calendar')}${tr('تم التسليم','Delivered')} <time datetime="${esc(tx.deliveredAt)}" title="${esc(date(tx.deliveredAt))}">${esc(new Intl.DateTimeFormat(tr('ar-EG','en-GB'),{day:'numeric',month:'short',year:'numeric',timeZone:'Africa/Cairo'}).format(new Date(tx.deliveredAt)))}</time></span>`:''}</div></section><div class="as-grid as-request-grid"><div class="as-request-products">
+        <section class="as-card"><h3>${formIcon('return')}${tr('القطع الراجعة','Returned items')}</h3><div class="as-return-lines">${tx.items.map((line,i) => {
           const used = data.prior.flatMap(r => r.items || []).filter(l => l.lineIndex === i || l.lineIndex == null && l.code === line.code).reduce((n,l) => n + Number(l.qty),0), available = Math.max(0,Number(line.qty)-used);
           const ids = data.identities.lines.find(l => line.lineId ? l.lineId === line.lineId : l.sku === line.code)?.current || [];
-          return `<div data-as-line="${i}"><div class="as-row"><div>${productCard({...data.products.find(p=>p.code===line.code),...line,imageUrl:line.imageUrl||data.products.find(p=>p.code===line.code)?.imageUrl})}<small>${tr('المتاح للطلب','Eligible quantity')}: ${available}</small></div><input class="as-input as-qty" type="number" min="0" max="${available}" step="1" value="0" data-as-qty aria-label="${tr('كمية المرتجع','Return quantity')}" ${available ? '' : 'disabled'}></div>${ids.map(u => `<label class="as-identity"><input type="checkbox" value="${esc(u.unitId)}" data-as-unit><code dir="ltr">${esc(u.manualCode || u.barcode)}</code></label>`).join('')}</div>`;
-        }).join('')}</section><section class="as-card" data-as-replacements hidden><h3>${tr('المنتج البديل','Replacement items')}</h3><div data-as-replacement-list></div><button type="button" class="btn btn-outline" data-as-add>${tr('إضافة بديل','Add replacement')}</button><div class="as-picker" data-as-picker hidden><label class="as-field">${tr('ابحث عن المنتج بالاسم أو SKU','Search products by name or SKU')}<input type="search" data-as-search autocomplete="off"></label><div class="as-picker-results" data-as-picker-results></div></div><div data-as-exchange-summary></div><label class="as-check"><input type="checkbox" name="upgradeAccepted">${tr('وافق العميل على فرق سعر ترقية المنتج، إن وجد.','Customer accepted a product upgrade difference, if any.')}</label></section></div>
-        <aside><section class="as-card"><h3>${tr('حساب التسوية','Settlement')}</h3><div data-as-quote>${summary(null)}</div><label class="as-field" style="margin-top:16px">${tr('تكلفة الاسترجاع / الاستبدال لهذه العملية','Return / exchange cost for this request')}<input type="number" name="customerFee" min="0" step="0.01" value="${data.policy.returnFee || 0}" ${data.policy.customerFeesEnabled ? '' : 'disabled'}></label><p class="as-muted" data-as-fee-help></p><button type="button" class="btn btn-outline" data-as-reset-fee>${tr('استخدام التكلفة الافتراضية','Use default cost')}</button><label class="as-field">${tr('سبب انطباق الرسوم','Why the fee applies')}<textarea name="feeBasis" maxlength="1000" rows="2"></textarea></label><p class="as-muted">${esc(data.policy.feePolicyNote || tr('رسوم العميل غير مفعلة. يضبط المدير السياسة من إعدادات خدمة ما بعد البيع.','Customer fees are disabled. An administrator can configure the after-sales policy.'))}</p></section><section class="as-card"><label class="as-field">${tr('تفاصيل المشكلة أو مرجع الصور','Issue details or photo reference')}<textarea name="note" maxlength="1000" rows="3"></textarea></label></section></aside></div><footer class="as-foot"><button type="submit" class="btn btn-primary">${tr('تسجيل الطلب للمراجعة','Submit request')}</button></footer></form>`);
+          return `<div class="as-return-line" data-as-line="${i}"><div class="as-row">${productCard({...data.products.find(p=>p.code===line.code),...line,imageUrl:line.imageUrl||data.products.find(p=>p.code===line.code)?.imageUrl})}<label class="as-return-quantity"><span>${tr('الكمية','Quantity')}</span><input class="as-input as-qty" type="number" min="0" max="${available}" step="1" value="0" data-as-qty ${available ? '' : 'disabled'}><small>${tr('من','of')} ${available}</small></label></div>${ids.length?`<details class="as-unit-details"><summary>${tr('اختيار القطع بالكود','Select unit codes')} <span>${ids.length}</span></summary>${ids.map(u => `<label class="as-identity"><input type="checkbox" value="${esc(u.unitId)}" data-as-unit><code dir="ltr">${esc(u.manualCode || u.barcode)}</code></label>`).join('')}</details>`:''}</div>`;
+        }).join('')}</div></section><section class="as-card" data-as-replacements hidden><div class="as-card-heading"><h3>${formIcon('exchange')}${tr('المنتج البديل','Replacement items')}</h3><button type="button" class="btn btn-outline" data-as-add aria-expanded="false" aria-controls="as-replacement-picker">${formIcon('plus')}${tr('إضافة بديل','Add replacement')}</button></div><div class="as-picker" id="as-replacement-picker" data-as-picker hidden><label class="as-field">${tr('ابحث بالاسم أو كود المنتج','Search by product name or code')}<input type="search" data-as-search autocomplete="off"></label><div class="as-picker-results" data-as-picker-results></div></div><div data-as-replacement-list></div><div data-as-exchange-summary></div><label class="as-check"><input type="checkbox" name="upgradeAccepted">${tr('وافق العميل على فرق سعر الترقية، إن وجد.','Customer accepted any upgrade price difference.')}</label></section></div>
+        <aside class="as-request-aside"><section class="as-card as-settlement-card"><h3>${formIcon('wallet')}${tr('ملخص التسوية','Settlement summary')}</h3><div data-as-quote aria-live="polite">${summary(null)}</div><details class="as-fee-details"><summary>${tr('رسوم العملية','Request fees')}<b data-as-fee-value></b></summary><div class="as-fee-content"><label class="as-field">${tr('التكلفة على العميل','Customer cost')}<input type="number" name="customerFee" min="0" step="0.01" value="${data.policy.returnFee || 0}" ${data.policy.customerFeesEnabled ? '' : 'disabled'}></label><p class="as-muted" data-as-fee-help></p><button type="button" class="btn btn-outline" data-as-reset-fee>${tr('استعادة الافتراضي','Reset to default')}</button><label class="as-field">${tr('سبب انطباق الرسوم','Why the fee applies')}<textarea name="feeBasis" maxlength="1000" rows="2"></textarea></label>${data.policy.feePolicyNote?`<p class="as-muted">${esc(data.policy.feePolicyNote)}</p>`:''}</div></details></section><section class="as-card as-note-card"><h3>${formIcon('note')}${tr('ملاحظات','Notes')}<small>${tr('اختياري','Optional')}</small></h3><label class="as-field"><span class="as-visually-hidden">${tr('تفاصيل المشكلة أو مرجع الصور','Issue details or photo reference')}</span><textarea name="note" maxlength="1000" rows="2" placeholder="${tr('تفاصيل تساعد في تنفيذ الطلب…','Details to help process the request…')}"></textarea></label></section></aside></div></div><footer class="as-foot"><span class="as-submit-hint">${tr('يُرسل للمراجعة قبل التنفيذ','Sent for review before processing')}</span><button type="submit" class="btn btn-primary"><span data-as-submit-label>${tr('تسجيل الطلب','Submit request')}</span>${formIcon('check')}</button></footer></form>`);
       const form = el('form'), field = name => form.elements.namedItem(name);
-      form.querySelector('.as-card').insertAdjacentHTML('beforeend',`<label class="as-field">${tr('طريقة التنفيذ','Fulfillment method')}<select name="fulfillmentChannel"><option value="bosta">${tr('شحن بوسطة','Bosta shipment')}</option><option value="direct">${tr('استلام وتسليم مباشر بالمخزن','Direct warehouse handover')}</option></select></label>`);
       field('kind').value = kind;
       if (complaint) {
         field('kind').disabled = true;
-        const banner = document.createElement('div'); banner.className = 'as-banner';
-        banner.textContent = tr('مرتبط بالشكوى: ', 'Linked complaint: ') + complaint.complaintNo;
-        form.prepend(banner);
         for (const row of form.querySelectorAll('[data-as-line]')) {
           const item = complaint.items.find(i => i.lineIndex === Number(row.dataset.asLine));
           row.querySelector('[data-as-qty]').value = item?.qty || 0;
@@ -415,6 +451,7 @@
           : tr('يمكن تعديل التكلفة لهذه العملية فقط، بما فيها الاستلام المباشر. تُخصم من المبلغ المُرد للعميل، وتُضاف إلى الفرق المطلوب منه عند الاستبدال إن وجد.', 'Edit the cost for this request, including direct handover. It reduces the customer refund or increases any exchange amount to collect.');
       }
       syncFee();
+      form.addEventListener('invalid',event=>{const details=event.target.closest('details');if(details)details.open=true;},true);
       el('[data-as-reset-fee]').onclick = () => { manualFees.delete(field('kind').value); syncFee(); void calculate(); };
       const selected = new Map();
       const normalize = value => typeof normalizeUiSearch === 'function' ? normalizeUiSearch(String(value||'')) : String(value||'').toLocaleLowerCase().trim();
@@ -439,7 +476,8 @@
           selected.set(product._id,{product,qty:1});renderSelected();renderPicker();void calculate();
         });
       }
-      el('[data-as-add]').onclick=()=>{const picker=el('[data-as-picker]');picker.hidden=!picker.hidden;if(!picker.hidden){renderPicker();el('[data-as-search]').focus();}};
+      el('[data-as-add]').onclick=()=>{const picker=el('[data-as-picker]');picker.hidden=!picker.hidden;el('[data-as-add]').setAttribute('aria-expanded',String(!picker.hidden));if(!picker.hidden){renderPicker();el('[data-as-search]').focus();}};
+      el('[data-as-search]').onkeydown=event=>{if(event.key==='Escape'&&!el('[data-as-picker]').hidden){event.preventDefault();event.stopPropagation();el('[data-as-picker]').hidden=true;el('[data-as-add]').setAttribute('aria-expanded','false');el('[data-as-add]').focus();}};
       el('[data-as-search]').oninput=renderPicker;
       renderSelected();
       function payload() {
@@ -454,11 +492,13 @@
         const isExchange=field('kind').value==='exchange';
         el('[data-as-replacements]').hidden = !isExchange;
         field('upgradeAccepted').disabled=!isExchange;
-        el('#as-title').textContent=isExchange?tr('طلب استبدال منتج','Product exchange request'):tr('طلب استرجاع منتج','Product return request');
-        el('[data-as-path-description]').textContent=isExchange?tr('حدد القطع الراجعة والبديل. بعد الاعتماد يصبح البديل مسجّلًا وبانتظار التجهيز، وتُسوّى فروق السعر والشحن.','Select returned and replacement items. Approval creates a registered replacement awaiting prep, followed by preparation and settlement of price and shipping differences.'):tr('حدد القطع المطلوب إرجاعها. يتم سحبها وفحصها بالمخزن ثم رد المستحق بعد تطبيق سياسة الإرجاع.','Select items to return. They are collected and inspected at the warehouse, then the refund is paid according to the return policy.');
-        el('[data-as-create] button[type=submit]').textContent=isExchange?tr('تسجيل طلب الاستبدال','Submit exchange request'):tr('تسجيل طلب الاسترجاع','Submit return request');
+        el('#as-title').innerHTML=formIcon(isExchange?'exchange':'return')+tr(isExchange?'طلب استبدال منتج':'طلب استرجاع منتج',isExchange?'Product exchange request':'Product return request');
+        el('[data-as-path-description]').textContent=isExchange?tr('اختر القطع الراجعة والبديل، ثم راجع فرق السعر قبل تسجيل الطلب.','Choose returned and replacement items, then review the difference before submitting.'):tr('اختر القطع الراجعة وراجع المستحق للعميل. يُرد المبلغ بعد الاستلام والفحص.','Choose returned items and review the refund. Payment follows receipt and inspection.');
+        el('[data-as-submit-label]').textContent=isExchange?tr('تسجيل الاستبدال','Submit exchange'):tr('تسجيل الاسترجاع','Submit return');
+        el('[data-as-fee-value]').textContent=amount(field('customerFee').value);
+        form.querySelectorAll('[data-as-line]').forEach(row=>row.classList.toggle('is-selected',Number(row.querySelector('[data-as-qty]').value)>0));
         field('feeBasis').required = !field('customerFee').disabled && Number(field('customerFee').value) > 0;
-        const body=payload(); el('[data-as-exchange-summary]').innerHTML=exchangeSummary(body.items,body.exchangeItems);
+        const body=payload(); el('[data-as-exchange-summary]').innerHTML=body.items.length&&body.exchangeItems.length?exchangeSummary(body.items,body.exchangeItems):'';
         // Notes/search and repeated input/change events do not change the quote.
         const signature=JSON.stringify({...body,note:undefined,feeBasis:!!body.feeBasis});
         if(signature===quoteKey)return;
@@ -479,6 +519,8 @@
       let timer; form.oninput = event => { if(event.target.name==='note'||event.target.matches('[data-as-search]'))return; if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); clearTimeout(timer); timer=setTimeout(calculate,180); };
       form.onchange = event => { if(event.target.name==='note'||event.target.matches('[data-as-search]'))return; clearTimeout(timer); if(event.target.name==='customerFee') manualFees.set(field('kind').value,field('customerFee').value); if(['kind','reason','fulfillmentChannel'].includes(event.target.name)) syncFee(); void calculate(); };
       form.onsubmit = async event => { event.preventDefault(); if(busy)return; setBusy(true); try { const result=await post('', '', payload()); if(complaintOrigin)complaintOrigin.caseId=result._id; await savedStep(result,result._id,['returns']); if (complaint) void window.ComplaintFlow?.changed(); message(tr('تم تسجيل الطلب وإرساله للمراجعة.','The request was submitted for review.'),false); } catch(error){message(error.message);} finally{setBusy(false);} };
+      if(typeof _pmEnhanceSelects==='function')_pmEnhanceSelects(form);
+      el('.as-fee-details').open=!!data.policy.customerFeesEnabled&&Number(field('customerFee').value)>0;
       await calculate();
     } catch(error) { message(error.message); }
   }
@@ -488,7 +530,7 @@
       { id:row.workflow.replacementTxId,label:tr('فاتورة البديل','Replacement invoice')+' #'+(row.workflow.replacementRef||'') },
       { id:row.returnTxId,label:tr('فاتورة المرتجع','Return invoice')+' #'+(row.returnTxRef||'') }].filter(x=>x.id).map(x=>`<button class="as-link" type="button" data-as-invoice="${esc(x.id)}">${esc(x.label)}</button>`).join('');
   }
-  function bindLinks() { dialog.querySelectorAll('[data-as-complaint]').forEach(button=>button.onclick=()=>{if(complaintOrigin?.complaintId===button.dataset.asComplaint)return backToComplaint();const task=window.ComplaintFlow?.resume(button.dataset.asComplaint);if(document.querySelector('.cf-dialog[open]')){serial++;dialog.close();}return task;}); dialog.querySelectorAll('[data-as-invoice]').forEach(button=>button.onclick=()=>{complaintOrigin=null;suspendedView=null;dialog.close();showInvoiceDetail(button.dataset.asInvoice);}); }
+  function bindLinks() { dialog.querySelectorAll('[data-as-complaint]').forEach(button=>button.onclick=()=>{if(complaintOrigin?.complaintId===button.dataset.asComplaint)return backToComplaint();const task=window.ComplaintFlow?.resume(button.dataset.asComplaint);if(document.querySelector('#page-complaint-detail.active')||document.querySelector('.cf-dialog[open]')){closeDialog();}return task;}); dialog.querySelectorAll('[data-as-invoice]').forEach(button=>button.onclick=()=>{complaintOrigin=null;suspendedView=null;closeDialog();showInvoiceDetail(button.dataset.asInvoice);}); }
   async function open(id, restorePosition = false, committedRow = null) {
     if(complaintOrigin&&String(complaintOrigin.caseId)!==String(id)){complaintOrigin=null;suspendedView=null;}
     const owner=navigationOwner();
@@ -519,7 +561,7 @@
         <div class="as-grid"><div><section class="as-card" data-as-section="status" tabindex="-1"><div class="as-row"><h3>${tr('حالة الطلب','Case status')}</h3><span class="as-badge">${stage(w.stage,row.requestKind)}</span></div><div class="as-actions">${links(row)}</div>${row.requestKind==='exchange'&&w.replacementTxId?`<div class="as-banner">${tr('حالة طلب البديل','Replacement order status')}: ${SouliaOrderStatus.badge(SouliaOrderStatus.resolve({pickupStatus:w.replacementPickupStatus||'Pending',bostaOrderId:w.shipment?.deliveryId,bostaStatus:w.shipment?.carrierStatus},'transaction',tr('ar','en')))}<button type="button" class="btn btn-outline" data-as-orders>${tr('فتح الطلبات والتجهيز','Open orders and preparation')}</button></div>`:''}<p class="as-muted">${tr('سبب الطلب','Reason')}: ${esc(reasonLabel(row.reason))} · ${esc(row.reasonDetails||'')}</p><div class="as-table-wrap"><table class="as-table"><thead><tr><th>${tr('المنتج الراجع','Returned item')}</th><th>${tr('الكمية','Qty')}</th><th>${tr('القيمة','Value')}</th></tr></thead><tbody>${row.items.map(i=>`<tr><td>${productCard(i)}<small class="as-muted"> ${esc(i.condition||'')}</small></td><td>${i.qty}</td><td>${amount(i.total)}</td></tr>`).join('')}</tbody></table></div>${row.requestKind==='exchange'&&row.exchangeItems?.length?`<p class="as-muted">${tr('البديل','Replacement')}: ${row.exchangeItems.map(i=>productCard(i)+'<span class="as-badge">× '+i.qty+'</span>').join('')}</p>`:''}</section>
         <section class="as-card" data-as-section="shipment" tabindex="-1"><h3>${tr('الشحن والاستلام','Shipment and receipt')}</h3><p>${esc(w.shipment?.trackingNumber||tr('لم تُنشأ بوليصة بعد','No waybill yet'))} <span class="as-badge">${esc(w.shipment?.carrierLabel||w.shipment?.status||'')}</span></p><p class="as-muted">${tr('استلام المخزن','Warehouse receipt')}: ${date(w.receivedAt)}${row.requestKind==='exchange'?`<br>${tr('تسليم البديل','Replacement delivery')}: ${date(w.replacementDeliveredAt)}` : ''}</p>${w.shipment?.trackingNumber?`<a class="as-link" href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(w.shipment.trackingNumber)}" target="_blank" rel="noopener">${tr('تتبع بوسطة','Track Bosta')}</a>`:''}</section><div class="as-actions">${actions.map(([action,label])=>`<button class="btn ${['approve','ship','receive','settle'].includes(action)?'btn-primary':'btn-outline'}" type="button" data-as-action="${action}">${label}</button>`).join('')}<button class="btn btn-outline" type="button" data-as-print>${tr('طباعة','Print')}</button></div></div>
         <aside><section class="as-card" data-as-section="financial" tabindex="-1"><h3>${tr('التسوية المالية','Financial settlement')}</h3>${summary(w.quote,row.requestKind)}${financialStatus(row)}</section><section class="as-card"><h3>${tr('سجل الطلب','Case history')}</h3><ol class="as-history">${(w.history||[]).slice().reverse().map(h=>`<li>${esc(actionLabel(h.action))} · ${esc(h.by)}<time>${date(h.at)}</time>${h.note?`<div>${esc(h.note)}</div>`:''}</li>`).join('')}</ol></section></aside></div>`);
-      if(el('[data-as-orders]'))el('[data-as-orders]').onclick=()=>{dialog.close();navigateTo('pickup-orders');};
+      if(el('[data-as-orders]'))el('[data-as-orders]').onclick=()=>{closeDialog();navigateTo('pickup-orders');};
       dialog.querySelectorAll('[data-as-step]').forEach(button=>button.onclick=()=>moveToCaseStep(button));
       if(restorePosition&&caseReturn?.id===String(row._id))el('.as-body').scrollTop=caseReturn.top;
       bindLinks(); dialog.querySelectorAll('[data-as-action]').forEach(button=>button.onclick=()=>{
@@ -645,30 +687,72 @@
     const w=row.workflow, exchange=row.requestKind==='exchange', q=w.quote;
     const title=exchange?tr('فاتورة استبدال','Exchange invoice'):tr('فاتورة استرجاع','Return invoice');
     const money=value=>`<bdi dir="ltr">${esc(amount(value))}</bdi>`;
-    const field=(label,value,ltr=false)=>`<div class="field"><dt>${label}</dt><dd>${ltr?'<bdi dir="ltr">':''}${esc(value||'—')}${ltr?'</bdi>':''}</dd></div>`;
+    const field=(label,value,ltr=false,wide=false)=>`<div class="field${wide?' wide-field':''}"><dt>${label}</dt><dd>${ltr?'<bdi dir="ltr">':''}${esc(value??'—')||'—'}${ltr?'</bdi>':''}</dd></div>`;
     const moneyRow=(label,value,highlight=false)=>`<div class="money-row${highlight?' total':''}"><span>${label}</span><strong>${money(value)}</strong></div>`;
-    const itemsTable=(heading,items)=>`<section class="items"><h2>${heading}</h2><table><colgroup><col style="width:6%"><col style="width:43%"><col style="width:11%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>#</th><th>${tr('المنتج / الكود','Product / code')}</th><th class="number">${tr('الكمية','Qty')}</th><th class="number">${tr('سعر الوحدة','Unit price')}</th><th class="number">${tr('الإجمالي','Total')}</th></tr></thead><tbody>${(items||[]).map((i,index)=>{
+    const itemsTable=(heading,items)=>{
+      const rows=(items||[]).map((i,index)=>{
       const total=i.total!=null?Number(i.total):i.price!=null?Number(i.price)*Number(i.qty):null;
       const price=i.price!=null?Number(i.price):total!=null&&Number(i.qty)>0?total/Number(i.qty):null;
-      return `<tr><td>${index+1}</td><td><strong>${esc(i.name||i.code||'—')}</strong>${i.code?`<small><bdi dir="ltr">${esc(i.code)}</bdi></small>`:''}</td><td class="number"><bdi>${esc(i.qty)}</bdi></td><td class="number">${price==null?'—':money(price)}</td><td class="number">${total==null?'—':money(total)}</td></tr>`;
-    }).join('')||`<tr><td colspan="5">${tr('لا توجد منتجات مسجلة','No items recorded')}</td></tr>`}</tbody></table></section>`;
-    const address=w.customerAddress||row.addressHint||{};
+      return `<tr><td>${index+1}</td><td><strong>${esc(i.name||i.code||'—')}</strong>${i.code?` <small>· <bdi dir="ltr">${esc(i.code)}</bdi></small>`:''}${i.condition?` <small>· ${esc(i.condition==='سليم'?tr('سليم','Sound'):i.condition==='تالف'?tr('تالف','Damaged'):i.condition)}</small>`:''}</td><td class="number"><bdi>${esc(i.qty)}</bdi></td><td class="number">${price==null?'—':money(price)}</td><td class="number">${total==null?'—':money(total)}</td></tr>`;
+      });
+      const table=part=>`<table><colgroup><col style="width:6%"><col style="width:38%"><col style="width:8%"><col style="width:24%"><col style="width:24%"></colgroup><thead><tr><th>#</th><th>${tr('المنتج / الكود','Product / code')}</th><th class="number">${tr('الكمية','Qty')}</th><th class="number">${tr('سعر الوحدة','Unit price')}</th><th class="number">${tr('الإجمالي','Total')}</th></tr></thead><tbody>${part.join('')||`<tr><td colspan="5">${tr('لا توجد منتجات مسجلة','No items recorded')}</td></tr>`}</tbody></table>`;
+      const middle=Math.ceil(rows.length/2);
+      return `<section class="items"><h2>${heading} <span class="item-count">${tr('إجمالي القطع','Total quantity')}: ${(items||[]).reduce((sum,item)=>sum+Number(item.qty||0),0)}</span></h2>${rows.length>18?`<div class="item-columns">${table(rows.slice(0,middle))}${table(rows.slice(middle))}</div>`:table(rows)}</section>`;
+    };
+    const address={...(row.addressHint||{}),...(w.customerAddress||{})};
+    const addressText=[address.firstLine,address.districtName||address.district,address.cityName||address.city].filter(Boolean).join(' · ');
     const refundPaid=Number(w.refund?.amount||0), collected=Number(w.collection?.amount||0);
     const balanceLabel=exchange&&q?.collectDue?tr('المتبقي للتحصيل من العميل','Remaining to collect'):tr('المتبقي للرد إلى العميل','Remaining customer refund');
     const balance=q?Math.max(0,exchange&&q.collectDue?Number(q.collectDue)-collected:Number(q.refundDue||0)-refundPaid):null;
+    const paymentDetails=[['refund',tr('رد المبلغ','Refund')],['collection',tr('التحصيل','Collection')]].filter(([key])=>w[key]).map(([key,label])=>{
+      const payment=w[key];
+      return `<div class="payment-record"><strong>${label}</strong><span>${esc([payment.method,payment.reference,payment.at?date(payment.at):''].filter(Boolean).join(' · ')||'—')}</span></div>`;
+    }).join('');
+    const notes=[[tr('تفاصيل الطلب','Request details'),row.reasonDetails],[tr('سبب الرسوم','Fee basis'),w.feeBasis],[tr('إثبات التسليم','Delivery evidence'),w.deliveryEvidence]].filter(([,value])=>value);
+    const sideBySide=exchange&&(row.items?.length||0)+(row.exchangeItems?.length||0)>18&&Math.max(row.items?.length||0,row.exchangeItems?.length||0)<=18;
+    const shippingInfo=`<h2>${tr('الشحن والاستلام','Shipment and receipt')}</h2><dl style="margin:0">${field(tr('طريقة التنفيذ','Fulfillment'),w.fulfillmentChannel==='direct'?tr('استلام وتسليم مباشر','Direct handover'):row.returnShipCo||'Bosta')}${field(exchange?tr('بوليصة الاستبدال','Exchange waybill'):tr('بوليصة سحب المرتجع','Return collection waybill'),w.shipment?.trackingNumber||row.returnTrackingNumber,true)}${field(tr('استلام المخزن','Warehouse receipt'),date(w.receivedAt)+(w.receivedBy?' · '+w.receivedBy:''))}${exchange?field(tr('تسليم البديل','Replacement delivery'),date(w.replacementDeliveredAt)):''}${w.shipment?.carrierLabel||w.shipment?.status?field(tr('حالة الشحنة','Shipment status'),w.shipment.carrierLabel||w.shipment.status):''}</dl>${paymentDetails?`<section class="payment-details"><h2>${tr('حركات الدفع المسجلة','Recorded payments')}</h2>${paymentDetails}</section>`:''}${w.carrierSettlement?`<section class="carrier-settlement"><h2>${tr('تسوية شركة الشحن','Carrier settlement')}</h2>${moneyRow(tr('تكلفة الناقل','Carrier cost'),w.carrierSettlement.cost)}<p class="note">${esc([w.carrierSettlement.method,w.carrierSettlement.reference,w.carrierSettlement.at?date(w.carrierSettlement.at):''].filter(Boolean).join(' · '))}</p></section>`:''}`;
     popup.document.write(`<!doctype html><html lang="${tr('ar','en')}" dir="${tr('rtl','ltr')}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)} - ${esc(w.ref)}</title><style>
       *{box-sizing:border-box}body{margin:0;background:#edf0f4;color:#172033;font:13px/1.65 Arial,Tahoma,sans-serif}.toolbar{max-width:794px;margin:18px auto;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 16px;color:#526074}.toolbar button{border:0;border-radius:6px;background:#172033;color:white;padding:10px 24px;font:inherit;cursor:pointer}.sheet{max-width:794px;margin:0 auto 24px;background:white;padding:36px 40px;box-shadow:0 2px 16px #17203314}.invoice-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:3px solid #172033;padding-bottom:20px}.brand{font-size:30px;letter-spacing:3px;font-weight:800;line-height:1.2}.eyebrow{font-size:11px;color:#526074;margin-top:8px}h1{font-size:23px;margin:0 0 6px;line-height:1.4}.document-title{text-align:end}.reference{font-size:13px}.status{display:inline-block;border:1px solid #c3cbd4;border-radius:4px;padding:3px 10px;margin-top:10px;font-size:11px}.details{display:grid;grid-template-columns:1fr 1fr;gap:8px 26px;margin:20px 0;padding:16px;border:1px solid #dce1e7;border-radius:6px}.field{min-width:0}dt{font-size:10px;color:#526074}dd{margin:2px 0 0;font-weight:600;overflow-wrap:anywhere}h2{font-size:14px;margin:0 0 10px}.items{margin:22px 0}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}th,td{padding:10px 8px;text-align:start;border-bottom:1px solid #dce1e7;overflow-wrap:anywhere;vertical-align:top}th{background:#f2f4f7;font-size:10px;color:#526074;border-top:1px solid #dce1e7}.number{text-align:end;font-variant-numeric:tabular-nums}small{display:block;font-size:10px;color:#526074;margin-top:3px}.settlement{display:grid;grid-template-columns:1fr 1.15fr;gap:24px;margin-top:24px;align-items:start}.shipping{border:1px solid #dce1e7;border-radius:6px;padding:14px}.shipping .field+.field{margin-top:10px}.money-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #e6e9ee;font-size:12px}.money-row strong{white-space:nowrap;font-variant-numeric:tabular-nums}.total{border-top:2px solid #172033;border-bottom:2px solid #172033;margin-top:8px;padding:12px 0;font-size:13px}.paid{margin-top:12px}.balance{font-weight:bold;margin-top:8px}.note{color:#526074;font-size:10px;margin:14px 0 0;white-space:pre-line;overflow-wrap:anywhere}.invoice-footer{border-top:1px solid #dce1e7;margin-top:28px;padding-top:10px;display:flex;justify-content:space-between;gap:16px;font-size:10px;color:#526074}.invoice-footer bdi{flex-shrink:0}
-      @page{size:A4;margin:14mm} @media print{body{background:white;font-size:12px}.toolbar{display:none}.sheet{max-width:none;margin:0;padding:0;box-shadow:none}thead{display:table-header-group}tr,.invoice-head,.details,.settlement,.invoice-footer{break-inside:avoid}h2{break-after:avoid}th{background:#f2f4f7;print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media screen and (max-width:600px){.sheet{padding:22px 16px}.brand{font-size:23px}h1{font-size:19px}.details,.settlement{grid-template-columns:1fr}.toolbar{font-size:11px}th,td{padding:8px 4px}table{font-size:11px}}
-    </style></head><body><div class="toolbar"><span>${tr('نسخة للطباعة · A4','Print preview · A4')}</span><button type="button" id="print-invoice">${tr('طباعة / حفظ PDF','Print / Save PDF')}</button></div><main class="sheet"><header class="invoice-head"><div><div class="brand" dir="ltr">SOULIA</div><div class="eyebrow">${tr('خدمة ما بعد البيع','AFTER-SALES SERVICE')}</div></div><div class="document-title"><h1>${title}</h1><div class="reference"><bdi dir="ltr">${esc(w.ref)}</bdi></div><span class="status">${esc(stage(w.stage,row.requestKind))}</span></div></header>
-      <dl class="details">${field(tr('العميل','Customer'),address.customerName||row.client)}${field(tr('تاريخ الطلب','Request date'),date(row.createdAt))}${field(tr('رقم الهاتف','Phone'),address.phone||row.phone,true)}${field(tr('الفاتورة الأصلية','Original invoice'),row.originalRef?'#'+row.originalRef:'',true)}${address.firstLine?field(tr('عنوان العميل','Customer address'),address.firstLine):''}${exchange&&w.replacementRef?field(tr('فاتورة البديل','Replacement invoice'),'#'+w.replacementRef,true):''}${row.returnTxRef?field(tr('فاتورة المرتجع','Return invoice'),'#'+row.returnTxRef,true):''}${field(tr('سبب الطلب','Request reason'),reasonLabel(row.reason))}</dl>
-      ${itemsTable(tr('المنتجات المرتجعة','Returned items'),row.items)}${exchange?itemsTable(tr('المنتجات البديلة','Replacement items'),row.exchangeItems):''}
-      <div class="settlement"><section class="shipping"><h2>${tr('الشحن والاستلام','Shipment and receipt')}</h2><dl style="margin:0">${field(exchange?tr('بوليصة الاستبدال','Exchange waybill'):tr('بوليصة سحب المرتجع','Return collection waybill'),w.shipment?.trackingNumber||row.returnTrackingNumber,true)}${field(tr('استلام المخزن','Warehouse receipt'),date(w.receivedAt))}${exchange?field(tr('تسليم البديل','Replacement delivery'),date(w.replacementDeliveredAt)):''}</dl>${row.reasonDetails?`<p class="note">${esc(row.reasonDetails)}</p>`:''}</section><section class="financial"><h2>${tr('الملخص المالي','Financial summary')}</h2>${q?`${moneyRow(tr('قيمة المنتجات الراجعة','Returned items value'),q.credit)}${exchange?moneyRow(tr('قيمة البديل','Replacement value'),q.replacement):''}${moneyRow(exchange?tr('تكلفة الاستبدال','Exchange cost'):tr('تكلفة الاسترجاع المخصومة','Return cost deduction'),q.customerFee)}${moneyRow(exchange?(q.collectDue?tr('فرق مطلوب من العميل','Difference to collect'):q.refundDue?tr('فرق يُرد للعميل','Difference to refund'):tr('استبدال بدون فرق','Exchange with no difference')):tr('صافي المبلغ المستحق للعميل','Net customer refund'),q.collectDue||q.refundDue,true)}`:`<p>${tr('لم يُحسب المبلغ بعد','Amount not calculated yet')}</p>`}<div class="paid">${moneyRow(tr('المدفوع فعليًا للعميل','Refund actually paid'),refundPaid)}${exchange?moneyRow(tr('التحصيل الفعلي','Actually collected'),collected):''}${balance!=null?`<div class="balance">${moneyRow(balanceLabel,balance)}</div>`:''}</div><p class="note">${tr('المبالغ المستحقة حسب الطلب؛ المدفوع والمحصّل حسب التسويات المسجلة.','Amounts due reflect the case quote; paid and collected amounts reflect recorded settlements.')}</p></section></div>
-      <footer class="invoice-footer"><span>${tr('مستند خدمة ما بعد البيع مرتبط بالفاتورة الأصلية.','After-sales document linked to the original invoice.')}</span><bdi dir="ltr">${esc(w.ref)}</bdi></footer></main></body></html>`);
+      .print-preview{overflow:auto}.print-page{width:210mm;min-height:297mm;padding:10mm;margin:0 auto 24px;background:#fff;box-shadow:0 2px 16px #17203314}.sheet{width:190mm;max-width:none;margin:0 auto;padding:0;box-shadow:none;font-size:11px;line-height:1.4}.invoice-head{padding-bottom:10px;border-bottom-width:2px;gap:12px}.brand{font-size:27px}.eyebrow{font-size:9px;margin-top:4px}h1{font-size:21px;margin-bottom:3px}.reference{font-size:11px}.status{margin-top:5px;padding:2px 8px;font-size:10px}.details{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px 14px;margin:12px 0;padding:10px;border-radius:4px}.wide-field{grid-column:span 2}dt{font-size:9px}dd{font-size:11px;margin-top:1px}.items{margin:12px 0}h2{font-size:12px;margin:0 0 6px}.items h2{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.item-count{font-size:9px;font-weight:400;color:#526074}table{font-size:10.5px}th,td{padding:5px 5px}th{font-size:9px}td small{display:inline;font-size:9px;margin:0 0 0 5px}.item-columns,.item-tables.side-by-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}.item-columns table,.side-by-side table{font-size:9px}.item-columns th,.side-by-side th{font-size:8px}.item-columns th,.item-columns td,.side-by-side th,.side-by-side td{padding:3px}.side-by-side .items{min-width:0}.settlement{grid-template-columns:1fr 1.1fr;gap:16px;margin-top:12px}.shipping{padding:10px;border-radius:4px}.shipping dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}.shipping .field+.field{margin:0}.money-row{font-size:10.5px;padding:4px 0;gap:10px}.total{font-size:11px;margin-top:5px;padding:6px 0;border-width:1px}.paid{margin-top:6px}.balance{margin-top:4px}.note{font-size:9px;margin-top:8px}.payment-record{margin-top:6px;padding-top:6px;border-top:1px solid #dce1e7;font-size:9px;overflow-wrap:anywhere}.payment-record strong,.payment-record span{display:block}.invoice-notes{margin-top:10px;padding:8px 10px;border:1px solid #dce1e7;border-radius:4px;font-size:10px;overflow-wrap:anywhere;white-space:pre-line}.invoice-notes p{margin:3px 0}.invoice-footer{margin-top:12px;padding-top:7px;font-size:9px;gap:12px}.print-signatures{display:flex;justify-content:space-between;gap:20px;margin-top:18px;font-size:10px}.print-signatures span{flex:1;border-top:1px solid #c3cbd4;padding-top:5px}
+      @page{size:A4 portrait;margin:10mm} @media print{html,body{background:#fff}.toolbar{display:none}.print-preview{overflow:visible}.print-page{width:190mm;min-height:0;margin:0;padding:0;box-shadow:none}.sheet{margin:0 auto}thead{display:table-header-group}tr,.invoice-head,.details,.settlement,.invoice-footer,.invoice-notes,.print-signatures{break-inside:avoid}h2{break-after:avoid}th{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media screen and (max-width:600px){.toolbar{font-size:11px}.toolbar button{padding:8px 12px}.print-page{margin-inline:0}}
+      .payment-details,.carrier-settlement{margin-top:10px}
+    </style></head><body><div class="toolbar"><span>${tr('ورقة واحدة · A4','One page · A4')}</span><button type="button" id="print-invoice">${tr('طباعة / حفظ PDF','Print / Save PDF')}</button></div><div class="print-preview"><main class="print-page"><article class="sheet"><header class="invoice-head"><div><div class="brand" dir="ltr">SOULIA</div><div class="eyebrow">${tr('خدمة ما بعد البيع','AFTER-SALES SERVICE')}</div></div><div class="document-title"><h1>${title}</h1><div class="reference"><bdi dir="ltr">${esc(w.ref)}</bdi></div><span class="status">${esc(stage(w.stage,row.requestKind))}</span></div></header>
+      <dl class="details">${field(tr('العميل','Customer'),address.customerName||row.client)}${field(tr('رقم الهاتف','Phone'),address.phone||row.phone,true)}${field(tr('تاريخ الطلب','Request date'),date(row.createdAt))}${field(tr('الفاتورة الأصلية','Original invoice'),row.originalRef?'#'+row.originalRef:'',true)}${exchange&&w.replacementRef?field(tr('فاتورة البديل','Replacement invoice'),'#'+w.replacementRef,true):''}${row.returnTxRef?field(tr('فاتورة المرتجع','Return invoice'),'#'+row.returnTxRef,true):''}${field(tr('سبب الطلب','Request reason'),reasonLabel(row.reason))}${addressText?field(tr('عنوان العميل','Customer address'),addressText,false,true):''}${row.requestedBy?field(tr('مسجل الطلب','Requested by'),row.requestedBy):''}${w.approvedBy?field(tr('الاعتماد','Approval'),w.approvedBy+' · '+date(w.approvedAt)):''}</dl>
+      <div class="item-tables${sideBySide?' side-by-side':''}">${itemsTable(tr('المنتجات المرتجعة','Returned items'),row.items)}${exchange?itemsTable(tr('المنتجات البديلة','Replacement items'),row.exchangeItems):''}</div>
+      <div class="settlement"><section class="shipping">${shippingInfo}</section><section class="financial"><h2>${tr('الملخص المالي','Financial summary')}</h2>${q?`${moneyRow(tr('قيمة المنتجات الراجعة','Returned items value'),q.credit)}${exchange?moneyRow(tr('قيمة البديل','Replacement value'),q.replacement):''}${moneyRow(exchange?tr('تكلفة الاستبدال','Exchange cost'):tr('تكلفة الاسترجاع المخصومة','Return cost deduction'),q.customerFee)}${moneyRow(exchange?(q.collectDue?tr('فرق مطلوب من العميل','Difference to collect'):q.refundDue?tr('فرق يُرد للعميل','Difference to refund'):tr('استبدال بدون فرق','Exchange with no difference')):tr('صافي المبلغ المستحق للعميل','Net customer refund'),q.collectDue||q.refundDue,true)}`:`<p>${tr('لم يُحسب المبلغ بعد','Amount not calculated yet')}</p>`}<div class="paid">${moneyRow(tr('المدفوع فعليًا للعميل','Refund actually paid'),refundPaid)}${exchange?moneyRow(tr('التحصيل الفعلي','Actually collected'),collected):''}${balance!=null?`<div class="balance">${moneyRow(balanceLabel,balance)}</div>`:''}</div><p class="note">${tr('المبالغ المستحقة حسب الطلب؛ المدفوع والمحصّل حسب التسويات المسجلة.','Amounts due reflect the case quote; paid and collected amounts reflect recorded settlements.')}</p></section></div>
+      ${notes.length?`<section class="invoice-notes">${notes.map(([label,value])=>`<p><strong>${label}: </strong>${esc(value)}</p>`).join('')}</section>`:''}
+      <div class="print-signatures"><span>${tr('توقيع العميل','Customer signature')}</span><span>${tr('مسؤول الاستلام / التسليم','Receipt / delivery officer')}</span></div><footer class="invoice-footer"><span>${tr('مستند خدمة ما بعد البيع مرتبط بالفاتورة الأصلية.','After-sales document linked to the original invoice.')}</span><bdi dir="ltr">${esc(w.ref)}</bdi></footer></article></main></div></body></html>`);
     popup.document.close();
-    popup.document.getElementById('print-invoice').onclick=()=>popup.print();
+    // CSS uses the same 190 mm content width in preview and print. Fit all content
+    // inside the 277 mm A4 printable height, including notes and final balances.
+    const fitPage=()=>{
+      if(popup.closed)return;
+      const sheet=popup.document.querySelector('.sheet');
+      const applyScale=scale=>{sheet.style.zoom=String(scale);sheet.style.width=(190/scale)+'mm';};
+      applyScale(1);
+      const available=277*96/25.4-4;
+      let scale=1;
+      if(sheet.getBoundingClientRect().height>available){
+        let low=.001,high=1;
+        for(let attempt=0;attempt<12;attempt++){
+          const candidate=(low+high)/2;applyScale(candidate);
+          if(sheet.getBoundingClientRect().height<=available)low=candidate;else high=candidate;
+        }
+        scale=Math.floor(low*1000)/1000;applyScale(scale);
+      }
+      // Font rounding at a fractional zoom can wrap an extra line. Measure the
+      // rendered result as well, rather than relying on the initial ratio alone.
+      for(let attempt=0;attempt<8&&sheet.getBoundingClientRect().height>available;attempt++){
+        scale=Math.max(.001,Math.floor(scale*available/sheet.getBoundingClientRect().height*995)/1000);
+        applyScale(scale);
+      }
+      sheet.dataset.printScale=String(scale);
+    };
+    popup.addEventListener('beforeprint',fitPage);
+    popup.document.getElementById('print-invoice').onclick=()=>{fitPage();popup.print();};
     await popup.document.fonts?.ready;
     if(popup.closed)return;
-    popup.requestAnimationFrame(()=>popup.requestAnimationFrame(()=>{if(!popup.closed){popup.focus();popup.print();}}));
+    popup.requestAnimationFrame(()=>popup.requestAnimationFrame(()=>{if(!popup.closed){fitPage();popup.focus();popup.print();}}));
   }
   function timeline(tx) {
     const groups=new Map();
@@ -713,6 +797,6 @@
     void refresh(['returns']);
     if(!busy&&dialog?.open&&activeCase?._id===id&&el('[data-as-print]'))void open(id);
   }
-  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,refreshPreparationDetails,printOrderCase,shippingBadges,changed};
+  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,refreshPreparationDetails,printOrderCase,shippingBadges,changed,selectIcon};
   document.addEventListener('DOMContentLoaded',()=>{mountLaunchers();let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mountLaunchers();});}).observe(document.getElementById('main')||document.body,{childList:true,subtree:true});});
 })();

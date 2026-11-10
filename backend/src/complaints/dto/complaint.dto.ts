@@ -5,16 +5,31 @@ import {
   IsNumber,
   Min,
   Max,
-  IsIn, IsArray, IsInt, IsBoolean, MaxLength,
+  IsIn, IsArray, IsInt, IsBoolean, MaxLength, Matches, ValidateNested, ValidateIf, ArrayMaxSize,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { COMPLAINT_ITEM_ISSUE_TYPES } from '../complaint-item-issues';
+
+export class ComplaintItemDto {
+  @IsInt() @Min(0)
+  lineIndex: number;
+  @IsInt() @Min(1)
+  qty: number;
+  @IsIn(COMPLAINT_ITEM_ISSUE_TYPES)
+  issueType: string;
+  @IsString() @Matches(/\S/) @MaxLength(2000)
+  issueDescription: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(100) @IsString({ each: true })
+  unitIds?: string[];
+}
 
 export class CreateComplaintDto {
   @IsOptional() @IsString()
   ownerId?: string;
   @IsOptional() @IsString() @MaxLength(120)
   operationKey?: string;
-  @IsOptional() @IsArray()
-  items?: any[];
+  @IsOptional() @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => ComplaintItemDto)
+  items?: ComplaintItemDto[];
   @IsOptional()
   @IsString()
   transactionId?: string;
@@ -55,9 +70,10 @@ export class CreateComplaintDto {
   @IsString()
   variantDetail?: string;
 
-  @IsOptional()
   @IsString()
-  categoryGroup?: string;
+  @IsNotEmpty({ message: 'نوع المشكلة مطلوب' })
+  @Matches(/\S/, { message: 'نوع المشكلة مطلوب' })
+  categoryGroup: string;
 
   @IsOptional()
   @IsString()
@@ -67,9 +83,9 @@ export class CreateComplaintDto {
   @IsString()
   imageUrl?: string;
 
-  @IsNotEmpty()
-  @IsString()
-  description: string;
+  @ValidateIf(dto => dto.description !== undefined || !dto.items?.length)
+  @IsString() @MaxLength(5000)
+  description?: string;
 
   @IsOptional()
   @IsString()
@@ -164,7 +180,7 @@ export class ComplaintWorkflowDto {
   @IsOptional() @IsNumber() @Min(0.01) @Max(1000000) amount?: number;
   @IsOptional() @IsIn(['phone','whatsapp','email','other']) channel?: string;
   @IsOptional() @IsIn(['reached','no_answer','confirmed','disputed']) contactResult?: string;
-  @IsOptional() @IsArray() items?: any[];
+  @IsOptional() @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => ComplaintItemDto) items?: ComplaintItemDto[];
   @IsOptional() @IsString() transactionId?: string;
 }
 

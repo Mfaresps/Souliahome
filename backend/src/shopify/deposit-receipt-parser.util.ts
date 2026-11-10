@@ -253,7 +253,9 @@ function detectVault(text: string, hasTransferSentence: boolean): { method: Rece
   if (walletDetails && !brandedInstapay) return { method: PHONE.test(text) || vodafoneAppLabels ? 'فودافون كاش' : '', pattern: 'wallet-app' };
   if (INSTAPAY_MARKER.test(text) || handles.length) {
     if (WALLET_DESTINATION.test(destinationText)) return { method: 'فودافون كاش', pattern: 'instapay' };
-    if (/\bto\s+instapay\b|[إا]ل[يى]\s+[إا]نستا\s*با[يى]/i.test(destinationText)) return { method: 'Instapay', pattern: 'instapay' };
+    // A photographed screen can split the destination label or read its I as l/1.
+    // Require the To label: a sender's @instapay address cannot identify the receiving vault.
+    if (/^to(?:\s+|[ \t]*[:：]\s*)(?:[il1]nsta\s*pay|mnstapay)\b|[إا]ل[يى]\s+[إا]نستا\s*با[يى]/im.test(destinationText)) return { method: 'Instapay', pattern: 'instapay' };
     // «Send Money» is InstaPay's address-to-address transfer; a wallet transfer reads «To Mobile
     // Wallet» instead (checked just above). The address itself is often too faint to read.
     if (/send\s*money/i.test(text)) return { method: 'Instapay', pattern: 'instapay' };

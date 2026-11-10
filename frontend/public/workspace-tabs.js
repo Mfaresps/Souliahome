@@ -3,7 +3,7 @@
   const selector = [
     '#sp-subnav', '#page-movements > .mov-tab-bar', '#page-inventory .mov-tab-bar',
     '#page-products .prod-tabs', '#sup-tabs', '#sp-tab-bar', '#page-expenses .exp-tab-bar',
-    '#page-csp .csp-header-actions', '#page-complaints .cs-main-tabs', '#cmp-status-tabs',
+    '#page-csp .csp-header-actions', '#cmp-status-tabs',
     '#page-approvals > .section-tab-bar', '#page-reports .rep-section-tabs',
     '#vault-tabs', '.users-workspace-tabs', '#page-barcodes .iu-tabs', '#stg-provider-tabs',
     '#tx-type-selector', '#page-shopify-orders .perf-period-tabs'

@@ -95,6 +95,9 @@ export class Complaint {
   @Prop({ required: true })
   description: string;
 
+  @Prop()
+  additionalDescription?: string; // Optional case notes; product issues live on each item.
+
   @Prop({ required: true })
   submittedBy: string;
 

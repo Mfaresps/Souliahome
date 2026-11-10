@@ -263,6 +263,17 @@ describe('rules on synthetic text', () => {
   it('uses a labelled recipient handle when the sender is censored', () => {
     expect(parseReceiptText('Transaction Successful\n500 EGP\nFrom\n[censored]\nTo\nreceiver@instapay\nMore Details').method).toBe('Instapay');
   });
+  it.each(['To Instapay', 'To\nInsta pay', 'To:Instapay', 'To:\nlnstapay', 'To\n1nstapay'])('reads the photographed phone destination labelled %s', label => {
+    const receipt = ['Your account ending in 1992 has been charged', 'the amount of 500.5 for an IPN transfer',
+      'Your transaction was successful', '500 EGP', 'Transfer Amount', 'From', 'customer@instapay',
+      'ACCOUNT XXXX1992', label, 'Mohamed F ******', '01012345678', 'More Details', 'POWERED BY IPN'].join('\n');
+    expect(parseReceiptText(receipt)).toMatchObject({ amount: 500, method: 'Instapay', pattern: 'instapay' });
+  });
+  it('does not infer the destination vault from a phone or sender address', () => {
+    expect(parseReceiptText('500 EGP\nFrom\ntoinstapay@instapay\nTo\n01012345678\nMore Details').method).toBe('');
+    expect(parseReceiptText('500 EGP\nFrom\ncustomer@instapay\nTo Mobile Wallet\n01012345678').method).toBe(W);
+    expect(parseReceiptText('500 EGP\nFrom\ncustomer@instapay\nTo\n01012345678\nNote\nTo Insta pay').method).toBe('');
+  });
   it('recognizes a spaced InstaPay destination on the To line', () => {
     const receipt = 'Approved Transaction\n1,000 EGP\nTransfer Amount\nFrom\n[censored]\nTo: vkswr3420 @ insta pay\nFees\n1 EGP\nTotal Amount\n1,001 EGP';
     expect(parseReceiptText(receipt)).toMatchObject({ amount: 1000, method: 'Instapay', confident: true });

@@ -1,0 +1,101 @@
+{
+  "origin": "https://admin.soulia.store",
+  "scope": "Unauthenticated login shell only; after user deployment",
+  "results": [
+    {
+      "label": "cold",
+      "settledMs": 5997,
+      "domContentLoadedMs": 4077,
+      "loadMs": 4096,
+      "requests": 167,
+      "cached": 0,
+      "networkResponses": 167,
+      "networkBytes": 2450301,
+      "largest": [
+        {
+          "path": "/app-core.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 1290620,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/app-core.css",
+          "status": 200,
+          "disk": false,
+          "bytes": 323071,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 94101,
+          "cache": "public, no-cache, must-revalidate"
+        },
+        {
+          "path": "/inventory-units.js",
+          "status": 200,
+          "disk": false,
+          "bytes": 43583,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/favicon.png",
+          "status": 200,
+          "disk": false,
+          "bytes": 33597,
+          "cache": "no-cache"
+        }
+      ]
+    },
+    {
+      "label": "warm",
+      "settledMs": 1426,
+      "domContentLoadedMs": 778,
+      "loadMs": 793,
+      "requests": 165,
+      "cached": 0,
+      "networkResponses": 165,
+      "networkBytes": 20636,
+      "largest": [
+        {
+          "path": "/api/drafts",
+          "status": 401,
+          "disk": false,
+          "bytes": 323,
+          "cache": null
+        },
+        {
+          "path": "/api/branding",
+          "status": 200,
+          "disk": false,
+          "bytes": 265,
+          "cache": "no-store"
+        },
+        {
+          "path": "/",
+          "status": 200,
+          "disk": false,
+          "bytes": 142,
+          "cache": "public, no-cache, must-revalidate"
+        },
+        {
+          "path": "/app-core.css",
+          "status": 304,
+          "disk": false,
+          "bytes": 125,
+          "cache": "no-cache"
+        },
+        {
+          "path": "/app-core.js",
+          "status": 304,
+          "disk": false,
+          "bytes": 125,
+          "cache": "no-cache"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

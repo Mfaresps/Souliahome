@@ -13,6 +13,7 @@ import { complaintFlow, complaintView, executionEvidence, assertCaseCoverage, wo
 import { ComplaintWorkflowDto } from './dto/complaint.dto';
 import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
 import { DEFAULT_COMPLAINT_MESSAGES, MESSAGE_TOKENS, validateComplaintMessages, renderComplaintMessage } from './complaint-messages';
+import { COMPLAINT_ITEM_ISSUE_TYPES, describeComplaintItems } from './complaint-item-issues';
 import {
   CreateComplaintDto,
   UpdateComplaintDto,
@@ -191,6 +192,8 @@ export class ComplaintsService {
       return previous;
     }
     const data: any = { ...dto };
+    if (dto.items !== undefined && (!Array.isArray(dto.items) || dto.items.length && !dto.transactionId)) throw new BadRequestException('حدد فاتورة المنتجات المتضررة');
+    if (dto.description !== undefined && (typeof dto.description !== 'string' || dto.description.length > 5000)) throw new BadRequestException('وصف المشكلة غير صالح');
     delete data.operationKey;
     delete data.ownerId;
     let ownerId = submittedById, ownerName = submittedBy;
@@ -206,10 +209,12 @@ export class ComplaintsService {
       if (!tx) throw new BadRequestException('فاتورة المبيعات غير موجودة');
       data.transactionRef = tx.ref; data.clientName = tx.client || data.clientName; data.phone = tx.phone || data.phone;
       data.items = this.validateItems(dto.items || [], tx);
-      if (data.items.length) Object.assign(data, { productCode: data.items[0].code, productName: data.items.map((i: any) => i.name).join('، '), productQty: data.items.reduce((n: number, i: any) => n + i.qty, 0) });
+      if (data.items.length) Object.assign(data, { productCode: data.items[0].code, productName: data.items.map((i: any) => i.name).join('، '), productQty: data.items.reduce((n: number, i: any) => n + i.qty, 0), additionalDescription: (dto.description || '').trim(), description: describeComplaintItems(data.items, dto.description || '') });
     } else if (!data.clientName?.trim() || !data.phone?.trim()) throw new BadRequestException('أدخل اسم العميل ورقم التواصل للشكوى بدون فاتورة');
     if (!data.phone?.trim()) throw new BadRequestException('أدخل رقم التواصل مع العميل');
     if (!data.description?.trim()) throw new BadRequestException('اكتب وصف المشكلة');
+    if (typeof data.categoryGroup !== 'string' || !data.categoryGroup.trim()) throw new BadRequestException('اختر نوع المشكلة');
+    data.categoryGroup = data.categoryGroup.trim();
     const complaintNo = await this.generateComplaintNo(data.transactionRef);
     const now = new Date().toISOString();
     const imageMeta = dto.imageUrl
@@ -272,6 +277,13 @@ export class ComplaintsService {
     for (const key of Object.keys(labels)) {
       if (!(key in dto)) continue;
       const next = ((dto as Record<string, string>)[key] ?? '').trim();
+      if (key === 'description' && complaint.items?.some(item => item.issueType)) {
+        if (next === complaint.description || next === complaint.additionalDescription) continue;
+        complaint.additionalDescription = next;
+        complaint.description = describeComplaintItems(complaint.items, next);
+        changes.push('تم تعديل الملاحظات الإضافية');
+        continue;
+      }
       const prev = ((complaint as unknown as Record<string, string>)[key] || '')
         .toString()
         .trim();
@@ -568,13 +580,16 @@ export class ComplaintsService {
     if (!Array.isArray(items) || items.length > 100) throw new BadRequestException('بنود الشكوى غير صالحة');
     const seen = new Set<number>();
     return items.map(item => {
-      const index = Number(item.lineIndex), qty = Number(item.qty), source = tx.items?.[index];
-      if (!source || !Number.isInteger(index) || seen.has(index) || !Number.isSafeInteger(qty) || qty < 1 || qty > source.qty) throw new BadRequestException('راجع كمية القطع المتضررة وبنود الفاتورة');
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw new BadRequestException('بنود الشكوى غير صالحة');
+      const index = item.lineIndex, qty = item.qty, source = tx.items?.[index], invoiceQty = Number(source?.qty);
+      if (!source || !Number.isSafeInteger(index) || seen.has(index) || !Number.isSafeInteger(qty) || qty < 1 || !Number.isSafeInteger(invoiceQty) || qty > invoiceQty) throw new BadRequestException('راجع كمية القطع المتضررة وبنود الفاتورة');
+      if (!COMPLAINT_ITEM_ISSUE_TYPES.includes(item.issueType)) throw new BadRequestException(`حدد نوع المشكلة للمنتج: ${source.name || source.code}`);
+      if (typeof item.issueDescription !== 'string' || !item.issueDescription.trim() || item.issueDescription.length > 2000) throw new BadRequestException(`اكتب وصف المشكلة للمنتج: ${source.name || source.code}`);
       seen.add(index);
       const unitIds = Array.isArray(item.unitIds) ? [...new Set(item.unitIds.map((v: string) => String(this.oid(v))))] : [];
       if (unitIds.length > qty) throw new BadRequestException('عدد هويات القطع يتجاوز الكمية المحددة');
       return { lineIndex: index, lineId: source.lineId, code: source.code, name: source.name, productId: source.productId,
-        imageUrl: source.imageUrl, qty, unitIds };
+        imageUrl: source.imageUrl, qty, unitIds, issueType: item.issueType, issueDescription: item.issueDescription.trim() };
     });
   }
 
@@ -630,7 +645,10 @@ export class ComplaintsService {
             if (row.transactionId && row.transactionId !== String(tx._id)) throw new ConflictException('لا يمكن نقل الشكوى إلى فاتورة أخرى');
             if (row.phone && tx.phone && row.phone.replace(/\D/g,'').slice(-10) !== String(tx.phone).replace(/\D/g,'').slice(-10)) throw new BadRequestException('رقم العميل لا يطابق الفاتورة');
             row.transactionId = String(tx._id); row.transactionRef = tx.ref; row.clientName = tx.client || row.clientName; row.phone = tx.phone || row.phone;
-            row.items = this.validateItems(body.items || [], tx); if (!row.items.length) throw new BadRequestException('اختر بنود الشكوى'); break;
+            row.items = this.validateItems(body.items || [], tx); if (!row.items.length) throw new BadRequestException('اختر بنود الشكوى');
+            row.additionalDescription ??= row.description;
+            row.description = describeComplaintItems(row.items, row.additionalDescription);
+            break;
           }
           case 'plan':
             if (!SOLUTIONS.includes(body.solution as any)) throw new BadRequestException('اختر نوع الحل');
@@ -686,10 +704,11 @@ export class ComplaintsService {
           }
           case 'contact':
             if (!body.channel || !body.contactResult) throw new BadRequestException('حدد وسيلة التواصل ونتيجته');
-            w.contacts = [...(w.contacts || []), { channel: body.channel, result: body.contactResult, at: now, by: actor.name, note }];
+            if (w.stage !== 'closed') setDeadline();
+            w.contacts = [...(w.contacts || []), { channel: body.channel, result: body.contactResult, at: now, by: actor.name, note, ...(w.stage !== 'closed'?{dueAt:w.dueAt}:{}) }];
             if (body.contactResult === 'confirmed' && evidence.ready) { w.customerConfirmedAt = now; w.reviewRequired = false; }
             if (body.contactResult === 'disputed') { w.reviewRequired = true; delete w.customerConfirmedAt; }
-            if (w.stage !== 'closed') setDeadline(); break;
+            break;
           case 'close': {
             if (!OUTCOMES.includes(body.outcome as any)) throw new BadRequestException('اختر نتيجة الإغلاق');
             const success = ['resolved','partial_agreement'].includes(body.outcome!);
@@ -731,7 +750,9 @@ export class ComplaintsService {
           default: throw new BadRequestException('الإجراء غير معروف');
         }
         w.revision++; w.operations ||= []; w.operations.push({ key: body.operationKey, fingerprint });
-        workflowEvent(w, body.action, actor, note, { outcome: body.outcome, solution: body.solution, caseId: w.caseId });
+        workflowEvent(w, body.action, actor, note, { outcome: body.outcome, solution: body.solution, caseId: w.caseId,
+          ...(body.dueAt && w.stage !== 'closed'?{dueAt:w.dueAt}:{}),
+          ...(body.action === 'contact'?{channel:body.channel,contactResult:body.contactResult}:{}) });
         row.workflow = w; row.markModified('workflow');
         row.inFollowUp = w.stage !== 'closed' && !!w.solution;
         await row.save({ session });

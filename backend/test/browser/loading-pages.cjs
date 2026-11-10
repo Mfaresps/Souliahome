@@ -138,7 +138,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true,'Shopify refresh retains loaded orders');
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
   }
-  await page.evaluate(async()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;hold=false;fail=true;await loadShopifyOrders();});
+  await page.evaluate(async()=>{showPage('shopify-orders');_shopifyOrders=[];_spServerResponse=null;_spOrdersLoaded=false;hold=false;fail=true;await loadShopifyOrders();});
   assert(await page.$('#sp-orders-loading[data-state=error] button'),'first-load failure offers retry');
   await page.evaluate(async()=>{fail=false;await loadShopifyOrders();});
   assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);

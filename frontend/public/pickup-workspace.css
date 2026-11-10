@@ -54,7 +54,6 @@ body.dark-mode #page-pickup-orders .pu-bkpi.bkpi-rate { --pu-kpi: #b69aff; }
 #page-pickup-orders #pu-live-clock { display: none; }
 #page-pickup-orders .pu-board-col-body { gap: 20px; scrollbar-gutter: stable; }
 #page-pickup-orders .pu-board-col-body > .pu-group { flex-shrink: 0; }
-#page-pickup-orders .pu-stagger-in { animation-duration: 140ms; animation-delay: 0ms; }
 #page-pickup-orders .pu-board-col-body > .pu-group + .pu-group::before {
   content: '';
   position: absolute;

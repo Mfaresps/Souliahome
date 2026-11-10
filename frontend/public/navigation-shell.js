@@ -16,7 +16,7 @@ function syncSidebarToggle() {
 // restart hover transitions, drop keyboard focus or reset the scroll container.
 function syncShellChildren(parent, incoming) {
   const key = node => node.nodeType === 1
-    ? node.tagName + ':' + (node.dataset.page || node.dataset.repSub || node.id || node.dataset.shellSection || node.className)
+    ? node.tagName + ':' + (node.dataset.page || node.dataset.repSub || node.dataset.csSub || node.id || node.dataset.shellSection || node.className)
     : '#' + node.nodeType;
   const available = [...parent.childNodes];
   incoming.forEach((next, index) => {
@@ -74,7 +74,7 @@ function syncNavigationShell(incomingRows) {
         if (!row) continue;
         grouped.add(row);
         section.append(row);
-        if (id === 'reports') { const sub = rows.find(el => el.id === 'nav-sub-reports'); if (sub) { grouped.add(sub); section.append(sub); } }
+        if (id === 'reports' || id === 'complaints') { const sub = rows.find(el => el.id === 'nav-sub-' + id); if (sub) { grouped.add(sub); section.append(sub); } }
       }
       if (section.children.length > 1) content.append(section);
     }
@@ -89,7 +89,7 @@ function syncNavigationShell(incomingRows) {
   qsa('#sidebar .nav-item').forEach(row => {
     const label = row.querySelector('span:nth-child(2)')?.childNodes[0]?.textContent?.trim() || row.textContent.trim();
     row.title = label; row.setAttribute('aria-label', label);
-    if (row.classList.contains('active')) row.setAttribute('aria-current','page'); else row.removeAttribute('aria-current');
+    if (row.classList.contains('active') && !row.classList.contains('nav-parent')) row.setAttribute('aria-current','page'); else row.removeAttribute('aria-current');
     row.querySelectorAll('svg').forEach(icon => icon.setAttribute('aria-hidden','true'));
   });
   const left = qs('#header > .flex');
@@ -111,6 +111,9 @@ function syncNavigationShell(incomingRows) {
     breadcrumb.setAttribute('aria-label', shellText('المسار الحالي','Breadcrumb'));
     const entry = NAV_ITEMS.find(item => item.id === currentPage);
     const detailLabels = {
+      complaints: shellText('الشكاوى', 'Complaints'),
+      followups: shellText('متابعة الطلبات', 'Order Follow-ups'),
+      'complaint-detail': qs('#cf-case-title')?.textContent || shellText('ملف الشكوى', 'Complaint file'),
       roles: shellText('الأدوار والصلاحيات', 'Roles & Permissions'),
       'supplier-profile': qs('#sp-name')?.textContent,
       'category-profile': qs('#catp-name')?.textContent,
@@ -140,7 +143,9 @@ function syncNavigationShell(incomingRows) {
       if (step && step !== section) html += '<a href="#warehouse-management/supplier-labels">'+esc(section)+'</a>'+sep;
       html += '<strong aria-current="page">'+esc(step || section)+'</strong>';
     }
-    else if (currentPage === 'reports' && typeof reportTabLabel === 'function' && activeReportTab) html += '<a href="#reports" onclick="handleNavClick(event,\'reports\')">'+esc(label)+'</a>'+sep+'<strong aria-current="page">'+esc(reportTabLabel(activeReportTab))+'</strong>';
+    else if (currentPage === 'complaint-detail') html += '<a href="#complaints" onclick="handleNavClick(event,\'complaints\')">'+esc(shellText('الشكاوى','Complaints'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
+    else if (['complaints','followups'].includes(currentPage)) html += '<a href="#complaints" onclick="handleCustomerServiceNavClick(event)">'+esc(shellText('خدمة العملاء','Customer Service'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
+    else if (currentPage === 'reports' && typeof reportTabLabel === 'function' && activeReportTab) html += '<a href="#reports" onclick="handleReportsNavClick(event)">'+esc(label)+'</a>'+sep+'<strong aria-current="page">'+esc(reportTabLabel(activeReportTab))+'</strong>';
     else if (currentPage === 'clients' && window.SouliaClients?.currentProfile()) html += '<a href="#clients">'+esc(t('clients'))+'</a>'+sep+'<strong aria-current="page">'+esc(window.SouliaClients.currentProfile().name)+'</strong>';
     else if (currentPage === 'supplier-profile') html += '<a href="#suppliers" onclick="handleNavClick(event,\'suppliers\')">'+esc(t('suppliers'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
     else if (currentPage === 'roles') html += '<a href="#users" onclick="handleNavClick(event,\'users\')">'+esc(t('users'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
