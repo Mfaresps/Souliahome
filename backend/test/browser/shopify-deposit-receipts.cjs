@@ -183,9 +183,11 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
           },language);
           check(await page.evaluate(()=>{
             const amount=qs('#spdep-amount').getBoundingClientRect(),chip=qs('#spdep-vault-chip').getBoundingClientRect();
-            return qs('#spdep-amount').value==='300' && !!qs('#spdep-vault-chip :is(img,svg)')
+            return Number(qs('#spdep-amount').value)===300 && !!qs('#spdep-vault-chip :is(img,svg)')
               && Math.abs(amount.top-chip.top)<45 && !qs('#spdep-vault-picker').open
-              && qs('#spdep-vault-chip').textContent.includes('Instapay');
+              && qs('#spdep-vault-chip').getAttribute('aria-label')==='Instapay'
+              && qs('#spdep-vault-chip').textContent.trim()===''
+              && qs('#spdep-vault-chip').offsetWidth===32;
           }),`recognized amount and vault logo share a compact row ${language}/${size.width}`);
           check(await page.$eval('#spdep-vault-picker',e=>!e.open&&e.querySelectorAll('input[name="spdep-vault"]').length===4),`vault options stay collapsed and available ${language}/${size.width}`);
           await page.click('#spdep-vault-picker summary');
@@ -250,12 +252,14 @@ function check(condition, message) { assert.ok(condition,message); checks++; }
           check(await page.evaluate(()=>qs('#spdep-sender-handle').value==='sender@instapay'&&qs('#spdep-sender-bank').value==='CIB'),`OCR sender address and bank populate optional fields ${lang}`);
           const before=seen.filter(r=>r.method==='DELETE').length;
           await page.click('.spdep-remove-image');
+          await page.evaluate(async()=>{await Promise.allSettled(qs('#spdep-remove-confirm').getAnimations({subtree:true}).map(animation=>animation.finished));});
           check(await page.$eval('#spdep-remove-confirm',e=>!e.hidden&&e.textContent.includes(t('spDepRemoveImageConfirm'))),`confirmation visible ${lang}`);
           await page.screenshot({path:path.join(os.tmpdir(),'soulia-remove-confirm-'+lang+'.png')});
           await page.click('#spdep-remove-confirm .btn-outline');
           check(await page.$eval('#spdep-remove-confirm',e=>e.hidden),`cancel hides confirmation ${lang}`);
           check(seen.filter(r=>r.method==='DELETE').length===before,`cancel preserves image ${lang}`);
           await page.click('.spdep-remove-image');
+          await page.evaluate(async()=>{await Promise.allSettled(qs('#spdep-remove-confirm').getAnimations({subtree:true}).map(animation=>animation.finished));});
           failWithdraw=true;
           await page.click('.spdep-remove-go');
           await page.waitForFunction(()=>!qs('#spdep-remove-error').hidden);

@@ -267,6 +267,10 @@ describe('rules on synthetic text', () => {
     const receipt = 'Approved Transaction\n1,000 EGP\nTransfer Amount\nFrom\n[censored]\nTo: vkswr3420 @ insta pay\nFees\n1 EGP\nTotal Amount\n1,001 EGP';
     expect(parseReceiptText(receipt)).toMatchObject({ amount: 1000, method: 'Instapay', confident: true });
   });
+  it('reads a recipient handle whose @ a black/white pass doubled (Nov 2026, #3040)', () => {
+    const receipt = 'Your transaction was successful\n200 ecp\nTransfer Amount\nFrom\nbasmalaasabry@instapay\nTo\nvkswr3420@@instapay\nMore Details +';
+    expect(parseReceiptText(receipt)).toMatchObject({ amount: 200, method: 'Instapay', pattern: 'instapay' });
+  });
   it('does not use an InstaPay fee-inclusive total when the transfer figure is unreadable', () => {
     const receipt = 'Approved Transaction\nTransfer Amount\nFrom\n[censored]\nTo: vkswr3420 @ insta pay\nFees\n1 EGP\nTotal Amount\n1,001 EGP';
     expect(parseReceiptText(receipt)).toMatchObject({ amount: null, method: 'Instapay', confident: false });

@@ -38,7 +38,10 @@ export class UnitActionDto extends TrackingRequestDto {
 }
 export class OrderPickScanDto extends TrackingRequestDto {
   @IsString() @MaxLength(160) identifier: string;
-  @IsString() @MaxLength(120) lineId: string;
+  @IsOptional() @IsString() @MaxLength(120) lineId?: string;
+  @IsBoolean() physicalPossessionConfirmed: boolean;
+}
+export class PrepareOrderPickingDto extends TrackingRequestDto {
   @IsBoolean() physicalPossessionConfirmed: boolean;
 }
 export class ReceiveCustomerPieceDto extends TrackingRequestDto {

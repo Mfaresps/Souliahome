@@ -23,6 +23,25 @@ function fixture(status = 'pending', shipped = false) {
 }
 
 describe('Shopify client name synchronization', () => {
+  it('stores email and stable customer identity on newly imported orders', async () => {
+    const { service } = fixture();
+    service.shopifyOrderModel.findOne = () => ({ lean: async () => null });
+    service.shopifyOrderModel.create = jest.fn(async (data: any) => ({ _id: 'created', ...data, save: async () => {} }));
+    service.employeeShiftService = { resolveAssignee: async () => null };
+    const result = await service.handleOrder({ id: 777, name: '#777', customer: { ...oldContact, id: 99, email: 'Customer@Example.com' } });
+    expect(result.saved).toBe(true);
+    expect(service.shopifyOrderModel.create).toHaveBeenCalledWith(expect.objectContaining({ customerEmail: 'customer@example.com', shopifyCustomerId: '99' }));
+  });
+
+  it('updates email on linked transactions and retains it when Shopify omits it', async () => {
+    const { service, order } = fixture('approved');
+    await service.handleOrderUpdate({ ...order.rawData, customer: { ...oldContact, id: 99, email: 'Customer@Example.com' } });
+    expect(order.customerEmail).toBe('customer@example.com');
+    expect(service.txModel.updateOne).toHaveBeenCalledWith({ shopifyOrderId: '111' }, { $set: expect.objectContaining({ customerEmail: 'customer@example.com', shopifyCustomerId: '99' }) });
+    await service.handleOrderUpdate({ ...order.rawData, customer: { ...oldContact, id: 99, email: null }, email: null });
+    expect(order.customerEmail).toBe('customer@example.com');
+  });
+
   it.each(['pending', 'approved'])('updates the %s order, linked transaction and live views', async status => {
     const { service, order } = fixture(status);
     expect(await service.handleOrderUpdate({ ...order.rawData, customer: newContact })).toEqual({ updated: true });

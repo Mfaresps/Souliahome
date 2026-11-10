@@ -31,6 +31,22 @@ function setup(role = 'admin') {
   return { service, push, account, accounts, jobs, users, stored, inbox, historyRows };
 }
 describe('Web Push settings, security and delivery', () => {
+  it.each(['en', 'ar'] as const)('persists and queues one group notification in %s when the same batch is retried', async language => {
+    const { service, account, stored, historyRows } = setup();
+    account.language = language;
+    const details = { actionKey: 'prep-group', status: 'approved' as const, prepRef: '710-10NOV', orderCount: 12 };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await service.enqueue('approval', 'prep-group:710-10NOV:batch-1', '710-10NOV', 'prep-group:710-10NOV', undefined, undefined, details);
+    }
+    expect(historyRows.size).toBe(1);
+    expect(stored.size).toBe(1);
+    const row = [...historyRows.values()][0];
+    const payload = JSON.parse([...stored.values()][0].payload);
+    expect(row.title).toBe(language === 'en' ? '📦 Prep group orders' : '📦 طلبات مجموعة التحضير');
+    expect(payload.body).toBe(language === 'en' ? '710-10NOV · 12 orders' : '710-10NOV · عدد الطلبات: 12');
+    expect(payload.title).toBe(row.title);
+    expect(new URL(payload.url, 'https://soulia.test').searchParams.get('pushRecord')).toBe('prep-group:710-10NOV');
+  });
   it('notifies the assignee, managers and admins about schedules and due times, including the scheduler themselves', async () => {
     const {service, users, historyRows, jobs}=setup('staff');
     const employee='507f1f77bcf86cd799439012', manager='507f1f77bcf86cd799439013', other='507f1f77bcf86cd799439014';

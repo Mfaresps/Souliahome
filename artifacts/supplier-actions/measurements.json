@@ -1,0 +1,110 @@
+[
+  {
+    "lang": "en",
+    "width": 320,
+    "overflow": "visible",
+    "scroll": 150,
+    "client": 150,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "overflow": "visible",
+    "scroll": 150,
+    "client": 150,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "en",
+    "width": 768,
+    "overflow": "visible",
+    "scroll": 150,
+    "client": 150,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "en",
+    "width": 1024,
+    "overflow": "visible",
+    "scroll": 149,
+    "client": 149,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "en",
+    "width": 1440,
+    "overflow": "visible",
+    "scroll": 149,
+    "client": 149,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "en",
+    "width": 1920,
+    "overflow": "visible",
+    "scroll": 149,
+    "client": 149,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "overflow": "visible",
+    "scroll": 140,
+    "client": 140,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "overflow": "visible",
+    "scroll": 140,
+    "client": 140,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 768,
+    "overflow": "visible",
+    "scroll": 140,
+    "client": 140,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 1024,
+    "overflow": "visible",
+    "scroll": 134,
+    "client": 134,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "overflow": "visible",
+    "scroll": 134,
+    "client": 134,
+    "fits": true,
+    "pageFits": true
+  },
+  {
+    "lang": "ar",
+    "width": 1920,
+    "overflow": "visible",
+    "scroll": 134,
+    "client": 134,
+    "fits": true,
+    "pageFits": true
+  }
+]

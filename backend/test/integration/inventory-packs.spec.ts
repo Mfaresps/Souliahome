@@ -133,6 +133,11 @@ describe('Sealed physical packs',()=>{
     await packs.undoScan(pack.barcode,req(),actor);expect(await Unit.countDocuments({status:'picking'})).toBe(0);
     await expect(scan(pack.barcode)).resolves.toMatchObject({quantity:6});
   });
+  it('requires one exact line for a whole pack when individual pieces use automatic matching',async()=>{
+    const result=await create(),pack=result.packs[0];
+    expect(()=>scan(pack.barcode,{lineId:undefined})).toThrow('Exact order line');
+    expect(await Unit.countDocuments({packId:pack._id,status:'picking'})).toBe(0);
+  });
   it('recognizes scanner prefixes and lowercase pack codes through the ordinary piece-scanning endpoint',async()=>{
     const {packs:created}=await create(),pack=created[0];
     const identifier=']Q3'+pack.barcode.toLowerCase();

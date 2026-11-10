@@ -24,9 +24,9 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
       if (url.origin === 'http://soulia.test') {
         if (url.pathname === '/') return request.respond({status:200,contentType:'text/html',body:html});
         if (url.pathname === '/design-system.css') return request.respond({status:200,contentType:'text/css',body:fs.readFileSync(path.join(publicDir,'design-system.css'),'utf8')});
-        if (url.pathname === '/order-status.js') return request.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.join(publicDir,'order-status.js'),'utf8')});
+        if (['/order-status.js','/clients-profile.js','/navigation-history.js'].includes(url.pathname)) return request.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)),'utf8')});
         if (url.pathname === '/shopify-edit-approvals.js') return request.respond({status:200,contentType:'text/javascript',body:fs.readFileSync(path.join(publicDir,'shopify-edit-approvals.js'),'utf8')});
-        if (['/navigation-shell.js','/navigation-shell.css','/soulia-logo.svg','/inventory-scanner.js','/inventory-scanner.css','/global-search-scanner.js','/global-search-scanner.css'].includes(url.pathname)) return request.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'image/svg+xml',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)))});
+        if (['/navigation-shell.js','/navigation-shell.css','/account-menu.js','/account-menu.css','/compact-pages.css','/workspace-tabs.css','/workspace-tabs.js','/table-viewport.js','/order-density.css','/designme/date-range-picker/soulia-range.js','/designme/date-range-picker/soulia-range.css','/soulia-logo.svg','/inventory-scanner.js','/inventory-scanner.css','/global-search-scanner.js','/global-search-scanner.css'].includes(url.pathname)) return request.respond({status:200,contentType:url.pathname.endsWith('.js')?'text/javascript':url.pathname.endsWith('.css')?'text/css':'image/svg+xml',body:fs.readFileSync(path.join(publicDir,url.pathname.slice(1)))});
         if (url.pathname === '/config.js') return request.respond({status:200,contentType:'text/javascript',body:'window.__ENV__={API_BASE_URL:""};'});
         if (url.pathname.startsWith('/api/')) return request.respond({status:200,contentType:'application/json',body:'[]'});
       }
@@ -42,6 +42,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
       qsa('.page').forEach(el=>el.classList.toggle('active',el.id==='page-dashboard'));
       // Page renderers are outside this test's scope; navigation still executes the real shell path.
       onPageEnter=()=>{};
+      _transactionSummariesComplete=true;
       api=async(url)=>({results:url.includes('empty-query')?[]:[{type:'customer',id:'client-1',title:'Osama Khamis',subtitle:'3 orders',score:180}]});
     });
     check(await page.$eval('.shell-breadcrumb',el=>el.textContent.includes('Dashboard')), 'Dashboard breadcrumb');
@@ -122,7 +123,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
     }
     await page.setViewport({width:1440,height:768});await pause();
     check(await page.$eval('.shell-nav-scroll',el=>el.scrollHeight<=el.clientHeight+1),'All main navigation items fit laptop height');
-    check(await page.$eval('body',el=>getComputedStyle(el).fontFamily.startsWith('Inter') && getComputedStyle(el).fontFamily.includes('Cairo')),'Latin font with unchanged Arabic fallback');
+    check(await page.$eval('body',el=>{const style=getComputedStyle(el);const primary=style.getPropertyValue('--font-app').split(',')[0].trim().replace(/['"]/g,'');return style.fontFamily.includes(primary)&&style.fontFamily.includes('Cairo');}),'Shared app font with Arabic fallback');
     check(await page.$eval('body',el=>getComputedStyle(el).fontVariantNumeric.includes('tabular-nums')),'Amounts use tabular numerals');
     await page.setViewport({width:1600,height:1000});await pause();
     await page.click('.shell-brand .shell-fold');await pause();
@@ -207,7 +208,8 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 250));
     await page.waitForFunction(()=>qs('#shell-breadcrumb').textContent.includes('#2773'));
     check(await page.$eval('#shell-breadcrumb',el=>!el.textContent.includes('#2772')),'Invoice breadcrumb follows live content replacement');
     await page.setViewport({width:390,height:844});await pause();
-    check(await page.$eval('#inv-view-content .shell-page-breadcrumb',el=>getComputedStyle(el).display!=='none'),'Invoice retains one usable breadcrumb on mobile');
+    check(await page.$eval('#inv-view-content .shell-page-breadcrumb',el=>getComputedStyle(el).display==='none'),'Invoice avoids a duplicate breadcrumb on mobile');
+    check(await page.$eval('#shell-breadcrumb',el=>getComputedStyle(el).display!=='none' && el.textContent.includes('#2773')),'Invoice identity remains visible in the mobile shell');
     await page.click('.inv2-header-actions .dd-toggle');await pause();
     check(await page.$eval('.dd-menu-portal',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;}),'Invoice actions menu fits mobile viewport');
     await page.evaluate(()=>closeAllMenus());

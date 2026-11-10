@@ -95,9 +95,21 @@
   };
   window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'deliveryPostponed' ? 'notification-delivery-postponed' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
   window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem', 'deliveryPostponed'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
+  window.souliaNotificationOtpHtml = function (n) {
+    if (typeof _isNoImageDepositMention !== 'function' || !_isNoImageDepositMention(n.mention)) return '';
+    const code = String(n.mention.commentText || '').match(/كود التحقق\s*[:\-]\s*(\d{4,8})\b/)?.[1];
+    if (!code) return '';
+    return '<div class="notification-otp"><div><span class="notification-otp-label">' + escHtml(t('mcOtpCode')) +
+      '</span><bdi class="notification-otp-code">' + code + '</bdi></div><button type="button" class="notification-otp-copy" data-otp-code="' + code +
+      '" onclick="event.stopPropagation();_ncCopyCode(this.dataset.otpCode,this)" aria-label="' + escHtml(t('mcCopyCode')) + '">' + escHtml(t('mcCopyCode')) + '</button></div>';
+  };
   window.souliaNotificationDescription = n => {
     const check = '<svg class="notification-check" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
-    const description = !n.history && !n.mention && typeof _stripHtml === 'function' ? _stripHtml(n.desc || '') : n.desc || '';
+    let description = !n.history && !n.mention && typeof _stripHtml === 'function' ? _stripHtml(n.desc || '') : n.desc || '';
+    if (typeof _isNoImageDepositMention === 'function' && _isNoImageDepositMention(n.mention)) {
+      const facts = String(n.mention.commentText || '').split('\n').filter(line => /^(الموظف|الأوردر|العميل|المبلغ|الخزنة|السبب)\s*:/.test(line.trim()));
+      description = (typeof _localizeSysText === 'function' ? _localizeSysText(facts.join('\n')) : facts.join('\n')).split('\n').join(' · ');
+    }
     const money = /(?:\bEGP\s+([\d٠-٩۰-۹][\d٠-٩۰-۹,٬]*(?:[.٫][\d٠-٩۰-۹]+)?)|([\d٠-٩۰-۹][\d٠-٩۰-۹,٬]*(?:[.٫][\d٠-٩۰-۹]+)?)\s*ج\.\s*م\.?)/g;
     let formatted = '', offset = 0;
     for (const match of String(description).matchAll(money)) {
@@ -171,7 +183,8 @@
           : !!mention.commentId && String(n.event) === String(mention.commentId) && String(n.recordId || '').split(':').pop() === String(mention.txId))));
       related.forEach(n => consumed.add(n.id));
       const item = { id: 'mention-' + id, mention, historyIds: related.map(n => n.id),
-        title: (typeof _sysSenderLabel === 'function' ? _sysSenderLabel(mention.fromName) : mention.fromName) || t('notifTabUpdates'),
+        title: typeof _isNoImageDepositMention === 'function' && _isNoImageDepositMention(mention) ? t('sysDepositNoImage') :
+          (typeof _sysSenderLabel === 'function' ? _sysSenderLabel(mention.fromName) : mention.fromName) || t('notifTabUpdates'),
         desc: typeof _localizeSysText === 'function' ? _localizeSysText(mention.commentText || '') : mention.commentText || '',
         actorUserId: mention.fromUserId, actorName: mention.fromName, actorAvatar: related.find(n => n.actorAvatar)?.actorAvatar,
         eventType: 'mention', type: 'info', icon: ICON('info'), ts: mention.ts,

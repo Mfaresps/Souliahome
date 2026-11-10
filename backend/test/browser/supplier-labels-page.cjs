@@ -22,6 +22,7 @@ const batch = { batchId, productId: '507f1f77bcf86cd799439011', sku: 'Code 53 - 
     });
     await page.evaluateOnNewDocument(() => {
       localStorage.setItem('token', 'isolated-supplier-page-test');
+      localStorage.setItem('soulia-push-prompt:', 'dismissed');
       localStorage.setItem('user', JSON.stringify({ name: 'System Manager', role: 'admin', perms: [] }));
     });
     await page.setRequestInterception(true);
@@ -32,8 +33,9 @@ const batch = { batchId, productId: '507f1f77bcf86cd799439011', sku: 'Code 53 - 
       let data = [];
       if (pathname === '/api/auth/me') data = { name: 'System Manager', role: 'admin', perms: [] };
       if (pathname === '/api/settings' || pathname === '/api/transactions/dashboard') data = {};
-      if (pathname === '/api/inventory-units/receipts') data={receipts:[],total:0};
-      if (pathname === '/api/inventory-units/units') data={units:[],total:0,products:[]};
+      if (pathname === '/api/notifications' || pathname === '/api/notifications/preferences') data={preferences:{enabled:false},language:'en',subscriptions:[]};
+      if (pathname === '/api/inventory-units/purchases/receipts') data={receipts:[],total:37};
+      if (pathname === '/api/inventory-units') data={units:[],total:0,limit:30,products:[]};
       if (pathname === '/api/products') data = [{ _id: batch.productId, name: batch.productName, code: batch.sku, isActive: true }];
       if (pathname === '/api/inventory-units/prelabels/batches/page') data = { batches: [batch], page: 1, totalPages: 1, total: 1 };
       if (pathname === '/api/inventory-units/prelabels/batches/' + batchId) data = { batch, linkedPurchases: [], linkedPurchaseTotal: 0, linkedPurchaseLimit: 20 };
@@ -68,6 +70,13 @@ const batch = { batchId, productId: '507f1f77bcf86cd799439011', sku: 'Code 53 - 
         // Pixel bounds catch clipped/transformed layouts that scrollWidth alone misses.
         const bounds = await page.$eval('.sl-workspace', el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width, viewport: innerWidth }; });
         assert(bounds.left >= -1 && bounds.right <= width + 1, `${view} at ${width}: ${JSON.stringify(bounds)}`);
+        const pageIdentity = await page.evaluate(() => {
+          const current = document.querySelector('#shell-breadcrumb [aria-current="page"]');
+          const box = current.getBoundingClientRect(), header = document.querySelector('#header').getBoundingClientRect();
+          return {label:current.textContent, title:document.querySelector('#sl-title').textContent, visible:box.width>=60&&box.height>0&&box.left>=header.left&&box.right<=header.right&&box.bottom<=header.bottom};
+        });
+        assert.equal(pageIdentity.label,pageIdentity.title,`${view}: workflow identity moves into the shell path`);
+        assert.ok(pageIdentity.visible,`${view} at ${width}: workflow identity stays visible`);
         assert.equal(await page.$('dialog[open]'), null);
         await page.screenshot({ path: path.join(artifacts, `app-${view}-${width}.png`), fullPage: true });
         if (view === 'detail') {
@@ -107,17 +116,58 @@ const batch = { batchId, productId: '507f1f77bcf86cd799439011', sku: 'Code 53 - 
     await page.click('#iu-tab-receipts'); await page.waitForSelector('#iu-invoice-detail:not([hidden])');
     assert.equal(new URL(page.url()).hash,'#warehouse-management');
     await page.evaluate(() => { window.barcodeTabsBeforeSwitch = document.querySelector('.iu-tabs'); });
-    await page.focus('#iu-tab-receipts'); await page.keyboard.press('End'); await page.waitForSelector('#page-warehouse-layout');
+    await page.focus('#iu-tab-receipts'); await page.keyboard.press('End'); await page.keyboard.press('Enter'); await page.waitForSelector('#page-warehouse-layout');
     assert.equal(new URL(page.url()).hash,'#warehouse-management/layout');
     assert.equal(await page.evaluate(() => window.barcodeTabsBeforeSwitch === document.querySelector('.iu-tabs')),true);
-    await page.focus('#iu-tab-layout'); await page.keyboard.press('ArrowRight'); await page.waitForSelector('#sl-new');
+    await page.focus('#iu-tab-layout'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter'); await page.waitForSelector('#sl-new');
     assert.equal(new URL(page.url()).hash,'#warehouse-management/supplier-labels');
     assert.equal(await page.evaluate(() => window.barcodeTabsBeforeSwitch === document.querySelector('.iu-tabs')),true);
     await page.goto('http://127.0.0.1:8080/#supplier-labels/batch/'+batchId,{waitUntil:'domcontentloaded'});
     await page.waitForSelector('#sl-print');
     assert.equal(new URL(page.url()).hash,'#warehouse-management/supplier-labels/batch/'+batchId);
+    for (const lang of ['en','ar']) for (const width of [320,390,768,1440]) {
+      await page.setViewport({width,height:900});
+      await page.evaluate(async lang=>{
+        currentLang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+        history.replaceState(null,'','#warehouse-management/supplier-labels');
+        await renderBarcodeManagement();
+      },lang);
+      await page.waitForSelector('#sl-new');
+      let anchor=null;
+      for (const view of ['supplier-labels','receipts','units','layout','supplier-labels']) {
+        await page.click('#iu-tab-'+view);
+        await page.waitForFunction(view=>document.querySelector('#page-barcodes').dataset.view===view,{},view);
+        await page.evaluate(()=>{window.scrollTo({top:0,behavior:'instant'});return document.fonts.ready;});
+        await new Promise(resolve=>setTimeout(resolve,450));
+        await page.waitForFunction(()=>{
+          const track=document.querySelector('#page-barcodes .iu-tabs'),r=track.getBoundingClientRect();
+          const selected=track.querySelector('[aria-selected="true"]').getBoundingClientRect();
+          return selected.left>=r.left-1&&selected.right<=r.right+1;
+        },{timeout:3000});
+        const position=await page.evaluate(()=>{
+          const page=document.querySelector('#page-barcodes'),track=page.querySelector('.iu-tabs');
+          const p=page.getBoundingClientRect(),r=track.getBoundingClientRect();
+          const selected=track.querySelector('[aria-selected="true"]').getBoundingClientRect();
+          const badge=track.querySelector('#iu-tab-invoice-count'),badgeRect=badge.getBoundingClientRect();
+          return {x:r.left-p.left,y:r.top-p.top,width:r.width,height:r.height,
+            badgeVisible:getComputedStyle(badge).visibility==='visible'&&badgeRect.height>0,
+            badgeWidth:badgeRect.width,badgeCount:badge.textContent,
+            selectedVisible:selected.left>=r.left-1&&selected.right<=r.right+1,
+            positions:[...track.querySelectorAll('[data-iu-tab]')].map(tab=>tab.getBoundingClientRect().left-r.left+track.scrollLeft)};
+        });
+        if(!anchor)anchor=position;
+        for(const key of ['x','y','width','height']) assert.ok(Math.abs(position[key]-anchor[key])<=1,`${lang}/${width}/${view}: tab track ${key} stays fixed: ${JSON.stringify({anchor,position})}`);
+        assert.ok(position.positions.every((value,i)=>Math.abs(value-anchor.positions[i])<=1),`${lang}/${width}/${view}: tab labels stay in the same slots`);
+        assert.ok(position.selectedVisible,`${lang}/${width}/${view}: selected label stays visible`);
+        assert.ok(position.badgeVisible,`${lang}/${width}/${view}: invoice badge remains visible`);
+        assert.ok(position.badgeWidth<=24,`${lang}/${width}/${view}: invoice badge stays compact`);
+        assert.notEqual(position.badgeCount,'0',`${lang}/${width}/${view}: no false zero while loading or rebuilding tabs`);
+        if (view !== 'supplier-labels') assert.equal(position.badgeCount,'37');
+        if (width === 390 || width === 1440) await page.screenshot({path:path.join(artifacts,`tabs-${lang}-${width}-${view}.png`)});
+      }
+    }
     assert.deepEqual(errors, []);
-    console.log('PASS: supplier page routing, direct links, reload, browser Back and viewport bounds at 1440/768/390.');
+    console.log('PASS: supplier page routing, direct links, reload, browser Back, viewport bounds and fixed warehouse tabs across 40 English/Arabic transitions at 320/390/768/1440.');
   } catch (e) {
     console.error(await page.evaluate(() => ({url:location.href,current:currentPage, message:document.querySelector('#sl-message')?.textContent,title:document.querySelector('#sl-title')?.textContent, view:document.querySelector('#sl-content')?.textContent?.slice(0,400)})));
     await page.screenshot({path:path.join(artifacts,'app-navigation-error.png'),fullPage:true});

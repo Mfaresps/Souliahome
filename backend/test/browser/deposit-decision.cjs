@@ -17,7 +17,7 @@ const output=path.join(root,'artifacts/deposit-decision');fs.mkdirSync(output,{r
   await page.addScriptTag({content:`
    let currentLang='ar';let order={_id:'o1',ref:'100',status:'pending',depositDecisionRevision:0};
    let _shopifyOrders=[order],transactions=[],currentAuditData=null;const _spShippingSwitchBusy=new Set();
-   const _spOrderById=()=>order,_spCanChooseShipping=()=>true,_spRefreshOrderRow=()=>{},renderAuditTable=()=>{},hasPerm=p=>!window.deniedPerms?.has(p);
+   const _spOrderById=()=>order,_spCanChooseShipping=()=>true,_spWarnDepositAction=()=>false,_spRefreshOrderRow=()=>{},renderAuditTable=()=>{},hasPerm=p=>!window.deniedPerms?.has(p);
    const showConfirm=async()=>true,t=x=>x,esc=String;window.messages=[];const toast=(...args)=>messages.push(args);window.requests=[];
    const options={reasons:[{code:'no-payment-method',ar:'لا تتوفر للعميل وسيلة دفع أو تحويل',en:'No payment method'},{code:'first-order-trust',ar:'أول تعامل ويحتاج الاطمئنان قبل الدفع',en:'First-order concern'},{code:'prefers-cod',ar:'يفضل الدفع عند الاستلام',en:'Prefers COD'},{code:'transfer-problem',ar:'مشكلة مؤقتة في التحويل أو حد التحويل',en:'Transfer problem'},{code:'not-requested',ar:'لم يُطلب مقدم من العميل — استثناء من المتجر',en:'Store exception'},{code:'other',ar:'سبب آخر',en:'Other'}],exceptions:[{code:'staff-discretion',ar:'استثناء ضمن صلاحياتي',en:'Within my authority'},{code:'manager-exception',ar:'بتوجيه الإدارة',en:'Management direction'}]};
    const api=async(url,init)=>{

@@ -143,8 +143,8 @@ html:has(#page-shopify-orders.active){scrollbar-gutter:stable}
 }
 #main #page-shopify-orders .sp-orders-loading-table .sp-loading-bar{max-width:100%}
 #main #page-shopify-orders .sp-orders-loading-table .is-time{margin-inline-start:4px}
-#main #page-shopify-orders .sp-orders-loading-table .sp-loading-status-head{display:inline-flex;align-items:center;gap:4px}
-#main #page-shopify-orders .sp-orders-loading-table .sp-loading-status-head>span{font-size:15px;line-height:1;color:var(--spw-muted)}
+#main #page-shopify-orders :is(#shopify-orders-table-wrap .data-table,.sp-orders-loading-table table) th[data-col="status"]{text-align:center}
+#main #page-shopify-orders .sp-loading-status-head{cursor:default;pointer-events:none}
 #main #page-shopify-orders .sp-orders-loading-table .sp-loading-day-content{display:flex;align-items:center;gap:12px}
 #main #page-shopify-orders .sp-orders-loading-table .is-day-label{width:68px;height:12px}
 #main #page-shopify-orders .sp-orders-loading-table .is-day-date{width:112px;height:11px}

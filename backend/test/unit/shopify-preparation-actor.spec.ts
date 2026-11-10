@@ -12,7 +12,7 @@ describe('Shopify preparation actor', () => {
     expect(service.approveOrder).toHaveBeenCalledWith('order-id', user.name || user.username, 'bosta', user.userId);
   });
 
-  it('attributes movements and preparation notifications to the picker while retaining the assigned employee', async () => {
+  it('attributes movements to the picker and leaves preparation notifications to the group commit', async () => {
     const service: any = Object.create(ShopifyService.prototype);
     const order = {
       _id: 'order-id', status: 'pending', assignedToName: 'Gannh', ref: '2924',
@@ -44,10 +44,7 @@ describe('Shopify preparation actor', () => {
     expect(service.inventoryMovementsService.record).toHaveBeenCalledWith([
       expect.objectContaining({ by: 'Fares', sourceTransactionRef: '2924' }),
     ]);
-    expect(service.notifications.enqueue).toHaveBeenCalledWith(
-      'approval', 'approval:shopify:order-id:approved', '2924', 'shopify:order-id', undefined, undefined,
-      expect.objectContaining({ actorName: 'Fares', actorUserId: 'picker-id', actionKey: 'order', status: 'approved' }),
-    );
+    expect(service.notifications.enqueue).not.toHaveBeenCalled();
     expect(service.emit).toHaveBeenCalledWith('tx:created', expect.objectContaining({ by: 'Fares' }));
   });
 });

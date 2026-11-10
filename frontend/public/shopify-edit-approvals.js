@@ -199,6 +199,12 @@ function _spOrderEditMark(order, compact = false) {
   const pending = request.status === 'معلق' || request.status === 'قيد التنفيذ';
   const label = pending ? _spEditPendingLabel()
     : request.status === 'معتمد' ? spEditText('تم قبول التعديل', 'Edit approved') : spEditText('تم رفض التعديل', 'Edit rejected');
+  if (compact === 'items') {
+    const state = pending ? 'pending' : request.status === 'معتمد' ? 'approved' : 'rejected';
+    const shortLabel = pending ? spEditText('طلب تعديل', 'Edit request')
+      : state === 'approved' ? spEditText('تم التعديل', 'Edited') : spEditText('تعديل مرفوض', 'Rejected');
+    return `<button type="button" class="sp-edit-status is-items is-${state}${isAdmin() ? ' is-admin' : ''}" title="${esc(label)}" aria-label="${esc(label)}" onclick="event.stopPropagation();openShopifyEditReview('${esc(order._id)}')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 20l4.5-1 12-12a2.12 2.12 0 0 0-3-3l-12 12L4 20Z"/></svg><span>${esc(shortLabel)}</span></button>`;
+  }
   if (request.status === 'معتمد') {
     return `<button type="button" class="sp-edit-status is-approved is-compact" title="${esc(label)}" aria-label="${esc(label)}" onclick="event.stopPropagation();openShopifyEditReview('${esc(order._id)}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></svg></button>`;
   }

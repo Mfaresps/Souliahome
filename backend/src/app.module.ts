@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { ClientsModule } from './clients/clients.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { CollectionsModule } from './collections/collections.module';
 import { ExpensesModule } from './expenses/expenses.module';
@@ -54,6 +55,7 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     UsersModule,
     ProductsModule,
     TransactionsModule,
+    ClientsModule,
     SuppliersModule,
     CollectionsModule,
     ExpensesModule,

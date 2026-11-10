@@ -1,0 +1,308 @@
+[
+  {
+    "width": 1920,
+    "height": 1080,
+    "boardBottom": 1059,
+    "pageBottom": 1068,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 4,
+    "overflowX": false,
+    "scrollHeight": 1136,
+    "main": {
+      "top": 56,
+      "height": 1024,
+      "minHeight": "1024px"
+    },
+    "lanes": [
+      {
+        "height": 619,
+        "scrollHeight": 619
+      },
+      {
+        "height": 709,
+        "scrollHeight": 709
+      },
+      {
+        "height": 658,
+        "scrollHeight": 658
+      },
+      {
+        "height": 709,
+        "scrollHeight": 4590
+      }
+    ]
+  },
+  {
+    "width": 2308,
+    "height": 1256,
+    "boardBottom": 1235,
+    "pageBottom": 1244,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 4,
+    "overflowX": false,
+    "scrollHeight": 1312,
+    "main": {
+      "top": 56,
+      "height": 1200,
+      "minHeight": "1200px"
+    },
+    "lanes": [
+      {
+        "height": 795,
+        "scrollHeight": 795
+      },
+      {
+        "height": 885,
+        "scrollHeight": 885
+      },
+      {
+        "height": 834,
+        "scrollHeight": 834
+      },
+      {
+        "height": 885,
+        "scrollHeight": 4590
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "height": 900,
+    "boardBottom": 879,
+    "pageBottom": 888,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 4,
+    "overflowX": false,
+    "scrollHeight": 956,
+    "main": {
+      "top": 56,
+      "height": 844,
+      "minHeight": "844px"
+    },
+    "lanes": [
+      {
+        "height": 439,
+        "scrollHeight": 439
+      },
+      {
+        "height": 529,
+        "scrollHeight": 529
+      },
+      {
+        "height": 478,
+        "scrollHeight": 478
+      },
+      {
+        "height": 529,
+        "scrollHeight": 4590
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "height": 600,
+    "boardBottom": 579,
+    "pageBottom": 588,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 4,
+    "overflowX": false,
+    "scrollHeight": 656,
+    "main": {
+      "top": 56,
+      "height": 544,
+      "minHeight": "544px"
+    },
+    "lanes": [
+      {
+        "height": 139,
+        "scrollHeight": 139
+      },
+      {
+        "height": 229,
+        "scrollHeight": 229
+      },
+      {
+        "height": 178,
+        "scrollHeight": 178
+      },
+      {
+        "height": 229,
+        "scrollHeight": 4590
+      }
+    ]
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "boardBottom": 952,
+    "pageBottom": 961,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 2,
+    "overflowX": false,
+    "scrollHeight": 971,
+    "main": {
+      "top": 56,
+      "height": 915,
+      "minHeight": "712px"
+    },
+    "lanes": [
+      {
+        "height": 133,
+        "scrollHeight": 133
+      },
+      {
+        "height": 223,
+        "scrollHeight": 223
+      },
+      {
+        "height": 172,
+        "scrollHeight": 172
+      },
+      {
+        "height": 223,
+        "scrollHeight": 4590
+      }
+    ]
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "boardBottom": 976,
+    "pageBottom": 985,
+    "gutter": 104,
+    "pagePadding": 9,
+    "columns": 2,
+    "overflowX": false,
+    "scrollHeight": 1096,
+    "main": {
+      "top": 72,
+      "height": 1017,
+      "minHeight": "952px"
+    },
+    "lanes": [
+      {
+        "height": 133,
+        "scrollHeight": 133
+      },
+      {
+        "height": 223,
+        "scrollHeight": 223
+      },
+      {
+        "height": 172,
+        "scrollHeight": 172
+      },
+      {
+        "height": 223,
+        "scrollHeight": 4630
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "boardBottom": 1996.109375,
+    "pageBottom": 2005.109375,
+    "gutter": 104,
+    "pagePadding": 9,
+    "columns": 1,
+    "overflowX": false,
+    "scrollHeight": 2109,
+    "main": {
+      "top": 72,
+      "height": 2037.109375,
+      "minHeight": "772px"
+    },
+    "lanes": [
+      {
+        "height": 91,
+        "scrollHeight": 91
+      },
+      {
+        "height": 205,
+        "scrollHeight": 205
+      },
+      {
+        "height": 111,
+        "scrollHeight": 111
+      },
+      {
+        "height": 506,
+        "scrollHeight": 4630
+      }
+    ]
+  },
+  {
+    "width": 375,
+    "height": 667,
+    "boardBottom": 1889.90625,
+    "pageBottom": 1898.90625,
+    "gutter": 104,
+    "pagePadding": 9,
+    "columns": 1,
+    "overflowX": false,
+    "scrollHeight": 2003,
+    "main": {
+      "top": 72,
+      "height": 1930.90625,
+      "minHeight": "595px"
+    },
+    "lanes": [
+      {
+        "height": 91,
+        "scrollHeight": 91
+      },
+      {
+        "height": 205,
+        "scrollHeight": 205
+      },
+      {
+        "height": 111,
+        "scrollHeight": 111
+      },
+      {
+        "height": 400,
+        "scrollHeight": 4630
+      }
+    ]
+  },
+  {
+    "width": 844,
+    "height": 390,
+    "boardBottom": 1008.5,
+    "pageBottom": 1017.5,
+    "gutter": 10,
+    "pagePadding": 9,
+    "columns": 2,
+    "overflowX": false,
+    "scrollHeight": 1028,
+    "main": {
+      "top": 56,
+      "height": 971.5,
+      "minHeight": "334px"
+    },
+    "lanes": [
+      {
+        "height": 133,
+        "scrollHeight": 133
+      },
+      {
+        "height": 223,
+        "scrollHeight": 223
+      },
+      {
+        "height": 172,
+        "scrollHeight": 172
+      },
+      {
+        "height": 223,
+        "scrollHeight": 4590
+      }
+    ]
+  }
+]

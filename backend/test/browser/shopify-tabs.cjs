@@ -19,8 +19,9 @@ const css = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1];
     await page.goto('http://shopify-tabs.test/');
     await page.setContent('<style>:root{--accent:#2c7a50;--border:#d5e3dc;--surface:#f7faf8;--text:#12352b;--text-muted:#68877b}body{margin:10px}</style><div id="page-shopify-orders">' + html.slice(start, end) + ['sp-orders-tab-content', 'sp-deposits-tab-content', 'sp-deposit-log-content', 'sp-perf-dashboard-content', 'shopify-filters-bar'].map(id => '<div id="' + id + '"></div>').join('') + '</div>');
     await page.addStyleTag({content: css});
-    await page.addStyleTag({path: path.join(root, 'shopify-tabs.css')});
-    await page.addScriptTag({content: 'window.qs=s=>document.querySelector(s); window.admin=true;window.isAdmin=()=>admin;window.renderPerformanceDashboard=()=>{};window.renderSpDepositReview=()=>{};window.renderSpDepositHistory=()=>{};window._depLogUrl=()=>"#shopify-orders/deposit-log";' + functions + ';_initShopifySubnav();'});
+    for (const file of ['shopify-tabs.css', 'shopify-responsive.css', 'shopify-compact-header.css'])
+      await page.addStyleTag({path: path.join(root, file)});
+    await page.addScriptTag({content: 'window.qs=s=>document.querySelector(s); window.admin=true;window.isAdmin=()=>admin;window._spServerEnabled=false;window.renderPerformanceDashboard=()=>{};window.renderSpDepositReview=()=>{};window.renderSpDepositHistory=()=>{};window._depLogUrl=()=>"#shopify-orders/deposit-log";' + functions + ';_initShopifySubnav();'});
     for (const dir of ['ltr', 'rtl']) {
       for (const width of [320, 390, 768, 1440]) {
         await page.setViewport({width, height: 800});
@@ -32,6 +33,8 @@ const css = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1];
         await page.keyboard.press('Enter');
         assert.equal(await page.evaluate(() => location.hash), '#shopify-orders/deposits');
         assert.equal(await page.$eval('#sp-subnav-deposits', el => el.getAttribute('aria-selected')), 'true');
+        assert.equal(await page.$eval('#sp-subnav', el => getComputedStyle(el).flexDirection), 'row');
+        assert.ok(await page.$eval('#sp-subnav-deposits', el => el.getBoundingClientRect().height >= 44), 'touch target');
         await page.evaluate(() => _spStepSubnav(1));
         assert.equal(await page.evaluate(() => location.hash), '#shopify-orders/deposit-log');
         await page.keyboard.press('End');
@@ -44,10 +47,23 @@ const css = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)[1];
         if (width === 390 && dir === 'rtl') await page.screenshot({path: 'artifacts/shopify-tabs-mobile.png'});
       }
     }
+    await page.evaluate(() => {
+      for (const tab of ['orders', 'deposits', 'deposit-log', 'perf', 'orders']) switchShopifySubnav(tab);
+    });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    assert.deepEqual(await page.$$eval('[role="tabpanel"]', panels => panels.filter(el => getComputedStyle(el).display !== 'none').map(el => el.id)), ['sp-orders-tab-content'], 'rapid switches leave one visible panel');
+    await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+    await page.evaluate(() => switchShopifySubnav('deposits'));
+    assert.equal(await page.$eval('#sp-deposits-tab-content', el => el.getAnimations().length), 0);
+    assert.ok(await page.$eval('#sp-subnav', el => parseFloat(getComputedStyle(el, '::before').transitionDuration) < .001));
     await page.evaluate(() => {admin = false; switchShopifySubnav('orders', true); _initShopifySubnav(); switchShopifySubnav('perf');});
     assert.equal(await page.$eval('#sp-subnav-orders', el => el.getAttribute('aria-selected')), 'true');
     assert.equal(await page.evaluate(() => _spVisibleSubnavTabs().length), 1);
+    assert.equal(await page.$eval('#sp-subnav-shell', el => el.hidden), true, 'one permitted destination needs no tab navigation');
+    assert.equal(await page.$eval('#sp-subnav-shell', el => getComputedStyle(el).display), 'none');
     assert.equal(await page.$eval('#sp-tab-next', el => el.disabled), true);
+    await page.evaluate(() => {admin = true; _initShopifySubnav();});
+    assert.equal(await page.$eval('#sp-subnav-shell', el => el.hidden), false, 'navigation returns when another tab is permitted');
     assert.deepEqual(errors, []);
     console.log('PASS Shopify tabs: keyboard, selection, routes, arrow boundaries, admin permissions, RTL/LTR and four viewport widths.');
   } finally {await browser.close();}

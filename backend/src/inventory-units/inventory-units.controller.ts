@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { InventoryUnitsService, TrackingActor } from './inventory-units.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
 import { InventoryScanningService } from './inventory-scanning.service';
 import { EligibleScanQueryDto, ScanRequestDto } from './inventory-scan.dto';
 import { ManualPurchaseReceivingService } from './manual-purchase-receiving.service';
@@ -121,6 +121,10 @@ export class InventoryUnitsController {
       return this.packs.scan(id, { ...dto, identifier }, req.user);
     }
     return this.service.pickScan(id, dto, req.user);
+  }
+  @Post('orders/:id/picking/prepare') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
+  preparePicking(@Param('id') id: string, @Body() dto: PrepareOrderPickingDto, @Req() req: { user: TrackingActor }) {
+    return this.service.preparePickedOrder(id, dto, req.user);
   }
   @Get() @RequirePerms('inventory-units-view') search(@Query() query: Record<string, string>) { return this.service.search(query); }
   @Post() @RequirePerms('inventory-units-register')

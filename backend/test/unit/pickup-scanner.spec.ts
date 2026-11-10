@@ -25,7 +25,7 @@ function fixture() {
     api: jest.fn(async (url: string, options: any) => {
       if (!options?.method) return { unit: { status: 'available', productId: 'product' } };
       const body = JSON.parse(options.body);
-      return { unit: { _id: body.identifier, barcode: body.identifier, status: 'picking', __v: 1 } };
+      return { lineId: body.lineId || 'line', unit: { _id: body.identifier, barcode: body.identifier, status: 'picking', __v: 1 } };
     }),
   };
   runInNewContext(barcode, c); runInNewContext(scanner, c); runInNewContext(undo, c);
@@ -90,7 +90,7 @@ it.each(['en', 'ar'])('accepts a physical scan without focusing an input (%s key
   expect(state.summary.lines[0].units).toHaveLength(1);
 });
 
-it('serializes fast scans received during an in-flight lookup and avoids duplicate submissions', async () => {
+it('serializes rapid scans with exactly one request per piece and avoids duplicate submissions', async () => {
   const { c, state } = fixture();
   let release: any;
   c.api.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
@@ -98,8 +98,9 @@ it('serializes fast scans received during an in-flight lookup and avoids duplica
   const second = c._pwSubmitScan('order', '234567891');
   c._pwSubmitScan('order', '234567891');
   expect(state.summary.lines[0].units).toHaveLength(0);
-  release({ unit: { status: 'available', productId: 'product' } }); await Promise.all([first, second]);
+  release({ lineId: 'line', unit: { unitId: '123456789', barcode: '123456789', status: 'picking' } }); await Promise.all([first, second]);
   expect(c.api.mock.calls.filter((row: any[]) => row[1]?.method === 'POST')).toHaveLength(2);
+  expect(c.api).toHaveBeenCalledTimes(2);
   expect(state.summary.lines[0].units).toHaveLength(2);
   expect(c._pwLoadPickSummary).not.toHaveBeenCalled();
 });
@@ -165,18 +166,19 @@ it('shows the committed code and check immediately, before subsequent preparatio
   finish(); await task;
 });
 
-it('never sends a captured scan to a newly selected order', async () => {
+it('keeps an in-flight scan on its original order and never sends queued scans to a newly selected order', async () => {
   const { c } = fixture(); let release: any;
   c.api.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
   const task = c._pwSubmitScan('order', '123456789'); await tick();
   c._pwSubmitScan('order', '234567891'); c._pwSelId = 'other';
-  release({ unit: { status: 'available', productId: 'product' } }); await task;
-  expect(c.api.mock.calls.filter((row: any[]) => row[1]?.method === 'POST')).toHaveLength(0);
+  release({ lineId: 'line', unit: { unitId: '123456789', barcode: '123456789', status: 'picking' } }); await task;
+  const writes = c.api.mock.calls.filter((row: any[]) => row[1]?.method === 'POST');
+  expect(writes).toHaveLength(1);
+  expect(writes[0][0]).toBe('/inventory-units/orders/order/picking/scans');
 });
 
 it('keeps success false on a failed save and reuses its operation key when retrying', async () => {
   const { c, state } = fixture();
-  c.api.mockImplementationOnce(async () => ({ unit: { status: 'available', productId: 'product' } }));
   c.api.mockRejectedValueOnce(Error('Network error'));
   await c._pwSubmitScan('order', '123456789');
   expect(state.feedback.error).toBe(true); expect(state.summary.lines[0].units).toHaveLength(0);
@@ -221,7 +223,7 @@ function replayFixture(pack = false) {
     const units = Array.from({ length: quantity }, (_, i) => ({ unitId: 'unit-' + i, barcode: 'SU-' + i, status: 'picking', version: revision,
       ...(pack ? { packId: 'abcdef123456789012345678' } : { manualCode: identifier }) }));
     server.lines[0].units = units;
-    const result = { unit: { ...units[0], manualCode: identifier }, ...(pack ? { units, isPack: true, quantity, packId: 'abcdef123456789012345678' } : {}) };
+    const result = { lineId: 'line', unit: { ...units[0], manualCode: identifier }, ...(pack ? { units, isPack: true, quantity, packId: 'abcdef123456789012345678' } : {}) };
     receipts.set(body.operationKey, result); return result;
   });
   return { ...env, identifier, server, scanKeys, quantity };

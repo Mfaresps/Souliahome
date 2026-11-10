@@ -42,6 +42,7 @@ import {
   visibleReceipts,
 } from './deposit-receipts.util';
 import { DepositReceiptsService } from './deposit-receipts.service';
+import { shopifyContact } from '../clients/client-profile.util';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 import { MentionsService } from '../mentions/mentions.service';
@@ -196,6 +197,7 @@ export class ShopifyService {
         ref,
         client: clientName,
         phone: clientPhone,
+        ...shopifyContact(orderData),
         notes,
         payment,
         total,
@@ -569,6 +571,9 @@ export class ShopifyService {
       order.notes = notes;
       if (clientName !== undefined) order.client = clientName;
       if (phone !== undefined) order.phone = phone;
+      const contact = shopifyContact(orderData);
+      if (contact.customerEmail) order.customerEmail = contact.customerEmail;
+      if (contact.shopifyCustomerId) order.shopifyCustomerId = contact.shopifyCustomerId;
       // العنوان على سجل الأوردر يتتبّع شوبيفاي دائماً — هذا السجل يمثّل ما يقوله المتجر،
       // والتجميد يحدث على الحركة/الشحنة أدناه حيث توجد Bosta. الاثنان يختلفان عمداً عند
       // التعارض، وهو بالضبط ما يجعل الاختلاف قابلاً للعرض بدل أن يُمحى.
@@ -664,6 +669,8 @@ export class ShopifyService {
       // tags في Shopify نص مفصول بفواصل، transaction تحتفظ بها كمصفوفة
       const txTags = tags ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
       const txUpdate: any = { notes, tags: txTags };
+      if (contact.customerEmail) txUpdate.customerEmail = contact.customerEmail;
+      if (contact.shopifyCustomerId) txUpdate.shopifyCustomerId = contact.shopifyCustomerId;
       if (clientName !== undefined) txUpdate.client = clientName;
       if (phone !== undefined) txUpdate.phone = phone;
 
@@ -1469,6 +1476,8 @@ export class ShopifyService {
       confirmedAt: confirmedAt,
       depositDetectedAt: order.depositDetectedAt || '',
       shippingAddress: order.shippingAddress || '',
+      customerEmail: order.customerEmail || shopifyContact(order.rawData).customerEmail,
+      shopifyCustomerId: order.shopifyCustomerId || shopifyContact(order.rawData).shopifyCustomerId,
       shippingCity: order.shippingCity || '',
       shippingGov: (order as any).shippingGov || '',
       shippingBostaCity: bostaCity,
@@ -1512,11 +1521,10 @@ export class ShopifyService {
 
     // Uploads abandoned before submission have no further use once the order is a transaction.
     this.logger.log(`✅ تم قبول أوردر Shopify: ${cleanRef}`);
-    // Independent post-commit work; persist the notification and clean drafts together.
+    // Preparation is announced once by setPickupPreparing, after the group is saved.
     await Promise.all([
       this.followUpsService?.closeForOrder({ transactionId: String(tx._id), shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'confirmed', paidNow > 0 ? 'تم دفع الديبوزت' : 'سيتم الشحن بدون ديبوزت', approvedBy),
       this.depositReceipts.discardDrafts(String(order._id)),
-      notifyApproval(this.notifications, 'approval:shopify:' + orderId + ':approved', order.ref, 'shopify:' + orderId, { actorName: approvedBy, actorUserId, actionKey: 'order', status: 'approved' }),
     ]);
     return { success: true, txId: String(tx._id) };
   }

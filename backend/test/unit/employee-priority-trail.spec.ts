@@ -50,8 +50,8 @@ it('wakes up at the appointment without waiting for a refresh', () => {
   } finally { jest.useRealTimers(); }
 });
 function fixture() {
-  const context: any = { _myTrailOpenRequest: 0, followUps: [],
-    _requirePageAccess: jest.fn(() => true), api: jest.fn().mockResolvedValue([{ _id: 'f1', comments: [{ _id: 'c1' }] }]),
+  const context: any = { _myTrailOpenRequest: 0, followUps: [], localStorage: { getItem: () => 'test-token' },
+    _requirePageAccess: jest.fn(() => true), api: jest.fn().mockResolvedValue({ _id: 'f1', comments: [{ _id: 'c1' }] }),
     openFuCommentPopup: jest.fn(), navigateTo: jest.fn(), toast: jest.fn(), t: (key: string) => key,
   };
   runInNewContext(source, context);
@@ -61,7 +61,7 @@ function fixture() {
 it('opens the full trail popup and highlights the comment without navigating away', async () => {
   const context = fixture(), trigger = { setAttribute: jest.fn(), removeAttribute: jest.fn() };
   await context.openMyFollowUpTrail('f1', 'c1', trigger);
-  expect(context.api).toHaveBeenCalledWith('/followups');
+  expect(context.api).toHaveBeenCalledWith('/followups/f1');
   expect(context.openFuCommentPopup).toHaveBeenCalledWith('f1', 'c1');
   expect(context.navigateTo).not.toHaveBeenCalled();
   expect(trigger.removeAttribute).toHaveBeenCalledWith('aria-busy');

@@ -1,0 +1,302 @@
+[
+  {
+    "lang": "en",
+    "width": 320,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 65.390625,
+      "after": 63.390625,
+      "padding": "6px 8px",
+      "oldPadding": "7px 8px",
+      "font": "13.34px",
+      "oldFont": "13.34px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 65.390625,
+      "after": 63.390625,
+      "padding": "6px 8px",
+      "oldPadding": "7px 8px",
+      "font": "13.34px",
+      "oldFont": "13.34px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "en",
+    "width": 768,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 87.46875,
+      "after": 81.46875,
+      "padding": "10px 8px",
+      "oldPadding": "12px 8px",
+      "font": "14.5px",
+      "oldFont": "14.5px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "en",
+    "width": 768,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "en",
+    "width": 1024,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": {
+      "before": 75.859375,
+      "after": 68.859375,
+      "padding": "8px 10px",
+      "oldPadding": "11px 10px",
+      "font": "14px",
+      "oldFont": "14px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "en",
+    "width": 1024,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "en",
+    "width": 1440,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": {
+      "before": 75.859375,
+      "after": 68.859375,
+      "padding": "8px 10px",
+      "oldPadding": "11px 10px",
+      "font": "14px",
+      "oldFont": "14px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "en",
+    "width": 1440,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 65.390625,
+      "after": 63.390625,
+      "padding": "6px 8px",
+      "oldPadding": "7px 8px",
+      "font": "13.34px",
+      "oldFont": "13.34px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 65.390625,
+      "after": 63.390625,
+      "padding": "6px 8px",
+      "oldPadding": "7px 8px",
+      "font": "13.34px",
+      "oldFont": "13.34px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "ar",
+    "width": 768,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": {
+      "before": 87.46875,
+      "after": 81.46875,
+      "padding": "10px 8px",
+      "oldPadding": "12px 8px",
+      "font": "14.5px",
+      "oldFont": "14.5px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 768,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": false,
+    "touch": true,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "ar",
+    "width": 1024,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": {
+      "before": 75.859375,
+      "after": 68.859375,
+      "padding": "8px 10px",
+      "oldPadding": "11px 10px",
+      "font": "14px",
+      "oldFont": "14px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 1024,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": null
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "route": "inventory",
+    "buttons": 4,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": {
+      "before": 75.859375,
+      "after": 68.859375,
+      "padding": "8px 10px",
+      "oldPadding": "11px 10px",
+      "font": "14px",
+      "oldFont": "14px",
+      "count": 7
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "route": "products",
+    "buttons": 6,
+    "oneLine": true,
+    "aligned": true,
+    "touch": false,
+    "overflow": false,
+    "kpiSize": null
+  }
+]

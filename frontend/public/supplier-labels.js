@@ -81,7 +81,9 @@
   function shell(title, subtitle, actions = '') {
     root.innerHTML = `<div class="sl-workspace"><header class="sl-header iu-section-heading"><div><h2 tabindex="-1" id="sl-title">${title}</h2><p>${subtitle}</p></div><div class="sl-actions">${actions}</div></header><p id="sl-message" class="sl-message" role="status" aria-live="polite"></p><div id="sl-content"></div></div>`;
     if (animateNextShell && !reducedMotion()) root.querySelector('.sl-workspace').animate([{ opacity: .12, transform: 'translateY(5px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 220, easing: 'cubic-bezier(.2,.7,.2,1)' });
-    get('title').focus({ preventScroll: true });
+    if (typeof syncNavigationShell === 'function') syncNavigationShell();
+    const heading = document.querySelector('#shell-breadcrumb [aria-current="page"]');
+    (heading || get('title')).focus({ preventScroll: true });
   }
   async function render() {
     root = document.getElementById('page-supplier-labels');

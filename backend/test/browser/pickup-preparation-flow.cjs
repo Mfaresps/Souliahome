@@ -13,6 +13,7 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
       const orders = [1, 2].map(n => ({ ...base, _id: String(n).padStart(24, '0'), ref: '310' + n }));
       const summaries = Object.fromEntries(orders.map(o => [o._id, { lines: [{ lineId: 'line', productId: product._id, qty: 1, units: [], availableCount: 1 }] }]));
       const page = await browser.newPage(), errors = [];
+      const requests = { scans: 0, lookups: 0, approvals: 0, shipments: 0 };
       let rejectCoverage = true;
       await page.setViewport({ width, height: 1000 });
       page.on('pageerror', e => errors.push(e.message));
@@ -28,6 +29,7 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
         const route = url.pathname.slice(4), body = request.postData() ? JSON.parse(request.postData()) : {};
         if (route.endsWith('/picking')) return respond(summaries[route.split('/')[3]]);
         if (route.endsWith('/picking/scans')) {
+          requests.scans++;
           if (rejectCoverage) {
             rejectCoverage = false;
             return respond({ code: 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED', message: 'Purchase receipt needs reconciliation before picking',
@@ -35,7 +37,15 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
           }
           const unit = { unitId: 'unit', barcode: body.identifier, status: 'picking', version: 1 };
           summaries[route.split('/')[3]].lines[0].units.push(unit);
-          return respond({ unit });
+          return respond({ unit, lineId: 'line' });
+        }
+        if (route.endsWith('/picking/prepare')) {
+          requests.approvals++;
+          const order = orders.find(o => route.includes(o._id));
+          order.prepChecked = true;
+          const summary = summaries[order._id]; summary.prepChecked = true;
+          summary.lines[0].units.forEach(unit => { unit.status = 'prepared'; });
+          return respond({ prepChecked: true, units: summary.lines[0].units });
         }
         if (route.endsWith('/actions')) {
           summaries[body.transactionId].lines[0].units[0].status = 'prepared'; return respond({ ok: true });
@@ -45,19 +55,21 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
           summaries[order._id].prepChecked = body.prepChecked; return respond({ ok: true, updated: true });
         }
         if (route.startsWith('/shipping/create-order/')) {
+          requests.shipments++;
           Object.assign(orders.find(o => route.endsWith(o._id)), { bostaOrderId: 'shipment', bostaTrackingNumber: 'TR-1', bostaStatus: 'CREATED' });
           return respond({ bostaOrderId: 'shipment', trackingNumber: 'TR-1' });
         }
-        if (route.startsWith('/inventory-units/')) return respond({ unit: { productId: product._id, status: 'available' } });
+        if (route.startsWith('/inventory-units/')) { requests.lookups++; return respond({ unit: { productId: product._id, status: 'available' } }); }
         return respond(route === '/auth/me' ? user : route === '/settings' ? { lang } : route === '/products' ? [product] :
           route === '/transactions/inventory' ? [{ ...product, current: 10 }] :
-          ['/transactions', '/transactions/pickup-orders'].includes(route) ? orders : route === '/shipping/pickup-preview' ? { requests: [] } : []);
+          ['/transactions', '/transactions/pickup-orders', '/transactions/pickup-orders/workspace'].includes(route) ? orders : route === '/shipping/pickup-preview' ? { requests: [] } : []);
       });
       await page.goto('http://localhost:8080/#pickup-orders', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#pu-prep-col .pu-group');
       await page.evaluate(() => {
         // Isolate the native print boundary; the real confirmation UI remains under test.
         _awbPrepareSoon = () => {}; _awbForget = () => {};
+        _awbWarm = () => {};
         printBostaAwb = async () => _awbConfirmPrinted();
         openPuCardOrdersModal('PREP-FLOW', 'prep');
       });
@@ -113,12 +125,10 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
       assert.equal(sendGreen, 'rgb(8, 123, 73)', 'send action uses the shared green');
       await page.evaluate(() => qs('#bsf-overlay .bsf-card').focus());
       await page.keyboard.press('Enter');
-      await page.waitForSelector('#bsf-overlay [data-stage="sent"]'); await centered();
+      // Send also starts printing; there is no intermediate Print click.
+      await page.waitForSelector('#soulia-modal-overlay.active');
       assert.equal(await page.evaluate(() => _pwSelId), orders[0]._id);
       assert(await page.$eval(`.pw-ocard[data-order-id="${orders[0]._id}"]`, el => el.classList.contains('is-done') && el.textContent.includes(document.documentElement.lang === 'en' ? 'With Bosta' : 'أُرسل لبوسطة')));
-      await page.evaluate(() => qs('#bsf-overlay .bsf-card').focus());
-      await page.keyboard.press('Enter');
-      await page.waitForSelector('#soulia-modal-overlay.active');
       assert(await page.$('#soulia-modal-overlay.active .bsf-ps-feed'), 'paper scene starts with the print question');
       await page.mouse.move(0, 0);
       assert.equal(await page.$eval('#soulia-modal-confirm', el => getComputedStyle(el).backgroundColor), sendGreen, 'print confirmation matches the send action');
@@ -129,16 +139,16 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
       await page.waitForSelector('#soulia-modal-overlay.active');
       assert(await page.$('#soulia-modal-overlay.active .bsf-ps-feed'), 'paper scene is visible before physical confirmation');
       await page.keyboard.press('Enter');
-      await page.waitForSelector('#bsf-overlay [data-stage="printed"]'); await centered();
-      assert.equal(await page.$('#bsf-overlay [data-stage="printed"] .bsf-ps-feed'), null, 'success does not replay the paper scene');
-      assert.equal(await page.$eval('#bsf-overlay [data-stage="printed"] .bsf-ic.is-ok', el => getComputedStyle(el).color), sendGreen, 'success mark matches the send action');
-      assert.equal(await page.evaluate(() => _pwSelId), orders[0]._id);
-      await page.keyboard.press('Enter');
-      await page.waitForFunction(id => _pwSelId !== id, {}, orders[0]._id);
+      await page.waitForFunction(id => _pwSelId !== id, { timeout: 1000 }, orders[0]._id);
       assert.equal(await page.evaluate(() => _pucoColType), 'prep');
       assert.equal(orders[0].pickupStatus, 'Preparing');
+      assert.deepEqual(requests, { scans: 2, lookups: 0, approvals: 1, shipments: 1 });
       assert.deepEqual(errors, []);
-      console.log(`${lang}: automatic scan/preparation, progress, date, centered shipping/printing, cancellation, print confirmation and Enter advancement passed`);
+      await page.waitForFunction(() => !document.querySelector('.bsf-overlay'));
+      const fs = require('node:fs'), path = require('node:path');
+      const output = path.resolve(__dirname, '../../../artifacts/pickup-fast-flow'); fs.mkdirSync(output, { recursive: true });
+      await page.screenshot({ path: path.join(output, `${lang}-${width}.png`) });
+      console.log(`${lang}: one-request scans, atomic approval, one-click send/print, cancelled print retry and immediate advancement passed`, requests);
       await page.close();
     }
   } finally { await browser.close(); }

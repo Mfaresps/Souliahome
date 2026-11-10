@@ -102,6 +102,12 @@ export class ShopifyOrder {
   phone: string;
 
   @Prop({ default: '' })
+  customerEmail: string;
+
+  @Prop({ default: '' })
+  shopifyCustomerId: string;
+
+  @Prop({ default: '' })
   notes: string;
 
   @Prop({ default: '' })

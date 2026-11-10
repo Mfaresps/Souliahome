@@ -17,17 +17,17 @@
 #sp-peek .sp-pk-sub-i>svg{width:13px;height:13px;flex-shrink:0}
 #sp-peek .sp-pk-head-acts{margin:0;gap:2px}
 #sp-peek .sp-pk-x{width:36px;height:36px}
-/* Customer block: row 1 = avatar · name over phone · contact buttons;
-   row 2 = the full address, under the name, never squeezed beside it. */
+/* Customer information follows the reading direction; wide screens place the address opposite it. */
 #sp-peek .sp-pk-head .sp-pk-cust-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:8px;padding-top:10px}
 #sp-peek .sp-pk-head .sp-pk-av{width:36px;height:36px;font-size:.74rem}
 #sp-peek .sp-pk-cust-id{min-width:0;display:flex;flex-direction:column;gap:1px}
 #sp-peek .sp-pk-client{font-size:.92rem;font-weight:650;line-height:1.35;overflow-wrap:anywhere}
 #sp-peek .sp-pk-address{grid-column:1/-1;display:flex;align-items:flex-start;gap:7px;min-width:0;padding:8px 10px;border-radius:9px;background:var(--surface2);color:var(--text);font-size:12.5px;line-height:1.6}
 #sp-peek .sp-pk-address>svg{width:15px;height:15px;flex-shrink:0;margin-top:3px;color:var(--muted)}
-/* Stored prose: reads in its own direction, aligned to the panel's start edge. */
-#sp-peek .sp-pk-address-txt{min-width:0;flex:1;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:left}
+/* Share the panel's alignment; each line retains its own reading direction. */
+#sp-peek .sp-pk-address-txt{min-width:0;flex:1;overflow-wrap:anywhere;text-align:left}
 #sp-peek[dir="rtl"] .sp-pk-address-txt{text-align:right}
+#sp-peek :is(.sp-pk-region,.sp-pk-address-detail){unicode-bidi:plaintext;text-align:inherit}
 #sp-peek .sp-pk-header-note{display:flex;align-items:flex-start;gap:6px;min-width:0;color:var(--muted);font-size:12px;line-height:1.5}
 #sp-peek .sp-pk-header-note>svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
 #sp-peek .sp-pk-header-note>span{min-width:0;max-height:72px;overflow:auto;overflow-wrap:anywhere;white-space:pre-wrap;touch-action:pan-y}
@@ -210,3 +210,54 @@ body.dark-mode #sp-peek .sp-pk-paysum-c>b.is-pend{color:#fbbf24}
 #fu-modal-overlay.is-over-peek{z-index:1180!important}
 /* The window takes focus on open (so keyboard users start inside it); it draws no ring. */
 #sp-peek .sp-peek:focus{outline:none}
+/* Contact information shares one row; delivery evidence uses only the space it needs. */
+#sp-peek .sp-pk-head .sp-pk-cust-top{grid-template-columns:36px minmax(0,1fr);align-items:start;row-gap:6px}
+#sp-peek .sp-pk-cust-id:has(.cp-order-evidence){display:grid;grid-template-columns:fit-content(72%) minmax(0,1fr);grid-template-rows:minmax(26px,auto);gap:2px 12px;align-items:start}
+#sp-peek .sp-pk-identity{display:flex;flex-wrap:nowrap;align-items:center;align-self:start;gap:2px 12px;min-width:0;grid-column:1;grid-row:1}
+#sp-peek .sp-pk-cust-id .sp-pk-phone-row{flex:none;min-width:0;margin:0;white-space:nowrap}
+#sp-peek .sp-pk-identity .sp-pk-copy{width:26px;height:26px;min-height:26px}
+#sp-peek .sp-pk-head .sp-pk-address{grid-column:2;padding:0;border:0;border-radius:0;background:transparent}
+#sp-peek .sp-pk-region{display:block;font-size:12px;font-weight:600;color:var(--text)}
+#sp-peek .sp-pk-address-detail{display:block;color:var(--muted);font-size:12px;line-height:1.6}
+#sp-peek .sp-pk-client{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;grid-column:1;grid-row:1}
+#sp-peek .sp-pk-client .cp-invoice-customer{color:inherit;text-decoration:none}
+#sp-peek .sp-pk-client .cp-invoice-customer:hover{text-decoration:underline;color:var(--accent)}
+#sp-peek .sp-pk-client .cp-invoice-customer:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#sp-peek .sp-pk-actions{position:relative;flex:none}
+#sp-peek .sp-pk-actions>summary{list-style:none;cursor:pointer;touch-action:manipulation}
+#sp-peek .sp-pk-actions>summary::-webkit-details-marker{display:none}
+#sp-peek .sp-pk-actions[open]>summary{background:var(--surface2);border-color:var(--accent)}
+#sp-peek .sp-pk-action-menu{position:absolute;inset-inline-end:0;top:calc(100% + 6px);z-index:10;width:180px;max-width:calc(100vw - 48px);padding:5px;border:1px solid var(--border);border-radius:10px;background:var(--bg);box-shadow:0 6px 24px #14291f26}
+#sp-peek .sp-pk-action-menu .sp-pk-contact{display:contents}
+#sp-peek .sp-pk-head .sp-pk-action-menu :is(.sp-ct-btn,.sp-pk-print-action){display:flex;justify-content:flex-start;align-items:center;gap:9px;width:100%;height:auto;min-height:36px;padding:8px 10px;box-sizing:border-box;border:0;border-radius:6px;background:transparent;color:var(--text);font:inherit;font-size:12px;font-weight:500;text-decoration:none;text-align:start;cursor:pointer;touch-action:manipulation}
+#sp-peek .sp-pk-head .sp-pk-action-menu :is(.sp-ct-btn,.sp-pk-print-action):hover{background:var(--surface2);color:var(--accent)}
+#sp-peek .sp-pk-action-menu :is(svg,img,.sp-vrobo-ic){width:16px;height:16px;flex:none;object-fit:contain}
+#sp-peek .sp-pk-action-menu .sp-vrobo-ic{font-size:16px}
+#sp-peek .sp-pk-action-menu .sp-pk-print-action{border-top:1px solid var(--border);margin-top:4px}
+#sp-peek .cp-order-evidence{display:contents}
+#sp-peek .cp-order-evidence .cp-badge{grid-column:2;grid-row:1;justify-self:start;min-width:0;max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:18px;padding:2px 7px;margin-top:2px}
+#sp-peek .cp-order-evidence small{grid-column:1/-1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;gap:2px 5px;min-width:0;font-size:11px;line-height:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+#sp-peek .cp-summary-part{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+#sp-peek .cp-summary-delivered,#sp-peek .cp-summary-positive{color:#28734d;font-weight:500}
+#sp-peek .cp-summary-check{display:block;flex:none;width:14px;height:14px}
+#sp-peek .cp-summary-divider{color:var(--muted);opacity:.65}
+body.dark-mode #sp-peek .cp-summary-delivered,body.dark-mode #sp-peek .cp-summary-positive{color:#8bcea7}
+@media(min-width:900px){
+  #sp-peek .sp-pk-head .sp-pk-cust-top:has(.sp-pk-address){grid-template-columns:36px minmax(0,1.05fr) minmax(0,.95fr);column-gap:16px}
+  #sp-peek .sp-pk-head .sp-pk-cust-top:has(.sp-pk-address) .sp-pk-cust-id{grid-column:2;grid-row:1}
+  #sp-peek .sp-pk-head .sp-pk-address{grid-column:3;grid-row:1;padding-block-start:3px}
+}
+#sp-peek .sp-pk-contact.is-compact{gap:3px}
+#sp-peek .sp-pk-head .sp-pk-contact.is-compact .sp-ct-btn,#sp-peek .sp-pk-head .sp-pk-x{width:28px;height:28px;min-height:28px;padding:4px;border-radius:6px}
+#sp-peek .sp-pk-contact.is-compact .sp-ct-btn :is(svg,img),#sp-peek .sp-pk-x svg{width:14px;height:14px}
+#sp-peek .sp-pk-contact.is-compact .sp-ct-btn .sp-vrobo-ic{width:14px;height:14px;font-size:14px}
+@media(max-width:600px){
+  #sp-peek .sp-pk-head .sp-pk-cust-top{grid-template-columns:minmax(0,1fr) auto}
+  #sp-peek .sp-pk-head .sp-pk-av{display:none}
+  #sp-peek .sp-pk-cust-id{grid-column:1/-1}
+  #sp-peek .sp-pk-contact.is-compact{grid-column:2;justify-self:end}
+  #sp-peek .sp-pk-cust-id:has(.cp-order-evidence){grid-template-columns:minmax(0,1fr) auto;column-gap:8px}
+  #sp-peek .sp-pk-identity{flex-wrap:wrap;gap:0 10px}
+  #sp-peek .cp-order-evidence .cp-badge{max-width:128px}
+  #sp-peek .sp-pk-head .sp-pk-address{grid-column:1/-1}
+}

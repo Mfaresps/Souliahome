@@ -33,6 +33,7 @@ const publicDir = path.resolve(__dirname, '../../../frontend/public');
         document.documentElement.dir = dir;
         const receipt = {
           id: 'receipt-1', status: 'معتمد', amount: 500, method: 'Instapay', vaultEntryId: 'entry-1',
+          warnings: [{ code: 'awaiting-send' }], warningAcknowledgedAt: '2026-11-07T09:08:00Z',
           ocr: { amount: 500, method: 'Instapay' }, senderName: 'C', senderHandle: 'cilabxinstapay@instapay', transferReference: '955386166910',
           transferDateText: '07 Nov 2026 11:07 AM', submittedBy: 'Malak Abbas',
           submittedAt: '2026-11-07T09:08:00Z', reviewedBy: 'Fares', vaultTxNo: 'SAL-1221',
@@ -57,17 +58,36 @@ const publicDir = path.resolve(__dirname, '../../../frontend/public');
           hasAdd: !!host.querySelector('.spdep-add'),
           hasRefund: !!row.querySelector('[onclick*="refund"]'),
           detailsClosed: !detail.open,
+          hasWarning: !!row.querySelector('.spdep-notice'),
         };
       }, { lang, dir });
       assert.ok(result.height < 150, `${width}px ${lang}: receipt stays compact: ${JSON.stringify(result)}`);
       assert.ok(result.thumb <= 54 && result.thumb >= 48, 'receipt thumbnail remains visible');
       assert.equal(result.overflow, false, `${width}px ${lang}: no horizontal overflow`);
       assert.ok(result.hasAmount && result.hasMethod && result.hasAdd && result.hasRefund && result.detailsClosed);
+      assert.equal(result.hasWarning, false, 'approved receipts do not keep showing review notices');
       await page.waitForFunction(() => document.querySelector('.spdep-thumb img')?.naturalWidth > 0);
       await page.screenshot({ path: path.join(os.tmpdir(), `soulia-shopify-receipt-peek-${width}-${lang}.png`) });
+      const summaryBefore = await page.$eval('.spdep-peek-details>summary', el => el.getBoundingClientRect().top);
+      const actionBefore = await page.$eval('.spdep-peek-footer .spdep-actions', el => el.getBoundingClientRect().top);
       await page.click('.spdep-peek-details>summary');
       assert.equal(await page.$eval('.spdep-peek-details', el => el.open), true);
       assert.ok((await page.$eval('.spdep-peek-details', el => el.textContent)).includes('955386166910'));
+      assert.ok(Math.abs(await page.$eval('.spdep-peek-details>summary', el => el.getBoundingClientRect().top) - summaryBefore) < 1, 'opening does not move the summary');
+      assert.ok(Math.abs(await page.$eval('.spdep-peek-footer .spdep-actions', el => el.getBoundingClientRect().top) - actionBefore) < 1, 'opening does not move refund');
+      assert.equal(await page.$('.spdep-details-arrow') !== null, true);
+      assert.equal(await page.$eval('.spdep-receipt-fields', el => el.textContent.includes('SAL-1221')), true);
+      assert.equal(await page.$eval('main', el => el.scrollWidth > el.clientWidth + 1), false, 'expanded details fit the phone');
+      const dataRules = await page.evaluate(() => ({
+        vaultOnly: _spPeekReceiptDataHtml({ vaultTxNo: 'SAL-9000' }).includes('SAL-9000'),
+        empty: _spPeekReceiptDataHtml({ submittedAt: 'bad-date', screenshotTime: '29:99' }),
+        edited: _spPeekReceiptDataHtml({ senderHandle: '', transferReference: '', ocr: { senderHandle: 'old@instapay', reference: 'old-reference' } }),
+        pendingWarning: _spReceiptNoticeHtml({ status: 'معلق', warnings: [{ code: 'awaiting-send' }], ocr: { amount: 500 } }).includes('spdep-notice'),
+      }));
+      assert.equal(dataRules.vaultOnly, true); assert.equal(dataRules.empty, ''); assert.equal(dataRules.edited, '');
+      assert.equal(dataRules.pendingWarning, true, 'warnings remain visible until approval');
+      await page.focus('.spdep-peek-details>summary'); await page.keyboard.press('Enter');
+      assert.equal(await page.$eval('.spdep-peek-details', el => el.open), false, 'keyboard collapses details');
       assert.deepEqual(errors, []);
     }
     console.log('shopify receipt peek: passed');

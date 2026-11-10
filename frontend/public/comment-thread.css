@@ -73,15 +73,6 @@ body.dark-mode .tx-cmt-text { background: transparent; border-color: transparent
 .sp-cmtwin .tx-cmt-time { margin-inline-start: 0; }
 .sp-cmtwin .tx-cmt-text { line-height: 1.7; }
 
-#fu-comment-popup .fu-timeline-item[data-kind="note"] .fu-timeline-content {
-  border-color: transparent !important;
-  background: transparent !important;
-  padding: 4px 0 10px;
-  border-radius: 0;
-}
-#fu-comment-popup .fu-timeline-item[data-kind="note"]:not(:last-child) .fu-timeline-content {
-  border-bottom: 1px solid var(--border) !important;
-}
 #fu-comment-popup .fu-timeline-item[data-kind="note"] .fu-timeline-name { color: var(--text) !important; }
 #fu-comment-popup .fu-timeline-item[data-kind="note"] .fu-timeline-footer { justify-content: space-between; }
 #fu-comment-popup .fu-thread-composer-box { border-radius: 10px; }

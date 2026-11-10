@@ -1,9 +1,9 @@
 import { FEE_LABEL, GARBLED_DIGITS, normalizeOcrText, parseReceiptText, ParsedReceipt } from './deposit-receipt-parser.util';
 import { parseScreenClock } from './receipt-screen-time.util';
 
-type Box = { x0: number; y0: number; x1: number; y1: number };
-type OcrLine = { text: string; confidence?: number; bbox?: Box; words?: Array<{ text: string; confidence?: number }> };
-type OcrPage = { text?: string; confidence?: number; blocks?: Array<{ paragraphs?: Array<{ lines?: OcrLine[] }>; lines?: OcrLine[] }> | null };
+export type Box = { x0: number; y0: number; x1: number; y1: number };
+export type OcrLine = { text: string; confidence?: number; bbox?: Box; words?: Array<{ text: string; confidence?: number; bbox?: Box }> };
+export type OcrPage = { text?: string; confidence?: number; blocks?: Array<{ paragraphs?: Array<{ lines?: OcrLine[] }>; lines?: OcrLine[] }> | null };
 
 const AMOUNT = /(?<!\d)(\d{1,7}(?:\.\d{1,2})?)(?![\d.])/g;
 const TRANSFER = /مبلغ\s*(?:التحويل|العملية|المرسل)|المبلغ\s*(?:المحول|المحوّل|المرسل)|تم\s*تحويل|تحويل\s*(?:مبلغ|بقيمة)|transfer\s*amount|amount\s*(?:transferred|sent)|money\s*transferred|sent\s*amount/i;

@@ -25,6 +25,26 @@ function fixture(kind: string, type: string, event = '123') {
   return { context, element };
 }
 describe('Notification event routing', () => {
+  it('opens the preparation board filtered to the notified group', async () => {
+    const { context, element } = fixture('tx', 'approval');
+    context.clearBoardFilters = jest.fn();
+    context.puSwitchView = jest.fn();
+    context.loadPickupOrders = jest.fn(async () => {});
+    expect(await context.souliaNavigateNotification('/?pushRecord=prep-group:710-10NOV&pushType=approval')).toBe(true);
+    expect(context._requirePageAccess).toHaveBeenCalledWith('pickup-orders');
+    expect(context.navigateTo).toHaveBeenCalledWith('pickup-orders');
+    expect(context.clearBoardFilters).toHaveBeenCalled();
+    expect(element).toHaveProperty('value', '710-10NOV');
+    expect(context.puSwitchView).toHaveBeenCalledWith('board');
+    expect(context.loadPickupOrders).toHaveBeenCalled();
+    expect(context.openOrderView).not.toHaveBeenCalled();
+  });
+  it('checks preparation page permissions before opening a group', async () => {
+    const { context } = fixture('tx', 'approval');
+    context._requirePageAccess.mockReturnValue(false);
+    expect(await context.souliaNavigateNotification('/?pushRecord=prep-group:710-10NOV&pushType=approval')).toBe(false);
+    expect(context.navigateTo).not.toHaveBeenCalled();
+  });
   it('queues a comment clicked while another notification is still opening', async () => {
     const { context } = fixture('tx', 'comment');
     let release!: () => void;

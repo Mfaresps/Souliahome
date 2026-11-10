@@ -54,8 +54,9 @@ fs.mkdirSync(output, { recursive: true });
           if (url.endsWith('/picking/scans')) {
             const payload = JSON.parse(options.body); scanWrites.push(payload);
             const unit = {unitId:payload.identifier,barcode:payload.identifier,status:'picking',version:1};
-            mockSummaries[url.split('/')[3]].lines.find(line=>line.lineId===payload.lineId).units.push(unit);
-            return {unit,lineId:payload.lineId,transactionId:url.split('/')[3]};
+            const lineId = payload.lineId || 'line-0';
+            mockSummaries[url.split('/')[3]].lines.find(line=>line.lineId===lineId).units.push(unit);
+            return {unit,lineId,transactionId:url.split('/')[3]};
           }
           if (url === '/transactions/pickup-orders') return structuredClone(_pickupOrders);
           return [];

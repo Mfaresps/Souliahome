@@ -53,8 +53,13 @@ const BIDI_MARKS = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c]/g;
  * Digits glued to symbols («8800©», «001/0», «)1», «.88», «+:86») are a misread font — typically
  * Arabic-Indic digits in a wallet app's display face — never a clean amount. A line carrying them
  * is not trusted for the amount: a blank field costs five seconds, a wrong figure gets approved.
+ *
+ * A standalone «م» glued to a digit run («م7006» for «700 EGP», «م5000» for «500 EGP», Nov 2026
+ * #3078) is the orange EGP read by the Arabic model as «م» + one digit, stuck onto the figure.
+ * Which digit is the E cannot be known, so the line is not read; the English pass sees «700 ecp».
+ * Only a «م» that does not end an Arabic word — «لرقم01012345678» is a phone, not a currency.
  */
-export const GARBLED_DIGITS = /\d[\/\\©®()\[\]+]|[\/\\©®()\[\]+]\d|(?<!\d)[.:]\d/;
+export const GARBLED_DIGITS = /\d[\/\\©®()\[\]+]|[\/\\©®()\[\]+]\d|(?<!\d)[.:]\d|(?<![\u0600-\u06ff])م\d{2,}/;
 
 /**
  * A fee / fee-inclusive-total label standing alone on its line. Its figure, on the line above or
@@ -101,20 +106,23 @@ const CURRENCY_MEEM = new RegExp(`م\\d\\s+${NUM}(?![\\d])`);
 const CURRENCY_MDA = new RegExp(`(?:^|\\s)مدع\\s+${NUM}(?![\\d.])`);
 const CURRENCY_AR_AFTER = new RegExp(`جني[هھة]\\s*${NUM}(?![\\d.])`);
 const CURRENCY_AR_BEFORE = new RegExp(`(?<![\\d.])${NUM}\\s*جني[هھة]`);
+const CURRENCY_JM_AFTER = new RegExp(`ج\\s*\\.\\s*م\\.?\\s*${NUM}(?![\\d.])`);
+const CURRENCY_JM_BEFORE = new RegExp(`(?<![\\d.])${NUM}\\s*ج\\s*\\.\\s*م\\.?`);
 
 // A line that states a fee or a fee-inclusive total — its figure is never the transfer amount.
 const FEE_LINE = /fee|total|deducted|الرسوم|الإجمالي|الاجمالي\b|المستحق|الكلي|مصاريف|تكل[فغ][هة]\s*المعاملة/i;
 // On some Arabic wallet receipts this is the transfer figure above "من / إلى";
 // the later "الإجمالي" is the fee-inclusive amount.
-const PRIMARY_WALLET_AMOUNT = /[إا]جمال[يى]\s+المبلغ/i;
+const PRIMARY_WALLET_AMOUNT = /[إا]جمال[يى]\s+المبل[غع]/i;
+const PAYMENT_AMOUNT_LABEL = /قيمة\s*ال(?:دفع|دقع|اقع)\s*[:：]?/;
 const WALLET_DETAILS_START = /^(?:من|إلى|الى|from|to|الرسوم|fees?|رقم\s+العملية|transaction\s+id)(?:\s|[:：]|$)/i;
 
 const SUCCESS_LINE = /success|approved transaction|your transaction|بنجاح|بنجاج|تمت العملية|تم الدفع/i;
 
 const USSD_MARKER = /مصاريف\s*ال?خد?مة|اطلب\s*9#|9#\*|send\s+(?:instructions|command)|إرسال التعليمات|معلومات شركة الاتصالات|(?:^|\s)0\s*[:：]\s*مزيد|مزيد\s*[:：]\s*0/i;
 const INSTAPAY_MARKER = /insta\s*pay|mnstapay|\bipn\b|powered\s*by|approved transaction|transfer amount|living exp|نفقات المعيشة|مصاريف المعيشة|مصازيف/i;
-const WALLET_APP_MARKER = /تحويل\s*[اأ]موال|money transferred|total amount deducted|transaction id|transaction date|رقم العملية|تاريخ العملية|المبلغ الكلي|اجمالي المبلغ|تم الدفع بنجاح|تم بنجاح|تم بنجاج|نوع العملية|حالة العملية|تكلفة المعاملة/i;
-const WALLET_DESTINATION = /mobile\s*wallet|المحفظ[هة]|wallet/i;
+const WALLET_APP_MARKER = /تحويل\s*[اأ]موال|money transferred|total amount deducted|transaction id|transaction date|رقم العملية|تاريخ العملية|المبلغ الكلي|[اإ]جمالي المبل[غع]|تم الدفع بنجاح|تم بنجاح|تم بنجاج|نوع العملية|حالة العملية|تكلفة المعاملة|قيمة\s*ال(?:دفع|دقع|اقع)/i;
+const WALLET_DESTINATION = /\bmobile\s*wa[l1][l1i]?e?t\b|\bwallet\b|(?:ال)?محفظ[هة](?:\s*[اإإ]لكتروني[هة])?/i;
 const INSTAPAY_HANDLE = /[\w.?’'-]+@\w*pay\b/gi;
 const PHONE = /(?<!\d)01\d{9}(?!\d)/;
 
@@ -181,7 +189,7 @@ function fromCurrencyMarker(lines: string[], stopAtDetails = false): number | nu
         if (value != null && (value >= 10 || index <= 1)) return value;
       }
     }
-    for (const re of [CURRENCY_AFTER, CURRENCY_BEFORE, CURRENCY_MEEM, CURRENCY_MDA, CURRENCY_AR_AFTER, CURRENCY_AR_BEFORE]) {
+    for (const re of [CURRENCY_AFTER, CURRENCY_BEFORE, CURRENCY_MEEM, CURRENCY_MDA, CURRENCY_AR_AFTER, CURRENCY_AR_BEFORE, CURRENCY_JM_AFTER, CURRENCY_JM_BEFORE]) {
       const m = l.match(re);
       if (m) {
         if ((re === CURRENCY_AR_AFTER || re === CURRENCY_AR_BEFORE) && (index > 7 || (l.match(/\d+(?:\.\d+)?/g) || []).length !== 1)) continue;
@@ -229,17 +237,23 @@ function detectVault(text: string, hasTransferSentence: boolean): { method: Rece
   const footer = lines.findIndex(line => /^(?:reference|date|note|more details|الرقم المرجعي|التاريخ|ملاحظة)(?:\s|:|$)/i.test(line));
   const recipientLines = footer < 0 ? lines : lines.slice(0, footer);
   const recipientText = recipientLines.join('\n');
-  const handleText = recipientText.replace(/\s*@\s*/g, '@').replace(/insta\s+pay/gi, 'instapay');
+  const recipientStart = recipientLines.findIndex(line => /^(?:to\b|إلى|الى|إلي|الي)(?:\s|[:：]|$)/i.test(line));
+  const destinationText = recipientStart >= 0 ? recipientLines.slice(recipientStart).join('\n') : recipientText;
+  // «vkswr3420@@instapay» — a black/white pass can read the @ twice.
+  const handleText = recipientText.replace(/\s*@[\s@]*/g, '@').replace(/insta\s+pay/gi, 'instapay');
   const handles = handleText.match(INSTAPAY_HANDLE) || [];
   const brandedInstapay = /insta\s*pay|mnstapay|\bipn\b|powered\s*by|living exp|نفقات المعيشة|مصاريف المعيشة/i.test(text) || handles.length > 0;
   const walletDetails = /transaction\s*(?:id|date)|total amount deducted|رقم العملية|تاريخ العملية|تكلفة المعاملة|نوع العملية|حالة العملية/i.test(text)
     || (/الرسوم/.test(text) && /تم الدفع بنجا/.test(text));
   // The Vodafone Cash app's own receipt is recognisable by its labels even when its Arabic-Indic
   // digits (phone included) are unreadable: «تم الدفع» + «اجمالي المبلغ» + «الرسوم».
-  const vodafoneAppLabels = /تم\s*الدفع/.test(text) && /[اإ]جمال[يى]\s*المبلغ/.test(text) && /الرسوم/.test(text);
+  const vodafoneAppLabels = /تم\s*الدفع/.test(text) && PRIMARY_WALLET_AMOUNT.test(text) && /الرسوم/.test(text);
+  const bankWalletDestination = /(?:[إا]ل[يى]\s+(?:ال)?محفظ[هة]|طريقة\s+الدفع\s*[:：.]?\s*محفظ[تن][يى]|محفظ[تن][يى]\s+طريقة\s+الدفع)/i.test(text);
+  if (!brandedInstapay && bankWalletDestination) return { method: 'فودافون كاش', pattern: 'wallet-app' };
   if (walletDetails && !brandedInstapay) return { method: PHONE.test(text) || vodafoneAppLabels ? 'فودافون كاش' : '', pattern: 'wallet-app' };
   if (INSTAPAY_MARKER.test(text) || handles.length) {
-    if (WALLET_DESTINATION.test(recipientText)) return { method: 'فودافون كاش', pattern: 'instapay' };
+    if (WALLET_DESTINATION.test(destinationText)) return { method: 'فودافون كاش', pattern: 'instapay' };
+    if (/\bto\s+instapay\b|[إا]ل[يى]\s+[إا]نستا\s*با[يى]/i.test(destinationText)) return { method: 'Instapay', pattern: 'instapay' };
     // «Send Money» is InstaPay's address-to-address transfer; a wallet transfer reads «To Mobile
     // Wallet» instead (checked just above). The address itself is often too faint to read.
     if (/send\s*money/i.test(text)) return { method: 'Instapay', pattern: 'instapay' };
@@ -251,7 +265,7 @@ function detectVault(text: string, hasTransferSentence: boolean): { method: Rece
       const afterTo = recipientLines.slice(to, to + 11);
       const end = afterTo.findIndex(line => /^(?:from|من)(?:\s|:|$)/i.test(line));
       const destination = (end < 0 ? afterTo : afterTo.slice(0, end)).join('\n')
-        .replace(/\s*@\s*/g, '@').replace(/insta\s+pay/gi, 'instapay');
+        .replace(/\s*@[\s@]*/g, '@').replace(/insta\s+pay/gi, 'instapay');
       if (/@\s*\w*pay\b|\b[\w.-]{2,}[:.]\s*(?:a\s*)?instapay\b/i.test(destination)) {
         return { method: 'Instapay', pattern: 'instapay' };
       }
@@ -274,8 +288,9 @@ function detectVault(text: string, hasTransferSentence: boolean): { method: Rece
 function fromWalletFigure(lines: string[]): number | null {
   for (const line of lines.slice(0, 10)) {
     if (PHONE.test(line) || FEE_LINE.test(line) || MONTHS.test(line) || /\d:\d/.test(line)) break;
-    const numbers = line.match(/\d+(?:\.\d{1,2})?/g) || [];
-    if (numbers.length !== 1 || /\d[A-Za-z@]/.test(line) || GARBLED_DIGITS.test(line)) continue;
+    const clean = line.replace(/^[p0][.-][2c]\s+(?=\d+\.\d{2}\b)/i, '');
+    const numbers = clean.match(/\d+(?:\.\d{1,2})?/g) || [];
+    if (numbers.length !== 1 || /\d[A-Za-z@]/.test(clean) || GARBLED_DIGITS.test(clean)) continue;
     const amount = asAmount(numbers[0]);
     if (amount != null && amount >= 10) return amount;
   }
@@ -381,9 +396,12 @@ export function parseReceiptText(rawText: string, walletLayout = false): ParsedR
   const lines = linesOf(text);
   const { amount: transfer, ambiguous } = fromTransferSentence(lines);
   const primaryWallet = fromPrimaryWalletAmount(lines);
+  const paymentLabel = lines.findIndex(line => PAYMENT_AMOUNT_LABEL.test(line));
+  const paymentLines = paymentLabel < 0 ? [] : [lines[paymentLabel].replace(PAYMENT_AMOUNT_LABEL, '').trim(), lines[paymentLabel + 1] || ''];
+  const payment = paymentLines.map(line => /^\d{1,7}(?:\.\d{1,2})?$/.test(line) ? asAmount(line) : null).find(value => value != null) ?? null;
   const currency = fromCurrencyMarker(lines, INSTAPAY_MARKER.test(text) || /@\s*insta\s*pay\b/i.test(text));
   const amountConflict = transfer != null && primaryWallet.amount != null && transfer !== primaryWallet.amount;
-  const amount = ambiguous || primaryWallet.ambiguous || amountConflict ? null : transfer ?? primaryWallet.amount ?? currency ?? fromSuccessHeading(lines) ?? (walletLayout ? fromWalletFigure(lines) : null);
+  const amount = ambiguous || primaryWallet.ambiguous || amountConflict ? null : transfer ?? primaryWallet.amount ?? payment ?? currency ?? fromSuccessHeading(lines) ?? (walletLayout ? fromWalletFigure(lines) : null);
   const { method, pattern } = detectVault(text, transfer != null);
   return {
     amount,
@@ -393,7 +411,7 @@ export function parseReceiptText(rawText: string, walletLayout = false): ParsedR
     reference: referenceOf(lines),
     dateText: dateTextOf(lines),
     confident: amount != null && method !== '',
-    ...(amount != null ? { amountSource: transfer != null || primaryWallet.amount != null ? 'sentence' as const : currency != null ? 'currency' as const : 'heading' as const } : {}),
+    ...(amount != null ? { amountSource: transfer != null || primaryWallet.amount != null || payment != null ? 'sentence' as const : currency != null ? 'currency' as const : 'heading' as const } : {}),
   };
 }
 

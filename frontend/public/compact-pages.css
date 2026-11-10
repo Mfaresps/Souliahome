@@ -1,0 +1,198 @@
+/* Page identity lives in the shell path. Keep tools and data close to it.
+   Scope this contract to screen UI so invoice and label print layouts are preserved. */
+@media screen {
+  #main {padding-block-start:8px}
+  #main > .page {padding-block:12px}
+  #main .page .page-title,
+  #main .page :is(.page-header,.inv-page-header,.exp-page-header,.csp-page-header,.pu-page-header,.tx-page-top,.vault-header,.rep-page-top) .page-subtitle,
+  #main #shopify-page-header > h2,
+  #main #page-userhub .uh-wrap > div:has(> .uh-title),
+  #main #page-barcodes .iu-header > div:first-child,
+  #main #page-barcodes .iu-standard-heading,
+  #main #users-roles-view .rbac-header > div,
+  #main #users-roles-view .rbac-breadcrumb {display:none!important}
+
+  /* Collapse title-only groups without discarding adjacent actions or contextual back buttons. */
+  #main .page :is(.page-header,.inv-page-header,.exp-page-header,.csp-page-header,.tx-page-top,.vault-header,.rep-page-top) div:has(> .page-title):not(:has(button,a,input,select,[role="button"])),
+  #main .page :is(.page-header,.inv-page-header,.vault-header):not(:has(button,a,input,select,summary,[role="button"])),
+  #main #mov-page-header:not(:has(.as-launcher)),
+  #main #page-settings .page-header {display:none!important}
+
+  #main .page :is(.page-header,.inv-page-header,.exp-page-header,.csp-page-header,.pu-page-header,.tx-page-top,.vault-header,.rbac-header) {
+    min-height:0;gap:8px;align-items:center;flex-wrap:wrap;
+    margin-block:0 10px!important;padding-block:0;border-bottom:0;
+  }
+  #main .page :is(.page-header,.inv-page-header) > div:first-child {width:auto}
+  #main .page :is(.page-header-actions,.prod-page-actions,.inv-header-actions,.exp-header-actions,.csp-header-actions,.pu-header-actions) {
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%;margin:0;
+  }
+  #main .page :is(.prod-sticky-head,.inv-sticky-head,.cs-sticky-head) {margin-top:0;padding-top:0}
+  /* Expenses: summary first, then status filters and their actions on one row. */
+  #main #page-expenses > .exp-page-header {display:none}
+  #main #page-expenses #exp-kpi-strip {margin:0 0 14px;padding:0;overflow:hidden}
+  #main #page-expenses .exp-kpi-row {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+  #main #page-expenses .exp-kpi-stat {display:grid;grid-template-columns:18px minmax(0,1fr);gap:7px 8px;min-width:0;padding:12px 16px;border-radius:0}
+  #main #page-expenses .exp-kpi-stat-icon {grid-column:1;grid-row:1;align-self:center}
+  #main #page-expenses .exp-kpi-stat-label {grid-column:2;grid-row:1;margin:0;white-space:normal;font-size:12px;line-height:1.5}
+  #main #page-expenses .exp-kpi-stat-val {grid-column:1/-1;grid-row:2;flex-wrap:wrap;font-size:19px;line-height:1.4}
+  #main #page-expenses .exp-kpi-stat-sub {font-size:11px}
+  #main #page-expenses .exp-toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;min-width:0}
+  #main #page-expenses .exp-toolbar > :is(.ui-tabs-shell,.exp-tab-bar) {min-width:0;max-width:100%;margin:0}
+  #main #page-expenses .exp-toolbar > .exp-header-actions {flex:none;flex-wrap:nowrap;gap:8px}
+  #main #page-expenses .exp-header-actions > .btn-primary {order:-1;white-space:nowrap}
+  #main #page-expenses .exp-header-actions > .btn {flex:none}
+  /* Keep both Users panels in the same header grid while retaining their DOM,
+     hidden state and delegated role-management handlers. */
+  #main > #page-users.active {display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:8px 12px}
+  #main #page-users > *,#main #users-accounts-view > *,#main #rbac-root > * {grid-column:1/-1;min-width:0}
+  #main #page-users :is(#users-accounts-view,#users-roles-view,#rbac-root) {display:contents}
+  #main #page-users > :is(.users-workspace-tabs,.ui-tabs-shell) {grid-column:1;grid-row:1;align-self:center;margin:0!important}
+  #main #page-users :is(#users-accounts-view > .page-header,#rbac-root > .rbac-header) {grid-column:2;grid-row:1;align-self:center;justify-self:end;justify-content:flex-end;max-width:100%;margin:0!important}
+  #main #page-users #rbac-status:empty,#main #page-users .rbac-header:has(> #rbac-create[hidden]) {display:none}
+  #main #page-users .page-header-actions {flex-wrap:nowrap;gap:6px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;padding-block:2px}
+  #main #page-users .page-header-actions > * {flex:none;white-space:nowrap}
+  @media(min-width:769px) and (pointer:fine) {
+    #main :is(#page-expenses .exp-header-actions,#page-users .page-header-actions) > .btn,
+    #main #page-users #rbac-create {min-height:32px!important;height:32px;padding:5px 10px;font-size:13px}
+  }
+  @media(max-width:768px) {
+    #main #page-users > :is(.users-workspace-tabs,.ui-tabs-shell) {grid-column:1/-1;grid-row:1}
+    #main #page-users :is(#users-accounts-view > .page-header,#rbac-root > .rbac-header) {grid-column:1/-1;grid-row:2;width:100%}
+    #main #page-users :is(.page-header-actions > .btn,#rbac-create) {min-height:44px!important}
+    #main #page-users #rbac-create {font-size:13px}
+    #main #page-users #rbac-create span {display:inline}
+    #main #page-expenses .exp-kpi-row {grid-template-columns:repeat(2,minmax(0,1fr))}
+    #main #page-expenses .exp-kpi-stat {padding:10px 12px;gap:6px 8px}
+    #main #page-expenses .exp-kpi-stat-val {font-size:17px}
+    #main #page-expenses .exp-kpi-stat:nth-child(3) {border-inline-start:0}
+    #main #page-expenses .exp-kpi-stat:nth-child(n+3) {border-top:1px solid var(--border)}
+    #main #page-expenses .exp-toolbar {flex-wrap:wrap;gap:10px}
+    #main #page-expenses .exp-toolbar > :is(.ui-tabs-shell,.exp-tab-bar) {width:100%;flex:1 1 100%;box-sizing:border-box}
+    #main #page-expenses .exp-toolbar > .exp-header-actions {justify-content:flex-end;width:100%}
+    #main #page-expenses .exp-header-actions .btn-primary {display:inline-flex;min-height:44px}
+  }
+  /* Catalog navigation and actions share a row; filters retain their full width. */
+  #main :is(#page-inventory .inv-sticky-head,#page-products .prod-sticky-head,#page-suppliers .sup-page-toolbar) {display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:6px 12px}
+  #main :is(#page-inventory .inv-sticky-head,#page-products .prod-sticky-head,#page-suppliers .sup-page-toolbar) > * {grid-column:1/-1;min-width:0}
+  #main :is(#page-inventory .inv-sticky-head > .inv-page-header,#page-products .prod-sticky-head > .page-header,#page-suppliers .sup-page-toolbar > .page-header) {grid-column:2;grid-row:1;align-self:center;justify-self:end;display:block;width:fit-content;max-width:100%;margin:0!important}
+  #main :is(#page-inventory .inv-sticky-head,#page-products .prod-sticky-head,#page-suppliers .sup-page-toolbar) > :is(.ui-tabs-shell,.mov-tab-bar,.prod-tabs,#sup-tabs) {grid-column:1;grid-row:1;align-self:center;margin:0!important}
+  #main :is(#page-inventory .inv-header-actions,#page-products .prod-page-actions,#page-suppliers .page-header-actions) {display:flex;flex-wrap:nowrap;max-width:100%;gap:6px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;padding-block:2px}
+  #main #page-inventory .wh-header-actions {flex-wrap:nowrap;flex:none}
+  #main :is(#page-inventory .inv-header-actions,#page-products .prod-page-actions,#page-suppliers .page-header-actions) > *,
+  #main :is(#page-inventory .inv-header-actions,#page-products .prod-page-actions,#page-suppliers .page-header-actions) .btn {flex:none;white-space:nowrap}
+  #main #page-suppliers .sup-page-toolbar {margin-bottom:8px}
+  /* Supplier actions size to their controls and wrap when needed; only tab tracks scroll. */
+  #main #page-suppliers .page-header-actions {width:max-content;max-width:100%;flex-wrap:wrap;justify-content:flex-end;overflow:visible;overscroll-behavior:auto}
+  #main #page-suppliers #sup-tabs svg {margin:0}
+  #main #page-inventory #inv-kpi-scroll {margin-bottom:6px;padding-bottom:2px}
+  #main #page-inventory #inv-summary-cards {gap:8px}
+  #main #page-inventory #inv-summary-cards .kpi {padding:8px 10px}
+  #main #page-inventory #inv-summary-cards .kpi-icon {margin-bottom:2px}
+  @media(min-width:769px) and (pointer:fine) {
+    #main :is(#page-inventory .inv-header-actions,#page-products .prod-page-actions,#page-suppliers .page-header-actions) .btn {min-height:32px!important;height:32px;padding:5px 10px}
+    #main #page-products .prod-page-actions .btn-icon {width:32px;padding:5px}
+  }
+  @media(min-width:601px) and (max-width:768px) {
+    #main #page-inventory #inv-summary-cards .kpi {padding:10px 8px}
+    #main #page-inventory #inv-summary-cards .kpi-icon {margin-bottom:4px}
+  }
+  #main #page-userhub .uh-wrap {padding-block:0 24px;gap:16px}
+  #main #page-settings .settings-page-inner {padding-inline:0}
+  #main .page :is(.cols-table-wrap,.colp-table-wrap) {position:relative;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+  #main #page-supplier-profile #sp-name {font:600 13px/1.5 var(--font-app);margin:0;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;max-width:100%;overflow-wrap:anywhere}
+  #main #page-invoice-view .inv2-page-heading h2 {display:none}
+  #main #page-invoice-view .inv2-page-header {margin-bottom:10px;gap:8px}
+
+  /* Shopify: tabs and secondary actions share the first row. */
+  #main #page-shopify-orders .sp-sticky-head {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;margin:0!important;padding-top:0}
+  #main #page-shopify-orders .sp-sticky-head > * {grid-column:1/-1;min-width:0}
+  #main #page-shopify-orders #shopify-page-header.sp-compact-header {grid-column:2;grid-row:1;align-self:start;justify-content:flex-end;flex-wrap:nowrap;margin:0!important}
+  #main #page-shopify-orders .sp-subnav-shell {grid-column:1;grid-row:1;margin:0;align-self:start}
+  #main #page-shopify-orders #sp-subnav {max-width:100%}
+  #main #page-shopify-orders #sp-kpi {margin-block:0}
+  #main #page-shopify-orders #shopify-filters-bar {margin-top:0}
+
+  /* The archive's accounting notice is useful context; its repeated title is not. */
+  #main #mov-panel-archive > .flex-between {margin-bottom:10px}
+  #main #mov-panel-archive > .flex-between > div {flex:1;min-width:0}
+  #main #mov-panel-collections > .flex-between {display:none}
+  #main > #page-movements.active {display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px}
+  #main #page-movements > * {grid-column:1/-1;min-width:0}
+  #main #page-movements > #mov-page-header {grid-column:2;grid-row:1;align-self:center;margin:0!important}
+  #main #page-movements > .mov-tab-bar {grid-column:1;grid-row:1;min-width:0;overflow-x:auto;margin-bottom:10px}
+  #main #mov-page-header .as-launcher {margin:0;padding:0}
+
+  /* Reports retain their export controls and section filters in a compact toolbar. */
+  #main #page-reports .rep-page-header {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;margin-bottom:12px}
+  #main #page-reports .rep-page-header > * {grid-column:1/-1;min-width:0}
+  #main #page-reports .rep-page-top {grid-column:2;grid-row:1;padding:8px}
+  #main #page-reports .rep-section-tabs {grid-column:1;grid-row:1;align-self:center;padding:8px;margin:0}
+  #main #page-reports .rep-page-top > div:first-child {display:none}
+  #main #page-reports #rep-export-actions {gap:6px}
+
+  /* Warehouse tabs already identify their sections. Hide duplicate introductions,
+     retaining warehouse selection, generation actions, status and back navigation. */
+  #main > #page-barcodes.active {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  #main #page-barcodes > * {grid-column:1/-1;min-width:0}
+  #main #page-barcodes > .iu-header {grid-column:2;grid-row:1;align-self:center;min-height:0;margin:0!important;justify-content:flex-end}
+  #main #page-barcodes > :is(.iu-tabs,.ui-tabs-shell) {grid-column:1;grid-row:1;align-self:center;margin:0!important}
+  /* Keep the invoice badge compact and visible in every warehouse section. */
+  #main #page-barcodes #iu-tab-invoice-count {display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;width:auto;min-width:22px;height:18px;padding:0 5px;line-height:1;visibility:visible;font-variant-numeric:tabular-nums}
+  #main #page-barcodes .iu-breadcrumb {display:none}
+  #main #page-barcodes :is(.iu-section-heading,.wl-header,.sl-header) {min-height:0;margin-bottom:10px;padding-block:0;gap:10px}
+  #main #page-barcodes .wl-header > div:first-child {display:none}
+  #main #page-barcodes .sl-header h2 {display:none}
+  #main #page-barcodes .sl-header p {font-size:12px;margin:0}
+  #main #page-barcodes :is(.sl-breadcrumb,.wl-kicker) {display:none}
+
+  #shell-breadcrumb [aria-current="page"] {margin:0;font:600 13px/1.5 var(--font-app);min-width:0}
+  #shell-breadcrumb {max-width:min(520px,40vw)}
+  #shell-breadcrumb a {min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
+  #shell-breadcrumb .shell-workspace {display:flex;flex-shrink:0}
+  #shell-breadcrumb .shell-root-sep {display:flex;align-items:center;flex-shrink:0}
+
+  @media (max-width:1100px) and (min-width:769px) {
+    #shell-breadcrumb {max-width:32vw}
+  }
+  @media (max-width:768px) {
+    #main :is(#page-inventory .inv-sticky-head > .inv-page-header,#page-products .prod-sticky-head > .page-header,#page-suppliers .sup-page-toolbar > .page-header) {grid-column:1/-1;grid-row:2;width:100%}
+    #main :is(#page-inventory .inv-sticky-head,#page-products .prod-sticky-head,#page-suppliers .sup-page-toolbar) > :is(.ui-tabs-shell,.mov-tab-bar,.prod-tabs,#sup-tabs) {grid-column:1/-1;grid-row:1}
+    #main :is(#page-inventory .inv-header-actions,#page-products .prod-page-actions,#page-suppliers .page-header-actions) .btn {min-height:44px!important}
+    :root {--header-h:72px}
+    #header {align-items:flex-start;gap:4px;padding-inline:12px}
+    #header > .flex {height:44px;gap:4px;flex-shrink:0}
+    #header .header-actions {height:44px;gap:0;margin-inline-start:auto}
+    #header .header-name-wrap,#header .pt-caret {display:none}
+    #header :is(.m-search-toggle,.notif-btn,.privacy-btn,.adb-reopen-btn,.hamburger) {width:44px;height:44px;min-width:44px;padding:0}
+    #header .profile-trigger {width:44px;height:44px;padding:0;border:0;justify-content:center}
+    #header .logo img {width:28px;height:28px}
+    #header #shell-breadcrumb {position:absolute;inset-inline:12px;bottom:3px;display:flex;gap:7px;max-width:none;height:24px;font-size:11px}
+    #shell-breadcrumb .shell-workspace,#shell-breadcrumb > .shell-root-sep {display:flex}
+    #shell-breadcrumb [aria-current="page"] {font-size:12px;max-width:none;flex:1 0 80px}
+    #shell-breadcrumb a {max-width:38%;overflow:hidden;text-overflow:ellipsis}
+    #main {padding-block-start:8px}
+    #main > .page {padding-block:10px}
+    #main .page :is(.page-header,.inv-page-header) > div:first-child {width:auto}
+    #main #page-shopify-orders .sp-sticky-head {gap:8px 6px;padding-bottom:8px}
+    #main #page-shopify-orders #shopify-page-header.sp-compact-header {align-self:center}
+    #main #page-shopify-orders .sp-subnav-shell {align-self:center}
+    #main #page-shopify-orders #sp-tools-menu > summary {width:44px;min-height:44px;box-sizing:border-box}
+    #main #page-shopify-orders .sp-subnav-shell #sp-subnav {padding:3px}
+    #main #page-shopify-orders .sp-tab-step {flex-basis:28px;width:28px}
+    #main #page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab {padding-inline:10px}
+    #main #mov-page-header .as-launcher button {width:44px;height:44px;min-height:44px;padding:0;font-size:0}
+    #main #mov-page-header .as-launcher button::before {content:"";display:block;width:18px;height:18px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m9 4-5 5 5 5M4 9h10a6 6 0 0 1 0 12h-3' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+    #main #page-movements > .mov-tab-bar {gap:4px}
+    #main #page-movements > .mov-tab-bar .mov-main-tab {padding-inline:8px;white-space:nowrap;flex:0 0 auto}
+    #main #page-reports .rep-page-top {grid-column:1/-1;grid-row:2;justify-content:flex-end;padding-top:0}
+    #main #page-reports .rep-section-tabs {grid-column:1/-1;grid-row:1}
+    #main .shell-page-breadcrumb,#main .cat-breadcrumb {display:none!important}
+  }
+  @media (max-width:359px) {
+    #header > .flex > .logo {display:none!important}
+    #main #page-barcodes .ui-tabs-step {display:none}
+  }
+  @media (max-width:600px) {
+    #main #page-inventory #inv-summary-cards .kpi {padding:6px 8px}
+  }
+}

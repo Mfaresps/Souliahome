@@ -4,6 +4,18 @@ import { runInNewContext } from 'vm';
 
 const source = readFileSync(resolve(__dirname, '../../../frontend/public/notification-history.js'), 'utf8');
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+it('labels a preparation notification with the group reference and pickup destination', async () => {
+  const row = { _id: 'c'.repeat(64), recordId: 'prep-group:710-10NOV', type: 'approval', ref: '710-10NOV',
+    title: '📦 Prep group orders', body: '710-10NOV · 12 orders', createdAt: '2026-11-10T12:00:00Z' };
+  const context: any = { currentUser: null, ICON: () => '', setInterval: jest.fn(), qs: () => null,
+    api: jest.fn(async () => ({ items: [row], unread: 1 })) };
+  context.window = context; runInNewContext(source, context);
+  context.currentUser = { _id: 'admin' };
+  await context.souliaRefreshNotificationHistory();
+  expect(context.souliaHistoryNotifs()[0]).toMatchObject({
+    title: '📦 Prep group orders · 710-10NOV', desc: '710-10NOV · 12 orders', page: 'pickup-orders',
+  });
+});
 it('shows the reaction message and retains the exact comment destination in history', async () => {
   const row = { _id: 'c'.repeat(64), recordId: 'tx:transaction1', type: 'comment', event: '123', reaction: 'applause',
     title: '👏 New reaction to your comment', actorName: 'Mona', commentText: 'Order confirmed',

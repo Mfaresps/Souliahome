@@ -17,10 +17,17 @@ const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcemen
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
 export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
 export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; reaction?: string; }
+export interface NotificationDetails { prepRef?: string; orderCount?: number; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
 export function notificationBody(type: NotificationType, ref: string, details: NotificationDetails = {}, language: 'ar' | 'en' = 'ar') {
+  if (type === 'approval' && details.actionKey === 'prep-group') {
+    const group = cleanText(details.prepRef, 40);
+    const count = details.orderCount;
+    if (!group || typeof count !== 'number' || !Number.isInteger(count) || count < 1) return '';
+    return language === 'en' ? `${group} · ${count} ${count === 1 ? 'order' : 'orders'}` : `${group} · عدد الطلبات: ${count}`;
+  }
   if (details.afterSalesAction) return notificationTitle(type, details, language) + ' · #' + cleanText(ref, 40) + ' · ' + cleanText(details.actorName, 36);
   const reference = cleanText(ref.replace(/^#+/, ''), 24);
   const actor = cleanText(details.actorName, 36) || (language === 'en' ? 'A team member' : 'أحد الموظفين');

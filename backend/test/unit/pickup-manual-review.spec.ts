@@ -23,7 +23,7 @@ it('records manual preparation without approving, reordering or changing the sel
   expect(c.api).toHaveBeenCalledTimes(1);expect(JSON.parse(c.api.mock.calls[0][1].body)).toMatchObject({action:'skip',quantity:1});
   expect(c._pwAutoPrepareScannedOrder).not.toHaveBeenCalled();expect(c.pucoTickOrder).not.toHaveBeenCalled();
   expect(order.prepChecked).toBe(false);expect(c._pwSelId).toBe('one');expect(c._pickupOrders.map(row=>row._id)).toEqual(['one','two']);
-  expect(state.feedback.hint).toContain('Approve preparation');expect(approve.focus).toHaveBeenCalledWith({preventScroll:true});
+  expect(state.feedback).toBeNull();expect(approve.focus).toHaveBeenCalledWith({preventScroll:true});
   expect(c._pwScanIntroHtml(order,state)).toContain('is-manual-review');
 });
 it('keeps a partially completed manual order ready for its remaining items',async()=>{

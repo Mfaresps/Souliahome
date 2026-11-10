@@ -1,6 +1,10 @@
 /* Pickup board: compact, neutral lanes inspired by the DesignMe kanban layout.
    State stays visible in the order details, progress and shipping action. */
 @media screen {
+  /* Keep the main area's top margin inside the app instead of adding it to
+     the body's viewport minimum height and creating an empty page scrollbar. */
+  #app:has(#page-pickup-orders.active) { display: flow-root; }
+
   #main > #page-pickup-orders {
     --pu-lane: color-mix(in srgb, var(--text) 4%, var(--surface));
     --pu-lane-line: color-mix(in srgb, var(--text) 10%, var(--surface));
@@ -31,11 +35,14 @@
   }
   #main #page-pickup-orders #pu-board-search { height: 32px; }
 
-  #main #page-pickup-orders .pu-board-3col { gap: 10px; }
+  #main #page-pickup-orders .pu-board-3col {
+    gap: 10px; height: auto; min-height: 0;
+    grid-auto-rows: auto; align-items: start;
+  }
   #main #page-pickup-orders .pu-board-col,
   #main #page-pickup-orders .pu-col-ready,
   #main #page-pickup-orders .pu-col-prep {
-    border: 0; border-radius: 14px; background: var(--pu-lane); box-shadow: none;
+    height: auto; border: 0; border-radius: 14px; background: var(--pu-lane); box-shadow: none;
   }
   #main #page-pickup-orders .pu-board-col .pu-board-col-header,
   #main #page-pickup-orders .pu-col-ready .pu-board-col-header,
@@ -79,6 +86,7 @@
     border: 0; border-radius: 0; background: transparent;
   }
   #main #page-pickup-orders .pu-board-col .pu-board-col-body {
+    flex: 0 0 auto; min-height: 90px; max-height: none; overflow: visible;
     padding: 5px 6px 8px; gap: 7px; scrollbar-gutter: auto;
   }
   #main #page-pickup-orders .pu-board-col-body > .pu-group + .pu-group::before { display: none; }
@@ -141,6 +149,5 @@
     #main #page-pickup-orders .pu-bkpi:nth-child(even) { border-inline-end: 0; }
     #main #page-pickup-orders .pu-bkpi:nth-child(n+3) { border-top: 1px solid var(--border); }
     #main #page-pickup-orders .pu-bkpi:last-child { grid-column: 1 / -1; }
-    #main #page-pickup-orders .pu-board-col .pu-board-col-body { max-height: 60svh; }
   }
 }

@@ -96,9 +96,27 @@ function syncNavigationShell(incomingRows) {
   let breadcrumb = qs('#shell-breadcrumb');
   if (!breadcrumb && left) { breadcrumb = document.createElement('nav'); breadcrumb.id = 'shell-breadcrumb'; breadcrumb.className = 'shell-breadcrumb'; left.append(breadcrumb); }
   if (breadcrumb) {
+    let back = qs('#shell-back-btn');
+    const backTarget = typeof navBackTarget === 'function' ? navBackTarget() : null;
+    if (!back && backTarget) {
+      back = document.createElement('button'); back.id = 'shell-back-btn'; back.type = 'button';
+      back.className = 'back-btn is-icon shell-back-btn'; back.innerHTML = BACK_ARROW_SVG;
+      back.addEventListener('click', () => navBack()); breadcrumb.before(back);
+    }
+    if (back) {
+      back.hidden = !backTarget;
+      const backLabel = backTarget ? tf('ivBackTo', { v: backTarget.label }) : '';
+      back.title = backLabel; back.setAttribute('aria-label', backLabel);
+    }
     breadcrumb.setAttribute('aria-label', shellText('المسار الحالي','Breadcrumb'));
     const entry = NAV_ITEMS.find(item => item.id === currentPage);
-    const label = currentPage === 'userhub' ? 'UserHub' : currentPage === 'profile' ? t('profile') : entry ? (currentLang === 'en' ? entry.labelEn || entry.label : entry.label) : qs('.page.active .page-title')?.textContent || currentPage;
+    const detailLabels = {
+      roles: shellText('الأدوار والصلاحيات', 'Roles & Permissions'),
+      'supplier-profile': qs('#sp-name')?.textContent,
+      'category-profile': qs('#catp-name')?.textContent,
+      'collection-profile': qs('#colp-name')?.textContent,
+    };
+    const label = currentPage === 'userhub' ? 'UserHub' : currentPage === 'profile' ? t('profile') : detailLabels[currentPage] || (entry ? (currentLang === 'en' ? entry.labelEn || entry.label : entry.label) : qs('.page.active .page-title')?.textContent || currentPage);
     const sep = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
     let html = '<a class="shell-workspace" href="#dashboard" onclick="event.preventDefault();goHomeFromLogo()">'+esc(shellText('مساحة العمل','Workspace'))+'</a><span class="shell-root-sep">'+sep+'</span>';
     const sourcePath = currentPage === 'invoice-view' ? qs('#inv-view-content .shell-page-breadcrumb') : currentPage === 'category-profile' ? qs('#catp-breadcrumb') : currentPage === 'collection-profile' ? qs('#colp-breadcrumb') : null;
@@ -114,9 +132,25 @@ function syncNavigationShell(incomingRows) {
         return clone.outerHTML;
       }).join('');
     }
+    else if (currentPage === 'barcodes' && qs('#page-barcodes [data-iu-tab].active')) {
+      const tab = qs('#page-barcodes [data-iu-tab].active');
+      const section = tab.childNodes[0]?.textContent.trim() || tab.textContent.trim();
+      const step = tab.dataset.iuTab === 'supplier-labels' ? qs('#sl-title')?.textContent.trim() : '';
+      html += '<a href="#warehouse-management">'+esc(label)+'</a>'+sep;
+      if (step && step !== section) html += '<a href="#warehouse-management/supplier-labels">'+esc(section)+'</a>'+sep;
+      html += '<strong aria-current="page">'+esc(step || section)+'</strong>';
+    }
     else if (currentPage === 'reports' && typeof reportTabLabel === 'function' && activeReportTab) html += '<a href="#reports" onclick="handleNavClick(event,\'reports\')">'+esc(label)+'</a>'+sep+'<strong aria-current="page">'+esc(reportTabLabel(activeReportTab))+'</strong>';
+    else if (currentPage === 'clients' && window.SouliaClients?.currentProfile()) html += '<a href="#clients">'+esc(t('clients'))+'</a>'+sep+'<strong aria-current="page">'+esc(window.SouliaClients.currentProfile().name)+'</strong>';
+    else if (currentPage === 'supplier-profile') html += '<a href="#suppliers" onclick="handleNavClick(event,\'suppliers\')">'+esc(t('suppliers'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
+    else if (currentPage === 'roles') html += '<a href="#users" onclick="handleNavClick(event,\'users\')">'+esc(t('users'))+'</a>'+sep+'<strong aria-current="page">'+esc(label)+'</strong>';
     else html += '<strong aria-current="page">'+esc(label)+'</strong>';
-    breadcrumb.innerHTML = html;
+    // Repeated badge updates must not replace a focused breadcrumb link.
+    const path = document.createElement('div');
+    path.innerHTML = html;
+    const current = path.querySelector('[aria-current="page"]');
+    if (current) { current.setAttribute('role','heading'); current.setAttribute('aria-level','1'); current.tabIndex = -1; current.title = current.textContent.trim(); }
+    syncShellChildren(breadcrumb, [...path.childNodes]);
   }
   const wrap = qs('#header .search-wrap');
   if (wrap && !wrap.querySelector('.shell-search-shortcut')) { const shortcut = document.createElement('kbd'); shortcut.className = 'shell-search-shortcut'; shortcut.textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'; wrap.append(shortcut); }

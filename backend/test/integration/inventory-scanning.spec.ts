@@ -102,9 +102,9 @@ describe('Shared scanning backend: real disposable Mongo transactions and HTTP',
     expect((await validate({ identifier: unit.barcode.toLowerCase() })).code).toBe('VALIDATED');
     expect((await validate({ identifier: ' ' + unit.barcode, sessionKey: 'second-normalization-session' })).code).toBe('VALIDATED');
     expect((await validate({ productId: key() })).code).toBe('WRONG_PRODUCT');
-    expect((await validate({ intent: 'inspect', productId })).code).toBe('INVALID_UNIT_STATE');
+    expect((await validate({ intent: 'inspect', productId, sessionKey: 'inspect-state-session' })).code).toBe('INVALID_UNIT_STATE');
     const assigned = await fixture('reserved', { assignment: { transactionId: saleId, lineId: 'line-1' } });
-    expect((await validate({ identifier: assigned.barcode, intent: 'picking', productId, transactionId: saleId, lineId: 'wrong' })).code).toBe('UNAVAILABLE_UNIT');
+    expect((await validate({ identifier: assigned.barcode, intent: 'picking', productId, transactionId: saleId, lineId: 'wrong', sessionKey: 'assigned-state-session' })).code).toBe('UNAVAILABLE_UNIT');
   });
   it('does not turn a rejected result into acceptance when replayed after conditions change', async () => {
     const request = dto({ intent: 'inspect', productId });
@@ -160,6 +160,79 @@ describe('Shared scanning backend: real disposable Mongo transactions and HTTP',
     const retry = await tracking.pickScan(saleId, request, actor);
     expect(retry).toEqual(first);
     expect(await Event.countDocuments({ unitId: String(unit._id), action: 'picking-started' })).toBe(1);
+  });
+  it('matches a piece to the next uncovered product line in the same HTTP scan request', async () => {
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { items: [
+      { code: 'SKU-1', qty: 1, lineId: 'line-1' }, { code: 'SKU-1', qty: 1, lineId: 'line-2' },
+    ] } });
+    const scan = (identifier: string) => fetch(base + `/orders/${saleId}/picking/scans`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-test-role': 'admin' }, body: JSON.stringify({
+        operationKey: key(), reason: 'One-request physical scan', identifier, physicalPossessionConfirmed: true,
+      }) });
+    const first = await scan(unit.barcode);
+    expect(first.status).toBe(201);
+    expect(await first.json()).toMatchObject({ lineId: 'line-1', unit: { status: 'picking' } });
+    const extra = await fixture();
+    const second = await scan(extra.barcode);
+    expect(second.status).toBe(201);
+    expect(await second.json()).toMatchObject({ lineId: 'line-2', unit: { status: 'picking' } });
+    expect((await scan((await fixture()).barcode)).status).toBe(409);
+  });
+  it('matches a reserved piece without requiring an additional available slot', async () => {
+    const reserved = await Unit.findById(unit._id);
+    reserved!.status = 'reserved'; reserved!.assignment = { transactionId: saleId, lineId: 'line-1' }; await reserved!.save();
+    await expect(tracking.pickScan(saleId, { operationKey: key(), reason: 'Reserved physical piece', identifier: unit.barcode,
+      physicalPossessionConfirmed: true }, actor)).resolves.toMatchObject({ lineId: 'line-1', unit: { status: 'picking' } });
+  });
+  it('atomically prepares all scanned pieces and the order with one idempotent operation', async () => {
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { 'items.0.qty': 2 } });
+    const second = await fixture();
+    for (const piece of [unit, second]) await tracking.pickScan(saleId, { operationKey: key(), reason: 'Physical piece', identifier: piece.barcode,
+      physicalPossessionConfirmed: true }, actor);
+    const dto = { operationKey: key(), reason: 'All pieces checked', physicalPossessionConfirmed: true };
+    const before = await balances();
+    const result = await tracking.preparePickedOrder(saleId, dto, actor);
+    expect(result).toMatchObject({ prepChecked: true, stockChanged: false });
+    expect(result.units).toHaveLength(2);
+    expect(await tracking.preparePickedOrder(saleId, dto, actor)).toEqual(result);
+    expect(await Unit.countDocuments({ 'assignment.transactionId': saleId, status: 'prepared' })).toBe(2);
+    expect(await Event.countDocuments({ transactionId: saleId, action: 'prepared' })).toBe(2);
+    const sale = await raw('transactions').findOne({ _id: new Types.ObjectId(saleId) });
+    expect(sale?.prepChecked).toBe(true);
+    expect(sale?.pickupHistory).toHaveLength(1);
+    const after = await balances();
+    expect(after.stock).toEqual(before.stock);
+    expect(after.money).toEqual(before.money);
+    expect(after.supplier).toEqual(before.supplier);
+  });
+  it('does not approve an incomplete order or partially prepare its scanned pieces', async () => {
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { 'items.0.qty': 2 } });
+    await tracking.pickScan(saleId, { operationKey: key(), reason: 'Physical piece', identifier: unit.barcode, physicalPossessionConfirmed: true }, actor);
+    await expect(tracking.preparePickedOrder(saleId, { operationKey: key(), reason: 'Approve', physicalPossessionConfirmed: true }, actor)).rejects.toThrow('incomplete');
+    expect((await Unit.findById(unit._id).lean() as any).status).toBe('picking');
+    expect((await raw('transactions').findOne({ _id: new Types.ObjectId(saleId) }))?.prepChecked).not.toBe(true);
+    expect(await Event.countDocuments({ action: 'prepared' })).toBe(0);
+  });
+  it('rolls back the whole approval when a later piece has an invalidated purchase receipt', async () => {
+    const purchaseId = key();
+    await raw('transactions').insertOne({ _id: new Types.ObjectId(purchaseId), type: 'مشتريات', warehouseCode: 'MAIN',
+      items: [{ lineId: 'purchase-line', code: 'SKU-1', qty: 1 }] });
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { 'items.0.qty': 2 } });
+    const second = await fixture('available', { origin: { kind: 'purchase', purchaseTransactionId: purchaseId, purchaseLineId: 'purchase-line' } });
+    for (const piece of [unit, second]) await tracking.pickScan(saleId, { operationKey: key(), reason: 'Physical piece', identifier: piece.barcode,
+      physicalPossessionConfirmed: true }, actor);
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(purchaseId) }, { $set: { cancelled: true } });
+    await expect(tracking.preparePickedOrder(saleId, { operationKey: key(), reason: 'Approve', physicalPossessionConfirmed: true }, actor)).rejects.toThrow('Receipt reversed');
+    expect(await Unit.countDocuments({ 'assignment.transactionId': saleId, status: 'picking' })).toBe(2);
+    expect(await Event.countDocuments({ action: 'prepared' })).toBe(0);
+    expect((await raw('transactions').findOne({ _id: new Types.ObjectId(saleId) }))?.prepChecked).not.toBe(true);
+  });
+  it('protects the bulk preparation HTTP endpoint with pickup editing and allocation permissions', async () => {
+    const response = await fetch(base + `/orders/${saleId}/picking/prepare`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-test-role': 'reader' }, body: JSON.stringify({
+        operationKey: key(), reason: 'Unauthorized approve', physicalPossessionConfirmed: true,
+      }) });
+    expect(response.status).toBe(403);
   });
   it('rejects barcode picking when the requested sale-line quantity is already covered', async () => {
     const first = await tracking.pickScan(saleId, { operationKey: key(), reason: 'Scanned unit', identifier: unit.barcode,

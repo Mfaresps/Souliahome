@@ -73,6 +73,76 @@ const legacy = code => ['🧾 طلب إضافة عربون بدون صورة ت�
       assert.match(result.log, /3021/); assert.match(result.log, /سُجّل العربون/);
       assert.match(result.rows, /دفع كاش في المحل/);
     }
+    // Exercise the unified inbox used by the bell, rather than only the old mentions renderer.
+    await page.evaluate((fresh, old) => {
+      document.getElementById('fx')?.remove();
+      currentUser = { _id: '111111111111111111111111', role: 'admin', name: 'Manager' };
+      qs('#app').style.display = '';
+      window.testOtpId = '222222222222222222222222';
+      window.testOrderId = '333333333333333333333333';
+      window.testMentions = [
+        { id: '444444444444444444444444', txId: testOtpId, fromName: 'نظام عربون بدون صورة', commentId: 0, commentText: fresh, read: false, ts: new Date().toISOString() },
+        { id: '555555555555555555555555', txId: testOtpId, fromName: 'نظام التحقق', commentId: 0, commentText: old, read: false, ts: new Date().toISOString() },
+      ];
+      window.testOtp = { _id: testOtpId, otp: '0482', kind: 'deposit-no-image', editTxId: testOrderId, txRef: '3021', client: 'مروى عبد الحليم', itemsTotal: 300, txType: 'فودافون كاش', status: 'unused', attempts: 0, createdAt: new Date().toISOString(), requestReason: 'دفع كاش في المحل' };
+      testMentions.forEach(m => { m.targetUserId = currentUser._id; });
+      window.testCalls = []; window.testNavigation = []; window.testCopied = '';
+      api = async (url, options = {}) => {
+        testCalls.push({ url, method: options.method || 'GET' });
+        if (url === '/discount-otp/record/' + testOtpId) return { ...testOtp };
+        if (url === '/shopify/orders/detail/' + testOrderId) return { _id: testOrderId, ref: '3021' };
+        if (url === '/notifications/read-state') return { ids: [] };
+        if (url === '/discount-otp') return [{ ...testOtp }];
+        if (url === '/mentions') return testMentions;
+        return {};
+      };
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async value => { testCopied = value; } } });
+      _requirePageAccess = () => true;
+      navigateTo = value => { testNavigation.push(value); currentPage = value; };
+      openSpOrderPeek = async value => { window.testOpenedOrder = value; };
+      refreshMentionsFromServer = async () => {};
+      window.souliaHistoryNotifs = () => [];
+      window.souliaRefreshNotificationHistory = async () => {};
+      saveMentionNotifs(testMentions);
+      window.souliaPushAppReady = true;
+    }, body('0482'), legacy('7390'));
+    for (const [lang, width] of [['ar', 390], ['en', 1440]]) {
+      await page.setViewport({ width, height: 900 });
+      await page.evaluate(lang => {
+        currentLang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        window.testOpenedOrder = ''; testNavigation.length = 0; saveMentionNotifs(testMentions);
+        openNotifCenter();
+      }, lang);
+      await page.waitForSelector('#nc-main .notification-otp-copy');
+      assert.deepEqual(await page.$$eval('#nc-main .notification-otp-code', nodes => nodes.map(n => n.textContent)), ['0482', '7390']);
+      assert(await page.$eval('#nc-main .notification-otp-copy', e => e.getBoundingClientRect().height >= 44));
+      await page.click('#nc-main .notification-otp-copy');
+      await page.waitForFunction(() => testCopied === '0482');
+      assert.equal(await page.evaluate(() => testOpenedOrder), '', 'copy does not open the order');
+      // Keyboard activation on a nested copy button must not activate its parent notification.
+      await page.focus('#nc-main .notification-otp-copy'); await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => testOpenedOrder), '');
+      assert(await page.$eval('#nc-main', e => e.scrollWidth <= e.clientWidth + 1));
+      await page.screenshot({ path: path.join(out, `inbox-${lang}-${width}.png`) });
+      await page.click('#nc-main .nc-item-title');
+      await page.waitForFunction(() => testOpenedOrder === testOrderId);
+      assert.deepEqual(await page.evaluate(() => testNavigation), ['shopify-orders']);
+      assert.equal(await page.evaluate(() => testCalls.some(c => c.url.startsWith('/transactions/'))), false);
+      assert.equal(await page.evaluate(() => testCalls.some(c => c.url === '/shopify/orders/detail/' + testOrderId)), true, 'loads an order absent from the current list');
+    }
+    // Old notifications follow their persisted OTP-to-order link too, without using the OTP id as an order id.
+    await page.evaluate(async () => { testOpenedOrder = ''; await onMentionNotifClick(testMentions[1].id, testOtpId, 0); });
+    assert.equal(await page.evaluate(() => testOpenedOrder), await page.evaluate(() => testOrderId));
+    // OS/push OTP notifications open this same order; other OTP kinds keep their verification-log destination.
+    await page.evaluate(async () => { testOpenedOrder = ''; await souliaNavigateNotification('/?pushRecord=otp:' + testOtpId + '&pushType=otp'); });
+    assert.equal(await page.evaluate(() => testOpenedOrder), await page.evaluate(() => testOrderId));
+    await page.evaluate(() => {
+      _otpAuditAllRows = [testOtp]; _otpAuditPage = 1; renderOtpTablePage();
+    });
+    assert.equal(await page.$$eval('#otp-audit-list .otp-audit-copy', nodes => nodes.length), 2, 'desktop and mobile verification records both offer copying');
+    assert((await page.$eval('#otp-audit-list', e => e.textContent)).includes('0482'));
+    await page.$eval('#otp-audit-list .otp-audit-order', e => e.click());
+    await page.waitForFunction(() => testOpenedOrder === testOrderId);
     assert.deepEqual(errors, []);
     console.log('deposit no-image OTP card + log: passed');
   } finally { await browser.close(); }

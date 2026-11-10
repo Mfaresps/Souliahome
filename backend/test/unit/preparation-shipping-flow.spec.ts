@@ -11,7 +11,7 @@ function fixture() {
   const context: any = {
     carrierIntegration: () => 'bosta', transactions: orders, _awbPrintsOf: () => [],
     _awbOrderCopies: (id: string) => orders.filter(o => o._id === id),
-    _awbPrepareSoon: jest.fn(), _awbForget: jest.fn(), _pwScanFocus: jest.fn(), _pwSelId: '2',
+    _awbPrepareSoon: jest.fn(), _awbWarm: jest.fn(), _awbForget: jest.fn(), _pwScanFocus: jest.fn(), _pwSelId: '2',
     _pucoGetGroup: () => null, markMovRecentlyUpdated: jest.fn(), qs: () => null,
     window: {matchMedia: () => ({matches: true})}, setTimeout: jest.fn(),
     t: (key: string, params: any) => key === 'bsfPrepared' ? `Order #${params.ref} prepared successfully` : key,
@@ -22,7 +22,7 @@ function fixture() {
   return {c: context, orders, state: () => runInNewContext('_bsfState', context)};
 }
 
-it('holds preparation through Send and preserves the original order identity', async () => {
+it('sends and starts printing in one action while preserving the original order identity', async () => {
   const {c, orders, state} = fixture();
   let sent: any;
   c.api.mockReturnValue(new Promise(resolve => {sent = resolve;}));
@@ -37,6 +37,9 @@ it('holds preparation through Send and preserves the original order identity', a
   sent({bostaOrderId: 'shipment', trackingNumber: 'TR-1'});
   await task;
   expect(state().stage).toBe('sent');
+  expect(c.printBostaAwb).toHaveBeenCalledWith('1', expect.objectContaining({ fromBostaFlow: true }));
+  await c._bsfSend();
+  expect(c.api).toHaveBeenCalledTimes(1);
   expect(orders[0]).toMatchObject({bostaOrderId: 'shipment', bostaTrackingNumber: 'TR-1'});
   expect((orders[1] as any).bostaOrderId).toBeUndefined();
   expect(released).toBe(false);
@@ -86,20 +89,16 @@ it('shows the prepared reference in the success title with the customer undernea
   expect(content).toContain('<div class="bsf-sub">Customer 1</div>');
 });
 
-it('waits for confirmed printing and the success scene before releasing the next order', async () => {
+it('releases the next order immediately after confirmed printing without a success delay', async () => {
   const { c, orders, state } = fixture();
   Object.assign(orders[0], { bostaOrderId: 'shipment', bostaTrackingNumber: 'TR-1' });
   let result: any = 'pending';
   c._bsfMaybeOffer(orders[0]).then((printed: boolean) => { result = printed; });
   c.printBostaAwb.mockResolvedValue(true);
   await c._bsfPrint();
-  expect(result).toBe('pending');
-  expect(state().stage).toBe('printed');
-  expect(c._bsfStageHtml(state(), orders[0])).toContain('bsf-ps-feed');
-  expect(c.setTimeout).toHaveBeenCalledWith(expect.any(Function), 4300);
-  c.setTimeout.mock.calls[0][0]();
-  await turn();
   expect(result).toBe(true);
+  expect(state()).toBeNull();
+  expect(c.setTimeout).not.toHaveBeenCalled();
 });
 
 it('postponing shipping does not authorize automatic advancement', async () => {
@@ -112,6 +111,7 @@ it('postponing shipping does not authorize automatic advancement', async () => {
 it.each([false, true])('records a print only after the user confirms physical output (confirmed=%s)', async confirmed => {
   const c: any = {
     currentLang: 'en', showConfirm: jest.fn().mockResolvedValue(confirmed),
+    _awbOrderCopies: () => [{}], _bsfState: null, _bsfPrintScene: () => '', esc: String, qs: () => null,
     _awbPrinting: false, _awbPrintsOf: () => [],
     _awbPrepare: jest.fn().mockResolvedValue({ pages: [] }), _awbPrintInFrame: jest.fn().mockResolvedValue(undefined),
     _awbPrepared: new Map(), _awbRecordPrint: jest.fn(), _awbBusy: jest.fn(),
@@ -127,6 +127,7 @@ it('keeps confirmation hidden until the print preview closes', async () => {
   let closePreview: any;
   const c: any = {
     currentLang: 'en', showConfirm: jest.fn().mockResolvedValue(true),
+    _awbOrderCopies: () => [{}], _bsfState: null, _bsfPrintScene: () => '', esc: String, qs: () => null,
     _awbPrinting: false, _awbPrintsOf: () => [],
     _awbPrepare: async () => ({ pages: [] }),
     _awbPrintInFrame: () => new Promise(resolve => { closePreview = resolve; }),
@@ -140,8 +141,8 @@ it('keeps confirmation hidden until the print preview closes', async () => {
   expect(c._awbRecordPrint).not.toHaveBeenCalled();
   closePreview();
   await printing;
-  expect(c.showConfirm).toHaveBeenCalledWith('Label printed?', expect.objectContaining({
-    confirmLabel: 'Yes, printed', cancelLabel: 'No, again'
+  expect(c.showConfirm).toHaveBeenCalledWith(expect.stringContaining('Did the label come out'), expect.objectContaining({
+    confirmLabel: 'Yes, printed', cancelLabel: 'Not printed'
   }));
 });
 
@@ -191,7 +192,8 @@ it.each([1, 2])('keeps completed orders in preparation and advances only after s
   const c: any = {
     _pickupOrders: orders, _puPrepGroups: [group], _pucoColType: 'prep', _pucoGroupKey: 'group', _pwSelId: '1',
     qs: () => null, CSS: { escape: String }, window: { matchMedia: () => ({ matches: true }) },
-    _pwEnsurePickLines: jest.fn(), api: jest.fn().mockResolvedValue({ lines: [{ lineId: 'line', qty: 1, units: [{ status: 'prepared' }] }] }),
+    crypto: { randomUUID: () => 'operation-id' },
+    _pwEnsurePickLines: jest.fn(), api: jest.fn().mockResolvedValue({ prepChecked: true, units: [] }),
     _pwIncompletePickLines: () => [], _pwPickState: () => ({}), _pwLoadPickSummary: jest.fn(),
     _puSetLocalPrepChecked: (id: string, checked: boolean) => { orders.find(o => o._id === id)!.prepChecked = checked; },
     _puPersistPrepCheck: jest.fn().mockResolvedValue(undefined), _bsfIsBostaOrder: () => true,
@@ -203,6 +205,9 @@ it.each([1, 2])('keeps completed orders in preparation and advances only after s
   runInNewContext(html.slice(html.indexOf('async function _pucoTickOrderImpl('), html.indexOf('let _pucoAddSuggestIdx')), c);
   await c._pucoTickOrderImpl('1', true);
   expect(orders[0].prepChecked).toBe(true);
+  expect(c.api).toHaveBeenCalledTimes(1);
+  expect(c.api).toHaveBeenCalledWith('/inventory-units/orders/1/picking/prepare', expect.objectContaining({ method: 'POST' }));
+  expect(c._puPersistPrepCheck).not.toHaveBeenCalled();
   expect(c._pucoUpdateProgress).toHaveBeenCalledWith(group);
   expect(c.pwSelectOrder).not.toHaveBeenCalled();
   printed(true); await turn();

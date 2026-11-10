@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { ARABIC_RECEIPT_DIGITS } from './receipt-digit-templates';
+import { ARABIC_RECEIPT_DIGITS, ARABIC_MESSAGE_DIGITS } from './receipt-digit-templates';
 
 export interface ReceiptDigitShape { pixels: string; aspect: number; relativeHeight: number }
 
@@ -27,11 +27,20 @@ export async function receiptDigitShapes(image: Buffer): Promise<ReceiptDigitSha
 
 /** Strict template fallback for the stylised Arabic digits Tesseract confuses with letters. */
 export async function readArabicTealAmount(image: Buffer): Promise<number | null> {
+  return readDigitAmount(image, ARABIC_RECEIPT_DIGITS);
+}
+
+/** Arabic-Indic message digits use a different face from the wallet's teal display figures. */
+export async function readArabicMessageAmount(image: Buffer): Promise<number | null> {
+  return readDigitAmount(image, ARABIC_MESSAGE_DIGITS);
+}
+
+async function readDigitAmount(image: Buffer, templates: Array<ReceiptDigitShape & { digit: string }>): Promise<number | null> {
   const shapes=await receiptDigitShapes(image);
   if(shapes.length<2 || shapes.length>7) return null;
   let digits='';
   for(const shape of shapes) {
-    const ranked=ARABIC_RECEIPT_DIGITS.map(t=>({digit:t.digit,
+    const ranked=templates.map(t=>({digit:t.digit,
       error:Array.from(shape.pixels,(p,i)=>p===t.pixels[i]?0:1).reduce<number>((sum,v)=>sum+v,0)/384
         +Math.abs(shape.aspect-t.aspect)*.15+Math.abs(shape.relativeHeight-t.relativeHeight)*.2,
     })).sort((a,b)=>a.error-b.error);

@@ -125,6 +125,7 @@ export class InventoryPacksService implements OnModuleInit {
     return {packId:String(pack._id),barcode:pack.barcode,state:'opened',stockChanged:false};
   });}
   scan(transactionId:string,dto:OrderPickScanDto,actor:TrackingActor){
+    if(!dto.lineId?.trim())throw new BadRequestException('Exact order line required for pack scanning');
     dto={...dto,identifier:dto.identifier.trim().replace(/^\][A-Za-z]\d/,'').toUpperCase()};
     return this.tracking.packOperation(`scan:${transactionId}`,dto,actor,async(session,name)=>{
     if(!dto.physicalPossessionConfirmed)throw new BadRequestException('Physical pack scan required');

@@ -29,7 +29,7 @@ const viewer = { role: 'staff', perms: ['pickup-orders', 'movements', 'inventory
 const writes: [any, string][] = [
   ...['setPickupPreparing','confirmPickup','undoPickup','returnPickupToPreparing','addToPickupRun','setPrepChecked','updatePickupOrder','addPickupComments'].map(method => [TransactionsController, method] as [any,string]),
   ...['createPickup','extendPickup','verifyPickupUpdate','createOrder','awbPrinted','cancelOrder','confirmCollection'].map(method => [BostaController, method] as [any,string]),
-  ...['identify','pickException','pickScan'].map(method => [InventoryUnitsController, method] as [any,string]),
+  ...['identify','pickException','pickScan','preparePicking'].map(method => [InventoryUnitsController, method] as [any,string]),
   ...['scan','undo'].map(method => [InventoryPacksController, method] as [any,string]),
 ];
 

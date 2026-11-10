@@ -112,23 +112,23 @@ async function openDepositObjectionForRef(ref){
   });
  }catch(e){toast(e.message,true);}
 }
-function depositObjectionButton(ref,compact=false,recorded=false){
+function depositObjectionButton(ref,compact=false){
  if(!ddCanRecord())return '';
- const label=compact?(recorded?ddText('تحديث السبب','Update reason'):ddText('تسجيل السبب','Record reason')):ddText('تسجيل سبب عدم دفع المقدم','Record deposit objection');
- return `<button type="button" class="dd-info-button${compact?' dd-info-button--compact':''}" onclick="event.stopPropagation();openDepositObjectionForRef(${ddEscape(JSON.stringify(String(ref)))})">${label}</button>`;
+ const fullLabel=ddText('تسجيل اعتراض العربون','Record deposit objection');
+ const label=compact?ddText('اعتراض','Objection'):fullLabel;
+ const icon=compact?'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/><path d="M12 7v5m0 4h.01"/></svg>':'';
+ return `<button type="button" class="dd-info-button${compact?' fu-call-attempt-btn fu-deposit-objection-btn':''}" title="${fullLabel}" aria-label="${fullLabel}" onclick="event.stopPropagation();openDepositObjectionForRef(${ddEscape(JSON.stringify(String(ref)))})">${icon}<span>${label}</span></button>`;
 }
 function depositDecisionSummaryHtml(order,compact=false){
  if(!order)return '';
  const hasHistory=!!order.depositDecision||!!order.depositDecisionHistory?.length||!!order.shipWithoutDeposit;
- const editable=order.status==='pending'&&!order.cancelled;
  if(compact){
-  const canRecord=editable&&ddCanRecord();
-  if(!hasHistory&&!canRecord)return '';
+  if(!hasHistory)return '';
   const recorded=!!order.depositDecision?.reasonCode||!!order.depositDecisionHistory?.some(e=>e.after?.reasonCode);
-  const note=recorded?ddText('السبب مسجّل في سجل الطلب','Reason saved in the order history'):hasHistory?ddText('يوجد سجل قرارات، ولم يُسجّل سبب العميل','Decision history available; customer reason missing'):ddText('لم يُسجّل سبب العميل بعد','Customer reason not recorded yet');
-  return `<div class="dd-summary dd-summary--compact"><div class="dd-summary-copy"><b>${ddText('سبب عدم دفع العربون','Deposit reason')}</b><span>${note}</span></div><div class="dd-summary-actions">${canRecord?depositObjectionButton(order.ref,true,recorded):''}${hasHistory?`<button type="button" class="dd-info-button dd-info-button--quiet" onclick="event.stopPropagation();openDepositDecisionHistory(${ddEscape(JSON.stringify(String(order.ref)))},${!!order.type})">${ddText('سجل القرارات','Decision history')}</button>`:''}</div></div>`;
+  const note=recorded?ddText('مسجّل','Saved'):ddText('غير مسجّل','Not recorded');
+  return `<div class="dd-summary dd-summary--compact"><div class="dd-summary-copy"><b>${ddText('سبب العربون','Deposit reason')}</b><span>${note}</span></div><div class="dd-summary-actions"><button type="button" class="dd-info-button dd-info-button--quiet" title="${ddText('سجل قرارات العربون','Deposit decision history')}" aria-label="${ddText('سجل قرارات العربون','Deposit decision history')}" onclick="event.stopPropagation();openDepositDecisionHistory(${ddEscape(JSON.stringify(String(order.ref)))},${!!order.type})">${ddText('السجل','History')}</button></div></div>`;
  }
- return `<div class="dd-summary">${hasHistory?`<button type="button" class="dd-info-button" onclick="event.stopPropagation();openDepositDecisionHistory(${ddEscape(JSON.stringify(String(order.ref)))},${!!order.type})">${ddText('سبب الشحن وسجل قرارات العربون','Shipping reason and deposit decisions')}</button>`:''}${editable?depositObjectionButton(order.ref):''}${!hasHistory&&!editable?ddText('سبب الشحن بدون عربون: غير مسجل','Shipping without deposit reason: not recorded'):''}</div>`;
+ return hasHistory?`<div class="dd-summary"><button type="button" class="dd-info-button" onclick="event.stopPropagation();openDepositDecisionHistory(${ddEscape(JSON.stringify(String(order.ref)))},${!!order.type})">${ddText('سبب الشحن وسجل قرارات العربون','Shipping reason and deposit decisions')}</button></div>`:'';
 }
 async function openDepositDecisionHistory(ref,invoice=false){
  try{
@@ -139,7 +139,7 @@ async function openDepositDecisionHistory(ref,invoice=false){
   const details=decision=>`${ddEscape(label(decision?.reasonCode,options.reasons))}${decision?.note?` — ${ddEscape(decision.note)}`:''}<p>${ddText('مبرر الاستثناء','Exception justification')}: ${ddEscape(label(decision?.exceptionCode,options.exceptions))}${decision?.exceptionNote?` — ${ddEscape(decision.exceptionNote)}`:''}</p>`;
   const actions={enabled:ddText('تفعيل الشحن بدون عربون','Enabled shipping without deposit'),disabled:ddText('إيقاف الشحن بدون عربون','Disabled shipping without deposit'),'reason-changed':ddText('تغيير السبب','Reason changed'),'objection-recorded':ddText('تسجيل اعتراض العميل','Customer reason recorded')};
   const history=(o.depositDecisionHistory||[]).slice().reverse();
-  const d=ddDialog(`${ddText('قرارات العربون','Deposit decisions')} #${ref}`,`<div class="dd-summary">${details(o.depositDecision)}</div><ol class="dd-history">${history.map(e=>`<li><b>${ddEscape(actions[e.action]||e.action)}</b><span class="dd-history-label">${ddEscape(new Date(e.at).toLocaleString(ddText('ar-EG','en-GB'),{timeZone:'Africa/Cairo'}))} · ${ddEscape(e.by)}</span>${details(e.after)}${e.before?.reasonCode?`<p>${ddText('السبب السابق','Previous reason')}: ${ddEscape(label(e.before.reasonCode,options.reasons))}</p>`:''}</li>`).join('')||`<li>${ddText('لا يوجد تاريخ مسجل للطلبات القديمة.','No recorded history for this older order.')}</li>`}</ol><div class="dd-actions">${o.status==='pending'&&!o.cancelled?depositObjectionButton(ref):''}<button type="button" class="btn btn-outline" data-close>${ddText('إغلاق','Close')}</button></div>`);
+  const d=ddDialog(`${ddText('قرارات العربون','Deposit decisions')} #${ref}`,`<div class="dd-summary">${details(o.depositDecision)}</div><ol class="dd-history">${history.map(e=>`<li><b>${ddEscape(actions[e.action]||e.action)}</b><span class="dd-history-label">${ddEscape(new Date(e.at).toLocaleString(ddText('ar-EG','en-GB'),{timeZone:'Africa/Cairo'}))} · ${ddEscape(e.by)}</span>${details(e.after)}${e.before?.reasonCode?`<p>${ddText('السبب السابق','Previous reason')}: ${ddEscape(label(e.before.reasonCode,options.reasons))}</p>`:''}</li>`).join('')||`<li>${ddText('لا يوجد تاريخ مسجل للطلبات القديمة.','No recorded history for this older order.')}</li>`}</ol><div class="dd-actions"><button type="button" class="btn btn-outline" data-close>${ddText('إغلاق','Close')}</button></div>`);
   d.querySelector('[data-close]').onclick=()=>d.close();
  }catch(e){toast(e.message,true);}
 }

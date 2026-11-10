@@ -3726,10 +3726,30 @@ restores `scrollTop`/`scrollLeft` when `_spTableViewKey()` (page, tab, search, f
 period) is unchanged; a different view still starts at the top. Verified: live update keeps
 1200px, same-view rebuild keeps 900px, next page → 0.
 
+### …and the page moved once the table reached its last row
+The box was `max-height: calc(100vh - 340px)`, but the pinned head (title, KPI strip, search)
+is ~540px. So the page still had ~200px to scroll: at the last row the wheel passed to the
+page and the pinned head slid over the column titles, which looked like the table jumping up.
+`_spFitOrderTable()` measures the room actually left (head, pagination, padding) and sets
+`--sp-table-max` on `#page-shopify-orders` (the loading skeleton uses it too). It runs after
+every table paint, on resize, and when the head changes size (ResizeObserver: KPI strip
+hidden, filter chips). When the table fits, `--sp-table-overscroll:contain` keeps the wheel
+in the table. ⚠ The app shell leaves every page ~64px of blank window scroll (body is
+`100vh` tall plus the 64px header), which is why `contain` is needed even after fitting.
+Below ~720px tall the box stays at its 280px minimum and the page scrolls as before.
+**Nov 10, 2026 — the page itself no longer scrolls at all** (owner's call: only the table).
+`_spFitOrderTable` adds `html.sp-page-locked` (window `overflow:hidden`) and gives the box
+exactly the room left, down to 160px. Only when less than 160px is left (a very short window)
+does the page scroll again. ⚠ `_doNavigateTo` removes the class as soon as another page is
+chosen, and calls `_spFitOrderTable()` at its end — leaving the class set would freeze every
+other page. Phones (cards, no table box) are never locked.
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 10, 2026 | Shopify orders page: the window no longer scrolls — only the orders table scrolls | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |
+| Nov 9, 2026 | Shopify orders table sized to the room left under the pinned head, so reaching the last row no longer scrolls the page and hides the column titles | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |
 | Nov 9, 2026 | Shopify orders no longer jump to the first row on live updates (the inner table scroller kept its position only on single-arrival repaints); Movements reload shows placeholder bars instead of half-empty rows and ghost buttons | See "Cascade Reveal" → the two subsections |
 | Nov 9, 2026 | Cascade Reveal: the dashboard, Movements and Shopify orders animate data arrival (every on-screen row rises, KPI numbers count up) once, never on filters or live updates; Shopify page entry shows the table skeleton instead of hiding the old table under «جارٍ التحميل…» | See "Cascade Reveal — Data Arrival Motion" above |
 | Nov 9, 2026 | «إضافة عربون بدون صورة تحويل»: amount + vault without a photo, still approved by a manager; staff need a manager OTP unless Settings turns it off | See "Deposit Without a Transfer Image" above |

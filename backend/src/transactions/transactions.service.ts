@@ -5916,6 +5916,18 @@ export class TransactionsService {
     }
     if (result.modifiedCount === validIds.length) {
       this.emit('pickup:updated', { ids: validIds, action: 'preparing', pickupRef: prepRef, by, groupMeta });
+      // One notification for the saved batch, including the full group size when joining it.
+      if (this.notifications && prepRef) {
+        try {
+          const orderCount = await this.transactionModel.countDocuments({
+            pickupRef: prepRef, pickupStatus: 'Preparing', type: 'مبيعات', cancelled: { $ne: true },
+          });
+          await notifyApproval(this.notifications,
+            `prep-group:${prepRef}:${groupMeta.prepCreatedAt}:${[...validIds].sort().join(',')}`,
+            prepRef, 'prep-group:' + prepRef,
+            { actionKey: 'prep-group', status: 'approved', prepRef, orderCount, actorName: by });
+        } catch { /* Preparation is committed; notification failures must not fail the batch. */ }
+      }
     }
     return { updated: result.modifiedCount };
   }
@@ -6110,6 +6122,10 @@ export class TransactionsService {
 
   notifyPickingReopened(id: string, pickupRef: string | null, pickupHistory: any[]) {
     this.emit('pickup:updated', { ids: [id], action: 'prepCheck', prepChecked: false, pickupRef, pickupHistory });
+  }
+
+  notifyPickingPrepared(id: string, pickupRef: string | null, pickupHistory: any[]) {
+    this.emit('pickup:updated', { ids: [id], action: 'prepCheck', prepChecked: true, pickupRef, pickupHistory });
   }
 
   private async assertTrackedPickupPrepared(id: string): Promise<number | null> {

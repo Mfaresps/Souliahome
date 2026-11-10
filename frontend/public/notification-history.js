@@ -37,8 +37,8 @@
     syncOwner();
     return rows.map(r => ({ id: 'history-' + r._id, history: true, historyRead: !!r.readAt, icon: ICON(r.type === 'comment' ? 'info' : 'alarm'), type: 'info',
       eventType: r.type, eventId: r.eventId, recordId: r.recordId, event: r.event, reaction: r.reaction, actorUserId: r.actorUserId, actorName: r.actorName, actorAvatar: r.actorAvatar,
-      title: r.title + (r.ref ? ' · #' + r.ref : ''), desc: r.reaction ? r.body : r.commentText ? [r.actorName, r.commentText].filter(Boolean).join(' · ') : r.body,
-      ts: r.createdAt, page: r.recordId?.startsWith('followup:') ? 'complaints' : r.recordId?.startsWith('shopify:') ? 'shopify-orders' : 'movements',
+      title: r.title + (r.ref ? (r.recordId?.startsWith('prep-group:') ? ' · ' : ' · #') + r.ref : ''), desc: r.reaction ? r.body : r.commentText ? [r.actorName, r.commentText].filter(Boolean).join(' · ') : r.body,
+      ts: r.createdAt, page: r.recordId?.startsWith('prep-group:') ? 'pickup-orders' : r.recordId?.startsWith('followup:') ? 'complaints' : r.recordId?.startsWith('shopify:') ? 'shopify-orders' : 'movements',
       refType: 'history', refId: r._id }));
   };
   window.souliaHistoryMoreButton = () => next ? `<button type="button" class="btn btn-outline btn-sm" style="margin:12px" onclick="souliaRefreshNotificationHistory(true)">${currentLang === 'en' ? 'Load older notifications' : 'عرض إشعارات أقدم'}</button>` : '';

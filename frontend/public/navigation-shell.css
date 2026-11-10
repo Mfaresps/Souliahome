@@ -137,3 +137,9 @@ body.sidebar-collapsed #sidebar .nav-item{min-height:34px;padding-block:7px}
 #announcement-bar{inset-inline-start:var(--sidebar-w);inset-inline-end:0;transition:opacity .35s ease,max-height .35s ease,background .4s ease,inset-inline-start .18s ease}
 #announcement-bar.ann-hidden{visibility:hidden}
 @media(max-width:768px){#announcement-bar{inset-inline-start:0;z-index:80}}
+
+/* Contextual Back shares the same route history as detail-page buttons. */
+#header .shell-back-btn{width:30px;height:30px;min-height:30px;flex-shrink:0;background:none;border:0;padding:6px;margin:0;color:var(--shell-muted);border-radius:6px}
+#header .shell-back-btn:hover{background:var(--shell-hover);color:var(--text)}
+#header .shell-back-btn[hidden]{display:none!important}
+@media print{#header .shell-back-btn{display:none!important}}

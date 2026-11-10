@@ -15,7 +15,7 @@ import { InventoryUnitOperation } from './schemas/inventory-unit-operation.schem
 import { INVENTORY_UNIT_STATUSES, OBJECT_ID_PATTERN, LABEL_SIZES, inventoryUnitBarcode } from './inventory-unit.constants';
 import { migrateInventoryUnitIndexes } from './inventory-unit-index.migration';
 import { TransactionsService } from '../transactions/transactions.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
 
 export type TrackingActor = { userId?: string; name?: string; username?: string; role?: string; perms?: string[] };
 type PurchaseReceiptLine = { lineIndex: number; lineId: string; sku: string; name: string; imageUrl: string; quantity: number; createdUnits: number; onHandUnits: number; unassignedUnits: number; printedUnits: number; printRequests: number; change?: any };
@@ -940,7 +940,7 @@ export class InventoryUnitsService implements OnModuleInit {
   }
 
   async pickUnitInSession(transactionId: string, dto: OrderPickScanDto, actor: TrackingActor, session: ClientSession, name: string, packId?: string) {
-      if (!dto.physicalPossessionConfirmed || !dto.reason?.trim() || !dto.lineId?.trim() || !dto.identifier?.trim() || /[\x00-\x1f\x7f]/.test(dto.identifier)) {
+      if (!dto.physicalPossessionConfirmed || !dto.reason?.trim() || (dto.lineId !== undefined && !dto.lineId?.trim()) || !dto.identifier?.trim() || /[\x00-\x1f\x7f]/.test(dto.identifier)) {
         throw new BadRequestException('Physical unit scan, exact order line and reason are required');
       }
       const unit: any = await this.units.findOne(await this.identifierFilter(dto.identifier, session)).session(session);
@@ -953,12 +953,29 @@ export class InventoryUnitsService implements OnModuleInit {
       const sale: any = await this.connection.collection('transactions').findOneAndUpdate({ _id: this.id(transactionId), type: 'مبيعات', pickupStatus: 'Preparing', cancelled: { $ne: true }, archived: { $ne: true }, prepChecked: { $ne: true } },
         { $inc: { unitTrackingRevision: 1 } }, { session, returnDocument: 'after', includeResultMetadata: false });
       if (!sale) throw new ConflictException('Live sale required');
-      const lines = (sale.items || []).filter((line: any) => line.lineId === dto.lineId && String(line.code || '').trim() === String(product.code || '').trim());
-      if (normalizeWarehouseCode(unit.warehouseCode) !== normalizeWarehouseCode(sale.warehouseCode)) throw new ConflictException('القطعة من مخزن مختلف عن المخزن المحدد في فاتورة العميل');
-      if (lines.length !== 1 || !Number.isSafeInteger(lines[0].qty) || lines[0].qty < 1) throw new ConflictException('Barcode does not match one exact sale line');
       if (unit.status === 'picking' || unit.status === 'prepared') throw new ConflictException({
         code: unit.assignment?.transactionId === String(sale._id) ? 'DUPLICATE_SCAN' : 'UNIT_ASSIGNED_ELSEWHERE',
         message: 'DUPLICATE_SCAN: this unit is already picked for an order' });
+      // Resolve the product line under the sale's write lock. A scanner needs no
+      // separate lookup of invoice history, print counts or receipt details.
+      if (!dto.lineId) {
+        const candidates = (sale.items || []).filter((line: any) => line.lineId &&
+          String(line.code || '').trim() === String(product.code || '').trim() &&
+          (!unit.assignment || (unit.assignment.transactionId === String(sale._id) && unit.assignment.lineId === line.lineId)));
+        if (!candidates.length) throw new ConflictException('Barcode does not match one exact sale line');
+        let lineId: string | undefined;
+        for (const line of candidates) {
+          const allocated = await this.units.countDocuments({ 'assignment.transactionId': String(sale._id),
+            'assignment.lineId': line.lineId, status: { $in: allocatedStatuses } }).session(session);
+          const needed = unit.status === 'reserved' ? 0 : 1;
+          if (Number.isSafeInteger(line.qty) && allocated + pickingExceptions(sale, line).length + needed <= line.qty) { lineId = line.lineId; break; }
+        }
+        if (!lineId) throw new ConflictException('Sale line already has its full quantity allocated');
+        dto = { ...dto, lineId };
+      }
+      const lines = (sale.items || []).filter((line: any) => line.lineId === dto.lineId && String(line.code || '').trim() === String(product.code || '').trim());
+      if (normalizeWarehouseCode(unit.warehouseCode) !== normalizeWarehouseCode(sale.warehouseCode)) throw new ConflictException('القطعة من مخزن مختلف عن المخزن المحدد في فاتورة العميل');
+      if (lines.length !== 1 || !Number.isSafeInteger(lines[0].qty) || lines[0].qty < 1) throw new ConflictException('Barcode does not match one exact sale line');
       const wasAvailable = unit.status === 'available' && !unit.assignment;
       const assigned = unit.assignment ? { transactionId: unit.assignment.transactionId, lineId: unit.assignment.lineId } : null;
       if (unit.status === 'available' && !assigned) {
@@ -988,6 +1005,56 @@ export class InventoryUnitsService implements OnModuleInit {
         notes: dto.reason.trim(), details: { physicalPossessionConfirmed: true, inputMethod: 'barcode', custodyConfirmed: true } });
       return { outcome: 'accepted', unit: { unitId: String(unit._id), barcode: unit.barcode, manualCode: await this.manualCodes.codeFor(String(unit._id)), productId: unit.productId, status: unit.status, version: unit.__v },
         transactionId: String(sale._id), lineId: dto.lineId, sku: product.code, stockChanged: false };
+  }
+
+  preparePickedOrder(transactionId: string, dto: PrepareOrderPickingDto, actor: TrackingActor) {
+    const saleId = String(this.id(transactionId));
+    return this.write(`order-pick-prepare:${saleId}`, dto, actor, 'inventory-units-allocate', async (session, name, context) => {
+      if (!dto.physicalPossessionConfirmed) throw new BadRequestException('Physical custody confirmation required');
+      const sale: any = await this.connection.collection('transactions').findOneAndUpdate({ _id: this.id(saleId),
+        type: 'مبيعات', pickupStatus: 'Preparing', cancelled: { $ne: true }, archived: { $ne: true },
+        'afterSales.shipmentPending': { $ne: true } }, { $inc: { unitTrackingRevision: 1 } },
+        { session, returnDocument: 'after', includeResultMetadata: false });
+      if (!sale) throw new ConflictException('Live sale required');
+      const items = sale.items || [];
+      if (!items.length || items.some((line: any) => !line.lineId || !Number.isSafeInteger(line.qty) || line.qty < 1) ||
+        new Set(items.map((line: any) => line.lineId)).size !== items.length) throw new ConflictException('Stable invoice lines required');
+      const units: any[] = await this.units.find({ 'assignment.transactionId': saleId, status: { $in: allocatedStatuses } }).session(session).lean();
+      const products = units.length ? await this.connection.collection('products').find({}, { session, projection: { code: 1 } }).toArray() : [];
+      for (const unit of units) {
+        const line = items.find((row: any) => row.lineId === unit.assignment?.lineId);
+        const product = products.find(row => String(row._id) === String(unit.productId));
+        if (!line || !product || String(line.code || '').trim() !== String(product.code || '').trim() ||
+          !['picking', 'prepared'].includes(unit.status) || normalizeWarehouseCode(unit.warehouseCode) !== normalizeWarehouseCode(sale.warehouseCode)) {
+          throw new ConflictException('Assigned piece does not match the live order');
+        }
+      }
+      for (const line of items) {
+        const matched = units.filter(unit => unit.assignment.lineId === line.lineId).length;
+        if (matched && products.filter(product => String(product.code || '').trim() === String(line.code || '').trim()).length !== 1) {
+          throw new ConflictException('Missing/duplicate SKU blocks preparation');
+        }
+        if (matched + pickingExceptions(sale, line).length !== line.qty) throw new ConflictException('Preparation is incomplete; scan each remaining piece');
+      }
+      const prepared = [];
+      // Reuse every version, custody and source-receipt guard in one transaction.
+      // An invalid piece rolls back the whole approval instead of leaving a partial batch.
+      for (const unit of units) {
+        if (unit.status === 'picking') {
+          const result = await this.actionInSession(unit.barcode, { ...dto, action: 'prepare', expectedVersion: unit.__v,
+            transactionId: saleId, lineId: unit.assignment.lineId, evidenceReference: `pickup:${saleId}:${unit.assignment.lineId}` },
+          actor, session, name, unit.packId, context);
+          prepared.push({ unitId: String(unit._id), status: 'prepared', version: result.unit.__v ?? result.unit.version });
+        } else prepared.push({ unitId: String(unit._id), status: 'prepared', version: unit.__v });
+      }
+      if (!sale.prepChecked) {
+        const entry = { action: 'prep-check', date: new Date().toISOString(), by: name, prepChecked: true };
+        await this.connection.collection('transactions').updateOne({ _id: sale._id },
+          { $set: { prepChecked: true }, $push: { pickupHistory: entry } as any }, { session });
+        context.afterCommit.push(() => this.transactions.notifyPickingPrepared?.(saleId, sale.pickupRef || null, [...(sale.pickupHistory || []), entry]));
+      }
+      return { transactionId: saleId, prepChecked: true, units: prepared, stockChanged: false };
+    });
   }
 
   async actionOptions(identifier: string, actor: TrackingActor, query = '') {

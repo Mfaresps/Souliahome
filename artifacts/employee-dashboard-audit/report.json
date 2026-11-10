@@ -1,0 +1,138 @@
+{
+  "metrics": [
+    {
+      "viewport": 2553,
+      "overflow": false,
+      "canvas": {
+        "x": 856.5,
+        "y": 62,
+        "width": 1080,
+        "height": 978.921875,
+        "font": "14px"
+      },
+      "card": {
+        "x": 888.5,
+        "y": 317.046875,
+        "width": 724,
+        "height": 354.375,
+        "font": "14px"
+      },
+      "shipping": null,
+      "buttons": [
+        {
+          "text": "Record follow-up",
+          "height": 44
+        },
+        {
+          "text": "View order→",
+          "height": 44
+        },
+        {
+          "text": "More⋯",
+          "height": 44
+        }
+      ],
+      "counter": "7",
+      "tabs": [
+        "Delivery issues1",
+        "Confirmation & follow-up8"
+      ],
+      "session": "Start follow-up session7 follow-ups · record each outcome→",
+      "distinctTasks": 9
+    },
+    {
+      "viewport": 1440,
+      "overflow": false,
+      "canvas": {
+        "x": 300,
+        "y": 62,
+        "width": 1080,
+        "height": 978.921875,
+        "font": "14px"
+      },
+      "card": {
+        "x": 332,
+        "y": 317.046875,
+        "width": 724,
+        "height": 354.375,
+        "font": "14px"
+      },
+      "shipping": null,
+      "buttons": [
+        {
+          "text": "Record follow-up",
+          "height": 44
+        },
+        {
+          "text": "View order→",
+          "height": 44
+        },
+        {
+          "text": "More⋯",
+          "height": 44
+        }
+      ],
+      "counter": "7",
+      "tabs": [
+        "Delivery issues1",
+        "Confirmation & follow-up8"
+      ],
+      "session": "Start follow-up session7 follow-ups · record each outcome→",
+      "distinctTasks": 9
+    },
+    {
+      "viewport": 390,
+      "overflow": false,
+      "canvas": {
+        "x": 40.578125,
+        "y": 78,
+        "width": 322.421875,
+        "height": 1369.859375,
+        "font": "14.5px"
+      },
+      "card": {
+        "x": 68.578125,
+        "y": 447.828125,
+        "width": 266.421875,
+        "height": 420.46875,
+        "font": "14.5px"
+      },
+      "shipping": null,
+      "buttons": [
+        {
+          "text": "Record follow-up",
+          "height": 44
+        },
+        {
+          "text": "View order→",
+          "height": 44
+        },
+        {
+          "text": "More⋯",
+          "height": 44
+        }
+      ],
+      "counter": "7",
+      "tabs": [
+        "Delivery issues1",
+        "Confirmation & follow-up8"
+      ],
+      "session": "Start follow-up session7 follow-ups · record each outcome→",
+      "distinctTasks": 9
+    }
+  ],
+  "scope": {
+    "firstSessionOrderWhileDeliveryTab": "#3000Audit Customer 0Customer phone unavailableDelivery issue — contact the customerNo update for 1hFollow-up trail ↗",
+    "selectedDelivery": "true",
+    "headline": "Follow-ups needing action now",
+    "value": "0",
+    "completeText": "Your achievements November 202668Orders assigned this period379My Points",
+    "visibleOrders": [],
+    "availableTasks": [
+      "9999"
+    ]
+  },
+  "errors": [
+    "SouliaDateRange is not defined\nhttp://audit.test/:114169:58"
+  ]
+}

@@ -38,12 +38,12 @@
     if (opening || !window.souliaPushAppReady || typeof currentUser === 'undefined' || !currentUser) return false;
     const params = pending?.searchParams;
     const record = params?.get('pushRecord');
-    if (!record || !/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales):[a-f0-9]{24}$/.test(record)) return false;
+    if (!record || !(/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales):[a-f0-9]{24}$/.test(record) || /^prep-group:[\p{L}\p{N} _-]{1,40}$/u.test(record))) return false;
     const [kind, id] = record.split(':');
     if (!['admin', 'staff', 'viewer'].includes(currentUser.role)) return false;
     const destination = { tx: 'invoice-view', shopify: 'shopify-orders', followup: 'followups',
       return: 'movements', vault: 'vault', product: 'approvals', expense: 'approvals',
-      supplierReturn: 'approvals', otp: 'approvals', audit: 'users', performance: 'userhub' }[kind];
+      supplierReturn: 'approvals', otp: 'approvals', audit: 'users', performance: 'userhub', 'prep-group': 'pickup-orders' }[kind];
     if (destination && !_requirePageAccess(destination)) {
       pending = null;
       return false;
@@ -54,7 +54,14 @@
     const event = /^[A-Za-z0-9_-]{1,80}$/.test(rawEvent) ? rawEvent : '';
     opening = true;
     try {
-      if (kind === 'after-sales') {
+      if (kind === 'prep-group') {
+        clearBoardFilters();
+        const search = document.querySelector('#pu-prep-search');
+        if (search) search.value = id;
+        navigateTo('pickup-orders');
+        puSwitchView('board');
+        await loadPickupOrders();
+      } else if (kind === 'after-sales') {
         await api('/after-sales/' + id);
         await window.AfterSales.open(id);
       } else if (kind === 'performance') {
@@ -62,15 +69,19 @@
         navigateTo('userhub');
       } else if (kind === 'otp') {
         const otp = await api('/discount-otp/record/' + id);
-        const rows = await api('/discount-otp');
-        if (otp && !rows.some(row => String(row._id) === id)) rows.unshift(otp);
         if (!otp) throw new Error('OTP request unavailable.');
-        navigateTo('approvals');
-        ['otp-audit-kind', 'otp-audit-status', 'otp-audit-from', 'otp-audit-to', 'otp-audit-emp', 'otp-audit-code'].forEach(key => { const el = document.getElementById(key); if (el) el.value = ''; });
-        switchApprTab('otp', document.getElementById('appr-tab-otp-btn'), false);
-        _otpAuditAllRows = rows; _otpAuditPage = Math.floor(rows.findIndex(row => String(row._id) === id) / OTP_PAGE_SIZE) + 1;
-        renderOtpTablePage();
-        await highlight('[data-push-otp-id="' + id + '"]');
+        if (otp.kind === 'deposit-no-image') {
+          await _openDepositNoImageOrder(id, otp);
+        } else {
+          const rows = await api('/discount-otp');
+          if (!rows.some(row => String(row._id) === id)) rows.unshift(otp);
+          navigateTo('approvals');
+          ['otp-audit-kind', 'otp-audit-status', 'otp-audit-from', 'otp-audit-to', 'otp-audit-emp', 'otp-audit-code'].forEach(key => { const el = document.getElementById(key); if (el) el.value = ''; });
+          switchApprTab('otp', document.getElementById('appr-tab-otp-btn'), false);
+          _otpAuditAllRows = rows; _otpAuditPage = Math.floor(rows.findIndex(row => String(row._id) === id) / OTP_PAGE_SIZE) + 1;
+          renderOtpTablePage();
+          await highlight('[data-push-otp-id="' + id + '"]');
+        }
       } else if (kind === 'audit') {
         const log = await api('/security-audit/logs/' + id);
         if (!log?._id) throw new Error('Security event unavailable.');

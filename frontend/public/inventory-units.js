@@ -405,7 +405,7 @@
       return state.receiptFilter === 'all' || (state.receiptFilter === 'missing' ? s.coded < s.qty && !readonly(inv) : s.coded >= s.qty && !readonly(inv));
     });
     get('iu-invoice-count').textContent = String(state.receiptTotal);
-    get('iu-tab-invoice-count').textContent = String(state.receiptTotal);
+    get('iu-tab-invoice-count').textContent = state.receiptPage > 0 ? String(state.receiptTotal) : '—';
     const receiptMarkup = list.map(invoice => {
       const s = totals(invoice), missing = Math.max(0, s.qty - s.coded), active = invoice.transactionId === state.activeInvoice?.transactionId;
       return `<button class="iu-invoice-link ${active ? 'active' : ''}" type="button" data-invoice-id="${html(invoice.transactionId)}" aria-current="${active}"><span class="iu-invoice-top"><strong><bdi>#${html(invoice.ref || invoice.transactionId.slice(-6))}</bdi></strong><time>${html(invoiceDate(invoice))}</time></span><span class="iu-invoice-supplier"><small>${tr('Supplier', 'المورد')}</small><strong dir="auto">${html(invoice.supplier || tr('Unspecified supplier', 'مورد غير محدد'))}</strong></span><span class="iu-invoice-bottom"><small>${invoice.lines.length} ${tr('products', 'منتجات')} · ${s.qty} ${tr('pieces', 'قطعة')}</small><span class="iu-badge ${missing ? 'amber' : ''}">${readonly(invoice) ? tr('Read only', 'للعرض فقط') : missing ? tr('Needs codes', 'تحتاج أكواد') : tr('Codes complete', 'مكتملة الأكواد')}</span></span><span class="iu-invoice-photos" aria-hidden="true">${invoice.lines.slice(0, 3).map(line => productImage(line, true)).join('')}${invoice.lines.length > 3 ? `<small>+${invoice.lines.length - 3}</small>` : ''}</span></button>`;
@@ -1094,6 +1094,7 @@
       button.classList.toggle('active', active); button.setAttribute('aria-selected', String(active)); button.tabIndex = active ? 0 : -1;
       button.setAttribute('aria-controls', tab === 'receipts' ? 'iu-invoice-detail' : tab === 'units' ? 'iu-registry' : tab === 'layout' ? 'page-warehouse-layout' : 'page-supplier-labels');
     });
+    if (typeof syncNavigationShell === 'function' && currentPage === 'barcodes') syncNavigationShell();
   }
   function barcodeTabKeys(event, root) {
     const tab = event.target.closest('[data-iu-tab]');
@@ -1274,7 +1275,7 @@
   }
   function barcodeNavigationHtml(canPurchase) {
     return `<header class="iu-header"><div><h1>${tr('Warehouse management', 'إدارة المخازن')}</h1><p class="iu-subtitle">${tr('Print labels, find pieces and manage warehouse locations.', 'اطبع الملصقات، وابحث عن القطع، وأدر مواقع التخزين.')}</p></div><div class="iu-header-actions"><span id="iu-connection" class="iu-connection" data-state="loading">${tr('Connecting…', 'جار الاتصال…')}</span><button id="iu-refresh" class="btn btn-outline iu-icon-button" type="button" aria-label="${tr('Refresh data', 'تحديث البيانات')}">${icon('refresh')}</button></div></header>
-      <nav class="iu-tabs" role="tablist" aria-label="${tr('Barcode views', 'عروض الباركود')}"><button id="iu-tab-receipts" type="button" role="tab" data-iu-tab="receipts" ${canPurchase ? '' : 'hidden'}>${tr('Print by invoice', 'الطباعة حسب الفاتورة')} <span id="iu-tab-invoice-count" class="iu-count">0</span></button><button id="iu-tab-units" type="button" role="tab" data-iu-tab="units">${tr('Find a piece', 'البحث عن قطعة')}</button>${has('inventory-units-print') ? `<button id="iu-tab-supplier-labels" type="button" role="tab" data-iu-tab="supplier-labels">${tr('QR Label Generator', 'مولّد ملصقات QR')}</button>` : ''}${has('products') ? `<button id="iu-tab-layout" type="button" role="tab" data-iu-tab="layout">${tr('Warehouse locations', 'مواقع التخزين')}</button>` : ''}</nav>
+      <nav class="iu-tabs" role="tablist" aria-label="${tr('Barcode views', 'عروض الباركود')}"><button id="iu-tab-receipts" type="button" role="tab" data-iu-tab="receipts" ${canPurchase ? '' : 'hidden'}>${tr('Print by invoice', 'الطباعة حسب الفاتورة')} <span id="iu-tab-invoice-count" class="iu-count">${state.receiptPage > 0 ? state.receiptTotal : '—'}</span></button><button id="iu-tab-units" type="button" role="tab" data-iu-tab="units">${tr('Find a piece', 'البحث عن قطعة')}</button>${has('inventory-units-print') ? `<button id="iu-tab-supplier-labels" type="button" role="tab" data-iu-tab="supplier-labels">${tr('QR Label Generator', 'مولّد ملصقات QR')}</button>` : ''}${has('products') ? `<button id="iu-tab-layout" type="button" role="tab" data-iu-tab="layout">${tr('Warehouse locations', 'مواقع التخزين')}</button>` : ''}</nav>
       <nav class="iu-breadcrumb" aria-label="${tr('Breadcrumb', 'مسار الصفحة')}"><span>${tr('Warehouse management', 'إدارة المخازن')}</span><span aria-hidden="true">/</span><strong id="iu-current-tab-name"></strong></nav>`;
   }
   function mountBarcodeContent(root, content, canPurchase, actorId) {
@@ -1297,7 +1298,7 @@
     root.querySelectorAll('dialog[open]').forEach(d => d.close());
     const actor = typeof currentUser === 'undefined' ? null : currentUser, actorId = String(actor?._id || actor?.id || actor?.userId || actor?.username || '');
     if (state.stockScope?.actor && state.stockScope.actor !== actorId) state.stockScope = null;
-    if (actorId !== state.actor) { state.selected.clear(); state.activeInvoice = null; state.sizeId = ''; state.registrationRequests.clear(); state.ranges.clear(); state.receipts = []; state.actor = actorId; }
+    if (actorId !== state.actor) { state.selected.clear(); state.activeInvoice = null; state.sizeId = ''; state.registrationRequests.clear(); state.ranges.clear(); state.receipts = []; state.receiptPage = 0; state.receiptTotal = 0; state.actor = actorId; }
     if (!has('inventory-units-view') && !(location.hash.split('/')[1] === 'layout' && has('products'))) { state.selected.clear(); root.innerHTML = emptyState(tr('Permission denied', 'الصلاحية غير متاحة'), tr('Ask an administrator for inventory-unit access.', 'تواصل مع المسؤول لإتاحة الوصول إلى القطع.')); return; }
     state.labelAudit = null; state.ready = false; state.config = null; state.preview = null; state.unitsReady = false; state.unitLoading = false; state.receiptLoading = false;
     const match = location.hash.match(/^#warehouse-management\/receipt\/([a-f\d]{24})(?:\/([^/]+))?$/i), linkedId = match?.[1]?.toLowerCase();

@@ -73,6 +73,12 @@ export class Transaction {
   @Prop()
   phone: string;
 
+  @Prop({ default: '' })
+  customerEmail: string;
+
+  @Prop({ default: '' })
+  shopifyCustomerId: string;
+
   @Prop()
   ref: string;
 

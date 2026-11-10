@@ -177,7 +177,10 @@
   /* Orders use the transaction table's scroll, density and interaction rules.
      Intrinsic sizing must see the contents of the old size-query wrappers. */
   #main #shopify-orders-table-wrap {box-shadow:0 1px 2px rgba(15,31,22,.04)}
-  #main #shopify-orders-table-wrap .sp-table-scroll {max-height:calc(100vh - 340px);min-height:280px;overflow-y:auto}
+  #main #shopify-orders-table-wrap .sp-table-scroll {max-height:var(--sp-table-max,calc(100vh - 340px));min-height:280px;overflow-y:auto;overscroll-behavior-y:var(--sp-table-overscroll,auto)}
+  /* Shopify orders: the window does not scroll, only the table (set by _spFitOrderTable). */
+  html.sp-page-locked, html.sp-page-locked body {overflow:hidden;overscroll-behavior:none}
+  html.sp-page-locked #main #shopify-orders-table-wrap .sp-table-scroll {min-height:160px}
   #main #shopify-orders-table-wrap .data-table :is(th,td) {padding-inline:clamp(4px,.45vw,10px);border-inline-start:0}
   #main #shopify-orders-table-wrap .data-table thead th {position:sticky;top:0;z-index:4;padding-block:12px;background:var(--surface);overflow:visible}
   #main #shopify-orders-table-wrap .data-table :is(th,td)[data-col="action"] {inset-inline-end:auto;box-shadow:none}

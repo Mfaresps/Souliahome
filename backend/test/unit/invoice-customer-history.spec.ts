@@ -6,6 +6,8 @@ export {};
 const source = fs.readFileSync(path.resolve(__dirname, '../../../frontend/public/index.html'), 'utf8').replace(/\r\n/g, '\n');
 const keyStart = source.indexOf('function _spPhoneKey(');
 const phoneKey = source.slice(keyStart, source.indexOf('\n}', keyStart) + 2);
+const lookupStart = source.indexOf('function _movementCustomerHistoryFor(');
+const historyLookup = source.slice(lookupStart, source.indexOf('\n}', lookupStart) + 2);
 const historyBlocks = [...source.matchAll(/let _custHistory = \[\];[\s\S]*?const _custOrderCount = _custHistory.length;/g)];
 if (keyStart < 0 || historyBlocks.length !== 2) throw new Error('Missing invoice customer history implementation');
 
@@ -16,6 +18,8 @@ const sale = (id: string, phone: string, extra: any = {}) => ({
 describe.each(historyBlocks.map((match, index) => [index === 0 ? 'invoice modal' : 'order page', match[0]]))('%s customer history', (_view, block) => {
   const history = new Function('tx', 'transactions', 'isPurchase', 'isReturn', 'isSupplierReturn', `
     ${phoneKey}
+    const _transactionSummariesComplete = true;
+    ${historyLookup}
     ${block}
     return _custHistory;
   `) as (tx: any, transactions: any[], isPurchase?: boolean, isReturn?: boolean, isSupplierReturn?: boolean) => any[];

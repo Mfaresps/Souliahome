@@ -32,6 +32,13 @@ describe('Persisted damaged-label picking exceptions', () => {
     await Unit.create({productId,status:'available',warehouseCode:'MAIN',assignment:null,origin:{kind:'legacy-unknown',reconciliationRef:'isolated-picking-test'},registeredByUserId:actor.userId,registeredBy:'Verified Picker'});
   });
   afterAll(async()=>{await mongo?.close();});
+  it('approves explicitly reviewed damaged-label exceptions with the same atomic preparation endpoint',async()=>{
+    await service.pickException(saleId,request(),actor);
+    const prepared=await service.preparePickedOrder(saleId,{operationKey:id(),reason:'Physical exception reviewed',physicalPossessionConfirmed:true},actor);
+    expect(prepared).toMatchObject({prepChecked:true,stockChanged:false,units:[]});
+    expect((await raw('transactions').findOne({_id:new Types.ObjectId(saleId)}))?.prepChecked).toBe(true);
+    expect(await Unit.countDocuments({status:'available'})).toBe(1);
+  });
   it('searches purchase invoice references without including other pieces of the same product',async()=>{
     const purchaseId=id();
     await raw('transactions').insertOne({_id:new Types.ObjectId(purchaseId),type:'مشتريات',ref:'PUR-88421',items:[{code:'SKU-1',qty:1}]});

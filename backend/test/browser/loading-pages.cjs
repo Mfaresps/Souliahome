@@ -35,7 +35,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    window.detailData={orders:[{id:'order-a',ref:'2929',client:'Mona',status:'pending',assignedAt:new Date().toISOString()}],followUps:[]};
    window.orderData=[{_id:'order-a',ref:'2929',client:'Mona',phone:'01000000000',status:'pending',total:500,items:[{name:'Product',qty:1,price:500}],createdAt:new Date().toISOString()}];
    api=async url=>{
-    const key=url.split('?')[0];let value;
+    const endpoint=url.split('?')[0],key=endpoint==='/shopify/orders/summary-page'?'/shopify/orders':endpoint;let value;
     if(key==='/transactions/dashboard'){dashboardStatsRequests++;throw new Error('duplicate dashboard summary requested');}
     if(key==='/transactions/sales-overview'){
      overviewRequests++;
@@ -46,7 +46,12 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
     }
     else if(key==='/employee-performance/team-workspace'){teamRequests++;value=teamData;}
     else if(key.startsWith('/employee-performance/team-workspace/'))value=detailData;
-    else if(key==='/shopify/orders')value=orderData;
+    else if(key==='/shopify/orders')value=endpoint==='/shopify/orders/summary-page'?{
+     rows:orderData,page:1,limit:30,total:orderData.length,allCount:orderData.length,pendingCount:orderData.length,tabCount:orderData.length,
+     filterCounts:{},baseCount:orderData.length,starredCount:0,filteredIds:orderData.map(o=>o._id),selectionRows:[],
+     depositSummary:{instapay:0,vodafone:0,paidCount:0,unpaidCount:orderData.length},
+     panelFacets:{status:{},staff:{},tags:{},comments:0,stock:{}},pendingCancelCount:0,pendingEditCount:0,kpiStats:null,
+    }:orderData;
     else return [];
     if(fail)throw new Error('Fixture network unavailable');
     return hold?new Promise((resolve,reject)=>{(pending[key]||=[]).push({resolve:()=>resolve(structuredClone(value)),reject});}):structuredClone(value);
@@ -62,6 +67,8 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
     currentLang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';document.body.classList.toggle('dark-mode',width===320);
     showPage('dashboard');hold=first;fail=false;window.dashboardTask=loadDashboard();
    },{lang,first,width});
+   // Finish the shell's direction/theme transition before comparing table geometry.
+   await new Promise(resolve=>setTimeout(resolve,300));
    assert.equal(await page.$('#dash-stats'),null,'old KPI grid is absent');
    assert.equal(await page.$eval('#dash-sales-overview',el=>getComputedStyle(el).display!=='none'),true,'sales overview is visible');
    assert.equal(await page.$eval('#dash-admin-team',el=>getComputedStyle(el).display!=='none'),true,'team oversight is restored below sales');
@@ -79,7 +86,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    await page.evaluate(()=>{hold=true;window.dashboardTask=loadDashboard();});
    await page.evaluate(async()=>await dashboardTask);
    assert.equal(await page.evaluate(()=>overviewRequests),1,'recent month is reused without another request');
-   await page.evaluate(()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;_spkState='ready';_spkFilter='';window.shopTask=loadShopifyOrders();});
+   await page.evaluate(()=>{showPage('shopify-orders');_shopifyOrders=[];_spOrdersLoaded=false;_spkState='ready';_spkFilter='';_setSpNavigationPending(true);window.shopTask=loadShopifyOrders();});
    await page.waitForSelector('#sp-orders-loading:not([hidden])');
    assert(await page.$eval('#sp-orders-loading',e=>e.getBoundingClientRect().top>=document.getElementById('sp-kpi').getBoundingClientRect().bottom),'summary stays above orders while loading');
    assert.equal(await page.$$eval('#sp-kpi .spk-lbl',els=>els.length),5);
@@ -94,12 +101,24 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    day:document.querySelector('.sp-orders-loading-table .sp-loading-day').getBoundingClientRect().height,
    order:document.querySelector('.sp-orders-loading-table tbody tr:not(.sp-loading-day)').getBoundingClientRect().height,
   })):null;
+  const statusHeading=loadingColumns?await page.$eval('.sp-loading-status-head',el=>{
+   const r=el.getBoundingClientRect(),label=el.querySelector('span').getBoundingClientRect(),arrow=el.querySelector('svg').getBoundingClientRect();
+   return {left:r.left,top:r.top,width:r.width,height:r.height,labelTop:label.top,labelHeight:label.height,arrowTop:arrow.top,arrowHeight:arrow.height,content:el.innerHTML};
+  }):null;
    await page.screenshot({path:path.join(out,`shopify-loading-${lang}-${width}.png`)});
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true);
    const realTop=await page.evaluate(()=>{const table=qs('#sp-orders-tab-content').dataset.layout==='table';return qs(table?'#shopify-orders-table-wrap':'#sp-mobile-list').getBoundingClientRect().top;});
    assert(Math.abs(realTop-loadingTop)<=12,`orders stay below summary ${lang}/${width}: ${loadingTop}/${realTop}`);
   if(loadingColumns){
+   const readyHeading=await page.$eval('#shopify-orders-table-wrap .sp-status-filter-head',el=>{
+    const r=el.getBoundingClientRect(),label=el.querySelector('span').getBoundingClientRect(),arrow=el.querySelector('svg').getBoundingClientRect();
+    return {left:r.left,top:r.top,width:r.width,height:r.height,labelTop:label.top,labelHeight:label.height,arrowTop:arrow.top,arrowHeight:arrow.height,content:el.innerHTML};
+   });
+   assert.equal(readyHeading.content,statusHeading.content,'loading and ready status headers use the same label and SVG');
+   for(const key of ['left','width','height','labelHeight','arrowHeight'])assert(Math.abs(readyHeading[key]-statusHeading[key])<=2,`status ${key} stays stable ${lang}/${width}`);
+   assert(Math.abs((readyHeading.labelTop-readyHeading.top)-(statusHeading.labelTop-statusHeading.top))<=1,'status label stays on the same baseline');
+   assert(Math.abs((readyHeading.arrowTop-readyHeading.top)-(statusHeading.arrowTop-statusHeading.top))<=1,'status arrow stays aligned after loading');
    const realColumns=await page.evaluate(()=>[...document.querySelectorAll('#shopify-orders-table-wrap .data-table thead th')].filter(el=>getComputedStyle(el).display!=='none').map(el=>({id:el.dataset.col||'check',left:el.getBoundingClientRect().left,width:el.getBoundingClientRect().width})));
    const realRows=await page.evaluate(()=>({
     header:document.querySelector('#shopify-orders-table-wrap .data-table thead tr').getBoundingClientRect().height,
@@ -113,6 +132,7 @@ for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))i
    }
    for(const row of ['header','day','order'])assert(Math.abs(realRows[row]-loadingRows[row])<=2,`${row} changes height ${lang}/${width}: ${loadingRows[row]} -> ${realRows[row]}`);
   }
+   await page.screenshot({path:path.join(out,`shopify-ready-${lang}-${width}.png`)});
    await page.evaluate(()=>{window.shopTask=loadShopifyOrders();});
    assert.equal(await page.$eval('#sp-orders-loading',e=>e.hidden),true,'Shopify refresh retains loaded orders');
    await page.evaluate(async()=>{release('/shopify/orders');await shopTask;});

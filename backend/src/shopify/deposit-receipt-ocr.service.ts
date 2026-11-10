@@ -3,10 +3,14 @@ import * as path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import sharp from 'sharp';
 import { createWorker, Worker } from 'tesseract.js';
-import { normalizeOcrText, ParsedReceipt } from './deposit-receipt-parser.util';
-import { parseReceiptRecognition } from './deposit-receipt-layout.util';
-import { receiptOcrRegion } from './receipt-image.util';
+import { normalizeOcrText, ParsedReceipt, parseReceiptText } from './deposit-receipt-parser.util';
+import { parseReceiptRecognition, OcrPage } from './deposit-receipt-layout.util';
+import { receiptOcrRegion, receiptTealAmount } from './receipt-image.util';
+import { readArabicTealAmount } from './receipt-digit.util';
+import { walletMessageAmount, walletUssdContext, walletUssdFigure, walletWordImage } from './receipt-wallet.util';
 import { compressReceipt } from './receipt-upload-policy.util';
+import { prepareInstapayLayout, parseInstapayLayout, instapayReferenceBox, instapayReferenceImage,
+  instapayAmountImage, instapayDestinationImage, verifiedInstapayReference } from './receipt-instapay.util';
 
 const OCR_TIMEOUT_MS = 20_000;
 
@@ -160,6 +164,78 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
     return found.sort((a, b) => (b.amountConfidence || 0) - (a.amountConfidence || 0))[0];
   }
 
+  /**
+   * An InstaPay receipt whose destination could not be read. InstaPay prints the recipient's
+   * address in light grey («vkswr3420@instapay»), which colour OCR returns as fragments, so only
+   * the sender's address is seen and the vault stays blank. A black/white pass at a high
+   * threshold turns light grey into solid text. Only the vault is taken from it — never the
+   * amount — and only when the pass recognises the same InstaPay receipt.
+   */
+  private async recoverInstapayDestination(worker: Worker, image: Buffer, expired: () => boolean): Promise<ParsedReceipt['method']> {
+    for (const level of [215, 200]) {
+      if (expired()) return '';
+      try {
+        const prepared = await sharp(image).rotate().grayscale().threshold(level).png().toBuffer();
+        const reading = parseReceiptRecognition((await worker.recognize(prepared, undefined, { blocks: true })).data);
+        if (reading.pattern === 'instapay' && reading.method) return reading.method;
+      } catch { /* One preparation failing leaves the next. */ }
+    }
+    return '';
+  }
+
+  /** The wallet's teal headline is separate ink from its black fees, totals and phone numbers. */
+  private async recoverWalletFigure(worker: Worker, image: Buffer, expired: () => boolean): Promise<{ amount: number | null; confidence: number; ambiguous?: boolean } | null> {
+    const mask = await receiptTealAmount(image);
+    if (!mask || expired()) return null;
+    const arabic = await readArabicTealAmount(mask);
+    if (arabic != null && arabic === await readArabicTealAmount(await sharp(mask).resize({ height: 140 }).png().toBuffer())) {
+      return { amount: arabic, confidence: .9 };
+    }
+    try {
+      await worker.reinitialize('eng');
+      await worker.setParameters({ tessedit_pageseg_mode: '7' as any, tessedit_char_whitelist: '0123456789,.' });
+      const first = (await worker.recognize(mask)).data;
+      if (expired()) return null;
+      const second = (await worker.recognize(await sharp(mask).resize({ height: 120 }).png().toBuffer())).data;
+      const figure = normalizeOcrText(first.text).trim();
+      const alternate = normalizeOcrText(second.text).trim();
+      if (/^[1-9]\d{0,6}(?:\.\d{1,2})?$/.test(figure) && /^[1-9]\d{0,6}(?:\.\d{1,2})?$/.test(alternate)
+        && first.confidence >= 80 && second.confidence >= 80 && Number(figure) !== Number(alternate)) {
+        return { amount: null, confidence: 0, ambiguous: true };
+      }
+      if (!/^[1-9]\d{0,6}(?:\.\d{1,2})?$/.test(figure) || figure !== normalizeOcrText(second.text).trim()
+        || !Number.isFinite(first.confidence) || !Number.isFinite(second.confidence)
+        || first.confidence < 80 || second.confidence < 80 || Number(figure) > 1_000_000) return null;
+      return { amount: Number(figure), confidence: Math.min(first.confidence, second.confidence) / 100 };
+    } finally {
+      await worker.reinitialize('ara+eng');
+      await worker.setParameters({ tessedit_pageseg_mode: '11' as any, tessedit_char_whitelist: '' });
+    }
+  }
+
+  private async recoverUssdPhoto(worker: Worker, image: Buffer, page: OcrPage, expired: () => boolean): Promise<number | null> {
+    const context = await walletUssdContext(image, page);
+    if (!context || expired()) return null;
+    try {
+      await worker.reinitialize('eng');
+      await worker.setParameters({ tessedit_pageseg_mode: '6' as any });
+      const figure = walletUssdFigure((await worker.recognize(context, undefined, { blocks: true })).data);
+      if (!figure || expired()) return null;
+      await worker.setParameters({ tessedit_pageseg_mode: '7' as any, tessedit_char_whitelist: '0123456789,.' });
+      const crop = await walletWordImage(context, figure.box);
+      const readings = [];
+      for (const level of [140, 180]) {
+        if (expired()) return null;
+        readings.push((await worker.recognize(await sharp(crop).threshold(level).png().toBuffer())).data);
+      }
+      return readings.every(r => Number.isFinite(r.confidence) && r.confidence >= 80 && Number(normalizeOcrText(r.text).trim()) === figure.value)
+        ? figure.value : null;
+    } finally {
+      await worker.reinitialize('ara+eng');
+      await worker.setParameters({ tessedit_pageseg_mode: '11' as any, tessedit_char_whitelist: '' });
+    }
+  }
+
   private async readNow(image: Buffer, timeoutMs = OCR_TIMEOUT_MS): Promise<OcrResult> {
     const started = Date.now();
     const empty: OcrResult = {
@@ -171,6 +247,59 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
     try {
       const work = (async () => {
         const worker = await this.getWorker();
+        if (cancelled) throw new Error('OCR request expired');
+        // Latin fields in both Arabic/English InstaPay templates share the same visual anchors.
+        // One English pass avoids the mixed-language pass confusing EGP and sender addresses.
+        let fast: (ParsedReceipt & { screenshotTime?: string }) | null = null;
+        try {
+          const layout = await prepareInstapayLayout(image);
+          if (layout && !cancelled) {
+            try {
+              await worker.reinitialize('eng');
+              await worker.setParameters({ tessedit_pageseg_mode: '11' as any });
+              const page = (await worker.recognize(layout.image, undefined, { blocks: true })).data;
+              if (cancelled) throw new Error('OCR request expired');
+              fast = parseInstapayLayout(page, layout);
+              if (fast) {
+                await worker.setParameters({ tessedit_pageseg_mode: '7' as any, tessedit_char_whitelist: '0123456789,.' });
+                const amountData = (await worker.recognize(await instapayAmountImage(layout))).data;
+                const figure = normalizeOcrText(amountData.text).trim();
+                const agrees = /^[1-9]\d{0,6}(?:\.\d{1,2})?$/.test(figure) && Number(figure) === fast.amount;
+                fast.amountConfidence = agrees ? amountData.confidence / 100 : 0;
+                if (!agrees) { fast.amount = null; fast.amountSource = undefined; }
+                fast.confident = agrees && fast.method !== '' && fast.amountConfidence >= .7;
+                const box = instapayReferenceBox(page, layout);
+                fast.reference = '';
+                if (box && !cancelled) {
+                  await worker.setParameters({ tessedit_pageseg_mode: '7' as any, tessedit_char_whitelist: '0123456789' });
+                  const referenceImage = await instapayReferenceImage(layout, box);
+                  const first = (await worker.recognize(referenceImage)).data;
+                  const second = (await worker.recognize(await sharp(referenceImage).threshold(150).png().toBuffer())).data;
+                  // Independent source-pixel readings must agree; conflicting ids stay blank.
+                  fast.reference = verifiedInstapayReference([first, second]);
+                  if (!fast.reference && !cancelled) {
+                    const third = (await worker.recognize(await sharp(referenceImage).resize({ height: 50 })
+                      .threshold(200).png().toBuffer())).data;
+                    fast.reference = verifiedInstapayReference([first, second, third]);
+                  }
+                }
+                receiptResult = fast;
+              }
+            } finally {
+              await worker.reinitialize('ara+eng');
+              await worker.setParameters({ tessedit_pageseg_mode: '11' as any, tessedit_char_whitelist: '' });
+            }
+            if (fast && !fast.method && !cancelled) {
+              const destination = (await worker.recognize(await instapayDestinationImage(layout), undefined, { blocks: true })).data;
+              const method = parseReceiptText(`Transaction Successful\n${fast.amount} EGP\nFrom\n${fast.senderHandle}\nTo\n${destination.text}`).method;
+              fast.method = method;
+              fast.confident = method !== '' && (fast.amountConfidence || 0) >= .7;
+            }
+            if (fast && fast.method && (fast.amount == null || (fast.amountConfidence || 0) >= .7)) {
+              return { ...fast, ...(fast.screenshotTime ? { screenshotTimeSource: 'screen-status-bar' as const } : {}) };
+            }
+          }
+        } catch { /* Unknown templates and low-quality inputs retain the general receipt reader. */ }
         if (cancelled) throw new Error('OCR request expired');
         let recognitionImage = image;
         try {
@@ -188,6 +317,35 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
         const { data } = await worker.recognize(recognitionImage, undefined, { blocks: true });
         if (cancelled) throw new Error('OCR request expired');
         let parsed = parseReceiptRecognition(data);
+        receiptResult = parsed;
+        let walletFigureConflict = false;
+        // Arabic display/message fonts can be read as 5, 000 or 600. Read their actual glyphs
+        // before any general recovery can promote such a truncated or substituted figure.
+        try {
+          const messageAmount = await walletMessageAmount(recognitionImage, data);
+          const walletFigure = parsed.pattern === 'wallet-app' && messageAmount == null
+            ? await this.recoverWalletFigure(worker, recognitionImage, () => cancelled) : null;
+          if (walletFigure?.ambiguous) {
+            walletFigureConflict = true;
+            parsed = { ...parsed, amount: null, amountSource: undefined, amountConfidence: 0, confident: false };
+          }
+          const amount = messageAmount ?? walletFigure?.amount;
+          if (amount != null) {
+            const method = parsed.method || (messageAmount != null ? 'فودافون كاش' : '');
+            parsed = { ...parsed, amount, amountSource: 'currency', amountConfidence: walletFigure?.confidence ?? .9,
+              method, pattern: parsed.pattern || 'wallet-app', confident: method !== '' };
+          }
+          if (parsed.amount == null && !parsed.method && Number(data.confidence) < 60 && !cancelled) {
+            const photoAmount = await this.recoverUssdPhoto(worker, recognitionImage, data, () => cancelled);
+            if (photoAmount != null) parsed = { ...parsed, amount: photoAmount, method: 'فودافون كاش', pattern: 'ussd',
+              amountSource: 'sentence', amountConfidence: .9, confident: true };
+          }
+        } catch { /* Unsupported colour/word crops keep the general reader available. */ }
+        if (cancelled) throw new Error('OCR request expired');
+        if (walletFigureConflict) {
+          receiptResult = parsed;
+          return { ...parsed, ...(parsed.screenshotTime ? { screenshotTimeSource: 'screen-status-bar' as const } : {}) };
+        }
         // Any figure read by any pass — including two passes that disagreed and were blanked on
         // purpose. The recovery pass below is for receipts where nothing was read at all; it must
         // never break a tie that was refused for being a tie.
@@ -209,7 +367,8 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
             await worker.reinitialize('eng');
             await worker.setParameters({ tessedit_pageseg_mode: '11' as any });
             const englishData = (await worker.recognize(recognitionImage, undefined, { blocks: true })).data;
-            let english = parseReceiptRecognition(englishData);
+            const bankReceipt = /من\s+حساب\s+رقم|قيمة\s*ال(?:دفع|دقع|اقع)/.test(data.text || '');
+            let english = parseReceiptRecognition(englishData, bankReceipt);
             if (english.amount != null) anyReading = true;
             // A Vodafone Cash app receipt whose «جنيه» the Arabic pass lost: the English pass still
             // sees the figure («a> 300.00»). Trusted only in the wallet's own «300.00» shape, and
@@ -292,6 +451,28 @@ export class DepositReceiptOcrService implements OnModuleInit, OnModuleDestroy {
               senderPhone: parsed.senderPhone || recovered.senderPhone,
               confident: method !== '' && (recovered.amountConfidence || 0) >= .7 };
           }
+        }
+        if (parsed.pattern === 'instapay' && !parsed.method && !cancelled) {
+          const method = await this.recoverInstapayDestination(worker, recognitionImage, () => cancelled);
+          if (method) {
+            parsed = { ...parsed, method,
+              confident: parsed.amount != null && (parsed.amountConfidence || 0) >= .7 };
+          }
+        }
+        if (!parsed.method && /من\s+حساب\s+رقم/.test(data.text || '') && !cancelled) {
+          // Some bank-wallet photos only reveal "Payment method: My Wallet" after contrast recovery.
+          const original = await sharp(image).rotate().png().toBuffer();
+          const meta = await sharp(original).metadata();
+          const top = Math.floor(meta.height! * .68);
+          const prepared = await sharp(original).extract({ left: 0, top, width: meta.width!, height: meta.height! - top })
+            .resize({ width: 1000 }).grayscale().normalise().png().toBuffer();
+          const recovered = parseReceiptText((await worker.recognize(prepared)).data.text);
+          if (recovered.method) parsed = { ...parsed, method: recovered.method, pattern: recovered.pattern || parsed.pattern,
+            confident: parsed.amount != null && (parsed.amountConfidence || 0) >= .7 };
+        }
+        if (fast && fast.amount === parsed.amount && (fast.amountConfidence || 0) >= .7) {
+          parsed = { ...parsed, senderHandle: fast.senderHandle,
+            reference: fast.reference, dateText: fast.dateText || parsed.dateText };
         }
         receiptResult = parsed;
         return { ...parsed, ...(parsed.screenshotTime ? { screenshotTimeSource: 'screen-status-bar' as const } : {}) };

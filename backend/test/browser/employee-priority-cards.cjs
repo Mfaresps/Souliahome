@@ -12,7 +12,7 @@ fs.mkdirSync(output, { recursive: true });
     page.on('request', request => {
       const url = new URL(request.url()), file = path.resolve(publicDir, url.pathname === '/' ? 'index.html' : url.pathname.slice(1));
       if (url.origin === 'http://priority.test' && file.startsWith(publicDir + path.sep) && fs.existsSync(file) &&
-        /\.(html|css|woff2?|svg|png|webp)$/.test(file)) return request.respond({ status: 200, contentType: file.endsWith('.html') ? 'text/html' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : /\.woff2?$/.test(file) ? 'font/woff2' : 'image/png', body: fs.readFileSync(file) });
+        (/\.(html|css|woff2?|svg|png|webp)$/.test(file) || url.pathname === '/designme/date-range-picker/soulia-range.js')) return request.respond({ status: 200, contentType: file.endsWith('.html') ? 'text/html' : file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.svg') ? 'image/svg+xml' : /\.woff2?$/.test(file) ? 'font/woff2' : 'image/png', body: fs.readFileSync(file) });
       if (request.resourceType() === 'script') return request.respond({ status: 200, contentType: 'text/javascript', body: 'window.Chart=class{static register(){} destroy(){}};window.io=()=>({on(){},emit(){},disconnect(){}});' });
       return request.respond({ status: 200, contentType: 'application/json', body: '[]' });
     });
@@ -110,6 +110,66 @@ fs.mkdirSync(output, { recursive: true });
     assert.deepEqual(await page.$$eval('.employee-priority-ref', refs => refs.map(ref => ref.textContent)), ['#3001']);
     await page.click('#employee-other-tasks-tab');
     assert.equal(await page.$$eval('.employee-priority-ref', refs => refs.some(ref => ref.textContent === '#3001')), false);
+    // Regression: the headline and tabs use one distinct, actionable queue.
+    await page.evaluate(() => {
+      currentLang = 'en'; document.documentElement.dir = 'ltr'; _myShowOtherTasks = false; _myShowAllPriorities = false;
+      const future = new Date(Date.now() + 3600000).toISOString();
+      _myWorkspace = { assignedOrdersTotal: 120, assignedOrdersInPeriod: 68, periodKey: '2026-11', prevPeriodKey: '2026-10', periodLabel: 'نوفمبر 2026',
+        points: { total: 379, prevPeriodPoints: 174 }, adjustments: [], openFollowUpsCount: 3, deliveryIssueFollowUpsCount: 1, pendingConfirmationCount: 2,
+        followUps: [
+          { id: 'issue', orderRef: '3017', clientName: 'Delivery customer', autoSource: 'shipping-issue', lastActivityAt: '2026-10-25T12:00:00Z', latestComment: { text: 'Please confirm the updated phone number.', authorName: 'Malak', at: '2026-10-25T12:00:00Z' } },
+          { id: 'ordinary', orderRef: '3018', clientName: 'Follow-up customer' },
+          { id: 'future', orderRef: '3019', deferredUntil: future },
+        ], orders: [{ ref: '3018', needsConfirmation: true }, { ref: '4000', client: 'Confirmation customer', needsConfirmation: true }] };
+      _myWorkspaceUpdatedAt = Date.now(); renderMyKpis();
+    });
+    assert.equal(await page.$eval('.is-followups .ds-me-kpi-value', el => el.textContent), '3');
+    assert.equal(await page.$eval('.employee-delivery-issue-count', el => el.textContent), '1');
+    assert.equal(await page.$eval('.employee-task-count', el => el.textContent), '2');
+    assert.match(await page.$eval('.employee-session-start', el => el.textContent), /2 follow-ups across both tabs/);
+    assert.match(await page.$eval('.is-orders', el => el.textContent), /all time.*November 2026/s);
+    assert.match(await page.$eval('.is-points', el => el.textContent), /November 2026.*October 2026/s);
+    for (const width of [2553, 1440, 390, 320]) {
+      await page.setViewport({ width, height: width < 600 ? 900 : 1270 });
+      await new Promise(resolve => setTimeout(resolve, 350));
+      await page.evaluate(() => { scrollTo(0, 0); qs('#main')?.scrollTo(0, 0); });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      if (width < 600) assert(await page.$eval('#page-dashboard', el => el.getBoundingClientRect().width) > width * .8);
+      if (width === 2553) {
+        assert(await page.$eval('#page-dashboard', el => el.getBoundingClientRect().width) > 1400);
+        assert(await page.$eval('.employee-priority-card', el => el.getBoundingClientRect().height) < 340);
+      }
+      await page.screenshot({ path: path.join(output, `fixed-dashboard-${width}.png`) });
+    }
+    await page.evaluate(() => {
+      _myWorkspace.followUps[0].deferredUntil = new Date(Date.now() + 3600000).toISOString();
+      renderMyKpis();
+    });
+    assert.equal(await page.$eval('#employee-other-tasks-tab', el => el.getAttribute('aria-selected')), 'true');
+    assert(await page.$$eval('.employee-priority-ref', refs => refs.some(el => el.textContent === '#4000')));
+    assert.equal(await page.$eval('.is-followups .ds-me-kpi-value', el => el.textContent), '2');
+    // Failed requests preserve the old timestamp and visibly mark cached values.
+    await page.evaluate(async () => {
+      const originalApi = api, originalShipping = _renderStaffDashboard, originalShift = renderMyShift;
+      const workspace = _myWorkspace, oldTime = Date.now() - 7200000;
+      try {
+        _myWorkspaceUpdatedAt = oldTime; _myWorkspaceRecipientId = String(currentUser._id);
+        _renderStaffDashboard = () => {}; renderMyShift = () => {};
+        api = async () => { throw new Error('Simulated offline'); };
+        await loadMyWorkspace();
+        window.failedWorkspaceState = { notice: qs('.employee-workspace-warning')?.textContent, refresh: qs('#rfz-time-dashboard')?.textContent, unchangedTime: _myWorkspaceUpdatedAt === oldTime, sameData: _myWorkspace === workspace };
+        api = async endpoint => endpoint.endsWith('my-workspace') ? workspace : {};
+        await loadMyWorkspace();
+        window.recoveredWorkspace = !qs('.employee-workspace-warning') && _myWorkspaceUpdatedAt === Date.now();
+      } finally { api = originalApi; _renderStaffDashboard = originalShipping; renderMyShift = originalShift; }
+    });
+    const failure = await page.evaluate(() => failedWorkspaceState);
+    assert.match(failure.notice, /previously loaded/); assert.equal(failure.refresh, 'Refresh failed');
+    assert.equal(failure.unchangedTime, true); assert.equal(failure.sameData, true);
+    assert.equal(await page.evaluate(() => recoveredWorkspace), true);
+    await page.evaluate(() => { _myWorkspace.openFollowUpsCount = 105; _myWorkspace.pendingConfirmationCount = 201; _myWorkspace.followUps = []; _myWorkspace.orders = []; renderMyKpis(); });
+    assert.match(await page.$eval('.employee-workspace-partial', el => el.textContent), /More tasks are available/);
+    assert.doesNotMatch(await page.$eval('.is-followups .ds-me-kpi-label', el => el.textContent), /complete/);
     assert.deepEqual(errors, []);
     console.log('Verified card layout at desktop/mobile widths, Arabic/English, dark mode, unbroken references, formatted dates, hidden contacts, menu keyboard controls, order/comment navigation and expansion.');
   } finally { await browser.close(); }

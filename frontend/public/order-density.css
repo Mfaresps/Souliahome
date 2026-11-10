@@ -1,0 +1,67 @@
+/* Spend height on orders, keeping text size and touch controls readable. */
+@media screen {
+  #main{padding-block-start:6px;padding-block-end:10px}
+  #main>.page{padding-block:8px}
+  #main>#page-shopify-orders{padding-block:8px}
+  #main .page :is(.page-header,.inv-page-header,.exp-page-header,.csp-page-header,.pu-page-header,.tx-page-top,.rbac-header){margin-bottom:6px!important}
+  #main .page :is(.fx-toolbar,.fu-toolbar){padding:8px;gap:8px;margin-bottom:8px}
+  #main .page :is(.table-wrap,.table-card,.fu-table-wrap){margin-top:0}
+  #main #page-shopify-orders .sp-sticky-head{gap:6px 10px}
+  #main #page-shopify-orders #shopify-filters-bar{padding-block:0 6px;margin-block:0 6px!important}
+  #main #page-shopify-orders #shopify-filters-top-row{margin-bottom:0}
+  #main #shopify-pagination .sp-pagination{padding-block:6px;margin-top:0}
+  #main #shopify-pagination{margin-top:6px!important}
+  #main #page-complaints .cs-main-tabs{margin-block:0!important}
+  #main #page-complaints #fu-orders-section{padding-top:0!important}
+  #main #page-complaints #fu-kpi-toolbar-row{margin-bottom:6px!important}
+  #main #page-complaints #cmp-header-block{padding-top:0}
+  #main #page-inventory .inv-sticky-head,#main #page-products .prod-sticky-head{padding-bottom:4px}
+  #main #page-reports .rep-page-header{margin-bottom:8px}
+  #main #page-barcodes .iu-header{margin-bottom:6px}
+  #main #page-barcodes .iu-tabs{margin:0}
+  #main .rep-tab-panel{animation:none}
+  /* Day separators are compact labels, leaving height for the actual orders. */
+  #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr.sp-day-sep>td,
+  #main #page-shopify-orders #sp-orders-loading .sp-orders-loading-table .sp-loading-day td{height:20px;padding:2px 12px;font-size:10px;line-height:1.2}
+  #main #page-shopify-orders #shopify-orders-table-wrap :is(.sp-day-sep-label,.sp-day-sep-date){font-size:10px;line-height:1.2;letter-spacing:0}
+  #main #page-shopify-orders #shopify-orders-table-wrap .sp-day-sep-label{font-weight:600}
+  #main #page-shopify-orders #shopify-orders-table-wrap .sp-day-sep-date{margin-inline-start:6px;padding-inline-start:6px}
+  #main #page-shopify-orders #sp-orders-loading .sp-loading-day :is(.is-day-label,.is-day-date){height:10px}
+  #main #page-shopify-orders #sp-mobile-list>.sp-card-day-header{height:20px;min-height:0;margin-block:2px 0;padding:1px 2px;font-size:10px;line-height:1.2}
+  @media(min-width:769px) and (pointer:fine){
+    :root{--header-h:56px}
+    #main .page :is(.fx-toolbar,.fu-toolbar,.users-toolbar) :is(input[type=search],input[type=text],.fx-btn,.fu-clear-filters){min-height:34px!important;height:34px!important;font-size:13px!important}
+    #main #page-shopify-orders #shopify-search-wrap{min-height:36px;height:36px}
+    #main #page-shopify-orders #shopify-search{height:34px;min-height:34px;padding-block:4px}
+    #main #page-shopify-orders #shopify-search-wrap>button{min-height:32px;height:32px}
+    #main #page-shopify-orders :is(.sp-refresh-btn,#sp-tools-menu>summary){min-height:32px;height:32px;box-sizing:border-box}
+    #main #page-shopify-orders .spk-tile{min-height:84px;padding:10px 14px}
+    #main #page-shopify-orders .spk-val{font-size:26px}
+    #main #page-shopify-orders .spk-tile.is-received .spk-val{font-size:28px}
+    #main :is(#mov-table,#shopify-orders-table-wrap .data-table) thead th{height:34px;padding-block:6px}
+    #main #page-shopify-orders #shopify-orders-table-wrap .data-table thead th,
+    #main #page-shopify-orders #sp-orders-loading .sp-orders-loading-table thead th{height:34px;padding-block:6px}
+    #main #page-shopify-orders .sp-table-scroll-hint{display:none}
+    #main #page-shopify-orders #shopify-orders-table-wrap .data-table tbody tr:not(.sp-day-sep)>td,
+    #main #mov-table tbody tr:not(.mov-day-sep)>td{height:40px;padding-block:3px;line-height:1.45}
+    #main #page-shopify-orders #shopify-orders-table-wrap .data-table :is(.sp-items-btn,.sp-confirm-btn,.spdep-shipping-switch,.sp-deposit-chip){height:32px;min-height:32px;padding-block:4px}
+    #main #page-shopify-orders #shopify-orders-table-wrap .data-table .spdep-fab-trigger{width:32px;min-width:32px;height:32px}
+    #main #page-shopify-orders #shopify-orders-table-wrap .data-table .spdep-empty{min-height:32px}
+    #main #page-shopify-orders #sp-orders-loading .sp-orders-loading-table td{height:40px;padding-block:3px}
+    #main #shopify-pagination :is(select,.sp-pag-arrow){height:30px;min-height:30px}
+    #main #page-complaints .cs-sticky-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;margin-top:0;padding-top:0}
+    #main #page-complaints .cs-sticky-head>*{grid-column:1/-1;min-width:0}
+    #main #page-complaints .cs-sticky-head>.page-header{grid-column:2;grid-row:1;margin:0!important}
+    #main #page-complaints .cs-sticky-head>.ui-tabs-shell{grid-column:1;grid-row:1;margin:0;align-self:center}
+    #main #page-complaints .cs-sticky-head>.page-header .btn{min-height:32px!important;padding-block:5px}
+  }
+  html.ui-table-locked,html.ui-table-locked body{overflow:hidden;overscroll-behavior:none}
+  #main .page .ui-viewport-table{max-height:var(--ui-table-room)!important;min-height:0!important;overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
+  #main .page .ui-viewport-table thead th{position:sticky;top:0;z-index:4;background:var(--surface)}
+  @media(max-width:768px){
+    #main{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+    #main>.page{padding-block:8px}
+    #main #page-shopify-orders .sp-sticky-head{padding-bottom:4px;gap:6px}
+    #main #page-pickup-orders #pu-board-filters-row{margin-bottom:8px}
+  }
+}

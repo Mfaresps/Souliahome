@@ -146,6 +146,12 @@ describe('deposit without transfer image', () => {
     const id = String(o._id);
     await expect(receipts.createWithoutImage(id, { amount: 400, method: W }, STAFF, OTP_PERM)).rejects.toBeInstanceOf(BadRequestException);
     const otpId = await verifiedCode(otp, id, 400);
+    const [verified] = await otp.list({ kind: 'deposit-no-image', status: 'used' });
+    expect(verified).toMatchObject({ kind: 'deposit-no-image', editTxId: id, itemsTotal: 400, txType: W, requestedById: STAFF.id, status: 'used', attempts: 0, txId: '' });
+    expect(verified.otp).toMatch(/^\d{4}$/);
+    expect(Number.isFinite(Date.parse(verified.createdAt))).toBe(true);
+    expect(Number.isFinite(Date.parse(verified.expiresAt))).toBe(true);
+    expect(Number.isFinite(Date.parse(verified.usedAt))).toBe(true);
     expect(mentions.createMany).toHaveBeenCalled();
     const [row] = mentions.createMany.mock.calls.at(-1)[0];
     // The bell card reads the code from line 1 and picks its layout by sender.
@@ -155,6 +161,7 @@ describe('deposit without transfer image', () => {
     const { receipt } = await receipts.createWithoutImage(id, { amount: 400, method: W, otpId }, STAFF, OTP_PERM);
     expect(receipt).toMatchObject({ noImageAuth: 'otp', noImageOtpId: otpId });
     expect((await otpModel.findById(otpId).lean().exec() as any).txId).toBe(receipt.id);
+    expect((await otp.list({ kind: 'deposit-no-image', status: 'used' }))[0].txId).toBe(receipt.id);
     await expect(receipts.createWithoutImage(id, { amount: 400, method: W, otpId }, STAFF, OTP_PERM)).rejects.toThrow('تم استخدام كود التحقق');
     expect((await fresh(id)).depositReceipts).toHaveLength(1);
   });

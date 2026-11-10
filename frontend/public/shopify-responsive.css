@@ -72,7 +72,7 @@
 .sp-loading-card-foot :is(.is-action,.is-contact){width:36px;height:36px;border-radius:8px}
 .sp-loading-card-foot .is-prepare{height:36px}
 .sp-orders-loading-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg)}
-.sp-loading-table-scroll{overflow:auto;overscroll-behavior-inline:contain;scrollbar-gutter:stable;max-height:calc(100vh - 340px);min-height:280px}
+.sp-loading-table-scroll{overflow:auto;overscroll-behavior-inline:contain;scrollbar-gutter:stable;max-height:var(--sp-table-max,calc(100vh - 340px));min-height:280px}
 .sp-orders-loading-table table{width:max-content;min-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0;text-align:start;font-family:var(--font-app)}
 #main .sp-orders-loading-table th{position:sticky;top:0;z-index:1;padding:12px clamp(4px,.45vw,10px);text-align:start;font-size:13px;font-weight:600;line-height:1.5;background:var(--surface);color:var(--muted);white-space:nowrap;border-bottom:1px solid #e9eceb}
 #main .sp-orders-loading-table td{height:62px;padding:9px clamp(4px,.45vw,10px);border-bottom:1px solid #e9eceb;vertical-align:middle;background:#fafbfc;box-sizing:border-box}
@@ -135,20 +135,5 @@ body.dark-mode #main .sp-orders-loading-table .sp-loading-day td{background:rgba
     grid-column:1;width:100%;gap:8px;font-size:.8rem;background:var(--primary-pale);color:var(--primary);
   }
   #page-shopify-orders #shopify-page-header button svg{width:18px;height:18px}
-  #page-shopify-orders .sp-subnav-shell{margin-bottom:14px;display:block}
-  #page-shopify-orders .sp-subnav-shell .sp-tab-step{display:none!important}
-  #page-shopify-orders .sp-subnav-shell #sp-subnav{
-    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
-    width:100%;max-width:100%;padding:0;margin:0;overflow:visible;
-    border:0;border-radius:0;background:transparent;
-  }
-  #page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab{
-    min-width:0;height:auto;min-height:44px;padding:10px;gap:7px;
-    white-space:normal;line-height:1.5;font-size:.78rem;border-radius:12px;
-    border:1px solid var(--border);background:var(--surface);color:var(--text);
-  }
-  #page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab.active{
-    background:var(--primary-pale);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 35%,var(--border));box-shadow:none;
-  }
-  #page-shopify-orders .sp-subnav-shell #sp-subnav .mov-main-tab svg{width:17px;height:17px}
+
 }

@@ -1,0 +1,104 @@
+[
+  {
+    "width": 1440,
+    "height": 900,
+    "before": {
+      "visibleOrders": 8,
+      "rows": 30,
+      "rowHeight": 45,
+      "dayHeight": 29.890625,
+      "dayFont": "11px",
+      "dateFont": "11px",
+      "tableTop": 273.53125,
+      "tableBottom": 776.53125,
+      "footerBottom": 844.53125,
+      "viewport": 900,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    },
+    "after": {
+      "visibleOrders": 14,
+      "rows": 30,
+      "rowHeight": 40,
+      "dayHeight": 20,
+      "dayFont": "10px",
+      "dateFont": "10px",
+      "tableTop": 167,
+      "tableBottom": 829,
+      "footerBottom": 879,
+      "viewport": 900,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    }
+  },
+  {
+    "width": 1440,
+    "height": 768,
+    "before": {
+      "visibleOrders": 5,
+      "rows": 30,
+      "rowHeight": 45,
+      "dayHeight": 29.890625,
+      "dayFont": "11px",
+      "dateFont": "11px",
+      "tableTop": 273.53125,
+      "tableBottom": 644.53125,
+      "footerBottom": 712.53125,
+      "viewport": 768,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    },
+    "after": {
+      "visibleOrders": 10,
+      "rows": 30,
+      "rowHeight": 40,
+      "dayHeight": 20,
+      "dayFont": "10px",
+      "dateFont": "10px",
+      "tableTop": 167,
+      "tableBottom": 697,
+      "footerBottom": 747,
+      "viewport": 768,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    }
+  },
+  {
+    "width": 1920,
+    "height": 1080,
+    "before": {
+      "visibleOrders": 12,
+      "rows": 30,
+      "rowHeight": 45,
+      "dayHeight": 29.890625,
+      "dayFont": "11px",
+      "dateFont": "11px",
+      "tableTop": 273.53125,
+      "tableBottom": 956.53125,
+      "footerBottom": 1024.53125,
+      "viewport": 1080,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    },
+    "after": {
+      "visibleOrders": 18,
+      "rows": 30,
+      "rowHeight": 40,
+      "dayHeight": 20,
+      "dayFont": "10px",
+      "dateFont": "10px",
+      "tableTop": 167,
+      "tableBottom": 1009,
+      "footerBottom": 1059,
+      "viewport": 1080,
+      "locked": true,
+      "font": "14px",
+      "overflow": false
+    }
+  }
+]

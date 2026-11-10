@@ -270,7 +270,7 @@
   .employee-home .employee-workspace .employee-adjustments{grid-column:2;grid-row:3;grid-template-columns:1fr;margin:0;padding:12px}
   .employee-home .employee-workspace .employee-point-message{padding:10px;gap:7px}
 }
-.dashboard-v2.employee-home{max-width:1080px;background:#eef2f6;border-color:#e0e6ed;padding:20px;box-shadow:none;--ds-muted:#64748b}
+.dashboard-v2.employee-home{max-width:1600px;width:100%;background:#eef2f6;border-color:#e0e6ed;padding:20px;box-shadow:none;--ds-muted:#64748b}
 .dashboard-v2.employee-home>.page-header{margin-bottom:16px}
 .employee-home .page-subtitle{color:#526171;line-height:1.5}
 .dashboard-v2.employee-home .ds-me-grid{gap:10px;margin-bottom:14px}
@@ -431,7 +431,8 @@
 .employee-priority-comment-meta>span{min-width:0;overflow-wrap:anywhere}
 .employee-priority-comment-meta time{margin-inline-start:auto;font-size:11px;font-variant-numeric:tabular-nums}
 .employee-priority-no-comment{display:flex;align-items:center;flex:1;padding:12px;border:1px dashed var(--priority-border);border-radius:9px;min-height:70px;color:var(--priority-muted);font-size:12px}
-.employee-priority-wait{font-size:10px!important;color:var(--priority-muted)!important}
+.employee-priority-wait{font-size:12px!important;color:var(--priority-muted)!important;line-height:1.6}
+.employee-priority-card.is-late .employee-priority-wait{padding:5px 8px;border-inline-start:3px solid #b16b13;border-radius:4px;background:#fff5e5;color:#805014!important;font-weight:600}
 .employee-priority-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:8px;border-top:1px solid var(--priority-border)}
 .employee-priority-view,.employee-priority-more-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:30px;padding:5px 10px;border:1px solid var(--priority-border);border-radius:7px;background:transparent;color:var(--priority-text);font:inherit;font-size:11px;font-weight:550;line-height:1.4;cursor:pointer;white-space:nowrap}
 .employee-priority-view{background:#236b4b;border-color:#236b4b;color:#fff}
@@ -468,7 +469,7 @@ body.dark-mode .employee-priority-comment:hover:not(:disabled){background:#273b2
 .employee-order-stack.employee-priority-list>.employee-priority-card:first-child{border-color:#80a991}
 .employee-priority-first{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#236443;font-size:12px;font-weight:700}
 .employee-priority-first>span{font-size:11px;font-weight:500;color:var(--priority-muted)}
-.employee-priority-comment-label,.employee-priority-comment-meta,.employee-priority-relative{font-size:11px}
+.employee-priority-comment-label,.employee-priority-comment-meta,.employee-priority-relative{font-size:12px}
 .employee-priority-record{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 11px;border:1px solid #236443;border-radius:8px;background:#236443;color:#fff;font:inherit;font-size:12px;font-weight:650;cursor:pointer}
 .employee-priority-record:hover{background:#194f34}
 .employee-priority-footer :is(.employee-priority-view,.employee-priority-more-button){min-height:44px;font-size:12px;padding:7px 8px}
@@ -481,6 +482,22 @@ body.dark-mode .employee-priority-comment:hover:not(:disabled){background:#273b2
 .employee-points-history:focus-visible{outline:2px solid #236443;outline-offset:3px;border-radius:4px}
 body.dark-mode .employee-priority-first{color:#a3d9ba}
 body.dark-mode .employee-task-count{background:#293c32;color:#bdcfc3}
+.employee-workspace-warning{display:flex;align-items:center;flex-wrap:wrap;gap:8px;width:100%;padding:10px 12px;border:1px solid #d5a965;border-radius:8px;background:#fff7e7;color:#774a12;font-size:13px;line-height:1.6}
+.employee-workspace-warning>span{flex:1;min-width:160px}
+.employee-workspace-warning button{min-height:44px;padding:6px 10px;border:1px solid currentColor;border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.employee-workspace-warning button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.employee-workspace-partial{background:var(--ds-surface);border-color:var(--ds-border);color:var(--ds-text)}
+body.dark-mode .employee-workspace-warning:not(.employee-workspace-partial){background:#362e20;border-color:#846535;color:#f0cf92}
+body.dark-mode .employee-priority-card.is-late .employee-priority-wait{background:#362e20;color:#f0cf92!important}
+.employee-home .ds-presence{padding-block:10px;margin-block:0 12px}
+/* Keep the single urgent order compact on a wide task panel. */
+@container employee-tasks (min-width:900px){
+  .employee-order-stack.employee-priority-list>.employee-priority-card:only-child{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 20px}
+  .employee-priority-card:only-child>:is(.employee-priority-first,.employee-priority-heading,.employee-priority-customer,.employee-priority-footer){grid-column:1/-1}
+  .employee-priority-card:only-child>.employee-priority-comment{grid-column:1;grid-row:4/7;align-self:start}
+  .employee-priority-card:only-child>.employee-priority-no-comment{grid-column:1;grid-row:4/7;min-height:44px}
+  .employee-priority-card:only-child>:is(.employee-priority-schedule,.employee-priority-wait,.employee-priority-defer){grid-column:2}
+}
 @media(max-width:600px){
   .employee-home .is-followups .employee-task-overview .ds-me-kpi-label{padding-inline-end:0;font-size:13px}
   .employee-task-overview #employee-home-refresh{position:static;grid-column:1/-1;grid-row:3;justify-self:start;margin-top:3px}

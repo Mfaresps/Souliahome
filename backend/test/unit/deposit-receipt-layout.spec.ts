@@ -39,6 +39,20 @@ describe('receipt amount extraction from OCR text and layout', () => {
     ]));
     expect(result).toMatchObject({ amount: 1000, method: 'Instapay', pattern: 'instapay' });
   });
+  it('never reads «م7006» as 7006: the orange EGP glued to 700 as «م» + «6» (Nov 2026, #3078)', () => {
+    // Exact Arabic-pass lines; «مبلغ التحويل» right under it used to anchor the wrong figure.
+    const result = parseReceiptRecognition(page([
+      ['معاملة ناجحة', 10], ['تم التحويل بنجاح', 40], ['م7006', 70, 91], ['مبلغ التحويل', 95],
+      ['zahrsayasser2024@instapay', 150], ['vkswr3420@instapay', 230],
+    ]));
+    expect(result.amount).toBeNull();
+    expect(result.method).toBe('Instapay');
+    expect(result.confident).toBe(false);
+  });
+  it('a phone glued to «لرقم» is not mistaken for the glued EGP', () => {
+    const result = parseReceiptRecognition({ text: 'تم تحويل 500 جنيه لرقم01008835575 مصاريف الخدمة 1 جنيه', blocks: null });
+    expect(result.amount).toBe(500);
+  });
   it('the amount + fee = total rule never invents a figure: two unrelated amounts stay a conflict', () => {
     const result = parseReceiptRecognition(page([
       ['Approved Transaction', 10], ['500 EGP', 70, 94], ['700 EGP', 110, 94], ['1 EGP', 150, 94],
