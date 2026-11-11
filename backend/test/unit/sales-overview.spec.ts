@@ -23,7 +23,7 @@ describe('Monthly sales overview', () => {
     }];
     const result = buildSalesOverview(2026, 11, buckets, [{ _id: '2026-11-04', amount: 50 }], new Date('2026-11-08T12:00:00Z'));
     expect(result.days).toHaveLength(30);
-    expect(result.days[0]).toEqual({ date: '2026-11-01', orders: 1, confirmedOrders: 1, revenue: 0 });
+    expect(result.days[0]).toEqual({ date: '2026-11-01', orders: 1, confirmedOrders: 1, revenue: 0, receivedValue: 0, confirmedValue: 0 });
     expect(result.days[1].orders).toBe(1);
     expect(result.days[2].revenue).toBe(250);
     expect(result.days[3].revenue).toBe(-50);
@@ -41,6 +41,18 @@ describe('Monthly sales overview', () => {
     expect(JSON.stringify(mongoCairoDay('$date'))).toContain('Africa/Cairo');
   });
 
+  it('keeps full received and confirmed cohort values separate from net invoice revenue and returns', () => {
+    const result = buildSalesOverview(2026, 11, [
+      { _id: '2026-11-11', receivedOrders: 5, confirmedOrders: 2, receivedValue: 1500.25, confirmedValue: 600.15 },
+      { _id: '2026-11-12', receivedOrders: 1, confirmedOrders: 0, receivedValue: 200.1, confirmedValue: 0 },
+      { _id: '2026-11-15', activeSales: 2, grossRevenue: 500 },
+    ], [{ _id: '2026-11-15', amount: 100 }]);
+    expect(result.days[10]).toMatchObject({ orders: 5, receivedValue: 1500.25, confirmedValue: 600.15, revenue: 0 });
+    expect(result.days[11]).toMatchObject({ orders: 1, receivedValue: 200.1, confirmedValue: 0 });
+    expect(result).toMatchObject({ totalReceivedValue: 1700.35, totalConfirmedValue: 600.15, totalRevenue: 400 });
+    expect(result.days[14]).toMatchObject({ receivedValue: 0, confirmedValue: 0, revenue: 400 });
+  });
+
   it('uses bounded database aggregates and returns only daily buckets', async () => {
     const calls: unknown[][] = [];
     const aggregate = (result: unknown[]) => (pipeline: unknown[]) => {
@@ -50,12 +62,12 @@ describe('Monthly sales overview', () => {
     let transactionAggregates = 0;
     const service = {
       shopifyOrderModel: { collection: { name: 'shopifyorders' }, aggregate: aggregate([
-        { _id: '2026-11-01', receivedOrders: 2, confirmedOrders: 1 },
+        { _id: '2026-11-01', receivedOrders: 2, confirmedOrders: 1, receivedValue: 800, confirmedValue: 300 },
       ]) },
       transactionModel: { collection: { name: 'transactions' }, aggregate: (pipeline: unknown[]) => {
         transactionAggregates++;
         return aggregate(transactionAggregates === 1
-          ? [{ _id: '2026-11-02', receivedOrders: 1, confirmedOrders: 1 }]
+          ? [{ _id: '2026-11-02', receivedOrders: 1, confirmedOrders: 1, receivedValue: 200, confirmedValue: 200 }]
           : [{ _id: '2026-11-03', activeSales: 2, grossRevenue: 230 }])(pipeline);
       } },
       returnRequestModel: { aggregate: aggregate([{ _id: '2026-11-03', amount: 20 }]) },
@@ -68,6 +80,7 @@ describe('Monthly sales overview', () => {
     expect(JSON.stringify(calls[2])).toContain('date');
     expect(JSON.stringify(calls[3])).toContain('reversedAt');
     expect(result).toMatchObject({ totalOrders: 3, confirmedOrders: 2, totalRevenue: 210, averageOrderValue: 115 });
+    expect(result).toMatchObject({ totalReceivedValue: 1000, totalConfirmedValue: 500 });
     expect(result.days).toHaveLength(30);
   });
 });

@@ -4100,7 +4100,8 @@ export class TransactionsService {
     const shopifyCollection = this.shopifyOrderModel.collection.name;
 
     // Shopify arrivals form the order cohort. Confirmation stays on the arrival day.
-    // Revenue is aggregated separately by invoice date, as in getReports().
+    // Cohort values include full order totals (shipping included), regardless of cancellation.
+    // Net accounting revenue stays separate by invoice date, as in getReports().
     const shopifyPipeline: any[] = [
       { $match: inBroadRange('shopifyCreatedAt') },
       { $set: { day: mongoCairoDay('$shopifyCreatedAt') } },
@@ -4111,16 +4112,21 @@ export class TransactionsService {
           { $match: { $expr: { $and: [
             { $eq: ['$shopifyOrderId', '$$orderId'] }, { $eq: ['$type', 'مبيعات'] },
           ] } } },
-          { $project: { _id: 0, active } },
+          { $project: { _id: 0, active, total: number('$total') } },
         ], as: 'sales',
       } },
       { $project: {
         day: 1,
+        receivedValue: number('$total'),
+        confirmedValue: { $ifNull: [{ $max: { $map: {
+          input: '$sales', as: 'sale', in: { $cond: ['$$sale.active', '$$sale.total', 0] },
+        } } }, 0] },
         confirmed: { $cond: [{ $anyElementTrue: ['$sales.active'] }, 1, 0] },
       } },
       { $group: {
         _id: '$day', receivedOrders: { $sum: 1 },
         confirmedOrders: { $sum: '$confirmed' },
+        receivedValue: { $sum: '$receivedValue' }, confirmedValue: { $sum: '$confirmedValue' },
       } },
     ];
 
@@ -4139,16 +4145,22 @@ export class TransactionsService {
         { sourceOrder: { $eq: [] } },
         { 'sourceOrder.shopifyCreatedAt': { $in: ['', null] } },
       ] } },
+      { $set: { receivedValue: { $convert: {
+        input: { $ifNull: [{ $arrayElemAt: ['$sourceOrder.total', 0] }, '$total'] }, to: 'double', onError: 0, onNull: 0,
+      } } } },
       { $group: {
         _id: { $cond: [
           { $and: [{ $ne: ['$shopifyOrderId', null] }, { $ne: ['$shopifyOrderId', ''] }] },
           { $concat: ['shopify:', '$shopifyOrderId'] }, { $toString: '$_id' },
         ] },
         day: { $min: '$day' }, confirmed: { $max: { $cond: [active, 1, 0] } },
+        receivedValue: { $max: '$receivedValue' },
+        confirmedValue: { $max: { $cond: [active, number('$total'), 0] } },
       } },
       { $group: {
         _id: '$day', receivedOrders: { $sum: 1 },
         confirmedOrders: { $sum: '$confirmed' },
+        receivedValue: { $sum: '$receivedValue' }, confirmedValue: { $sum: '$confirmedValue' },
       } },
     ];
 

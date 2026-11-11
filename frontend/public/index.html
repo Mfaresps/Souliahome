@@ -16794,7 +16794,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/navigation-shell.css?v=20261110-service-navigation">
 <link rel="stylesheet" href="/employee-home.css?v=20261028-staff-presence">
 <link rel="stylesheet" href="/admin-team-home.css?v=20261109-compact2">
-<link rel="stylesheet" href="/sales-overview.css?v=20261109-navigation-freshness">
+<link rel="stylesheet" href="/sales-overview.css?v=20261111-multi-month-values">
 <link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
 <link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261110-items-request">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
@@ -17169,6 +17169,14 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- Dashboard -->
 <div class="page dashboard-v2" id="page-dashboard">
 <div class="page-header">
+<div class="ds-presence ds-presence-compact" id="dash-users-presence">
+  <div id="users-status-grid" class="ds-presence-strip">
+    <span class="ss-skeleton ds-presence-placeholder"></span>
+    <span class="ss-skeleton ds-presence-placeholder"></span>
+    <span class="ss-skeleton ds-presence-placeholder"></span>
+  </div>
+  <span class="ds-presence-count" id="dash-users-count" data-i18n="updating">جاري التحديث</span>
+</div>
 <div><h2 class="page-title" data-i18n="dashboard">الرئيسية</h2><p class="page-subtitle" data-i18n="dashboardSubtitle">ملخص الطلبات والمبيعات اليومية</p></div>
 <div class="page-header-actions" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
 <div class="actions-dd" style="flex-shrink:0">
@@ -17205,6 +17213,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <div class="so-chart-head"><div><h4 id="so-chart-title"></h4><p id="so-chart-note"></p></div><div class="so-chart-actions"><span class="so-today" id="so-today" hidden></span><div class="so-chart-style" id="so-chart-style" role="group" aria-label="Chart style"><button type="button" data-chart-style="line" aria-pressed="true"></button><button type="button" data-chart-style="area" aria-pressed="false"></button></div></div></div>
   <div class="so-legend" id="so-legend" hidden></div>
   <div class="so-chart-scroll" id="so-chart-scroll"><div class="so-chart-canvas" id="so-chart-canvas"></div></div>
+  <div class="so-insight" id="so-insight" hidden></div>
   <div class="so-chart-foot" id="so-chart-foot"></div>
 </section>
 
@@ -17230,15 +17239,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <section id="dash-me-adjustments" class="employee-adjustments" style="display:none" aria-live="polite"></section>
 </div>
 
-<!-- التواجد بعد المؤشرات والمهام الرئيسية؛ الاسم والحالة متاحان في وصف كل شخص. -->
-<div class="ds-presence" id="dash-users-presence">
-  <div id="users-status-grid" class="ds-presence-strip">
-    <span class="ss-skeleton" style="width:48px;height:48px;border-radius:50%"></span>
-    <span class="ss-skeleton" style="width:48px;height:48px;border-radius:50%"></span>
-    <span class="ss-skeleton" style="width:48px;height:48px;border-radius:50%"></span>
-  </div>
-  <span class="ds-presence-count" id="dash-users-count" data-i18n="updating">جاري التحديث</span>
-</div>
+
 
 <!-- ═══ ترتيب اللوحة حسب الأولوية (Sep 8, 2026) ═══════════════════════════════
      ٠١ المؤشرات · ٠٢ قيد الشحن + متابعاتي · ٠٣ يحتاج انتباهك + أوردراتي · ٠٤ الورديات
@@ -114978,7 +114979,8 @@ function _spRenderHistoryTab() {
 </script>
 <script src="/navigation-shell.js?v=20261110-complaint-page"></script>
 <script src="/admin-team-home.js?v=20261109-cascade"></script>
-<script src="/sales-overview.js?v=20261109-cascade"></script>
+<script src="/daily-orders-analysis.js?v=20261111-multi-month-values"></script>
+<script src="/sales-overview.js?v=20261111-multi-month-values"></script>
 <script src="/shopify-edit-approvals.js?v=20261103-compact-order-mark"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">

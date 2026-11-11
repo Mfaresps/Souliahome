@@ -21,7 +21,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       const url = new URL(request.url());
       const local = path.join(pub, url.pathname.slice(1));
       if (url.pathname === '/') return request.respond({ status: 200, contentType: 'text/html', body: html });
-      if ((url.pathname.endsWith('.css') || ['/sales-overview.js', '/admin-team-home.js', '/order-status.js', '/designme/date-range-picker/soulia-range.js'].includes(url.pathname)) && fs.existsSync(local)) {
+      if ((url.pathname.endsWith('.css') || ['/sales-overview.js', '/daily-orders-analysis.js', '/admin-team-home.js', '/order-status.js', '/designme/date-range-picker/soulia-range.js'].includes(url.pathname)) && fs.existsSync(local)) {
         return request.respond({ status: 200, contentType: url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript', body: fs.readFileSync(local) });
       }
       if (request.resourceType() === 'script') return request.respond({ status: 200, contentType: 'text/javascript', body: 'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});' });
@@ -73,7 +73,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
     await page.evaluate(async () => { renderDashWelcome(false); await loadDashboard(); });
     assert.equal(await page.$$eval('#so-metrics .so-metric', nodes => nodes.length), 4);
     assert.equal(await page.$('#dash-stats'), null);
-    assert.equal(await page.evaluate(() => overviewCalls.length), 1);
+    assert.equal(await page.evaluate(() => overviewCalls.length), 1, 'chart loads only the selected month until comparison is enabled');
     assert.equal(await page.$eval('#dash-staff-section', node => getComputedStyle(node).display !== 'none'), true, 'shipping operations are visible below sales');
     assert.equal(await page.$('#dash-ship-subbar'), null, 'shipping date controls and duplicate total are removed');
     assert.equal(await page.$('#dash-ship-total'), null);
@@ -110,13 +110,13 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       const input = document.getElementById('so-month');
       input.value = '2025-12'; input.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.waitForFunction(() => document.getElementById('so-month').value === '2025-12' && document.querySelectorAll('#so-chart-canvas .so-point').length === 31);
+    await page.waitForFunction(() => document.getElementById('so-month').value === '2025-12' && document.querySelectorAll('#so-chart-canvas .so-point:not(.is-compare)').length === 31);
     assert.equal(await page.$eval('#so-metrics .so-metric-value', node => node.textContent.trim()), '31');
     await page.$eval('#so-next', button => button.click());
-    await page.waitForFunction(() => document.getElementById('so-month').value === '2026-01' && document.querySelectorAll('#so-chart-canvas .so-point').length === 31);
+    await page.waitForFunction(() => document.getElementById('so-month').value === '2026-01' && document.querySelectorAll('#so-chart-canvas .so-point:not(.is-compare)').length === 31);
     await page.$eval('#so-prev', button => button.click());
-    await page.waitForFunction(() => document.getElementById('so-month').value === '2025-12' && document.querySelectorAll('#so-chart-canvas .so-point').length === 31);
-    assert.equal(await page.evaluate(() => overviewCalls.length), 3, 'recent month is read from the small response cache');
+    await page.waitForFunction(() => document.getElementById('so-month').value === '2025-12' && document.querySelectorAll('#so-chart-canvas .so-point:not(.is-compare)').length === 31);
+    assert.equal(await page.evaluate(() => overviewCalls.length), 3, 'the selected month response is reused on return navigation');
     assert.equal(await page.$eval('#so-month', input => input.type), 'hidden', 'dashboard uses its styled month picker');
     await page.$eval('#so-month-trigger', button => { button.scrollIntoView({ block: 'center' }); button.click(); });
     const desktopPicker = await page.$eval('#so-month-popover', node => { const r = node.getBoundingClientRect(); return { hidden: node.hidden, expanded: document.getElementById('so-month-trigger').getAttribute('aria-expanded'), hostHidden: document.getElementById('dash-sales-overview').hidden, left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: innerWidth, height: innerHeight }; });
@@ -137,7 +137,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
     assert.equal(await page.$$eval('#so-chart-canvas .so-point:not(.is-compare)', nodes => nodes.length), 28);
     assert.equal(await page.$$eval('#so-chart-canvas .so-point.is-compare', nodes => nodes.length), 31);
     assert.equal(await page.$eval('#so-legend [data-series-toggle="0"]', node => node.getAttribute('aria-pressed')), 'true');
-    assert.equal(await page.$eval('#so-chart-style [data-chart-style="line"]', node => node.getAttribute('aria-pressed')), 'true');
+    assert.equal(await page.$eval('#so-chart-style [data-chart-style="area"]', node => node.getAttribute('aria-pressed')), 'true');
     await page.$eval('#so-chart-style [data-chart-style="area"]', button => button.click());
     assert.equal(await page.$$eval('#so-chart-canvas .so-area', nodes => nodes.length), 1, 'area style fills the primary series');
     await page.$eval('#so-chart-style [data-chart-style="line"]', button => button.click());
@@ -180,7 +180,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
     });
     await page.mouse.move(hoverTarget.x, hoverTarget.y);
     assert(await page.$eval('#so-tip', tip => !tip.hidden && tip.textContent.includes('February 2026')), 'hovering between points reads the nearest day');
-    assert.equal(await page.$eval('#so-chart-canvas .so-hover-line', node => node.hidden), false, 'hover guide follows the day');
+    assert.equal(await page.$eval('#so-chart-canvas .so-hover-line', node => node.hasAttribute('hidden')), false, 'hover guide follows the day');
     assert.equal(await page.$eval('#so-metrics .so-metric-value', node => node.textContent.trim()), '28');
     assert(await page.$eval('#so-metrics .so-delta', node => node.textContent.includes('3')), 'metric shows the difference');
     await page.$eval('#so-chart-canvas .so-point.is-compare[data-day="28"]', point => point.focus());
@@ -192,8 +192,10 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
       await page.screenshot({ path: process.env.SALES_COMPARE_SHOT });
     }
     await page.$eval('#so-compare-trigger', button => { button.scrollIntoView({ block: 'center' }); button.click(); });
+    await page.$eval('#so-month-popover [data-remove-month="2026-01"]', button => button.click());
     await page.click('#so-month-popover [data-year-step="-1"]');
     await page.click('#so-month-popover [data-month="2025-12"]');
+    await page.click('#so-apply-months');
     await page.waitForFunction(() => document.getElementById('so-compare-label').textContent.includes('December 2025'));
     assert.equal(await page.evaluate(() => overviewCalls.length), requestsBeforeCompare, 'a cached comparison month needs no request');
     await page.setViewport({ width: 390, height: 900 });

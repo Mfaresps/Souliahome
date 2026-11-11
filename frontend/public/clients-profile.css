@@ -37,3 +37,7 @@ body.dark-mode .cp-good{background:#193c2c;color:#9ad5b6}body.dark-mode .cp-warn
   .cp-orders .cp-table .cp-order-reason{max-width:none;min-width:0}.cp-invoice-link{min-height:36px}
   .cp-filters button{min-height:44px}.cp-phone .cp-text-action{min-height:44px;display:inline-flex;align-items:center}
 }
+
+.cp-table td .cp-deposit-paid{color:var(--primary);font-weight:600}
+
+.cp-after-sales-table{table-layout:fixed}.cp-after-sales-table th,.cp-after-sales-table td{white-space:normal;overflow-wrap:anywhere}.cp-after-sales-table th:first-child{width:24%}.cp-after-sales-table th:nth-child(2){width:16%}.cp-after-sales-table th:nth-child(3){width:13%}.cp-after-sales-table th:nth-child(4),.cp-after-sales-table th:nth-child(5){width:14%}.cp-after-sales-table th:last-child{width:19%}.cp-after-sales-table .cp-order-reason{min-width:0;max-width:none}

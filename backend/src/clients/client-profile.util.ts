@@ -1,6 +1,7 @@
 /** Customer analytics are derived from orders, never from payment status or name alone. */
 import { cancelReasonDef } from '../shared/cancellation.constants';
 import { createHash } from 'crypto';
+import { approvedDepositTotal } from '../shopify/deposit-receipts.util';
 export const clientCode = (key: string) => 'CL-' + createHash('sha256').update(key).digest('hex').slice(0, 20).toUpperCase();
 export function clientIdentity(key: string, name: string) {
   const code = clientCode(key);
@@ -57,12 +58,25 @@ export function buildClientProfiles(transactions: ClientRow[], shopify: ClientRo
       shopifyCustomerId: tx.shopifyCustomerId || order?.shopifyCustomerId || '' };
   });
   shopify.filter(r => !linked.has(text(r._id))).forEach(r => all.push({ ...r, _source: 'shopify', _orderId: text(r._id) }));
+  const salesById = new Map(all.filter(r => r._source === 'transaction').map(r => [text(r._id), r]));
+  const originalByReplacement = new Map(returns.filter(r => r.workflow?.replacementTxId)
+    .map(r => [text(r.workflow.replacementTxId), text(r.originalTransactionId)]));
+  const identityFor = (row: ClientRow) => {
+    const seen = new Set<string>();
+    while (row._source === 'transaction' && !seen.has(text(row._id))) {
+      seen.add(text(row._id));
+      const original = salesById.get(text(row.afterSales?.originalTransactionId) || originalByReplacement.get(text(row._id)) || '');
+      if (!original) break;
+      row = original;
+    }
+    return row;
+  };
 
   // Legacy contacts attach to a Shopify identity only when the contact has one owner.
   // A shared family number must never collapse two different Shopify customers.
   const owners = new Map<string, Set<string>>();
   for (const row of all) {
-    const id = text(row.shopifyCustomerId);
+    const id = text(identityFor(row).shopifyCustomerId);
     if (!id) continue;
     for (const contact of [clientPhone(row.phone), clientEmail(row.customerEmail)].filter(Boolean)) {
       if (!owners.has(contact)) owners.set(contact, new Set());
@@ -71,14 +85,15 @@ export function buildClientProfiles(transactions: ClientRow[], shopify: ClientRo
   }
   const groups = new Map<string, ClientRow[]>();
   for (const row of all) {
-    const phone = clientPhone(row.phone), email = clientEmail(row.customerEmail);
+    const identity = identityFor(row);
+    const phone = clientPhone(identity.phone), email = clientEmail(identity.customerEmail);
     const phoneOwners = owners.get(phone), emailOwners = owners.get(email);
     const phoneOwner = phoneOwners?.size === 1 ? [...phoneOwners][0] : '';
     const emailOwner = emailOwners?.size === 1 ? [...emailOwners][0] : '';
     const uniqueOwner = phoneOwners && phoneOwners.size > 1 || phoneOwner && emailOwner && phoneOwner !== emailOwner
       ? '' : phoneOwner || emailOwner;
-    const id = text(row.shopifyCustomerId) || uniqueOwner;
-    const key = id ? 's:' + id : phone ? 'p:' + phone : email ? 'e:' + email : row._source + ':' + text(row._id);
+    const id = text(identity.shopifyCustomerId) || uniqueOwner;
+    const key = id ? 's:' + id : phone ? 'p:' + phone : email ? 'e:' + email : identity._source + ':' + text(identity._id);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(row);
   }
@@ -114,13 +129,35 @@ export function buildClientProfiles(transactions: ClientRow[], shopify: ClientRo
       const excluded = excludedOrders.has(r.cancelReasonCode);
       const customerCaused = isFailed ? ['refused', 'unreachable', 'bad-address'].includes(r.failedDelivery?.outcome)
         : isCancelled && cancelReasonDef(r.cancelReasonCode)?.group === 'customer';
+      // Receipts override legacy summaries, including when all receipts were refunded/rejected.
+      const creditApplied = r.afterSales?.role === 'replacement' ? amount(r.afterSales.creditApplied) / 100 : 0;
+      const deposit = r._source === 'transaction' ? Math.max(0, (Number(r.deposit) || 0) - creditApplied)
+        : r.depositReceipts?.length ? approvedDepositTotal(r) : r.depositAmount;
       return { id: text(r._id), orderId: text(r._orderId), shopifyId: text(r.shopifyOrderId || r.shopifyId), source: r._source, ref: text(r.ref), date: dateOf(r),
-        total: amount(r.total) / 100, paid: !isCancelled && r._source === 'transaction' ? amount(r.deposit) / 100 : 0,
+        total: amount(r.total) / 100, paid: !isCancelled ? amount(deposit) / 100 : 0,
         remaining: !isCancelled && r._source === 'transaction' ? amount(r.remaining) / 100 : 0,
         outcome, excluded, customerCaused, fake: r.cancelReasonCode === 'fake-order',
         reason: text(r.cancelReason || r.failedDelivery?.note || (r.failedDelivery?.outcome ? r.failedDelivery.outcome : '') || fu?.resolution),
         reasonCode: text(r.cancelReasonCode), failureCode: text(r.failedDelivery?.outcome),
         payStatus: text(r.payStatus), confirmedDelivery: wasDelivered,
+        replacement: r.afterSales?.role === 'replacement', creditApplied,
+        originalRef: text(r.afterSales?.originalRef), caseId: text(r.afterSales?.caseId),
+        // Only lifecycle inputs for the shared order-status labels; no receipt or shipment payloads.
+        orderState: {
+          status: text(r.status), cancelled: cancelled(r) || !!fu && r._source !== 'shopify', payStatus: text(r.payStatus),
+          followUpOutcome: fu ? 'cancelled' : '',
+          confirmationApproved: r.shipWithoutDeposit === true || (r.depositReceipts || [])
+            .some((receipt: any) => ['معتمد', 'معلق'].includes(receipt.status) && Number(receipt.amount) > 0),
+          pickupStatus: text(r.pickupStatus),
+          bostaStatus: wasDelivered ? 'DELIVERED' : text(r.bostaStatus),
+          hasShipment: !!(r.bostaOrderId || r.afterSales?.shipments?.[r.afterSales?.caseId]?.deliveryId),
+          deliverySource: text(r.deliverySource), shipCo: text(r.shipCo), carrierCode: text(r.carrierCode),
+          shipmentAttempts: Array.isArray(r.shipmentAttempts) ? r.shipmentAttempts.length : 0,
+          bostaIsDelayed: r.bostaIsDelayed === true,
+          bostaDeliveryException: { code: r.bostaDeliveryException?.code },
+          bostaLastTrackingUpdate: { status: text(r.bostaLastTrackingUpdate?.status),
+            reason: text(r.bostaLastTrackingUpdate?.reason), reasonAr: text(r.bostaLastTrackingUpdate?.reasonAr) },
+        },
       };
     });
     const actual = history.filter(r => !r.excluded);
@@ -132,14 +169,19 @@ export function buildClientProfiles(transactions: ClientRow[], shopify: ClientRo
       cancelledBefore: count('cancelledBefore'), cancelledAfter: count('cancelledAfter'), active: count('active'), unknown: count('unknown'),
       customerIssues: actual.filter(r => r.customerCaused).length, fake: actual.filter(r => r.fake).length,
       recentCustomerIssues: recent.filter(r => r.customerCaused).length, recentOrders: recent.length,
-      deliveryRate: null as number | null, returns: 0 };
+      deliveryRate: null as number | null, returns: 0, exchanges: 0 };
     const resolved = stats.delivered + stats.failed;
     if (resolved) stats.deliveryRate = Math.round(stats.delivered / resolved * 100);
-    const approvedReturns = [...txIds].flatMap(id => returnsByTx.get(id) || []).filter(r => r.status === 'معتمد' && !r.reversedAt);
-    stats.returns = new Set(approvedReturns.map(r => text(r.originalTransactionId))).size;
+    const cases = [...txIds].flatMap(id => returnsByTx.get(id) || []);
+    const approvedReturns = cases.filter(r => r.status === 'معتمد' && !r.reversedAt
+      && (!r.workflow?.version || r.workflow.receivedAt || r.returnTxId));
+    stats.returns = cases.filter(r => r.requestKind !== 'exchange').length;
+    stats.exchanges = cases.filter(r => r.requestKind === 'exchange').length;
     const moneyRows = rows.filter(r => r._source === 'transaction' && !cancelled(r));
     const money = { total: moneyRows.reduce((n, r) => n + amount(r.total), 0) / 100,
-      paid: moneyRows.reduce((n, r) => n + amount(r.deposit), 0) / 100,
+      paid: (moneyRows.reduce((n, r) => n + Math.max(0, amount(r.deposit)
+        - (r.afterSales?.role === 'replacement' ? amount(r.afterSales.creditApplied) : 0)), 0)
+        + history.filter(r => r.source === 'shopify').reduce((n, r) => n + amount(r.paid), 0)) / 100,
       remaining: moneyRows.reduce((n, r) => n + amount(r.remaining), 0) / 100,
       returns: approvedReturns.reduce((n, r) => n + amount(r.total), 0) / 100 };
     // Evidence thresholds are explicit and intentionally conservative; no opaque risk score.
@@ -160,8 +202,18 @@ export function buildClientProfiles(transactions: ClientRow[], shopify: ClientRo
     return { key, name, ...clientIdentity(key, name),
       phone: phones[0] || '', phones, email: emails[0] || '', emails, firstOrder: dateOf(rows[rows.length - 1]),
       lastOrder: dateOf(rows[0]), stats, money, assessment, addresses: [...addresses.values()], history,
-      returns: approvedReturns.map(r => ({ id: text(r.returnTxId), ref: text(r.returnTxRef || r.originalRef),
-        date: text(r.approvedAt || r.createdAt), total: amount(r.total) / 100, reason: text(r.reasonDetails || r.reason),
-        kind: text(r.requestKind) })) };
+      returns: cases.map(r => ({ id: text(r.returnTxId), returnRef: text(r.returnTxRef), ref: text(r.workflow?.ref || r.returnTxRef || r.originalRef),
+        caseId: r.workflow?.version === 2 ? text(r._id) : '',
+        originalId: text(r.originalTransactionId), originalRef: text(r.originalRef || salesById.get(text(r.originalTransactionId))?.ref),
+        replacementId: text(r.workflow?.replacementTxId), replacementRef: text(r.workflow?.replacementRef),
+        date: dateOf({ date: r.createdAt || r.approvedAt }), total: amount(r.total) / 100,
+        reason: text(r.reasonDetails || r.reason), reasonCode: text(r.reason),
+        kind: r.requestKind === 'exchange' ? 'exchange' : 'return', status: text(r.status), reversed: !!r.reversedAt,
+        stage: r.reversedAt ? 'reversed' : text(r.workflow?.stage) || (r.status === 'معتمد' ? 'closed' : r.status === 'مرفوض' ? 'cancelled' : 'requested'),
+        refunded: !r.reversedAt ? amount(r.workflow?.version ? r.workflow.refund?.amount : r.status === 'معتمد' ? r.total : 0) / 100 : 0,
+        collected: !r.reversedAt ? amount(r.workflow?.collection?.amount) / 100 : 0,
+        refundDue: !r.reversedAt && r.workflow?.stage !== 'cancelled' && !r.workflow?.refund ? amount(r.workflow?.quote?.refundDue) / 100 : 0,
+        collectDue: !r.reversedAt && r.workflow?.stage !== 'cancelled' && !r.workflow?.collection ? amount(r.workflow?.quote?.collectDue) / 100 : 0,
+      })).sort((a, b) => b.date.localeCompare(a.date)) };
   });
 }

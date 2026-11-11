@@ -4,9 +4,11 @@ export type SalesOverviewDay = {
   orders: number;
   confirmedOrders: number;
   revenue: number;
+  receivedValue: number;
+  confirmedValue: number;
 };
 
-type OrderBucket = { _id: string; receivedOrders?: number; confirmedOrders?: number; activeSales?: number; grossRevenue?: number };
+type OrderBucket = { _id: string; receivedOrders?: number; confirmedOrders?: number; receivedValue?: number; confirmedValue?: number; activeSales?: number; grossRevenue?: number };
 type ReturnBucket = { _id: string; amount: number };
 
 const cairoDate = new Intl.DateTimeFormat('en-CA', {
@@ -49,7 +51,7 @@ export function buildSalesOverview(
   const rows = new Map<string, SalesOverviewDay>();
   for (let day = 1; day <= count; day++) {
     const date = `${start.slice(0, 8)}${String(day).padStart(2, '0')}`;
-    rows.set(date, { date, orders: 0, confirmedOrders: 0, revenue: 0 });
+    rows.set(date, { date, orders: 0, confirmedOrders: 0, revenue: 0, receivedValue: 0, confirmedValue: 0 });
   }
   for (const bucket of orderBuckets) {
     const row = rows.get(bucket._id);
@@ -57,12 +59,14 @@ export function buildSalesOverview(
     row.orders += Number(bucket.receivedOrders) || 0;
     row.confirmedOrders += Number(bucket.confirmedOrders) || 0;
     row.revenue += Number(bucket.grossRevenue) || 0;
+    row.receivedValue += Number(bucket.receivedValue) || 0;
+    row.confirmedValue += Number(bucket.confirmedValue) || 0;
   }
   for (const bucket of returnBuckets) {
     const row = rows.get(bucket._id);
     if (row) row.revenue -= Number(bucket.amount) || 0;
   }
-  const days = [...rows.values()].map(row => ({ ...row, revenue: money(row.revenue) }));
+  const days = [...rows.values()].map(row => ({ ...row, revenue: money(row.revenue), receivedValue: money(row.receivedValue), confirmedValue: money(row.confirmedValue) }));
   const totalOrders = days.reduce((sum, row) => sum + row.orders, 0);
   const confirmedOrders = days.reduce((sum, row) => sum + row.confirmedOrders, 0);
   const gross = orderBuckets.reduce((sum, row) => sum + (Number(row.grossRevenue) || 0), 0);
@@ -74,6 +78,8 @@ export function buildSalesOverview(
   return {
     month: start.slice(0, 7), timeZone: 'Africa/Cairo',
     totalOrders, totalRevenue, confirmedOrders,
+    totalReceivedValue: money(days.reduce((sum, row) => sum + row.receivedValue, 0)),
+    totalConfirmedValue: money(days.reduce((sum, row) => sum + row.confirmedValue, 0)),
     // Matches getReports(): average uses gross product sales per active sales invoice.
     averageOrderValue: activeSales ? Math.round(gross / activeSales) : 0,
     today: today.startsWith(start.slice(0, 7)) ? today : null,

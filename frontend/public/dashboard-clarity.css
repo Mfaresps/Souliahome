@@ -121,6 +121,88 @@ body.dark-mode .dashboard-v2 .ds-more-alert { color: #f0a7a7; }
   margin-block: 0 var(--ds-section-gap);
   padding-block: 10px;
 }
+/* Compact presence shares the dashboard toolbar; no standalone row below sales. */
+#main #page-dashboard > .page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "presence actions";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 0;
+  direction: ltr;
+  margin-block: 0 10px !important;
+}
+#main #page-dashboard > .page-header > div:has(> .page-title) { grid-column: 1 / -1; grid-row: 2; }
+#main #page-dashboard > .page-header > .page-header-actions { grid-area: actions; }
+html[dir="rtl"] #page-dashboard > .page-header > * { direction: rtl; }
+#main #page-dashboard > .page-header > .ds-presence-compact {
+  grid-area: presence;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+  width: auto;
+  max-width: 390px;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-v2 .ds-presence-compact .ds-presence-strip {
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+  min-height: 40px;
+  overflow-x: auto;
+  padding: 4px;
+  scrollbar-width: thin;
+}
+.dashboard-v2 .ds-presence-compact .ds-pu {
+  width: 32px;
+  height: 32px;
+  max-width: none;
+  justify-content: center;
+  gap: 0;
+}
+.dashboard-v2 .ds-presence-compact .ds-pu:focus-visible { outline-offset: 1px; }
+.dashboard-v2 .ds-presence-compact .ds-pu-av,
+.dashboard-v2 .ds-presence-compact .ds-presence-placeholder {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 11px;
+}
+.dashboard-v2 .ds-presence-compact .ds-pu-dot {
+  top: 23px;
+  left: 23px;
+  width: 8px;
+  height: 8px;
+}
+.dashboard-v2 .ds-presence-compact .ds-pu-status { display: none; }
+.dashboard-v2 .ds-presence-compact .ds-presence-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 650px) {
+  #main #page-dashboard > .page-header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "presence" "actions";
+    row-gap: 6px;
+  }
+  #main #page-dashboard > .page-header > .ds-presence-compact { max-width: 100%; }
+  .dashboard-v2 .ds-presence-compact .ds-pu { width: 44px; height: 44px; }
+  .dashboard-v2 .ds-presence-compact .ds-presence-strip { min-height: 52px; }
+  .dashboard-v2 .ds-presence-compact .ds-pu-dot { top: 29px; left: 29px; }
+  #main #page-dashboard > .page-header > .page-header-actions { justify-self: end; }
+  #main #page-dashboard > .page-header > div:has(> .page-title) { grid-row: 3; }
+}
+.dashboard-v2.sales-home .scc-zone { margin-top: 14px; }
 .dashboard-v2 .admin-team-home {
   background: var(--ds-surface);
   border-color: var(--ds-border);

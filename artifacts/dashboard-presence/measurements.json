@@ -1,0 +1,1122 @@
+[
+  {
+    "lang": "en",
+    "dark": false,
+    "width": 1440,
+    "presence": {
+      "left": 29,
+      "top": 35,
+      "right": 304.21875,
+      "bottom": 75,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 35,
+      "right": 1411,
+      "bottom": 75,
+      "width": 1382,
+      "height": 40
+    },
+    "actions": {
+      "left": 1058.875,
+      "top": 35,
+      "right": 1411,
+      "bottom": 75,
+      "width": 352.125,
+      "height": 40
+    },
+    "chart": {
+      "left": 29,
+      "top": 85,
+      "right": 1411,
+      "bottom": 756.328125,
+      "width": 1382,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 770.328125,
+      "right": 1411,
+      "bottom": 801.328125,
+      "width": 1382,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 41,
+      "right": 63,
+      "bottom": 69,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": false,
+    "width": 1024,
+    "presence": {
+      "left": 29,
+      "top": 29,
+      "right": 304.21875,
+      "bottom": 69,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 966,
+      "height": 40
+    },
+    "actions": {
+      "left": 642.875,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 352.125,
+      "height": 40
+    },
+    "chart": {
+      "left": 29,
+      "top": 79,
+      "right": 995,
+      "bottom": 750.328125,
+      "width": 966,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.328125,
+      "right": 995,
+      "bottom": 795.328125,
+      "width": 966,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 35,
+      "right": 63,
+      "bottom": 63,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": false,
+    "width": 768,
+    "presence": {
+      "left": 29,
+      "top": 34.875,
+      "right": 304.21875,
+      "bottom": 74.875,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.75,
+      "width": 710,
+      "height": 51.75
+    },
+    "actions": {
+      "left": 405.96875,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.75,
+      "width": 333.03125,
+      "height": 51.75
+    },
+    "chart": {
+      "left": 29,
+      "top": 90.75,
+      "right": 739,
+      "bottom": 799.328125,
+      "width": 710,
+      "height": 708.578125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 813.328125,
+      "right": 739,
+      "bottom": 844.328125,
+      "width": 710,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 40.875,
+      "right": 63,
+      "bottom": 68.875,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": false,
+    "width": 390,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 360.21875,
+      "bottom": 65,
+      "width": 347.21875,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 102
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 44
+    },
+    "chart": {
+      "left": 13,
+      "top": 125,
+      "right": 377,
+      "bottom": 985.59375,
+      "width": 364,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 999.59375,
+      "right": 377,
+      "bottom": 1027.890625,
+      "width": 364,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 25,
+      "top": 25,
+      "right": 53,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": false,
+    "width": 320,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 65,
+      "width": 294,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 154
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 96
+    },
+    "chart": {
+      "left": 13,
+      "top": 177,
+      "right": 307,
+      "bottom": 1083.59375,
+      "width": 294,
+      "height": 906.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 1097.59375,
+      "right": 307,
+      "bottom": 1125.890625,
+      "width": 294,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 25,
+      "top": 25,
+      "right": 53,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": true,
+    "width": 1440,
+    "presence": {
+      "left": 29,
+      "top": 29.21875,
+      "right": 304.21875,
+      "bottom": 69.21875,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.453125,
+      "width": 1382,
+      "height": 40.453125
+    },
+    "actions": {
+      "left": 1062.0625,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.453125,
+      "width": 348.9375,
+      "height": 40.453125
+    },
+    "chart": {
+      "left": 29,
+      "top": 79.453125,
+      "right": 1411,
+      "bottom": 750.78125,
+      "width": 1382,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.78125,
+      "right": 1411,
+      "bottom": 795.78125,
+      "width": 1382,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 35.21875,
+      "right": 63,
+      "bottom": 63.21875,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": true,
+    "width": 1024,
+    "presence": {
+      "left": 29,
+      "top": 29,
+      "right": 304.21875,
+      "bottom": 69,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 966,
+      "height": 40
+    },
+    "actions": {
+      "left": 642.875,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 352.125,
+      "height": 40
+    },
+    "chart": {
+      "left": 29,
+      "top": 79,
+      "right": 995,
+      "bottom": 750.328125,
+      "width": 966,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.328125,
+      "right": 995,
+      "bottom": 795.328125,
+      "width": 966,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 35,
+      "right": 63,
+      "bottom": 63,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": true,
+    "width": 768,
+    "presence": {
+      "left": 29,
+      "top": 34.875,
+      "right": 304.21875,
+      "bottom": 74.875,
+      "width": 275.21875,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.75,
+      "width": 710,
+      "height": 51.75
+    },
+    "actions": {
+      "left": 405.96875,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.75,
+      "width": 333.03125,
+      "height": 51.75
+    },
+    "chart": {
+      "left": 29,
+      "top": 90.75,
+      "right": 739,
+      "bottom": 799.328125,
+      "width": 710,
+      "height": 708.578125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 813.328125,
+      "right": 739,
+      "bottom": 844.328125,
+      "width": 710,
+      "height": 31
+    },
+    "avatar": {
+      "left": 35,
+      "top": 40.875,
+      "right": 63,
+      "bottom": 68.875,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": true,
+    "width": 390,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 360.21875,
+      "bottom": 65,
+      "width": 347.21875,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 102
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 44
+    },
+    "chart": {
+      "left": 13,
+      "top": 125,
+      "right": 377,
+      "bottom": 985.59375,
+      "width": 364,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 999.59375,
+      "right": 377,
+      "bottom": 1027.890625,
+      "width": 364,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 25,
+      "top": 25,
+      "right": 53,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "en",
+    "dark": true,
+    "width": 320,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 65,
+      "width": 294,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 154
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 96
+    },
+    "chart": {
+      "left": 13,
+      "top": 177,
+      "right": 307,
+      "bottom": 1083.59375,
+      "width": 294,
+      "height": 906.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 1097.59375,
+      "right": 307,
+      "bottom": 1125.890625,
+      "width": 294,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 25,
+      "top": 25,
+      "right": 53,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": false,
+    "width": 1440,
+    "presence": {
+      "left": 29,
+      "top": 29.140625,
+      "right": 318.109375,
+      "bottom": 69.140625,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.296875,
+      "width": 1382,
+      "height": 40.296875
+    },
+    "actions": {
+      "left": 1060.984375,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.296875,
+      "width": 350.015625,
+      "height": 40.296875
+    },
+    "chart": {
+      "left": 29,
+      "top": 79.296875,
+      "right": 1411,
+      "bottom": 750.625,
+      "width": 1382,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.625,
+      "right": 1411,
+      "bottom": 795.625,
+      "width": 1382,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 35.140625,
+      "right": 312.109375,
+      "bottom": 63.140625,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": false,
+    "width": 1024,
+    "presence": {
+      "left": 29,
+      "top": 29,
+      "right": 318.109375,
+      "bottom": 69,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 966,
+      "height": 40
+    },
+    "actions": {
+      "left": 642.90625,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 352.09375,
+      "height": 40
+    },
+    "chart": {
+      "left": 29,
+      "top": 79,
+      "right": 995,
+      "bottom": 750.328125,
+      "width": 966,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.328125,
+      "right": 995,
+      "bottom": 795.328125,
+      "width": 966,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 35,
+      "right": 312.109375,
+      "bottom": 63,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": false,
+    "width": 768,
+    "presence": {
+      "left": 29,
+      "top": 34.75,
+      "right": 318.109375,
+      "bottom": 74.75,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.5,
+      "width": 710,
+      "height": 51.5
+    },
+    "actions": {
+      "left": 407.078125,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.5,
+      "width": 331.921875,
+      "height": 51.5
+    },
+    "chart": {
+      "left": 29,
+      "top": 90.5,
+      "right": 739,
+      "bottom": 799.078125,
+      "width": 710,
+      "height": 708.578125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 813.078125,
+      "right": 739,
+      "bottom": 844.078125,
+      "width": 710,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 40.75,
+      "right": 312.109375,
+      "bottom": 68.75,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": false,
+    "width": 390,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 374.109375,
+      "bottom": 65,
+      "width": 361.109375,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 102
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 44
+    },
+    "chart": {
+      "left": 13,
+      "top": 125,
+      "right": 377,
+      "bottom": 985.59375,
+      "width": 364,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 999.59375,
+      "right": 377,
+      "bottom": 1027.890625,
+      "width": 364,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 334.109375,
+      "top": 25,
+      "right": 362.109375,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": false,
+    "width": 320,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 65,
+      "width": 294,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 154
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 96
+    },
+    "chart": {
+      "left": 13,
+      "top": 177,
+      "right": 307,
+      "bottom": 1037.59375,
+      "width": 294,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 1051.59375,
+      "right": 307,
+      "bottom": 1079.890625,
+      "width": 294,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 267,
+      "top": 25,
+      "right": 295,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": true,
+    "width": 1440,
+    "presence": {
+      "left": 29,
+      "top": 29.21875,
+      "right": 318.109375,
+      "bottom": 69.21875,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.453125,
+      "width": 1382,
+      "height": 40.453125
+    },
+    "actions": {
+      "left": 1062.09375,
+      "top": 29,
+      "right": 1411,
+      "bottom": 69.453125,
+      "width": 348.90625,
+      "height": 40.453125
+    },
+    "chart": {
+      "left": 29,
+      "top": 79.453125,
+      "right": 1411,
+      "bottom": 750.78125,
+      "width": 1382,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.78125,
+      "right": 1411,
+      "bottom": 795.78125,
+      "width": 1382,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 35.21875,
+      "right": 312.109375,
+      "bottom": 63.21875,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": true,
+    "width": 1024,
+    "presence": {
+      "left": 29,
+      "top": 29,
+      "right": 318.109375,
+      "bottom": 69,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 966,
+      "height": 40
+    },
+    "actions": {
+      "left": 642.90625,
+      "top": 29,
+      "right": 995,
+      "bottom": 69,
+      "width": 352.09375,
+      "height": 40
+    },
+    "chart": {
+      "left": 29,
+      "top": 79,
+      "right": 995,
+      "bottom": 750.328125,
+      "width": 966,
+      "height": 671.328125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 764.328125,
+      "right": 995,
+      "bottom": 795.328125,
+      "width": 966,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 35,
+      "right": 312.109375,
+      "bottom": 63,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": true,
+    "width": 768,
+    "presence": {
+      "left": 29,
+      "top": 34.75,
+      "right": 318.109375,
+      "bottom": 74.75,
+      "width": 289.109375,
+      "height": 40
+    },
+    "header": {
+      "left": 29,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.5,
+      "width": 710,
+      "height": 51.5
+    },
+    "actions": {
+      "left": 407.078125,
+      "top": 29,
+      "right": 739,
+      "bottom": 80.5,
+      "width": 331.921875,
+      "height": 51.5
+    },
+    "chart": {
+      "left": 29,
+      "top": 90.5,
+      "right": 739,
+      "bottom": 799.078125,
+      "width": 710,
+      "height": 708.578125
+    },
+    "shipping": {
+      "left": 29,
+      "top": 813.078125,
+      "right": 739,
+      "bottom": 844.078125,
+      "width": 710,
+      "height": 31
+    },
+    "avatar": {
+      "left": 284.109375,
+      "top": 40.75,
+      "right": 312.109375,
+      "bottom": 68.75,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": true,
+    "width": 390,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 374.109375,
+      "bottom": 65,
+      "width": 361.109375,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 102
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 377,
+      "bottom": 115,
+      "width": 364,
+      "height": 44
+    },
+    "chart": {
+      "left": 13,
+      "top": 125,
+      "right": 377,
+      "bottom": 985.59375,
+      "width": 364,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 999.59375,
+      "right": 377,
+      "bottom": 1027.890625,
+      "width": 364,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 334.109375,
+      "top": 25,
+      "right": 362.109375,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  },
+  {
+    "lang": "ar",
+    "dark": true,
+    "width": 320,
+    "presence": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 65,
+      "width": 294,
+      "height": 52
+    },
+    "header": {
+      "left": 13,
+      "top": 13,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 154
+    },
+    "actions": {
+      "left": 13,
+      "top": 71,
+      "right": 307,
+      "bottom": 167,
+      "width": 294,
+      "height": 96
+    },
+    "chart": {
+      "left": 13,
+      "top": 177,
+      "right": 307,
+      "bottom": 1037.59375,
+      "width": 294,
+      "height": 860.59375
+    },
+    "shipping": {
+      "left": 13,
+      "top": 1051.59375,
+      "right": 307,
+      "bottom": 1079.890625,
+      "width": 294,
+      "height": 28.296875
+    },
+    "avatar": {
+      "left": 267,
+      "top": 25,
+      "right": 295,
+      "bottom": 53,
+      "width": 28,
+      "height": 28
+    },
+    "overflow": false,
+    "inHeader": true,
+    "statusHidden": true
+  }
+]

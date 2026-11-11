@@ -21,7 +21,7 @@ window.SouliaClients = (() => {
   const labels = {
     delivered: ['تم الاستلام', 'Delivered'], failed: ['فشل الاستلام', 'Failed delivery'],
     cancelledBefore: ['إلغاء قبل التسجيل', 'Cancelled before registration'], cancelledAfter: ['إلغاء بعد التسجيل', 'Cancelled after registration'],
-    active: ['طلبات جارية', 'In progress'], returns: ['مرتجع بعد الاستلام', 'After-sales returns'],
+    active: ['طلبات جارية', 'In progress'], returns: ['الاسترجاع', 'Returns'], exchanges: ['الاستبدال', 'Exchanges'],
     unknown: ['نتيجة غير مسجّلة', 'Outcome not recorded'],
     all: ['كل الطلبات', 'All orders'], insufficient: ['سجل غير كافٍ للتقييم', 'Not enough history'],
     reliable: ['منتظم في الاستلام', 'Reliable recipient'], valued: ['عميل مميز', 'Valued customer'],
@@ -233,19 +233,44 @@ window.SouliaClients = (() => {
         </section>
         <section class="cp-finances" aria-label="${tr('ملخص الحساب', 'Account summary')}">${stat(fmtJ(p.money.total), tr('قيمة الفواتير', 'Invoice total'))}${stat(fmtJ(p.money.paid), tr('المدفوع فعليًا', 'Actual payments'))}${stat(fmtJ(p.money.remaining), tr('المتبقي', 'Due'), p.money.remaining > 0 ? 'cp-due' : '')}${stat(fmtJ(p.money.returns), tr('مرتجعات معتمدة', 'Approved returns'))}</section>
         ${hasPerm('complaints') ? `<details class="cp-panel cp-tickets" id="cp-ticket-panel" ${ticketsOpen ? 'open' : ''}><summary><span>${tr('التذاكر', 'Tickets')}<small>${tr('المتابعات والشكاوى', 'Follow-ups & complaints')}</small></span><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m9 5 7 7-7 7"/></svg></summary><div class="cp-ticket-body"><div class="cp-ticket-actions"><label for="cp-ticket-order">${tr('الطلب المرتبط', 'Related order')}</label><select id="cp-ticket-order">${p.history.filter(r => !r.excluded).map(r => `<option value="${e(r.source + ':' + r.id)}">#${e(r.ref)} · ${e(fmtDate(r.date))}</option>`).join('')}</select><button type="button" class="btn btn-outline btn-sm" data-cp="new-ticket">${tr('إضافة تذكرة', 'Add ticket')}</button></div><div id="cp-ticket-results"></div></div></details>` : ''}
-        <section class="cp-panel cp-orders"><div class="cp-section-title"><h2>${tr('الفواتير والطلبات', 'Invoices & orders')}</h2><input id="cp-order-search" type="search" aria-label="${tr('بحث برقم الطلب', 'Search order number')}" placeholder="${tr('بحث برقم الطلب…', 'Search order number…')}" value="${e(query)}"></div><div class="cp-filters" role="group" aria-label="${tr('تصفية الطلبات', 'Filter orders')}">${['all', ...segments, 'returns'].map(k => `<button type="button" data-cp-filter="${k}" aria-pressed="${filter === k}">${label(k)} <span>${n(k === 'all' ? p.history.length : s[k])}</span></button>`).join('')}</div><div id="cp-order-results"></div></section>
+        <section class="cp-panel cp-orders"><div class="cp-section-title"><h2>${tr('الفواتير والطلبات', 'Invoices & orders')}</h2><input id="cp-order-search" type="search" aria-label="${tr('بحث برقم الطلب', 'Search order number')}" placeholder="${tr('بحث برقم الطلب…', 'Search order number…')}" value="${e(query)}"></div><div class="cp-filters" role="group" aria-label="${tr('تصفية الطلبات', 'Filter orders')}">${['all', ...segments, 'returns', 'exchanges'].map(k => `<button type="button" data-cp-filter="${k}" aria-pressed="${filter === k}">${label(k)} <span>${n(k === 'all' ? p.history.length : s[k] || 0)}</span></button>`).join('')}</div><div id="cp-order-results"></div></section>
       </div></div></div>`;
     paintOrders();
     if (ticketsOpen) loadTickets();
     if (typeof syncNavigationShell === 'function') syncNavigationShell();
   }
+  function orderStatusBadge(row, isReturn) {
+    const state = row.orderState;
+    const unknown = row.outcome === 'unknown' && row.source === 'transaction' && state
+      && !state.pickupStatus && !state.bostaStatus && !state.hasShipment && !state.deliverySource;
+    if (!isReturn && state && !unknown) {
+      return SouliaOrderStatus.badge(SouliaOrderStatus.resolve(state, row.source, currentLang));
+    }
+    return `<span class="cp-result cp-result-${e(row.outcome || 'returns')}">${e(isReturn ? label('returns') : label(row.outcome))}</span>`;
+  }
+  const canOpenCase = () => isAdmin() || ['transaction', 'movements', 'reports', 'inventory-units-condition', 'shopify-prepare-ship', 'complaints', 'pickup-orders'].some(hasPerm);
+  function caseInvoice(id, ref, title) {
+    return id ? `<small>${title} <a class="cp-invoice-link" href="#transactions/orders/view/sales-${enc(ref)}" data-cp-invoice="${e(id)}" data-cp-source="transaction"><bdi>#${e(ref || '—')}</bdi></a></small>` : '';
+  }
+  function paintAfterSales(data) {
+    const refund = tr('رُد للعميل فعليًا', 'Refund paid'), collect = tr('فرق تم تحصيله', 'Difference collected');
+    $('#cp-order-results').innerHTML = data.length ? `<div class="cp-table-scroll"><table class="cp-table cp-after-sales-table"><thead><tr><th>${tr('العملية والفواتير', 'Case & invoices')}</th><th>${tr('التاريخ', 'Date')}</th><th>${tr('قيمة المرتجع', 'Return value')}</th><th>${refund}</th><th>${collect}</th><th>${tr('الحالة والسبب', 'Status & reason')}</th></tr></thead><tbody>${data.map(row => {
+      const stage = row.reversed ? tr('تم التراجع', 'Reversed') : window.AfterSales?.stageLabel?.(row.stage, row.kind) || row.status;
+      const why = row.reason && row.reason !== row.reasonCode ? row.reason : window.AfterSales?.reasonLabel?.(row.reasonCode) || row.reason;
+      const reference = row.caseId && canOpenCase() ? `<button type="button" class="cp-text-action cp-invoice-link" data-cp-case="${e(row.caseId)}"><bdi>${e(row.ref)}</bdi></button>`
+        : row.id ? `<a class="cp-invoice-link" href="#transactions/orders/view/sales-${enc(row.returnRef || row.ref)}" data-cp-invoice="${e(row.id)}" data-cp-source="transaction"><bdi>#${e(row.ref)}</bdi></a>` : `<bdi>${e(row.ref)}</bdi>`;
+      return `<tr class="${row.reversed || row.stage === 'cancelled' ? 'cp-excluded' : ''}"><td>${reference}<small>${row.kind === 'exchange' ? label('exchanges') : label('returns')}</small>${caseInvoice(row.originalId, row.originalRef, tr('الأصل', 'Original'))}${caseInvoice(row.replacementId, row.replacementRef, tr('البديل', 'Replacement'))}${row.caseId ? caseInvoice(row.id, row.returnRef, tr('فاتورة المرتجع', 'Return invoice')) : ''}</td><td>${e(fmtDate(row.date))}</td><td data-cp-amount data-label="${tr('قيمة المرتجع', 'Return value')}">${fmtJ(row.total)}</td><td data-cp-amount data-label="${refund}">${fmtJ(row.refunded)}${row.refundDue > 0 ? `<small>${tr('مستحق للعميل', 'Refund due')}: ${fmtJ(row.refundDue)}</small>` : ''}</td><td data-cp-amount data-label="${collect}">${fmtJ(row.collected)}${row.collectDue > 0 ? `<small>${tr('متبقي للتحصيل', 'To collect')}: ${fmtJ(row.collectDue)}</small>` : ''}</td><td><span class="cp-result">${e(stage)}</span>${why ? `<small class="cp-order-reason">${e(why)}</small>` : ''}</td></tr>`;
+    }).join('')}</tbody></table></div>` : `<div class="cp-empty">${tr('لا توجد عمليات في هذا القسم', 'No cases in this section')}</div>`;
+  }
   function paintOrders() {
     if (!profile) return;
     const isReturn = filter === 'returns';
-    const data = (isReturn ? profile.returns : profile.history).filter(r => (isReturn || filter === 'all' || r.outcome === filter)
-      && normalizeUiSearch(r.ref).includes(normalizeUiSearch(query)));
+    const isAfterSales = isReturn || filter === 'exchanges';
+    const data = (isAfterSales ? profile.returns : profile.history).filter(r => (isAfterSales ? r.kind === (isReturn ? 'return' : 'exchange') : filter === 'all' || r.outcome === filter)
+      && normalizeUiSearch(isAfterSales ? [r.ref, r.originalRef, r.replacementRef, r.returnRef].join(' ') : r.ref).includes(normalizeUiSearch(query)));
     document.querySelectorAll('#clients-profile-view [data-cp-filter]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cpFilter === filter)));
-    $('#cp-order-results').innerHTML = data.length ? `<div class="cp-table-scroll"><table class="cp-table"><thead><tr><th>${tr('الطلب', 'Order')}</th><th>${tr('التاريخ', 'Date')}</th><th>${tr('الإجمالي', 'Total')}</th>${isReturn ? '' : `<th>${tr('المدفوع', 'Paid')}</th><th>${tr('المتبقي', 'Due')}</th>`}<th>${tr('النتيجة والسبب', 'Outcome & reason')}</th></tr></thead><tbody>${data.map(r => `<tr class="${r.excluded ? 'cp-excluded' : ''}"><td>${r.id ? `<a href="${r.source === 'shopify' ? '#shopify-orders' : '#transactions/orders/view/sales-' + enc(r.ref)}" class="cp-invoice-link" data-cp-invoice="${e(r.id)}" data-cp-source="${e(r.source || 'transaction')}"><bdi>#${e(r.ref || '—')}</bdi></a>` : e(r.ref)}${r.source === 'shopify' ? `<small>Shopify · ${tr('بدون فاتورة', 'Not registered')}</small>` : ''}</td><td>${e(fmtDate(r.date))}</td><td data-cp-amount data-label="${tr('الإجمالي', 'Total')}">${fmtJ(r.total)}</td>${isReturn ? '' : `<td data-cp-amount data-label="${tr('المدفوع', 'Paid')}">${fmtJ(r.paid)}</td><td data-cp-amount data-label="${tr('المتبقي', 'Due')}">${fmtJ(r.remaining)}</td>`}<td><span class="cp-result cp-result-${e(r.outcome || 'returns')}">${e(isReturn ? label('returns') : label(r.outcome))}</span>${r.excluded ? `<small>${tr('مستبعد من التقييم', 'Excluded from assessment')}</small>` : ''}${reason(r) ? `<small class="cp-order-reason">${e(reason(r))}</small>` : !isReturn && ['failed', 'cancelledBefore', 'cancelledAfter'].includes(r.outcome) ? `<small>${tr('السبب غير مسجّل', 'Reason not recorded')}</small>` : ''}</td></tr>`).join('')}</tbody></table></div>` : `<div class="cp-empty">${tr('لا توجد طلبات في هذا القسم', 'No orders in this section')}</div>`;
+    if (isAfterSales) { paintAfterSales(data); return; }
+    $('#cp-order-results').innerHTML = data.length ? `<div class="cp-table-scroll"><table class="cp-table"><thead><tr><th>${tr('الطلب', 'Order')}</th><th>${tr('التاريخ', 'Date')}</th><th>${tr('الإجمالي', 'Total')}</th>${isReturn ? '' : `<th>${tr('المدفوع', 'Paid')}</th><th>${tr('المتبقي', 'Due')}</th>`}<th>${tr('الحالة والسبب', 'Status & reason')}</th></tr></thead><tbody>${data.map(r => `<tr class="${r.excluded ? 'cp-excluded' : ''}"><td>${r.id ? `<a href="${r.source === 'shopify' ? '#shopify-orders' : '#transactions/orders/view/sales-' + enc(r.ref)}" class="cp-invoice-link" data-cp-invoice="${e(r.id)}" data-cp-source="${e(r.source || 'transaction')}"><bdi>#${e(r.ref || '—')}</bdi></a>` : e(r.ref)}${r.replacement ? `<small>${tr('بديل استبدال', 'Exchange replacement')} · #${e(r.originalRef)}</small>` : ''}${r.source === 'shopify' ? `<small>Shopify · ${tr('بدون فاتورة', 'Not registered')}</small>${r.paid > 0 ? `<small class="cp-deposit-paid">${tr('عربون مدفوع', 'Deposit paid')}</small>` : ''}` : ''}</td><td>${e(fmtDate(r.date))}</td><td data-cp-amount data-label="${tr('الإجمالي', 'Total')}">${fmtJ(r.total)}</td>${isReturn ? '' : `<td data-cp-amount data-label="${tr('المدفوع', 'Paid')}">${fmtJ(r.paid)}${r.creditApplied > 0 ? `<small>${tr('رصيد مرتجع مستخدم', 'Return credit applied')}: ${fmtJ(r.creditApplied)}</small>` : ''}</td><td data-cp-amount data-label="${tr('المتبقي', 'Due')}">${fmtJ(r.remaining)}</td>`}<td>${orderStatusBadge(r, isReturn)}${r.excluded ? `<small>${tr('مستبعد من التقييم', 'Excluded from assessment')}</small>` : ''}${reason(r) ? `<small class="cp-order-reason">${e(reason(r))}</small>` : !isReturn && ['failed', 'cancelledBefore', 'cancelledAfter'].includes(r.outcome) ? `<small>${tr('السبب غير مسجّل', 'Reason not recorded')}</small>` : ''}</td></tr>`).join('')}</tbody></table></div>` : `<div class="cp-empty">${tr('لا توجد طلبات في هذا القسم', 'No orders in this section')}</div>`;
   }
   async function loadTickets(force = false) {
     const p = profile, host = $('#cp-ticket-results');
@@ -424,6 +449,12 @@ window.SouliaClients = (() => {
       else openComplaintBySlug(ticket.dataset.cpTicket, true);
       return;
     }
+    const caseButton = event.target.closest('[data-cp-case]');
+    if (caseButton) {
+      event.preventDefault();
+      if (canOpenCase()) window.AfterSales?.open(caseButton.dataset.cpCase);
+      return;
+    }
     const openButton = event.target.closest('[data-cp-open]');
     if (openButton) { event.preventDefault(); if ($('#sp-peek')) closeSpOrderPeek(); open(openButton.dataset.cpOpen); return; }
     const inv = event.target.closest('[data-cp-invoice]');
@@ -492,8 +523,8 @@ window.SouliaClients = (() => {
     if (!connection || connectedSockets.has(connection)) return;
     connectedSockets.add(connection);
     ['connect', 'shopify:order-created', 'shopify:order-cancelled', 'shopify:phone-changed',
-      'shopify:client-changed', 'shopify:edit-changed', 'tx:created', 'tx:updated', 'tx:cancelled', 'tx:deleted',
-      'followup:changed', 'complaint:changed']
+      'shopify:client-changed', 'shopify:edit-changed', 'shopify:deposit-changed', 'tx:created', 'tx:updated', 'tx:cancelled', 'tx:deleted',
+      'followup:changed', 'complaint:changed', 'after-sales:updated']
       .forEach(event => connection.on(event, changed));
   }
   return { renderList, showLoading, open, orderEvidence, orderSummary, bindSocket, customerLink,

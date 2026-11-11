@@ -797,6 +797,6 @@
     void refresh(['returns']);
     if(!busy&&dialog?.open&&activeCase?._id===id&&el('[data-as-print]'))void open(id);
   }
-  window.AfterSales={create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,refreshPreparationDetails,printOrderCase,shippingBadges,changed,selectIcon};
+  window.AfterSales={stageLabel:stage,reasonLabel,create,open,fromComplaint,list,report,policy,invoiceNotes,invoiceActions,timeline,ledgerDetails,orderBadge,preparationDetails,loadPreparationDetails,refreshPreparationDetails,printOrderCase,shippingBadges,changed,selectIcon};
   document.addEventListener('DOMContentLoaded',()=>{mountLaunchers();let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mountLaunchers();});}).observe(document.getElementById('main')||document.body,{childList:true,subtree:true});});
 })();

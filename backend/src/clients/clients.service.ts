@@ -25,9 +25,14 @@ export class ClientsService {
   }
   private async readProfiles() {
     const [transactions, orders, returns, followups, contacts] = await Promise.all([
-      this.transactions.find({ type: 'مبيعات' }).select(COMMON + ' type shopifyOrderId pickupStatus deliveredAt bostaStatus bostaShippingStatus failedDelivery shipIssueState').lean().exec(),
-      this.orders.find().select(COMMON + ' shopifyId status rawData.customer.id rawData.customer.email rawData.contact_email rawData.email').lean().exec(),
-      this.returns.find({ status: 'معتمد' }).select('originalTransactionId originalRef returnTxId returnTxRef approvedAt createdAt total reason reasonDetails requestKind reversedAt').lean().exec(),
+      this.transactions.find({ type: 'مبيعات' }).select(COMMON + ' type shopifyOrderId pickupStatus deliveredAt bostaStatus bostaShippingStatus failedDelivery shipIssueState'
+        + ' bostaOrderId deliverySource shipCo carrierCode shipmentAttempts.bostaOrderId afterSales.caseId afterSales.shipments'
+        + ' afterSales.role afterSales.kind afterSales.caseRef afterSales.originalTransactionId afterSales.originalRef afterSales.creditApplied'
+        + ' bostaIsDelayed bostaDeliveryException.code bostaLastTrackingUpdate.status bostaLastTrackingUpdate.reason bostaLastTrackingUpdate.reasonAr').lean().exec(),
+      this.orders.find().select(COMMON + ' shopifyId status shipWithoutDeposit depositAmount depositReceipts.status depositReceipts.amount rawData.customer.id rawData.customer.email rawData.contact_email rawData.email').lean().exec(),
+      this.returns.find().select('originalTransactionId originalRef returnTxId returnTxRef approvedAt createdAt total reason reasonDetails requestKind status reversedAt'
+        + ' workflow.version workflow.ref workflow.stage workflow.approvedAt workflow.receivedAt workflow.replacementTxId workflow.replacementRef'
+        + ' workflow.quote.refundDue workflow.quote.collectDue workflow.quote.creditApplied workflow.refund.amount workflow.collection.amount').lean().exec(),
       this.followups.find({ reason: 'عملية تأكيد الطلب', status: 'العميل ألغى الطلب', cancelled: { $ne: true }, autoSource: { $ne: 'shipping-issue' } })
         .select('transactionId shopifyOrderId status reason resolution orderOutcome cancelled autoSource').lean().exec(),
       this.contacts.find().select('key email updatedAt').sort({ updatedAt: -1 }).lean().exec(),

@@ -24,15 +24,15 @@ const { cairoToday, salesOverviewMonth } = require('../../dist/transactions/sale
     const { start, next, count, broadStart, broadEnd } = salesOverviewMonth(year, month);
     const overview = await TransactionsService.prototype.getSalesOverview.call(service, year, month);
     const orders = await collection('shopifyorders').find({ shopifyCreatedAt: { $gte: broadStart, $lt: broadEnd } },
-      { projection: { shopifyId: 1, shopifyCreatedAt: 1 } }).toArray();
+      { projection: { shopifyId: 1, shopifyCreatedAt: 1, total: 1 } }).toArray();
     const ids = orders.map(order => order.shopifyId).filter(Boolean);
     const broad = field => ({ [field]: { $gte: broadStart, $lt: broadEnd } });
     const candidateSales = await collection('transactions').find({ type: 'مبيعات', $or: [
       { shopifyOrderId: { $in: ids } }, broad('shopifyCreatedAt'), broad('transactionDate'), broad('date'),
-    ] }, { projection: { shopifyOrderId: 1, shopifyCreatedAt: 1, transactionDate: 1, date: 1, cancelled: 1, archived: 1 } }).toArray();
+    ] }, { projection: { shopifyOrderId: 1, shopifyCreatedAt: 1, transactionDate: 1, date: 1, cancelled: 1, archived: 1, total: 1 } }).toArray();
     const sourceIds = [...new Set(candidateSales.map(sale => sale.shopifyOrderId).filter(Boolean))];
     const linkedOrders = await collection('shopifyorders').find({ shopifyId: { $in: sourceIds } },
-      { projection: { shopifyId: 1, shopifyCreatedAt: 1 } }).toArray();
+      { projection: { shopifyId: 1, shopifyCreatedAt: 1, total: 1 } }).toArray();
     const sources = new Map([...orders, ...linkedOrders].map(order => [order.shopifyId, order]));
     const end = `${start.slice(0, 8)}${String(count).padStart(2, '0')}`;
     const trend = buildOrderArrivalTrend([...sources.values()], candidateSales, start, end);
@@ -46,6 +46,28 @@ const { cairoToday, salesOverviewMonth } = require('../../dist/transactions/sale
     const gross = activeSales.reduce((sum, sale) => sum + (Number(sale.itemsTotal) || Number(sale.total) - (Number(sale.shipCost) || 0)), 0);
     const returned = returns.reduce((sum, row) => sum + (Number(row.total) || 0), 0);
     const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
+    const cohortValues = new Map();
+    const arrivalDay = (...values) => {
+      for (const value of values) {
+        if (!value) continue;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value);
+        if (!Number.isNaN(new Date(value).getTime())) return cairoToday(new Date(value));
+      }
+      return '';
+    };
+    for (const order of sources.values()) cohortValues.set(`shopify:${order.shopifyId}`, {
+      date: arrivalDay(order.shopifyCreatedAt), received: Number(order.total) || 0, confirmed: 0,
+    });
+    for (const sale of candidateSales) {
+      const key = sale.shopifyOrderId ? `shopify:${sale.shopifyOrderId}` : `sale:${sale._id}`;
+      const row = cohortValues.get(key);
+      const source = sources.get(sale.shopifyOrderId);
+      cohortValues.set(key, {
+        date: row?.date || arrivalDay(sale.shopifyCreatedAt, sale.transactionDate, sale.date),
+        received: source ? Number(source.total) || 0 : Math.max(row?.received || 0, Number(sale.total) || 0),
+        confirmed: Math.max(row?.confirmed || 0, !sale.cancelled && !sale.archived ? Number(sale.total) || 0 : 0),
+      });
+    }
     assert.equal(overview.totalOrders, trend.series.reduce((sum, day) => sum + day.receivedOrders, 0));
     assert.equal(overview.confirmedOrders, trend.series.reduce((sum, day) => sum + day.confirmedOrders, 0));
     assert.equal(overview.totalRevenue, round(Math.max(0, gross - returned)));
@@ -60,7 +82,10 @@ const { cairoToday, salesOverviewMonth } = require('../../dist/transactions/sale
       const dailyReturns = returns.filter(row => row.createdAt.toISOString().slice(0, 10) === day.date)
         .reduce((sum, row) => sum + (Number(row.total) || 0), 0);
       assert.equal(day.revenue, round(dailyGross - dailyReturns), `revenue on ${day.date}`);
+      const cohort = [...cohortValues.values()].filter(row => row.date === day.date);
+      assert.equal(day.receivedValue, round(cohort.reduce((sum, row) => sum + row.received, 0)), `received value on ${day.date}`);
+      assert.equal(day.confirmedValue, round(cohort.reduce((sum, row) => sum + row.confirmed, 0)), `confirmed value on ${day.date}`);
     }
-    console.log(`PASS live sales overview ${overview.month}: ${overview.totalOrders} orders, ${activeSales.length} invoices, ${returns.length} returns, ${overview.days.length} reconciled days.`);
+    console.log(`PASS live sales overview ${overview.month}: counts, full received/confirmed values, net accounting revenue; ${overview.days.length} reconciled days.`);
   } finally { await mongoose.disconnect(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

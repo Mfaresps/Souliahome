@@ -91,6 +91,40 @@ describe('clients API — real MongoDB', () => {
     expect(p.history).toHaveLength(2);
     expect(await models.ClientContact.countDocuments()).toBe(0); // No manual profile/contact setup is required.
   });
+  it('projects live shipment status, retry counts and delay details for the shared delivery badges', async () => {
+    const id = new mongoose.Types.ObjectId();
+    await models.Transaction.collection.insertOne(sale(id, { bostaOrderId: 'b1', bostaStatus: 'OUT_FOR_DELIVERY',
+      bostaIsDelayed: true, shipCo: 'Bosta', shipmentAttempts: [{ bostaOrderId: 'old', private: 'PRIVATE_ATTEMPT' }],
+      bostaDeliveryException: { code: 3 }, bostaLastTrackingUpdate: { status: 'OUT_FOR_DELIVERY', reason: 'Postponed', reasonAr: 'مؤجل' } }));
+    let p: any = await (await request('/profile?key=' + encodeURIComponent(key))).json();
+    expect(p.history[0].orderState).toMatchObject({ bostaStatus: 'OUT_FOR_DELIVERY', hasShipment: true,
+      bostaIsDelayed: true, shipCo: 'Bosta', shipmentAttempts: 1,
+      bostaDeliveryException: { code: 3 }, bostaLastTrackingUpdate: { reason: 'Postponed' } });
+    expect(JSON.stringify(p)).not.toContain('PRIVATE_ATTEMPT');
+    await models.Transaction.updateOne({ _id: id }, { $set: { bostaStatus: 'DELIVERED' } });
+    p = await (await request('/profile?key=' + encodeURIComponent(key))).json();
+    expect(p.history[0].orderState.bostaStatus).toBe('DELIVERED');
+  });
+  it('reads approved unregistered deposits through the real projection and counts them once after conversion', async () => {
+    const orderId = new mongoose.Types.ObjectId();
+    await models.ShopifyOrder.collection.insertOne({ _id: orderId, shopifyId: 'deposit-order', ref: '3122',
+      client: 'منى', phone, total: 2300, status: 'pending', depositAmount: 999,
+      depositReceipts: [{ status: 'معتمد', amount: 500.25, imageKey: 'PRIVATE_RECEIPT', senderPhone: 'PRIVATE_PHONE' },
+        { status: 'معلق', amount: 200 }, { status: 'مُسترد', amount: 100 }] });
+    let p: any = await (await request('/profile?key=' + encodeURIComponent(key))).json();
+    expect(p.history).toHaveLength(1);
+    expect(p.history[0]).toMatchObject({ source: 'shopify', paid: 500.25, outcome: 'active' });
+    expect(p.money.paid).toBe(500.25);
+    expect(JSON.stringify(p)).not.toMatch(/PRIVATE_RECEIPT|PRIVATE_PHONE|depositReceipts/);
+    const list: any = await (await request('')).json();
+    expect(list[0].money.paid).toBe(500.25);
+    await models.Transaction.collection.insertOne(sale(new mongoose.Types.ObjectId(),
+      { shopifyOrderId: 'deposit-order', deposit: 500.25 }));
+    p = await (await request('/profile?key=' + encodeURIComponent(key))).json();
+    expect(p.history).toHaveLength(1);
+    expect(p.history[0]).toMatchObject({ source: 'transaction', paid: 500.25 });
+    expect(p.money.paid).toBe(500.25);
+  });
   it('includes a customer immediately after their first manual sale, even without a previous website order', async () => {
     await models.Transaction.collection.insertOne(sale(new mongoose.Types.ObjectId(), { client: 'عميل يدوي جديد' }));
     const list: any = await (await request('')).json();
@@ -182,5 +216,36 @@ describe('clients API — real MongoDB', () => {
     await models.ReturnRequest.collection.insertOne({ originalTransactionId: String(txId), returnTxId: 'old-return', status: 'معتمد', reversedAt: new Date().toISOString() });
     const response = await request('/order-profile?source=transaction&id=old-return');
     expect(response.status).toBe(200); expect((await response.json() as any).key).toBe(key);
+  });
+  it('shows pending returns, exchanges and reversal history, with replacement credit separated from real payments', async () => {
+    const original = new mongoose.Types.ObjectId(), replacement = new mongoose.Types.ObjectId();
+    const pending = new mongoose.Types.ObjectId(), exchange = new mongoose.Types.ObjectId();
+    await models.Transaction.collection.insertMany([sale(original, { shopifyCustomerId: 'customer-a', deposit: 1000 }),
+      sale(replacement, { total: 600, deposit: 600, remaining: 0,
+        afterSales: { caseId: String(exchange), role: 'replacement', originalTransactionId: String(original), originalRef: '1001', creditApplied: 500 } })]);
+    await models.ShopifyOrder.collection.insertOne({ _id: new mongoose.Types.ObjectId(), shopifyId: 'shared', shopifyCustomerId: 'customer-b', client: 'آخر', phone });
+    await models.ReturnRequest.collection.insertMany([
+      { _id: pending, originalTransactionId: String(original), originalRef: '1001', status: 'معلق', total: 300, requestKind: 'return',
+        workflow: { version: 2, ref: 'AS-1', stage: 'approved', quote: { refundDue: 250 }, history: ['PRIVATE_HISTORY'] } },
+      { _id: exchange, originalTransactionId: String(original), originalRef: '1001', status: 'معتمد', total: 500, requestKind: 'exchange', returnTxId: 'exchange-return',
+        workflow: { version: 2, ref: 'AS-2', stage: 'closed', receivedAt: '2026-11-10', replacementTxId: String(replacement),
+          replacementRef: '2001', quote: { collectDue: 100 }, collection: { amount: 100 } } },
+      { originalTransactionId: String(original), originalRef: '1001', status: 'معتمد', total: 200, returnTxId: 'reversed-return', reversedAt: '2026-11-10' },
+    ]);
+    const p: any = await (await request('/profile?key=s%3Acustomer-a')).json();
+    expect(p.history).toHaveLength(2);
+    expect(p.money).toMatchObject({ paid: 1100, returns: 500 });
+    expect(p.stats).toMatchObject({ returns: 2, exchanges: 1 });
+    expect(p.returns).toHaveLength(3);
+    expect(p.returns.find((r: any) => r.caseId === String(pending))).toMatchObject({ stage: 'approved', refunded: 0, refundDue: 250 });
+    expect(p.returns.find((r: any) => r.kind === 'exchange')).toMatchObject({ replacementId: String(replacement), collected: 100, collectDue: 0 });
+    expect(p.returns.find((r: any) => r.reversed)).toMatchObject({ refunded: 0, stage: 'reversed' });
+    expect(JSON.stringify(p)).not.toContain('PRIVATE_HISTORY');
+    const byReturn: any = await (await request('/order-profile?source=transaction&id=exchange-return')).json();
+    const byReplacement: any = await (await request('/order-profile?source=transaction&id=' + replacement)).json();
+    expect(byReturn.key).toBe(p.key); expect(byReplacement.key).toBe(p.key);
+    const list: any = await (await request('')).json();
+    expect(list).toHaveLength(2);
+    expect(list.every((r: any) => r.returns === undefined)).toBe(true);
   });
 });

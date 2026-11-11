@@ -11,15 +11,21 @@ const sale = (id, extra = {}) => ({ _id: id, type: 'مبيعات', client: 'من
   shippingAddress: '١٢ شارع النخيل، الدور الثالث، شقة ٨', shippingCity: 'مدينة نصر', shippingGov: 'القاهرة', ...extra });
 const txs = [sale('1', { deliveredAt: '2026-10-04', date: '2026-10-04', remaining: 0, deposit: 1475 }),
   sale('2', { bostaShippingStatus: 'Delivered', date: '2026-09-22' }),
-  sale('3', { bostaStatus: 'RETURNED', failedDelivery: { outcome: 'refused', note: 'رفض الاستلام عند وصول المندوب' } }),
+  sale('3', { bostaOrderId: 'b3', bostaStatus: 'RETURNED', failedDelivery: { outcome: 'refused', note: 'رفض الاستلام عند وصول المندوب' } }),
   sale('4', { cancelled: true, cancelReasonCode: 'customer-changed-mind', cancelReason: 'العميل غيّر رأيه' }),
-  sale('5', { date: '2026-08-01', shippingAddress: '٥ شارع التحرير', shippingCity: 'الدقي', shippingGov: 'الجيزة' }),
+  sale('5', { date: '2026-08-01', bostaOrderId: 'b5', bostaStatus: 'OUT_FOR_DELIVERY', shippingAddress: '٥ شارع التحرير', shippingCity: 'الدقي', shippingGov: 'الجيزة' }),
   sale('6', { client: 'منة الديب', phone: '01112345678' }),
   sale('7', { client: '<script>alert(1)</script>', phone: '01212345678' })];
 const orders = [{ _id: 's1', shopifyId: '101', ref: '3101', client: 'منة الديب', phone: '+201012345678',
   customerEmail: 'menna@example.com', total: 1700, cancelled: true, cancelReasonCode: 'out-of-stock', shopifyCreatedAt: '2026-10-06' }];
 const profiles = buildClientProfiles(txs, orders, [{ originalTransactionId: '1', status: 'معتمد', returnTxId: 'ret1', returnTxRef: '2601-RET',
-  approvedAt: '2026-10-06', total: 200, reason: 'عيب صناعة' }]);
+  approvedAt: '2026-10-06', total: 200, reason: 'عيب صناعة' },
+  { _id: 'pending-return', originalTransactionId: '1', originalRef: '2601', status: 'معلق', total: 300, requestKind: 'return',
+    createdAt: '2026-11-10', reason: 'customer-choice', workflow: { version: 2, ref: 'AS-RETURN', stage: 'approved', quote: { refundDue: 250 } } },
+  { _id: 'exchange-case', originalTransactionId: '1', originalRef: '2601', status: 'معتمد', total: 400, requestKind: 'exchange',
+    returnTxId: 'ret-exchange', returnTxRef: 'RT-EXCHANGE', createdAt: '2026-11-09', reason: 'defect',
+    workflow: { version: 2, ref: 'AS-EXCHANGE', stage: 'settlement', receivedAt: '2026-11-10', replacementTxId: 'replacement',
+      replacementRef: 'SALE-REPLACEMENT', quote: { collectDue: 50 }, collection: { amount: 50 } } }]);
 const profile = profiles.find(p => p.key === 'p:201012345678');
 profile.emailSource = 'shopify';
 const list = () => profiles.map(({ history, addresses, returns, emails, ...p }) => p);
@@ -30,7 +36,7 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
   const errors = [], requests = [], writes = [];
   try {
     const page = await browser.newPage();
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', error => { errors.push(error.message); console.error(error.stack); });
     await page.setRequestInterception(true);
     let failProfile = false;
     page.on('request', request => {
@@ -40,6 +46,7 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
       let body = [];
       if (url.pathname === '/api/auth/me') body = { _id: 'client-test', name: 'Profile review', username: 'review', role: 'admin', perms: [] };
       if (url.pathname === '/api/settings') body = {};
+      if (url.pathname === '/api/notifications') body = { preferences: { enabled: false }, categories: [], devices: 0, language: 'ar' };
       if (url.pathname === '/api/transactions/startup-overview') body = { rows: [], activeCount: 0 };
       if (url.pathname === '/api/clients') body = list();
       if (url.pathname === '/api/clients/profile') {
@@ -101,11 +108,25 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
     await page.click('#cp-ticket-panel summary');
     assert.equal(requests.filter(url => url === '/api/clients/tickets').length, 1, 'reopening tickets reuses the same response');
     assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), 6);
+    assert.equal(await page.$$eval('#cp-order-results .order-state', nodes => nodes.length), 6, 'profile rows use shared status badges');
+    assert.equal(await page.$eval('#cp-order-results [data-order-state="OUT_FOR_DELIVERY"] .order-state-label', el => el.textContent), 'خارج للتسليم');
+    assert.equal(await page.$('.cp-deposit-paid'), null, 'orders without retained deposits have no paid-deposit label');
     await page.click('[data-cp-filter="failed"]');
     assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), 1);
     assert.match(await page.$eval('#cp-order-results', el => el.textContent), /رفض الاستلام/);
     await page.click('[data-cp-filter="returns"]');
     assert.match(await page.$eval('#cp-order-results', el => el.textContent), /2601-RET/);
+    assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), 2, 'pending and legacy returns are both visible');
+    assert.match(await page.$eval('#cp-order-results', el => el.textContent), /250/);
+    assert.match(await page.$eval('#cp-order-results', el => el.textContent), /بانتظار سحب المرتجع/);
+    await page.evaluate(() => { window.__cpOpenedCases = []; window.AfterSales.open = id => window.__cpOpenedCases.push(id); });
+    await page.click('[data-cp-case="pending-return"]');
+    assert.deepEqual(await page.evaluate(() => window.__cpOpenedCases), ['pending-return']);
+    await page.click('[data-cp-filter="exchanges"]');
+    assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), 1);
+    assert.match(await page.$eval('#cp-order-results', el => el.textContent), /SALE-REPLACEMENT/);
+    assert.match(await page.$eval('#cp-order-results', el => el.textContent), /بانتظار التسوية/);
+    assert.equal(await page.$eval('#cp-order-results [data-cp-invoice="replacement"]', el => el.textContent), '#SALE-REPLACEMENT');
     await page.click('[data-cp-filter="all"]');
     await page.type('#cp-order-search', '2601');
     assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), 1);
@@ -143,6 +164,7 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
         closeSidebar(); applyLang(); await SouliaClients.renderList();
       }, lang);
       await page.waitForSelector('.cp-profile');
+      assert.equal(await page.$eval('#cp-order-results [data-order-state="OUT_FOR_DELIVERY"] .order-state-label', el => el.textContent), lang === 'ar' ? 'خارج للتسليم' : 'Out for Delivery');
       // The existing shell animates its desktop sidebar margins for 300ms on resize.
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 400)));
@@ -155,6 +177,16 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
       measurements.push({ lang, ...result });
       await page.screenshot({ path: path.join(out, `profile-${lang}-${width}.png`), fullPage: true });
       if (width === 390) await page.screenshot({ path: path.join(out, `profile-${lang}-${width}-top.png`) });
+      if (width !== 768) for (const kind of ['returns', 'exchanges']) {
+        await page.click(`[data-cp-filter="${kind}"]`);
+        assert.equal(await page.$$eval('#cp-order-results tbody tr', nodes => nodes.length), kind === 'returns' ? 2 : 1);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `${lang}/${width}/${kind}: no page overflow`);
+        if (width === 1440) assert.equal(await page.$eval('#cp-order-results .cp-table-scroll', el => el.scrollWidth > el.clientWidth + 1), false, `${lang}/${kind}: all case columns fit`);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await page.screenshot({ path: path.join(out, `${kind}-${lang}-${width}.png`), fullPage: true });
+      }
+      await page.click('[data-cp-filter="all"]');
     }
     await page.evaluate(() => { currentLang = 'ar'; history.pushState(null, '', '#clients'); return SouliaClients.renderList(); });
     await page.waitForSelector('.cp-client-card');
@@ -177,7 +209,8 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
       await SouliaClients.renderList();
     });
     const websiteOrder = { _id: 'live-site-order', shopifyId: 'live-site', ref: '4101', client: 'عميل موقع جديد',
-      phone: '01512345678', shopifyCustomerId: 'live-customer', status: 'pending', total: 800, shopifyCreatedAt: '2026-11-10' };
+      phone: '01512345678', shopifyCustomerId: 'live-customer', status: 'pending', total: 800, shopifyCreatedAt: '2026-11-10',
+      depositAmount: 700, depositReceipts: [{ status: 'معتمد', amount: 500.25 }, { status: 'معلق', amount: 100 }] };
     const websiteProfile = buildClientProfiles([], [websiteOrder])[0];
     profiles.push(websiteProfile);
     await page.evaluate(() => window.__clientSocketHandlers['shopify:order-created'].forEach(handler => handler({ id: 'live-site-order' })));
@@ -186,6 +219,42 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8080';
     await page.select('#clients-has-remaining', 'no-invoice');
     await page.waitForFunction(() => document.querySelectorAll('.cp-client-card').length === 1);
     assert.match(await page.$eval('.cp-client-card', el => el.textContent), /بدون فاتورة/);
+    await page.click(`[data-cp-open="${websiteProfile.key}"]`);
+    await page.waitForSelector('.cp-deposit-paid');
+    assert.equal(await page.$eval('#cp-order-results .order-state', el => el.dataset.orderState), 'confirmed', 'unregistered paid orders use the shared confirmation label');
+    websiteOrder.depositReceipts[0].status = 'مُسترد';
+    Object.assign(websiteProfile, buildClientProfiles([], [websiteOrder])[0]);
+    await page.evaluate(async () => {
+      window.__clientSocketHandlers['shopify:deposit-changed'].forEach(handler => handler({ orderId: 'live-site-order' }));
+      await SouliaClients.renderList();
+    });
+    assert.equal(await page.$('.cp-deposit-paid'), null, 'a refund invalidates cached deposit data');
+    websiteOrder.depositReceipts[0].status = 'معتمد';
+    Object.assign(websiteProfile, buildClientProfiles([], [websiteOrder])[0]);
+    await page.evaluate(async () => {
+      window.__clientSocketHandlers['shopify:deposit-changed'].forEach(handler => handler({ orderId: 'live-site-order' }));
+      await SouliaClients.renderList();
+    });
+    await page.waitForSelector('.cp-deposit-paid');
+    for (const lang of ['ar', 'en']) for (const width of [320, 390, 1440]) {
+      await page.setViewport({ width, height: 1000 });
+      await page.evaluate(async lang => {
+        currentLang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = lang;
+        closeSidebar(); applyLang(); await SouliaClients.renderList();
+        await new Promise(resolve => setTimeout(resolve, 400));
+      }, lang);
+      assert.equal(await page.$eval('.cp-deposit-paid', el => el.textContent), lang === 'ar' ? 'عربون مدفوع' : 'Deposit paid');
+      assert.match(await page.$eval('#cp-order-results tbody tr td:nth-child(4)', el => el.textContent), /500\.25/);
+      assert.equal(await page.evaluate(() => SouliaClients.currentProfile().money.paid), 500.25);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `${lang}/${width}: deposit row overflow`);
+      await page.screenshot({ path: path.join(out, `unregistered-deposit-${lang}-${width}.png`), fullPage: true });
+    }
+    await page.setViewport({ width: 1440, height: 1000 });
+    await page.evaluate(() => {
+      currentLang = 'ar'; document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar'; applyLang();
+    });
+    await page.goBack();
+    await page.waitForSelector('#clients-has-remaining');
     const sameCustomerSale = sale('live-manual-sale', { client: 'عميل موقع جديد', phone: '01512345678' });
     profiles.splice(profiles.indexOf(websiteProfile), 1, buildClientProfiles([sameCustomerSale], [websiteOrder])[0]);
     const manualProfile = buildClientProfiles([sale('manual-only', { client: 'أول تعامل يدوي', phone: '01099990001' })], [])[0];
