@@ -1,7 +1,7 @@
 /* Barcode workspace: server-issued physical identities only; selection never creates stock. */
 (function () {
   'use strict';
-  const VERSION = '20261111-black-fills-print';
+  const VERSION = '20261111-black-fills-print-3';
   const state = {
     generation: 0, actor: '', ready: false, busy: false, selectionBusy: false, refreshQueued: false, config: null,
     selected: new Map(), sizeId: '', preview: null, pendingPrint: null, view: 'receipts',
