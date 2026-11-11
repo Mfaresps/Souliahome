@@ -489,6 +489,7 @@ export class ShopifyOrder {
 
 export const ShopifyOrderSchema = SchemaFactory.createForClass(ShopifyOrder);
 ShopifyOrderSchema.index({ shopifyCreatedAt: 1 });
+ShopifyOrderSchema.index({ createdAt: 1 });
 // The receipt-image route and the duplicate checks look a receipt up by id / hash across orders.
 ShopifyOrderSchema.index({ 'depositReceipts.id': 1 });
 ShopifyOrderSchema.index({ 'depositReceipts.imageSha256': 1 });

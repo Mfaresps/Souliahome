@@ -1,4 +1,4 @@
-/** A month of order arrivals, grouped in MongoDB before it reaches the browser. */
+/** Shopify intake and confirmation cohorts, alongside separate net invoice revenue. */
 export type SalesOverviewDay = {
   date: string;
   orders: number;
@@ -76,7 +76,7 @@ export function buildSalesOverview(
   const totalRevenue = money(Math.max(0, gross - returns));
   const today = cairoToday(now);
   return {
-    month: start.slice(0, 7), timeZone: 'Africa/Cairo',
+    month: start.slice(0, 7), timeZone: 'Africa/Cairo', orderSource: 'shopify' as const,
     totalOrders, totalRevenue, confirmedOrders,
     totalReceivedValue: money(days.reduce((sum, row) => sum + row.receivedValue, 0)),
     totalConfirmedValue: money(days.reduce((sum, row) => sum + row.confirmedValue, 0)),

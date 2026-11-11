@@ -1,5 +1,6 @@
 import { setCommentReaction } from '../shared/comment-reactions';
 import { cachedRead } from '../shared/read-cache.util';
+import { shopifyConfirmationBucket } from './shopify-confirmation.util';
 import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FollowUpsService } from '../followups/followups.service';
@@ -1088,9 +1089,8 @@ export class ShopifyService {
     }
     const settled = new Set(['تم حل المشكلة', 'تمت المتابعة', 'تمت عملية التأكيد', 'العميل ألغى الطلب']);
     const bucket = (o: any) => {
-      if (o.cancelled || o.status === 'rejected') return 'cancelled';
-      if (deposit(o).amount > 0) return 'deposit';
-      if (o.shipWithoutDeposit === true || o.status === 'approved') return 'nodep';
+      const confirmed = shopifyConfirmationBucket(o);
+      if (confirmed) return confirmed;
       const tickets = [...(followupById.get(String(o.shopifyOrderId || '')) || []), ...(followupByRef.get(refKey(o.ref)) || [])];
       if (tickets.some(ticket => !ticket.cancelled && !settled.has(ticket.status))) return 'followup';
       return 'open';

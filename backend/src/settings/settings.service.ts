@@ -1041,6 +1041,7 @@ export class SettingsService {
     'inventoryunitoperations',
     'inventoryunitprelabelbatches',
     'inventoryunitprelabels',
+    'inventoryunitprelabelpacks',
     'inventoryunitcodes',
     'inventoryunitcodecounters',
     // ── Per-segment vault balances (settings.vault* is only a mirror of these) ──
@@ -1719,8 +1720,9 @@ export class SettingsService {
 
         const fixedDocs = (docs as any[]).map((doc: any) => {
           const fixed: any = { ...doc };
-          // Convert _id string → ObjectId
-          if (fixed._id && !['complaintevidence', 'depositreceiptidentities', 'inventoryunitoperations', 'inventoryunitcodecounters'].includes(collectionName)) {
+          // Convert _id string → ObjectId. ⚠ inventoryunitcodecounters MUST convert: the code
+          // counters are read by ObjectId, and text-keyed copies restarted every U/PK code at 0.
+          if (fixed._id && !['complaintevidence', 'depositreceiptidentities', 'inventoryunitoperations'].includes(collectionName)) {
             const rawId = typeof fixed._id === 'string' ? fixed._id : fixed._id?.$oid;
             if (rawId) {
               try { fixed._id = new ObjectId(rawId); } catch { delete fixed._id; }
@@ -1927,7 +1929,7 @@ export class SettingsService {
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
     transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'carrierimports', 'carrierpayouts'],
-    inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitcodes', 'inventoryunitcodecounters'],
+    inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks', 'inventoryunitcodes', 'inventoryunitcodecounters'],
     products:       ['products', 'categories', 'collections', 'collectionproducts'],
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
     expenses:       ['expenses'],

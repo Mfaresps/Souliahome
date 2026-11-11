@@ -81,6 +81,7 @@ import { inDateWindow, dateWindowQuery, normalizeDateOnly } from '../shared/date
 import { buildCancelledProducts } from './cancellation-products';
 import { buildOrderArrivalTrend } from './order-arrival-trend';
 import { buildSalesOverview, cairoToday, mongoCairoDay, salesOverviewMonth } from './sales-overview';
+import { mongoShopifyConfirmed } from '../shopify/shopify-confirmation.util';
 import { normalizeCity } from '../shared/normalize-city.util';
 import {
   ShipZone,
@@ -4091,71 +4092,20 @@ export class TransactionsService {
       { $ne: [number('$itemsTotal'), 0] }, number('$itemsTotal'),
       { $subtract: [number('$total'), number('$shipCost')] },
     ] };
-    const active = { $and: [{ $ne: ['$cancelled', true] }, { $ne: ['$archived', true] }] };
-    const saleDay = { $ifNull: [
-      mongoCairoDay('$shopifyCreatedAt'),
-      { $ifNull: [mongoCairoDay('$transactionDate'), mongoCairoDay('$date')] },
-    ] };
-    const txCollection = this.transactionModel.collection.name;
-    const shopifyCollection = this.shopifyOrderModel.collection.name;
-
-    // Shopify arrivals form the order cohort. Confirmation stays on the arrival day.
-    // Cohort values include full order totals (shipping included), regardless of cancellation.
-    // Net accounting revenue stays separate by invoice date, as in getReports().
+    // Match Shopify KPIs: source-order arrivals and confirmation, independently of invoice creation.
+    // Net accounting revenue remains a separate aggregate over all sales invoices.
+    const confirmed = mongoShopifyConfirmed();
     const shopifyPipeline: any[] = [
-      { $match: inBroadRange('shopifyCreatedAt') },
-      { $set: { day: mongoCairoDay('$shopifyCreatedAt') } },
+      { $match: { $or: [inBroadRange('shopifyCreatedAt'), {
+        createdAt: { $gte: new Date(broadStart), $lt: new Date(broadEnd) },
+      }] } },
+      { $set: { day: { $ifNull: [mongoCairoDay('$shopifyCreatedAt'), mongoCairoDay('$createdAt')] } } },
       { $match: { day: { $gte: start, $lt: next } } },
-      { $lookup: {
-        from: txCollection, let: { orderId: '$shopifyId' },
-        pipeline: [
-          { $match: { $expr: { $and: [
-            { $eq: ['$shopifyOrderId', '$$orderId'] }, { $eq: ['$type', 'مبيعات'] },
-          ] } } },
-          { $project: { _id: 0, active, total: number('$total') } },
-        ], as: 'sales',
-      } },
       { $project: {
         day: 1,
         receivedValue: number('$total'),
-        confirmedValue: { $ifNull: [{ $max: { $map: {
-          input: '$sales', as: 'sale', in: { $cond: ['$$sale.active', '$$sale.total', 0] },
-        } } }, 0] },
-        confirmed: { $cond: [{ $anyElementTrue: ['$sales.active'] }, 1, 0] },
-      } },
-      { $group: {
-        _id: '$day', receivedOrders: { $sum: 1 },
-        confirmedOrders: { $sum: '$confirmed' },
-        receivedValue: { $sum: '$receivedValue' }, confirmedValue: { $sum: '$confirmedValue' },
-      } },
-    ];
-
-    // Manual invoices, deleted sources, and sources missing an arrival timestamp count once.
-    // A linked source with its own timestamp is counted by the Shopify aggregate above.
-    const orphanPipeline: any[] = [
-      { $match: { type: 'مبيعات', $or: [
-        inBroadRange('shopifyCreatedAt'), inBroadRange('transactionDate'), inBroadRange('date'),
-      ] } },
-      { $set: { day: saleDay } },
-      { $match: { day: { $gte: start, $lt: next } } },
-      { $lookup: {
-        from: shopifyCollection, localField: 'shopifyOrderId', foreignField: 'shopifyId', as: 'sourceOrder',
-      } },
-      { $match: { $or: [
-        { sourceOrder: { $eq: [] } },
-        { 'sourceOrder.shopifyCreatedAt': { $in: ['', null] } },
-      ] } },
-      { $set: { receivedValue: { $convert: {
-        input: { $ifNull: [{ $arrayElemAt: ['$sourceOrder.total', 0] }, '$total'] }, to: 'double', onError: 0, onNull: 0,
-      } } } },
-      { $group: {
-        _id: { $cond: [
-          { $and: [{ $ne: ['$shopifyOrderId', null] }, { $ne: ['$shopifyOrderId', ''] }] },
-          { $concat: ['shopify:', '$shopifyOrderId'] }, { $toString: '$_id' },
-        ] },
-        day: { $min: '$day' }, confirmed: { $max: { $cond: [active, 1, 0] } },
-        receivedValue: { $max: '$receivedValue' },
-        confirmedValue: { $max: { $cond: [active, number('$total'), 0] } },
+        confirmedValue: { $cond: [confirmed, number('$total'), 0] },
+        confirmed: { $cond: [confirmed, 1, 0] },
       } },
       { $group: {
         _id: '$day', receivedOrders: { $sum: 1 },
@@ -4185,13 +4135,12 @@ export class TransactionsService {
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } }, amount: { $sum: number('$total') } } },
     ];
 
-    const [shopifyRows, orphanRows, revenueRows, returnRows] = await Promise.all([
+    const [shopifyRows, revenueRows, returnRows] = await Promise.all([
       this.shopifyOrderModel.aggregate(shopifyPipeline).exec(),
-      this.transactionModel.aggregate(orphanPipeline).exec(),
       this.transactionModel.aggregate(revenuePipeline).exec(),
       this.returnRequestModel.aggregate(returnsPipeline).exec(),
     ]);
-    return buildSalesOverview(selectedYear, selectedMonth, [...shopifyRows, ...orphanRows, ...revenueRows], returnRows);
+    return buildSalesOverview(selectedYear, selectedMonth, [...shopifyRows, ...revenueRows], returnRows);
   }
 
   async getDashboard(expenseTotal = 0): Promise<DashboardData> {

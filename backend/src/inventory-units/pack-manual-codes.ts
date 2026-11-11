@@ -22,8 +22,13 @@ export function packCodeFilter(value: string) {
 }
 export async function initPackCodes(connection: Connection) {
   await connection.collection('inventorypacks').createIndex({manualCode:1},{unique:true,partialFilterExpression:{manualCode:{$type:'string'}},name:'inventory_pack_manual_code_unique'});
-  const highest = await connection.collection('inventorypacks').find({manualCode:{$regex:'^PK-[0-9]{6}-[0-9]$'}},{projection:{manualCode:1}}).sort({manualCode:-1}).limit(1).next();
-  await connection.collection('inventoryunitcodecounters').updateOne({_id:counterId},{$max:{sequence:highest ? Number(highest.manualCode.slice(3,9)) : 0}},{upsert:true});
+  // Pre-printed supplier packs reserve codes before they exist in inventorypacks; never hand those out again.
+  const highestIn = (name: string) => connection.collection(name).find({manualCode:{$regex:'^PK-[0-9]{6}-[0-9]$'}},{projection:{manualCode:1}}).sort({manualCode:-1}).limit(1).next();
+  const sequence = Math.max(0, ...(await Promise.all(['inventorypacks','inventoryunitprelabelpacks'].map(highestIn))).map(row => row ? Number(row.manualCode.slice(3,9)) : 0));
+  // A restore once wrote this counter with a TEXT _id; fold that copy in, then drop it.
+  const counters = connection.collection('inventoryunitcodecounters'), stray:any = await counters.findOne({_id:String(counterId) as any});
+  await counters.updateOne({_id:counterId},{$max:{sequence:Math.max(sequence,Number(stray?.sequence)||0)}},{upsert:true});
+  if (stray) await counters.deleteOne({_id:String(counterId) as any});
 }
 export async function nextPackCode(connection: Connection, session?: ClientSession) {
   const counter:any = await connection.collection('inventoryunitcodecounters').findOneAndUpdate({_id:counterId},{$inc:{sequence:1}},{session,upsert:true,returnDocument:'after',includeResultMetadata:false});

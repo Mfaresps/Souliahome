@@ -83,17 +83,20 @@ export class LabelRequestDto extends TrackingRequestDto {
 export class PrelabelIssueDto extends TrackingRequestDto {
   @IsString() @Matches(OBJECT_ID_PATTERN) productId: string;
   @IsInt() @Min(1) @Max(1000) quantity: number;
+  /** Optional: issue the batch as sealed packs of this many pieces (one pack label per pack). */
+  @IsOptional() @IsInt() @Min(2) @Max(100) piecesPerPack?: number;
 }
 export class PrelabelPrintDto extends TrackingRequestDto {
   @IsInt() @Min(1) start: number;
-  @IsInt() @Min(1) @Max(100) quantity: number;
+  /** Pieces. A pack batch may print up to 1,000 pieces (100 pack labels); the service enforces it. */
+  @IsInt() @Min(1) @Max(1000) quantity: number;
   @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
   @IsOptional() @IsBoolean() allowReprint?: boolean;
   @IsOptional() @IsString() @Matches(/^[a-f\d]{64}$/) selectionHash?: string;
 }
 export class PrelabelRangePreviewDto {
   @IsInt() @Min(1) start: number;
-  @IsInt() @Min(1) @Max(100) quantity: number;
+  @IsInt() @Min(1) @Max(1000) quantity: number;
   @IsString() @IsIn(LABEL_SIZES.map(size => size.id)) sizeId: string;
 }
 export class PrelabelBulkSelectionDto {

@@ -79,7 +79,7 @@ async function tipFor(page, selector) {
     assert.equal(await page.$$eval('.so-series', nodes => nodes.length), 1);
     assert.equal(await page.$eval('#so-legend', node => node.hidden), true);
     assert.equal(await page.$$eval('.so-metric-compare', nodes => nodes.length), 0);
-    assert.equal(await page.$eval('#so-chart-note', node => node.textContent), 'Daily orders for the selected month');
+    assert.equal(await page.$eval('#so-chart-note', node => node.textContent), 'Daily Shopify orders for the selected month');
     assert.equal(await page.$$eval('.so-day-label', nodes => nodes.length), 31);
     assert.equal(await page.$$eval('.so-point:not(.is-compare)', nodes => nodes.length), 11, 'future dates are not plotted');
     assert.equal(await page.$$eval('.so-area', nodes => nodes.length), 1, 'the chart opens with a faded area');
@@ -265,7 +265,7 @@ async function tipFor(page, selector) {
       await page.evaluate(() => { currentLang = 'ar'; document.documentElement.dir = 'rtl'; document.body.classList.add('dark-mode'); salesOverview.render(); });
       await new Promise(resolve => setTimeout(resolve, 170));
       assert.equal(await page.$$eval('.so-series', nodes => nodes.length), 1, 'Arabic simple view contains only the selected month');
-      assert.equal(await page.$eval('#so-chart-note', node => node.textContent), 'الطلبات اليومية للشهر المحدد');
+      assert.equal(await page.$eval('#so-chart-note', node => node.textContent), 'طلبات Shopify اليومية للشهر المحدد');
       assert.match(await page.$eval('#so-insight', node => node.textContent), /رؤية ذكية/);
       assert.equal(await page.$$eval('.so-annotation.is-low, .so-point.is-low', nodes => nodes.length), 0, 'Arabic views have no lowest-day label');
       await page.screenshot({ path: path.join(out, `chart-ar-dark-${width}.png`), fullPage: true });

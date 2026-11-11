@@ -109,7 +109,7 @@
     if (linkMethod === 'scan') {
       stopCamera();
       scanSession = { lineIndex: Number(field('line').value), target: Math.max(0, Number(line.quantity) - Number(line.createdUnits || 0)), scanned: 0,
-        awaitingInspection: 0, accepted: new Set(), acceptedCodes: new Set(), pendingCode: '', pendingLabelKey: '', finished: false };
+        awaitingInspection: 0, accepted: new Set(), acceptedCodes: new Set(), pendingCode: '', pendingLabelKey: '', pendingQuantity: 1, finished: false };
     } else scanSession = null;
     const old = field('link-controls'); if (old) old.remove();
     field('body').insertAdjacentHTML('beforeend', `<section class="pl-panel pl-link-controls" id="pl-link-controls" data-method="${linkMethod}">
@@ -118,13 +118,23 @@
       <div class="pl-scan-dashboard pl-scan-only"><div class="pl-scan-metric"><div><span>${tr('Pieces to receive', 'القطع المطلوب مسحها')}</span><strong dir="ltr"><b id="pl-scan-done">0</b><small> / <b id="pl-scan-target">${Math.max(0, Number(line.quantity) - Number(line.createdUnits || 0))}</b></small></strong></div><em id="pl-scan-left"></em></div><progress id="pl-scan-progress" value="0" max="${Math.max(1, Number(line.quantity) - Number(line.createdUnits || 0))}" aria-label="${tr('Receiving progress', 'تقدم الاستلام')}"></progress><p id="pl-scan-status">${tr('Scan the first attached label', 'ابدأ بمسح أول ملصق مثبت على قطعة')}</p></div>
       <div class="pl-checks"><label class="pl-confirm-row"><input id="pl-possession" type="checkbox"><span>${tr('I counted these pieces and have them in the invoice warehouse.', 'عددت هذه القطع وهي موجودة فعليًا في مخزن الفاتورة.')}</span></label><label class="pl-confirm-row"><input id="pl-labels-confirmed" type="checkbox"><span>${tr('The exact numbered labels are attached to these pieces.', 'الملصقات ذات هذه الأرقام بالضبط ملصقة على القطع.')}</span></label><label class="pl-confirm-row"><input id="pl-inspection" type="checkbox"><span>${tr('I checked their condition; make them available now.', 'فحصت سلامتها؛ اجعلها متاحة الآن.')}</span></label></div>
       <button type="button" class="pl-primary pl-bulk-only" id="pl-link">${tr('Link selected identities', 'ربط الهويات المحددة')}</button>
-      <div class="pl-scan pl-scan-only"><label>${tr('Scan one attached QR label', 'امسح QR الملصق المثبت على القطعة')}<input id="pl-scan-code" dir="ltr" autocomplete="off" placeholder="SU-..."></label><button type="button" id="pl-scan-submit">${tr('Receive scanned piece', 'استلام القطعة الممسوحة')}</button><button type="button" id="pl-camera">${tr('Phone camera', 'كاميرا الهاتف')}</button></div><p class="pl-scan-result pl-scan-only" id="pl-scan-result" role="status" aria-live="polite" aria-atomic="true" hidden></p><video id="pl-video" playsinline muted hidden></video>
+      <div class="pl-scan pl-scan-only"><label>${tr('Scan one attached QR label', 'امسح QR الملصق المثبت على القطعة')}<input id="pl-scan-code" dir="ltr" autocomplete="off" placeholder="SU-... / PK-..."></label><button type="button" id="pl-scan-submit">${tr('Receive scanned piece', 'استلام القطعة الممسوحة')}</button><button type="button" id="pl-camera">${tr('Phone camera', 'كاميرا الهاتف')}</button></div><p class="pl-scan-result pl-scan-only" id="pl-scan-result" role="status" aria-live="polite" aria-atomic="true" hidden></p><video id="pl-video" playsinline muted hidden></video>
       <div class="pl-scan-actions pl-scan-only"><button type="button" id="pl-scan-finish">${tr('Finish scanning', 'إنهاء المسح')}</button><button type="button" id="pl-scan-resume" hidden>${tr('Continue scanning', 'متابعة المسح')}</button></div>
+      <p class="pl-help" id="pl-pack-hint" hidden></p>
       <p class="pl-help">${tr('The linked codes become normal inventory units immediately. The purchase stock is not posted again.', 'تصبح الأكواد المرتبطة هويات قطع عادية فورًا. لا تُضاف كمية الشراء مرة أخرى.')}</p></section>`);
     field('link-batch').value = selectedId && matching.some(batch => batch.batchId === selectedId) ? selectedId : matching[0]?.batchId || '';
     chosenBatch = matching.find(batch => batch.batchId === field('link-batch').value) || null;
     field('link-start').value = String(chosenBatch?.firstUnused || 1);
-    field('link-batch').onchange = () => { chosenBatch = matching.find(batch => batch.batchId === field('link-batch').value) || null; field('link-start').value = String(chosenBatch?.firstUnused || 1); };
+    // A pack batch is received in whole packs; its pack label stands for all of its pieces.
+    const syncPackHint = () => {
+      const per = Number(chosenBatch?.piecesPerPack) || 0, hint = field('pack-hint');
+      hint.hidden = !per;
+      hint.textContent = per ? tr(`This batch is packed: ${per} pieces per pack. Scan the pack label, or link a range that starts at a pack and covers whole packs (multiples of ${per}).`,
+        `هذه دفعة باكات: ${per} قطع في كل باك. امسح ملصق الباك، أو اربط نطاقًا يبدأ من أول باك ويغطي باكات كاملة (مضاعفات ${per}).`) : '';
+      field('link-quantity').step = String(per || 1);
+    };
+    field('link-batch').onchange = () => { chosenBatch = matching.find(batch => batch.batchId === field('link-batch').value) || null; field('link-start').value = String(chosenBatch?.firstUnused || 1); syncPackHint(); };
+    syncPackHint();
     field('link').onclick = linkRange;
     for (const id of ['possession', 'labels-confirmed', 'inspection']) field(id).addEventListener('change', () => {
       if (linkMethod === 'scan' && field('possession').checked && field('labels-confirmed').checked)
@@ -154,14 +164,17 @@
       if (scanSession.accepted.has(labelKey)) throw new Error(tr('This piece was counted already. Scan a different label.', 'هذه القطعة محسوبة بالفعل. امسح ملصق قطعة أخرى.'));
       if (label.sku !== line.sku) throw new Error(tr('This QR belongs to a different invoice product.', 'رمز QR يخص منتجًا آخر غير بند الفاتورة.'));
       if (label.state !== 'unused' || label.printCount < 1) throw new Error(tr('This QR was linked already or never printed.', 'رمز QR مرتبط سابقًا أو لم تُطلب طباعته.'));
+      if (label.piecesPerPack && !label.isPack) throw new Error(tr(`This piece belongs to a pack of ${label.piecesPerPack}. Scan the pack label instead.`, `هذه القطعة ضمن باك من ${label.piecesPerPack} قطع. امسح ملصق الباك بدلًا منها.`));
+      const pieces = label.isPack ? Number(label.quantity) : 1, left = scanSession.target - scanSession.scanned;
+      if (pieces > left) throw new Error(tr(`This pack holds ${pieces} pieces but only ${left} remain on this invoice line.`, `هذا الباك به ${pieces} قطع والمتبقي في بند الفاتورة ${left} فقط.`));
       let batch = batches.find(row => row.batchId === label.batchId);
       if (!batch) { batch = { batchId: label.batchId, productId: label.productId, sku: label.sku, productName: label.productName,
         quantity: label.batchQuantity, unused: 1 }; batches.unshift(batch); }
       chosenBatch = batch;
       if (!Array.from(field('link-batch').options).some(option => option.value === batch.batchId))
         field('link-batch').add(new Option(`${batch.productName} · ${batch.batchId.slice(-8).toUpperCase()}`, batch.batchId));
-      field('link-batch').value = batch.batchId; field('link-start').value = String(label.ordinal); field('link-quantity').value = '1';
-      scanSession.pendingCode = identifier; scanSession.pendingLabelKey = labelKey;
+      field('link-batch').value = batch.batchId; field('link-start').value = String(label.ordinal); field('link-quantity').value = String(pieces);
+      scanSession.pendingCode = identifier; scanSession.pendingLabelKey = labelKey; scanSession.pendingQuantity = pieces;
       field('scan-code').value = '';
     } catch (e) {
       scanFeedback('error', e.status === 404
@@ -174,8 +187,8 @@
   }
   async function linkScannedPiece() {
     if (busy || !scanSession || !chosenBatch || !invoice) return;
-    const lineIndex = scanSession.lineIndex, start = Number(field('link-start').value);
-    const payload = { batchId: chosenBatch.batchId, lineIndex, start, quantity: 1, physicalPossessionConfirmed: true,
+    const lineIndex = scanSession.lineIndex, start = Number(field('link-start').value), pieces = Number(scanSession.pendingQuantity) || 1;
+    const payload = { batchId: chosenBatch.batchId, lineIndex, start, quantity: pieces, physicalPossessionConfirmed: true,
       physicalLabelsConfirmed: true, inspectionPassed: field('inspection').checked,
       reason: 'Physical count and exact preprinted label range confirmed' };
     const matchingRetry = pendingLink?.invoiceId === invoice.transactionId && JSON.stringify(pendingLink.payload, Object.keys(payload).sort()) === JSON.stringify(payload, Object.keys(payload).sort());
@@ -185,11 +198,11 @@
     let saved = false, selectCode = false;
     try {
       const result = await post(`/purchases/${invoice.transactionId}/prelabels/link`, payload);
-      if (Number(result.linked) !== 1) throw new Error(tr('The scan result was unexpected. Reopen this invoice to check it.', 'نتيجة المسح غير متوقعة. أعد فتح الفاتورة للتحقق منها.'));
+      if (Number(result.linked) !== pieces) throw new Error(tr('The scan result was unexpected. Reopen this invoice to check it.', 'نتيجة المسح غير متوقعة. أعد فتح الفاتورة للتحقق منها.'));
       saved = true; pendingLink = null;
-      scanSession.scanned += 1; scanSession.accepted.add(scanSession.pendingLabelKey); scanSession.acceptedCodes.add(scanSession.pendingCode);
-      if (result.status !== 'available') scanSession.awaitingInspection += 1;
-      scanSession.pendingCode = ''; scanSession.pendingLabelKey = '';
+      scanSession.scanned += pieces; scanSession.accepted.add(scanSession.pendingLabelKey); scanSession.acceptedCodes.add(scanSession.pendingCode);
+      if (result.status !== 'available') scanSession.awaitingInspection += pieces;
+      scanSession.pendingCode = ''; scanSession.pendingLabelKey = ''; scanSession.pendingQuantity = 1;
       const options = await loadLinkOptions(invoice.transactionId);
       if (!options.receipt) throw new Error(tr('The piece was saved but its invoice summary could not be loaded.', 'حُفظت القطعة لكن تعذر تحديث ملخص الفاتورة.'));
       invoice = options.receipt; batches = options.batches;
@@ -207,13 +220,15 @@
           : scanSession.awaitingInspection === scanSession.target
             ? tr(`All ${scanSession.target} pieces of this product were received and await inspection.`, `تم استلام جميع قطع هذا المنتج ${scanSession.target} وهي بانتظار الفحص.`) + nextProduct
             : tr(`All ${scanSession.target} pieces of this product were received; ${scanSession.awaitingInspection} await inspection.`, `تم استلام جميع قطع هذا المنتج ${scanSession.target}؛ ${scanSession.awaitingInspection} منها بانتظار الفحص.`) + nextProduct
-        : tr(`Piece received successfully (${scanSession.scanned} of ${scanSession.target}). Scan the next piece.`, `تم استلام القطعة بنجاح (${scanSession.scanned} من ${scanSession.target}). امسح القطعة التالية.`));
+        : pieces > 1
+          ? tr(`Pack of ${pieces} received (${scanSession.scanned} of ${scanSession.target} pieces). Scan the next label.`, `تم استلام باك من ${pieces} قطع (${scanSession.scanned} من ${scanSession.target} قطعة). امسح الملصق التالي.`)
+          : tr(`Piece received successfully (${scanSession.scanned} of ${scanSession.target}). Scan the next piece.`, `تم استلام القطعة بنجاح (${scanSession.scanned} من ${scanSession.target}). امسح القطعة التالية.`));
     } catch (e) {
       if (saved) { scanSession.finished = true; stopCamera(); updateScanProgress(); }
       else {
         field('scan-code').value = scanSession.pendingCode;
         if (e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status)) {
-          scanSession.pendingCode = ''; scanSession.pendingLabelKey = ''; pendingLink = null;
+          scanSession.pendingCode = ''; scanSession.pendingLabelKey = ''; scanSession.pendingQuantity = 1; pendingLink = null;
         }
       }
       scanFeedback('error', saved
@@ -273,6 +288,9 @@
     const lineIndex = Number(field('line').value), line = invoice.lines[lineIndex], start = Number(field('link-start').value), quantity = Number(field('link-quantity').value);
     if (!Number.isSafeInteger(start) || !Number.isSafeInteger(quantity) || start < 1 || quantity < 1 || quantity > 1000 || start + quantity - 1 > chosenBatch.quantity || quantity > line.quantity - line.createdUnits)
       return notice(tr('The range exceeds the batch or invoice remainder.', 'النطاق يتجاوز الدفعة أو المتبقي في الفاتورة.'), true);
+    const per = Number(chosenBatch.piecesPerPack) || 0;
+    if (per && ((start - 1) % per || quantity % per))
+      return notice(tr(`This batch is packed (${per} per pack). Start at a pack's first piece and link whole packs.`, `هذه دفعة باكات (${per} قطع في الباك). ابدأ من أول قطعة في باك واربط باكات كاملة.`), true);
     if (!field('possession').checked || !field('labels-confirmed').checked) return notice(tr('Confirm the physical count and exact attached labels.', 'أكّد العدد الفعلي والملصقات المطابقة.'), true);
     setBusy(true);
     try {
@@ -295,7 +313,8 @@
         if (linkMethod === 'scan') field('scan-code').focus();
       }
       window.InventoryUnitLabels?.receiptChanged(invoice.transactionId);
-      notice(result.status === 'available' ? tr(`${result.linked} identities linked and available.`, `تم ربط ${result.linked} هوية وأصبحت متاحة.`) : tr(`${result.linked} identities linked and awaiting inspection.`, `تم ربط ${result.linked} هوية وهي بانتظار الفحص.`));
+      const packNote = result.packs ? tr(` ${result.packs} sealed packs are ready under their printed codes.`, ` و${result.packs} باك مغلق جاهز بنفس الأكواد المطبوعة.`) : '';
+      notice((result.status === 'available' ? tr(`${result.linked} identities linked and available.`, `تم ربط ${result.linked} هوية وأصبحت متاحة.`) : tr(`${result.linked} identities linked and awaiting inspection.`, `تم ربط ${result.linked} هوية وهي بانتظار الفحص.`)) + packNote);
     } catch (e) { notice(e.message + (pendingLink ? tr(' Retry with the same operation key if the result is uncertain.', ' عند عدم وضوح النتيجة أعد المحاولة بمفتاح العملية نفسه.') : ''), true); }
     finally { setBusy(false); }
   }

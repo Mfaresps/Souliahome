@@ -93,7 +93,7 @@ describe('SettingsService backup coverage', () => {
   });
 
   it('retains unit identity/audit together and excludes both from generic clear-data', () => {
-    expect(SECTIONS.inventoryUnits).toEqual(['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitcodes', 'inventoryunitcodecounters']);
+    expect(SECTIONS.inventoryUnits).toEqual(['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks', 'inventoryunitcodes', 'inventoryunitcodecounters']);
     expect(ALLOWED).not.toContain('inventoryunits');
     expect(ALLOWED).not.toContain('inventoryunitevents');
     expect(ALLOWED).not.toContain('inventoryunitoperations');

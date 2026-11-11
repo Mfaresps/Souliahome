@@ -59,28 +59,25 @@ describe('Monthly sales overview', () => {
       calls.push(pipeline);
       return { exec: async () => result };
     };
-    let transactionAggregates = 0;
     const service = {
       shopifyOrderModel: { collection: { name: 'shopifyorders' }, aggregate: aggregate([
         { _id: '2026-11-01', receivedOrders: 2, confirmedOrders: 1, receivedValue: 800, confirmedValue: 300 },
       ]) },
-      transactionModel: { collection: { name: 'transactions' }, aggregate: (pipeline: unknown[]) => {
-        transactionAggregates++;
-        return aggregate(transactionAggregates === 1
-          ? [{ _id: '2026-11-02', receivedOrders: 1, confirmedOrders: 1, receivedValue: 200, confirmedValue: 200 }]
-          : [{ _id: '2026-11-03', activeSales: 2, grossRevenue: 230 }])(pipeline);
-      } },
+      transactionModel: { collection: { name: 'transactions' }, aggregate: aggregate([
+        { _id: '2026-11-03', activeSales: 2, grossRevenue: 230 },
+      ]) },
       returnRequestModel: { aggregate: aggregate([{ _id: '2026-11-03', amount: 20 }]) },
     };
     const result = await TransactionsService.prototype.getSalesOverview.call(service as unknown as TransactionsService, 2026, 11);
-    expect(calls).toHaveLength(4);
+    expect(calls).toHaveLength(3);
     expect(JSON.stringify(calls[0])).toContain('shopifyCreatedAt');
-    expect(JSON.stringify(calls[1])).toContain('transactionDate');
-    expect(JSON.stringify(calls[2])).toContain('itemsTotal');
-    expect(JSON.stringify(calls[2])).toContain('date');
-    expect(JSON.stringify(calls[3])).toContain('reversedAt');
-    expect(result).toMatchObject({ totalOrders: 3, confirmedOrders: 2, totalRevenue: 210, averageOrderValue: 115 });
-    expect(result).toMatchObject({ totalReceivedValue: 1000, totalConfirmedValue: 500 });
+    expect(JSON.stringify(calls[0])).toContain('depositReceipts');
+    expect(JSON.stringify(calls[0])).toContain('shipWithoutDeposit');
+    expect(JSON.stringify(calls[1])).toContain('itemsTotal');
+    expect(JSON.stringify(calls[1])).toContain('date');
+    expect(JSON.stringify(calls[2])).toContain('reversedAt');
+    expect(result).toMatchObject({ totalOrders: 2, confirmedOrders: 1, totalRevenue: 210, averageOrderValue: 115, orderSource: 'shopify' });
+    expect(result).toMatchObject({ totalReceivedValue: 800, totalConfirmedValue: 300 });
     expect(result.days).toHaveLength(30);
   });
 });

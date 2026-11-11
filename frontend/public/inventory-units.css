@@ -502,3 +502,9 @@ body.dark-mode #page-barcodes .iu-print-count.is-reprint,body.dark-mode #page-ba
 #page-barcodes .iu-identity-action:disabled{opacity:.45;cursor:not-allowed}
 @container barcode (max-width:380px){#page-barcodes .iu-identity-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){#page-barcodes .iu-identity-action{transition:none}}
+/* The code box must print even when "Background graphics" is off or the label driver drops fills:
+   an SVG shape is content, not background, so it always prints. labelHtml() and batchCoverHtml() add
+   .iu-code-fill to the code box and to both SOULIA logo boxes (the logo itself is white). */
+.iu-label .iu-label-value,.iu-label.iu-label-50x25 .iu-label-value,.iu-label .iu-label-value.iu-short-code,.iu-label.iu-label-50x25 .iu-label-value.iu-short-code{position:relative;z-index:0;isolation:isolate;overflow:hidden;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.iu-label .iu-code-fill{position:absolute;inset:0;z-index:-1;width:100%;height:100%;display:block;pointer-events:none}
+.iu-label .iu-label-brand,.iu-label.iu-label-50x25 .iu-label-brand,.iu-label.iu-label-compact .iu-label-brand,.iu-label .iu-cover-brand{position:relative;z-index:0;isolation:isolate;print-color-adjust:exact;-webkit-print-color-adjust:exact}

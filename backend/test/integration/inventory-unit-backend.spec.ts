@@ -261,6 +261,55 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     const reserved = await service.action(first.unitIds[0], { ...req(), action: 'reserve', expectedVersion: 0, transactionId: saleId, lineId: 'line-1' }, actor);
     expect(reserved.unit.status).toBe('reserved');
   });
+  it('repairs a restored code counter (text _id, real counter at 0) so new batches never reuse an issued code', async () => {
+    const counters = raw('inventoryunitcodecounters'), unitCounter = new Types.ObjectId('000000000000000000000001');
+    const first = await service.issuePrelabels({ ...req(), productId, quantity: 3 }, actor);
+    const issued = (await counters.findOne({ _id: unitCounter }) as any).sequence;
+    // The broken restore: the value lands on a text-keyed copy and the real counter restarts.
+    await counters.insertOne({ _id: '000000000000000000000001' as any, sequence: issued });
+    await counters.updateOne({ _id: unitCounter }, { $set: { sequence: 0 } });
+    await expect(service.issuePrelabels({ ...req(), productId, quantity: 2 }, actor)).rejects.toThrow(/Concurrent duplicate/);
+    const manualCodes = new UnitManualCodesService(mongo.connection); await manualCodes.onModuleInit();
+    expect(await counters.countDocuments({ _id: '000000000000000000000001' as any })).toBe(0);
+    expect((await counters.findOne({ _id: unitCounter }) as any).sequence).toBe(issued);
+    const second = await service.issuePrelabels({ ...req(), productId, quantity: 2 }, actor);
+    const codes = [...(await service.prelabelRange(first.batchId, 1, 3)).labels, ...(await service.prelabelRange(second.batchId, 1, 2)).labels].map(l => l.manualCode);
+    expect(new Set(codes).size).toBe(5);
+  });
+  it('issues a pack batch: one pack label per pack, and linking seals real packs under the printed codes', async () => {
+    await raw('inventoryunitprelabelpacks').deleteMany({}); await raw('inventorypacks').deleteMany({});
+    await expect(service.issuePrelabels({ ...req(), productId, quantity: 5, piecesPerPack: 2 }, actor)).rejects.toThrow(/يُقسم/);
+    const issued = await service.issuePrelabels({ ...req(), productId, quantity: 4, piecesPerPack: 2 }, actor);
+    expect(issued).toMatchObject({ quantity: 4, piecesPerPack: 2, packs: 2, stockChanged: false });
+    expect((await service.prelabelBatches(productId))[0]).toMatchObject({ piecesPerPack: 2, unused: 4 });
+    // Print ranges must cover whole packs.
+    await expect(service.previewPrelabelRange(issued.batchId, { start: 2, quantity: 2, sizeId: '50x30' })).rejects.toThrow(/باكات كاملة/);
+    const preview = await service.previewPrelabelRange(issued.batchId, { start: 1, quantity: 4, sizeId: '50x30' });
+    expect(preview.labels).toHaveLength(2);
+    expect(preview.labels.every((label: any) => label.isPack && label.quantity === 2 && label.barcode === 'PK-' + label.unitId.toUpperCase())).toBe(true);
+    expect(preview.labels.every((label: any) => /^PK-\d{6}-\d$/.test(label.manualCode))).toBe(true);
+    expect(await raw('inventoryunitprelabels').countDocuments({ printCount: { $gt: 0 } })).toBe(0);
+    const bulk = await service.previewPrelabelBulk({ batchIds: [issued.batchId], mode: 'unprinted', sizeId: '50x30' });
+    expect(bulk).toMatchObject({ total: 2, reprints: 0 });
+    const printed = await service.printPrelabels(issued.batchId, { ...req(), start: 1, quantity: 4, sizeId: '50x30', selectionHash: preview.selectionHash }, actor);
+    expect(printed.labels.map((label: any) => label.manualCode)).toEqual(preview.labels.map((label: any) => label.manualCode));
+    expect(await raw('inventoryunitprelabels').countDocuments({ batchId: issued.batchId, printCount: 1 })).toBe(4);
+    // Receiving scans the pack label and links the whole pack.
+    const pack = preview.labels[0];
+    expect(await service.prelabelLookup(pack.manualCode)).toMatchObject({ isPack: true, quantity: 2, ordinal: 1, state: 'unused', printCount: 1 });
+    expect((await service.prelabelLookup(pack.barcode)).unitId).toBe(pack.unitId);
+    const link = { ...req(), batchId: issued.batchId, lineIndex: 0, physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed: true };
+    await expect(service.linkPrelabels(purchaseId, { ...link, start: 1, quantity: 1 }, actor)).rejects.toThrow(/باكات كاملة/);
+    const linked = await service.linkPrelabels(purchaseId, { ...link, start: 1, quantity: 2 }, actor);
+    expect(linked).toMatchObject({ linked: 2, packs: 1, packCodes: [pack.manualCode] });
+    const sealed: any = await raw('inventorypacks').findOne({ barcode: pack.barcode });
+    expect(sealed).toMatchObject({ state: 'sealed', manualCode: pack.manualCode, quantity: 2, productId });
+    expect((await Unit.find({ _id: { $in: linked.unitIds } }).lean()).every((unit: any) => unit.packId === pack.unitId)).toBe(true);
+    expect((await service.lookupPack(pack.manualCode))?.unit).toBeTruthy();
+    expect((await service.prelabelLookup(pack.manualCode)).state).toBe('linked');
+    // The invoice line holds 3 pieces, so the second pack (2 more) does not fit.
+    await expect(service.linkPrelabels(purchaseId, { ...link, operationKey: key(), start: 3, quantity: 2 }, actor)).rejects.toThrow();
+  });
   it('paginates more than one hundred issued batches in stable date order', async () => {
     const createdAt = new Date('2026-11-03T12:00:00Z');
     const docs = Array.from({ length: 125 }, (_, index) => ({ _id: new Types.ObjectId(), productId,

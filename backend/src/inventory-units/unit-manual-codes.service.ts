@@ -10,7 +10,15 @@ export class UnitManualCodesService implements OnModuleInit {
   private readonly counterId = new Types.ObjectId('000000000000000000000001');
   async onModuleInit() {
     await this.connection.collection('inventoryunitcodes').createIndex({ code: 1 }, { unique: true, name: 'inventory_unit_manual_code_unique' });
-    await this.connection.collection('inventoryunitcodecounters').updateOne({ _id: this.counterId }, { $setOnInsert: { sequence: 0 } }, { upsert: true });
+    // Never hand out a code that already exists. A restore once wrote this counter with a TEXT _id,
+    // leaving the real (ObjectId) counter at 0, so every new code collided with an issued one.
+    const counters = this.connection.collection('inventoryunitcodecounters');
+    const highest = await this.connection.collection('inventoryunitcodes').find({ code: { $regex: '^[0-9]{9}$' } }, { projection: { code: 1 } })
+      .sort({ code: -1 }).limit(1).next();
+    const stray: any = await counters.findOne({ _id: String(this.counterId) as any });
+    const floor = Math.max(highest ? Number(String(highest.code).slice(0, 8)) : 0, Number(stray?.sequence) || 0);
+    await counters.updateOne({ _id: this.counterId }, { $max: { sequence: floor } }, { upsert: true });
+    if (stray) await counters.deleteOne({ _id: String(this.counterId) as any });
   }
   private check(body: string) {
     let sum = 0;

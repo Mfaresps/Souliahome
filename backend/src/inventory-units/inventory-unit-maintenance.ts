@@ -1,7 +1,7 @@
 import { Connection } from 'mongoose';
 
 const CORE_TRACKING = ['inventoryunits', 'inventoryunitevents', 'inventoryunitoperations'];
-const PRELABELS = ['inventoryunitprelabelbatches', 'inventoryunitprelabels'];
+const PRELABELS = ['inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks'];
 const TRACKING = [...CORE_TRACKING, ...PRELABELS, 'inventoryunitcodes', 'inventorypacks', 'warehousetransfers'];
 const RELATED = ['products', 'transactions', 'inventorymovements', 'returnrequests', 'supplierreturnorders', 'purchaseorders', 'suppliers', 'supplierledgerentries', 'vaultentries', 'warehouses', ...TRACKING, 'inventoryunitcodecounters'];
 

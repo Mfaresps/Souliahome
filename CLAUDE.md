@@ -3805,10 +3805,45 @@ Locally there are no webhooks and one user, so no events, so it never showed.
   - `transactions.service.spec.ts`: 67 tests fail on a mock with no `.db` (`requireWarehouse`).
   - `followup-order-outcome.spec.ts`: 2 tests fail; `_fuRenderCommentThread` is missing from `index.html`.
 
+## QR Label Generator — Pack Batches (Nov 11, 2026)
+
+«مولّد ملصقات QR» (`supplier-labels.js`) can issue a batch as packs: 12 pieces with 6 per pack →
+**2 pack labels**, not 12 piece labels. Toggle «طباعة كباكات» + «عدد القطع في الباك» in the new-batch form.
+
+- **Every piece still gets its U identity** (`inventoryunitprelabels`, now with `packId`). Each pack is
+  reserved in **`inventoryunitprelabelpacks`** `{_id, batchId, ordinal, barcode 'PK-<ID>', manualCode, quantity, unitIds, state}`;
+  the batch carries `piecesPerPack`.
+- ⚠ **The pack's manual code (`PK-000123-4`) is reserved at issue time** via `nextPackCode`, so the printed
+  code is valid once linked. `initPackCodes` now takes the counter's floor from BOTH `inventorypacks` and
+  `inventoryunitprelabelpacks` — otherwise a lost counter would hand a printed code out twice.
+- Quantity must divide exactly by the pack size (2–100); the form states the nearest valid totals.
+- **Ranges stay in pieces on the server**; a pack batch requires pack-aligned ranges (`assertPrelabelRange`):
+  print up to 100 pack labels per request, link whole packs only. The UI asks for pack numbers and converts.
+- `packPrelabelOutputs` turns piece outputs into one `isPack` label per pack in all four print/preview paths
+  (single range, bulk preview, bulk labels, bulk print). Printing a pack increments every member's `printCount`,
+  which is what receiving requires.
+- **Linking seals real packs** (`sealLinkedPrelabelPacks`): `inventorypacks` gets the same `_id`, barcode and
+  manual code, and each new unit gets `packId` — so the printed label works in the sales/pick scanners at once.
+- Receiving: scanning a `PK` label (`prelabelLookup` → `prelabelPackLookup`) links the whole pack; scanning a
+  single piece of a pack batch is refused with «امسح ملصق الباك».
+- Backup/restore and maintenance lists include `inventoryunitprelabelpacks`.
+- ⚠ **«توجد عملية متزامنة أو هوية مكررة» on every new batch** was not the packs: the full restore skipped the
+  `_id → ObjectId` conversion for `inventoryunitcodecounters`, so the counters came back TEXT-keyed (686 / 35) and
+  the real ObjectId counter read 0 — every new U code collided with an issued one (unique index → 11000). Fixed
+  in restore, and `UnitManualCodesService.onModuleInit` / `initPackCodes` now floor the counter at the highest
+  issued code + any text-keyed copy, then delete that copy. Test: «repairs a restored code counter».
+- Tests: a pack-batch case in `inventory-unit-backend.spec.ts` (issue, refused remainder, pack-aligned preview,
+  2 labels, print, lookup by code, refused partial link, sealed pack + `packId`), and
+  `test/browser/supplier-labels-packs.cjs` (17 checks, ar/en). ⚠ `supplier-labels-page.cjs` already times out at
+  its `.iu-tabs` narrow-width check — unrelated to this change.
+
+---
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 11, 2026 | QR label generator: a batch can be issued as packs (e.g. 12 pieces, 6 per pack → 2 pack labels); linking at receipt seals real packs under the printed PK codes | See "QR Label Generator — Pack Batches" above |
 | Nov 10, 2026 | Shopify orders page: the window no longer scrolls — only the orders table scrolls | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |
 | Nov 9, 2026 | Shopify orders table sized to the room left under the pinned head, so reaching the last row no longer scrolls the page and hides the column titles | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |
 | Nov 9, 2026 | Shopify orders no longer jump to the first row on live updates (the inner table scroller kept its position only on single-arrival repaints); Movements reload shows placeholder bars instead of half-empty rows and ghost buttons | See "Cascade Reveal" → the two subsections |

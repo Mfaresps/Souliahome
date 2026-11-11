@@ -5,9 +5,9 @@
   const host = () => document.getElementById('dash-sales-overview');
   const q = id => document.getElementById(id);
   const labels = () => currentLang === 'en' ? {
-    eyebrow: 'SALES OVERVIEW', note: 'Orders received in the selected month',
-    orders: 'Total orders', revenue: 'Net sales', confirmed: 'Confirmed orders', average: 'Average order value',
-    chart: 'Daily orders', chartNote: 'Every day of the month · tap, hover or focus a point for orders and revenue',
+    eyebrow: 'SALES OVERVIEW', note: 'Shopify orders received in the selected month',
+    orders: 'Shopify orders', revenue: 'Net sales · all invoices', confirmed: 'Confirmed orders', average: 'Average invoice value',
+    chart: 'Daily Shopify orders', chartNote: 'Every day of the month · tap, hover or focus a point for orders and revenue',
     today: 'Today', received: 'orders', oneOrder: 'order', dailyRevenue: 'Revenue', scroll: 'Scroll to see every day',
     timezone: 'Days follow Cairo time', financial: 'Revenue excludes shipping and approved returns',
     prev: 'Previous month', next: 'Next month', previousYear: 'Previous year', nextYear: 'Next year', choose: 'Choose month and year',
@@ -16,9 +16,9 @@
     difference: 'Difference', partial: 'Current month figures are month to date',
     lineStyle: 'Line', areaStyle: 'Area', chartStyle: 'Chart style', showSeries: 'Show', hideSeries: 'Hide',
   } : {
-    eyebrow: 'ملخص المبيعات', note: 'الطلبات الواردة خلال الشهر المحدد',
-    orders: 'إجمالي الطلبات', revenue: 'صافي المبيعات', confirmed: 'الطلبات المؤكدة', average: 'متوسط قيمة الطلب',
-    chart: 'الطلبات يومًا بيوم', chartNote: 'كل أيام الشهر · اضغط أو مرّر أو ركّز على النقطة لمعرفة الطلبات والإيراد',
+    eyebrow: 'ملخص المبيعات', note: 'طلبات Shopify الواردة خلال الشهر المحدد',
+    orders: 'طلبات Shopify', revenue: 'صافي المبيعات · كل الفواتير', confirmed: 'الطلبات المؤكدة', average: 'متوسط قيمة الفاتورة',
+    chart: 'طلبات Shopify يومًا بيوم', chartNote: 'كل أيام الشهر · اضغط أو مرّر أو ركّز على النقطة لمعرفة الطلبات والإيراد',
     today: 'اليوم', received: 'طلب', oneOrder: 'طلب', dailyRevenue: 'المبيعات', scroll: 'اسحب لرؤية جميع أيام الشهر',
     timezone: 'الأيام حسب توقيت القاهرة', financial: 'المبيعات بدون الشحن وبعد المرتجعات المعتمدة',
     prev: 'الشهر السابق', next: 'الشهر التالي', previousYear: 'السنة السابقة', nextYear: 'السنة التالية', choose: 'اختر الشهر والسنة',
@@ -41,19 +41,19 @@
     future: 'Upcoming', outside: 'No calendar date', partial: 'Today · in progress', soFar: 'so far',
     zeroBase: 'N/A · previous count is zero', unavailable: 'Comparison unavailable', comparisonError: 'Comparison data could not load.',
     note: 'Daily orders · same calendar day comparison',
-    singleNote: 'Daily orders for the selected month',
+    singleNote: 'Daily Shopify orders for the selected month',
     apply: 'Apply', months: 'months', selection: 'Select comparison months',
     direction: 'Each month has its own colour', revenue: 'Revenue', confirmedValue: 'Confirmed value',
-    valueNote: 'Revenue: all received orders, including shipping and cancellations · Confirmed value: active confirmed orders',
+    valueNote: 'Shopify order values include shipping · Confirmed: approved deposit, no-deposit approval or registration · Cancelled and rejected orders are excluded from confirmed',
   } : {
     peak: 'الأعلى', hotspot: 'نشاط استثنائي', insight: 'رؤية ذكية', missing: 'بيانات غير متاحة',
     future: 'يوم قادم', outside: 'لا يوجد هذا اليوم', partial: 'اليوم · غير مكتمل', soFar: 'حتى الآن',
     zeroBase: 'غير متاح · العدد السابق صفر', unavailable: 'المقارنة غير متاحة', comparisonError: 'تعذر تحميل بيانات المقارنة.',
     note: 'الطلبات اليومية · مقارنة نفس اليوم من الشهر',
-    singleNote: 'الطلبات اليومية للشهر المحدد',
+    singleNote: 'طلبات Shopify اليومية للشهر المحدد',
     apply: 'تطبيق', months: 'شهور', selection: 'اختر شهور المقارنة',
     direction: 'لكل شهر لون ثابت', revenue: 'قيمة المستقبَل', confirmedValue: 'قيمة المؤكد',
-    valueNote: 'قيمة المستقبَل تشمل الشحن وكل الحالات، بما فيها الإلغاء · قيمة المؤكد للطلبات المؤكدة النشطة',
+    valueNote: 'قيم طلبات Shopify تشمل الشحن · المؤكد: عربون معتمد أو سماح بدون عربون أو تسجيل الطلب · الملغي والمرفوض خارج المؤكد',
   };
   const state = { month: '', compareMonth: '', compareMonths: [], comparisons: [], comparing: false, visible: [true, true], chartStyle: 'area', chartSignature: '', data: null, compareData: null, token: '', error: false, run: 0, cache: new Map(), pending: new Map() };
   let monthPopup = null, pickerYear = 0, pickerTarget = 'primary', draftMonths = new Set();
