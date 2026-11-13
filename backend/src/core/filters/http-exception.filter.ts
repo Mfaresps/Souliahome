@@ -41,10 +41,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      if (typeof exceptionResponse === 'object' && (exceptionResponse as any).code === 'PURCHASE_RECEIPT_RECONCILIATION_REQUIRED') {
-        // Keep the actionable receipt details through the production HTTP error filter.
-        for (const key of ['code', 'purchaseTransactionId', 'purchaseRef', 'invoiceQuantity', 'registeredQuantity']) {
-          receiptDetails[key] = (exceptionResponse as any)[key];
+      if (exceptionResponse && typeof exceptionResponse === 'object' && typeof (exceptionResponse as any).code === 'string') {
+        // A coded error is a question the client answers (SHOPIFY_DIVERGENCE_ACK_REQUIRED, BUNDLE_BREAK_CONFIRM_REQUIRED,
+        // UNIDENTIFIED_CONFIRM_REQUIRED, PURCHASE_RECEIPT_…): keep its code and details, or the page only sees the text
+        // and shows it as a failure instead of asking. The standard fields below still win.
+        for (const [key, value] of Object.entries(exceptionResponse as Record<string, unknown>)) {
+          if (!['statusCode', 'message', 'error', 'timestamp', 'path'].includes(key)) receiptDetails[key] = value;
         }
       }
       message =

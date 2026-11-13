@@ -40,7 +40,8 @@
 .edit-change-values small{font-size:.67rem;color:var(--muted);font-weight:400;white-space:nowrap}
 .edit-change-before bdi{color:var(--muted)}
 .edit-change-after bdi{color:var(--text);font-weight:700}
-.edit-change-arrow{color:var(--muted);flex:none;font-size:1rem}
+.edit-change-arrow{display:inline-flex;align-self:flex-end;flex:none;width:18px;height:18px;margin-bottom:1px;color:var(--primary,#287448)}
+.edit-change-arrow svg{width:18px;height:18px}
 html[dir="ltr"] .edit-change-arrow{transform:rotate(180deg)}
 .edit-product-context{margin:0;padding:0 14px 12px;font-size:.75rem;color:var(--muted);line-height:1.7}
 .edit-total-summary{border:1px solid var(--border);background:var(--surface2);border-radius:12px}

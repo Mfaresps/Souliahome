@@ -271,3 +271,8 @@ body.dark-mode #sp-peek .cp-summary-delivered,body.dark-mode #sp-peek .cp-summar
   #sp-peek .cp-order-evidence .cp-badge{max-width:128px}
   #sp-peek .sp-pk-head .sp-pk-address{grid-column:1/-1}
 }
+/* «تحضير وشحن» from the quick view (Nov 13, 2026): pinned under the body, full width on phones,
+   a normal-width primary button at the end of the bar on desktop. */
+#sp-peek .sp-pk-foot{flex-shrink:0;justify-content:flex-end}
+#sp-peek .sp-pk-foot-go{justify-content:center}
+@media(min-width:601px){#sp-peek .sp-pk-foot{padding:10px 16px}#sp-peek .sp-pk-foot-go{flex:0 0 auto;min-width:220px;height:42px}}

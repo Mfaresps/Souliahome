@@ -47,7 +47,7 @@
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
-  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261110-field-shimmer', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261110-items-request', invoiceImage:'/invoice-image.js?v=20261113-ship-discount'};
+  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261110-field-shimmer', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261113-rtl-arrow', invoiceImage:'/invoice-image.js?v=20261113-ship-discount'};
   var tasks = {};
   window.souliaLibraryReady = function (name) {
     if (tasks[name]) return tasks[name];
@@ -17203,7 +17203,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/admin-team-home.css?v=20261109-compact2">
 <link rel="stylesheet" href="/sales-overview.css?v=20261111-multi-month-values">
 <link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
-<link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261110-items-request">
+<link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261113-rtl-arrow">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
 <link rel="stylesheet" href="/deposit-transfer.css">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -17224,7 +17224,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/comment-reactions.css?v=20261029-smile-plus">
 <script src="/comment-reactions.js?v=20261029-smile-plus"></script>
 <link rel="stylesheet" href="/followup-trail.css?v=20261110-neutral-cards">
-<link rel="stylesheet" href="/shopify-order-peek.css?v=20261110-instant-shimmer">
+<link rel="stylesheet" href="/shopify-order-peek.css?v=20261113-prepare-ship">
 <link rel="stylesheet" href="/shopify-cards.css?v=20261109-card-preview">
 <link rel="stylesheet" href="/shopify-responsive.css?v=20261110-loading-consistency">
 <link rel="stylesheet" href="/shopify-deposit-fab.css?v=20261109-white-plus">
@@ -22678,7 +22678,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <div class="stg-guide-body" dir="auto">
             <ol>
               <li data-i18n="stgBostaHow1">ادخل على لوحة تحكم Bosta</li>
-              <li data-i18n="stgBostaHow2">اذهب إلى الإعدادات → API Credentials</li>
+              <li data-i18n="stgBostaHow2">اذهب إلى الإعدادات ← API Credentials</li>
               <li data-i18n="stgBostaHow3">انسخ الـ API Key وألصقه هنا</li>
             </ol>
           </div>
@@ -25931,7 +25931,7 @@ const TRANSLATIONS = {
   supGuideDepositP1:{ar:'يُخصم المبلغ فعلياً من الخزنة المختارة (كاش / فودافون / Instapay / بنك)، ولهذا تظهر قائمة «مصدر السيولة».',en:'The amount is actually deducted from the chosen vault (Cash / Vodafone / Instapay / Bank), which is why the "liquidity source" picker appears.'},
   supGuideDepositP2:{ar:'يقلّ المستحق عليك للمورد. وإذا دفعت أكثر مما عليك، يتحوّل الفائض إلى رصيد لك عنده تستخدمه في فواتير شراء لاحقة.',en:'It reduces what you owe the supplier. If you pay more than you owe, the excess becomes credit you can use on later purchase invoices.'},
   supGuideDepositP3:{ar:'النظام يمنع الحفظ لو كان رصيد الخزنة المختارة غير كافٍ.',en:'The system blocks saving if the chosen vault has insufficient balance.'},
-  supGuideDepositExample:{ar:'دفعت 40,000 مقدماً قبل استلام البضاعة → الخزنة تنقص 40,000، ويظهر 40,000 في «رصيد لك عند المورد».',en:'You paid 40,000 in advance before receiving goods → the vault drops by 40,000 and 40,000 appears under "credit with supplier".'},
+  supGuideDepositExample:{ar:'دفعت 40,000 مقدماً قبل استلام البضاعة ← الخزنة تنقص 40,000، ويظهر 40,000 في «رصيد لك عند المورد».',en:'You paid 40,000 in advance before receiving goods → the vault drops by 40,000 and 40,000 appears under "credit with supplier".'},
   supGuideDebitTitle:{ar:'خصم على الحساب',en:'Account charge'},
   supGuideDebitTag:{ar:'لا يؤثر على الخزنة',en:'Does not affect the vault'},
   supGuideDebitSummary:{ar:'المورد حمّلك مبلغاً، وأنت لم تدفع شيئاً.',en:'The supplier charged you an amount and you paid nothing.'},
@@ -25940,7 +25940,7 @@ const TRANSLATIONS = {
   supGuideDebitP1:{ar:'لا تتحرك الخزنة نهائياً — لا يخرج ولا يدخل جنيه واحد، ولهذا تختفي قائمة «مصدر السيولة».',en:'The vault does not move at all — not a single pound in or out, which is why the "liquidity source" picker disappears.'},
   supGuideDebitP2:{ar:'تزيد مديونيتك للمورد فقط.',en:'Only your debt to the supplier increases.'},
   supGuideDebitP3:{ar:'يُستخدم للرسوم أو الغرامات أو التصحيحات القادمة من جانب المورد.',en:'Used for fees, penalties or corrections coming from the supplier side.'},
-  supGuideDebitExample:{ar:'المورد أضاف رسوم شحن أو غرامة تأخير 2,000 على حسابك → الخزنة كما هي، ومديونيتك تزيد 2,000.',en:'The supplier added a 2,000 shipping fee or late penalty to your account → the vault is unchanged and your debt rises by 2,000.'},
+  supGuideDebitExample:{ar:'المورد أضاف رسوم شحن أو غرامة تأخير 2,000 على حسابك ← الخزنة كما هي، ومديونيتك تزيد 2,000.',en:'The supplier added a 2,000 shipping fee or late penalty to your account → the vault is unchanged and your debt rises by 2,000.'},
   supGuideCorrectionTitle:{ar:'تصحيح رصيد (بدون نقدية)',en:'Balance correction (no cash)'},
   supGuideCorrectionTag:{ar:'تصحيح فقط',en:'Correction only'},
   supGuideCorrectionSummary:{ar:'ليست معاملة حقيقية — لتصحيح رقم خاطئ أو تسجيل رصيد افتتاحي.',en:'Not a real transaction — to fix a wrong figure or record an opening balance.'},
@@ -25949,7 +25949,7 @@ const TRANSLATIONS = {
   supGuideCorrectionP1:{ar:'لتصحيح رصيد مسجَّل بالخطأ، أو لتسجيل رصيد افتتاحي لمورد قديم بدأ التعامل معه قبل تفعيل سجل المديونية.',en:'To fix a balance recorded in error, or to record an opening balance for an existing supplier you dealt with before the ledger was enabled.'},
   supGuideCorrectionP2:{ar:'يعمل في الاتجاهين (زيادة أو تقليل المستحق) لكن بدون أي أثر على الخزنة.',en:'Works in both directions (raising or lowering the amount owed) but with no vault impact.'},
   supGuideCorrectionP3:{ar:'لا تستخدمه لتسجيل دفعة حقيقية — لو دفعت نقداً فعلاً استخدم «عربون / دفعة مقدمة».',en:'Do not use it to record a real payment — if you actually paid cash, use "deposit / advance payment".'},
-  supGuideCorrectionExample:{ar:'اكتشفت أن رصيد المورد مسجَّل 5,000 والصحيح 3,000 → صحّح الفرق هنا بدون لمس الخزنة.',en:'You found the supplier balance recorded as 5,000 when it should be 3,000 → correct the difference here without touching the vault.'},
+  supGuideCorrectionExample:{ar:'اكتشفت أن رصيد المورد مسجَّل 5,000 والصحيح 3,000 ← صحّح الفرق هنا بدون لمس الخزنة.',en:'You found the supplier balance recorded as 5,000 when it should be 3,000 → correct the difference here without touching the vault.'},
   supGuideVaultDown:{ar:'ينقص',en:'Decreases'},
   supGuideVaultFlat:{ar:'لا يتأثر',en:'Unaffected'},
   supGuideModalTitle:{ar:'شرح معاملات حساب المورد',en:'Supplier account transactions explained'},
@@ -26330,7 +26330,7 @@ const TRANSLATIONS = {
   stgSaveKey:{ar:'حفظ المفتاح',en:'Save key'},
   stgBostaHowTitle:{ar:'كيف تحصل على API Key؟',en:'How do I get an API key?'},
   stgBostaHow1:{ar:'ادخل على لوحة تحكم Bosta',en:'Open your Bosta dashboard'},
-  stgBostaHow2:{ar:'اذهب إلى الإعدادات → API Credentials',en:'Go to Settings → API Credentials'},
+  stgBostaHow2:{ar:'اذهب إلى الإعدادات ← API Credentials',en:'Go to Settings → API Credentials'},
   stgBostaHow3:{ar:'انسخ الـ API Key وألصقه هنا',en:'Copy the API key and paste it here'},
   stgWebhookSection:{ar:'تحديث حالة الشحنة تلقائياً (Webhook)',en:'Automatic shipment status updates (Webhook)'},
   stgWebhookHowTitle:{ar:'كيف أربط الـ Webhook في Bosta؟',en:'How do I wire the webhook in Bosta?'},
@@ -27710,8 +27710,8 @@ const TRANSLATIONS = {
   chipType:{ar:'النوع: {v}',en:'Type: {v}'},
   chipSearch:{ar:'بحث: {v}',en:'Search: {v}'},
   chipSupplier:{ar:'المورد: {v}',en:'Supplier: {v}'},
-  chipDateRange:{ar:'التاريخ: {from} → {to}',en:'Date: {from} → {to}'},
-  chipAmountRange:{ar:'المبلغ: {min} → {max}',en:'Amount: {min} → {max}'},
+  chipDateRange:{ar:'التاريخ: {from} ← {to}',en:'Date: {from} → {to}'},
+  chipAmountRange:{ar:'المبلغ: {min} ← {max}',en:'Amount: {min} → {max}'},
   chipEmployee:{ar:'الموظف: {v}',en:'Employee: {v}'},
   chipMethod:{ar:'الطريقة: {v}',en:'Method: {v}'},
   chipStatus:{ar:'الحالة: {v}',en:'Status: {v}'},
@@ -27743,8 +27743,8 @@ const TRANSLATIONS = {
   sortDateAsc:{ar:'الأقدم أولاً',en:'Oldest first'},
   sortAmountDesc:{ar:'الأعلى قيمة',en:'Highest amount'},
   sortAmountAsc:{ar:'الأقل قيمة',en:'Lowest amount'},
-  sortClientAsc:{ar:'العميل: أ → ي',en:'Client: A → Z'},
-  sortClientDesc:{ar:'العميل: ي → أ',en:'Client: Z → A'},
+  sortClientAsc:{ar:'العميل: أ ← ي',en:'Client: A → Z'},
+  sortClientDesc:{ar:'العميل: ي ← أ',en:'Client: Z → A'},
   sortRefAsc:{ar:'رقم المعاملة: تصاعدي',en:'Ref #: ascending'},
   sortRefDesc:{ar:'رقم المعاملة: تنازلي',en:'Ref #: descending'},
   dateFilterHeader:{ar:'فلتر التاريخ',en:'Date filter'},
@@ -28917,8 +28917,8 @@ const TRANSLATIONS = {
   colAdjustments:{ar:'تسويات يدوية',en:'Manual adjustments'},
 
   // Sort options
-  sortNameAsc:{ar:'الاسم: أ → ي',en:'Name: A → Z'},
-  sortNameDesc:{ar:'الاسم: ي → أ',en:'Name: Z → A'},
+  sortNameAsc:{ar:'الاسم: أ ← ي',en:'Name: A → Z'},
+  sortNameDesc:{ar:'الاسم: ي ← أ',en:'Name: Z → A'},
   sortSellPriceAsc:{ar:'سعر البيع: من الأقل',en:'Sale price: lowest first'},
   sortSellPriceDesc:{ar:'سعر البيع: من الأعلى',en:'Sale price: highest first'},
   sortBuyPriceAsc:{ar:'سعر الشراء: من الأقل',en:'Purchase price: lowest first'},
@@ -28930,8 +28930,8 @@ const TRANSLATIONS = {
   chipMaterial:{ar:'الخامة: {v}',en:'Material: {v}'},
   chipFeature:{ar:'الميزة: {v}',en:'Feature: {v}'},
   chipSize:{ar:'المقاس: {v}',en:'Size: {v}'},
-  chipPriceRange:{ar:'السعر: {min} → {max}',en:'Price: {min} → {max}'},
-  chipStockRange:{ar:'المخزون: {min} → {max}',en:'Stock: {min} → {max}'},
+  chipPriceRange:{ar:'السعر: {min} ← {max}',en:'Price: {min} → {max}'},
+  chipStockRange:{ar:'المخزون: {min} ← {max}',en:'Stock: {min} → {max}'},
   sizeCustomLabel:{ar:'أبعاد مخصصة',en:'Custom dimensions'},
   noColorsRecorded:{ar:'لا توجد ألوان مسجلة',en:'No colors recorded'},
   noMaterialsRecorded:{ar:'لا توجد خامات مسجلة',en:'No materials recorded'},
@@ -29308,8 +29308,8 @@ const TRANSLATIONS = {
   prodQuickNoCategories:{ar:'لا توجد تصنيفات',en:'No categories'},
   prodQuickNoCollections:{ar:'لا توجد مجموعات',en:'No collections'},
   prodQuickMultiple:{ar:'متعدد ({n})',en:'Multiple ({n})'},
-  chipSellPriceRange:{ar:'سعر البيع: {min} → {max}',en:'Sale price: {min} → {max}'},
-  chipBuyPriceRange:{ar:'سعر الشراء: {min} → {max}',en:'Purchase price: {min} → {max}'},
+  chipSellPriceRange:{ar:'سعر البيع: {min} ← {max}',en:'Sale price: {min} → {max}'},
+  chipBuyPriceRange:{ar:'سعر الشراء: {min} ← {max}',en:'Purchase price: {min} → {max}'},
   chipCategory:{ar:'التصنيف: {v}',en:'Category: {v}'},
   chipCollection:{ar:'المجموعة: {v}',en:'Collection: {v}'},
   prodSelectedCount:{ar:'تم تحديد {n} صنف',en:'{n} product(s) selected'},
@@ -29689,7 +29689,7 @@ const TRANSLATIONS = {
   gsHomeTitle:{ar:'الرئيسية',en:'Home'},
   gsClearSearch:{ar:'مسح البحث',en:'Clear search'},
   gsClear:{ar:'مسح',en:'Clear'},
-  gsHint:{ar:'يبدأ بـ 010/011/012/015 → هاتف · أرقام قصيرة → رقم الطلب · نص → بحث بالاسم',en:'Starts with 010/011/012/015 → phone · short digits → order no. · text → search by name'},
+  gsHint:{ar:'يبدأ بـ 010/011/012/015 ← هاتف · أرقام قصيرة ← رقم الطلب · نص ← بحث بالاسم',en:'Starts with 010/011/012/015 → phone · short digits → order no. · text → search by name'},
   // Result group headings
   gsCatNav:{ar:'الأقسام',en:'Sections'},
   gsCatProduct:{ar:'الأصناف',en:'Products'},
@@ -32098,8 +32098,74 @@ let privacyMode = false;
 const _PRIV_ICON_ON = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M6.7 6.7C3.7 8.8 2 12 2 12s4 7 11 7c2 0 3.8-.5 5.3-1.3M11 5.06A11 11 0 0112 5c7 0 11 7 11 7a18 18 0 01-3 4"/><path d="M14 14.24A3 3 0 019.88 9.87"/></svg>`;
 const _PRIV_ICON_OFF = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
+/* ⚠ مبالغ مكتوبة كنص عادي — `fmtJT` («EGP 1,234») في البيك أب والتوستات والملفات
+   الخارجية، و`EGP ${fmtMoneyN()}` — ما بتعدّيش على `.amt-num`، فكانت بتفضل مكشوفة.
+   وهو مقفول، المراقب ده بيلفّ أي رقم جنب «EGP» (قبله أو بعده) في نص ظاهر بنفس
+   الـspan، فيتقفل ويتكشف بالوقوف زي الباقي. ⚠ بيلفّ الرقم بس — «EGP» تفضل ظاهرة
+   زي fmtJ. textContent ما بيتغيّرش، فأي كود بيقرا النص بيشتغل زي ما هو. */
+const _PRIV_MONEY_RE = /(EGP\s*)([−+\-]?\d[\d,]*(?:\.\d+)?)|([−+\-]?\d[\d,]*(?:\.\d+)?)(\s*(?:EGP|ج\.م|جنيه))/g;
+const _PRIV_SKIP_TAGS = new Set(['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT','OPTION','NOSCRIPT','TITLE']);
+let _privObserver = null, _privPending = new Set(), _privRaf = 0;
+function _privWrapTextNode(node) {
+  const text = node.nodeValue;
+  if (!text || text.indexOf('EGP') < 0 && text.indexOf('ج.م') < 0 && text.indexOf('جنيه') < 0) return;
+  const parent = node.parentElement;
+  if (!parent || _PRIV_SKIP_TAGS.has(parent.tagName) || parent.isContentEditable) return;
+  if (parent.closest('.amt-num,svg,#privacy-btn')) return;
+  _PRIV_MONEY_RE.lastIndex = 0;
+  if (!_PRIV_MONEY_RE.test(text)) return;
+  _PRIV_MONEY_RE.lastIndex = 0;
+  const frag = document.createDocumentFragment();
+  let last = 0, m;
+  while ((m = _PRIV_MONEY_RE.exec(text))) {
+    const num = m[2] || m[3];
+    const numStart = m.index + (m[1] ? m[1].length : 0);
+    if (numStart > last) frag.appendChild(document.createTextNode(text.slice(last, numStart)));
+    const span = document.createElement('span');
+    span.className = 'amt-num';
+    span.style.setProperty('--amt-ch', String(num.length));
+    span.textContent = num;
+    frag.appendChild(span);
+    last = numStart + num.length;
+  }
+  if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+  parent.replaceChild(frag, node);
+}
+function _privScan(root) {
+  if (!root) return;
+  if (root.nodeType === 3) { _privWrapTextNode(root); return; }
+  if (root.nodeType !== 1 && root.nodeType !== 11) return;
+  if (root.nodeType === 1 && (_PRIV_SKIP_TAGS.has(root.tagName) || root.closest?.('.amt-num'))) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(_privWrapTextNode);
+}
+function _privFlush() {
+  _privRaf = 0;
+  const batch = [..._privPending]; _privPending.clear();
+  batch.forEach(n => { if (n.isConnected) _privScan(n); });
+}
+function _privWatch(on) {
+  if (on && !_privObserver) {
+    _privScan(document.body);
+    _privObserver = new MutationObserver(records => {
+      for (const r of records) {
+        if (r.type === 'characterData') _privPending.add(r.target);
+        else r.addedNodes.forEach(n => _privPending.add(n));
+      }
+      if (_privPending.size && !_privRaf) _privRaf = requestAnimationFrame(_privFlush);
+    });
+    _privObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+  } else if (!on && _privObserver) {
+    _privObserver.disconnect(); _privObserver = null; _privPending.clear();
+    if (_privRaf) { cancelAnimationFrame(_privRaf); _privRaf = 0; }
+  }
+}
+
 function applyPrivacyMode() {
   document.body.classList.toggle('privacy-on', privacyMode);
+  _privWatch(privacyMode);
   const btn = qs('#privacy-btn');
   /* الزرار نفسه بيتشال من الشاشة لغير المدير — مش بيتعطّل. زرار باهت معناه
      «محتاج صلاحية»، وده مش الحالة هنا: الوضع ده مالوش أي معنى لغير المدير
@@ -37393,7 +37459,7 @@ function _vltSyncPeriodLabel() {
   const f = qs('#vault-from')?.value, tv = qs('#vault-to')?.value;
   // نطاق مخصّص: لا مفتاح ترجمة ثابت له، فيُزال data-i18n حتى لا يمسحه مسح applyLang
   lbl.removeAttribute('data-i18n');
-  lbl.textContent = (f || tv) ? `${f || '…'} → ${tv || '…'}` : t('vltPeriodCustom');
+  lbl.textContent = (f || tv) ? `⁨${f || '…'}⁩ ${_dirArrow()} ⁨${tv || '…'}⁩` : t('vltPeriodCustom');
 }
 function setVaultQuickDate(range, btn) {
   _clearVaultQuickBtns();
@@ -41525,7 +41591,7 @@ const INV_KPI_META = {
     rows: [
       { label: '📌 ما هو؟',       val: 'عدد الأصناف التي مخزونها الحالي فوق الحد الأدنى المطلوب — الوضع طبيعي.' },
       { label: '🔢 كيف يُحسب؟',   val: 'الأصناف التي: الرصيد الحالي > الحد الأدنى (minStock).' },
-      { label: '🧮 مثال',          val: 'صنف عنده 30 قطعة والحد الأدنى 10 → يُعد "متوفر".' },
+      { label: '🧮 مثال',          val: 'صنف عنده 30 قطعة والحد الأدنى 10 ← يُعد "متوفر".' },
       { label: '✅ الهدف',         val: 'هذا الرقم يجب أن يكون الأعلى دائماً مقارنة بمنخفض ونفد.' },
     ],
   },
@@ -41537,7 +41603,7 @@ const INV_KPI_META = {
     rows: [
       { label: '📌 ما هو؟',       val: 'عدد الأصناف التي وصل مخزونها لمستوى التحذير — تحتاج تجديد قريباً.' },
       { label: '🔢 كيف يُحسب؟',   val: 'الأصناف التي: الرصيد الحالي > 0 AND الرصيد الحالي ≤ الحد الأدنى (minStock).' },
-      { label: '🧮 مثال',          val: 'صنف عنده 5 قطع والحد الأدنى 10 → يُعد "منخفض" وتظهر له تحذيرات.' },
+      { label: '🧮 مثال',          val: 'صنف عنده 5 قطع والحد الأدنى 10 ← يُعد "منخفض" وتظهر له تحذيرات.' },
       { label: '⚠️ إجراء مطلوب',   val: 'ابدأ في الطلب من الموردين قبل النفاد التام.' },
     ],
   },
@@ -49982,7 +50048,7 @@ async function loadInventoryMovementPieces(id, page = 1) {
               ? (en ? 'Entered warehouse · Purchase receipt' : 'دخول المخزن · استلام مشتريات')
               : (en ? 'Identity registered in warehouse' : 'تسجيل الهوية بالمخزن')) : labels[event.action];
             const location = event.action === 'warehouse-changed'
-              ? `${warehouse(event.fromWarehouseCode)} → ${warehouse(event.toWarehouseCode)}`
+              ? `<bdi>${warehouse(event.fromWarehouseCode)}</bdi> ${_dirArrow()} <bdi>${warehouse(event.toWarehouseCode)}</bdi>`
               : warehouse(['shipped', 'supplier-returned'].includes(event.action) ? event.fromWarehouseCode : event.toWarehouseCode);
             return `<div><b>${esc(label || event.action)}</b><div style="color:var(--muted)">${date(event.date)} · ${location}</div></div>`;
           }).join('') : `<div style="color:var(--muted)">${en ? 'Warehouse entry and exit dates are not recorded.' : 'تواريخ الدخول والخروج من المخزن غير مسجلة.'}</div>`}
@@ -50752,7 +50818,7 @@ function openFxDrawer(ctx) {
           </div>
           <div class="fx-range">
             <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}" class="date-filter-icon${s.dateFrom ? ' has-value' : ''}" title="${escHtml(t('from'))}">
-            <span class="fx-range-sep">←</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}" class="date-filter-icon${s.dateTo ? ' has-value' : ''}" title="${escHtml(t('to'))}">
           </div>
         </div>
@@ -50766,7 +50832,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="number" min="0" placeholder="${escHtml(t('from'))}" data-fx="amountMin" value="${esc(s.amountMin)}">
-            <span class="fx-range-sep">←</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="number" min="0" placeholder="${escHtml(t('to'))}" data-fx="amountMax" value="${esc(s.amountMax)}">
           </div>
         </div>
@@ -50878,7 +50944,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="date" data-fx="dateFrom" value="${esc(s.dateFrom)}" class="date-filter-icon${s.dateFrom ? ' has-value' : ''}" title="${escHtml(t('rangeFrom'))}">
-            <span class="fx-range-sep">←</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="date" data-fx="dateTo" value="${esc(s.dateTo)}" class="date-filter-icon${s.dateTo ? ' has-value' : ''}" title="${escHtml(t('rangeTo'))}">
           </div>
         </div>
@@ -50946,7 +51012,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="number" min="0" placeholder="${escHtml(t('rangeFrom'))}" data-fx="priceMin" value="${esc(s.priceMin)}">
-            <span class="fx-range-sep">→</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="number" min="0" placeholder="${escHtml(t('rangeTo'))}" data-fx="priceMax" value="${esc(s.priceMax)}">
           </div>
         </div>
@@ -50960,7 +51026,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="number" min="0" placeholder="${escHtml(t('rangeFrom'))}" data-fx="stockMin" value="${esc(s.stockMin)}">
-            <span class="fx-range-sep">→</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="number" min="0" placeholder="${escHtml(t('rangeTo'))}" data-fx="stockMax" value="${esc(s.stockMax)}">
           </div>
         </div>
@@ -51009,7 +51075,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="number" min="0" placeholder="من" data-fx="sellMin" value="${esc(s.sellMin)}">
-            <span class="fx-range-sep">→</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="number" min="0" placeholder="إلى" data-fx="sellMax" value="${esc(s.sellMax)}">
           </div>
         </div>
@@ -51023,7 +51089,7 @@ function openFxDrawer(ctx) {
         <div class="fx-section-body">
           <div class="fx-range">
             <input type="number" min="0" placeholder="من" data-fx="buyMin" value="${esc(s.buyMin)}">
-            <span class="fx-range-sep">→</span>
+            <span class="fx-range-sep">${_dirArrow()}</span>
             <input type="number" min="0" placeholder="إلى" data-fx="buyMax" value="${esc(s.buyMax)}">
           </div>
         </div>
@@ -58410,13 +58476,20 @@ async function sendToBosta(id) {
   }
 
   // التحقق من البيانات المطلوبة قبل الإرسال
-  const missingFields = [];
-  const addr = (tx.shippingAddress || '').replace(/^العنوان:\s*/, '').trim();
-  const city = (tx.shippingGov || tx.shippingCity || '').trim();
-  const phone = (tx.phone || '').replace(/\D/g, '');
-  if (!addr)  missingFields.push('عنوان التوصيل التفصيلي');
-  if (!city)  missingFields.push('المحافظة / المدينة');
-  if (!phone) missingFields.push('رقم الهاتف');
+  // ⚠ Same rule as the prep dialog: `tx` may be a startup-overview row that
+  //   carries no address fields, so every in-memory copy is consulted.
+  let missingFields = _bsfMissing(tx);
+  if (missingFields.length) {
+    try {
+      const full = await api(`/transactions/${encodeURIComponent(id)}`);
+      if (full && String(full._id) === String(id)) {
+        ['shippingAddress', 'shippingGov', 'shippingCity', 'shippingBostaCity', 'phone'].forEach(k => {
+          if (full[k] != null && full[k] !== '') tx[k] = full[k];
+        });
+        missingFields = _bsfMissing(tx);
+      }
+    } catch (_) { /* keep the local verdict */ }
+  }
   if (missingFields.length) {
     toast(`بيانات ناقصة — يرجى تعديل المعاملة وإضافة: ${missingFields.join(' • ')}`, true);
     return;
@@ -58828,12 +58901,17 @@ async function _bostaOpenCase(o) {
 function _bsfIsSent(o) {
   return !!o.bostaOrderId && !['VALIDATION_ERROR', 'DELETED'].includes(o.bostaStatus || '');
 }
+// ⚠ Reads every in-memory copy of the order, not the first one found. The boot
+//   `transactions` rows come from startup-overview, which carries `phone` but NOT
+//   shippingAddress / shippingGov / shippingCity — preferring that row reported a
+//   fully addressed order as «بيانات ناقصة: العنوان • المحافظة / المدينة».
 function _bsfMissing(o) {
-  const tx = (transactions || []).find(t => String(t._id) === String(o._id)) || o;
+  const copies = [o, ..._awbOrderCopies(o._id)];
+  const has = (pick) => copies.some(c => c && pick(c));
   const miss = [];
-  if (!String(tx.shippingAddress || '').replace(/^العنوان:\s*/, '').trim()) miss.push(t('bsfMissAddr'));
-  if (!String(tx.shippingGov || tx.shippingCity || '').trim()) miss.push(t('bsfMissCity'));
-  if (!String(tx.phone || tx.clientPhone || '').replace(/\D/g, '')) miss.push(t('bsfMissPhone'));
+  if (!has(c => String(c.shippingAddress || '').replace(/^العنوان:\s*/, '').trim())) miss.push(t('bsfMissAddr'));
+  if (!has(c => String(c.shippingGov || c.shippingCity || c.shippingBostaCity || '').trim())) miss.push(t('bsfMissCity'));
+  if (!has(c => String(c.phone || c.clientPhone || '').replace(/\D/g, ''))) miss.push(t('bsfMissPhone'));
   return miss;
 }
 
@@ -66174,6 +66252,9 @@ function ehEntryHtml({ action, when, by, rows }) {
  *   («إجمالي الأصناف: 1550 ← 790»)، لا حقولٌ مُهيكلة — فلا سبيل لإعادة توليدها.
  *   تُقرأ هنا بنمطٍ واحد ويسقط ما لا يطابقه إلى سطر ملاحظة كما هو، فلا يضيع شيء.
  */
+/* السهم بين «من» و«إلى» أو «قبل» و«بعد» يتبع اتجاه الواجهة: ← بالعربي و→ بالإنجليزي.
+   «→» وسط نص عربي يُعرض معكوساً (الرقمان يتبادلان مكانهما ويبقى السهم يشير للقديم). */
+function _dirArrow() { return currentLang === 'en' ? '→' : '←'; }
 const _EH_ARROW_RE = /^(.*?):\s*(.+?)\s*(?:←|→|->|<-)\s*(.+)$/;
 function ehRowFromText(line) {
   const m = _EH_ARROW_RE.exec(String(line || '').trim());
@@ -80515,7 +80596,7 @@ const REP_KPI_META = {
     rows:[
       { label:'📌 ما هو؟', val:'إجمالي المبالغ المحصلة فعلياً من العملاء (العربون/الدفعة المقدمة) عند إنشاء الفواتير.' },
       { label:'🔢 كيف يُحسب؟', val:'مجموع العربون المدفوع في كل فاتورة مبيعات ضمن الفترة.' },
-      { label:'🧮 مثال', val:'فاتورة بقيمة 1,000 — عربون 300 → يُحتسب هنا 300 فقط.' },
+      { label:'🧮 مثال', val:'فاتورة بقيمة 1,000 — عربون 300 ← يُحتسب هنا 300 فقط.' },
       { label:'❌ لا يشمل', val:'المبالغ المتبقية لم تُحصل بعد • دفعات تمت بعد إنشاء الفاتورة.' },
     ],
   },
@@ -80525,7 +80606,7 @@ const REP_KPI_META = {
     rows:[
       { label:'📌 ما هو؟', val:'إجمالي الأرصدة المستحقة على العملاء في فواتير المبيعات النشطة.' },
       { label:'🔢 كيف يُحسب؟', val:'مجموع المبلغ المتبقي في كل فاتورة مبيعات نشطة ضمن الفترة.' },
-      { label:'🧮 مثال', val:'فاتورة 1,000 — عربون 300 → متبقي 700 يُحتسب هنا.' },
+      { label:'🧮 مثال', val:'فاتورة 1,000 — عربون 300 ← متبقي 700 يُحتسب هنا.' },
       { label:'⚠️ ملاحظة', val:'يشمل فواتير المبيعات فقط — ديون الموردين (مشتريات) لا تظهر هنا.' },
     ],
   },
@@ -104555,7 +104636,7 @@ function puCardItemChange(orderId, idx, field, val) {
   if (field === 'price') item.price = Math.max(0, Number(val)||0);
   item.total = item.qty * item.price;
   const subEl = qs(`#puitem-sub-${orderId}-${idx}`);
-  if (subEl) subEl.textContent = fmtJ(item.total);
+  if (subEl) subEl.innerHTML = fmtJ(item.total);
   o.total = (o.items||[]).reduce((s,it)=>s+(it.qty*it.price),0) + (o.shipCost||0) - (o.discount||0);
   _puDirtyCards.add(orderId);
   const totalEl = qs(`#pu-card-total-${orderId}`);
@@ -110310,7 +110391,8 @@ function _spPeekHtml(o) {
       ${_spPeekCommentsHtml(o)}
       ${_spPeekTogetherHtml(o, canConfirm)}
       </div>
-    </div>`;
+    </div>
+    ${canConfirm && hasPerm('shopify-prepare-ship') ? `<footer class="sp-pk-foot"><button type="button" class="sp-confirm-btn is-lg sp-pk-foot-go" onclick="approveShopifyOrder('${esc(String(o._id))}')">${_spConfirmBtnHTML()}</button></footer>` : ''}`;
 }
 
 const _SP_PRINT_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
@@ -117736,7 +117818,7 @@ function _spRenderHistoryTab() {
 <script src="/admin-team-home.js?v=20261109-cascade"></script>
 <script src="/daily-orders-analysis.js?v=20261111-multi-month-values"></script>
 <script src="/sales-overview.js?v=20261111-multi-month-values"></script>
-<script src="/shopify-edit-approvals.js?v=20261103-compact-order-mark"></script>
+<script src="/shopify-edit-approvals.js?v=20261113-rtl-arrow"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js?v=20261029-permissions"></script>

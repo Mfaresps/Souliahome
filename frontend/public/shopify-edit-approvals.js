@@ -32,11 +32,15 @@ function _spEditProposalPatch(order, proposal) {
   }
   return patch;
 }
+/* ← بالعربي و→ بالإنجليزي: «→» وسط نص عربي يُعرض معكوساً. */
+function _spEditArrow() { return typeof currentLang !== 'undefined' && currentLang === 'en' ? '→' : '←'; }
+/* كل قيمة معزولة (FSI…PDI) حتى لا يسحب اسم لاتيني قبلها السهمَ إلى اتجاه إنجليزي. */
+function _spEditPair(a, b) { return `⁨${a}⁩ ${_spEditArrow()} ⁨${b}⁩`; }
 function _spEditComparisonHtml(before = {}, patch = {}, fallback = []) {
   const e = value => esc(String(value ?? ''));
   const beforeLabel = spEditText('قبل التعديل', 'Before');
   const afterLabel = spEditText('بعد التعديل', 'After');
-  const row = (label, oldValue, newValue, extra = '') => `<div class="edit-change-row ${extra}"><span class="edit-change-label">${e(label)}</span><div class="edit-change-values"><span class="edit-change-before"><small>${e(beforeLabel)}</small><bdi>${e(oldValue)}</bdi></span><span class="edit-change-arrow" aria-hidden="true">←</span><span class="edit-change-after"><small>${e(afterLabel)}</small><bdi>${e(newValue)}</bdi></span></div></div>`;
+  const row = (label, oldValue, newValue, extra = '') => `<div class="edit-change-row ${extra}"><span class="edit-change-label">${e(label)}</span><div class="edit-change-values"><span class="edit-change-before"><small>${e(beforeLabel)}</small><bdi>${e(oldValue)}</bdi></span><span class="edit-change-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></span><span class="edit-change-after"><small>${e(afterLabel)}</small><bdi>${e(newValue)}</bdi></span></div></div>`;
   const productRows = [];
   if (Array.isArray(patch.items)) {
     const imageIndex = typeof _spBuildInvIndex === 'function' ? _spBuildInvIndex() : null;
@@ -113,8 +117,8 @@ function _spEditProposalChanges(order, proposal) {
       const previous = before.get(key);
       if (!previous) lines.push(spEditText('إضافة صنف', 'Add item') + `: ${item.name} (${item.qty})`);
       else {
-        if (item.qty !== previous.qty) lines.push(spEditText('كمية', 'Quantity') + ` ${item.name}: ${previous.qty} → ${item.qty}`);
-        if (item.price !== previous.price) lines.push(spEditText('سعر', 'Price') + ` ${item.name}: ${_spEditMoneyText(previous.price)} → ${_spEditMoneyText(item.price)}`);
+        if (item.qty !== previous.qty) lines.push(spEditText('كمية', 'Quantity') + ` ${item.name}: ${_spEditPair(previous.qty, item.qty)}`);
+        if (item.price !== previous.price) lines.push(spEditText('سعر', 'Price') + ` ${item.name}: ${_spEditPair(_spEditMoneyText(previous.price), _spEditMoneyText(item.price))}`);
       }
     }
     for (const [key, item] of before) {
@@ -137,15 +141,15 @@ function _spEditProposalChanges(order, proposal) {
     if (!(key in patch)) continue;
     const before = order[key] ?? (money.has(key) ? 0 : ''), after = patch[key] ?? '';
     if (money.has(key) ? Number(before) === Number(after) : String(before) === String(after)) continue;
-    lines.push(spEditText(...label) + ': ' + (money.has(key) ? _spEditMoneyText(Number(before)) : String(before || '—'))
-      + ' → ' + (money.has(key) ? _spEditMoneyText(Number(after)) : String(after || '—')));
+    lines.push(spEditText(...label) + ': ' + _spEditPair(money.has(key) ? _spEditMoneyText(Number(before)) : String(before || '—'),
+      money.has(key) ? _spEditMoneyText(Number(after)) : String(after || '—')));
   }
   if (!invoice && (items || proposal.discount)) {
     const itemsTotal = (items || order.items || []).reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
     const discount = Number(order.discount || 0) + Number(proposal.discount?.manualDiscount ?? order.manualDiscount ?? 0)
       + Number(proposal.discount?.codesDiscount ?? order.codesDiscount ?? 0);
     const total = Math.max(0, itemsTotal - Math.min(itemsTotal, discount) + Number(order.shipCost || 0));
-    if (total !== Number(order.total || 0)) lines.push(spEditText('الإجمالي', 'Total') + `: ${_spEditMoneyText(order.total || 0)} → ${_spEditMoneyText(total)}`);
+    if (total !== Number(order.total || 0)) lines.push(spEditText('الإجمالي', 'Total') + `: ${_spEditPair(_spEditMoneyText(order.total || 0), _spEditMoneyText(total))}`);
   }
   for (const correction of invoice?.depositVaultCorrections || []) {
     lines.push(spEditText('تصحيح خزنة الدفعة', 'Change payment account') + ` ${correction.id}: ${correction.method}`);
