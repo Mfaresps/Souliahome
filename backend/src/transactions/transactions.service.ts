@@ -3736,6 +3736,7 @@ export class TransactionsService implements ClassificationInit {
       vaultDelta,
       shipExtra,
       snapshotBefore,
+      ...(isPurchase && dto.batchId ? { batchId: String(dto.batchId).slice(0, 64) } : {}),
     } as any);
 
     const saved = await tx.save();

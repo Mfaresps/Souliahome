@@ -2575,6 +2575,12 @@ body.dark-mode .stg-cell-down{color:#f87171}
 body.dark-mode .spb-head{color:#fb923c}
 body.dark-mode .spb-wrap{background:rgba(249,115,22,.09)}
 @media(max-width:640px){.spb-head-sum{display:none}.spb-undo-btn{width:100%;justify-content:center}}
+/* Payments log: a split payment is one row, its parts sit under it */
+.sl-tbl tr.spp-group td{border-bottom-color:transparent}
+.sl-tbl tr.spp-part td{background:var(--bg-alt);padding-top:6px;padding-bottom:6px;font-size:.82rem}
+.sl-tbl .spp-count{color:var(--muted);font-weight:600}
+.sl-tbl .spp-branch{color:var(--muted);text-align:center}
+.sl-tbl .spp-part-amt{color:var(--muted);font-weight:600}
 .stg-rule{font-size:.76rem;color:var(--text);line-height:1.75;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.28);border-radius:10px;padding:10px 12px}
 .stg-rule b{color:var(--primary)}
 body.dark-mode .stg-rule{background:rgba(59,130,246,.10)}
@@ -26079,6 +26085,7 @@ const TRANSLATIONS = {
   supBulkPanelHint:{ar:'كل دفعة منها سُدّدت مرة واحدة ووُزّعت على عدة فواتير — التراجع يلغيها بالكامل دفعة واحدة.',en:'Each of these was paid once and split across several invoices — undoing reverses the whole batch at once.'},
   supBulkItemInvoices:{ar:'{n} فواتير',en:'{n} invoices'},
   supBulkUndoAllBtn:{ar:'تراجع عن الدفعة كلها',en:'Undo the whole payment'},
+  supPayKindSplit:{ar:'سداد موزع',en:'Split payment'},
   supBulkRevTitle:{ar:'تراجع عن دفعة موزعة',en:'Undo a split payment'},
   supBulkRevSub:{ar:'{n} فواتير · {method}',en:'{n} invoices · {method}'},
   supBulkRevWarn:{ar:'سيتم إلغاء السداد على هذه الفواتير وإرجاع المبلغ للخزنة',en:'Payment on these invoices will be cancelled and the amount returned to the vault'},
@@ -54762,11 +54769,21 @@ function _refreshEditMetaSummary() {
 }
 
 function _buildEditSupplierField(tx) {
-  const cur = esc(tx.client || '');
-  const opts = suppliers.map(s => `<option value="${esc(s.name)}" data-phone="${esc(s.phone||'')}" ${s.name === tx.client ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  // The invoice's own supplier must always be selected. Matching only on the exact name left the
+  // select EMPTY — and the save refused with «يجب اختيار مورد» — whenever the supplier list had not
+  // loaded yet (slow connection), the stored name differed by spaces/case, or the supplier was
+  // renamed. Match by id, then by trimmed name; otherwise keep the stored name as its own option.
+  const list = Array.isArray(suppliers) ? suppliers : [];
+  const norm = v => String(v || '').trim().toLowerCase();
+  const curName = String(tx.client || '').trim();
+  const match = (tx.supplierId && list.find(s => String(s._id) === String(tx.supplierId)))
+    || list.find(s => norm(s.name) === norm(curName)) || null;
+  const opts = list.map(s => `<option value="${esc(s.name)}" data-id="${esc(s._id || '')}" data-phone="${esc(s.phone||'')}" ${s === match ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  const keep = !match && curName
+    ? `<option value="${esc(curName)}" data-id="${esc(tx.supplierId || '')}" data-phone="${esc(tx.phone || '')}" selected>${esc(curName)}</option>` : '';
   return `<select id="edit-tx-client" onchange="_onEditSupplierChange(this)" style="width:100%">
       <option value="">اختر مورد</option>
-      ${opts}
+      ${keep}${opts}
     </select>`;
 }
 function _onEditSupplierChange(sel) {
@@ -56680,7 +56697,7 @@ async function saveEditMovement(id) {
     }
     return;
   }
-  if (tx.type === 'مشتريات' && !qs('#edit-tx-client')?.value) { toast('يجب اختيار مورد من القائمة قبل الحفظ', true); qs('#edit-tx-client')?.focus(); return; }
+  if (tx.type === 'مشتريات' && !qs('#edit-tx-client')?.value) { toggleEditMetaPanel(true); toast('يجب اختيار مورد من القائمة قبل الحفظ', true); qs('#edit-tx-client')?.focus(); return; }
   // Sales: validate customer name + phone (both required)
   if (tx.type === 'مبيعات') {
     let editValid = true;
@@ -57884,6 +57901,8 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
   const errors = [];
 
   const otpTotalAmount = meta.totalAmount || dist.reduce((s, e) => s + e.pay, 0);
+  // One id for the whole payment, so the payments log shows it as ONE payment with its split.
+  const batchId = 'pb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   for (const entry of dist) {
     try {
       const body = {
@@ -57892,7 +57911,8 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
         collectAmount: entry.pay,
         collectDate: payDate,
         otpId,
-        otpTotalAmount
+        otpTotalAmount,
+        batchId
       };
       await api('/transactions/' + entry.id + '/collect', { method: 'POST', body: JSON.stringify(body) });
 
@@ -57908,7 +57928,8 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
           date: new Date(payDate).toISOString(),
           by: currentUser?.name || 'مستخدم',
           remaining: t2.remaining || 0,
-          collectedAmount: entry.pay
+          collectedAmount: entry.pay,
+          batchId
         });
         t2.remaining = Math.max(0, (t2.remaining || 0) - entry.pay);
         t2.deposit = ((t2.deposit || 0) + entry.pay);
@@ -62667,6 +62688,30 @@ table.iv-items td.c-total{font-size:10.5px;font-weight:600}
 .iv-cell.is-settled{background:#f1f6f2;justify-content:center}
 .iv-cell.is-settled .v{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--brand)}
 
+/* ── SUPPLIER INVOICE: payments made + supplier statement ─────────────── */
+.iv-sec{margin-top:6mm;page-break-inside:avoid;break-inside:avoid}
+.iv-sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:5px}
+.iv-sec-head .iv-k{font-weight:600;color:#4a574f;font-size:8.5px}
+.iv-sec-head .note{font-size:7.8px;color:var(--muted)}
+table.iv-mini{width:100%;border-collapse:collapse;table-layout:fixed}
+table.iv-mini th{padding:0 6px 5px;font-size:7.8px;font-weight:600;color:#4a574f;text-align:right;border-bottom:1px solid var(--ink)}
+table.iv-mini td{padding:5px 6px;font-size:9.6px;border-bottom:1px solid #e4e9e6;vertical-align:top;color:var(--ink-2)}
+table.iv-mini .n{text-align:left;white-space:nowrap}
+table.iv-mini td.n{font-weight:600;color:var(--ink)}
+table.iv-mini td .s{display:block;font-size:7.8px;color:var(--muted);margin-top:1px}
+table.iv-mini tr.is-this td{background:#f1f6f2}
+table.iv-mini tr.is-this td:first-child{font-weight:700;color:var(--ink)}
+table.iv-mini tfoot td{border-bottom:0;border-top:1px solid var(--ink);font-weight:700;color:var(--ink);padding-top:6px}
+.iv-tag{display:inline-block;margin-inline-start:5px;padding:0 5px;border-radius:3px;font-size:7.4px;font-weight:600;background:var(--brand);color:#fff;vertical-align:1px}
+.iv-stmt-due{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:6px;padding:9px 14px;border-radius:3px;background:var(--brand);color:#fff}
+.iv-stmt-due .k{font-size:9px;font-weight:600}
+.iv-stmt-due .k small{display:block;font-size:7.6px;font-weight:400;color:#c9ddd0;margin-top:1px}
+.iv-stmt-due .v{font-size:16px;font-weight:700;white-space:nowrap}
+.iv-stmt-due .iv-cur{color:#c9ddd0}
+.iv-stmt-due.is-zero{background:#f1f6f2;color:var(--brand)}
+.iv-stmt-due.is-zero .k small,.iv-stmt-due.is-zero .iv-cur{color:var(--muted)}
+.iv-stmt-gap{margin-top:4px;font-size:7.8px;color:var(--muted)}
+
 /* ── SHEET FOOT — pinned to the bottom, carries the page number ────────── */
 .sheet-foot{position:absolute;inset-inline:13mm;bottom:10mm;display:flex;
   justify-content:space-between;align-items:center;gap:10px;
@@ -62947,6 +62992,128 @@ function _isPurchaseDetailsRestricted(tx) {
 function _invoiceDetailsDenied() {
   toast(currentLang === 'en' ? 'Purchase invoice details and printing are restricted to admins.' : 'تفاصيل وطباعة فواتير الشراء متاحة للمدير فقط.', true);
 }
+/* ── Supplier invoice print: what was paid on it, and where the account stands ──
+   Every amount between «total» and «remaining» is named: logged deposits, later
+   payments (a part of a split payment says so), supplier credit used, a write-off,
+   and — for invoices from before the logs existed — the unexplained rest as one line,
+   so the rows always add up to (total − remaining). */
+function _invPrintDay(d) {
+  const s = String(d || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s.split('-').reverse().join('/') : '—';
+}
+function _invPurchasePaymentsHtml(tx) {
+  const money = v => `<span class="num">${fmtN(Math.round((Number(v) || 0) * 100) / 100)}</span>`;
+  const total = Number(tx.total) || 0;
+  const remaining = Math.max(0, Number(tx.remaining) || 0);
+  const settled = Math.max(0, total - remaining);
+  const rows = [];
+  (tx.deposits || []).filter(d => !d.reversed && Number(d.amount) > 0).forEach(d =>
+    rows.push({ date: d.date, kind: 'دفعة عند تسجيل الفاتورة', method: d.method, amount: Number(d.amount), note: '' }));
+  (tx.payments || []).filter(p => !p.reversed && Number(p.amount) > 0).forEach(p =>
+    rows.push({ date: p.date, kind: 'سداد', method: p.method, amount: Number(p.amount),
+      note: p.batchId ? 'جزء من دفعة واحدة وُزّعت على أكثر من فاتورة' : (p.note || '') }));
+  rows.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  const credit = Number(tx.creditApplied) || 0;
+  if (credit > 0) rows.push({ date: tx.date, kind: 'خصم من رصيد لك عند المورد', method: '', amount: credit, note: 'لم يخرج نقد من الخزنة' });
+  const wo = Number(tx.writeOff?.amount) || 0;
+  if (wo > 0) rows.push({ date: tx.writeOff.at, kind: 'إقفال المتبقي', method: '', amount: wo, note: tx.writeOff.reason || '' });
+  const listed = rows.reduce((s, r) => s + r.amount, 0);
+  const gap = Math.round((settled - listed) * 100) / 100;
+  if (gap > 0.5) rows.unshift({ date: tx.date, kind: 'مسدَّد سابقاً', method: tx.depMethod || '', amount: gap, note: 'بدون تفاصيل في السجل' });
+  if (!rows.length) return '';
+  const body = rows.map((r, i) => `<tr>
+      <td>${fmtN(i + 1)}</td>
+      <td><span class="num">${_invPrintDay(r.date)}</span></td>
+      <td>${esc(r.kind)}${r.note ? `<span class="s"><bdi>${esc(r.note)}</bdi></span>` : ''}</td>
+      <td><bdi>${esc(r.method || '—')}</bdi></td>
+      <td class="n">${money(r.amount)}</td>
+    </tr>`).join('');
+  return `<div class="iv-sec">
+    <div class="iv-sec-head"><span class="iv-k">الدفعات على هذه الفاتورة</span><span class="note">${fmtN(rows.length)} ${rows.length === 1 ? 'دفعة' : 'دفعات'}</span></div>
+    <table class="iv-mini">
+      <thead><tr><th style="width:7mm">#</th><th style="width:22mm">التاريخ</th><th>البيان</th><th style="width:30mm">الطريقة</th><th class="n" style="width:28mm">المبلغ</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot>
+        <tr><td colspan="4">إجمالي المسدَّد</td><td class="n">${money(settled)}</td></tr>
+        <tr><td colspan="4">المتبقي على هذه الفاتورة</td><td class="n">${money(remaining)}</td></tr>
+      </tfoot>
+    </table>
+  </div>`;
+}
+function _invSupplierStatementHtml(tx) {
+  const st = tx._printStatement;
+  if (!st) return '';
+  const money = v => `<span class="num">${fmtN(Math.round((Number(v) || 0) * 100) / 100)}</span>`;
+  const cur = '<span class="iv-cur">EGP</span>';
+  const open = st.invoices || [];
+  const sumOpen = open.reduce((s, r) => s + r.remaining, 0);
+  const rows = open.map(r => `<tr${r.isThis ? ' class="is-this"' : ''}>
+      <td><span class="num">#${esc(r.ref || '—')}</span>${r.isThis ? '<span class="iv-tag">هذه الفاتورة</span>' : ''}</td>
+      <td><span class="num">${_invPrintDay(r.date)}</span></td>
+      <td class="n">${money(r.total)}</td>
+      <td class="n">${money(r.paid)}</td>
+      <td class="n">${money(r.remaining)}</td>
+    </tr>`).join('');
+  const due = st.debt != null ? st.debt : sumOpen;
+  const gap = st.debt != null ? Math.round((sumOpen - st.debt) * 100) / 100 : 0;
+  return `<div class="iv-sec">
+    <div class="iv-sec-head"><span class="iv-k">كشف حساب المورد — الفواتير غير المسدَّدة</span><span class="note">حتى ${_invPrintDay(st.at)}</span></div>
+    ${open.length ? `<table class="iv-mini">
+      <thead><tr><th>الفاتورة</th><th style="width:22mm">التاريخ</th><th class="n" style="width:26mm">الإجمالي</th><th class="n" style="width:26mm">المسدَّد</th><th class="n" style="width:26mm">المتبقي</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="4">مجموع المتبقي على الفواتير (${fmtN(open.length)})</td><td class="n">${money(sumOpen)}</td></tr></tfoot>
+    </table>` : `<div class="iv-stmt-gap">لا توجد فواتير غير مسدَّدة لهذا المورد.</div>`}
+    <div class="iv-stmt-due${due > 0 ? '' : ' is-zero'}">
+      <span class="k">${due > 0 ? 'إجمالي المستحق للمورد' : 'لا يوجد مستحق للمورد'}<small>${st.debt != null ? 'حسب سجل المديونية' : 'من الفواتير — تعذّر قراءة سجل المديونية'}</small></span>
+      <span class="v">${money(due)} ${cur}</span>
+    </div>
+    ${st.credit > 0 ? `<div class="iv-stmt-gap">رصيد لك عند المورد: ${money(st.credit)} ${cur}</div>` : ''}
+    ${Math.abs(gap) > 0.5 ? `<div class="iv-stmt-gap">الفرق ${money(Math.abs(gap))} ${cur} بين مجموع الفواتير والمستحق: مرتجعات أو تسويات أو دفعات مسجَّلة في سجل المديونية.</div>` : ''}
+  </div>`;
+}
+/**
+ * Before printing, re-read what may have changed since the list was loaded: the invoice
+ * itself (payments, remaining) and — for a purchase — the supplier's other unpaid invoices
+ * and ledger balance. A failure on a side request never blocks printing; the statement
+ * then says where its figure came from.
+ */
+async function _invRefreshForPrint(tx) {
+  if (!tx || !tx._id) return tx;
+  let fresh = tx;
+  try {
+    const full = await api(`/transactions/${tx._id}`);
+    if (full && full._id) {
+      const i = transactions.findIndex(t => t._id === tx._id);
+      fresh = Object.assign({}, tx, full, { _fullyHydrated: true });
+      if (i >= 0) transactions[i] = fresh;
+    }
+  } catch (_) { /* print what we have */ }
+  if (fresh.type !== 'مشتريات' || fresh.cancelled) return fresh;
+  const name = String(fresh.client || '').trim().toLowerCase();
+  const sid = fresh.supplierId || (suppliers || []).find(s => String(s.name || '').trim().toLowerCase() === name)?._id || '';
+  const same = t => t.type === 'مشتريات' && !t.cancelled && !isStatusCancelled(t.payStatus)
+    && (sid && t.supplierId ? String(t.supplierId) === String(sid) : String(t.client || '').trim().toLowerCase() === name);
+  const others = transactions.filter(t => t._id !== fresh._id && same(t) && (Number(t.remaining) || 0) > 0);
+  const [ledger, ...updated] = await Promise.all([
+    sid ? api(`/supplier-ledger/supplier/${sid}/balance`).catch(() => null) : Promise.resolve(null),
+    ...others.map(o => api(`/transactions/${o._id}`).catch(() => o)),
+  ]);
+  const invoices = [fresh, ...updated]
+    .filter(t => t && same(t) && (t._id === fresh._id || (Number(t.remaining) || 0) > 0))
+    .map(t => {
+      const total = Number(t.total) || 0, remaining = Math.max(0, Number(t.remaining) || 0);
+      return { ref: t.ref, date: t.date, total, paid: Math.max(0, total - remaining), remaining, isThis: t._id === fresh._id };
+    })
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  fresh._printStatement = {
+    at: new Date().toISOString(),
+    invoices,
+    debt: ledger ? Math.max(0, Number(ledger.debt) || 0) : null,
+    credit: ledger ? Math.max(0, Number(ledger.credit) || 0) : 0,
+  };
+  return fresh;
+}
+
 function buildInvoiceHtml(tx) {
   if (_isPurchaseDetailsRestricted(tx)) return '';
   const isPur   = tx.type === 'مشتريات';
@@ -63082,7 +63249,7 @@ function buildInvoiceHtml(tx) {
          ${tx.depMethod ? `<span class="sub">عن طريق <b dir="auto">${esc(tx.depMethod)}</b></span>` : ''}</div>`
     : `<div class="iv-cell"><span class="k">إجمالي الفاتورة</span><span class="v">${money(total)} ${cur}</span></div>
        <div class="iv-cell"><span class="k">${isPur ? 'المسدَّد للمورد' : 'المدفوع'}</span><span class="v">${money(paid)} ${cur}</span>
-         ${paid > 0 && paidVia ? `<span class="sub">عن طريق <b dir="auto">${esc(paidVia)}</b></span>` : ''}</div>
+         ${paid > 0 && isPur && !isCancelled ? `<span class="sub">تفاصيل الدفعات أدناه</span>` : paid > 0 && paidVia ? `<span class="sub">عن طريق <b dir="auto">${esc(paidVia)}</b></span>` : ''}</div>
        ${isCancelled ? ''
          : remaining > 0
            ? `<div class="iv-cell is-due"><span class="k">${isPur ? 'المتبقي للمورد' : 'المتبقي على العميل'}</span><span class="v">${money(remaining)} ${cur}</span>
@@ -63164,6 +63331,8 @@ function buildInvoiceHtml(tx) {
       <div class="iv-pay-grid">${payCells}</div>
     </div>
 
+    ${isPur && !isCancelled ? _invPurchasePaymentsHtml(tx) + _invSupplierStatementHtml(tx) : ''}
+
   </div>
   ${_invSheetFoot(tx, dateStr, 1, pageCount)}
 </div>
@@ -63210,10 +63379,11 @@ async function bulkPrintPDF() {
   if (selected.length !== selectedMovIds.size) { toast(t('noTransactionsToExport'), true); return; }
   const w = window.open('', '_blank');
   if (!w) { toast('اسمح بفتح نافذة الطباعة', true); return; }
-  const identityLoads = await Promise.allSettled(selected.map(tx => window.InvoiceUnitIdentities?.ensure(tx)));
+  const freshList = await Promise.all(selected.map(tx => _invRefreshForPrint(tx)));
+  const identityLoads = await Promise.allSettled(freshList.map(tx => window.InvoiceUnitIdentities?.ensure(tx)));
   const identityFailure = identityLoads.find(result => result.status === 'rejected');
   if (identityFailure) { w.close(); toast('تعذر تحديث هويات القطع قبل الطباعة: ' + identityFailure.reason.message, true); return; }
-  const allHtml = selected.map(tx => buildInvoiceHtml(tx)).join('');
+  const allHtml = freshList.map(tx => buildInvoiceHtml(tx)).join('');
   w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}${_invPrintTrigger()}</body></html>`);
   w.document.close();
   toast(`جارٍ طباعة ${selected.length} فاتورة`);
@@ -63237,9 +63407,11 @@ async function printInvoice(id) {
   if (_isPurchaseDetailsRestricted(tx)) { _invoiceDetailsDenied(); return; }
   const w = window.open('', '_blank');
   if (!w) { toast('اسمح بفتح نافذة الطباعة', true); return; }
-  try { await window.InvoiceUnitIdentities?.ensure(tx); }
+  // Print the invoice as it stands NOW (payments made since the list loaded, supplier balance).
+  const fresh = await _invRefreshForPrint(tx);
+  try { await window.InvoiceUnitIdentities?.ensure(fresh); }
   catch (error) { w.close(); toast('تعذر تحديث هويات القطع قبل الطباعة: ' + error.message, true); return; }
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(tx)}${_invPrintTrigger()}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(fresh)}${_invPrintTrigger()}</body></html>`);
   w.document.close();
 }
 
@@ -74603,85 +74775,83 @@ function renderSpPaymentsPanel(txs) {
     return;
   }
 
-  // تجميع الدفعات التي تمت معاً (نفس التاريخ اليومي + نفس الطريقة + أكثر من فاتورة)
+  // One row per PAYMENT. A payment split over several invoices («سداد دفعة») is one row with its
+  // parts beneath it. Parts are tied by `batchId` (written since Nov 13, 2026). Older parts have no
+  // id, so they are tied by same day + same method — and only when each part is on a DIFFERENT
+  // invoice (a split never pays one invoice twice); otherwise they stay separate rather than guess.
   const _dateKey = e => (e.date || e.createdAt || '').slice(0, 10);
-  const groupMap = {};
-  allEntries.forEach(e => {
-    if (e._kind !== 'payment' || !e.id) return;
-    const key = _dateKey(e) + '|' + (e.method || '');
-    if (!groupMap[key]) groupMap[key] = [];
-    groupMap[key].push(e);
+  const groupOf = new Map();
+  const groups = {};
+  const _addGroup = (key, arr) => { groups[key] = arr; arr.forEach(e => groupOf.set(e, key)); };
+  const pays = allEntries.filter(e => e._kind === 'payment' && e.id);
+  const byBatch = {}, legacy = {};
+  pays.forEach(e => {
+    if (e.batchId) (byBatch[e.batchId] = byBatch[e.batchId] || []).push(e);
+    else { const k = _dateKey(e) + '|' + (e.method || ''); (legacy[k] = legacy[k] || []).push(e); }
   });
-  const bulkGroups = Object.entries(groupMap)
-    .filter(([, arr]) => arr.length > 1)
-    .map(([key, arr]) => ({ key, entries: arr, total: arr.reduce((s, e) => s + (e.amount || 0), 0), date: arr[0].date, method: arr[0].method }));
+  Object.entries(byBatch).forEach(([k, arr]) => { if (arr.length > 1) _addGroup('b:' + k, arr); });
+  Object.entries(legacy).forEach(([k, arr]) => {
+    if (arr.length > 1 && new Set(arr.map(e => e._txId)).size === arr.length) _addGroup('l:' + k, arr);
+  });
 
-  const total = allEntries.length;
+  const items = [];
+  const seen = new Set();
+  allEntries.forEach(e => {
+    const gk = groupOf.get(e);
+    if (!gk) { items.push({ single: e }); return; }
+    if (seen.has(gk)) return;
+    seen.add(gk);
+    const parts = groups[gk].slice().sort((a, b) => String(a._ref || '').localeCompare(String(b._ref || ''), 'en', { numeric: true }));
+    items.push({ parts, total: parts.reduce((s, p) => s + (Number(p.amount) || 0), 0), head: e });
+  });
+
+  const canRev = canReverseSupplierPay();
+  // Shown-but-disabled without the perm: an undo that silently isn't offered looks like the
+  // payment can't be reversed at all, which sends the user hunting for a workaround.
+  const undoBtn = e => `<button class="btn btn-outline btn-sm" style="font-size:.68rem;color:#f97316;border-color:rgba(249,115,22,.4)" onclick="confirmUndoPayment('${esc(e._txId)}','${esc(e.id)}','payment',${Number(e.amount)},'${esc(e.method||'')}')"${supLockAttr(canRev)}>${t('supPayUndoBtn')}</button>`;
+
+  // Group payloads are stashed on one keyed object (not per-group window globals).
+  _spBulkGroups = {};
+  const total = items.length;
   const shown = Math.min(_spLimitFor('payments'), total);
-  const rows = allEntries.slice(0, shown).map(e => {
-    const kindLabel = e._kind === 'deposit' ? `<span class="badge badge-blue">${t('supPayDepositBadge')}</span>` : `<span class="badge badge-green">${t('supPayKindPayment')}</span>`;
-    // Shown-but-disabled without the perm: an undo that silently isn't offered looks like the
-    // payment can't be reversed at all, which sends the user hunting for a workaround.
-    const isUndoable = e._kind === 'payment' && !!e.id;
-    const undoBtn = isUndoable
-      ? `<button class="btn btn-outline btn-sm" style="font-size:.68rem;color:#f97316;border-color:rgba(249,115,22,.4)" onclick="confirmUndoPayment('${esc(e._txId)}','${esc(e.id)}','payment',${Number(e.amount)},'${esc(e.method||'')}')"${supLockAttr(canReverseSupplierPay())}>${t('supPayUndoBtn')}</button>`
-      : '';
-    return `<tr class="sl-zebra">
-      <td class="sl-date"><strong>${fmtDate((e.date || e.createdAt || '').slice(0,10))}</strong></td>
+  const rows = items.slice(0, shown).map((it, gi) => {
+    if (it.single) {
+      const e = it.single;
+      const kindLabel = e._kind === 'deposit' ? `<span class="badge badge-blue">${t('supPayDepositBadge')}</span>` : `<span class="badge badge-green">${t('supPayKindPayment')}</span>`;
+      return `<tr class="sl-zebra">
+      <td class="sl-date"><strong>${fmtDate(_dateKey(e))}</strong></td>
       <td style="white-space:nowrap">${kindLabel}</td>
       <td class="sl-num"><span class="sl-credit">${fmtJ(e.amount || 0)}</span></td>
       <td style="text-align:center">${payMethodIcon(e.method || '', 18)}</td>
       <td class="sl-ref" style="font-weight:700;color:var(--text)">#${esc(e._ref || '')}</td>
       <td class="sl-desc">${esc(e.note || e.by || '') || SL_DASH}</td>
-      <td style="white-space:nowrap">${undoBtn}</td>
+      <td style="white-space:nowrap">${e._kind === 'payment' && e.id ? undoBtn(e) : ''}</td>
     </tr>`;
+    }
+    const h = it.head;
+    _spBulkGroups[gi] = it.parts.map(p => ({ txId: p._txId, payId: p.id, amount: p.amount, ref: p._ref, method: p.method }));
+    const head = `<tr class="sl-zebra spp-group">
+      <td class="sl-date"><strong>${fmtDate(_dateKey(h))}</strong></td>
+      <td style="white-space:nowrap"><span class="badge badge-green">${t('supPayKindSplit')}</span></td>
+      <td class="sl-num"><span class="sl-credit">${fmtJ(it.total)}</span></td>
+      <td style="text-align:center">${payMethodIcon(h.method || '', 18)}</td>
+      <td class="sl-ref spp-count">${t('supBulkItemInvoices', { n: fmtN(it.parts.length) })}</td>
+      <td class="sl-desc">${esc(h.note || h.by || '') || SL_DASH}</td>
+      <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" style="font-size:.68rem;color:#f97316;border-color:rgba(249,115,22,.4)" onclick="openBulkReverseModal(_spBulkGroups[${gi}])"${supLockAttr(canRev)}>${t('supBulkUndoAllBtn')}</button></td>
+    </tr>`;
+    const parts = it.parts.map(p => `<tr class="spp-part">
+      <td></td>
+      <td class="spp-branch" aria-hidden="true">↳</td>
+      <td class="sl-num"><span class="spp-part-amt">${fmtJ(p.amount || 0)}</span></td>
+      <td></td>
+      <td class="sl-ref" style="font-weight:700;color:var(--text)">#${esc(p._ref || '')}</td>
+      <td></td>
+      <td style="white-space:nowrap">${undoBtn(p)}</td>
+    </tr>`).join('');
+    return head + parts;
   }).join('');
 
-  // Bulk-reverse panel. Collapsed by default: this is a rarely-used recovery affordance, and at
-  // ~10 batches the old always-open list pushed the payments table itself below the fold. Collapsed
-  // it costs one line; expanded it scrolls internally rather than growing the page without bound.
-  // Group payloads are stashed on a single keyed object (not window['_bulkGroup_'+i] globals, which
-  // leaked one global per group and went stale when switching suppliers).
-  _spBulkGroups = {};
-  const bulkCardsHtml = canReverseSupplierPay() && bulkGroups.length ? (() => {
-    const grandTotal = bulkGroups.reduce((s, g) => s + g.total, 0);
-    const invoiceCount = bulkGroups.reduce((s, g) => s + g.entries.length, 0);
-    const open = !!_spBulkOpen;
-    const items = bulkGroups.map((g, gi) => {
-      _spBulkGroups[gi] = g.entries.map(e => ({ txId: e._txId, payId: e.id, amount: e.amount, ref: e._ref, method: e.method }));
-      return `
-        <div class="spb-item">
-          <div class="spb-item-main">
-            <span class="spb-item-amt">${fmtJ(g.total)}</span>
-            <span class="spb-item-meta">
-              ${payMethodIcon(g.method, 14)}
-              <span class="spb-dot">·</span>${esc(g.date?.slice(0,10) || '')}
-              <span class="spb-dot">·</span>${t('supBulkItemInvoices', { n: fmtN(g.entries.length) })}
-            </span>
-          </div>
-          <button class="spb-undo-btn" onclick="openBulkReverseModal(_spBulkGroups[${gi}])">
-            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/></svg>
-            ${t('supBulkUndoAllBtn')}
-          </button>
-        </div>`;
-    }).join('');
-    return `
-      <div class="spb-wrap ${open ? 'is-open' : ''}">
-        <button class="spb-head" onclick="toggleSpBulkPanel()" aria-expanded="${open}">
-          <svg class="spb-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="spb-head-title">${t('supBulkPanelTitle')}</span>
-          <span class="spb-count">${fmtN(bulkGroups.length)}</span>
-          <span class="spb-head-sum">${t('supBulkPanelSum', { amt: fmtJ(grandTotal), n: fmtN(invoiceCount) })}</span>
-        </button>
-        <div class="spb-body">
-          <p class="spb-hint">${t('supBulkPanelHint')}</p>
-          <div class="spb-list">${items}</div>
-        </div>
-      </div>`;
-  })() : '';
-
   qs('#sp-panel-payments').innerHTML = `
-    ${bulkCardsHtml}
     <div class="sl-card">
       ${_spPanelCap(t('supSpTabPayments'), shown, total, t('supNounPayment'))}
       <div class="sl-scroll">
@@ -117544,7 +117714,7 @@ function _spRenderHistoryTab() {
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/shopify-sync.css?v=20261103-neutral-surfaces">
 <script src="/shopify-sync.js?v=20261112-deposit-mf"></script>
-<link rel="stylesheet" href="/inventory-units.css?v=20261111-black-fills-print-3">
+<link rel="stylesheet" href="/inventory-units.css?v=20261113-pack-tag">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
@@ -117561,7 +117731,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/warehouse-workspace.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/preparation-location-flip.css?v=20261103-1">
 <script src="/warehouse-layout.js?v=20261103-warehouse-route"></script>
-<script src="/inventory-units.js?v=20261113-supplier"></script>
+<script src="/inventory-units.js?v=20261113-pack-tag"></script>
 <link rel="stylesheet" href="/preprinted-labels.css?v=20261103-scan-progress">
 <script src="/preprinted-labels.js?v=20261111-packs"></script>
 <link rel="stylesheet" href="/supplier-labels.css?v=20261111-packs-2">

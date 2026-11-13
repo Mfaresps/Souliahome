@@ -18,7 +18,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
 
 export type TrackingActor = { userId?: string; name?: string; username?: string; role?: string; perms?: string[] };
-type PurchaseReceiptLine = { lineIndex: number; lineId: string; sku: string; name: string; imageUrl: string; quantity: number; createdUnits: number; onHandUnits: number; unassignedUnits: number; printedUnits: number; printRequests: number; change?: any };
+type PurchaseReceiptLine = { lineIndex: number; lineId: string; sku: string; name: string; imageUrl: string; quantity: number; createdUnits: number; onHandUnits: number; unassignedUnits: number; printedUnits: number; printRequests: number; change?: any; packs?: { count: number; pieces: number; printed: number; piecesPerPack: number | null; loose: number; loosePrinted: number } };
 type PurchaseReceipt = { transactionId: string; ref: string; date: any; supplier: string; warehouseCode: string; cancelled: boolean; lines: PurchaseReceiptLine[] };
 type PurchaseReceiptPage = { receipts: PurchaseReceipt[]; total: number; page: number; limit: number };
 export { LABEL_SIZES } from './inventory-unit.constants';
@@ -426,9 +426,21 @@ export class InventoryUnitsService implements OnModuleInit {
       .select('_id productId origin status packId').lean() : [];
     const printCounts = await this.labelPrintCounts(unitRows.map(unit => String(unit._id)));
     const packIds = [...new Set(unitRows.map(unit=>unit.packId).filter(id=>OBJECT_ID_PATTERN.test(String(id||''))))];
-    const printedPacks = packIds.length ? await this.connection.collection('inventorypacks').find({_id:{$in:packIds.map(id=>this.id(String(id)))},state:'sealed',printCount:{$gt:0}},
-      {projection:{unitIds:1,quantity:1}}).toArray() : [];
+    const sealedPacks = packIds.length ? await this.connection.collection('inventorypacks').find({_id:{$in:packIds.map(id=>this.id(String(id)))},state:'sealed'},
+      {projection:{unitIds:1,quantity:1,printCount:1}}).toArray() : [];
+    const printedPacks = sealedPacks.filter(pack=>Number(pack.printCount)>0);
     const packCoverage = new Map(printedPacks.filter(pack=>pack.unitIds?.length===pack.quantity).map(pack=>[String(pack._id),new Set((pack.unitIds||[]).map(String))]));
+    const sealedById = new Map(sealedPacks.map(pack=>[String(pack._id),pack]));
+    /** Packs holding this line's pieces: the card counts labels to print in PACKS, not pieces. */
+    const linePacks = (units: any[]) => {
+      const ids = [...new Set(units.map(unit => String(unit.packId || '')).filter(id => sealedById.has(id)))];
+      const packed = units.filter(unit => sealedById.has(String(unit.packId || '')));
+      const sizes = [...new Set(ids.map(id => Number(sealedById.get(id)?.quantity) || 0))];
+      return { count: ids.length, pieces: packed.length, printed: ids.filter(id => Number(sealedById.get(id)?.printCount) > 0).length,
+        piecesPerPack: sizes.length === 1 ? sizes[0] : null,
+        loose: units.length - packed.length,
+        loosePrinted: units.filter(unit => !sealedById.has(String(unit.packId || '')) && (printCounts.get(String(unit._id)) || 0) > 0).length };
+    };
     const productIds = [...new Set(unitRows.map(unit => unit.productId))];
     const invoiceSkus = [...new Set(invoices.flatMap((invoice: any) => (invoice.items || []).map((line: any) => String(line.code || '').trim())).filter(Boolean))];
     const productFilters: any[] = [];
@@ -474,7 +486,8 @@ export class InventoryUnitsService implements OnModuleInit {
           name: String(line.name || line.productName || product?.name || ''), imageUrl, quantity: Number(line.qty) || 0, change,
           createdUnits: exact.length + unassigned.length, onHandUnits: [...exact, ...unassigned].filter(onHand).length, unassignedUnits: unassigned.length,
           printedUnits: [...exact, ...unassigned].filter(unit => (printCounts.get(String(unit._id)) || 0) > 0 || packCoverage.get(String(unit.packId))?.has(String(unit._id))).length,
-          printRequests: [...exact, ...unassigned].reduce((sum, unit) => sum + (printCounts.get(String(unit._id)) || 0), 0) };
+          printRequests: [...exact, ...unassigned].reduce((sum, unit) => sum + (printCounts.get(String(unit._id)) || 0), 0),
+          packs: linePacks([...exact, ...unassigned]) };
       }),
       get orphanedUnits() { return invoiceUnits.filter(unit => !represented.has(String(unit._id))).length; },
     }; });

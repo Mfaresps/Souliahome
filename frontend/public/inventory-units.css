@@ -509,3 +509,17 @@ body.dark-mode #page-barcodes .iu-print-count.is-reprint,body.dark-mode #page-ba
 /* !important: the page-wide "#page-barcodes svg{width:19px}" icon rule would otherwise size it in the preview. */
 .iu-label .iu-code-fill,#page-barcodes .iu-label .iu-code-fill{position:absolute;inset:0;z-index:-1;width:100%!important;height:100%!important;max-width:none;display:block;pointer-events:none}
 .iu-label .iu-label-brand,.iu-label.iu-label-50x25 .iu-label-brand,.iu-label.iu-label-compact .iu-label-brand,.iu-label .iu-cover-brand{position:relative;z-index:0;isolation:isolate;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+/* Receipt card print state: printed = solid green (done), not printed = amber (to do). */
+#page-barcodes .iu-print-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid transparent;font-size:11px;font-weight:650;line-height:1.4;white-space:nowrap}
+#page-barcodes .iu-print-tag>svg{width:15px!important;height:15px!important;flex:none}
+#page-barcodes .iu-print-tag-n{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:600;padding-inline-start:7px;border-inline-start:1px solid currentColor;border-inline-start-color:color-mix(in srgb,currentColor 35%,transparent)}
+#page-barcodes .iu-print-tag.is-printed{background:#1f7a47;border-color:#1f7a47;color:#fff}
+#page-barcodes .iu-print-tag.is-unprinted{background:#fff4e0;border-color:#efc887;color:#8a4b00}
+#page-barcodes .iu-print-tag.is-conflict{background:#fff1f0;border-color:#efc9c5;color:#a02d2d}
+body.dark-mode #page-barcodes .iu-print-tag.is-printed{background:#1f7a47;border-color:#2c9a5c;color:#fff!important}
+body.dark-mode #page-barcodes .iu-print-tag.is-unprinted{background:#3b2a12;border-color:#7a5520;color:#f6c77a}
+body.dark-mode #page-barcodes .iu-print-tag.is-conflict{background:#3d1d1b;border-color:#7a3a35;color:#f3b0a9}
+/* Pieces sealed into packs: the card says how many PACK labels there are to print. */
+#page-barcodes .iu-pack-note{display:flex;flex-wrap:wrap;align-items:center;gap:4px 7px;margin-top:9px;padding:7px 9px;border-radius:7px;background:var(--iu-bg);color:var(--iu-text);font-size:11px;line-height:1.6}
+#page-barcodes .iu-pack-note>svg{width:15px!important;height:15px!important;color:var(--iu-muted)}
+#page-barcodes .iu-pack-note small{flex-basis:100%;color:var(--iu-muted);font-size:10px}

@@ -9,6 +9,7 @@ import {
   Min,
   IsIn,
   IsObject,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CANCEL_REASON_CODES } from '../../shared/cancellation.constants';
@@ -549,6 +550,13 @@ export class CollectTransactionDto {
   @IsString()
   @IsOptional()
   readonly collectDate?: string;
+
+  // One supplier payment split over several invoices: every part carries the same id, so the
+  // payments log can show it as one payment with its distribution (never inferred from date+method).
+  @IsString()
+  @IsOptional()
+  @MaxLength(64)
+  readonly batchId?: string;
 }
 
 export class BulkDeleteDto {
