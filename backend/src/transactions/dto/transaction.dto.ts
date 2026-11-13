@@ -257,8 +257,19 @@ export class DepositVaultCorrectionDto {
 }
 
 export class UpdateTransactionDto {
+  /** Explicit confirmation that removing/reducing a Shopify bundle part reprices the rest (bundle-guard.util.ts). Never stored. */
+  @IsOptional()
+  @IsBoolean()
+  readonly confirmBundleBreak?: boolean;
+
   @IsOptional() @IsString()
   readonly warehouseCode?: string;
+  /** Sales: how an overpayment created by this edit is handled — 'credit' or 'unresolved'. */
+  @IsOptional() @IsIn(['credit', 'unresolved'])
+  readonly overpaymentResolution?: 'credit' | 'unresolved';
+  /** Sales with a live Bosta shipment: the admin confirmed the carrier's COD must be fixed by hand. */
+  @IsOptional() @IsBoolean()
+  readonly shipmentChangeConfirmed?: boolean;
   @IsString()
   @IsOptional()
   readonly highValueDiscountOtpId?: string;

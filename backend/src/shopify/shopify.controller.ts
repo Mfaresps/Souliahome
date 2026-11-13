@@ -202,9 +202,13 @@ export class ShopifyController {
     @Param('id') id: string,
     @Body('carrierCode') carrierCode: string,
     @Request() req: any,
+    @Body('acknowledgeDivergence') acknowledgeDivergence?: boolean,
   ) {
     const actor = actorOf(req);
-    return this.shopifyService.approveOrder(id, actor.name || actor.username || 'admin', carrierCode, actor.id);
+    // The acknowledgement is passed only when given, so the usual call stays exactly as before.
+    return acknowledgeDivergence === true
+      ? this.shopifyService.approveOrder(id, actor.name || actor.username || 'admin', carrierCode, actor.id, true)
+      : this.shopifyService.approveOrder(id, actor.name || actor.username || 'admin', carrierCode, actor.id);
   }
 
   // ── Deposit receipts ──────────────────────────────────────────────────────────────────

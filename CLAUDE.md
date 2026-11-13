@@ -491,6 +491,89 @@ price, unitCost}` (`unitCost` after the line's share of the invoice discount), `
 
 ---
 
+## Shipping Discount Classification + Shopify Native Bundles (Nov 13, 2026)
+
+### Phase 1 — free shipping is no longer a product discount
+Shopify puts Free Shipping inside `total_discounts`, so 120 per order was booked in `tx.discount`
+and reported as a product discount. **Gross profit was always right** (shipping is pass-through:
+`collect()` deducts `shipCost`, gross profit adds back only `shipSaving − shipLoss`, and the 120
+inside `discount` was effectively the absorbed carrier fee). Only the labels were wrong.
+- `shippingDiscount` (+ `shippingDiscountSource`, `shippingDiscountCodes`) on Transaction and
+  ShopifyOrder — **no DTO**. `discount`, `shipCost`, `total`, `remaining`, vault, Bosta,
+  collection are never written by this. Rule `0 ≤ shippingDiscount ≤ min(shipCost, discount)`.
+- **One rule**: `shared/sale-discount.util.ts` — `invoiceDiscount` = product discount,
+  `invoiceShipCharged` = shipCost − shippingDiscount, `invoiceShippingSubsidyRatio` = the subsidy
+  spread over lines, subtracted in gross profit so it is **identical** to the old formula.
+  ⚠ Frontend mirror `_saleShipDisc/_saleShipCharged/_saleProductDiscount/_saleStoredProductDiscount`
+  (index.html, after `_unitCostOf`) — pinned by `shipping-discount-mirror.spec.ts` (408 cases).
+- Written at arrival (`handleOrder`, pending `handleOrderUpdate`) and confirmation (`approveOrder`,
+  clamped by Shopify's own discount — manual/code discounts are never shipping); `update()` re-clamps.
+- Reports: product revenue / product discounts / shipping collected / **shipping subsidy** / actual
+  carrier cost (`actualShipCost` — the only carrier-cost field; shown with «known for N of M»).
+  Per product: `profitBeforeShipping`, `shippingSubsidy`, `profit` (= after subsidy = the old figure).
+  Effective date in `classificationchanges` (`$setOnInsert` on first start; local record is `build: dev`).
+- Screens: «شحن مجاني −X» line on invoice page / window / print / image; badges, discount filter,
+  refund cap (`returns-validation` + `getRetRefundCeiling`), profit analysis (subsidy column only
+  when present), codes report («خصومات الشحن» for a shipping code), Excel columns, the invoice edit
+  window keeps it outside the manual discount (`editShipDiscount`).
+  ⚠ Verified byte-identical before/after for 1,082 renders of real orders without a shipping discount.
+- **Historical correction**: `transactions/shipping-discount-correction.ts` (plan / apply / rollback,
+  conditional writes, audit in `financialcorrections`). Apply needs the exact approved list
+  (`onlyTxIds`); a Shopify order record is written only with its own sale.
+  `APPROVED_SHIPPING_CORRECTIONS` (shipping-discount-approved.ts) run **once each at startup**
+  (marker `_id` = runId): 257 invoices / 32,390 + 47 edited-in-Soulia / 5,890. Excluded by the
+  owner: the four cancelled, #2341 (+200 TXN-003 → accountant), #2488, #2457 (voided in Shopify,
+  active here). Rollback: `POST /transactions/backfill/shipping-discounts/rollback {runId}`.
+  ⚠ Orders confirmed on production between Nov 13 and the deploy are not on the list.
+- Scripts: `scripts/shipping-discount-dryrun.cjs` (scratch copies, credentials blanked, apply +
+  rollback byte-check), `scripts/shipping-discount-approval-report.cjs` (read only).
+
+### Phase 2 — Shopify native bundles (display + data; edit protections are Phase 3)
+Real #3146: a bundle arrives as component lines with `sales_line_item_group_id`, each priced at its
+share of the bundle (3000 × 1420/3270 = 1302.75). ⚠ REST `line_item_groups` has only `{id,
+parent_line_item_id}` — name and quantity come from GraphQL `LineItem.lineItemGroup`.
+- `shopify/shopify-bundles.util.ts` (pure): snapshot, verification, composition key, bundle-own-SKU
+  conflict. `mapItems` stores `shopifyLineId/VariantId/ProductId`, `shopifyLineDiscount`,
+  `bundleGroupId`, `priceBasis:'bundle'` (no «سعر مختلف» on bundle parts — Shopify's price stands).
+- ShopifyOrder `bundleCurrent` + `bundleHistory` (follow Shopify), `bundleOriginal` (**set once**,
+  verified only, and only if the composition equals `bundleFirstComposition`). Refreshed in the
+  background after webhooks (`refreshBundlesSoon`); GraphQL asked only when unverified or changed.
+- `approveOrder`: refuses a line carrying the bundle's own SKU/variant beside its parts; writes
+  `tx.bundleSnapshot` once (verified, or `unverifiable:true` — «Unverifiable Bundle Composition»,
+  never reconstructed); invoice line id = `'sh:' + shopifyLineId`.
+- Edits: `shared/shopify-line.util.ts` `carryShopifyLineFields` copies the fields from the STORED
+  line (validEditItems keeps `shopifyLineId` as a key only; `update()` carries by lineId / unique code).
+  `itemKey` includes the bundle group. Report markdowns: `bundle` source («تخصيص باقة Shopify»).
+- Frontend `_bundleMetaOf/_bundleStartsAt/_bundleLabelHtml`: a heading before the bundle's first part
+  and marked parts in the invoice page, window, print, Shopify popover, quick view and edit window.
+- Existing orders: `ShopifyService.onModuleInit` reads bundle data once (15 s after start) for orders with
+  bundle lines and no data. ⚠ `onApplicationBootstrap` was never called in this app — use `onModuleInit`.
+  ⚠ Query the array with `$elemMatch` — `$nin:[null]` on `rawData.line_items.<field>` drops any order
+  that mixes bundle parts with ordinary lines.
+
+### Phase 3 — bundle protection on edits
+One rule, `shared/bundle-guard.util.ts` (`bundleGuard`), used by `prepareOrderEdit` (Shopify edit window)
+and `TransactionsService.update` (confirmed invoice):
+- A part's price is locked and its quantity never grows (`BUNDLE_PRICE_LOCKED` / `BUNDLE_QTY_LOCKED`);
+  more pieces = a separate line at the normal price (the window adds it on «+»).
+- Removing/reducing a part breaks the bundle: without `confirmBundleBreak` → 400
+  `BUNDLE_BREAK_CONFIRM_REQUIRED` with a preview; with it, the rest is repriced by the SERVER at the
+  standalone price of the ORDER's Cairo day (`effectiveSellPrice`, offer of that day included), loses
+  `bundleGroupId`, gets `priceBasis:'regular'`, `brokenFrom`. Any price the browser sent is ignored.
+  After delivery → `BUNDLE_LOCKED_AFTER_DELIVERY` (returns / after-sales).
+- Codes + extra discount ≤ the lines outside intact bundles (`nonBundleSubtotal`); more needs
+  `shopify-bundle-discount-override` (admin passes) + a reason ≥5 chars → `bundleDiscountOverride` +
+  history line, else `BUNDLE_DISCOUNT_BLOCKED`. Frontend `_spDiscBase` bases codes/percent on the same.
+- Any edit leaving the total ≠ Shopify's `current_total_price` writes `shopifyDivergence`; `approveOrder`
+  refuses with `SHOPIFY_DIVERGENCE_ACK_REQUIRED` unless `acknowledgeDivergence:true`
+  (`_spApproveRequest` asks; bulk confirm never acknowledges for the operator). Cleared by a later
+  Shopify update that makes the totals agree. Copied to the sale. Nothing is pushed to Shopify.
+- ⚠ `shopifyDivergence` / `bundleDiscountOverride` are schema props — strict mode drops undeclared $set fields.
+- Tests: `bundle-guard.spec.ts` (12), `shopify-bundle-edit.spec.ts` (6, real service code; revert-checked),
+  `test/browser/shopify-bundle-edit.cjs` (13).
+
+---
+
 ## «بيانات المرتجعات» — Supplier Return Statements, Documentation Only (Nov 13, 2026)
 
 A tab in the supplier profile (after «مرتجعات الموردين») to record defective goods found when a

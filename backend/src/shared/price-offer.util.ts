@@ -117,7 +117,9 @@ export function lineMarkdown(item: any): { source: string; value: number } | nul
   const list = Number(item?.listPrice);
   if (!Number.isFinite(list) || list <= 0 || !item?.priceSource) return null;
   const qty = Number(item.qty) || 0;
-  return { source: String(item.priceSource), value: Math.round((list - (Number(item.price) || 0)) * qty * 100) / 100 };
+  // A Shopify bundle component: the gap to the system price is Shopify's bundle split, reported apart (Phase 2).
+  const source = item.priceSource === 'shopify' && item.bundleGroupId ? 'bundle' : String(item.priceSource);
+  return { source, value: Math.round((list - (Number(item.price) || 0)) * qty * 100) / 100 };
 }
 
 // ── شيل عرض من سطر في فاتورة واحدة (Nov 13, 2026) ──────────────────────────────────────────

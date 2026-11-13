@@ -42,7 +42,7 @@ pipeline {
         sh 'docker build -t soulia-backend:ci-${BUILD_NUMBER} backend'
         // BUILD_NUMBER is baked into the frontend image as /version.json — this is what
         // signals connected clients to force-refresh, so it must be passed on every build.
-        sh 'docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} -t soulia-frontend:ci-${BUILD_NUMBER} frontend'
+        sh 'docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} --build-arg GIT_COMMIT=${GIT_COMMIT} -t soulia-frontend:ci-${BUILD_NUMBER} frontend'
       }
     }
 
@@ -62,7 +62,7 @@ pipeline {
         // Update only app containers; --no-deps keeps soulia-mongodb (the live DB) untouched.
         // BUILD_NUMBER is consumed by frontend's build args (see docker-compose.yml) and
         // becomes /version.json inside the image — the deploy marker clients poll.
-        sh 'BUILD_NUMBER=${BUILD_NUMBER} docker compose -p soulia up -d --build --no-deps backend frontend'
+        sh 'BUILD_NUMBER=${BUILD_NUMBER} GIT_COMMIT=${GIT_COMMIT} docker compose -p soulia up -d --build --no-deps backend frontend'
       }
     }
 

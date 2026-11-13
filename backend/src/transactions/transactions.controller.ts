@@ -50,6 +50,7 @@ import type { MovementsState } from './movements-page.util';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, UploadedImage, ReceiptActor } from '../shopify/deposit-receipts.service';
 import { ConfirmManualDepositReceiptDto } from './dto/manual-deposit-receipt.dto';
 import { cachedRead } from '../shared/read-cache.util';
+import { OrderCreditService, CreditActor } from './order-credit.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('transactions')
@@ -61,6 +62,7 @@ export class TransactionsController {
     private readonly reportsExportService: ReportsExportService,
     private readonly carrierSettlementService: CarrierSettlementService,
     private readonly depositReceipts: DepositReceiptsService,
+    private readonly orderCredit: OrderCreditService,
   ) {}
 
   // ── Carrier settlement-file import ────────────────────────────────────────────────────────
@@ -518,6 +520,49 @@ export class TransactionsController {
     return this.transactionsService.findMovementCustomerHistory(id, req?.user?.role);
   }
 
+  // ─── Payment reconciliation: overpayment credit / refund / transfer (order-credit.service) ──
+  // Reads: anyone who can open the order. Writes: admin only (refund completion moves cash).
+  private creditActor(req: any): CreditActor {
+    return { name: req?.user?.name || req?.user?.username || '', role: req?.user?.role || '' };
+  }
+
+  @Get('customer-credits')
+  async customerCredits(@Query('phone') phone?: string, @Query('client') client?: string, @Query('txId') txId?: string) {
+    return this.orderCredit.customerCredits({ phone, client, txId });
+  }
+
+  @Get(':id/reconciliation')
+  async reconciliation(@Param('id') id: string) {
+    return this.orderCredit.summary(id);
+  }
+
+  @Post(':id/overpayment/mode')
+  async overpaymentMode(@Param('id') id: string, @Body() body: { mode: string; note?: string }, @Req() req: any) {
+    return this.orderCredit.setMode(id, String(body?.mode || ''), String(body?.note || ''), this.creditActor(req));
+  }
+
+  @Post(':id/overpayment/refunds')
+  async overpaymentRefund(@Param('id') id: string, @Body() body: { amount: number; method?: string; reason: string; requestKey?: string }, @Req() req: any) {
+    return this.orderCredit.requestRefund(id, body || ({} as any), this.creditActor(req));
+  }
+
+  @Post(':id/overpayment/refunds/:moveId/complete')
+  async overpaymentRefundComplete(@Param('id') id: string, @Param('moveId') moveId: string,
+    @Body() body: { method: string; date?: string; reference?: string }, @Req() req: any) {
+    return this.orderCredit.completeRefund(id, moveId, body || ({} as any), this.creditActor(req));
+  }
+
+  @Post(':id/overpayment/refunds/:moveId/cancel')
+  async overpaymentRefundCancel(@Param('id') id: string, @Param('moveId') moveId: string, @Body() body: { reason?: string }, @Req() req: any) {
+    return this.orderCredit.cancelRefund(id, moveId, String(body?.reason || ''), this.creditActor(req));
+  }
+
+  @Post(':id/overpayment/transfers')
+  async overpaymentTransfer(@Param('id') id: string,
+    @Body() body: { targetTxId: string; amount: number; customerApproved?: boolean; reason?: string; requestKey?: string }, @Req() req: any) {
+    return this.orderCredit.transfer(id, body || ({} as any), this.creditActor(req));
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req?: { user?: { role?: string; perms?: string[] } }) {
     if (id === 'pickup-orders') {
@@ -885,6 +930,25 @@ export class TransactionsController {
    * عشان تعديل سعر الشراء بعد كده مايغيّرش أرباح الشهور اللي فاتت.
    * dryRun افتراضيًا true — ابعت {"dryRun": false} للكتابة. آمن للتكرار.
    */
+  /**
+   * تصنيف خصم الشحن تاريخياً (Nov 13, 2026). dryRun افتراضيًا true — بيرجّع الخطة كاملة ومابيكتبش.
+   * الكتابة: {"dryRun": false, "runId": "...", "approvalNote": "...", "approveCancelledIds": [...]} بعد موافقة المالك.
+   */
+  @Roles('admin')
+  @Post('backfill/shipping-discounts')
+  async correctShippingDiscounts(
+    @Body() body: { dryRun?: boolean; runId?: string; approvalNote?: string; onlyTxIds?: string[]; approveCancelledIds?: string[]; excludeTxIds?: string[] },
+    @Req() req?: any,
+  ) {
+    return this.transactionsService.correctShippingDiscounts(body || {}, req?.user?.name || req?.user?.username || 'admin');
+  }
+
+  @Roles('admin')
+  @Post('backfill/shipping-discounts/rollback')
+  async rollbackShippingDiscounts(@Body('runId') runId: string, @Req() req?: any) {
+    return this.transactionsService.rollbackShippingDiscountCorrection(runId, req?.user?.name || req?.user?.username || 'admin');
+  }
+
   @Roles('admin')
   @Post('backfill/freeze-line-costs')
   async freezeLegacyLineCosts(@Body('dryRun') dryRun?: boolean) {

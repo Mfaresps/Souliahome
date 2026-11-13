@@ -67,6 +67,7 @@ services:
         # Supplied by CI (Jenkins exports BUILD_NUMBER); defaults to "dev" locally.
         # Written into /version.json at image build — the deploy marker clients poll.
         BUILD_NUMBER: ${BUILD_NUMBER:-dev}
+        GIT_COMMIT: ${GIT_COMMIT:-}
     container_name: soulia-frontend
     restart: unless-stopped
     ports:

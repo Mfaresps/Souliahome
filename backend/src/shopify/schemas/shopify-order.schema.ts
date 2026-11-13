@@ -125,6 +125,38 @@ export class ShopifyOrder {
   @Prop({ default: 0 })
   discount: number;
 
+  /** The part of `discount` (Shopify's total_discounts) applied to shipping — shopify-discounts.util.ts. */
+  @Prop({ type: Number, default: 0 })
+  shippingDiscount: number;
+
+  /**
+   * Shopify native bundles (shopify-bundles.util.ts). ⚠ In no DTO — only the server writes them.
+   * `bundleOriginal`: the verified composition at the time of the order — set ONCE, never overwritten.
+   * `bundleCurrent`: the latest composition Shopify reports; every change is appended to `bundleHistory`.
+   * `bundleFirstComposition`: composition key of the first arrival — a later verified snapshot may become
+   *  `bundleOriginal` only if it matches it.
+   */
+  @Prop({ type: Object, default: null })
+  bundleOriginal: Record<string, any> | null;
+
+  @Prop({ type: Object, default: null })
+  bundleCurrent: Record<string, any> | null;
+
+  @Prop({ type: [Object], default: undefined })
+  bundleHistory?: Record<string, any>[];
+
+  @Prop({ type: String, default: '' })
+  bundleFirstComposition: string;
+
+  /** Soulia's total differs from Shopify's after an edit: {shopifyTotal, erpTotal, diff, by, at, changes,
+   *  acknowledgedBy?, acknowledgedAt?}. Confirming requires acknowledging it. Nothing is pushed to Shopify. */
+  @Prop({ type: Object, default: null })
+  shopifyDivergence: Record<string, any> | null;
+
+  /** A discount applied over bundle parts by exception: {reason, by, at, amount, base}. */
+  @Prop({ type: Object, default: null })
+  bundleDiscountOverride: Record<string, any> | null;
+
   @Prop({ default: '' })
   discountCode: string;
 

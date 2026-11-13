@@ -1,3 +1,4 @@
+import { invoiceShipCharged, invoiceShippingDiscount } from '../shared/sale-discount.util';
 import { Injectable, Logger, NotFoundException, BadRequestException, Optional, Inject, forwardRef } from '@nestjs/common';
 import { carrierLabel, LEGACY_CARRIER_AR, LEGACY_CARRIER_CODE } from '../shared/carriers.constants';
 import { InjectModel } from '@nestjs/mongoose';
@@ -336,12 +337,14 @@ export class OrderAuditService {
           0,
         );
         const itemsTotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-        const shippingCost = Number(tx.shipCost) || 0;
+        // Shipping the customer was charged (free shipping excluded) and the product discount only.
+        // netProfit below is mathematically unchanged: both move by the shipping discount.
+        const shippingCost = invoiceShipCharged(tx);
         const live=this.shippingReads.get(String(tx._id));
         const actualCharge=auditShippingCharge(tx,live?.deliveryId===String(tx.bostaOrderId||'')?live.data:undefined);
         const actualShipCost = actualCharge.amount ?? (Number(tx.actualShipCost)||0);
         const orderTotal = Number(tx.total) || 0;
-        const discount = Number(tx.discount) || 0;
+        const discount = Math.max(0, (Number(tx.discount) || 0) - invoiceShippingDiscount(tx));
 
         // Profit = revenue on goods − product cost − real shipping burden − discount
         const shipBurden = actualShipCost > 0 ? actualShipCost : 0;
@@ -429,7 +432,7 @@ export class OrderAuditService {
           productsLabel: items.map((i) => `${i.name} ×${i.qty}`).join('، '),
           orderTotal: Number(so.total) || 0,
           productCost: items.reduce((s, i) => s + (costByCode.get(i.code) ?? 0) * i.qty, 0),
-          shippingCost: Number(so.shipCost) || 0,
+          shippingCost: invoiceShipCharged(so as any),
           actualShipCost: 0,
           netProfit: 0,
           registered: false,
@@ -445,7 +448,7 @@ export class OrderAuditService {
           carrierCode: '',
           txId: '',
           hasProfit: false,
-          hasShipping: (Number(so.shipCost) || 0) > 0,
+          hasShipping: invoiceShipCharged(so as any) > 0,
           notes: String(so.notes || ''),
           tags: String(so.tags || ''),
           depositApproved: approvedDepositTotal(so),

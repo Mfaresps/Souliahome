@@ -2,7 +2,7 @@
   'use strict';
   const groups = [
     ['dashboard','Dashboard','الرئيسية',['dashboard','reports-kpis','reports-charts']],
-    ['orders','Orders','الطلبات',['shopify-orders','transaction','pickup-orders','pickup-orders-edit','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-edit-direct','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','delivery-manual-confirm','delivery-view-audit']],
+    ['orders','Orders','الطلبات',['shopify-orders','transaction','pickup-orders','pickup-orders-edit','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-edit-direct','shopify-bundle-discount-override','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','delivery-manual-confirm','delivery-view-audit']],
     ['inventory','Inventory','المخزون',['inventory','products','products-create','products-edit','products-delete','products-sku-manage','inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers']],
     ['promotions','Promotions','العروض والخصومات',['promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit']],
     ['movement','Movement','الحركات',['movements','approvals','carrier-import','carrier-settle-view','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse']],
@@ -23,7 +23,7 @@
   const specialNames = {
     dashboard:['View Dashboard','عرض الرئيسية'], 'reports-kpis':['View Analytics','عرض مؤشرات الأداء'],
     'shopify-orders':['View Orders','عرض طلبات شوبيفاي'], transaction:['Create Transactions / Orders','إنشاء معاملات وطلبات'],
-    'shopify-edit-direct':['Edit Orders','تعديل الطلبات'], 'shopify-cancel':['Cancel Orders','إلغاء الطلبات'],
+    'shopify-edit-direct':['Edit Orders','تعديل الطلبات'], 'shopify-bundle-discount-override':['Discount on Shopify bundles (exception)','خصم على باقات Shopify (استثناء)'], 'shopify-cancel':['Cancel Orders','إلغاء الطلبات'],
     'shopify-deposit-no-image':['Add Deposit Without Image (direct)','إضافة عربون بدون صورة (مباشرة)'],
     'shopify-deposit-no-image-otp':['Add Deposit Without Image (manager OTP)','إضافة عربون بدون صورة (بكود OTP)'],
     'pickup-orders':['View Pick-Up Orders','عرض طلبات الاستلام'], 'pickup-orders-edit':['Edit Pick-Up Orders','تعديل طلبات الاستلام'],
@@ -41,7 +41,7 @@
     'suppliers-rs-delete':['Delete Return Statements','حذف بيانات المرتجعات'], 'suppliers-rs-export':['Print / Export Statements','طباعة وتصدير بيانات المرتجعات'],
     'promotions-tags':['Manage Tags','إدارة التاجات'], 'promotions-audit':['View Promotions Audit Log','عرض سجل مراجعة العروض'],
   };
-  const sensitive = new Set(['users','settings','vault','shopify-cancel','shopify-edit-direct','shopify-deposit-no-image','products-delete','suppliers-delete','suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse']);
+  const sensitive = new Set(['users','settings','vault','shopify-cancel','shopify-edit-direct','shopify-bundle-discount-override','shopify-deposit-no-image','products-delete','suppliers-delete','suppliers-pay','suppliers-deposit','suppliers-ledger-adjust','suppliers-write-off','suppliers-reverse','carrier-settle-run','carrier-settle-approve','carrier-settle-reverse']);
   const viewerAllowed = new Set(['dashboard','inventory','products','movements','clients','suppliers','complaints','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','categories-view','pickup-orders','shopify-orders','csp-view','purchase-view','inventory-units-view','suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity','carrier-settle-view','delivery-view-audit','promotions-view','suppliers-rs-view']);
   const builtInAr = {
     'super-admin':['المدير الرئيسي','الحساب الرئيسي المحمي مع وصول كامل للنظام.'],

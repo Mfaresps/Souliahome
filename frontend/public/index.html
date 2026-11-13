@@ -47,7 +47,7 @@
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
-  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261110-field-shimmer', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261110-items-request', invoiceImage:'/invoice-image.js?v=20261029-purchase-access'};
+  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261110-field-shimmer', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261110-items-request', invoiceImage:'/invoice-image.js?v=20261113-ship-discount'};
   var tasks = {};
   window.souliaLibraryReady = function (name) {
     if (tasks[name]) return tasks[name];
@@ -1586,6 +1586,27 @@ body.dark-mode .po-now{color:#86efac;background:rgba(134,239,172,.12)}
 .prd-kpi.is-offer .prd-kpi-val{color:var(--primary)}
 
 .rep-kpi-sub{margin-top:2px;font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* Shipping subsidy under a product's profit (shown only when the product carries one). */
+.rep-ship-sub{margin-top:2px;font-size:.7rem;font-weight:500;color:var(--muted);line-height:1.35;white-space:normal}
+/* Shopify bundles (Phase 2): a heading row before the bundle's parts; the parts are indented. */
+.bdl-tag{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:.8rem;color:var(--text)}
+.bdl-tag svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:.75}
+.bdl-qty{font-weight:600;color:var(--muted)}
+.bdl-unverified{display:inline-block;margin-inline-start:6px;padding:1px 7px;border-radius:999px;font-size:.68rem;font-weight:600;background:rgba(217,119,6,.12);color:#92400e}
+body.dark-mode .bdl-unverified{background:rgba(245,158,11,.16);color:#fcd34d}
+.bdl-meta{margin-inline-start:auto;font-size:.74rem;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.inv2-bundle-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:9px 14px;background:var(--bg-alt);border-top:1px solid var(--border)}
+.inv2-line.is-bundle-part{border-inline-start:3px solid var(--border)}
+.inv-bundle-head td{background:var(--bg-alt);padding:7px 10px}
+.inv-bundle-head td{display:table-cell}
+.inv-bundle-head .bdl-meta{float:inline-end}
+.sp-bundle-disc-note{margin:8px 0;padding:8px 10px;border-radius:10px;background:var(--bg-alt);font-size:.78rem;color:var(--muted);line-height:1.5}
+.sp-bundle-disc-link{background:none;border:0;padding:0;margin-inline-start:6px;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline}
+.sp-bundle-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 10px;margin-top:6px;border-radius:10px;background:var(--bg-alt);list-style:none}
+.sp-ip-row.is-bundle-part,.sp-pk-item.is-bundle-part,.sp-edit-item-row.is-bundle-part{margin-inline-start:12px;border-inline-start:3px solid var(--border)}
+@media (max-width:640px){.sp-bundle-head .bdl-meta{margin-inline-start:0;width:100%;white-space:normal}}
+tr.is-bundle-part td.col-product{padding-inline-start:18px}
+.rep-ship-sub bdi{unicode-bidi:isolate;font-variant-numeric:tabular-nums}
 /* ── Product page (#product/{id}) — header, numbers, main column + side column, save bar.
    Colour only where it states something: low stock amber, out/negative red, active green. */
 .prd{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -24131,7 +24152,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261113-supplier"></script>
 <script src="/failed-delivery-identities.js?v=20261024-1"></script>
-<script src="/invoice-image.js?v=20261029-purchase-access"></script>
+<script src="/invoice-image.js?v=20261113-ship-discount"></script>
 <script src="/animated-number.js?v=20261108"></script>
 <script src="/comment-inline-edit.js?v=20261109-1"></script>
 <script src="/copy-button.js?v=20261109-1"></script>
@@ -25491,7 +25512,7 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
+const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'pickup-orders','pickup-orders-edit',
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
@@ -25509,7 +25530,7 @@ const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',
   'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات (Prep & Ship)',
   'shopify-reassign':'شوبيفاي - إدارة إسناد الطلبات للموظفين (Assignee)',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
-  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','shopify-deposit-no-image':'شوبيفاي - إضافة عربون بدون صورة تحويل (مباشرة)','shopify-deposit-no-image-otp':'شوبيفاي - إضافة عربون بدون صورة تحويل (بكود OTP من المدير)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
+  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-bundle-discount-override':'شوبيفاي - تطبيق خصم على أجزاء الباقة (استثناء بسبب مكتوب)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','shopify-deposit-no-image':'شوبيفاي - إضافة عربون بدون صورة تحويل (مباشرة)','shopify-deposit-no-image-otp':'شوبيفاي - إضافة عربون بدون صورة تحويل (بكود OTP من المدير)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
   'categories-view':'التصنيفات - عرض','categories-create':'التصنيفات - إضافة تصنيف/مجموعة','categories-edit':'التصنيفات - تعديل تصنيف/مجموعة','categories-delete':'التصنيفات - حذف تصنيف/مجموعة','categories-assign-products':'التصنيفات - ربط الأصناف بالمجموعات','categories-link-suppliers':'التصنيفات - ربط الموردين بالمجموعات',
   'suppliers-tab-invoices':'حساب المورد - عرض الفواتير','suppliers-tab-pos':'حساب المورد - عرض أوامر الشراء','suppliers-tab-sreturns':'حساب المورد - عرض مرتجعات الموردين','suppliers-tab-payments':'حساب المورد - عرض سجل المدفوعات','suppliers-tab-ledger':'حساب المورد - عرض سجل المديونية','suppliers-tab-activity':'حساب المورد - عرض سجل النشاط',
   'suppliers-pay':'حساب المورد - سداد دفعة للمورد','suppliers-deposit':'حساب المورد - دفع عربون / خصم على الحساب','suppliers-ledger-adjust':'حساب المورد - تسوية سجل المديونية','suppliers-write-off':'حساب المورد - إقفال متبقي الفاتورة','suppliers-reverse':'حساب المورد - التراجع عن دفعة','suppliers-returns':'حساب المورد - إنشاء وإدارة مرتجعات الموردين',
@@ -28183,6 +28204,58 @@ const TRANSLATIONS = {
   ivItemsTotal:{ar:'إجمالي الأصناف',en:'Items total'},
   ivShippingCost:{ar:'تكلفة الشحن',en:'Shipping cost'},
   ivDiscount:{ar:'خصم',en:'Discount'},
+  // Shipping discount (Nov 13, 2026) — free shipping kept apart from product discounts.
+  sdFreeShipping:{ar:'شحن مجاني',en:'Free shipping'},
+  sdShipDiscount:{ar:'خصم الشحن',en:'Shipping discount'},
+  sdShipSubsidy:{ar:'دعم الشحن',en:'Shipping subsidy'},
+  sdShipSubsidyHint:{ar:'شحن مجاني تحمّلته الشركة — جزء من الربح الإجمالي، وليس خصماً على المنتجات ولا تكلفة شركة الشحن',en:'Free shipping absorbed by the company — part of gross profit, not a product discount nor the carrier cost'},
+  sdShipCollected:{ar:'الشحن المحصَّل من العملاء',en:'Shipping collected from customers'},
+  sdProductRevenue:{ar:'إيراد المنتجات',en:'Product revenue'},
+  sdProductDiscounts:{ar:'خصومات المنتجات',en:'Product discounts'},
+  sdActualCarrierCost:{ar:'تكلفة الشحن الفعلية',en:'Actual carrier cost'},
+  sdKnownOf:{ar:'معروفة لـ {k} من {n} طلب',en:'known for {k} of {n} orders'},
+  sdProfitBeforeShip:{ar:'الربح قبل دعم الشحن',en:'Profit before shipping subsidy'},
+  sdProfitAfterShip:{ar:'المساهمة بعد دعم الشحن',en:'Contribution after shipping subsidy'},
+  sdEffectiveSince:{ar:'تصنيف خصم الشحن مطبَّق منذ {d}',en:'Shipping-discount classification applied since {d}'},
+  sdBeforeEffective:{ar:'الطلبات قبل هذا التاريخ ما زالت بالتصنيف القديم (الشحن المجاني داخل الخصومات) حتى اعتماد التصحيح التاريخي.',en:'Orders before this date still use the old classification (free shipping inside discounts) until the historical correction is approved.'},
+  sdShipCodesHead:{ar:'خصومات الشحن',en:'Shipping discounts'},
+  // Shopify bundles (Phase 2)
+  bdlBundle:{ar:'باقة',en:'Bundle'},
+  bdlUnnamed:{ar:'باقة Shopify',en:'Shopify bundle'},
+  bdlParts:{ar:'{n} قطع',en:'{n} parts'},
+  bdlPriceNote:{ar:'سعر القطعة = نصيبها من سعر الباقة في Shopify',en:'Each part is priced at its share of the bundle price on Shopify'},
+  bdlUnverifiable:{ar:'تكوين الباقة غير قابل للتحقق',en:'Unverifiable Bundle Composition'},
+  bdlUnverifiableHint:{ar:'اسم الباقة وعددها لم يُقرآ من Shopify وقت التأكيد — لا يُعاد بناؤهما ولا يُخمَّنان',en:'The bundle name and quantity were not read from Shopify at confirmation — they are never reconstructed or guessed'},
+  bdlPending:{ar:'بانتظار التحقق من Shopify',en:'Awaiting Shopify verification'},
+  bdlPendingHint:{ar:'يُقرأ اسم الباقة وعددها من Shopify تلقائياً',en:'The bundle name and quantity are read from Shopify automatically'},
+  bdlPriceLocked:{ar:'سعر جزء الباقة هو نصيبه من سعر الباقة في Shopify ولا يُعدَّل',en:'A bundle part is priced at its share of the bundle on Shopify and cannot be edited'},
+  bdlQtyLocked:{ar:'استخدم + لإضافة قطعة بسعرها العادي، أو − لكسر الباقة',en:'Use + to add a piece at its normal price, or − to break the bundle'},
+  bdlQtySeparate:{ar:'القطعة الزيادة اتضافت سطراً منفصلاً بسعرها العادي — مش بسعر الباقة',en:'The extra piece was added as a separate line at its normal price — not at the bundle price'},
+  bdlBreakTitle:{ar:'كسر الباقة',en:'Break the bundle'},
+  bdlBreakQ:{ar:'شيل جزء من باقة «{name}» يلغي سعر الباقة. الأجزاء الباقية هتتسعّر بسعرها العادي يوم الطلب.',en:'Removing a part of «{name}» cancels the bundle price. The remaining parts will be priced at their normal price on the order date.'},
+  bdlBreakHint:{ar:'يشمل أي عرض كان شغّال يوم الطلب. العميل هيتحاسب على الفرق، والإجمالي هيختلف عن Shopify.',en:'Any offer running on the order date is included. The customer pays the difference, and the total will differ from Shopify.'},
+  bdlBreakOk:{ar:'كسر الباقة وإعادة التسعير',en:'Break and reprice'},
+  bdlBreakAdded:{ar:'الفرق على العميل',en:'Difference for the customer'},
+  bdlBreakUnknownPrice:{ar:'لا يمكن تحديد السعر العادي — الصنف غير مطابق لمنتج في النظام',en:'The normal price is unknown — the item matches no product in the system'},
+  bdlDiscExceeds:{ar:'الأكواد والخصم الإضافي على الأصناف خارج الباقة فقط — قلّل الخصم أو استخدم استثناء الباقة',en:'Codes and the extra discount apply to items outside the bundle only — lower it or use the bundle exception'},
+  bdlDiscNote:{ar:'الأكواد والخصم الإضافي يُحسبان على الأصناف خارج الباقة فقط ({base})',en:'Codes and the extra discount apply to items outside the bundle only ({base})'},
+  bdlDiscOverrideLink:{ar:'تطبيق على الباقة (استثناء)',en:'Apply to the bundle (exception)'},
+  bdlDiscOverrideOn:{ar:'استثناء الباقة مفعّل — {reason}',en:'Bundle exception on — {reason}'},
+  bdlDiscOverrideTitle:{ar:'استثناء خصم على الباقة',en:'Bundle discount exception'},
+  bdlDiscOverrideAsk:{ar:'اكتب سبب تطبيق الخصم على أجزاء الباقة (يُسجَّل في سجل الطلب)',en:'Write why the discount should apply to the bundle parts (kept in the order history)'},
+  bdlDiscReasonShort:{ar:'السبب لازم يكون 5 حروف على الأقل',en:'The reason must be at least 5 characters'},
+  bdlDiscNoPerm:{ar:'تطبيق الخصم على الباقة يحتاج صلاحية خاصة',en:'Applying a discount to the bundle needs a special permission'},
+  spDivTitle:{ar:'الإجمالي مختلف عن Shopify',en:'Total differs from Shopify'},
+  spDivQ:{ar:'الطلب اتعدّل في النظام وإجماليه بقى مختلف عن اللي Shopify حاسب بيه العميل.',en:'The order was edited here and its total now differs from what Shopify charged the customer.'},
+  spDivHint:{ar:'التأكيد هيعتمد إجمالي النظام. Shopify مش هيتعدّل تلقائياً.',en:'Confirming uses the total here. Shopify is not updated automatically.'},
+  spDivOk:{ar:'فاهم — أكّد الطلب',en:'Understood — confirm'},
+  spDivShopify:{ar:'إجمالي Shopify',en:'Shopify total'},
+  spDivSoulia:{ar:'إجمالي النظام',en:'Total here'},
+  spDivDiff:{ar:'الفرق',en:'Difference'},
+  spDivCancelled:{ar:'لم يُؤكَّد الطلب',en:'The order was not confirmed'},
+  bdlBreakCancelled:{ar:'لم يُحفظ التعديل — الباقة كما هي',en:'Not saved — the bundle is unchanged'},
+  sdGroupTitle:{ar:'المنتجات والشحن',en:'Products & shipping'},
+  sdGroupNote:{ar:'إيراد المنتجات وخصوماتها منفصلة عن الشحن المجاني وتكلفة شركة الشحن.',en:'Product revenue and discounts, kept apart from free shipping and the carrier cost.'},
   ivNotes:{ar:'ملاحظات',en:'Notes'},
   ivCancelReason:{ar:'سبب الإلغاء',en:'Cancellation reason'},
   // Settlement breakdown
@@ -29114,6 +29187,8 @@ const TRANSLATIONS = {
   repMdOfferHint:{ar:'السعر الأساسي − سعر العرض',en:'Base price − offer price'},
   repMdShopify:{ar:'فرق سعر Shopify',en:'Shopify price difference'},
   repMdShopifyHint:{ar:'سعر النظام − السعر اللي اتباع بيه في Shopify',en:'System price − the price charged on Shopify'},
+  repMdBundle:{ar:'تخصيص باقة Shopify',en:'Shopify bundle allocation'},
+  repMdBundleHint:{ar:'سعر النظام − نصيب القطعة من سعر الباقة في Shopify',en:'System price − the component’s share of the bundle price on Shopify'},
   repMdManual:{ar:'تعديل سعر يدوي',en:'Manual price changes'},
   repMdManualHint:{ar:'السعر الأساسي − سعر اتكتب بإيد في الفاتورة',en:'Base price − a price typed on the invoice'},
   repMdNote:{ar:'للعرض بس — المبيعات والربح فوق محسوبين بعدها. العروض والفروق بتتسجل من 12 نوفمبر 2026.',en:'For reference — sales and profit above are already net of these. Offers and price differences are recorded from Nov 12, 2026.'},
@@ -32722,12 +32797,15 @@ const UPD_POLL_MS = 60000;          // background check cadence
 const UPD_RELOAD_FLAG = 'soulia_update_reloaded';   // survives the reload, to toast after
 let _updBootVersion = null;         // version this tab started on; null until first fetch
 let _updDialogShown = false;        // one-way latch — never re-show or re-hide
+let _updBootInfo = null;            // full /version.json of this tab's build {build, builtAt, commit}
+let _updLastInfo = null;
 
 /** Read the deploy marker. Cache-busted per call so no layer can serve a stale copy. */
 async function _updFetchVersion() {
   const res = await fetch(`/version.json?_=${Date.now()}`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`version.json ${res.status}`);
   const data = await res.json();
+  _updLastInfo = data && typeof data === 'object' ? data : null;
   return String(data.version || data.build || '').trim() || null;
 }
 
@@ -32783,10 +32861,31 @@ function _updVersionText(raw) {
 async function checkForAppUpdate() {
   if (_updDialogShown) return;
   let remote = null;
-  try { remote = await _updFetchVersion(); } catch (_) { return; }
-  if (!remote) return;
-  if (!_updBootVersion) { _updBootVersion = remote; return; }   // first successful read = our baseline
+  try { remote = await _updFetchVersion(); } catch (_) { _updNoteCheck(false); return; }
+  if (!remote) { _updNoteCheck(false); return; }
+  _updNoteCheck(true, remote);
+  if (!_updBootVersion) {                                         // first successful read = our baseline
+    _updBootVersion = remote;
+    _updBootInfo = _updLastInfo;
+    try { renderVersionFooter(); } catch (_) {}                   // the Settings footer reads it
+    return;
+  }
   if (remote !== _updBootVersion) showUpdateDialog(remote);
+}
+
+// Result of the latest check, for the Settings footer's «this tab is up to date» line.
+let _updLastCheck = null;           // {at:Date, ok:boolean, remote:string|null}
+function _updNoteCheck(ok, remote) {
+  _updLastCheck = { at: new Date(), ok, remote: remote || null };
+  if (typeof currentPage !== 'undefined' && currentPage === 'settings') {
+    try { renderVersionFooter(); } catch (_) {}
+  }
+}
+
+/** The footer's «فحص الآن» — same check the timer runs, on demand. */
+async function checkForAppUpdateNow(btn) {
+  if (btn) btn.disabled = true;
+  try { await checkForAppUpdate(); } finally { if (btn && btn.isConnected) btn.disabled = false; }
 }
 
 /**
@@ -32872,7 +32971,13 @@ function initAppUpdateWatcher() {
 
   _updShowReloadedToast();
   // Establish the baseline for this tab, then poll.
-  _updFetchVersion().then(v => { if (v) _updBootVersion = v; }).catch(() => {});
+  _updFetchVersion().then(v => {
+    _updNoteCheck(!!v, v);
+    if (!v) return;
+    _updBootVersion = v;
+    _updBootInfo = _updLastInfo;
+    try { renderVersionFooter(); } catch (_) {}
+  }).catch(() => {});
   setInterval(checkForAppUpdate, UPD_POLL_MS);
   // A tab left open overnight checks the moment it is looked at again, rather than
   // waiting out the remainder of the interval.
@@ -39874,8 +39979,11 @@ const _transactionDependentPages = new Set(['transaction',
 const _startupPageDependencies = {
   transaction: [0, 2, 12],
   barcodes: [0, 12],
-  products: [0, 12],
-  product: [0, 12],
+  // 2 = suppliers: the product page's «المورد الأساسي» and the supplier-price add row read it.
+  // Without it, after a dashboard boot (which defers suppliers) both lists were empty and the
+  // add row claimed «كل الموردين المسجلين مضافين بالفعل».
+  products: [0, 2, 12],
+  product: [0, 2, 12],
   // Offers need the product list, the tag manager needs the master tags (7).
   promotions: [0, 7],
   suppliers: [2],
@@ -41064,7 +41172,8 @@ function renderAdminBriefing() {
   const expensesInRange = expAll.filter(e => e.status === 'معتمد' && _adbInRange(e) && itemMatchesSearch(e));
 
   // Goods after the invoice discount, without shipping — the same definition as التقارير.
-  const totalSales = sales.reduce((s, t) => s + Math.max(0, (Number(t.total) || 0) - (Number(t.shipCost) || 0)), 0);
+  // Free shipping is not a product discount: subtract only the shipping the customer was charged.
+  const totalSales = sales.reduce((s, t) => s + Math.max(0, (Number(t.total) || 0) - _saleShipCharged(t)), 0);
   const totalPurchases = purchases.reduce((s, t) => s + (t.total || 0), 0);
   const totalExpenses = expensesInRange.reduce((s, e) => s + (e.amount || 0), 0);
   const incompleteOrders = txInRange.filter(t => (t.remaining || 0) > 0).length;
@@ -46163,7 +46272,7 @@ function _editDsbRemoveCode(codeId, code, itemsTotal) {
 function _syncEditAppliedCodesToInputs(itemsTotal) {
   const totalDisc = _editCodesTotal(itemsTotal);
   const discInput = qs('#edit-tx-discount');
-  if (discInput) discInput.value = totalDisc;
+  if (discInput) discInput.value = totalDisc + (editShipDiscount || 0);
   const idInp = qs('#edit-tx-discount-code-id');
   const codeInp = qs('#edit-tx-discount-code');
   const typeInp = qs('#edit-tx-discount-code-type');
@@ -48017,7 +48126,8 @@ function getRetRefundCeiling() {
     if (it.condition === 'تالف') damagedValue += v;
   });
   const invItemsTotal = Number(tx?.itemsTotal) || (tx?.items || []).reduce((s, i) => s + (Number(i.total) || 0), 0);
-  const invDiscount = Math.max(0, Number(tx?.discount) || 0);
+  // Product discount only — free shipping was never taken off the goods (mirror of returns-validation).
+  const invDiscount = _saleStoredProductDiscount(tx);
   const discountRatio = invItemsTotal > 0 ? Math.min(1, invDiscount / invItemsTotal) : 0;
   const effective = itemsValue * (1 - discountRatio);
   const refundableCash = _retRefundableCash(tx);
@@ -50712,7 +50822,7 @@ function openFxDrawer(ctx) {
           <label class="fx-checkbox">
             <input type="checkbox" data-fx="discountOnly" ${s.discountOnly?'checked':''}>
             <span class="fx-checkbox-label">${t('fxDiscountOnlyLabel')}</span>
-            <span class="fx-checkbox-count">${fmtN(txs.filter(t => Number(t.discount) > 0).length)}</span>
+            <span class="fx-checkbox-count">${fmtN(txs.filter(t => _saleStoredProductDiscount(t) > 0).length)}</span>
           </label>
           <div style="margin-top:10px;display:flex;align-items:center;gap:6px;position:relative">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -51837,7 +51947,8 @@ function discBadgeHtml(disc, codeStr, itemsBase, opts = {}) {
 }
 
 function _movDiscountBadge(tx) {
-  const disc = Number(tx.discount) || 0;
+  // Product discount only — free shipping is not a discount on the goods (shared/sale-discount.util.ts).
+  const disc = _saleStoredProductDiscount(tx);
   if (!disc) return '<span style="color:var(--muted)">—</span>';
   const itemsBase = Number(tx.itemsTotal) || 0;
   const base = itemsBase > 0 ? itemsBase : (Number(tx.total) || 0) + disc;
@@ -51847,7 +51958,8 @@ function _movDiscountBadge(tx) {
 function showDiscountDetail(txId) {
   const tx = (transactions || []).find(t => t._id === txId);
   if (!tx) return;
-  const disc = Number(tx.discount) || 0;
+  // Same figure as the badge that opens it — product discount only.
+  const disc = _saleStoredProductDiscount(tx);
   const codeStr = (tx.discountCode || '').trim();
   const codeIds = (tx.discountCodeId || '').split(',').filter(Boolean);
   const codeNames = codeStr ? codeStr.split('+').map(n => n.trim()).filter(Boolean) : [];
@@ -52734,7 +52846,7 @@ function renderMovementsLegacy() {
       if (!_inlineTagFilters.every(tf => txTags.some(tg => tg.includes(tf)))) return false;
     }
     if (movDiscountFilter || fs.discountOnly) {
-      if (!(Number(tx.discount) > 0)) return false;
+      if (!(_saleStoredProductDiscount(tx) > 0)) return false;
     }
     if (fs.discountCode) {
       const needle = fs.discountCode.toLowerCase();
@@ -52779,9 +52891,11 @@ function renderMovementsLegacy() {
 
   // إجمالي المبيعات = سعر المنتجات فقط (بدون الشحن)
   const salesTx = activeTx.filter(t => t.type === 'مبيعات');
-  const productSalesTotal = salesTx.reduce((s, t) => s + Math.max(0, (t.total || 0) - (Number(t.shipCost) || 0)), 0);
+  // ⚠ Mirror of backend movements-page.util.ts: the shipping subtracted is what the customer was
+  // charged (shipCost − shipping discount), so free shipping is not taken off product sales.
+  const productSalesTotal = salesTx.reduce((s, t) => s + Math.max(0, (t.total || 0) - _saleShipCharged(t)), 0);
   // إجمالي الشحن المحصل من العملاء
-  const totalShipBilled = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+  const totalShipBilled = salesTx.reduce((s, t) => s + _saleShipCharged(t), 0);
   // فرق الشحن (الزيادة في التكلفة الفعلية = خسارة)
   const shipLossTotal = salesTx.reduce((s, t) => {
     const billed = Number(t.shipCost) || 0;
@@ -52832,7 +52946,7 @@ function renderMovementsLegacy() {
   const _mkHi = to   || (_mkDayPool.length ? _mkDayPool.reduce((a, b) => (a > b ? a : b)) : '');
   const _mkSalesSeries = _mkSeries(_mkLo, _mkHi, salesTx.map(tx2 => [
     _mkTxDay(tx2),
-    Math.max(0, (tx2.total || 0) - (Number(tx2.shipCost) || 0))
+    Math.max(0, (tx2.total || 0) - _saleShipCharged(tx2))
       - Math.max(0, (Number(tx2.actualShipCost) || 0) - (Number(tx2.shipCost) || 0)),
   ]));
   // Supplier returns are dated on their own field and enter as negatives, exactly as
@@ -54377,6 +54491,9 @@ function toggleAllMov(cb) {
 let editTxItems = [];
 let editAppliedCodes = []; // multi-code for edit modal
 let editManualDiscount = 0; // separate manual discount for edit modal
+// Free shipping already inside tx.discount (tx.shippingDiscount). ⚠ Never part of the manual discount:
+// every writer of #edit-tx-discount adds it back, so editing a code cannot charge the customer shipping.
+let editShipDiscount = 0;
 let editTxId = '';
 /* مفتاح لافتة التحذير داخل مودال التعديل (يُملأ من txEditGate عند السماح المشروط) */
 let _editTxWarnKey = '';
@@ -54690,6 +54807,65 @@ function _unitCostOf(r) {
   return Number.isFinite(buy) && buy >= 0 ? buy : 0;
 }
 
+/* ── Shipping discount (Nov 13, 2026) ───────────────────────────────────────────────────────
+   ⚠ Mirror of backend shared/sale-discount.util.ts (shipping-discount-mirror.spec.ts checks it).
+   `discount` stays the WHOLE invoice discount (total = items − discount + shipCost, unchanged);
+   `shippingDiscount` is the part Shopify applied to shipping (Free Shipping). A row without the
+   field reads exactly as before: shipping discount 0, product discount = the stored discount. */
+function _saleItemsTotal(tx) {
+  const stored = Number(tx?.itemsTotal) || 0;
+  if (stored > 0) return stored;
+  const lines = (tx?.items || []).reduce((s, i) => s + (Number(i?.total) || 0), 0);
+  if (lines > 0) return lines;
+  return Math.max(0, (Number(tx?.total) || 0) - (Number(tx?.shipCost) || 0));
+}
+function _saleShipDisc(tx) {
+  const sd = Number(tx?.shippingDiscount) || 0;
+  if (sd <= 0) return 0;
+  return Math.min(sd, Math.max(0, Number(tx?.shipCost) || 0), Math.max(0, Number(tx?.discount) || 0));
+}
+function _saleShipCharged(tx) {
+  return Math.max(0, (Number(tx?.shipCost) || 0) - _saleShipDisc(tx));
+}
+function _saleProductDiscount(tx) {
+  const items = _saleItemsTotal(tx);
+  const stored = Number(tx?.discount) || 0;
+  const d = stored > 0 ? stored - _saleShipDisc(tx) : Math.max(0, items - ((Number(tx?.total) || 0) - _saleShipCharged(tx)));
+  return Math.min(Math.max(d, 0), items);
+}
+/* ── Shopify bundles (Phase 2, Nov 13, 2026) ──────────────────────────────────────────────────
+   A bundle arrives as its component lines (each priced at its share of the bundle by Shopify). The
+   bundle's name and quantity live on the document: a sale's `bundleSnapshot` (frozen at confirmation),
+   else the order's `bundleOriginal`, else `bundleCurrent`. Display only — nothing here prices a line. */
+function _bundleMetaOf(doc) {
+  const snap = doc?.bundleSnapshot || doc?.bundleOriginal || doc?.bundleCurrent || null;
+  const map = new Map();
+  for (const g of (snap?.groups || [])) map.set(String(g.groupId), { title: g.title || '', quantity: g.quantity, total: g.allocatedTotal, verified: !!snap.verified, sale: !!doc?.bundleSnapshot });
+  return map;
+}
+/** The bundle that STARTS at items[i] (its first component), or null. */
+function _bundleStartsAt(doc, items, i) {
+  const it = items?.[i];
+  const g = it?.bundleGroupId ? String(it.bundleGroupId) : '';
+  if (!g) return null;
+  for (let j = 0; j < i; j++) if (String(items[j]?.bundleGroupId || '') === g) return null;
+  const meta = _bundleMetaOf(doc).get(g) || { title: '', quantity: null, total: null, verified: false, sale: !!doc?.bundleSnapshot };
+  const parts = items.filter(x => String(x?.bundleGroupId || '') === g);
+  const total = meta.total ?? parts.reduce((s, x) => s + (Number(x.total) || (Number(x.price) || 0) * (Number(x.qty) || 0)), 0);
+  return { ...meta, groupId: g, parts: parts.length, total };
+}
+function _bundleLabelHtml(b) {
+  const name = b.title ? `<bdi>${esc(b.title)}</bdi>` : esc(t('bdlUnnamed'));
+  const qty = Number(b.quantity) > 1 ? ` <span class="bdl-qty"><bdi>× ${fmtN(b.quantity)}</bdi></span>` : '';
+  const warn = b.verified ? '' : ` <span class="bdl-unverified" title="${escHtml(t(b.sale ? 'bdlUnverifiableHint' : 'bdlPendingHint'))}">${esc(t(b.sale ? 'bdlUnverifiable' : 'bdlPending'))}</span>`;
+  return `<span class="bdl-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></svg>${esc(t('bdlBundle'))}: ${name}${qty}</span>${warn}`;
+}
+
+/** The stored discount minus the shipping part — for screens that showed the raw `discount` (no inference). */
+function _saleStoredProductDiscount(tx) {
+  return Math.max(0, (Number(tx?.discount) || 0) - _saleShipDisc(tx));
+}
+
 /* ── Price offers (Nov 12, 2026) ───────────────────────────────────────────────────────────
    A temporary price for a period. ⚠ Mirror of backend shared/price-offer.util.ts
    (effectiveSellPrice) — the server stamps each sale line with listPrice / priceSource, so the
@@ -54954,7 +55130,7 @@ function _offerTagHtml(name) {
 /** Shopify edit window: put the running offer's price on that line. */
 function _spApplyOfferPrice(idx) {
   const item = _shopifyEditItems?.[idx];
-  if (!item) return;
+  if (!item || item.bundleGroupId) return;   // a bundle part keeps Shopify's allocated price
   const p = (products || []).find(x => x._id === item.productId || x.code === item.code);
   const ctx = item._addedAt ? { day: todayLocalISO(), since: item._addedAt } : _spOfferCtx(_spEditOrder);
   const eff = p ? _effectiveSellPrice(p, ctx.day) : null;
@@ -55172,13 +55348,14 @@ const _REP_MD_KINDS = [
   { key: 'invoice', label: 'repMdInvoice', hint: 'repMdInvoiceHint' },
   { key: 'offer', label: 'repMdOffer', hint: 'repMdOfferHint' },
   { key: 'shopify', label: 'repMdShopify', hint: 'repMdShopifyHint' },
+  { key: 'bundle', label: 'repMdBundle', hint: 'repMdBundleHint' },
   { key: 'manual', label: 'repMdManual', hint: 'repMdManualHint' },
 ];
 function renderMarkdownsPanel(r) {
   const box = qs('#rv-markdowns');
   if (!box) return;
   const md = r?.priceMarkdowns || {};
-  const vals = { invoice: { value: Number(r?.totalDiscounts) || 0, lines: null }, offer: md.offer, shopify: md.shopify, manual: md.manual };
+  const vals = { invoice: { value: Number(r?.totalDiscounts) || 0, lines: null }, offer: md.offer, shopify: md.shopify, bundle: md.bundle, manual: md.manual };
   const rows = _REP_MD_KINDS.map(k => ({ ...k, v: vals[k.key] || { value: 0, lines: 0, qty: 0 } }));
   const total = rows.reduce((s, x) => s + Math.max(0, Number(x.v.value) || 0), 0);
   if (total <= 0) { box.innerHTML = ''; return; }
@@ -55305,7 +55482,7 @@ function _buildEditInvoiceImgRowHtml(url) {
   return `<div class="edit-invoice-img-row" style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px">
     <div style="display:flex;align-items:center;gap:8px">
       <input type="url" class="edit-invoice-img-url" placeholder="https://... رابط صورة الفاتورة" value="${u}" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:.82rem" oninput="_updateEditInvoiceImgPreview(this)">
-      <button type="button" onclick="this.closest('.edit-invoice-img-row').remove()" style="flex-shrink:0;width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center">
+      <button type="button" onclick="this.closest('.edit-invoice-img-row').remove();_refreshEditSaveBtnVisibility()" style="flex-shrink:0;width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -55317,8 +55494,10 @@ function _addEditInvoiceImgRow() {
   const div = document.createElement('div');
   div.innerHTML = _buildEditInvoiceImgRowHtml('');
   list.appendChild(div.firstElementChild);
+  list.lastElementChild?.querySelector('.edit-invoice-img-url')?.focus();
 }
 function _updateEditInvoiceImgPreview(input) {
+  _refreshEditSaveBtnVisibility();
   const url = (input.value || '').trim();
   const box = input.closest('.edit-invoice-img-row')?.querySelector('.edit-invoice-img-preview');
   if (!box) return;
@@ -55440,6 +55619,7 @@ async function openEditMovement(id) {
   _editDiscRemovedForReapply = {};
   editManualDiscount = 0;
   editManualDiscountType = 'fixed';
+  editShipDiscount = tx.type === 'مبيعات' ? _saleShipDisc(tx) : 0;
   if (tx.discountCodeId) {
     const ids = tx.discountCodeId.split(',').filter(Boolean);
     const codes = (tx.discountCode || '').split('+').filter(Boolean);
@@ -55456,7 +55636,7 @@ async function openEditMovement(id) {
   } else if (Number(tx.discount) > 0) {
     const _initItemsTotal = (tx.items || []).reduce((s, it) => s + ((it.qty || 1) * (it.price || 0)), 0);
     const _initCodeDisc = editAppliedCodes.reduce((s, c) => s + (c.type === 'percent' ? Math.round(_initItemsTotal * c.value / 100) : c.value), 0);
-    editManualDiscount = Math.max(0, Number(tx.discount) - _initCodeDisc);
+    editManualDiscount = Math.max(0, Number(tx.discount) - _initCodeDisc - _saleShipDisc(tx));
     editManualDiscountType = 'fixed';
   }
   const shipCoOpts = getShipCompanyOptions(tx.shipCo || '');
@@ -56066,7 +56246,7 @@ function applyEditDiscount(itemsTotal) {
   const discInput = qs('#edit-tx-discount');
   editManualDiscount = manualDisc;
   editManualDiscountType = editDiscountType;
-  if (discInput) { discInput.value = totalDisc; recalcEditTx(); }
+  if (discInput) { discInput.value = totalDisc + (editShipDiscount || 0); recalcEditTx(); }
   // Write combined multi-code data to hidden inputs
   const idInp = qs('#edit-tx-discount-code-id');
   const codeInp = qs('#edit-tx-discount-code');
@@ -56089,8 +56269,9 @@ function applyEditDiscount(itemsTotal) {
 }
 function removeEditDiscount() {
   const discInput = qs('#edit-tx-discount');
-  const hasDiscount = Number(discInput?.value) > 0;
-  if (discInput) { discInput.value = 0; recalcEditTx(); }
+  // Free shipping is not a discount the employee removes here — it stays.
+  const hasDiscount = Number(discInput?.value) > (editShipDiscount || 0);
+  if (discInput) { discInput.value = editShipDiscount || 0; recalcEditTx(); }
   editManualDiscount = 0;
   editManualDiscountType = 'fixed';
   editAppliedCodes = [];
@@ -56104,7 +56285,7 @@ function removeEditDiscount() {
 function removeEditSummaryCode(codeId) {
   editAppliedCodes = editAppliedCodes.filter(c => c.id !== codeId);
   const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
-  const newTotal = _editCodesTotal(it) + (editManualDiscount || 0);
+  const newTotal = _editCodesTotal(it) + (editManualDiscount || 0) + (editShipDiscount || 0);
   const discInput = qs('#edit-tx-discount');
   if (discInput) discInput.value = Math.min(newTotal, it);
   const idInp = qs('#edit-tx-discount-code-id');
@@ -56126,7 +56307,7 @@ function removeEditSummaryManualDisc() {
   editManualDiscount = 0;
   const it = editTxItems.reduce((s, x) => s + (x.qty * x.price), 0);
   const discInput = qs('#edit-tx-discount');
-  if (discInput) discInput.value = Math.min(_editCodesTotal(it), it);
+  if (discInput) discInput.value = Math.min(_editCodesTotal(it) + (editShipDiscount || 0), it);
   recalcEditTx();
   toast('تم حذف الخصم اليدوي');
 }
@@ -56143,9 +56324,26 @@ function updateEditShipCost() {
 }
 // فحص خفيف بلا آثار جانبية (بدون توست/تحقق) — يحدد هل يوجد أي تغيير فعلي في نافذة التعديل
 // يُستخدم فقط لإظهار/إخفاء زر "حفظ التعديلات"؛ منطق الحفظ الفعلي في saveEditMovement يعيد نفس الحساب بتفصيل أكبر
+/* Supplier-invoice links on a purchase: the saved list vs what the edit window holds now.
+   Empty rows are ignored on both sides (saveEditMovement drops them too). */
+function _editInvoiceLinks() {
+  return Array.from(qsa('#edit-tx-invoice-imgs-list .edit-invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
+}
+function _editInvoiceLinksOrig(tx) {
+  const imgs = Array.isArray(tx?.invoiceImages) && tx.invoiceImages.length ? tx.invoiceImages : (tx?.invoiceImageUrl ? [tx.invoiceImageUrl] : []);
+  return imgs.map(u => String(u || '').trim()).filter(Boolean);
+}
+function _editInvoiceLinksChanged(tx) {
+  if (!tx || tx.type !== 'مشتريات' || !qs('#edit-tx-invoice-imgs-list')) return false;
+  return _editInvoiceLinks().join('|') !== _editInvoiceLinksOrig(tx).join('|');
+}
+
 function _editHasChanges() {
   const tx = transactions.find(t => t._id === editTxId);
   if (!tx) return false;
+
+  // روابط فواتير المورد — إضافتها أو حذفها تعديل يستحق الحفظ.
+  if (_editInvoiceLinksChanged(tx)) return true;
 
   const newClient = (qs('#edit-tx-client')?.value || '').trim();
   if (newClient !== (tx.client || '').trim()) return true;
@@ -56426,13 +56624,16 @@ function recalcEditTx() {
         <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${manualDiscLabel} ${_editCancelBtn('removeEditSummaryManualDisc()', t('txRemoveManualDiscTitle'))}</span>
         <span style="color:var(--red)">- ${fmtJ(manualDiscAmt)}</span></div>`
     : '';
+  // Free shipping inside the discount is shown on its own line under the shipping (total unchanged).
+  const _eSd = isSaleTx ? Math.min(editShipDiscount || 0, discount, shipCost) : 0;
+  const _eDisc = discount - _eSd;
   const discTotalRow = (hasCodeDisc && hasManualDisc)
-    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><span>${t('txTotalDiscountLabel')}</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>`
+    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.78rem;color:var(--muted)"><span>${t('txTotalDiscountLabel')}</span><span style="color:var(--red)">- ${fmtJ(_eDisc)}</span></div>`
     : '';
   const discRowHtml = (hasCodeDisc || hasManualDisc)
     ? codeRowsHtml + manualRowHtml + discTotalRow
-    : discount > 0
-    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${plainDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(discount)}</span></div>`
+    : _eDisc > 0
+    ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${plainDiscLabel}</span><span style="color:var(--red)">- ${fmtJ(_eDisc)}</span></div>`
     : '';
 
   if (isPurTx) {
@@ -56453,6 +56654,7 @@ function recalcEditTx() {
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('txItemsTotalLabel')}</span><strong>${fmtJ(itemsTotal)}</strong></div>
       ${discRowHtml}
       ${shipCost ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('ivShippingCost')}</span><span>+ ${fmtJ(shipCost)}</span></div>` : ''}
+      ${_eSd > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${esc(t('sdFreeShipping'))}</span><span style="color:var(--red)">- ${fmtJ(_eSd)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('colDeposit')}${isSaleTx && depMethod ? ` <span class="text-xs text-muted">(${esc(depMethod)})</span>` : ''}</span><span style="color:${depositExceedsTotal ? 'var(--red)' : 'var(--green)'}">${fmtJ(deposit)}</span></div>
       <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>${t('editTxFinalTotal')}</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>${t('colRemaining')}</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> ' + t('txFullyPaidLabel')}</strong></div>
@@ -56698,6 +56900,11 @@ async function saveEditMovement(id) {
   if (shipCostDelta !== 0) changes.push({ type: 'financial', text: `تكلفة الشحن: ${fmtJT(origShipCost)} ← ${fmtJT(shipCost)}` });
   if (depositDelta !== 0) changes.push({ type: 'financial', text: `${tx.type === 'مشتريات' ? 'العربون' : 'الديبوزت'}: ${fmtJT(origDeposit)} ← ${fmtJT(deposit)}` });
   if (totalDelta !== 0) changes.push({ type: 'financial', text: `الإجمالي: ${fmtJT(origTotal)} ← ${fmtJT(total)}` });
+  if (_editInvoiceLinksChanged(tx)) {
+    const _lb = _editInvoiceLinksOrig(tx), _la = _editInvoiceLinks();
+    _la.filter(u => !_lb.includes(u)).forEach(u => changes.push({ type: 'added', text: `رابط فاتورة: ${esc(u.length > 48 ? u.slice(0, 45) + '…' : u)}` }));
+    _lb.filter(u => !_la.includes(u)).forEach(u => changes.push({ type: 'removed', text: `رابط فاتورة: ${esc(u.length > 48 ? u.slice(0, 45) + '…' : u)}` }));
+  }
   // مشتريات سُدِّد جزء منها من رصيد سابق عند المورد: الإجمالي وحده لا يقول كم سيصبح الدَّين.
   // نذكر المتبقي للمورد صراحةً، وأن الرصيد السابق باقٍ على الفاتورة (ومن أي خزنة دُفع).
   if (tx.type === 'مشتريات') {
@@ -56817,8 +57024,26 @@ async function saveEditMovement(id) {
   } catch (e) { toast('خطأ: ' + e.message, true); }
 }
 
+/** Saves an invoice edit. Removing/reducing a Shopify bundle part makes the server ask for confirmation
+ *  (BUNDLE_BREAK_CONFIRM_REQUIRED, with the repricing preview) — show it, then resend with the confirmation. */
+async function _putTxWithBundleConfirm(id, body) {
+  try { return await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
+  catch (e) {
+    if (e?.code !== 'BUNDLE_BREAK_CONFIRM_REQUIRED' || body.confirmBundleBreak) throw e;
+    const pv = Array.isArray(e.details?.preview) ? e.details.preview : [];
+    const added = Math.round(pv.reduce((s, b) => s + (Number(b.addedToCustomer) || 0), 0) * 100) / 100;
+    const ok = await showConfirm(
+      `<p>${esc(t('bdlBreakQ', { name: pv.map(b => b.title || t('bdlUnnamed')).join('، ') }))}</p><p style="color:var(--muted);font-size:.85rem">${esc(t('bdlBreakHint'))}</p>`,
+      { title: t('bdlBreakTitle'), danger: true, confirmLabel: t('bdlBreakOk'),
+        rows: [...pv.flatMap(b => (b.lines || []).map(l => [l.name || l.code, `${fmtN(l.from)} → ${fmtN(l.to)}`])),
+          [t('bdlBreakAdded'), (added >= 0 ? '+' : '−') + fmtN(Math.abs(added))]] });
+    if (!ok) throw new Error(t('bdlBreakCancelled'));
+    return api('/transactions/' + id, { method: 'PUT', body: JSON.stringify({ ...body, confirmBundleBreak: true }) });
+  }
+}
+
 async function _applyEditTxBody(id, body, tx, changes, editDiscCodeId) {
-  await api('/transactions/' + id, { method: 'PUT', body: JSON.stringify(body) });
+  await _putTxWithBundleConfirm(id, body);
   const discount = body.discount || 0;
   if (editDiscCodeId && editDiscCodeId !== (tx.discountCodeId || '')) {
     const newCodeIds = editDiscCodeId.split(',').filter(Boolean);
@@ -59494,7 +59719,10 @@ function openProfitAnalysis() {
     const billedShip  = Number(tx.shipCost) || 0;
     const actualShip  = Number(tx.actualShipCost) || 0;
     const shipLoss    = Math.max(0, actualShip - billedShip);
-    const discount  = Number(tx.discount) || 0;
+    // Product discount only; free shipping is a separate shipping subsidy (mirror of
+    // shared/sale-discount.util.ts). Net profit is unchanged: both are still subtracted.
+    const discount  = _saleStoredProductDiscount(tx);
+    const shipSubsidy = _saleShipDisc(tx);
     // cost = sum of (item.qty × unit cost). ⚠ The cost frozen on the line wins
     // (mirror of backend shared/line-cost.util.ts lineUnitCost); only an unfrozen
     // line falls back to the product's current buyPrice, exactly as before.
@@ -59508,9 +59736,9 @@ function openProfitAnalysis() {
     });
     // Credited by the automatic Bosta settlement when Bosta took less than the tariff.
     const shipSaving = Number(tx.shipSaving) || 0;
-    const netProfit = revenue - cost - shipLoss + shipSaving - discount;
+    const netProfit = revenue - cost - shipLoss + shipSaving - discount - shipSubsidy;
     const margin    = revenue > 0 ? ((netProfit / revenue) * 100) : 0;
-    return { tx, revenue, cost, shipLoss, shipSaving, discount, netProfit, margin };
+    return { tx, revenue, cost, shipLoss, shipSaving, discount, shipSubsidy, netProfit, margin };
   });
 
   // Summary totals
@@ -59519,8 +59747,17 @@ function openProfitAnalysis() {
     cost:    a.cost    + r.cost,
     shipLoss:a.shipLoss+ r.shipLoss,
     discount:a.discount+ r.discount,
+    shipSubsidy: a.shipSubsidy + r.shipSubsidy,
     profit:  a.profit  + r.netProfit,
-  }), { revenue:0, cost:0, shipLoss:0, discount:0, profit:0 });
+  }), { revenue:0, cost:0, shipLoss:0, discount:0, shipSubsidy:0, profit:0 });
+  // Shown only when a selected sale carries a shipping subsidy — otherwise the panel is exactly as before.
+  const hasSub = tot.shipSubsidy > 0;
+  // The header cell exists only while a selected sale carries a subsidy — the static table is untouched.
+  const thSub = qs('#pa-th-subsidy');
+  if (hasSub && !thSub) {
+    const after = qs('#pa-detail-table thead th:nth-child(6)');
+    if (after) after.insertAdjacentHTML('afterend', `<th style="text-align:center" id="pa-th-subsidy">${esc(t('sdShipSubsidy'))}</th>`);
+  } else if (!hasSub && thSub) thSub.remove();
   const totalMargin = tot.revenue > 0 ? ((tot.profit / tot.revenue) * 100) : 0;
 
   const summaryEl = qs('#pa-summary-cards');
@@ -59529,7 +59766,7 @@ function openProfitAnalysis() {
     <div class="pa-kpi"><div class="pa-kpi-label">إجمالي الإيراد</div><div class="pa-kpi-val">${fmtJ(tot.revenue)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">تكلفة المنتجات</div><div class="pa-kpi-val red">${fmtJ(tot.cost)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">خسارة الشحن الإضافي</div><div class="pa-kpi-val red">${fmtJ(tot.shipLoss)}</div></div>
-    <div class="pa-kpi"><div class="pa-kpi-label">الخصومات</div><div class="pa-kpi-val red">${fmtJ(tot.discount)}</div></div>
+    <div class="pa-kpi"><div class="pa-kpi-label">الخصومات</div><div class="pa-kpi-val red">${fmtJ(tot.discount)}</div></div>${hasSub ? `<div class="pa-kpi"><div class="pa-kpi-label">${esc(t('sdShipSubsidy'))}</div><div class="pa-kpi-val red">${fmtJ(tot.shipSubsidy)}</div></div>` : ''}
     <div class="pa-kpi"><div class="pa-kpi-label">صافي الربح</div><div class="pa-kpi-val ${tot.profit >= 0 ? 'green' : 'red'}">${fmtJ(tot.profit)}</div></div>
     <div class="pa-kpi"><div class="pa-kpi-label">هامش الربح</div><div class="pa-kpi-val ${totalMargin >= 0 ? 'green' : 'red'}">${totalMargin.toFixed(1)}%</div></div>
   `;
@@ -59545,7 +59782,7 @@ function openProfitAnalysis() {
       <td style="text-align:center">${fmtJ(r.revenue)}</td>
       <td style="text-align:center;color:#ef4444">${fmtJ(r.cost)}</td>
       <td style="text-align:center;color:#f59e0b">${r.shipLoss > 0 ? fmtJ(r.shipLoss) : '—'}</td>
-      <td style="text-align:center;color:#8b5cf6">${fmtJ(r.discount)}</td>
+      <td style="text-align:center;color:#8b5cf6">${fmtJ(r.discount)}</td>${hasSub ? `<td style="text-align:center;color:#8b5cf6">${r.shipSubsidy > 0 ? fmtJ(r.shipSubsidy) : '—'}</td>` : ''}
       <td style="text-align:center" class="${profitCls}">${fmtJ(r.netProfit)}</td>
       <td style="text-align:center">
         <span style="font-size:.75rem;font-weight:700;color:${barColor}">${r.margin.toFixed(1)}%</span>
@@ -59567,14 +59804,15 @@ function _paPrintPDF() {
   const panel = qs('#profit-analysis-modal .pa-panel');
   if (!panel) return;
   const w = window.open('', '_blank', 'width=950,height=700');
-  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,profit:0});
+  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,shipSubsidy:a.shipSubsidy+(r.shipSubsidy||0),profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,shipSubsidy:0,profit:0});
+  const hasSub = tot.shipSubsidy > 0;
   const rows = _paData.map(r => `<tr>
     <td>#${r.tx.ref||String(r.tx._id).slice(-6)}</td>
     <td>${r.tx.client||'—'}</td>
     <td>${r.revenue.toFixed(2)}</td>
     <td>${r.cost.toFixed(2)}</td>
     <td>${r.shipLoss > 0 ? r.shipLoss.toFixed(2) : '—'}</td>
-    <td>${r.discount.toFixed(2)}</td>
+    <td>${r.discount.toFixed(2)}</td>${hasSub ? `<td>${r.shipSubsidy > 0 ? r.shipSubsidy.toFixed(2) : '—'}</td>` : ''}
     <td style="font-weight:700;color:${r.netProfit>=0?'#10b981':'#ef4444'}">${r.netProfit.toFixed(2)}</td>
     <td>${r.margin.toFixed(1)}%</td>
   </tr>`).join('');
@@ -59591,10 +59829,10 @@ function _paPrintPDF() {
     <div class="kpi"><div class="kpi-l">الإيراد</div><div class="kpi-v">${tot.revenue.toFixed(2)}</div></div>
     <div class="kpi"><div class="kpi-l">التكلفة</div><div class="kpi-v" style="color:#ef4444">${tot.cost.toFixed(2)}</div></div>
     <div class="kpi"><div class="kpi-l">خسارة الشحن الإضافي</div><div class="kpi-v" style="color:#f59e0b">${tot.shipLoss.toFixed(2)}</div></div>
-    <div class="kpi"><div class="kpi-l">الخصومات</div><div class="kpi-v" style="color:#8b5cf6">${tot.discount.toFixed(2)}</div></div>
+    <div class="kpi"><div class="kpi-l">الخصومات</div><div class="kpi-v" style="color:#8b5cf6">${tot.discount.toFixed(2)}</div></div>${hasSub ? `<div class="kpi"><div class="kpi-l">${t('sdShipSubsidy')}</div><div class="kpi-v" style="color:#8b5cf6">${tot.shipSubsidy.toFixed(2)}</div></div>` : ''}
     <div class="kpi"><div class="kpi-l">صافي الربح</div><div class="kpi-v" style="color:${tot.profit>=0?'#10b981':'#ef4444'}">${tot.profit.toFixed(2)}</div></div>
   </div>
-  <table><thead><tr><th>#المرجع</th><th>العميل</th><th>الإيراد</th><th>التكلفة</th><th>خسارة الشحن الإضافي</th><th>الخصم</th><th>صافي الربح</th><th>الهامش %</th></tr></thead>
+  <table><thead><tr><th>#المرجع</th><th>العميل</th><th>الإيراد</th><th>التكلفة</th><th>خسارة الشحن الإضافي</th><th>الخصم</th>${hasSub ? `<th>${t('sdShipSubsidy')}</th>` : ''}<th>صافي الربح</th><th>الهامش %</th></tr></thead>
   <tbody>${rows}</tbody></table>
   <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
   w.document.close();
@@ -59603,7 +59841,9 @@ function _paPrintPDF() {
 async function _paExportExcel() {
   await window.souliaLibraryReady('xlsx'); // Preserve the CSV fallback if Excel is unavailable.
   if (!_paData.length) return;
-  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,profit:0});
+  const tot = _paData.reduce((a,r)=>({revenue:a.revenue+r.revenue,cost:a.cost+r.cost,shipLoss:a.shipLoss+r.shipLoss,discount:a.discount+r.discount,shipSubsidy:a.shipSubsidy+(r.shipSubsidy||0),profit:a.profit+r.netProfit}),{revenue:0,cost:0,shipLoss:0,discount:0,shipSubsidy:0,profit:0});
+  const hasSub = tot.shipSubsidy > 0;
+  const subCol = hasSub ? t('sdShipSubsidy') + ' (ج)' : null;
   const rows = _paData.map(r => ({
     'المرجع': '#' + (r.tx.ref || String(r.tx._id).slice(-6)),
     'العميل': r.tx.client || '—',
@@ -59611,6 +59851,7 @@ async function _paExportExcel() {
     'تكلفة المنتجات (ج)': r.cost,
     'خسارة الشحن الإضافي (ج)': r.shipLoss,
     'الخصم (ج)': r.discount,
+    ...(hasSub ? { [subCol]: r.shipSubsidy } : {}),
     'صافي الربح (ج)': r.netProfit,
     'الهامش %': parseFloat(r.margin.toFixed(2)),
   }));
@@ -59621,6 +59862,7 @@ async function _paExportExcel() {
     'تكلفة المنتجات (ج)': tot.cost,
     'خسارة الشحن الإضافي (ج)': tot.shipLoss,
     'الخصم (ج)': tot.discount,
+    ...(hasSub ? { [subCol]: tot.shipSubsidy } : {}),
     'صافي الربح (ج)': tot.profit,
     'الهامش %': tot.revenue > 0 ? parseFloat(((tot.profit/tot.revenue)*100).toFixed(2)) : 0,
   });
@@ -62382,6 +62624,11 @@ table.iv-items td.c-total{font-size:10.5px;font-weight:600}
 /* Offer: the same fluorescent mark as on screen; print-color-adjust keeps the fill on paper. */
 .iv-offer{margin-top:2px}
 .iv-offer-tag{display:inline-block;font-size:7.5px;font-weight:700;line-height:1.5;padding:0 5px;border-radius:3px;background:#e3ff3c;color:#1d2a00;box-shadow:inset 0 0 0 .6px rgba(108,140,0,.5);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.iv-bundle td{padding:5px 8px;background:#f4f6f5;border-top:1px solid #d9dfdc;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.iv-bundle-tag{font-weight:700;font-size:9px}
+.iv-bundle-warn{font-size:7.5px;color:#a16207;margin-inline-start:6px}
+.iv-bundle-total{float:inline-end;font-weight:700;font-size:9px}
+.iv-bundle-part .c-item{padding-inline-start:16px}
 .iv-was{font-size:8px;color:var(--muted);text-decoration:line-through}
 .iv-items-foot{display:flex;justify-content:space-between;gap:10px;padding-top:6px;font-size:8px;color:var(--muted)}
 
@@ -62769,12 +63016,14 @@ function buildInvoiceHtml(tx) {
      stored on the line first, then the live catalogue. A failed load removes
      the <img> and the placeholder icon beneath it shows. */
   const PH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m21 15-5-5L5 21"/></svg>';
-  const itemsHtml = (tx.items || []).map((it) => {
+  const itemsHtml = (tx.items || []).map((it, i) => {
+    const _b = typeof _bundleStartsAt === 'function' ? _bundleStartsAt(tx, tx.items, i) : null;
+    const _bh = _b ? `<tr class="iv-bundle"><td colspan="4"><span class="iv-bundle-tag">باقة: ${esc(_b.title || 'باقة Shopify')}${Number(_b.quantity) > 1 ? ' × ' + fmtN(_b.quantity) : ''}</span>${_b.verified ? '' : ' <span class="iv-bundle-warn">' + (_b.sale ? 'تكوين الباقة غير قابل للتحقق' : 'بانتظار التحقق') + '</span>'}<span class="iv-bundle-total">${money(_b.total)}</span></td></tr>` : '';
     const img = typeof _pwItemImgUrl === 'function' ? _pwItemImgUrl(it) : '';
     const meta = (it.condition && it.condition !== 'سليم') ? `الحالة: ${esc(it.condition)}` : '';
     const code = it.code && String(it.code).toLowerCase() !== 'shopify' ? esc(it.code) : '';
     const off = (isSales && typeof _lineOfferOf === 'function') ? _lineOfferOf(it) : null;
-    return `<tr>
+    return `${_bh}<tr${it.bundleGroupId ? ' class="iv-bundle-part"' : ''}>
       <td class="c-item"><div class="iv-item">
         <div class="iv-thumb">${PH}${img ? `<img src="${escHtml(img)}" alt="" onerror="this.remove()">` : ''}</div>
         <div class="iv-it-txt">
@@ -62895,8 +63144,17 @@ function buildInvoiceHtml(tx) {
         ${(() => { const os = (isSales && typeof _offerSummaryOf === 'function') ? _offerSummaryOf(tx.items) : null;
           return os ? `<div class="r"><span>الأصناف قبل العروض</span>${money(os.before)}</div>` + os.groups.map(g => `<div class="r"><span>عرض <span class="iv-offer-tag" dir="auto">${esc(g.name || '')}</span></span><span class="num">−${fmtN(g.saved)}</span></div>`).join('') : ''; })()}
         <div class="r"><span>إجمالي الأصناف</span>${money(itemsSubtotal)}</div>
-        ${tx.discount ? `<div class="r"><span>الخصم ${discLabel}</span><span class="num">−${fmtN(tx.discount)}</span></div>` : ''}
-        ${!isPur && tx.shipCost ? `<div class="r"><span>الشحن</span><span class="num">+${fmtN(tx.shipCost)}</span></div>` : ''}
+        ${(() => {
+          // Printed sheet: free shipping stated on its own line under the shipping (unchanged without it).
+          const _sd = !isPur ? _saleShipDisc(tx) : 0;
+          if (!_sd) return (tx.discount ? `<div class="r"><span>الخصم ${discLabel}</span><span class="num">−${fmtN(tx.discount)}</span></div>` : '')
+            + `
+        ` + (!isPur && tx.shipCost ? `<div class="r"><span>الشحن</span><span class="num">+${fmtN(tx.shipCost)}</span></div>` : '');
+          const _pd = _saleStoredProductDiscount(tx);
+          return (_pd ? `<div class="r"><span>الخصم ${discLabel}</span><span class="num">−${fmtN(_pd)}</span></div>` : '')
+            + `<div class="r"><span>الشحن</span><span class="num">+${fmtN(tx.shipCost)}</span></div>`
+            + `<div class="r"><span>شحن مجاني</span><span class="num">−${fmtN(_sd)}</span></div>`;
+        })()}
         <div class="g"><span class="l">${isPur ? 'إجمالي المشتريات' : isRet ? 'إجمالي المرتجع' : 'الإجمالي'}</span><span class="t">${money(total)} ${cur}</span></div>
       </div>
     </div>
@@ -63331,8 +63589,9 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
   } else {
     _statusText = t('ivStatusAwaitingCollection');
   }
-  const itemsRows = (tx.items || []).map((it, i) => `
-    <tr>
+  const itemsRows = (tx.items || []).map((it, i) => `${(() => { const b = _bundleStartsAt(tx, tx.items, i); return b ? `
+    <tr class="inv-bundle-head"><td colspan="${hasPieceColumn ? 6 : 5}">${_bundleLabelHtml(b)}<span class="bdl-meta">${esc(t('bdlParts', { n: fmtN(b.parts) }))} · <bdi>${fmtJ(b.total)}</bdi></span></td></tr>` : ''; })()}
+    <tr${it.bundleGroupId ? ' class="is-bundle-part"' : ''}>
       <td class="col-num">${i + 1}</td>
       <td class="col-product"><div style="display:flex;align-items:center;gap:8px">${productThumbHtml(it.imageUrl, it.name, 'inv-item-thumb')}<div>${esc(it.name || '')}${it.code ? `<div class="col-code">${esc(it.code)}</div>` : ''}${invoiceUnitBarcodeButton(tx, it, isPurchase, isReturn)}</div></div></td>
       ${hasPieceColumn ? `<td class="col-piece-identity">${window.InvoiceUnitIdentities?.placeholder(tx, it) || ''}</td>` : ''}
@@ -63449,7 +63708,13 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
               ${(!isPurchase && tx.type === 'مبيعات') ? (tx.items || []).filter(it => it.offerRemoved).map(it => `<div class="sum-line is-offer-removed"><span class="lbl"><span dir="auto">${esc(it.name || it.code || '')}</span> ${_offerRemovedHtml(it.offerRemoved)}</span><span class="val">—</span></div>`).join('') : ''}
               <div class="sum-line"><span class="lbl">${t('ivItemsTotal')}</span><span class="val">${fmtJ(itemsTotal)}</span></div>
               ${tx.shipCost && !isPurchase ? `<div class="sum-line"><span class="lbl">${t('ivShippingCost')}</span><span class="val">${fmtJ(tx.shipCost)}</span></div>` : ''}
-              ${tx.discount ? `<div class="sum-line discount"><span class="lbl">${t('ivDiscount')} ${discBadgeHtml(Number(tx.discount), tx.discountCode, itemsTotal, { size: 'sm', inline: true, txId: tx._id })}</span><span class="val">- ${fmtJ(tx.discount)}</span></div>` : ''}
+              ${(() => {
+                // Same rule as the invoice page: free shipping on its own line (unchanged without it).
+                const _sd = _saleShipDisc(tx);
+                const _pd = _sd ? _saleStoredProductDiscount(tx) : Number(tx.discount) || 0;
+                return (_pd ? `<div class="sum-line discount"><span class="lbl">${t('ivDiscount')} ${discBadgeHtml(_pd, tx.discountCode, itemsTotal, { size: 'sm', inline: true, txId: tx._id })}</span><span class="val">- ${fmtJ(_pd)}</span></div>` : '')
+                  + (_sd ? `<div class="sum-line discount is-ship-disc"><span class="lbl">${esc(t('sdFreeShipping'))}</span><span class="val">- ${fmtJ(_sd)}</span></div>` : '');
+              })()}
             </div>
             <div class="inv-summary-card highlight">
               <div class="card-label">${t('ivGrandTotal')}</div>
@@ -64274,8 +64539,9 @@ function renderInvoiceViewPage() {
       <span class="inv2-h-price">${t('ivColPrice')}</span>
       <span class="inv2-h-total">${t('ivColTotal')}</span>
     </div>`;
-  const itemsRows = (tx.items||[]).map((it,i) => `
-    <div class="inv2-line">
+  const itemsRows = (tx.items||[]).map((it,i) => `${(() => { const b = _bundleStartsAt(tx, tx.items, i); return b ? `
+    <div class="inv2-bundle-head">${_bundleLabelHtml(b)}<span class="bdl-meta">${esc(t('bdlParts', { n: fmtN(b.parts) }))} · <bdi>${fmt(b.total)}</bdi></span></div>` : ''; })()}
+    <div class="inv2-line${it.bundleGroupId ? ' is-bundle-part' : ''}">
       <span class="inv2-line-i">${fmtN(i+1)}</span>
       ${productThumbHtml(it.imageUrl, it.name, 'inv-item-thumb')}
       <div class="inv2-line-main">
@@ -64495,7 +64761,15 @@ function renderInvoiceViewPage() {
     ${(!isPurchase && !isReturn && !isSupplierReturn) ? (tx.items || []).filter(it => it.offerRemoved).map(it => _sumRow(`<span dir="auto">${esc(it.name || it.code || '')}</span> ${_offerRemovedHtml(it.offerRemoved)}`, '—', { cls: 'is-offer-removed' })).join('') : ''}
     ${_sumRow(t('ivItemsTotal'), fmt(itemsTotal))}
     ${tx.shipCost && !isPurchase ? _sumRow(t('ivShippingCost'), fmt(tx.shipCost)) : ''}
-    ${tx.discount ? _sumRow(`${t('ivDiscount')} ${discBadgeHtml(Number(tx.discount), tx.discountCode, itemsTotal, { size:'sm', inline:true, txId: tx._id })}`, '− ' + fmt(tx.discount)) : ''}
+    ${(() => {
+      // Free shipping is its own line, never part of the product discount (shared/sale-discount.util.ts).
+      // Without a shipping discount this renders exactly the old discount row.
+      const _sd = _saleShipDisc(tx);
+      if (!_sd) return tx.discount ? _sumRow(`${t('ivDiscount')} ${discBadgeHtml(Number(tx.discount), tx.discountCode, itemsTotal, { size:'sm', inline:true, txId: tx._id })}`, '− ' + fmt(tx.discount)) : '';
+      const _pd = _saleStoredProductDiscount(tx);
+      return (_pd ? _sumRow(`${t('ivDiscount')} ${discBadgeHtml(_pd, tx.discountCode, itemsTotal, { size:'sm', inline:true, txId: tx._id })}`, '− ' + fmt(_pd)) : '')
+        + _sumRow(`<span title="${escHtml(t('sdShipDiscount'))}">${esc(t('sdFreeShipping'))}</span>`, '− ' + fmt(_sd), { cls: 'is-ship-disc' });
+    })()}
     <div class="inv2-sum-row inv2-sum-total is-hero">
       <span class="inv2-sum-k">${t('ivGrandTotal')}</span>
       <span class="inv2-sum-v is-grand" style="direction:ltr">${fmt(isSupplierReturn ? (_srSettlement?.returnValue ?? itemsTotal) : (tx.total||0))}</span>
@@ -64752,7 +65026,8 @@ function renderInvoiceViewPage() {
       </div>`;
     })()}
     ${(()=>{
-      const _disc = Number(tx.discount) || 0;
+      // Product discount only — free shipping is stated in the order summary as its own line.
+      const _disc = _saleStoredProductDiscount(tx);
       const _codeNames = (tx.discountCode || '').trim() ? tx.discountCode.split('+').map(n => n.trim()).filter(Boolean) : [];
       const _manualDisc = Number(tx.manualDiscount) || 0;
       if (!_codeNames.length && !(_manualDisc > 0) && !(_disc > 0)) return '';
@@ -68508,6 +68783,7 @@ async function _acLoadHistory(productId) {
 }
 
 let _psState = { productId: '', rows: [], status: 'loading', editing: '', adding: false, busy: false };
+let _psSupLoading = false, _psSupTried = false;   // on-demand /suppliers load for the add row
 
 async function _psLoad(productId) {
   _psState = { productId, rows: [], status: 'loading', editing: '', adding: false, busy: false };
@@ -68593,6 +68869,18 @@ function _psRowHtml(r, low) {
 /* The add form is the table's last row, on the same columns, with the app's own select. */
 function _psAddRowHtml() {
   const taken = new Set(_psState.rows.map(r => r.supplierId));
+  // An empty list means suppliers were never loaded, not that every one is listed — load them
+  // and redraw rather than state something false.
+  if (!Array.isArray(suppliers) || !suppliers.length) {
+    if (!_psSupLoading) {
+      _psSupLoading = true;
+      api('/suppliers').then(r => { if (Array.isArray(r)) suppliers = r; })
+        .catch(() => {})
+        .finally(() => { _psSupLoading = false; _psSupTried = true; try { _psRender(); } catch (_) {} });
+    }
+    if (!_psSupTried || _psSupLoading) return `<div class="ps-row ps-add-row" role="row"><div class="ps-add-empty" role="cell">${esc(currentLang === 'en' ? 'Loading suppliers…' : 'جارٍ تحميل الموردين…')}</div>
+    <div class="ps-c-act" role="cell">${_PS_SLOT}${_PS_SLOT}${_psBtn('', '_psCancel()', t('cancel'), _PS_SVG.no)}</div></div>`;
+  }
   const opts = (Array.isArray(suppliers) ? suppliers : []).filter(s => s?._id && !taken.has(s._id));
   if (!opts.length) return `<div class="ps-row ps-add-row" role="row"><div class="ps-add-empty" role="cell">${esc(t('psNoMoreSuppliers'))}</div>
     <div class="ps-c-act" role="cell">${_PS_SLOT}${_PS_SLOT}${_psBtn('', '_psCancel()', t('cancel'), _PS_SVG.no)}</div></div>`;
@@ -80029,8 +80317,8 @@ const REP_KPI_META = {
     color:'#64748b', soft:'rgba(100,116,139,.1)',
     module:'المبيعات',
     rows:[
-      { label:'📌 ما هو؟', val:'إجمالي رسوم الشحن المحصلة من العملاء كما أُدخلت في الفواتير.' },
-      { label:'🔢 كيف يُحسب؟', val:'مجموع حقل "رسوم الشحن" في كل فاتورة مبيعات ضمن الفترة.' },
+      { label:'📌 ما هو؟', val:'إجمالي رسوم الشحن التي دفعها العملاء فعلاً — الشحن المجاني لا يُحسب هنا (انظر «دعم الشحن»).' },
+      { label:'🔢 كيف يُحسب؟', val:'مجموع (رسوم الشحن − خصم الشحن) في كل فاتورة مبيعات ضمن الفترة.' },
       { label:'⚠️ ملاحظة', val:'هذا ما دفعه العميل للشحن — قد يختلف عن التكلفة الفعلية (انظر بطاقة فرق الشحن).' },
     ],
   },
@@ -80042,6 +80330,36 @@ const REP_KPI_META = {
       { label:'🔢 كيف يُحسب؟', val:'مجموع (تكلفة الشحن الفعلية − رسوم الشحن المحصلة من العميل) لكل فاتورة.' },
       { label:'🧮 مثال', val:'إذا بلغت تكلفة الشحن الفعلية 80 والرسوم المحصلة 50، يكون الفرق 30.' },
       { label:'⚠️ تأثيره', val:'يُخصم فرق تكلفة الشحن من إجمالي الربح.' },
+    ],
+  },
+  // ── Products & shipping (Nov 13, 2026) — shared/sale-discount.util.ts, shipping-breakdown.util.ts ──
+  rep_prodrevenue: {
+    color:'#10b981', soft:'rgba(16,185,129,.1)', module:'المبيعات',
+    rows:[
+      { label:'📌 ما هو؟', val:'قيمة الأصناف المباعة قبل خصومات المنتجات والمرتجعات، بدون الشحن.' },
+      { label:'🔢 كيف يُحسب؟', val:'مجموع «إجمالي الأصناف» في فواتير المبيعات ضمن الفترة.' },
+    ],
+  },
+  rep_proddisc: {
+    color:'#8b5cf6', soft:'rgba(139,92,246,.1)', module:'المبيعات',
+    rows:[
+      { label:'📌 ما هو؟', val:'الخصومات على المنتجات: خصم Shopify على الأصناف، الأكواد، والخصم اليدوي.' },
+      { label:'⚠️ ملاحظة', val:'الشحن المجاني ليس خصماً على المنتجات ولا يُحسب هنا — يظهر في «دعم الشحن».' },
+    ],
+  },
+  rep_shipsubsidy: {
+    color:'#f59e0b', soft:'rgba(245,158,11,.1)', module:'المبيعات',
+    rows:[
+      { label:'📌 ما هو؟', val:'الشحن المجاني الذي تحمّلته الشركة (خصم الشحن في Shopify).' },
+      { label:'🔢 كيف يُحسب؟', val:'مجموع «خصم الشحن» في فواتير المبيعات ضمن الفترة.' },
+      { label:'⚠️ تأثيره', val:'جزء من الربح الإجمالي كما كان دائماً — الربح الإجمالي لم يتغيّر بفصله، فقط صار ظاهراً كرقم مستقل.' },
+    ],
+  },
+  rep_carriercost: {
+    color:'#64748b', soft:'rgba(100,116,139,.1)', module:'المبيعات',
+    rows:[
+      { label:'📌 ما هو؟', val:'ما أخذته شركة الشحن فعلاً، ومعه رسوم رجوع الشحنات الفاشلة.' },
+      { label:'⚠️ ملاحظة', val:'معروفة فقط للطلبات التي تمت تسويتها مع شركة الشحن — العدد مكتوب تحت الرقم، فلا تُقرأ كإجمالي كامل.' },
     ],
   },
 };
@@ -80107,8 +80425,8 @@ const REP_KPI_EXPLANATIONS_EN = {
     'Supplier balances from purchase invoices are excluded.',
   ],
   rep_shipping:[
-    'Shipping charges collected from customers as recorded on sales invoices.',
-    'Sum of the shipping charge field on sales invoices in the selected period.',
+    'Shipping customers actually paid — free shipping is not counted here (see Shipping subsidy).',
+    'Sum of (shipping charge − shipping discount) on sales invoices in the selected period.',
     'Collected charges can differ from actual shipping costs; see Shipping cost difference.',
   ],
   rep_shiploss:[
@@ -80116,6 +80434,23 @@ const REP_KPI_EXPLANATIONS_EN = {
     'Sum of actual shipping cost minus shipping charges collected for each invoice.',
     'An actual cost of 80 and a customer charge of 50 produce a difference of 30.',
     'This difference is deducted from gross profit.',
+  ],
+  rep_prodrevenue:[
+    'Value of the items sold before product discounts and returns, without shipping.',
+    'Sum of the items total on sales invoices in the selected period.',
+  ],
+  rep_proddisc:[
+    'Discounts on products: Shopify item discounts, codes and manual discounts.',
+    'Free shipping is not a product discount and is not counted here — see Shipping subsidy.',
+  ],
+  rep_shipsubsidy:[
+    'Free shipping absorbed by the company (Shopify shipping discount).',
+    'Sum of the shipping discount on sales invoices in the selected period.',
+    'Part of gross profit as it always was — separating it did not change gross profit, it only shows it as its own figure.',
+  ],
+  rep_carriercost:[
+    'What the carrier actually took, including return-leg fees of failed deliveries.',
+    'Known only for orders settled with the carrier — the count is shown under the figure, so do not read it as a complete total.',
   ],
 };
 
@@ -80138,6 +80473,7 @@ const REP_KPI_LABEL_KEYS = {
   rep_purchases:'repKpiPurchases', rep_expenses:'repKpiExpenses', rep_returns:'repKpiReturns',
   rep_collected:'repKpiCollected', rep_remaining:'repKpiRemaining',
   rep_shipping:'repKpiShipping', rep_shiploss:'repKpiShipLoss',
+  rep_prodrevenue:'sdProductRevenue', rep_proddisc:'sdProductDiscounts', rep_shipsubsidy:'sdShipSubsidy', rep_carriercost:'sdActualCarrierCost',
 };
 const REP_KPI_MODULE_KEYS = {
   rep_sales:'repModuleSales', rep_orders:'repModuleSales', rep_avg:'repModuleSales',
@@ -80145,8 +80481,18 @@ const REP_KPI_MODULE_KEYS = {
   rep_purchases:'repModulePurchases', rep_expenses:'repModuleExpenses', rep_returns:'repModuleReturns',
   rep_collected:'repModuleSales', rep_remaining:'repModuleSales',
   rep_shipping:'repModuleSales', rep_shiploss:'repModuleSales',
+  rep_prodrevenue:'repModuleSales', rep_proddisc:'repModuleSales', rep_shipsubsidy:'repModuleSales', rep_carriercost:'repModuleSales',
 };
 function reportKpiLabel(id) { return t(REP_KPI_LABEL_KEYS[id] || id); }
+/** The «Products & shipping» group note: when the shipping-discount classification began, and whether
+ *  older orders are still on the old classification (shipping-breakdown.util.ts). */
+function _repShipSplitNote(r) {
+  const c = r?.shippingClassification;
+  if (!c?.effectiveAt) return t('sdGroupNote');
+  const d = new Date(c.effectiveAt);
+  const day = isNaN(d) ? c.effectiveAt : d.toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+  return t('sdEffectiveSince', { d: day }) + (c.historyCorrected ? '' : ' ' + t('sdBeforeEffective'));
+}
 function reportKpiModule(id) { return t(REP_KPI_MODULE_KEYS[id] || id); }
 
 let repTrendRows = [];
@@ -80294,11 +80640,16 @@ function renderReportKPIs(r, loading = false) {
     { id:'rep_remaining',   val:fmtJ(r.totalRemaining) },
     { id:'rep_shipping',    val:fmtJ(r.totalShipping || 0) },
     { id:'rep_shiploss',    val:fmtJ(r.totalShipLoss || 0) },
+    { id:'rep_prodrevenue', val:fmtJ(r.productRevenue || 0) },
+    { id:'rep_proddisc',    val:fmtJ(r.productDiscounts || 0) },
+    { id:'rep_shipsubsidy', val:fmtJ(r.shippingSubsidy || 0), sub: Number(r.shippingSubsidyOrders) > 0 ? `${fmtN(r.shippingSubsidyOrders)} ${esc(currentLang === 'en' ? 'orders' : 'طلب')}` : '' },
+    { id:'rep_carriercost', val:fmtJ(r.actualCarrierCost?.amount || 0), sub: r.actualCarrierCost ? esc(t('sdKnownOf', { k: fmtN(r.actualCarrierCost.known || 0), n: fmtN(r.actualCarrierCost.of || 0) })) : '' },
   ];
   const groups = [
     { id:'overview', title:t('repOverviewTitle'), note:t('repOverviewNote'), keys:['rep_sales','rep_netprofit','rep_orders','rep_avg'] },
     { id:'finance', title:t('repFinanceTitle'), note:t('repFinanceNote'), keys:['rep_grossprofit','rep_purchases','rep_expenses','rep_returns'] },
     { id:'collection', title:t('repCollectionTitle'), note:t('repCollectionNote'), keys:['rep_collected','rep_remaining','rep_shipping','rep_shiploss'] },
+    { id:'split', title:t('sdGroupTitle'), note: _repShipSplitNote(r), keys:['rep_prodrevenue','rep_proddisc','rep_shipsubsidy','rep_carriercost'] },
   ];
   const byId = new Map(kpis.map(k => [k.id, k]));
   const renderCard = k => {
@@ -80719,6 +81070,7 @@ function openRepKpiExplain(id) {
     rep_netprofit:DS_KPI_ICONS.profit, rep_grossprofit:DS_KPI_ICONS.profit, rep_purchases:DS_KPI_ICONS.purchases,
     rep_expenses:DS_KPI_ICONS.expenses, rep_returns:DS_KPI_ICONS.returns, rep_collected:DS_KPI_ICONS.collected,
     rep_remaining:DS_KPI_ICONS.debts, rep_shipping:DS_KPI_ICONS.shipping, rep_shiploss:DS_KPI_ICONS.shipping,
+    rep_prodrevenue:DS_KPI_ICONS.sales, rep_proddisc:DS_KPI_ICONS.sales, rep_shipsubsidy:DS_KPI_ICONS.shipping, rep_carriercost:DS_KPI_ICONS.shipping,
   }[id] || DS_KPI_ICONS.sales;
 
   const overlay = qs('#ds-explain-overlay');
@@ -82554,7 +82906,7 @@ function renderProfitTable(pp) {
         <td class="rep-cell-num" data-label="${escHtml(t('qty'))}">${fmtN(p.qty)}</td>
         <td class="rep-cell-num" data-label="${escHtml(t('colRevenue'))}"><span class="rep-money">${fmtJ(p.rev)}</span></td>
         <td class="rep-cell-num" data-label="${escHtml(t('colCost'))}"><span class="rep-money">${fmtJ(p.cost)}</span></td>
-        <td class="rep-cell-num${profit < 0 ? ' is-loss' : ''}" data-label="${escHtml(t('colProfit'))}"><span class="rep-money">${fmtJ(p.profit)}</span></td>
+        <td class="rep-cell-num${profit < 0 ? ' is-loss' : ''}" data-label="${escHtml(t('colProfit'))}"><span class="rep-money">${fmtJ(p.profit)}</span>${Number(p.shippingSubsidy) > 0.005 ? `<div class="rep-ship-sub" title="${escHtml(t('sdShipSubsidyHint'))}">${esc(t('sdProfitBeforeShip'))} <bdi>${fmtJ(p.profitBeforeShipping)}</bdi> · ${esc(t('sdShipSubsidy'))} <bdi>−${fmtJ(p.shippingSubsidy)}</bdi></div>` : ''}</td>
         <td class="rep-cell-num" data-label="${escHtml(t('colMargin'))}">${margin}%</td>
         <td class="rep-cell-outcome" data-label="${escHtml(t('repOutcome'))}"><span class="rep-outcome${profit < 0 ? ' is-loss' : ''}">${esc(outcome)}</span></td>
       </tr>
@@ -82691,12 +83043,17 @@ function renderDiscountCodesReport(from, to) {
         ? Math.round(itemsBase * (Number(c.value) || 0) / 100)
         : (Number(c.value) || 0);
     });
-    const txDisc = Number(t.discount) || 0;
+    // Product discount only. Free shipping that came from a code (tx.shippingDiscountCodes, set by the
+    // server from Shopify's payload) is credited to that code under «خصومات الشحن», never as a product discount.
+    const txDisc = _saleStoredProductDiscount(t);
+    const shipCodes = Array.isArray(t.shippingDiscountCodes) ? t.shippingDiscountCodes.map(String) : [];
+    const shipShare = shipCodes.length ? _saleShipDisc(t) / shipCodes.length : 0;
     const known = shares.reduce((a, v) => a + (v === null ? 0 : v), 0);
     names.forEach((name, i) => {
-      if (!codeStats.has(name)) codeStats.set(name, { usageCount: 0, totalDiscount: 0, totalOrderValue: 0 });
+      if (!codeStats.has(name)) codeStats.set(name, { usageCount: 0, totalDiscount: 0, totalOrderValue: 0, shippingDiscount: 0 });
       const st = codeStats.get(name);
       st.usageCount++;
+      if (shipCodes.includes(name)) st.shippingDiscount = (st.shippingDiscount || 0) + shipShare;
       let share = shares[i];
       if (share === null || known <= 0) share = txDisc / names.length;
       /* الحصص لا تتجاوز خصم الحركة الفعلي: كوداً قد يكون قُصّ عند itemsTotal. */
@@ -82758,7 +83115,7 @@ function renderDiscountCodesReport(from, to) {
       <td style="padding:8px 10px;color:var(--muted);font-size:.82rem">${esc(c.description || '—')}</td>
       <td style="padding:8px 10px;text-align:center">${typeBadge}</td>
       <td style="padding:8px 10px;text-align:center">${(()=>{ const lu = _liveCodeUsage(c.id||'', c.code); const n = lu.count; const col = n > 10 ? '#16a34a' : n > 3 ? '#0891b2' : n > 0 ? '#047857' : 'var(--muted)'; return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:${n>0?'rgba(16,185,129,.08)':'var(--surface2)'};border:1px solid ${n>0?'rgba(16,185,129,.2)':'var(--border)'};font-weight:700;font-size:.85rem;color:${col}">${n}<span style="font-size:.7rem;font-weight:500;opacity:.8">مرة</span></span>`;})()}</td>
-      <td style="padding:8px 10px;text-align:right;color:#dc2626;font-weight:600">${r.totalDiscount > 0 ? '− ' + fmtJ(r.totalDiscount) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="padding:8px 10px;text-align:right;color:#dc2626;font-weight:600">${r.totalDiscount > 0 ? '− ' + fmtJ(r.totalDiscount) : '<span style="color:var(--muted)">—</span>'}${r.shippingDiscount > 0 ? `<div style="font-size:.74rem;font-weight:500;color:var(--muted)">${esc(t('sdShipCodesHead'))} <bdi>− ${fmtJ(r.shippingDiscount)}</bdi></div>` : ''}</td>
       <td style="padding:8px 10px;text-align:right;color:#0066cc;font-weight:500">${r.totalOrderValue > 0 ? fmtJ(r.totalOrderValue) : '<span style="color:var(--muted)">—</span>'}</td>
       <td style="padding:8px 10px;text-align:center">${activeBadge}</td>
     </tr>`;
@@ -82776,6 +83133,12 @@ function exportReportData() {
     { 'المؤشر': 'الربح الصافي', 'القيمة': r.netProfit },
     { 'المؤشر': 'المصاريف', 'القيمة': r.expenseTotal },
     { 'المؤشر': 'عدد المعاملات', 'القيمة': r.transactionCount },
+    { 'المؤشر': 'إيراد المنتجات', 'القيمة': r.productRevenue ?? '' },
+    { 'المؤشر': 'خصومات المنتجات', 'القيمة': r.productDiscounts ?? '' },
+    { 'المؤشر': 'الشحن المحصَّل من العملاء', 'القيمة': r.shippingCollected ?? r.totalShipping ?? '' },
+    { 'المؤشر': 'دعم الشحن (شحن مجاني تحمّلته الشركة)', 'القيمة': r.shippingSubsidy ?? '' },
+    { 'المؤشر': `تكلفة الشحن الفعلية (معروفة لـ ${r.actualCarrierCost?.known ?? 0} من ${r.actualCarrierCost?.of ?? 0})`, 'القيمة': r.actualCarrierCost?.amount ?? '' },
+    { 'المؤشر': 'الربح الإجمالي', 'القيمة': r.grossProfit },
     {},
     ...((r.productProfits || []).slice(0, 20).map((p, i) => ({
       'الترتيب': i + 1,
@@ -88062,7 +88425,13 @@ function _liveCodeUsage(codeId, codeName) {
     const ids = (t.discountCodeId || '').split(',').map(s => s.trim());
     const names = (t.discountCode || '').split('+').map(s => s.trim());
     const matched = (codeId && ids.includes(codeId)) || names.includes(codeName);
-    if (matched) { count++; totalDisc += Number(t.discount) || 0; totalOrder += Number(t.total) || 0; }
+    if (matched) {
+      count++;
+      // Product discount, plus the free shipping only when this code is what granted it.
+      const shipCodes = Array.isArray(t.shippingDiscountCodes) ? t.shippingDiscountCodes.map(String) : [];
+      totalDisc += _saleStoredProductDiscount(t) + (shipCodes.includes(codeName) ? _saleShipDisc(t) / shipCodes.length : 0);
+      totalOrder += Number(t.total) || 0;
+    }
   });
   return { count, totalDisc, totalOrder };
 }
@@ -90758,33 +91127,131 @@ function renderVersionFooter() {
   const footerEl = qs('#settings-version-footer');
   if (!footerEl || !settings) return;
 
-  const sysVersion = settings.systemVersion || '2.4.0';
-  const lastUpdate = settings.lastVersionUpdate ? new Date(settings.lastVersionUpdate) : new Date();
-  const lastUpload = settings.lastLiveUpload ? new Date(settings.lastLiveUpload) : new Date();
+  // Real figures of the build this tab is running, from /version.json (written by the
+  // Dockerfile at image build: Jenkins BUILD_NUMBER + build time + commit). The old
+  // settings.systemVersion / lastVersionUpdate / lastLiveUpload were moved only by a
+  // post-commit hook that stopped firing, so they froze at «2.4.0 · 12/08/2026» — and a
+  // missing date fell back to new Date(), printing "today" as if it were a deploy.
+  const info = _updBootInfo || {};
+  const rawBuild = String(info.build || (_updBootVersion ? String(_updBootVersion).replace(/^1\.0\./, '') : '')).trim();
+  // _updBuildLabel turns the dev build (index.html's mtime in ms) into "08/08 14:23"; a CI
+  // BUILD_NUMBER is already short and passes through untouched.
+  const buildStr = _updBuildLabel(rawBuild);
+  const commit = String(info.commit || '').trim();
+  const builtAt = info.builtAt ? new Date(info.builtAt) : null;
+  const hasDate = builtAt && !isNaN(builtAt.getTime());
 
   // 'ar-EG' alone emits Arabic-Indic digits (٠-٩); '-u-nu-latn' keeps them Latin — the
   // recurring trap in this file (see CLAUDE.md).
-  const updateDateStr = lastUpdate.toLocaleDateString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const uploadDateStr = lastUpload.toLocaleDateString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const uploadTimeStr = lastUpload.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = hasDate ? builtAt.toLocaleDateString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const timeStr = hasDate ? builtAt.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' }) : '';
 
-  // The deploy build this tab is actually running (from /version.json, set by the update
-  // watcher). sysVersion is the DB-side semantic version bumped by the post-commit hook —
-  // it tells you what the SERVER is on, which a stale tab would still render from its own
-  // cached settings. Showing the build too makes "this tab is running old code" visible.
-  // _updBuildLabel turns the dev build (index.html's mtime in ms) into "08/08 14:23"; a CI
-  // BUILD_NUMBER is already short and passes through untouched. The raw value stays in the
-  // tooltip — it is the exact string support would ask for.
-  const rawBuild = _updBootVersion ? String(_updBootVersion).replace(/^1\.0\./, '') : '';
-  const buildStr = _updBuildLabel(rawBuild);
+  const strong = s => `<span style="color:var(--text);font-weight:600"><bdi>${esc(s)}</bdi></span>`;
+  const versionHtml = buildStr
+    ? `build ${strong(buildStr)}${commit ? ` <span style="opacity:.7" title="commit ${escHtml(commit)}">(<bdi>${esc(commit)}</bdi>)</span>` : ''}`
+    : `<span style="opacity:.7">—</span>`;
+  const uploadHtml = hasDate ? `${strong(dateStr)} · <bdi>${esc(timeStr)}</bdi>` : `<span style="opacity:.7">—</span>`;
 
   footerEl.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 14px;font-size:.7rem;color:var(--muted);line-height:1.6;opacity:.8">
-      <span>إصدار النظام: <span style="color:var(--text);font-weight:600">${esc(sysVersion)}</span>${buildStr ? ` <span style="opacity:.7" title="${escHtml(rawBuild)}">(build <bdi>${esc(buildStr)}</bdi>)</span>` : ''} · ${esc(updateDateStr)}</span>
+      <span title="${escHtml(rawBuild)}">إصدار النظام: ${versionHtml}</span>
       <span style="opacity:.4">|</span>
-      <span>آخر رفع: <span style="color:var(--text);font-weight:600">${esc(uploadDateStr)}</span> · ${esc(uploadTimeStr)}</span>
+      <span>آخر رفع: ${uploadHtml}</span>
     </div>
+    ${_vfStatusRowHtml()}
   `;
+}
+
+/* ── Settings footer, second row: is this tab current, and are backups running ──
+   Tab state comes from the update watcher's last check (_updLastCheck). Backups:
+   the newest local file (GET /settings/backups, admin-only — the same read the
+   restore list makes, shared through window._localBackups) and the cloud run
+   (settings.r2LastRun via _cbStateFromSettings). Both are nightly, so >36h without
+   a success is flagged red — a quiet stop is exactly what this line exists to show. */
+let _vfBackupsLoading = false;
+let _vfBackupsFailed = false;
+function _vfEnsureLocalBackups() {
+  if (window._localBackups !== undefined || _vfBackupsLoading || _vfBackupsFailed) return;
+  _vfBackupsLoading = true;
+  api('/settings/backups', { method: 'GET' })
+    .then(r => { window._localBackups = Array.isArray(r) ? r : []; })
+    .catch(() => { _vfBackupsFailed = true; })
+    .finally(() => { _vfBackupsLoading = false; try { renderVersionFooter(); } catch (_) {} });
+}
+
+function _vfAge(d) {
+  const ms = Date.now() - d.getTime();
+  const p = n => String(n).padStart(2, '0');
+  const hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+  if (ms < 6e4) return 'الآن';
+  if (days === 0) return `النهارده ${hm}`;
+  if (days === 1) return `امبارح ${hm}`;
+  return `من ${days} يوم`;
+}
+
+function _vfChip(tone, text, title) {
+  const color = tone === 'ok' ? 'var(--green, #16a34a)' : tone === 'bad' ? 'var(--red, #dc2626)' : tone === 'warn' ? '#d97706' : 'var(--muted)';
+  return `<span style="display:inline-flex;align-items:center;gap:5px"${title ? ` title="${escHtml(title)}"` : ''}>`
+    + `<span style="width:7px;height:7px;border-radius:50%;background:${color};flex-shrink:0"></span>${text}</span>`;
+}
+
+function _vfStatusRowHtml() {
+  const parts = [];
+
+  // 1) This tab vs the server
+  const c = _updLastCheck;
+  let tab;
+  if (_updDialogShown || (c && c.ok && _updBootVersion && c.remote !== _updBootVersion)) {
+    tab = _vfChip('warn', 'الصفحة: فيه نسخة أحدث — حدّث الصفحة');
+  } else if (c && !c.ok) {
+    tab = _vfChip('bad', `الصفحة: تعذّر الفحص · ${esc(_vfAge(c.at))}`);
+  } else if (c && c.ok) {
+    tab = _vfChip('ok', `الصفحة: محدّثة · آخر فحص <bdi>${esc(_vfAge(c.at))}</bdi>`);
+  } else {
+    tab = _vfChip('', 'الصفحة: جارٍ الفحص…');
+  }
+  parts.push(tab + ` <button type="button" onclick="checkForAppUpdateNow(this)" style="all:unset;cursor:pointer;color:var(--accent, var(--primary));text-decoration:underline;text-underline-offset:2px">فحص الآن</button>`);
+
+  // 2) Backups — admin only (the routes and the cloud state are admin data)
+  if (typeof isAdmin === 'function' && isAdmin()) {
+    _vfEnsureLocalBackups();
+    let local;
+    if (_vfBackupsFailed) {
+      local = _vfChip('bad', 'النسخة الاحتياطية: تعذّر القراءة');
+    } else if (window._localBackups === undefined) {
+      local = _vfChip('', 'النسخة الاحتياطية: …');
+    } else {
+      const newest = window._localBackups
+        .map(b => ({ b, d: new Date(b.date) }))
+        .filter(x => !isNaN(x.d.getTime()))
+        .sort((a, b) => b.d - a.d)[0];
+      if (!newest) {
+        local = _vfChip('bad', 'النسخة الاحتياطية: لا توجد نسخ');
+      } else {
+        const stale = (Date.now() - newest.d.getTime()) > 36 * 36e5;
+        const kind = newest.b.auto ? 'تلقائية' : 'يدوية';
+        local = _vfChip(stale ? 'bad' : 'ok',
+          `آخر نسخة: <bdi>${esc(_vfAge(newest.d))}</bdi> · ${kind}`,
+          `${newest.b.filename} — ${newest.d.toLocaleString('ar-EG-u-nu-latn')}${stale ? ' — مضى أكثر من 36 ساعة بدون نسخة' : ''}`);
+      }
+    }
+    parts.push(local);
+
+    let cloud;
+    try {
+      const s = _cbStateFromSettings();
+      if (!s || !s.configured) cloud = _vfChip('', 'السحابة: غير مفعّلة');
+      else if (s.status === 'pending') cloud = _vfChip('', 'السحابة: أول رفع الليلة 03:00');
+      else if (s.status !== 'ok') cloud = _vfChip('bad', 'السحابة: فشل آخر رفع', s.message || '');
+      else if (s.stale) cloud = _vfChip('bad', `السحابة: متوقفة · آخر رفع <bdi>${esc(_vfAge(new Date(s.finishedAt)))}</bdi>`);
+      else cloud = _vfChip('ok', `السحابة: تمام · <bdi>${esc(_vfAge(new Date(s.finishedAt)))}</bdi>`, s.file || '');
+    } catch (_) { cloud = ''; }
+    if (cloud) parts.push(cloud);
+  }
+
+  return `<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 16px;margin-top:6px;font-size:.7rem;color:var(--muted);line-height:1.6">${parts.join('<span style="opacity:.4">|</span>')}</div>`;
 }
 async function saveDefaultPrices() {
   settings.cairoPrice = Number(qs('#set-cairo-price').value) || 0;
@@ -91699,6 +92166,9 @@ function _cbStateFromSettings() {
 async function loadBackupList(showMessage = true) {
   try {
     const backups = await api('/settings/backups', { method: 'GET' });
+    // The Settings footer states the newest backup — share this read with it.
+    window._localBackups = Array.isArray(backups) ? backups : [];
+    try { renderVersionFooter(); } catch (_) {}
     const select = qs('#backup-select');
     select.innerHTML = '<option value="">-- اختر نسخة احتياطية --</option>';
 
@@ -94319,9 +94789,10 @@ function _xpSummarySheet(meta) {
 
 /* ── Shared row-level builders (transactions are the deepest model) ───── */
 function _xpTxSheets(txs) {
-  const inv = { name: 'الفواتير', numeric: new Set([9, 10, 11, 12, 13, 14, 15]), rows: [],
+  // «خصم الشحن» / «الشحن المحصَّل»: free shipping kept apart from the product discount (Nov 13, 2026).
+  const inv = { name: 'الفواتير', numeric: new Set([9, 10, 11, 12, 13, 14, 15, 16, 17]), rows: [],
     header: ['المرجع', 'النوع', 'التاريخ', 'العميل / المورد', 'الهاتف', 'الموظف', 'طريقة الدفع', 'حالة الدفع', 'حالة الطلب',
-             'إجمالي الأصناف', 'الخصم', 'تكلفة الشحن', 'الإجمالي', 'المدفوع', 'المتبقي', 'عدد الأصناف', 'ملاحظات'] };
+             'إجمالي الأصناف', 'الخصم', 'تكلفة الشحن', 'خصم الشحن', 'الشحن المحصَّل', 'الإجمالي', 'المدفوع', 'المتبقي', 'عدد الأصناف', 'ملاحظات'] };
   const items = { name: 'الأصناف', numeric: new Set([4, 5, 6]), rows: [],
     header: ['المرجع', 'التاريخ', 'SKU', 'اسم الصنف', 'الكمية', 'سعر الوحدة', 'الإجمالي'] };
   const pays = { name: 'المدفوعات', numeric: new Set([4, 5]), rows: [],
@@ -94343,7 +94814,8 @@ function _xpTxSheets(txs) {
 
     inv.rows.push([ref, _xpTxt(tx.type), date, _xpTxt(tx.client), _xpTxt(tx.phone), _xpTxt(tx.employee),
       _xpTxt(tx.payment), _xpTxt(tx.payStatus), txStatus(tx),
-      _xpNum(tx.itemsTotal), _xpNum(tx.discount) + _xpNum(tx.manualDiscount), _xpNum(tx.shipCost),
+      _xpNum(tx.itemsTotal), _xpNum(tx.discount) + _xpNum(tx.manualDiscount) - _saleShipDisc(tx), _xpNum(tx.shipCost),
+      _saleShipDisc(tx), _saleShipCharged(tx),
       _xpNum(tx.total), paid, _xpNum(tx.remaining), (tx.items || []).length, _xpTxt(tx.notes)]);
 
     (tx.items || []).forEach(it => items.rows.push([ref, date, _xpTxt(it.code), _xpTxt(it.name),
@@ -109543,6 +110015,7 @@ function _spPeekHtml(o) {
   const metaChips = [
     ship > 0 ? `<span class="sp-pk-meta-chip">${isEn ? 'Shipping' : 'الشحن'} ${fmtJ(ship)}</span>` : '',
     disc > 0 ? `<span class="sp-pk-meta-chip is-disc">${isEn ? 'Discount' : 'الخصم'} ${fmtJSigned(disc, '−')}</span>` : '',
+    _saleShipDisc(o) > 0 ? `<span class="sp-pk-meta-chip is-disc">${esc(t('sdFreeShipping'))} ${fmtJSigned(_saleShipDisc(o), '−')}</span>` : '',
     ...((_offerSummaryOf(o.items, (o.status || 'pending') === 'pending' ? _spOfferCtx(o).day : null, _spOfferCtx(o).since)?.groups) || []).map(g => `<span class="sp-pk-meta-chip is-offer">${_offerTagHtml(g.name)} ${fmtJSigned(g.saved, '−')}</span>`),
   ].filter(Boolean).join('');
   /* Payment + deposit receipts are ONE card (owner, Nov 9, 2026): the header carries the
@@ -109570,11 +110043,12 @@ function _spPeekHtml(o) {
     </section>`;
 
   /* ── Items ── */
-  const itemsHtml = items.map(i => {
+  const itemsHtml = items.map((i, _n) => {
     const s = _spItemStock(i, idx);
     const full = s.inv?.name || i.shopifyName || i.name || i.code || '—';
     const code = i.code && i.code !== 'SHOPIFY' ? i.code : (s.inv?.code || '');
-    return `<li class="sp-pk-item">${_spThumbHtml(i, s.inv, 'sp-pk-img')}
+    const _b = _bundleStartsAt(o, items, _n);
+    return `${_b ? `<li class="sp-bundle-head">${_bundleLabelHtml(_b)}<span class="bdl-meta">${esc(t('bdlParts', { n: fmtN(_b.parts) }))} · <bdi>${fmtJ(_b.total)}</bdi></span></li>` : ''}<li class="sp-pk-item${i.bundleGroupId ? ' is-bundle-part' : ''}">${_spThumbHtml(i, s.inv, 'sp-pk-img')}
       <div class="sp-pk-item-txt">
         <div class="sp-pk-item-n" title="${escHtml(full)}"><bdi>${esc(full)}</bdi></div>
         <div class="sp-pk-item-sub">${code ? `<bdi class="sp-pk-code">${esc(code)}</bdi>` : ''}${_spStockMarkHtml(s, 'sp-pk-st')}</div>
@@ -110697,7 +111171,9 @@ function _spDiscountBase(o, disc) {
  */
 function _spTotalDiscount(o) {
   const itemsTotal = Number(o.itemsTotal) || 0;
-  const raw = (Number(o.discount) || 0)
+  // ⚠ Free shipping (o.shippingDiscount, inside Shopify's total_discounts) is not a product
+  //   discount — it shows as its own «شحن مجاني» line. Without it the figure is exactly as before.
+  const raw = _saleStoredProductDiscount(o)
     + (Number(o.manualDiscount) || 0)
     + (Number(o.codesDiscount) || 0);
   const capped = Math.max(0, raw);
@@ -110747,7 +111223,7 @@ function showSpDiscountDetail(orderId) {
 
   /* ⚠ نفس `_spTotalDiscount` الذي يقرأه العمود: كان يقرأ `o.discount` وحده، فتفتح
        اللوحة من شارة تقول 335 لتعرض 145. الشارة واللوحة يجب أن تنطقا بالرقم نفسه. */
-  const shopDisc = Number(o.discount) || 0;
+  const shopDisc = _saleStoredProductDiscount(o);
   const codesDisc = Number(o.codesDiscount) || 0;
   const manualDisc = Number(o.manualDiscount) || 0;
   const disc = _spTotalDiscount(o);
@@ -110840,7 +111316,9 @@ function showSpItemsPopover(orderId, btn) {
   const idx = _spBuildInvIndex();
   let nReady = 0, nBlock = 0, nMissing = 0, itemsSum = 0;
 
-  const rowsHtml = items.map(i => {
+  const rowsHtml = items.map((i, _n) => {
+    const _b = _bundleStartsAt(o, items, _n);
+    const _bh = _b ? `<div class="sp-bundle-head">${_bundleLabelHtml(_b)}<span class="bdl-meta">${esc(t('bdlParts', { n: fmtN(_b.parts) }))} · <bdi>${fmtJ(_b.total)}</bdi></span></div>` : '';
     const s = _spItemStock(i, idx);
     const inv = s.inv, need = s.need, have = s.have;
     const name = esc(inv?.name || i.shopifyName || i.name || i.code || '—');
@@ -110857,12 +111335,12 @@ function showSpItemsPopover(orderId, btn) {
     const _offCtx = _spOfferCtx(o);
     const _offEff = _offProd ? _effectiveSellPrice(_offProd, _offCtx.day) : null;
     const _atOffer = !!_offEff?.offer && _offerCoversOrder(_offEff.offer, _offCtx.since) && Math.abs(unit - _offEff.price) < 0.005;
-    if (s.state === 'ok' && !_atOffer && inv.sellPrice && i.shopifyPrice && Math.abs(inv.sellPrice - i.shopifyPrice) > 0.01)
+    if (s.state === 'ok' && !_atOffer && !i.bundleGroupId && inv.sellPrice && i.shopifyPrice && Math.abs(inv.sellPrice - i.shopifyPrice) > 0.01)
       warn = `<div class="mip-warn is-warn">${isEn ? `Price differs · store ${fmtN(inv.sellPrice)}` : `سعر مختلف · بالمخزن ${fmtN(inv.sellPrice)}`}</div>`;
     /* ✓ متوفر + كم متاح، ✕ غير متوفر + كم متاح فعلاً. لا شريط: الرقم هو المعلومة.
        ⚠ لا يُرسم قبل تحميل المخزون — وإلا يقرأ كل صنف 0. */
     const stock = _spStockMarkHtml(s, 'sp-ip-stock');
-    return `<div class="sp-ip-row${s.state === 'out' || s.state === 'short' ? ' is-bad' : ''}">
+    return `${_bh}<div class="sp-ip-row${s.state === 'out' || s.state === 'short' ? ' is-bad' : ''}${i.bundleGroupId ? ' is-bundle-part' : ''}">
       ${_spThumbHtml(i, inv, 'sp-ip-img')}
       <div class="sp-ip-body">
         <div class="sp-ip-name" title="${escHtml(inv?.name || i.shopifyName || i.name || '')}">${name}</div>
@@ -113895,7 +114373,8 @@ async function _confirmBulkSendShopify() {
     await new Promise(resolve => setTimeout(resolve, 0));
     await _runWithConcurrency(sendable, 4, async ({ order }) => {
       try {
-        const res = await api(`/shopify/orders/${order._id}/approve`, { method:'PATCH', body:JSON.stringify({carrierCode}), headers:{'Content-Type':'application/json'} });
+        // Bulk never acknowledges a difference from Shopify on the operator's behalf — it is reported as a failure.
+        const res = await _spApproveRequest(order._id, carrierCode, { noAsk: true });
         if (!res?.success) throw new Error(t('spDepOrderChanged'));
         okCount++;
         if (res.txId) {
@@ -114585,7 +115064,7 @@ async function _confirmApproveShopify(id) {
   let transferCommitted = false;
   try {
     if (btn) { btn.disabled = true; btn.innerHTML = t('spSending'); }
-    const res = await api(`/shopify/orders/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ carrierCode }), headers: {'Content-Type':'application/json'} });
+    const res = await _spApproveRequest(id, carrierCode);
     if (!res?.success) throw new Error(t('spDepOrderChanged'));
     transferCommitted = true;
     _spdHide(document.getElementById('shopify-confirm-modal'));
@@ -114958,6 +115437,8 @@ async function editShopifyOrder(id) {
   if (!order) return;
   _shopifyEditId = id;
   _shopifyEditItems = order.items.map(i => ({ ...i }));
+  _spEditConfirmBreak = false;      // a bundle break confirmed in THIS editing session (Phase 3)
+  _spBundleOverride = null;         // exception: discount over bundle parts {reason}
 
   // حالة التبويبات — تُعاد تهيئتها عند كل فتح، فأوردر سابق لا يترك خصمه أو تبويبه للتالي.
   _spEditOrder = order;
@@ -115184,8 +115665,9 @@ function _renderShopifyEditItems() {
         : `<span class="sp-edit-stock-note is-ok">${tf('spAvailable', { n: stock })}</span>`
       : '';
 
-    return `
-    <div class="sp-edit-item-row" style="background:var(--bg-alt);border-radius:12px;border:1.5px solid ${hasProduct ? 'var(--border)' : '#ef444430'};transition:border-color .2s" id="shopify-edit-item-${idx}">
+    const _b = _bundleStartsAt(_spEditOrder, _shopifyEditItems, idx);
+    return `${_b ? `<div class="sp-bundle-head">${_bundleLabelHtml(_b)}<span class="bdl-meta">${esc(t('bdlPriceNote'))}</span></div>` : ''}
+    <div class="sp-edit-item-row${item.bundleGroupId ? ' is-bundle-part' : ''}" style="background:var(--bg-alt);border-radius:12px;border:1.5px solid ${hasProduct ? 'var(--border)' : '#ef444430'};transition:border-color .2s" id="shopify-edit-item-${idx}">
       <div class="sp-edit-item-info">
         ${imgHtml}
         <div style="flex:1;min-width:0">
@@ -115195,7 +115677,7 @@ function _renderShopifyEditItems() {
             ${statusBadge}
             ${!isOverStock ? stockInfo : ''}
           </div>
-          ${hasProduct ? `<div class="po-notice-row">${_offerNoticeHtml(prod, item.price, { applyIdx: idx, removed: item.offerRemoved, removeAct: `_spOfferOff(${idx})`, restoreAct: `_spOfferBack(${idx})`, ...(item._addedAt ? { day: todayLocalISO(), since: item._addedAt } : _spOfferCtx(_spEditOrder)) })}</div>` : ''}
+          ${hasProduct && !item.bundleGroupId ? `<div class="po-notice-row">${_offerNoticeHtml(prod, item.price, { applyIdx: idx, removed: item.offerRemoved, removeAct: `_spOfferOff(${idx})`, restoreAct: `_spOfferBack(${idx})`, ...(item._addedAt ? { day: todayLocalISO(), since: item._addedAt } : _spOfferCtx(_spEditOrder)) })}</div>` : ''}
           ${isOverStock ? stockInfo : ''}
           ${!hasProduct ? `<div style="margin-top:6px">
             <div style="position:relative">
@@ -115212,7 +115694,7 @@ function _renderShopifyEditItems() {
       <div class="sp-edit-item-controls">
         <div style="text-align:center">
           <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">${t('spEditPrice')}</div>
-          <input type="number" min="0" value="${item.price||0}"
+          <input type="number" min="0" value="${item.price||0}" ${item.bundleGroupId ? `readonly title="${escHtml(t('bdlPriceLocked'))}"` : ''}
             style="width:70px;padding:5px 7px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);font-size:.82rem;text-align:center;color:var(--text);outline:none;font-family:inherit"
             oninput="_shopifyEditItemChanged(${idx},'price',+this.value)">
         </div>
@@ -115220,7 +115702,7 @@ function _renderShopifyEditItems() {
           <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">${t('spEditQty')}</div>
           <div style="display:flex;align-items:center;gap:4px">
             <button onclick="_shopifyEditQty(${idx},-1)" style="width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center">−</button>
-            <input type="number" min="1" value="${item.qty||1}"
+            <input type="number" min="1" value="${item.qty||1}" ${item.bundleGroupId ? `readonly title="${escHtml(t('bdlQtyLocked'))}"` : ''}
               style="width:42px;padding:4px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);font-size:.88rem;text-align:center;color:var(--text);outline:none;font-family:inherit"
               oninput="_shopifyEditItemChanged(${idx},'qty',Math.max(1,+this.value))">
             <button onclick="_shopifyEditQty(${idx},1)" style="width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center">+</button>
@@ -115262,13 +115744,35 @@ function _shopifyEditItemChanged(idx, field, val) {
 
 function _shopifyEditQty(idx, delta) {
   if (!_shopifyEditItems[idx]) return;
+  const _bi = _shopifyEditItems[idx];
+  if (_bi.bundleGroupId) {
+    // More pieces never take the bundle price: a separate line at the normal price. Fewer pieces break the bundle.
+    if (delta > 0) { _spAddSeparateLine(_bi); return; }
+    const nq = Math.max(0, (Number(_bi.qty) || 1) + delta);
+    if (nq < (Number(_bi.qty) || 1)) _spBreakBundle(idx, nq);
+    return;
+  }
   const newQty = Math.max(1, (_shopifyEditItems[idx].qty||1) + delta);
   _shopifyEditItems[idx].qty = newQty;
   _shopifyEditItems[idx].total = newQty * (_shopifyEditItems[idx].price||0);
   _renderShopifyEditItems();
 }
 
+function _spAddSeparateLine(part) {
+  const prod = (products || []).find(p => p._id === part.productId || p.code === part.code);
+  if (!prod) { toast(t('bdlBreakUnknownPrice'), true); return; }
+  const existing = _shopifyEditItems.find(i => i.productId === prod._id && !i.bundleGroupId);
+  if (existing) { existing.qty += 1; existing.total = existing.qty * existing.price; }
+  else {
+    const price = _effectiveSellPrice(prod, todayLocalISO()).price;
+    _shopifyEditItems.push({ productId: prod._id, code: prod.code || '', name: prod.name, qty: 1, price, total: price, _addedAt: new Date().toISOString() });
+  }
+  toast(t('bdlQtySeparate'));
+  _renderShopifyEditItems();
+}
+
 function _shopifyEditRemoveItem(idx) {
+  if (_shopifyEditItems[idx]?.bundleGroupId) { _spBreakBundle(idx, 0); return; }
   _shopifyEditItems.splice(idx, 1);
   _renderShopifyEditItems();
 }
@@ -115435,7 +115939,8 @@ function _shopifyPickerDispatch(key, prodId) {
 function _shopifyEditAddFromPicker(prodId) {
   const prod = products.find(p => p._id === prodId);
   if (!prod) return;
-  const existing = _shopifyEditItems.find(i => i.productId === prodId);
+  // Never merge into a bundle part — that would sell the extra piece at the bundle price.
+  const existing = _shopifyEditItems.find(i => i.productId === prodId && !i.bundleGroupId);
   if (existing) { existing.qty += 1; existing.total = existing.qty * existing.price; }
   else {
     _shopifyEditItems.push({
@@ -115492,11 +115997,15 @@ async function _saveShopifyEdit() {
 
   try {
     const discount = needDisc ? _spDiscAmounts() : null;
-    const proposal = { items: _shopifyEditItems, ...(needDisc ? { discount: {
+    const proposal = { items: _shopifyEditItems, ...(_spEditConfirmBreak ? { confirmBundleBreak: true } : {}), ...(needDisc ? { discount: {
       manualDiscount: discount.manualDisc, manualDiscountType: _spDiscType,
       codesDiscount: discount.codesDisc, discountCodeId: _spDiscCodes.map(c => c.id).join(','),
       discountCode: _spDiscCodes.map(c => c.code).join('+'), highValueDiscountOtpId: _spDiscOtpId || '',
+      ...(_spBundleOverride ? { bundleOverrideReason: _spBundleOverride.reason } : {}),
     } } : {}) };
+    if (_spBundleDiscountExcess(_shopifyEditItems.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0)) > 0) {
+      toast(t('bdlDiscExceeds'), true); return;
+    }
     if (!(await _spConfirmEditSubmission(_spEditOrder, proposal))) return;
     if (btn) { btn.disabled = true; btn.innerHTML = t('spSaving'); }
     const res = await api(`/shopify/orders/${_shopifyEditId}/edit`, {
@@ -115534,6 +116043,23 @@ let _spDiscType = 'fixed';        // نوع الخصم اليدوي في الم�
 let _spDiscCodes = [];            // [{id, code, type, value}] الأكواد المطبَّقة
 let _spDiscOtpId = '';            // معرّف OTP بعد التحقق
 let _spDiscOtpAmount = 0;         // القيمة التي تحقق عليها الـ OTP
+
+/** Confirm an order. When an edit left its total different from Shopify's, the server asks for an explicit
+ *  acknowledgement (SHOPIFY_DIVERGENCE_ACK_REQUIRED): show the figures, then resend with it. */
+async function _spApproveRequest(id, carrierCode, opts = {}) {
+  try {
+    return await api(`/shopify/orders/${id}/approve`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carrierCode, ...(opts.ack ? { acknowledgeDivergence: true } : {}) }) });
+  } catch (e) {
+    if (e?.code !== 'SHOPIFY_DIVERGENCE_ACK_REQUIRED' || opts.ack || opts.noAsk) throw e;
+    const d = e.details?.divergence || {};
+    const ok = await showConfirm(`<p>${esc(t('spDivQ'))}</p><p style="color:var(--muted);font-size:.85rem">${esc(t('spDivHint'))}</p>`, {
+      title: t('spDivTitle'), confirmLabel: t('spDivOk'),
+      rows: [[t('spDivShopify'), fmtN(d.shopifyTotal)], [t('spDivSoulia'), fmtN(d.erpTotal)], [t('spDivDiff'), (d.diff > 0 ? '+' : '−') + fmtN(Math.abs(d.diff || 0))]] });
+    if (!ok) throw new Error(t('spDivCancelled'));
+    return _spApproveRequest(id, carrierCode, { ack: true });
+  }
+}
 
 function _spOrderById(id) {
   if(_txReceiptOrder?._id===id) return _txReceiptOrder;
@@ -115595,8 +116121,66 @@ function _spCodeAmount(c, itemsTotal) {
     : (Number(c.value) || 0);
 }
 
+/* ── Shopify bundles in the edit window (Phase 3, Nov 13, 2026) ─────────────────────────────────
+   Mirror of backend shared/bundle-guard.util.ts — the server decides; this shows the same result first.
+   Codes and the extra discount apply to the lines OUTSIDE bundles by default; going over needs the
+   'shopify-bundle-discount-override' permission and a written reason. */
+let _spEditConfirmBreak = false;
+let _spBundleOverride = null;
+function _spDiscBase(itemsTotal) {
+  if (_spBundleOverride || !(_shopifyEditItems || []).some(i => i.bundleGroupId)) return itemsTotal;
+  return Math.round((_shopifyEditItems || []).filter(i => !i.bundleGroupId).reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0) * 100) / 100;
+}
 function _spCodesTotal(itemsTotal) {
-  return _spDiscCodes.reduce((s, c) => s + _spCodeAmount(c, itemsTotal), 0);
+  const base = _spDiscBase(itemsTotal);
+  return _spDiscCodes.reduce((s, c) => s + _spCodeAmount(c, base), 0);
+}
+/** Codes + extra discount above the non-bundle base, while bundles are intact and no exception is set. */
+function _spBundleDiscountExcess(itemsTotal) {
+  const base = _spDiscBase(itemsTotal);
+  if (base === itemsTotal) return 0;
+  return Math.max(0, Math.round((_spCodesTotal(itemsTotal) + _spManualAmount(itemsTotal) - base) * 100) / 100);
+}
+async function _spAskBundleOverride() {
+  if (!(isAdmin() || hasPerm('shopify-bundle-discount-override'))) { toast(t('bdlDiscNoPerm'), true); return; }
+  const reason = await showPrompt(t('bdlDiscOverrideAsk'), { title: t('bdlDiscOverrideTitle'), required: true });
+  if (!reason || String(reason).trim().length < 5) { if (reason !== null) toast(t('bdlDiscReasonShort'), true); return; }
+  _spBundleOverride = { reason: String(reason).trim() };
+  if (typeof _spRenderDiscountTab === 'function') _spRenderDiscountTab();
+  _updateShopifyEditSummary();
+}
+/** Standalone price of a bundle part on the ORDER's day (offer of that day included), or null. */
+function _spBundlePartPrice(item) {
+  const p = (products || []).find(x => (item.productId && x._id === item.productId) || (item.code && x.code === item.code));
+  return p ? _effectiveSellPrice(p, _spOfferCtx(_spEditOrder).day).price : null;
+}
+/** Removing (newQty 0) or reducing a bundle part breaks the bundle: confirm, then reprice the rest. */
+async function _spBreakBundle(idx, newQty) {
+  const item = _shopifyEditItems[idx];
+  const g = String(item?.bundleGroupId || '');
+  if (!g) return false;
+  const rest = _shopifyEditItems.map((it, i) => ({ it, i })).filter(x => String(x.it.bundleGroupId || '') === g && (x.i !== idx || newQty > 0));
+  const priced = rest.map(x => ({ ...x, to: _spBundlePartPrice(x.it), qty: x.i === idx ? newQty : Number(x.it.qty) || 0 }));
+  if (priced.some(x => x.to === null)) { toast(t('bdlBreakUnknownPrice'), true); return false; }
+  const meta = _bundleMetaOf(_spEditOrder).get(g);
+  const added = Math.round(priced.reduce((s, x) => s + (x.to - (Number(x.it.price) || 0)) * x.qty, 0) * 100) / 100;
+  const name = meta?.title || t('bdlUnnamed');
+  const ok = await showConfirm(
+    `<p>${esc(t('bdlBreakQ', { name }))}</p><p style="color:var(--muted);font-size:.85rem">${esc(t('bdlBreakHint'))}</p>`,
+    { title: t('bdlBreakTitle'), danger: true, confirmLabel: t('bdlBreakOk'),
+      rows: [...priced.map(x => [x.it.name || x.it.code, `${fmtN(x.it.price)} → ${fmtN(x.to)}`]),
+        [t('bdlBreakAdded'), (added >= 0 ? '+' : '−') + fmtN(Math.abs(added))]] });
+  if (!ok) return false;
+  if (newQty > 0) { item.qty = newQty; item.total = newQty * (Number(item.price) || 0); }
+  else _shopifyEditItems.splice(idx, 1);
+  for (const x of priced) {
+    const it = x.i === idx ? item : x.it;
+    it.price = x.to; it.total = (Number(it.qty) || 0) * x.to;
+    delete it.bundleGroupId; it.priceBasis = 'regular'; it.brokenFrom = g;
+  }
+  _spEditConfirmBreak = true;
+  _renderShopifyEditItems();
+  return true;
 }
 
 /**
@@ -115664,7 +116248,7 @@ function _spManualAmount(itemsTotal) {
   const raw = Number(input ? input.value : _spDiscInputValue(_spEditOrder)) || 0;
   if (raw <= 0) return 0;
   return _spDiscType === 'percent'
-    ? Math.round(itemsTotal * Math.min(raw, 100) / 100)
+    ? Math.round(_spDiscBase(itemsTotal) * Math.min(raw, 100) / 100)
     : raw;
 }
 
@@ -115903,6 +116487,9 @@ function _spRenderDiscountTab() {
       ${_spDiscGuardHtml(ourDisc)}
     </div>
 
+    ${(_shopifyEditItems || []).some(i => i.bundleGroupId) ? `<div class="sp-bundle-disc-note">${_spBundleOverride
+      ? esc(t('bdlDiscOverrideOn', { reason: _spBundleOverride.reason }))
+      : `${esc(t('bdlDiscNote', { base: fmtN(_spDiscBase(itemsTotal)) }))}${(isAdmin() || hasPerm('shopify-bundle-discount-override')) ? ` <button type="button" class="sp-bundle-disc-link" onclick="_spAskBundleOverride()">${esc(t('bdlDiscOverrideLink'))}</button>` : ''}`}</div>` : ''}
     <div class="sp-disc-sum" id="sp-disc-sum">${_spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand)}</div>
   `;
   _updateShopifyEditSummary();
@@ -115944,6 +116531,9 @@ function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCos
     `<div class="sp-sum-row ${cls || ''}"><span>${esc(label)}</span><span class="sp-sum-v">${val}</span></div>`;
   const _oc = _spOfferCtx(_spEditOrder);
   const _os = _offerSummaryOf(_shopifyEditItems, _oc.day, _oc.since);
+  // Free shipping inside Shopify's discount is stated as its own line (the total is unchanged).
+  const _sd = Math.min(_saleShipDisc(_spEditOrder), Math.max(0, shopDisc));
+  shopDisc = Math.max(0, shopDisc - _sd);
   return [
     _os ? row(t('poSumBefore'), fmtJ(_os.before)) : '',
     ...(_os ? _os.groups.map(g => `<div class="sp-sum-row is-minus is-offer"><span>${esc(t('poChip'))} ${_offerTagHtml(g.name)}</span><span class="sp-sum-v">${fmtJSigned(g.saved, '−')}</span></div>`) : []),
@@ -115952,6 +116542,7 @@ function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCos
     codesDisc > 0 ? row(t('spDiscCodes'), fmtJSigned(codesDisc, '−'), 'is-minus') : '',
     manualDisc > 0 ? row(t('spDiscManual'), fmtJSigned(manualDisc, '−'), 'is-minus') : '',
     shipCost > 0 ? row(t('spDiscShipping'), fmtJSigned(shipCost, '+')) : '',
+    _sd > 0 ? row(t('sdFreeShipping'), fmtJSigned(_sd, '−'), 'is-minus') : '',
     row(t('spDiscGrandTotal'), fmtJ(grand), 'is-total'),
     paid.deposit > 0 ? row(t('spDepApprovedTotal'), fmtJSigned(paid.deposit, '−')) : '',
     paid.deposit > 0 ? row(t('spRemaining'), fmtJ(Math.max(0, balance)), 'is-total') : '',
@@ -116937,7 +117528,7 @@ function _spRenderHistoryTab() {
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261029-reactions"></script>
-<script src="/roles-permissions.js?v=20261113-rs1"></script>
+<script src="/roles-permissions.js?v=20261113-bundle"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/supplier-return-statements.js?v=5"></script>
 <script src="/promotions.js?v=4"></script>

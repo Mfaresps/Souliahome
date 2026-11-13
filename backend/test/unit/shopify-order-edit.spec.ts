@@ -79,6 +79,7 @@ it('submits a combined edit once and resumes the same save after the OTP gate', 
     const _spConfirmEditSubmission=async()=>accepted;
     const currentLang='en', _shopifyEditId='o1', _shopifyEditItems=[{productId:'p1',qty:2,price:1000}];
     const _spDiscType='fixed', _spDiscCodes=[{id:'c1',code:'SAVE'}], _spDiscOtpId='otp1';
+    const _spDiscBase=(n)=>n, _spBundleDiscountExcess=()=>0; let _spEditConfirmBreak=false, _spBundleOverride=null; // bundle rules: bundle-guard.spec / shopify-bundle-edit.cjs
     const document={getElementById:()=>null,removeEventListener:()=>{}};
     const toast=message=>messages.push(message),t=String,tf=String,confirm=()=>true;
     const _shopifyEditOutsideClick=()=>{},_spDiscountDirty=()=>true;
@@ -110,6 +111,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const currentLang='en', t=String, esc=String, fmtJ=String, _payMethodLabel=String;
       const fmtJSigned=(amount,sign)=>sign+amount;
       const _spOfferCtx=()=>({}), _offerSummaryOf=()=>null, _offerTagHtml=String, _shopifyEditItems=[]; // offers are covered by their own browser checks
+      const _saleShipDisc=(o)=>Math.min(Math.max(0,Number(o&&o.shippingDiscount)||0),Math.max(0,Number(o&&o.shipCost)||0),Math.max(0,Number(o&&o.discount)||0)); // shipping-discount-mirror.spec checks the real one
       ${extractFn(src, '_spDepositOf')}
       ${extractFn(src, '_spDiscSummaryHtml')}
       return _spDiscSummaryHtml(grand,0,0,0,0,grand);
@@ -145,6 +147,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const _spConfirmEditSubmission=async()=>accepted;
       const currentLang='en', _spEditRemoveModal=()=>{closed=true;}, loadShopifyOrders=async()=>{reloads++;};
       const _spOfferCtx=()=>({}), _offerSummaryOf=()=>null, _offerTagHtml=String; // offers are covered by their own browser checks
+      const _spDiscBase=(n)=>n, _spBundleDiscountExcess=()=>0; let _spEditConfirmBreak=false, _spBundleOverride=null; // bundle rules: bundle-guard.spec / shopify-bundle-edit.cjs
       const footer={innerHTML:''}, sum={innerHTML:''};
       const host={set innerHTML(html) { input={value:html.match(/id="sp-disc-value"[^>]*value="([^"]*)"/)[1]}; }};
       const document={getElementById:()=>footer};
@@ -239,6 +242,7 @@ function loadDiscountFns(): DiscEnv {
   // بيئة صغيرة: الدوال تقرأ _spDiscCodes و_spDiscType وقيمة الحقل عبر qs.
   return new Function(`
     let _spDiscCodes = [], _spDiscType = 'fixed', _typed = '';
+    const _spDiscBase=(n)=>n, _spBundleDiscountExcess=()=>0; let _spEditConfirmBreak=false, _spBundleOverride=null; // bundle rules: bundle-guard.spec / shopify-bundle-edit.cjs
     const qs = () => ({ value: _typed });
     ${body}
     return {

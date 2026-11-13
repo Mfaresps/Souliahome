@@ -1,3 +1,4 @@
+import { invoiceShipCharged } from '../shared/sale-discount.util';
 /**
  * Reference Detail Service
  * Aggregates all data for a specific reference number
@@ -203,7 +204,8 @@ export class ReferenceDetailService {
     const totalReturns = returnTxs.reduce((s, t) => s + (t.total || 0), 0);
     const totalPaid = salesTxs.reduce((s, t) => s + (t.deposit || 0), 0);
     const totalRemaining = salesTxs.reduce((s, t) => s + (t.remaining || 0), 0);
-    const shipCost = salesTxs.reduce((s, t) => s + (t.shipCost || 0), 0);
+    // What the customer was charged for shipping (free shipping excluded) — shared/sale-discount.util.ts.
+    const shipCost = salesTxs.reduce((s, t) => s + invoiceShipCharged(t as any), 0);
 
     return {
       totalSales,

@@ -1033,6 +1033,10 @@ export class SettingsService {
     'productsuppliers',
     'productcostevents',
     'inventorywriteoffs',
+    // Shipping-discount classification: when it took effect, and the audit of every historical
+    // correction (who approved, before/after). ⚠ Deliberately NOT in ALLOWED_COLLECTIONS.
+    'classificationchanges',
+    'financialcorrections',
     // ── Catalogue: categories / collections and the product↔collection join table ──
     'categories',
     'collections',
@@ -1946,7 +1950,7 @@ export class SettingsService {
   // produces a leaderboard of ids nobody can read.
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
-    transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'inventorywriteoffs', 'carrierimports', 'carrierpayouts'],
+    transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'inventorywriteoffs', 'carrierimports', 'carrierpayouts', 'classificationchanges', 'financialcorrections'],
     inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks', 'inventoryunitcodes', 'inventoryunitcodecounters'],
     products:       ['products', 'categories', 'collections', 'collectionproducts', 'productsuppliers', 'productcostevents'],
     customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries', 'supplierreturnstatements', 'supplierreturnstatementimages'],

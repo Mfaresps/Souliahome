@@ -15,6 +15,7 @@ import { ReferenceDetailService } from './reference-detail.service';
 import { ReportsExportService } from './reports-export.service';
 import { CarrierStatementService } from './carrier-statement.service';
 import { CarrierSettlementService } from './carrier-settlement.service';
+import { OrderCreditService } from './order-credit.service';
 import { CarrierAutoSettleService } from './carrier-auto-settle.service';
 import { CarrierBatchPayoutService } from './carrier-batch-payout.service';
 import { CarrierAutoSettleController } from './carrier-auto-settle.controller';
@@ -83,9 +84,10 @@ import { FollowUpsModule } from '../followups/followups.module';
     ReportsExportService,
     CarrierStatementService,
     CarrierSettlementService,
+    OrderCreditService,
     CarrierAutoSettleService,
     CarrierBatchPayoutService,
   ],
-  exports: [TransactionsService, CarrierStatementService, CarrierSettlementService, CarrierAutoSettleService],
+  exports: [TransactionsService, OrderCreditService, CarrierStatementService, CarrierSettlementService, CarrierAutoSettleService],
 })
 export class TransactionsModule {}

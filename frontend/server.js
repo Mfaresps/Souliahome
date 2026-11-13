@@ -45,11 +45,14 @@ app.get('/config.js', (req, res) => {
 app.get('/version.json', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   let build = 'dev';
+  let builtAt = '';
   try {
     // Math.floor, not `| 0` — mtimeMs exceeds 32 bits and bitwise ops would wrap it negative.
-    build = String(Math.floor(fs.statSync(path.join(__dirname, 'public', 'index.html')).mtimeMs));
+    const ms = Math.floor(fs.statSync(path.join(__dirname, 'public', 'index.html')).mtimeMs);
+    build = String(ms);
+    builtAt = new Date(ms).toISOString();
   } catch (_) {}
-  res.json({ version: `1.0.${build}`, build });
+  res.json({ version: `1.0.${build}`, build, builtAt, commit: '' });
 });
 
 // Revalidate on every visit: an unchanged shell returns 304 with no body, while

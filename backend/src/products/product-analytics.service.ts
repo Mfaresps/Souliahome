@@ -10,6 +10,7 @@ import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { lineUnitCost } from '../shared/line-cost.util';
 import { currentUnitCost } from '../shared/avg-cost.util';
+import { invoiceShippingDiscount } from '../shared/sale-discount.util';
 
 export interface ProductInvoice {
   type: 'sales' | 'purchase' | 'return';
@@ -21,6 +22,8 @@ export interface ProductInvoice {
   unitPrice: number;
   totalPrice: number;
   discountShare: number;
+  /** This line's share of the invoice's shipping subsidy (free shipping we absorbed). */
+  shippingSubsidyShare?: number;
   netTotal: number;
   status: string;
 }
@@ -59,6 +62,10 @@ export interface ProductAnalytics {
     /** التكلفة اللي البيعة الجاية هتاخدها (متوسط التكلفة، أو سعر الكارت لو لسه ماتحسبش). */
     currentUnitCost: number;
     netProfit: number;
+    /** Product gross profit before the shipping subsidy (netProfit = this − shippingSubsidy). */
+    profitBeforeShipping?: number;
+    /** Free shipping absorbed, allocated to this product by line value. */
+    shippingSubsidy?: number;
     profitMargin: number;
   };
   performance: ProductPerformance;
@@ -141,13 +148,18 @@ export class ProductAnalyticsService {
       const itemTotal = item.total || 0;
       const txItemsTotal = (tx.itemsTotal || 0) || (tx.items || []).reduce((s, i) => s + (i.total || 0), 0);
       // Use stored discount; if missing, infer from itemsTotal vs (total - shipCost)
-      let txDiscount = Number(tx.discount) || 0;
-      if (txDiscount === 0 && txItemsTotal > 0) {
+      // ⚠ Product discount only — the shipping part (Free Shipping) is a shipping subsidy, kept apart
+      //   (shared/sale-discount.util.ts). A row without shippingDiscount reads exactly as before.
+      const shipDisc = invoiceType === 'sales' ? invoiceShippingDiscount(tx as any) : 0;
+      let txDiscount = (Number(tx.discount) || 0) - shipDisc;
+      if (txDiscount <= 0 && shipDisc === 0 && txItemsTotal > 0) {
         const ship = Number((tx as any).shipCost) || 0;
         txDiscount = Math.max(0, txItemsTotal - (tx.total - ship));
       }
+      txDiscount = Math.max(0, txDiscount);
       // Distribute discount proportionally by item share of invoice total
       const discountShare = txItemsTotal > 0 ? (itemTotal / txItemsTotal) * txDiscount : 0;
+      const shippingSubsidyShare = txItemsTotal > 0 ? (itemTotal / txItemsTotal) * shipDisc : 0;
       const netTotal = itemTotal - discountShare;
 
       const invoice: ProductInvoice = {
@@ -160,6 +172,7 @@ export class ProductAnalyticsService {
         unitPrice: item.price || 0,
         totalPrice: itemTotal,
         discountShare,
+        shippingSubsidyShare,
         netTotal,
         status: tx.payStatus || 'pending',
       };
@@ -195,7 +208,11 @@ export class ProductAnalyticsService {
         ? totalCostFromPurchases / totalQuantityPurchased
         : product.buyPrice || 0;
     const netCost = Math.max(0, soldCost - returnedCost);
-    const netProfit = netRevenue - netCost;
+    // Gross profit before the shipping subsidy, the subsidy, and the contribution after it.
+    // `netProfit` stays the contribution AFTER the subsidy — the same figure as before the split.
+    const shippingSubsidy = Math.round(saleInvoices.reduce((sum, inv) => sum + (inv.shippingSubsidyShare || 0), 0) * 100) / 100;
+    const profitBeforeShipping = netRevenue - netCost;
+    const netProfit = profitBeforeShipping - shippingSubsidy;
 
     const profitMargin =
       netRevenue > 0
@@ -235,6 +252,8 @@ export class ProductAnalyticsService {
         netCost: Math.round(netCost * 100) / 100,
         currentUnitCost: Math.round(liveCost * 100) / 100,
         netProfit,
+        profitBeforeShipping: Math.round(profitBeforeShipping * 100) / 100,
+        shippingSubsidy,
         profitMargin,
       },
       performance,

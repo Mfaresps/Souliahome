@@ -37,6 +37,8 @@ export function validEditItems(items: any[]): any[] {
       name: String(item.name || ''), qty, price, total: qty * price,
       imageUrl: String(item.imageUrl || ''), shopifyName: String(item.shopifyName || ''),
       ...(Number.isFinite(Number(item.shopifyPrice)) ? { shopifyPrice: Number(item.shopifyPrice) } : {}),
+      // A KEY only: the bundle/Shopify fields themselves are copied from the stored line (shared/shopify-line.util.ts).
+      ...(item.shopifyLineId ? { shopifyLineId: String(item.shopifyLineId) } : {}),
       // «العرض اتشال من السطر» — cleaned here, decided by settleOfferRemovals (perm + coherence).
       ...(cleanOfferRemoval(item.offerRemoved) ? { offerRemoved: cleanOfferRemoval(item.offerRemoved) } : {}) };
   });

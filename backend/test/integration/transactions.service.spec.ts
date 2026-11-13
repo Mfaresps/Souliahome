@@ -1954,16 +1954,141 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(vaultMoves()).toEqual([[500, 'فودافون كاش']]);
     });
 
-    it('تصفير العربون يعيد المال من خزنته ولا يُنشئ تحويلاً', async () => {
+    // ⚠ Reversed on purpose (payment reconciliation, Nov 13, 2026): zeroing a sale's deposit by edit
+    // used to pay 500 out of the vault — a refund nobody executed. The paid amount is now fixed;
+    // an excess becomes an overpayment resolved explicitly (order-credit.service).
+    it('تصفير العربون من تعديل الفاتورة مرفوض ولا يحرّك الخزنة', async () => {
       mockUpdatable(buildSale());
-      await service.update(
-        'tx-cash-rule',
-        { deposit: 0 } as any,
-        'Fares',
-        '',
-        'admin',
-      );
-      expect(vaultMoves()).toEqual([[-500, 'Instapay']]);
+      await expect(service.update('tx-cash-rule', { deposit: 0 } as any, 'Fares', '', 'admin'))
+        .rejects.toThrow('لا يمكن تخفيض المبلغ المدفوع');
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+  });
+
+  /** Payment reconciliation on a sale edit — shared/payment-reconciliation.util.ts. */
+  describe('update() — sale payment reconciliation', () => {
+    function buildRecSale(overrides: Record<string, unknown> = {}): any {
+      const tx: any = buildSaleTransaction({
+        _id: 'tx-rec', type: 'مبيعات', ref: '3001', client: 'Mona', phone: '01001234567',
+        total: 1000, deposit: 500, remaining: 500, payStatus: 'معلق', depMethod: 'كاش', payment: 'كاش',
+        cancelled: false, pickupStatus: 'Pending', bostaStatus: '', deliverySource: '',
+        deposits: [{ id: 'd1', amount: 500, method: 'كاش' }], payments: [], editHistory: [],
+        ...overrides,
+      });
+      tx.save = jest.fn().mockResolvedValue(tx);
+      return tx;
+    }
+    let write: jest.Mock;
+    function mockRec(tx: any, result: any = tx) {
+      txModel.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
+      write = jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(result) });
+      txModel.findOneAndUpdate = write;
+    }
+    const written = () => write.mock.calls[0][1];
+
+    it('A: 1000 → 800 with 500 paid → remaining 300, no vault entry', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 800, deposit: 500, remaining: 0, payStatus: 'مكتمل' } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 300, payStatus: 'معلق', overpaymentMode: '' });
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('B: total equal to paid → fully paid', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 500, deposit: 500 } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 0, payStatus: 'مكتمل' });
+    });
+
+    it('C: 400 with 500 paid → overpayment 100 kept on the order, nothing refunded', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 400, deposit: 500 } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 0, payStatus: 'مكتمل', overpaymentMode: '' });
+      expect(written().reconciliationLog.at(-1)).toMatchObject({
+        previousTotal: 1000, newTotal: 400, totalPaid: 500, previousRemaining: 500, newRemaining: 0, overpayment: 100, resolution: 'pending', by: 'Fares',
+      });
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('C: the chosen resolution is stored', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 400, deposit: 500, overpaymentResolution: 'credit' } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ overpaymentMode: 'credit' });
+      expect(written()).not.toHaveProperty('overpaymentResolution');
+    });
+
+    it('a fully-paid sale reduced in value refunds nothing (old clamp paid the difference out)', async () => {
+      mockRec(buildRecSale({ deposit: 1000, remaining: 0, payStatus: 'مكتمل', deposits: [{ id: 'd1', amount: 1000, method: 'كاش' }] }));
+      await service.update('tx-rec', { total: 800, deposit: 1000 } as any, 'Fares', '', 'admin');
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+      expect(written().reconciliationLog.at(-1)).toMatchObject({ overpayment: 200 });
+    });
+
+    it('E: total raised → remaining from the server, not the browser', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 1400, deposit: 500, remaining: 0 } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 900, payStatus: 'معلق' });
+    });
+
+    it('a collected COD order counts the collected amount, not the vault net', async () => {
+      mockRec(buildRecSale({ deposit: 940, remaining: 0, payStatus: 'مكتمل',
+        payments: [{ id: 'p1', amount: 440, collectedAmount: 500, method: 'كاش' }] }));
+      await service.update('tx-rec', { notes: 'x', total: 1000, deposit: 940 } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 0, payStatus: 'مكتمل' });
+    });
+
+    it('a top-up in the edit is still a real payment (vault in, counted as paid)', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { total: 1000, deposit: 700 } as any, 'Fares', '', 'admin');
+      expect(written()).toMatchObject({ remaining: 300 });
+      expect(vaultService.addSystemEntry.mock.calls.map((c: any[]) => c[0])).toEqual([200]);
+    });
+
+    it('19: the write is conditional on the money state read', async () => {
+      mockRec(buildRecSale({ overpayRevision: 2 }));
+      await service.update('tx-rec', { total: 900, deposit: 500 } as any, 'Fares', '', 'admin');
+      const and = write.mock.calls[0][0].$expr.$and;
+      expect(and).toEqual(expect.arrayContaining([
+        { $eq: [{ $ifNull: ['$deposit', 0] }, 500] },
+        { $eq: [{ $ifNull: ['$overpayRevision', 0] }, 2] },
+        { $eq: [{ $size: { $ifNull: ['$payments', []] } }, 0] },
+      ]));
+    });
+
+    it('19: a payment landing mid-edit fails the edit instead of overwriting it', async () => {
+      mockRec(buildRecSale(), null);
+      await expect(service.update('tx-rec', { total: 900, deposit: 500 } as any, 'Fares', '', 'admin'))
+        .rejects.toThrow('سُجّلت دفعة');
+    });
+
+    it('18: a cancelled sale cannot have its value edited', async () => {
+      mockRec(buildRecSale({ cancelled: true }));
+      await expect(service.update('tx-rec', { total: 900 } as any, 'Fares', '', 'admin')).rejects.toThrow('الطلب ملغي');
+    });
+
+    it('17: a delivered sale cannot be edited', async () => {
+      mockRec(buildRecSale({ bostaStatus: 'DELIVERED' }));
+      await expect(service.update('tx-rec', { total: 900 } as any, 'Fares', '', 'admin')).rejects.toThrow('تم تسليمه');
+    });
+
+    it('16: live Bosta shipment — staff refused, admin needs explicit confirmation, recorded', async () => {
+      const shipped = { bostaOrderId: 'B1', bostaStatus: 'PICKUP_REQUESTED', bostaTrackingNumber: '777' };
+      mockRec(buildRecSale(shipped));
+      await expect(service.update('tx-rec', { total: 900 } as any, 'staff', '', 'staff')).rejects.toThrow('للمدير فقط');
+      mockRec(buildRecSale(shipped));
+      await expect(service.update('tx-rec', { total: 900 } as any, 'Fares', '', 'admin')).rejects.toThrow('SHIPMENT_CHANGE_CONFIRM_REQUIRED');
+      mockRec(buildRecSale(shipped));
+      await service.update('tx-rec', { total: 900, shipmentChangeConfirmed: true } as any, 'Fares', '', 'admin');
+      expect(written().reconciliationLog.at(-1)).toMatchObject({ shipmentChangeConfirmed: true, bostaTrackingNumber: '777' });
+      // a note-only edit of a shipped order needs no confirmation
+      mockRec(buildRecSale(shipped));
+      await expect(service.update('tx-rec', { notes: 'x' } as any, 'staff', '', 'staff')).resolves.toBeDefined();
+    });
+
+    it('14/15: a note-only edit writes no reconciliation row', async () => {
+      mockRec(buildRecSale());
+      await service.update('tx-rec', { notes: 'x' } as any, 'Fares', '', 'admin');
+      expect(written()).not.toHaveProperty('reconciliationLog');
+      expect(written()).toMatchObject({ remaining: 500 });
     });
   });
 

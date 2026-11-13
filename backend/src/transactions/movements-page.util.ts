@@ -1,3 +1,4 @@
+import { invoiceShipCharged, invoiceShippingDiscount } from '../shared/sale-discount.util';
 // The Movements page reads a bounded page. These predicates mirror its former
 // browser-side rules, including the intentionally permissive undated rows.
 export type MovementsState = {
@@ -147,7 +148,8 @@ function filterTransactions(rows: any[], state: MovementsState): any[] {
       if (!tokens.every(token => blob.includes(token))) return false;
     }
     if (inlineTags.length && !inlineTags.every(token => (tx.tags || []).some((tag: string) => tag.toLowerCase().includes(token)))) return false;
-    if (state.discountOnly && !(n(tx.discount) > 0)) return false;
+    // Product discount only — free shipping is not a discount on the goods (same as the browser filter).
+    if (state.discountOnly && !(Math.max(0, n(tx.discount) - invoiceShippingDiscount(tx)) > 0)) return false;
     if (state.discountCode && !String(tx.discountCode || '').toLowerCase().includes(state.discountCode.toLowerCase())) return false;
     if (!state.showExcluded && excluded.has(String(tx._id))) return false;
     return true;
@@ -226,7 +228,9 @@ export function buildMovementsPage(transactions: any[], returns: any[], supplier
   const settledReturns = supplierReturns.filter(r => r.status === COMPLETED && !r.reversal &&
     !(state.dateFrom && day(r.returnDate || r.createdAt) && day(r.returnDate || r.createdAt) < state.dateFrom) &&
     !(state.dateTo && day(r.returnDate || r.createdAt) && day(r.returnDate || r.createdAt) > state.dateTo));
-  const shipBilled = sales.reduce((sum, tx) => sum + n(tx.shipCost), 0);
+  // الشحن المحصَّل من العميل = shipCost − خصم الشحن. دعم الشحن رقم لوحده (shared/sale-discount.util.ts).
+  const shipBilled = sales.reduce((sum, tx) => sum + invoiceShipCharged(tx), 0);
+  const shippingSubsidy = sales.reduce((sum, tx) => sum + invoiceShippingDiscount(tx), 0);
   const shipLoss = sales.reduce((sum, tx) => sum + Math.max(0, n(tx.actualShipCost) - n(tx.shipCost)), 0);
   const txDay = (tx: any) => day(state.dateField === 'createdAt'
     ? tx.createdAt || tx.date || tx.transactionDate : tx.transactionDate || tx.date || tx.createdAt);
@@ -237,8 +241,8 @@ export function buildMovementsPage(transactions: any[], returns: any[], supplier
   const purchased = purchases.reduce((sum, tx) => sum + n(tx.total), 0);
   const returned = settledReturns.reduce((sum, r) => sum + n(r.total), 0);
   const kpi = {
-    sales: sales.reduce((sum, tx) => sum + Math.max(0, n(tx.total) - n(tx.shipCost)), 0) - shipLoss + sales.reduce((sum, tx) => sum + n(tx.shipSaving), 0),
-    shipping: shipBilled, shipLoss, purchases: Math.max(0, purchased - returned),
+    sales: sales.reduce((sum, tx) => sum + Math.max(0, n(tx.total) - invoiceShipCharged(tx)), 0) - shipLoss + sales.reduce((sum, tx) => sum + n(tx.shipSaving), 0),
+    shipping: shipBilled, shipLoss, shippingSubsidy: Math.round(shippingSubsidy * 100) / 100, purchases: Math.max(0, purchased - returned),
     returns: salesReturns.reduce((sum, tx) => sum + n(tx.total), 0),
     remainingCollection: sales.reduce((sum, tx) => sum + n(tx.remaining), 0),
     remainingSupplier: purchases.reduce((sum, tx) => sum + n(tx.remaining), 0),
@@ -249,7 +253,7 @@ export function buildMovementsPage(transactions: any[], returns: any[], supplier
     mini: { sales: sales.length, purchases: purchases.length,
       returns: active.filter(tx => [RETURN, SALES_RETURN, PURCHASE_RETURN].includes(tx.type)).length },
     series: {
-      sales: series(lo, hi, sales.map(tx => [txDay(tx), Math.max(0, n(tx.total) - n(tx.shipCost)) - Math.max(0, n(tx.actualShipCost) - n(tx.shipCost))])),
+      sales: series(lo, hi, sales.map(tx => [txDay(tx), Math.max(0, n(tx.total) - invoiceShipCharged(tx)) - Math.max(0, n(tx.actualShipCost) - n(tx.shipCost))])),
       purchases: series(lo, hi, [...purchases.map(tx => [txDay(tx), n(tx.total)] as [string, number]),
         ...settledReturns.map(r => [day(r.returnDate || r.createdAt), -n(r.total)] as [string, number])]),
       remainingCollection: series(lo, hi, sales.map(tx => [txDay(tx), n(tx.remaining)])),

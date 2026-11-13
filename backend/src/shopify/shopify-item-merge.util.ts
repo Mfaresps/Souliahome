@@ -1,7 +1,9 @@
 export function itemKey(item: any): string {
-  if (item.productId) return 'product:' + String(item.productId);
-  if (item.code && item.code !== 'SHOPIFY') return 'code:' + String(item.code);
-  return 'name:' + String(item.shopifyName || item.name || '');
+  // A bundle component is its own line even when the same product is also bought on its own (Phase 2).
+  const bundle = item.bundleGroupId ? '|bundle:' + String(item.bundleGroupId) : '';
+  if (item.productId) return 'product:' + String(item.productId) + bundle;
+  if (item.code && item.code !== 'SHOPIFY') return 'code:' + String(item.code) + bundle;
+  return 'name:' + String(item.shopifyName || item.name || '') + bundle;
 }
 
 function groups(items: any[]): Map<string, any[]> {

@@ -150,8 +150,13 @@ async function buildCompactInvoiceCanvas(tx, preview = false) {
   divider();
   pair(label('إجمالي الأصناف', 'Items subtotal'), money((tx.items || []).reduce((sum, item) => sum + Number(item.total ?? ((Number(item.qty) || 0) * (Number(item.price) || 0))), 0)));
   if (Number(tx.shipCost)) pair(label('الشحن', 'Shipping'), money(tx.shipCost));
-  if (Number(tx.discount) > 0) {
-    pair(label('الخصم', 'Discount'), '−' + money(tx.discount));
+  // Free shipping is its own line, never part of the product discount (mirror of shared/sale-discount.util.ts).
+  // Without a shipping discount nothing below changes.
+  const shipDisc = Math.min(Math.max(0, Number(tx.shippingDiscount) || 0), Math.max(0, Number(tx.shipCost) || 0), Math.max(0, Number(tx.discount) || 0));
+  if (shipDisc > 0) pair(label('شحن مجاني', 'Free shipping'), '−' + money(shipDisc));
+  const productDisc = Math.max(0, (Number(tx.discount) || 0) - shipDisc);
+  if (productDisc > 0) {
+    pair(label('الخصم', 'Discount'), '−' + money(productDisc));
     const codes = String(tx.discountCode || '').split('+').map(code => code.trim()).filter(Boolean);
     if (codes.length) text(label('أكواد الخصم: ', 'Discount codes: ') + codes.join(' + '), 18);
     if (Number(tx.manualDiscount) > 0) text(label('يشمل الخصم الإضافي', 'Includes the additional discount'), 18);

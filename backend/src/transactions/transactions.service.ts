@@ -1,6 +1,7 @@
 import { setCommentReaction } from '../shared/comment-reactions';
 import { randomUUID } from 'node:crypto';
 import { cachedRead } from '../shared/read-cache.util';
+import { reconcile, hasLiveShipment, RECON_TOLERANCE, round2 as reconRound } from '../shared/payment-reconciliation.util';
 import { buildMovementsPage, MovementsState } from './movements-page.util';
 import { maskTransactionsForRole } from './purchase-mask.util';
 import { notifyApproval } from '../notifications/admin-events';
@@ -12,6 +13,7 @@ import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
 import { carryLineCosts, freezeLineCost, frozenUnitCost, lineUnitCost, stampMissingSaleLineCosts, stampSaleLineCosts, lineCostSourceKey, LINE_COST_SOURCE_KEYS } from '../shared/line-cost.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
+import { OnModuleInit as ClassificationInit } from '@nestjs/common';
 import {
   Injectable,
   Inject,
@@ -67,7 +69,12 @@ import { SuppliersService } from '../suppliers/suppliers.service';
 import { ProductSuppliersService } from '../suppliers/product-suppliers.service';
 import { ProductCostService } from '../products/product-cost.service';
 import { currentUnitCost, knownUnitCost } from '../shared/avg-cost.util';
-import { invoiceDiscount, invoiceDiscountRatio, invoiceItemsTotal, invoiceNetSales } from '../shared/sale-discount.util';
+import { invoiceDiscount, invoiceDiscountRatio, invoiceItemsTotal, invoiceNetSales, invoiceShippingSubsidyRatio } from '../shared/sale-discount.util';
+import { shippingBreakdown, shippingClassificationStatus, ensureClassificationEffectiveDate } from './shipping-breakdown.util';
+import { applyApprovedShippingCorrection, applyCorrectionPlan, buildCorrectionPlan, loadCorrectionInputs, rollbackCorrection } from './shipping-discount-correction';
+import { APPROVED_SHIPPING_CORRECTIONS } from './shipping-discount-approved';
+import { carryShopifyLineFields } from '../shared/shopify-line.util';
+import { BundleGuardError, bundleGuard, hasBundleLines } from '../shared/bundle-guard.util';
 import { PromotionAuditService } from '../promotions/promotion-audit.service';
 import { carryLinePrices, lineMarkdown, OfferRemovalError, settleOfferRemovals, stampSaleLinePrices } from '../shared/price-offer.util';
 import {
@@ -156,6 +163,13 @@ export interface DashboardData {
   totalShipLoss: number;
   /** Carrier took less than the invoice tariff (automatic Bosta settlement only). */
   totalShipSaving?: number;
+  productRevenue?: number;
+  productDiscounts?: number;
+  shippingCollected?: number;
+  shippingSubsidy?: number;
+  shippingSubsidyOrders?: number;
+  actualCarrierCost?: { amount: number; known: number; of: number; returnLegFees: number };
+  shippingClassification?: any;
   returnCount: number;
   totalReturns: number;
   totalDiscounts: number;
@@ -167,7 +181,27 @@ export interface DashboardData {
 }
 
 @Injectable()
-export class TransactionsService {
+export class TransactionsService implements ClassificationInit {
+  /**
+   * Records once, on the first start of a build that classifies shipping discounts, the moment the
+   * new classification began (shipping-breakdown.util.ts). Never changed afterwards; reports show it.
+   * A failure here must not stop the API — it is retried on the next start.
+   */
+  async onModuleInit(): Promise<void> {
+    try { await ensureClassificationEffectiveDate(this.transactionModel.db, String(process.env.BUILD_NUMBER || process.env.APP_VERSION || '')); }
+    catch (e) { console.warn('[classification] effective date not recorded:', (e as Error).message); }
+    // The owner-approved historical correction (257 invoices) — applied once, in the background, only to
+    // the approved ids that are still unchanged. Never blocks or fails startup (shipping-discount-correction.ts).
+    (async () => {
+      for (const approval of APPROVED_SHIPPING_CORRECTIONS) {
+        try {
+          const r: any = await applyApprovedShippingCorrection(this.transactionModel.db, approval);
+          if (!r.skipped) console.log(`[shipping-discount] ${approval.runId}: ${r.written} invoices, ${r.ordersWritten} order records, changed ${r.skippedChanged.length}, missing ${r.missingFromPlan.length}`);
+        } catch (e) { console.warn(`[shipping-discount] ${approval.runId} failed:`, (e as Error).message); }
+      }
+    })();
+  }
+
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   // Promotions audit log (global module) — records an offer taken off an invoice line.
   @PushOptional() @PushInject(PromotionAuditService) private readonly promoAudit?: PromotionAuditService;
@@ -1766,6 +1800,36 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Payment reconciliation gates for editing a SALE (shared/payment-reconciliation.util.ts).
+   * - A cancelled sale's value is never edited — corrections go through their own workflow.
+   * - The paid amount is never lowered by an invoice edit: lowering `deposit` here used to book
+   *   a vault outflow («خصم تحصيل مبيعات») — an automatic refund nobody executed. An excess is now
+   *   an overpayment, resolved explicitly (credit / refund / transfer / left open).
+   * - A live Bosta shipment carries a fixed COD that Bosta cannot edit; changing the order's value
+   *   behind it is admin-only and needs an explicit confirmation, recorded in the audit.
+   */
+  private assertSaleFinancialEditAllowed(existing: TransactionDocument, dto: UpdateTransactionDto, callerRole: string): void {
+    if (existing.type !== 'مبيعات') return;
+    const differs = (a: unknown, b: unknown) => a !== undefined && Math.abs((Number(a) || 0) - (Number(b) || 0)) > RECON_TOLERANCE;
+    const totalChanges = differs(dto.total, existing.total) || differs(dto.shipCost, existing.shipCost) || differs(dto.discount, existing.discount);
+    const depositChanges = differs(dto.deposit, existing.deposit);
+    if (existing.cancelled && (totalChanges || depositChanges || dto.items !== undefined)) {
+      throw new BadRequestException('الطلب ملغي — لا يمكن تعديل أصنافه أو قيمته. أي تصحيح مالي يتم من مساره المخصّص');
+    }
+    if (dto.deposit !== undefined && (Number(dto.deposit) || 0) < (Number(existing.deposit) || 0) - RECON_TOLERANCE) {
+      throw new BadRequestException('لا يمكن تخفيض المبلغ المدفوع من تعديل الفاتورة — المدفوعات الفعلية لا تتغير، والزيادة تُعالَج كرصيد للعميل أو استرداد أو تحويل');
+    }
+    if (totalChanges && hasLiveShipment(existing)) {
+      if (callerRole !== 'admin') {
+        throw new BadRequestException('الشحنة مُنشأة في بوسطة بقيمة تحصيل ثابتة — تعديل قيمة الطلب الآن للمدير فقط، أو استخدم المرتجعات بعد التسليم');
+      }
+      if (!dto.shipmentChangeConfirmed) {
+        throw new BadRequestException('SHIPMENT_CHANGE_CONFIRM_REQUIRED: الشحنة مُنشأة في بوسطة ولا يمكن تعديل قيمة تحصيلها من هنا — أكّد أنك ستصحّحها مع بوسطة');
+      }
+    }
+  }
+
   async update(
     id: string,
     dto: UpdateTransactionDto,
@@ -1810,6 +1874,7 @@ export class TransactionsService {
     }
     this.assertNotExchangePendingCollect(existing);
     this.assertEditableByFulfillment(existing, existing.shopifyOrderId && callerPerms.includes('shopify-edit-direct') ? 'admin' : callerRole);
+    this.assertSaleFinancialEditAllowed(existing, dto, callerRole);
     if (dto.ref !== undefined) {
       await this.assertRetailRefForPersist(
         existing.type,
@@ -1950,10 +2015,29 @@ export class TransactionsService {
     // ⚠ التكلفة المثبّتة على سطور البيع (`unitCost`) مش في الـDTO، فالتعديل كان هيمسحها.
     // بتتنقل من السطور المخزّنة — ومابتتاخدش أبدًا من الطلب. انظر shared/line-cost.util.ts
     if (dto.items !== undefined && existing.type !== 'مشتريات') {
-      let items = carryLineCosts(existing.items as any[], dto.items as any[]);
+      // Shopify line id + bundle fields: carried from the stored lines (the DTO drops them) — shared/shopify-line.util.ts.
+      let items = carryLineCosts(existing.items as any[], carryShopifyLineFields(existing.items as any[], dto.items as any[]) as any[]);
       // خطوة 2: سطر جديد (مالقاش تكلفة يتنقل منها) ياخد التكلفة الحالية.
       if (existing.type === 'مبيعات') {
         const products = await this.productsService.findAll();
+        // Bundle protection (Phase 3, shared/bundle-guard.util.ts) — same rule as the Shopify edit window.
+        // ⚠ After delivery the composition cannot change; a break is priced on the ORDER's day.
+        const bundleDay = /^\d{4}-\d{2}-\d{2}/.test(String((existing as any).shopifyCreatedAt || ''))
+          ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date((existing as any).shopifyCreatedAt))
+          : this.saleDayOf(existing as any);
+        if (hasBundleLines(existing.items as any[])) {
+          const delivered = existing.bostaStatus === 'DELIVERED' || String((existing as any).pickupStatus || '') === 'Delivered'
+            || ['تم التسليم', 'delivered', 'Delivered'].includes(String((existing as any).deliveryStatus || ''));
+          try {
+            items = bundleGuard({ stored: existing.items as any[], incoming: items as any[], day: bundleDay, delivered,
+              confirmBreak: (dto as any).confirmBundleBreak === true,
+              titleOf: (g) => (existing as any).bundleSnapshot?.groups?.find((x: any) => String(x.groupId) === g)?.title || '',
+              productOf: (line) => products.find((p: any) => String(p.code).trim() === String(line?.code || '').trim()) || null }).items as any;
+          } catch (e) {
+            if (e instanceof BundleGuardError) throw new BadRequestException({ code: e.code, message: e.message, preview: e.preview || null });
+            throw e;
+          }
+        }
         const costByCode = new Map<string, { cost: number; basis: string } | null>();
         for (const p of products) if (!costByCode.has(p.code)) costByCode.set(p.code, knownUnitCost(p as any));
         items = stampMissingSaleLineCosts(items, (code) => costByCode.get(code) ?? null, new Date().toISOString());
@@ -1963,6 +2047,9 @@ export class TransactionsService {
         for (const p of products) if (!byCode.has(p.code)) byCode.set(p.code, p);
         const day = this.saleDayOf({ transactionDate: (dto as any).transactionDate ?? (existing as any).transactionDate, date: (dto as any).date ?? existing.date });
         items = (items || []).map((it: any) => it.listPrice !== undefined ? it : stampSaleLinePrices([it], (code) => byCode.get(code) ?? null, day)![0]);
+        // A part repriced by a bundle break is a list / offer price of the order's day — not a manual price.
+        items = (items || []).map((it: any) => (it.brokenFrom && it.priceBasis === 'regular'
+          ? stampSaleLinePrices([it], (code) => byCode.get(code) ?? null, bundleDay)![0] : it));
         // شيل عرض من سطر: شيل متسجل قبل كده بيعدّي، وشيل جديد محتاج promotions-offers.
         const settled = this.settleOfferRemovalsOrThrow(items as any[], existing.items as any[], editedBy || notificationActor || '', callerRole, callerPerms,
           (line) => byCode.get(String(line?.code || '').trim()) ?? null);
@@ -1975,7 +2062,59 @@ export class TransactionsService {
     const avgEditStock = existing.type === 'مشتريات' && (dto.items !== undefined || (dto as any).discount !== undefined)
       && this.productCost && await this.productCost.purchaseIsInAverage(String(existing._id))
       ? await this.stockOfFn() : null;
-    const { depositVaultCorrections: _corrections, ...writeDto } = dto;
+    const { depositVaultCorrections: _corrections, confirmBundleBreak: _confirmBreak, ...writeDto } = dto as any;
+    // خصم الشحن مش في الـDTO فبيفضل زي ما هو — بس لازم يفضل ≤ الشحن والخصم الجديدين لو التعديل نزّلهم.
+    // ⚠ مابيأثرش على الإجمالي ولا الخزنة (shared/sale-discount.util.ts).
+    const storedShipDisc = Number((existing as any).shippingDiscount) || 0;
+    if (storedShipDisc > 0) {
+      const clamped = Math.round(Math.max(0, Math.min(storedShipDisc, newShipCost, newDiscount)) * 100) / 100;
+      if (clamped !== storedShipDisc) (writeDto as any).shippingDiscount = clamped;
+    }
+    // ── Payment reconciliation (sales) ─────────────────────────────────────────────────────
+    // The browser's remaining/payStatus are never trusted: they are derived from the money logs
+    // and the new total. An excess paid is kept as an overpayment, never refunded by the edit.
+    delete (writeDto as any).overpaymentResolution;
+    delete (writeDto as any).shipmentChangeConfirmed;
+    let salesGuard: Record<string, any> = {};
+    if (existing.type === 'مبيعات' && !existing.cancelled) {
+      const plainExisting = typeof (existing as any).toObject === 'function' ? existing.toObject() : { ...(existing as any) };
+      const reconBefore = reconcile(plainExisting);
+      const topUp = reconRound(newDeposit - oldDeposit);
+      const after = reconcile({
+        ...plainExisting,
+        deposit: newDeposit,
+        deposits: [...(existing.deposits || []), ...(topUp > 0 ? [{ amount: topUp }] : [])],
+      }, newTotal);
+      const mode = after.overpayment > RECON_TOLERANCE
+        ? (dto.overpaymentResolution || (existing as any).overpaymentMode || '')
+        : '';
+      (writeDto as any).remaining = after.remaining;
+      (writeDto as any).payStatus = after.remaining <= RECON_TOLERANCE ? 'مكتمل' : 'معلق';
+      (writeDto as any).overpaymentMode = mode;
+      const moved = Math.abs(reconBefore.total - after.total) > RECON_TOLERANCE
+        || Math.abs(reconBefore.overpayment - after.overpayment) > RECON_TOLERANCE
+        || Math.abs(reconBefore.remaining - after.remaining) > RECON_TOLERANCE;
+      if (moved) {
+        const entry = {
+          at: historyEntry.editedAt, by: editedBy || notificationActor || '', kind: 'edit',
+          ref: existing.ref || '', previousTotal: reconBefore.total, newTotal: after.total,
+          totalPaid: after.netPaid, previousRemaining: reconBefore.remaining, newRemaining: after.remaining,
+          previousOverpayment: reconBefore.overpayment, overpayment: after.overpayment,
+          resolution: after.overpayment > RECON_TOLERANCE ? (mode || 'pending') : '',
+          ...(dto.shipmentChangeConfirmed && hasLiveShipment(existing) ? { shipmentChangeConfirmed: true, bostaTrackingNumber: (existing as any).bostaTrackingNumber || '' } : {}),
+        };
+        (writeDto as any).reconciliationLog = [...(((existing as any).reconciliationLog) || []), entry];
+        Object.assign(historyEntry.after, { remaining: after.remaining, overpayment: after.overpayment });
+      }
+      // ⚠ Conditional on the money not having moved since the read: a payment, deposit or credit
+      // move landing mid-edit would otherwise be overwritten by a remaining computed without it.
+      salesGuard = { $expr: { $and: [
+        { $eq: [{ $ifNull: ['$deposit', 0] }, Number(existing.deposit) || 0] },
+        { $eq: [{ $size: { $ifNull: ['$payments', []] } }, (existing.payments || []).length] },
+        { $eq: [{ $size: { $ifNull: ['$deposits', []] } }, (existing.deposits || []).length] },
+        { $eq: [{ $ifNull: ['$overpayRevision', 0] }, Number((existing as any).overpayRevision) || 0] },
+      ] } };
+    }
     let tx: TransactionDocument | null;
     if (vaultCorrections.length) {
       const moved: typeof vaultCorrections = [];
@@ -2004,8 +2143,10 @@ export class TransactionsService {
         throw error;
       }
     } else {
-      tx = await this.transactionModel.findOneAndUpdate({_id:id,...purchaseFilter}, {...writeDto,...editCarrier,editHistory,...purchaseRevision}, {new:true}).exec();
-      if (!tx) throw new BadRequestException('تغيرت الفاتورة أو أكواد القطع أثناء التعديل؛ حدّث البيانات وأعد المحاولة');
+      tx = await this.transactionModel.findOneAndUpdate({_id:id,...purchaseFilter,...salesGuard}, {...writeDto,...editCarrier,editHistory,...purchaseRevision}, {new:true}).exec();
+      if (!tx) throw new BadRequestException(existing.type === 'مبيعات'
+        ? 'سُجّلت دفعة أو حركة رصيد على الطلب أثناء التعديل — حدّث الفاتورة وأعد المحاولة'
+        : 'تغيرت الفاتورة أو أكواد القطع أثناء التعديل؛ حدّث البيانات وأعد المحاولة');
     }
 
     if (avgEditStock && tx) {
@@ -2121,13 +2262,16 @@ export class TransactionsService {
         Math.round((effNewDeposit - effOldDeposit) * 100) / 100;
 
       if (existing.type === 'مبيعات') {
-        // يدخل الخزنة ما حصَّلناه فعلاً من العميل — بموجب فرق السداد لا فرق الإجمالي.
-        if (cashSettledDelta !== 0 && depMethod) {
-          const direction =
-            cashSettledDelta > 0 ? 'إضافة تحصيل مبيعات' : 'خصم تحصيل مبيعات';
-          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | المحصَّل قبل: ${effOldDeposit} ج — بعد: ${effNewDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
+        // يدخل الخزنة ما حصَّلناه فعلاً من العميل — دفعة جديدة مسجّلة في التعديل فقط.
+        // ⚠ لا يخرج شيء من الخزنة بتعديل فاتورة بيع: الإجمالي لو نزل تحت المدفوع يصبح «زيادة
+        // دفع» تُعالَج صراحةً (رصيد / استرداد / تحويل) — shared/payment-reconciliation.util.ts.
+        // (المسار القديم كان يقص المدفوع على الإجمالي الجديد فيُخرج الفرق كاسترداد لم يحدث.)
+        const saleCashIn = Math.max(0, Math.round((newDeposit - oldDeposit) * 100) / 100);
+        if (saleCashIn > 0 && depMethod) {
+          const direction = 'إضافة تحصيل مبيعات';
+          const vaultNote = `${direction} فاتورة #${txRef} — ${existing.client || ''} | المحصَّل قبل: ${oldDeposit} ج — بعد: ${newDeposit} ج | ${changes.join(' | ')} | بواسطة: ${editedBy}`;
           await this.vaultService.addSystemEntry(
-            cashSettledDelta,
+            saleCashIn,
             depMethod,
             vaultNote,
             txDate,
@@ -2363,6 +2507,12 @@ export class TransactionsService {
     await this.assertWarehouseChange(tx, null);
     if ((tx as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بتحويل بوسطة مجمع — يلزم تسوية الدفعة قبل إلغاء الطلب');
+    }
+    // ⚠ Cancellation refunds the whole deposit from the vault. If part of the money already left
+    // as an overpayment refund or moved to / came from another order, that refund would pay it
+    // twice (or pay out credit that was never cash on this order). Those moves are resolved first.
+    if (((tx as any).creditMoves || []).some((m: any) => m && m.status !== 'cancelled')) {
+      throw new BadRequestException('على الطلب استرداد أو تحويل رصيد مسجّل — راجعه من «زيادة الدفع» قبل الإلغاء');
     }
     // خطوة 3: المخزون قبل الإلغاء (شامل كمية الفاتورة) — لتصحيح المتوسط بعد الإلغاء.
     const avgCancelStock = tx.type === 'مشتريات' && this.productCost && await this.productCost.purchaseIsInAverage(String(tx._id))
@@ -4295,11 +4445,16 @@ export class TransactionsService {
     // Net of the invoice discount — the same rule as getReports (shared/sale-discount.util):
     // the stored discount, else the one implied by the totals (= total − shipping).
     const goodsCharged = { $max: [0, { $subtract: [number('$total'), number('$shipCost')] }] };
+    // Product discount = stored discount − shipping discount (invoiceDiscount). A row without the
+    // field reads 0, i.e. exactly the old figure. The inferred branch only runs when the stored
+    // discount is 0, where the shipping discount is 0 too.
+    const shipDiscount = { $max: [0, { $min: [number('$shippingDiscount'), number('$shipCost'), number('$discount')] }] };
+    const productDiscount = { $max: [0, { $subtract: [number('$discount'), shipDiscount] }] };
     const productRevenue = { $cond: [
       { $ne: [number('$itemsTotal'), 0] },
       { $cond: [
         { $gt: [number('$discount'), 0] },
-        { $max: [0, { $subtract: [number('$itemsTotal'), { $min: [number('$discount'), number('$itemsTotal')] }] }] },
+        { $max: [0, { $subtract: [number('$itemsTotal'), { $min: [productDiscount, number('$itemsTotal')] }] }] },
         { $min: [number('$itemsTotal'), goodsCharged] },
       ] },
       goodsCharged,
@@ -4378,7 +4533,9 @@ export class TransactionsService {
     // A reversed return keeps its approved status, so reversedAt must also be checked.
     const totalReturns = approvedReturns.reduce((s, r) => s + (Number(r.total) || 0), 0);
 
-    const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+    // الشحن المحصَّل من العملاء (بعد خصم الشحن) — دعم الشحن رقم منفصل (shipping-breakdown.util.ts).
+    const shipSplit = shippingBreakdown(salesTx);
+    const totalShipping = shipSplit.shippingCollected;
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
     // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
     const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
@@ -4415,11 +4572,14 @@ export class TransactionsService {
     }
     let grossProfit = 0;
     salesTx.forEach((tx) => {
-      const keep = 1 - invoiceDiscountRatio(tx);   // invoice discount spread over its lines
+      const keep = 1 - invoiceDiscountRatio(tx);   // product discount spread over its lines
+      // Shipping subsidy (free shipping we absorbed) — spread the same way, so gross profit is
+      // identical to the pre-split formula (shared/sale-discount.util.ts).
+      const subsidy = invoiceShippingSubsidyRatio(tx);
       tx.items.forEach((item) => {
         const product = productByCode.get(item.code);
         grossProfit +=
-          (item.price * keep - lineUnitCost(item, product ? product.buyPrice : 0)) * item.qty;
+          (item.price * (keep - subsidy) - lineUnitCost(item, product ? product.buyPrice : 0)) * item.qty;
       });
     });
 
@@ -4464,6 +4624,14 @@ export class TransactionsService {
       totalShipping,
       totalShipLoss,
       totalShipSaving,
+      // Nov 13, 2026 — منتجات / شحن / شركة الشحن، كل واحد في رقم (shipping-breakdown.util.ts).
+      productRevenue: grossProductSales,
+      productDiscounts: totalDiscounts,
+      shippingCollected: shipSplit.shippingCollected,
+      shippingSubsidy: shipSplit.shippingSubsidy,
+      shippingSubsidyOrders: shipSplit.shippingSubsidyOrders,
+      actualCarrierCost: shipSplit.actualCarrierCost,
+      shippingClassification: await shippingClassificationStatus(this.transactionModel.db, salesTx),
       returnCount: approvedReturns.length,
       totalReturns,
       totalDiscounts,
@@ -4531,7 +4699,9 @@ export class TransactionsService {
     }
 
     // الشحن: المحصل من العملاء والفرق المتحمل من الشركة
-    const totalShipping = salesTx.reduce((s, t) => s + (Number(t.shipCost) || 0), 0);
+    // الشحن المحصَّل من العملاء (بعد خصم الشحن) — دعم الشحن رقم منفصل (shipping-breakdown.util.ts).
+    const shipSplit = shippingBreakdown(salesTx);
+    const totalShipping = shipSplit.shippingCollected;
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
     // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
     const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
@@ -4561,7 +4731,7 @@ export class TransactionsService {
     let grossProfit = 0;
     const prodProfitMap: Record<
       string,
-      { qty: number; rev: number; cost: number; profit: number }
+      { qty: number; rev: number; cost: number; profit: number; profitBeforeShipping: number; shippingSubsidy: number }
     > = {};
     // التدقيق المحاسبي: تصنيف مصدر التكلفة — للعرض بس، الربح فوق بيتحسب زي ما هو.
     const costSources: Record<string, { lines: number; qty: number; cost: number }> = Object.fromEntries(
@@ -4576,19 +4746,26 @@ export class TransactionsService {
       b.lines++; b.qty += Number(item.qty) || 0; b.value = Math.round((b.value + md.value) * 100) / 100;
     }));
     salesTx.forEach((tx) => {
-      // خصم الفاتورة متوزع على سطورها بنسبة قيمتها — الربح من السعر الصافي.
+      // خصم المنتجات متوزع على سطورها بنسبة قيمتها — الربح من السعر الصافي.
       const keep = 1 - invoiceDiscountRatio(tx);
+      // دعم الشحن (شحن مجاني شالته الشركة) متوزع بنفس الطريقة. `profit` = بعد الدعم = نفس الرقم
+      // اللي كان بيطلع قبل الفصل (Nov 13, 2026)، فالربح الإجمالي والمنتجات قابلين للمقارنة بالماضي.
+      const subsidyRatio = invoiceShippingSubsidyRatio(tx);
       tx.items.forEach((item) => {
         const p = products.find((x) => x.code === item.code);
         const cost = lineUnitCost(item, p ? p.buyPrice : 0);
-        const profit = (item.price * keep - cost) * item.qty;
+        const profitBeforeShipping = (item.price * keep - cost) * item.qty;
+        const lineSubsidy = item.price * subsidyRatio * item.qty;
+        const profit = profitBeforeShipping - lineSubsidy;
         grossProfit += profit;
         const src = costSources[lineCostSourceKey(item, p ? p.buyPrice : null)];
         src.lines++; src.qty += Number(item.qty) || 0; src.cost += cost * (Number(item.qty) || 0);
         if (cost === 0) zeroCostLines++;
         if (!prodProfitMap[item.name]) {
-          prodProfitMap[item.name] = { qty: 0, rev: 0, cost: 0, profit: 0 };
+          prodProfitMap[item.name] = { qty: 0, rev: 0, cost: 0, profit: 0, profitBeforeShipping: 0, shippingSubsidy: 0 };
         }
+        prodProfitMap[item.name].profitBeforeShipping += profitBeforeShipping;
+        prodProfitMap[item.name].shippingSubsidy += lineSubsidy;
         prodProfitMap[item.name].qty += item.qty;
         prodProfitMap[item.name].rev += (Number(item.total) || 0) * keep;
         prodProfitMap[item.name].cost += cost * item.qty;
@@ -4671,6 +4848,14 @@ export class TransactionsService {
       totalShipping,
       totalShipLoss,
       totalShipSaving,
+      // Nov 13, 2026 — منتجات / شحن / شركة الشحن، كل واحد في رقم (shipping-breakdown.util.ts).
+      productRevenue: grossProductSales,
+      productDiscounts: totalDiscounts,
+      shippingCollected: shipSplit.shippingCollected,
+      shippingSubsidy: shipSplit.shippingSubsidy,
+      shippingSubsidyOrders: shipSplit.shippingSubsidyOrders,
+      actualCarrierCost: shipSplit.actualCarrierCost,
+      shippingClassification: await shippingClassificationStatus(this.transactionModel.db, salesTx),
       returnCount: approvedReturns.length,
       totalReturns,
       transactionCount: transactions.length,
@@ -6585,6 +6770,28 @@ export class TransactionsService {
     const map = new Map<string, number>();
     for (const p of products) if (!map.has(p.code)) map.set(p.code, currentUnitCost(p as any) ?? 0);
     return map;
+  }
+
+  /**
+   * Shipping-discount reclassification (Nov 13, 2026) — shipping-discount-correction.ts.
+   * Dry run by default: returns the full plan and writes nothing. Writing needs dryRun:false, a
+   * runId and the owner's approval note; cancelled sales are written only when named.
+   */
+  async correctShippingDiscounts(opts: { dryRun?: boolean; runId?: string; approvalNote?: string; onlyTxIds?: string[]; approveCancelledIds?: string[]; excludeTxIds?: string[] }, by: string) {
+    const db = this.transactionModel.db;
+    const plan = buildCorrectionPlan(await loadCorrectionInputs(db), db.name);
+    if (opts.dryRun !== false) return { dryRun: true, plan };
+    if (!String(opts.approvalNote || '').trim()) throw new BadRequestException('اكتب مرجع موافقة المالك على تقرير الـ Dry Run');
+    if (!plan.checks.every((c) => c.pass)) throw new BadRequestException('فحوصات الخطة لم تنجح — لن يُكتب شيء');
+    if (!Array.isArray(opts.onlyTxIds) || !opts.onlyTxIds.length) throw new BadRequestException('أرسل القائمة المعتمدة بالضبط (onlyTxIds) من تقرير الموافقة');
+    const result = await applyCorrectionPlan(db, plan, { runId: String(opts.runId || ''), approvedBy: `${by} — ${String(opts.approvalNote).trim()}`,
+      onlyTxIds: opts.onlyTxIds, approveCancelledIds: opts.approveCancelledIds || [], excludeTxIds: opts.excludeTxIds || [] });
+    return { dryRun: false, result };
+  }
+
+  async rollbackShippingDiscountCorrection(runId: string, by: string) {
+    if (!String(runId || '').trim()) throw new BadRequestException('runId مطلوب');
+    return rollbackCorrection(this.transactionModel.db, String(runId), by);
   }
 
   async freezeLegacyLineCosts(dryRun = true): Promise<{

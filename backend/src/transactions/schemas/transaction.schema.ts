@@ -185,6 +185,35 @@ export class Transaction {
   @Prop({ default: 0 })
   discount: number;
 
+  /**
+   * The part of `discount` that Shopify applied to SHIPPING (Free Shipping). Classification only:
+   * `discount`, `shipCost`, `total`, `remaining`, the vault and Bosta never read it
+   * (shared/sale-discount.util.ts). 0 ≤ shippingDiscount ≤ min(shipCost, discount).
+   * ⚠ In no DTO on purpose — only the server sets it.
+   */
+  @Prop({ type: Number, default: 0 })
+  shippingDiscount: number;
+
+  /** Where shippingDiscount came from: 'order' (set when the order was confirmed) or 'correction:<runId>'. */
+  @Prop({ type: String, default: '' })
+  shippingDiscountSource: string;
+
+  /** Discount codes that granted the shipping discount (empty for automatic Free Shipping). Reports file
+   *  the shipping part under «خصومات الشحن» for these codes, never as a product discount. */
+  @Prop({ type: [String], default: undefined })
+  shippingDiscountCodes?: string[];
+
+  /**
+   * Shopify bundle composition at confirmation (order's bundleOriginal, or an unverified snapshot marked
+   * as such). ⚠ Written once by approveOrder and NEVER overwritten — the historical record of the sale.
+   */
+  @Prop({ type: Object, default: null })
+  bundleSnapshot: Record<string, any> | null;
+
+  /** The order's difference from Shopify's total, acknowledged at confirmation (audit only). */
+  @Prop({ type: Object, default: null })
+  shopifyDivergence: Record<string, any> | null;
+
   @Prop({ default: '' })
   discountCodeId: string; // ID of applied discount code (empty if manual)
 
@@ -400,6 +429,25 @@ export class Transaction {
     reversedBy?: string;
     reversalReason?: string;
   }>;
+
+  /**
+   * Overpayment refunds and transfers between orders — shared/payment-reconciliation.util.ts.
+   * Append-only: a move is completed or cancelled in place, never removed. `type` is mandatory.
+   */
+  @Prop({ type: [Object], default: [] })
+  creditMoves: Array<Record<string, any>>;
+
+  /** '' (nothing chosen) | 'credit' (kept as customer credit) | 'unresolved' (left open on purpose). */
+  @Prop({ type: String, default: '' })
+  overpaymentMode: string;
+
+  /** Bumped by every credit move; edits and credit writes are conditional on it. */
+  @Prop({ type: Number, default: 0 })
+  overpayRevision: number;
+
+  /** Audit of each financial reconciliation (edit that moved the total, credit move, mode change). */
+  @Prop({ type: [Object], default: [] })
+  reconciliationLog: Array<Record<string, any>>;
 
   @Prop({ default: '' })
   invoiceImageUrl: string;

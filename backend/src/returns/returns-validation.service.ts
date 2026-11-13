@@ -1,3 +1,4 @@
+import { invoiceShippingDiscount } from '../shared/sale-discount.util';
 import {
   Injectable,
   BadRequestException,
@@ -252,7 +253,9 @@ export class ReturnsValidationService {
     const invoiceItemsTotal =
       Number(originalTx.itemsTotal) ||
       (originalTx.items || []).reduce((s, i) => s + (Number(i.total) || 0), 0);
-    const invoiceDiscount = Math.max(0, Number(originalTx.discount) || 0);
+    // Product discount only: a free-shipping discount was never taken off the goods, so it must not
+    // lower what a returned item refunds (shared/sale-discount.util.ts, Nov 13, 2026).
+    const invoiceDiscount = Math.max(0, (Number(originalTx.discount) || 0) - invoiceShippingDiscount(originalTx as any));
     const discountRatio =
       invoiceItemsTotal > 0
         ? Math.min(1, invoiceDiscount / invoiceItemsTotal)

@@ -30,7 +30,7 @@
 import { FifoBook, FifoLayer } from '../shared/fifo.util';
 import { lineUnitCost } from '../shared/line-cost.util';
 import { purchaseLotsByCode, currentUnitCost } from '../shared/avg-cost.util';
-import { invoiceDiscountRatio } from '../shared/sale-discount.util';
+import { invoiceDiscountRatio, invoiceShippingSubsidyRatio } from '../shared/sale-discount.util';
 import { dateOnly } from '../shared/date-window.util';
 
 type Doc = Record<string, any>;
@@ -73,7 +73,7 @@ export async function loadFifoHistory(db: any): Promise<FifoHistory> {
   return {
     products: await col('products').find({}, { projection: { code: 1, name: 1, buyPrice: 1, avgCost: 1, openingBalance: 1, createdAt: 1, isActive: 1, 'activityLog.changes': 1, 'activityLog.at': 1, 'activityLog.by': 1 } }).toArray(),
     transactions: await col('transactions').find({ cancelled: { $ne: true }, archived: { $ne: true } }, {
-      projection: { type: 1, ref: 1, notes: 1, date: 1, createdAt: 1, shippedAt: 1, discount: 1, itemsTotal: 1, total: 1, shipCost: 1, supplierId: 1, supplier: 1, client: 1,
+      projection: { type: 1, ref: 1, notes: 1, date: 1, createdAt: 1, shippedAt: 1, discount: 1, shippingDiscount: 1, itemsTotal: 1, total: 1, shipCost: 1, supplierId: 1, supplier: 1, client: 1,
         'items.code': 1, 'items.name': 1, 'items.qty': 1, 'items.price': 1, 'items.total': 1, 'items.condition': 1, 'items.unitCost': 1, 'items.costSource': 1 },
     }).toArray(),
     returnRequests: await col('returnrequests').find({ status: 'معتمد', $or: [{ reversedAt: null }, { reversedAt: { $exists: false } }] }).toArray(),
@@ -469,7 +469,7 @@ export function buildFifoPreview(h: FifoHistory, opts: FifoPreviewOptions = {}) 
     }
     saleLines.push({
       key: s.key, txId: s.txId, ref: trimCode(s.tx.ref), date: day(s.tx.date), enteredAt: day(s.tx.createdAt), stockOutAt: isoDay(s.t), timedBy: s.timedBy, month: month(s.tx.date),
-      code: s.code, name: productByCode.get(s.code)?.name || '', qty: s.qty, price: Number(s.item.price) || 0, keep: 1 - invoiceDiscountRatio(s.tx),
+      code: s.code, name: productByCode.get(s.code)?.name || '', qty: s.qty, price: Number(s.item.price) || 0, keep: 1 - invoiceDiscountRatio(s.tx) - invoiceShippingSubsidyRatio(s.tx),
       costSourceBefore: s.item.costSource || (cardOf(s.code) > 0 ? 'live-card' : 'missing'),
       unitCostBefore: before, costBefore: r2(before * s.qty), costAfter: r2(cost), unitCostAfter: s.qty ? r2(cost / s.qty) : 0,
       pendingCost: r2(pendingCost), unresolvedQty, status, layers: parts.join(' + '), evidence: evidence.join(' · '),
@@ -555,7 +555,8 @@ export function buildFifoPreview(h: FifoHistory, opts: FifoPreviewOptions = {}) 
   for (const tx of h.transactions) if (tx.type === 'مبيعات') (tx.items || []).forEach((item: Doc) => {
     if (productByCode.has(codeOf(item.code))) return;
     const o = M(month(tx.date)), q = Number(item.qty) || 0, c = lineUnitCost(item, 0) * q;
-    o.revenue += (Number(item.price) || 0) * (1 - invoiceDiscountRatio(tx)) * q;
+    // Net of the shipping subsidy too, so this preview keeps matching getReports' gross profit.
+    o.revenue += (Number(item.price) || 0) * (1 - invoiceDiscountRatio(tx) - invoiceShippingSubsidyRatio(tx)) * q;
     o.cogsBefore += c; o.cogsAfter += c; o.lines++;
     if (D.unknownCodes?.[trimCode(item.code)]?.decision === 'accept') o.tracedLines++; else { o.pendingCost += c; o.unresolvedQty += q; }
   });

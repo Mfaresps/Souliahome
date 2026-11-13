@@ -68,6 +68,11 @@ import { carrierLabel, isValidCarrier } from '../shared/carriers.constants';
 import { resolveShopifyPhone } from './shopify-phone.util';
 import { resolveShopifyClientName } from './shopify-client-name.util';
 import { shopifyLineQuantity } from './shopify-line-quantity.util';
+import { clampShippingDiscount, shopifyShippingDiscount, shopifyShippingDiscountCodes } from './shopify-discounts.util';
+import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles, lineDiscountOf } from './shopify-bundles.util';
+import { ShopifySyncApiService } from './sync/sync-api.service';
+import { carryShopifyLineFields } from '../shared/shopify-line.util';
+import { BundleGuardError, bundleGuard, hasBundleLines, nonBundleSubtotal } from '../shared/bundle-guard.util';
 import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
 import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount } from './order-edit.util';
 import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
@@ -113,7 +118,83 @@ export class ShopifyService {
     private readonly discountOtpService: DiscountOtpService,
     private readonly depositReceipts: DepositReceiptsService,
     @PushOptional() private readonly depositMetafields?: ShopifyDepositMetafieldsService,
+    @PushOptional() private readonly shopifyGraphql?: ShopifySyncApiService,
   ) {}
+
+  /**
+   * Shopify native bundles (Phase 2) — keeps `bundleCurrent`/`bundleHistory` in step with Shopify and sets
+   * `bundleOriginal` ONCE, only from a verified snapshot (name + quantity read from GraphQL) whose composition
+   * equals the first arrival. Not saved here. GraphQL is asked only when the data is unverified or changed.
+   * Returns true when anything changed.
+   */
+  private async refreshBundles(order: ShopifyOrderDocument, raw: any): Promise<boolean> {
+    const o: any = order;
+    if (!hasBundles(raw)) {
+      if (!o.bundleCurrent) return false;
+      o.bundleHistory = [...(o.bundleHistory || []), { at: new Date().toISOString(), change: 'removed', snapshot: null }];
+      o.bundleCurrent = null;
+      order.markModified('bundleHistory');
+      return true;
+    }
+    const plain = buildBundleSnapshot(raw, null);
+    const sameAsCurrent = o.bundleCurrent?.verified && compositionKey(o.bundleCurrent) === compositionKey(plain);
+    let snap = sameAsCurrent ? o.bundleCurrent : plain;
+    if (!sameAsCurrent && this.shopifyGraphql && raw?.id != null) {
+      try {
+        const data = await this.shopifyGraphql.query(
+          'query BundleGroups($id: ID!) { order(id: $id) { lineItems(first: 100) { nodes { id lineItemGroup { id title quantity productId variantId variantSku } } } } }',
+          { id: `gid://shopify/Order/${raw.id}` });
+        snap = buildBundleSnapshot(raw, groupInfoFromGraphql(data?.order?.lineItems?.nodes));
+      } catch (e) {
+        this.logger.warn(`Bundle details unavailable for ${o.ref}: ${(e as Error).message}`);
+      }
+    }
+    let changed = false;
+    if (!o.bundleFirstComposition) { o.bundleFirstComposition = compositionKey(plain); changed = true; }
+    const prev = o.bundleCurrent;
+    if (!prev || compositionKey(prev) !== compositionKey(snap) || (!prev.verified && snap.verified)) {
+      o.bundleHistory = [...(o.bundleHistory || []), { at: new Date().toISOString(), change: prev ? 'changed' : 'first', snapshot: snap }];
+      o.bundleCurrent = snap;
+      order.markModified('bundleHistory'); order.markModified('bundleCurrent');
+      changed = true;
+    }
+    // ⚠ Set once, only verified, only if it is still the composition that arrived first.
+    if (!o.bundleOriginal?.verified && snap.verified && compositionKey(snap) === o.bundleFirstComposition) {
+      o.bundleOriginal = snap; order.markModified('bundleOriginal'); changed = true;
+    }
+    return changed;
+  }
+
+  /**
+   * Once per start: orders that arrived before bundle support (component lines present, no bundle data yet)
+   * get their bundle data read. Order records only — sales are never touched. Background, never throws.
+   */
+  onModuleInit(): void {
+    setTimeout(() => {
+      (async () => {
+        // ⚠ $elemMatch, not a plain $nin on the array path: $nin [null] fails an order that mixes
+        //   bundle parts with ordinary lines (any element null → excluded).
+        const pending = await this.shopifyOrderModel.find({
+          'rawData.line_items': { $elemMatch: { sales_line_item_group_id: { $nin: [null, ''] } } },
+          $or: [{ bundleCurrent: null }, { bundleCurrent: { $exists: false } }],
+        }).limit(200);
+        let n = 0;
+        for (const order of pending) {
+          if (await this.refreshBundles(order, order.rawData)) { await order.save(); n++; }
+        }
+        this.logger.log(`Bundle backfill: ${pending.length} order(s) without bundle data, ${n} updated`);
+      })().catch((e) => this.logger.warn(`Bundle backfill skipped: ${(e as Error).message}`));
+    }, 15000);
+  }
+
+  /** Background bundle refresh after a webhook — never delays the webhook reply, never throws. */
+  private refreshBundlesSoon(orderId: unknown, raw: any): void {
+    if (!hasBundles(raw)) return;
+    (async () => {
+      const fresh = await this.shopifyOrderModel.findById(orderId);
+      if (fresh && await this.refreshBundles(fresh, raw)) await fresh.save();
+    })().catch((e) => this.logger.warn(`Bundle refresh failed: ${(e as Error).message}`));
+  }
 
   /** Writes the deposit summary derived from APPROVED receipts onto the order (not saved). */
   private applyDerivedDeposit(order: ShopifyOrderDocument, at = new Date().toISOString()): void {
@@ -184,6 +265,8 @@ export class ShopifyService {
       const notes = orderData.note || '';
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
       const discount = this.parsePrice(orderData.total_discounts);
+      // الجزء من total_discounts اللي على الشحن (Free Shipping) — تصنيف بس، الإجمالي تحت ما بيتغيّرش.
+      const shippingDiscount = clampShippingDiscount(shopifyShippingDiscount(orderData), shipCost, discount);
       // الإجمالي من أسعار Shopify (اللي العميل شافها وقت الطلب) — mapItems بيسعّر السطر بيها.
       const itemsTotal = items.reduce((s, i) => s + (i.price * i.qty), 0);
       const total = Math.max(0, itemsTotal + shipCost - discount);
@@ -210,6 +293,7 @@ export class ShopifyService {
         itemsTotal,
         shipCost,
         discount,
+        shippingDiscount,
         discountCode,
         discountType,
         discountValue,
@@ -264,6 +348,8 @@ export class ShopifyService {
       // Tell open Orders workspaces to revalidate their current page after the
       // saved order (including its assignment/deposit summary) is visible.
       this.emit('shopify:order-created', { id: String(order._id) });
+      // Bundle name/quantity come from GraphQL — read in the background, never delaying this webhook.
+      this.refreshBundlesSoon(order._id, orderData);
       const itemCount = items.reduce((sum, item) => sum + item.qty, 0);
       await this.notifications?.enqueue('order', 'order:shopify:' + shopifyId, order.ref, 'shopify:' + order._id, undefined, undefined, { orderTotal: order.total, itemCount, assignedUserId: order.assignedTo || undefined });
       return { saved: true, id: String(order._id) };
@@ -634,12 +720,21 @@ export class ShopifyService {
         order.shipCost = shipCost;
         order.itemsTotal = order.items.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0);
         order.discount = discount;
+        order.shippingDiscount = clampShippingDiscount(shopifyShippingDiscount(orderData), shipCost, discount);
         // ⚠ الإجمالي يُعاد حسابه عبر computeShopifyOrderTotal، لا من أرقام شوبيفاي وحدها.
         //   `total` أعلاه يعرف خصم شوبيفاي فقط، فإسناده مباشرة كان يمحو الخصم اليدوي من
         //   الإجمالي عند أول orders/updated — الحقول تبقى لكن الرقم يعود لما قبل الخصم،
         //   وهو أسوأ من المحو لأن الخصم يظل ظاهراً في الواجهة بينما الإجمالي يخالفه.
         //   خصمنا في حقول منفصلة لا يلمسها هذا المسار، فالحساب هنا يستعيدها.
         order.total = this.computeShopifyOrderTotal(order).total;
+        // A recorded difference from Shopify follows Shopify's own updates: gone once the totals agree again.
+        const div: any = (order as any).shopifyDivergence;
+        const shopifyNow = parseFloat(String(orderData.current_total_price ?? ''));
+        if (div && Number.isFinite(shopifyNow)) {
+          const diff = Math.round((order.total - shopifyNow) * 100) / 100;
+          (order as any).shopifyDivergence = Math.abs(diff) > 0.5 ? { ...div, shopifyTotal: shopifyNow, erpTotal: order.total, diff } : null;
+          order.markModified('shopifyDivergence');
+        }
       } else if (totalChanged) {
         order.valueChangeConflict = {
           oldTotal: order.total || 0,
@@ -665,6 +760,7 @@ export class ShopifyService {
       await order.save();
       // A Shopify-side total edit changes custom.remaining_amount of an order already sent.
       await this.depositMetafields?.requestSyncIfTotalChanged(shopifyId, orderData.current_total_price);
+      this.refreshBundlesSoon(order._id, orderData);
 
       if (order.status === 'pending') {
         this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
@@ -1275,7 +1371,7 @@ export class ShopifyService {
    * into the vault and are copied to the sale without another entry. For an older order with no
    * receipts, an explicit paid amount in its Shopify note is booked once during confirmation.
    */
-  async approveOrder(orderId: string, approvedBy: string, carrierCode?: string, actorUserId?: string): Promise<{ success: boolean; txId?: string }> {
+  async approveOrder(orderId: string, approvedBy: string, carrierCode?: string, actorUserId?: string, acknowledgeDivergence = false): Promise<{ success: boolean; txId?: string }> {
     const order = await this.shopifyOrderModel.findById(orderId);
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
@@ -1283,6 +1379,30 @@ export class ShopifyService {
     }
     if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل التحضير والشحن');
     if (order.editRequest?.status === 'معلق') throw new BadRequestException('راجع طلب تعديل الأوردر قبل التحضير والشحن');
+    // An edit left Soulia's total different from what Shopify charged: confirming needs an explicit acknowledgement.
+    const divergence: any = (order as any).shopifyDivergence;
+    if (divergence && !acknowledgeDivergence) {
+      throw new BadRequestException({ code: 'SHOPIFY_DIVERGENCE_ACK_REQUIRED', divergence,
+        message: `إجمالي الطلب في النظام ${divergence.erpTotal} يختلف عن Shopify ${divergence.shopifyTotal} (فرق ${divergence.diff}) — راجع الفرق وأكّد قبل التأكيد` });
+    }
+    const acknowledgedDivergence = divergence ? { ...divergence, acknowledgedBy: approvedBy, acknowledgedAt: new Date().toISOString() } : null;
+    // Shopify bundles (Phase 2): try once more to verify the composition, then refuse a line that carries the
+    // bundle's OWN SKU beside its components — its revenue and stock would be counted twice.
+    let confirmedBundleSnapshot: any = null;
+    if (hasBundles(order.rawData)) {
+      try { if (await this.refreshBundles(order, order.rawData)) await order.save(); }
+      catch (e) { this.logger.warn(`Bundle verification at confirmation failed for ${order.ref}: ${(e as Error).message}`); }
+      const o: any = order;
+      const known = o.bundleOriginal?.verified ? o.bundleOriginal : (o.bundleCurrent || buildBundleSnapshot(order.rawData, null));
+      const conflicts = bundleParentConflicts(order.rawData, known);
+      if (conflicts.length) {
+        throw new BadRequestException(`سطر الباقة وأجزاؤها معاً في نفس الأوردر (${conflicts.map(c => c.sku || c.lineId).join('، ')}) — احذف سطر الباقة نفسه قبل التأكيد حتى لا يُحسب الإيراد والمخزون مرتين`);
+      }
+      // ⚠ The sale's own record — written once here, never overwritten afterwards.
+      confirmedBundleSnapshot = o.bundleOriginal?.verified
+        ? { ...o.bundleOriginal, confirmedAt: new Date().toISOString() }
+        : { ...known, verified: false, unverifiable: true, reason: known?.reason || 'Unverifiable Bundle Composition', confirmedAt: new Date().toISOString() };
+    }
 
     // A receipt still under review is money not yet decided — confirming now would freeze the
     // order without it, and nothing could attach it afterwards.
@@ -1441,7 +1561,17 @@ export class ShopifyService {
     let tx: TransactionDocument;
     let createdTxId = '';
     try {
-      tx = await this.txModel.create({
+      // ⚠ مقصوص بخصم Shopify نفسه: الخصم اليدوي والأكواد عمرهم ما بيتحسبوا خصم شحن.
+    const confirmedSd = clampShippingDiscount(order.shippingDiscount, order.shipCost,
+      Math.min(Number(order.discount) || 0, Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER));
+    const confirmedSdCodes = confirmedSd > 0 ? shopifyShippingDiscountCodes(order.rawData) : [];
+    const confirmedLines = (settledConfirmed as any[]).map((it: any) => (it.shopifyLineId && !it.lineId ? { ...it, lineId: 'sh:' + it.shopifyLineId } : it));
+    const confirmedBundleField = confirmedBundleSnapshot ? { bundleSnapshot: confirmedBundleSnapshot } : {};
+    const confirmedDivergenceField = acknowledgedDivergence ? { shopifyDivergence: acknowledgedDivergence } : {};
+    const confirmedShippingDiscount = confirmedSd > 0
+      ? { shippingDiscount: confirmedSd, shippingDiscountSource: 'order', ...(confirmedSdCodes.length ? { shippingDiscountCodes: confirmedSdCodes } : {}) }
+      : {};
+    tx = await this.txModel.create({
       date,
       warehouseCode: 'MAIN',
       type: 'مبيعات',
@@ -1461,7 +1591,10 @@ export class ShopifyService {
       depositReceipts: depositReceiptsSnapshot,
       // ⚠ الفاتورة دي مابتعدّيش على TransactionsService.create، فلازم تحفظ تكلفة سطورها هنا
       // من نفس لقطة المخزون (خطوة 2 — shared/line-cost.util.ts).
-      items: settledConfirmed,
+      // The Shopify line id becomes the invoice line id, so later edits carry cost/price by the exact line.
+      items: confirmedLines,
+      ...confirmedBundleField,
+      ...confirmedDivergenceField,
       total: order.total,
       itemsTotal: order.itemsTotal,
       shipCost: order.shipCost,
@@ -1486,6 +1619,8 @@ export class ShopifyService {
           + (Number(order.manualDiscount) || 0),
         Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER,
       ),
+      // الجزء من `discount` اللي Shopify عمله على الشحن — تصنيف للتقارير بس (shared/sale-discount.util.ts).
+      ...confirmedShippingDiscount,
       // يبقى مخزَّناً كتفصيل: «كم منه قرّره موظف؟» سؤال مراجعة لا يجيب عنه المجموع.
       manualDiscount: Number(order.manualDiscount) || 0,
       manualDiscountType: order.manualDiscountType || 'fixed',
@@ -1902,7 +2037,27 @@ export class ShopifyService {
         patch.itemSyncConflict = null;
         changes.push(source === 'shopify' ? 'استخدام أصناف Shopify المتعارضة' : 'الاحتفاظ بأصناف النظام');
       }
-      patch.items = validEditItems(items!);
+      // Shopify line id + bundle fields come from the stored lines, never from the request.
+      patch.items = carryShopifyLineFields(order.items || [], validEditItems(items!));
+      // Bundle protection (Phase 3, shared/bundle-guard.util.ts): parts keep Shopify's price, never grow;
+      // a removed/reduced part breaks the bundle → the rest at their standalone price on the ORDER's day.
+      if (hasBundleLines(order.items || [])) {
+        const codes = [...new Set(patch.items.map((i: any) => String(i.code || '').trim()).filter(Boolean))];
+        const prods: any[] = codes.length ? await this.productModel.find({ code: { $in: codes } }, { code: 1, sellPrice: 1, priceOffers: 1 }).lean() : [];
+        const groupTitle = (g: string) => ((order as any).bundleOriginal || (order as any).bundleCurrent)?.groups?.find((x: any) => String(x.groupId) === g)?.title || '';
+        try {
+          const guarded = bundleGuard({ stored: order.items || [], incoming: patch.items, day: this.orderDayOf(order), delivered: false,
+            confirmBreak: !!(input as any).confirmBundleBreak, titleOf: groupTitle,
+            productOf: (line) => prods.find((p) => String(p.code).trim() === String(line?.code || '').trim()) || null });
+          patch.items = guarded.items;
+          for (const b of guarded.broken) {
+            changes.push(`كسر الباقة «${b.title || b.groupId}»: الأجزاء الباقية بسعرها العادي يوم الطلب (${b.lines.map(l => `${l.name || l.code} ${l.from} ← ${l.to}`).join('، ') || 'لا أجزاء باقية'})`);
+          }
+        } catch (e) {
+          if (e instanceof BundleGuardError) throw new BadRequestException({ code: e.code, message: e.message, preview: e.preview || null });
+          throw e;
+        }
+      }
       // شيل عرض من سطر: نفس قاعدة الفاتورة — شيل جديد محتاج promotions-offers، والقديم بيعدّي كما هو.
       if (patch.items.some((i: any) => i.offerRemoved)) {
         const codes = [...new Set(patch.items.map((i: any) => String(i.code || '').trim()).filter(Boolean))];
@@ -1943,9 +2098,46 @@ export class ShopifyService {
         if (before[key] !== patch[key]) changes.push(`${label}: ${before[key]} ← ${patch[key]}`);
       }
     }
+    // Codes and extra discounts apply to the lines OUTSIDE bundles by default (owner's decision). Going over
+    // that needs `shopify-bundle-discount-override` and a written reason — kept in the history.
+    if ((input.items || input.discount) && hasBundleLines(patch.items ?? order.items ?? [])) {
+      const lines = patch.items ?? order.items ?? [];
+      const ours = (patch.manualDiscount ?? before.manualDiscount ?? 0) + (patch.codesDiscount ?? before.codesDiscount ?? 0);
+      const base = nonBundleSubtotal(lines);
+      if (ours > base + 0.005) {
+        const reason = String((input.discount as any)?.bundleOverrideReason || '').trim();
+        const allowed = actor.role === 'admin' || (actor.perms || []).includes('shopify-bundle-discount-override');
+        if (!reason || reason.length < 5 || !allowed) {
+          throw new BadRequestException({ code: 'BUNDLE_DISCOUNT_BLOCKED', base, amount: ours,
+            message: allowed ? 'الخصم يتجاوز الأصناف خارج الباقة — اكتب سبب استثناء الباقة (5 أحرف على الأقل)'
+              : `الأكواد والخصم الإضافي على الأصناف خارج الباقة فقط (${base}) — تطبيقه على الباقة يحتاج صلاحية خاصة` });
+        }
+        patch.bundleDiscountOverride = { reason, by: actor.name, at: new Date().toISOString(), amount: ours, base };
+        changes.push(`استثناء خصم على الباقة (${ours} > ${base}) — ${reason}`);
+      }
+    }
     patch.total = this.computeShopifyOrderTotal({ ...before, ...patch }).total;
     if (patch.total !== before.total) changes.push(`الإجمالي: ${before.total} ← ${patch.total}`);
+    // Any edit that moves the total away from what Shopify charged is recorded; confirming then needs an
+    // explicit acknowledgement (approveOrder). Nothing is pushed to Shopify.
+    const shopifyTotal = parseFloat(String(order.rawData?.current_total_price ?? ''));
+    if (Number.isFinite(shopifyTotal)) {
+      const diff = Math.round((patch.total - shopifyTotal) * 100) / 100;
+      patch.shopifyDivergence = Math.abs(diff) > 0.5
+        ? { shopifyTotal, erpTotal: patch.total, diff, by: actor.name, at: new Date().toISOString(), changes: changes.slice(0, 10) }
+        : null;
+    }
     return { before, patch, changes };
+  }
+
+  /** The Cairo calendar day the order was placed — the day a broken bundle's parts are priced at. */
+  private orderDayOf(order: any): string {
+    const at = String(order?.shopifyCreatedAt || '');
+    if (/^\d{4}-\d{2}-\d{2}T/.test(at)) {
+      const d = new Date(at);
+      if (!isNaN(d.getTime())) return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    }
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   }
 
   async submitOrderEdit(orderId: string, input: OrderEditInput, actor: OrderEditActor) {
@@ -2757,11 +2949,14 @@ export class ShopifyService {
           : null;
 
         const warnings: string[] = [];
+        // A bundle component: Shopify priced it as its share of the bundle — not a price mismatch.
+        const bundleGroupId = item.sales_line_item_group_id != null && String(item.sales_line_item_group_id) !== ''
+          ? String(item.sales_line_item_group_id) : '';
 
         if (product) {
           const p = product as any;
-          // تحقق من تطابق سعر البيع
-          if (p.sellPrice && Math.abs(p.sellPrice - shopifyPrice) > 0.01) {
+          // تحقق من تطابق سعر البيع (سطر الباقة سعره نصيبه من الباقة — مش اختلاف)
+          if (!bundleGroupId && p.sellPrice && Math.abs(p.sellPrice - shopifyPrice) > 0.01) {
             warnings.push(`سعر مختلف: Shopify=${shopifyPrice}، النظام=${p.sellPrice}`);
           }
           // تحقق من تطابق الاسم
@@ -2788,6 +2983,12 @@ export class ShopifyService {
           shopifyPrice,
           shopifyName: item.title || item.name || '',
           warnings,
+          // Shopify identity of the line (Phase 2) — the line id survives confirmation as `lineId` ('sh:<id>').
+          shopifyLineId: item.id != null ? String(item.id) : '',
+          shopifyVariantId: item.variant_id != null ? String(item.variant_id) : '',
+          shopifyProductId: item.product_id != null ? String(item.product_id) : '',
+          shopifyLineDiscount: lineDiscountOf(item),
+          ...(bundleGroupId ? { bundleGroupId, priceBasis: 'bundle' } : {}),
         };
       }),
     );

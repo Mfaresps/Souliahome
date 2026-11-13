@@ -14,7 +14,7 @@ const line = (start) => { const i = html.indexOf(start); assert.ok(i > 0, 'extra
 const helpers = [
   line('const PROMO_PERMS ='), line('const PO_REASONS ='),
   ...['promoPerm', 'requirePromoPerm', '_offerActiveOn', '_effectiveSellPrice', '_lineOfferOf', '_codeNotStarted', '_codeExpired',
-    '_liveCodeUsage', '_psDate', 'todayLocalISO', 'discBadgeHtml', 'fmtMoneyN', '_offerTagHtml', '_dmyText', '_dmySync'].map(fnSrc),
+    '_liveCodeUsage', '_saleShipDisc', '_saleStoredProductDiscount', '_psDate', 'todayLocalISO', 'discBadgeHtml', 'fmtMoneyN', '_offerTagHtml', '_dmyText', '_dmySync'].map(fnSrc),
 ].join('\n');
 const reasons = html.slice(html.indexOf('  poR_blackFriday:'), html.indexOf('\n', html.indexOf('  poR_limited:')));
 // The page reaches the old write functions by name; their guard must be the real one.
