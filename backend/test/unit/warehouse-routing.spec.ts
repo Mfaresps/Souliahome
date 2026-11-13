@@ -81,11 +81,12 @@ describe('Warehouse routing and visibility', () => {
   });
   it('routes manual stock corrections to the selected warehouse balance', async () => {
     const service: any = Object.create(InventoryMovementsService.prototype);
-    service.model = { db: { collection: () => ({ findOne: async () => ({ code: 'WH-B' }) }) }, create: jest.fn(async value => value) };
+    service.model = { db: { collection: () => ({ findOne: async () => ({ code: 'WH-B' }), find: () => ({ toArray: async () => [] }) }) }, create: jest.fn(async value => value) };
     service.productsService = { findById: async () => ({ _id: productId, code: 'SKU-1', name: 'Basket' }) };
     service.transactionsService = stock(5, 20);
     service.generateMovementId = async () => '123456'; service.generateAdjustmentRef = async () => 'ADJ-1';
-    await expect(service.adjustStock({ productId, warehouseCode: 'WH-B', qtyDelta: -2, reason: 'Count', by: 'Admin' })).resolves.toMatchObject({ warehouseCode: 'WH-B', qtyBefore: 20, qtyAfter: 18 });
+    // A negative correction naming no piece needs an explicit confirmation + note (final audit).
+    await expect(service.adjustStock({ productId, warehouseCode: 'WH-B', qtyDelta: -2, reason: 'Count', by: 'Admin', unidentifiedConfirmed: true, unidentifiedNote: 'Count shortage' })).resolves.toMatchObject({ warehouseCode: 'WH-B', qtyBefore: 20, qtyAfter: 18 });
   });
   it('does not allocate corrections in a secondary warehouse to MAIN', async () => {
     const service: any = Object.create(TransactionsService.prototype);

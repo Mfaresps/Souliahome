@@ -1,3 +1,4 @@
+import { setPrimarySupplier } from './primary-supplier.util';
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -65,7 +66,9 @@ export class SuppliersService {
     const updateData: Record<string, unknown> = { ...dto };
     delete updateData['by'];
 
+    let oldName = '';
     if (updateData['name']) {
+      oldName = String(((await this.supplierModel.findById(id, { name: 1 }).lean().exec()) as any)?.name || '');
       const normalizedName = String(updateData['name']).trim();
       const existing = await this.supplierModel
         .findOne({ name: { $regex: `^${normalizedName}$`, $options: 'i' }, _id: { $ne: id } })
@@ -95,12 +98,22 @@ export class SuppliersService {
       )
       .exec();
     if (!supplier) throw new NotFoundException('المورد غير موجود');
+    // اسم المورد اتغيّر: نسخة الاسم على المنتجات (مورد أساسي مربوط، أو اسم قديم لسه مش مربوط) تتبعه.
+    if (oldName && oldName !== supplier.name) {
+      const db = this.supplierModel.db;
+      await db.collection('products').updateMany({ supplierId: String(supplier._id) }, { $set: { supplier: supplier.name } });
+      await db.collection('products').updateMany({ supplierId: { $in: ['', null] }, supplier: oldName }, { $set: { supplier: supplier.name } });
+      await db.collection('productsuppliers').updateMany({ supplierId: String(supplier._id) }, { $set: { supplierName: supplier.name } });
+    }
     return supplier;
   }
 
   async remove(id: string, by?: string): Promise<void> {
     const result = await this.supplierModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('المورد غير موجود');
+    // المنتجات اللي كان موردها الأساسي ترجع «— بدون —»؛ سطور أسعاره بتفضل (مكتوب عليها «محذوف»).
+    const linked: any[] = await this.supplierModel.db.collection('products').find({ supplierId: String(id) }, { projection: { _id: 1 } }).toArray();
+    for (const p of linked) await setPrimarySupplier(this.supplierModel.db, String(p._id), null, by || 'النظام').catch(() => undefined);
   }
 
   async addLog(id: string, dto: AddSupplierLogDto): Promise<SupplierDocument> {

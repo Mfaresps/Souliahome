@@ -8,6 +8,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
+import { lineUnitCost } from '../shared/line-cost.util';
+import { currentUnitCost } from '../shared/avg-cost.util';
 
 export interface ProductInvoice {
   type: 'sales' | 'purchase' | 'return';
@@ -52,6 +54,10 @@ export interface ProductAnalytics {
     netRevenue: number;
     netQuantitySold: number;
     avgBuyPrice: number;
+    /** خطوة 3: التكلفة اللي الربح اتحسب بيها فعلًا = تكلفة المبيعات المحفوظة − تكلفة المرتجع السليم. */
+    netCost: number;
+    /** التكلفة اللي البيعة الجاية هتاخدها (متوسط التكلفة، أو سعر الكارت لو لسه ماتحسبش). */
+    currentUnitCost: number;
     netProfit: number;
     profitMargin: number;
   };
@@ -108,6 +114,11 @@ export class ProductAnalyticsService {
 
     // Separate invoices by type
     const saleInvoices: ProductInvoice[] = [];
+    // خطوة 3: تكلفة البيع والمرتجع من التكلفة المحفوظة على السطر (line-cost.util)، مش من
+    // متوسط كل فواتير الشراء — نفس رقم التقارير. السطر الغير مثبّت ياخد التكلفة الحالية.
+    const liveCost = currentUnitCost(product as any) ?? 0;
+    let soldCost = 0;
+    let returnedCost = 0;
     const purchaseInvoices: ProductInvoice[] = [];
     const returnInvoices: ProductInvoice[] = [];
 
@@ -154,10 +165,13 @@ export class ProductAnalyticsService {
       };
 
       if (invoiceType === 'sales') {
+        soldCost += lineUnitCost(item, liveCost) * (Number(item.qty) || 0);
         saleInvoices.push(invoice);
       } else if (invoiceType === 'purchase') {
         purchaseInvoices.push(invoice);
       } else if (invoiceType === 'return') {
+        // التالف مابيرجعش المخزن، فتكلفته خسارة ومابتترجعش من تكلفة المبيعات.
+        if (String((item as any).condition || '').trim() !== 'تالف') returnedCost += lineUnitCost(item, liveCost) * (Number(item.qty) || 0);
         returnInvoices.push(invoice);
       }
     });
@@ -175,12 +189,12 @@ export class ProductAnalyticsService {
     const netQuantitySold = Math.max(0, totalQuantitySold - totalQuantityReturned);
     const netRevenue = Math.max(0, totalRevenueFromSales - totalLossFromReturns);
 
-    // Use avg buy price from actual purchase invoices when available, fallback to product.buyPrice
+    // متوسط فواتير الشراء — بيتعرض بس. التكلفة نفسها من السطور المحفوظة (خطوة 3).
     const avgBuyPrice =
       totalQuantityPurchased > 0
         ? totalCostFromPurchases / totalQuantityPurchased
         : product.buyPrice || 0;
-    const netCost = netQuantitySold * avgBuyPrice;
+    const netCost = Math.max(0, soldCost - returnedCost);
     const netProfit = netRevenue - netCost;
 
     const profitMargin =
@@ -218,6 +232,8 @@ export class ProductAnalyticsService {
         netRevenue,
         netQuantitySold,
         avgBuyPrice,
+        netCost: Math.round(netCost * 100) / 100,
+        currentUnitCost: Math.round(liveCost * 100) / 100,
         netProfit,
         profitMargin,
       },

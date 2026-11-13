@@ -54,7 +54,7 @@
       await load();
       dialog.querySelector('[data-cpr-custody]').checked = false;
       const text = result.pendingSettlement ? tr('Received. Complete the customer return or failed-delivery settlement, then approve this piece for sale.', 'تم الاستلام. أكمل تسوية المرتجع أو فشل التوصيل، ثم اعتمد القطعة للبيع.') : result.unit.status === 'available' ? tr('Received and available for sale with the same identity.', 'تم الاستلام والقطعة متاحة للبيع بنفس الهوية.') : result.unit.status === 'damaged' ? tr('Received as damaged. Blocked from preparation.', 'تم الاستلام كقطعة تالفة، وهي غير متاحة للتحضير.') : tr('Received for review. Not available for sale yet.', 'تم الاستلام للمراجعة. القطعة غير متاحة للبيع حاليًا.');
-      message(text, true);
+      message(text + ((sup => sup ? ' · ' + sup : '')(window.SouliaUnitSupplier?.text(result) || '')), true);
       const print = dialog.querySelector('[data-cpr-print]'); print.hidden = false;
       print.onclick = () => { dialog.close(); window.InventoryUnitLabels?.openStockUnits({ identifier, preview: true }); };
     } catch (error) {

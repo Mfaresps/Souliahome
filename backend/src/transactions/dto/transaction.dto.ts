@@ -8,6 +8,7 @@ import {
   ValidateNested,
   Min,
   IsIn,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CANCEL_REASON_CODES } from '../../shared/cancellation.constants';
@@ -63,6 +64,15 @@ export class TransactionItemDto {
   @IsString()
   @IsOptional()
   readonly condition?: string;
+
+  /**
+   * «العرض اتشال من السطر ده» — {offerId, offerName, reason, by, at}. ⚠ Must be declared or the
+   * whitelist pipe drops it silently. The server re-validates it (settleOfferRemovals): by/at come
+   * from the session, and a new removal needs promotions-offers.
+   */
+  @IsObject()
+  @IsOptional()
+  readonly offerRemoved?: Record<string, unknown>;
 }
 
 export class CreateTransactionDto {

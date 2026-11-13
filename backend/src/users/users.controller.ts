@@ -14,6 +14,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UsersService } from './users.service';
+import { AccessRolesService } from './access-roles.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
@@ -30,6 +31,7 @@ export class UsersController {
     @InjectModel(Transaction.name) private readonly txModel: Model<TransactionDocument>,
     private readonly presenceGateway: PresenceGateway,
     private readonly auditService: SecurityAuditService,
+    private readonly accessRoles: AccessRolesService,
   ) {}
 
   @Get('me/stats')
@@ -85,11 +87,22 @@ export class UsersController {
 
   @Roles('admin')
   @Post()
-  async create(@Body() dto: CreateUserDto, @Req() req: {user:{username:string}}) {
-    if (dto.role === 'admin' && req.user?.username !== 'admin') {
-      throw new ForbiddenException('Only the Super Admin can create administrators');
+  async create(@Body() dto: CreateUserDto) {
+    // Access comes from a role only: the account is created with no grants of its own and the
+    // chosen role is assigned in the same request. A role that does not exist fails BEFORE the
+    // account is written.
+    const roleId = String(dto.roleId || '').trim();
+    if (!roleId) throw new BadRequestException('اختر دوراً للمستخدم');
+    if (roleId === 'super-admin') throw new ForbiddenException('Super Admin cannot be assigned');
+    if (roleId !== 'admin') await this.accessRoles.findRolePublic(roleId);
+    const { role: _role, perms: _perms, roleId: _roleId, ...profile } = dto as CreateUserDto & Record<string, unknown>;
+    const user = await this.usersService.createUser({ ...(profile as unknown as CreateUserDto), role: 'viewer', perms: [] });
+    try {
+      await this.accessRoles.assign(roleId, String(user._id));
+    } catch (error) {
+      await this.usersService.removeUser(String(user._id)).catch(() => undefined);
+      throw error;
     }
-    const user = await this.usersService.createUser(dto);
     return this.usersService.findAllForAdmin().then((users) =>
       users.find((u) => u._id.toString() === user._id.toString()),
     );
@@ -107,13 +120,8 @@ export class UsersController {
     if (target && target.username === 'admin' && req.user?.username !== 'admin') {
       throw new ForbiddenException('لا يمكن تعديل حساب السوبر أدمن');
     }
-    // Prevent demoting the super admin
-    if (target && target.username === 'admin' && dto.role && dto.role !== 'admin') {
-      throw new ForbiddenException('لا يمكن تغيير دور السوبر أدمن');
-    }
-    if (dto.role === 'admin' && req.user?.username !== 'admin' && target?.role !== 'admin') {
-      throw new ForbiddenException('Only the Super Admin can grant administrator access');
-    }
+    // Access is changed through a role (POST /roles/:id/assign), never here: role and perms
+    // sent with a profile edit are dropped by updateUser.
     const user = await this.usersService.updateUser(id, dto);
     if (dto.avatar !== undefined || dto.name !== undefined) {
       try {

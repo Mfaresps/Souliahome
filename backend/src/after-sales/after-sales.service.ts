@@ -14,6 +14,8 @@ import { DEFAULT_AFTER_SALES_POLICY, afterSalesQuote, money, requireOperation } 
 import { identityOperationKey } from '../inventory-units/failed-delivery-identities';
 import { NotificationsService } from '../notifications/notifications.service';
 import { projectAfterSalesShipment } from './after-sales-shipment';
+import { returnLineCost } from '../shared/line-cost.util';
+import { currentUnitCost } from '../shared/avg-cost.util';
 import { linkComplaintCase, recordComplaintExecution } from '../complaints/complaint-workflow';
 
 @Injectable()
@@ -196,8 +198,9 @@ export class AfterSalesService {
     const codes = [...new Set(body.items.map((selected: any) => original.items?.[Number(selected.lineIndex)]?.code).filter(Boolean))];
     const replacementIds = body.kind === 'exchange' ? body.exchangeItems.map((selected: any) => this.id(selected.productId)) : [];
     const catalog = await this.connection.collection('products').find({ $or: [{ code: { $in: codes } }, { _id: { $in: replacementIds }, archived: { $ne: true } }] },
-      { session, projection: { code: 1, name: 1, imageUrl: 1, images: 1, sellPrice: 1, isActive: 1, archived: 1 } }).toArray();
+      { session, projection: { code: 1, name: 1, imageUrl: 1, images: 1, sellPrice: 1, buyPrice: 1, avgCost: 1, isActive: 1, archived: 1 } }).toArray();
     const byCode = new Map(catalog.map(product => [product.code, product]));
+    const costAt = new Date().toISOString();
     const byId = new Map(catalog.map(product => [String(product._id), product]));
     const assignedUnits = await this.connection.collection('inventoryunits').find({ productId: { $in: catalog.filter(product => codes.includes(product.code)).map(product => String(product._id)) },
       'assignment.transactionId': String(original._id) }, { session, projection: { productId: 1, 'assignment.lineId': 1, packId: 1 } }).toArray();
@@ -218,7 +221,9 @@ export class AfterSalesService {
       if (unitIds.some(id => !assigned.some(u => String(u._id) === id)) || prior.some(r => r.workflow?.selectedUnits?.some((id: string) => unitIds.includes(id)))) throw new ConflictException('هوية غير مرتبطة بالفاتورة أو لها طلب سابق');
       if (assigned.some(u => unitIds.includes(String(u._id)) && u.packId)) throw new ConflictException('افتح الباك في إدارة المخازن قبل استلام قطعه منفردة');
       items.push({ lineIndex: index, lineId: line.lineId, productId: product ? String(product._id) : '', code: line.code, name: line.name || product?.name || line.code, imageUrl: line.imageUrl || product?.imageUrl || product?.images?.[0] || '',
-        qty, price: money(Number(line.total || line.price * line.qty) / line.qty * ratio), total: money(Number(line.total || line.price * line.qty) / line.qty * qty * ratio), unitIds, condition: 'سليم' });
+        qty, price: money(Number(line.total || line.price * line.qty) / line.qty * ratio), total: money(Number(line.total || line.price * line.qty) / line.qty * qty * ratio), unitIds, condition: 'سليم',
+        // تكلفة سطر البيع الأصلي (shared/line-cost.util.ts) — بتعدّي مع `...line` لحد الاستلام والتالف.
+        ...returnLineCost(line, product ? currentUnitCost(product as any) : null, costAt) });
     }
     this.validation.assertQtyWithinRemaining(original, items, prior);
     const credit = money(items.reduce((n, item) => n + item.total, 0));

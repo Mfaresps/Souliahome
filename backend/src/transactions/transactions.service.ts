@@ -9,6 +9,7 @@ import { resetPickupPreparation } from '../inventory-units/pickup-preparation-re
 import { checkReturnedIdentities, finishFailedDeliveryIdentities, ReturnedIdentity } from '../inventory-units/failed-delivery-identities';
 import { normalizePurchaseEdit } from '../inventory-units/purchase-edit-integrity';
 import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
+import { carryLineCosts, freezeLineCost, frozenUnitCost, lineUnitCost, stampMissingSaleLineCosts, stampSaleLineCosts, lineCostSourceKey, LINE_COST_SOURCE_KEYS } from '../shared/line-cost.util';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -60,8 +61,15 @@ import { DiscountOtpService } from '../discount-otp/discount-otp.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 import { DepositReceiptsService, ReceiptActor } from '../shopify/deposit-receipts.service';
+import { ShopifyDepositMetafieldsService } from '../shopify/sync/deposit-metafields.service';
 import { SupplierLedgerService } from '../supplier-ledger/supplier-ledger.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
+import { ProductSuppliersService } from '../suppliers/product-suppliers.service';
+import { ProductCostService } from '../products/product-cost.service';
+import { currentUnitCost, knownUnitCost } from '../shared/avg-cost.util';
+import { invoiceDiscount, invoiceDiscountRatio, invoiceItemsTotal, invoiceNetSales } from '../shared/sale-discount.util';
+import { PromotionAuditService } from '../promotions/promotion-audit.service';
+import { carryLinePrices, lineMarkdown, OfferRemovalError, settleOfferRemovals, stampSaleLinePrices } from '../shared/price-offer.util';
 import {
   InventoryMovementsService,
   RecordMovementEntry,
@@ -77,7 +85,7 @@ import {
   LEGACY_CANCEL_REASON_CODE,
   SHOPIFY_CANCELLED_CODE,
 } from '../shared/cancellation.constants';
-import { inDateWindow, dateWindowQuery, normalizeDateOnly } from '../shared/date-window.util';
+import { inDateWindow, dateWindowQuery, normalizeDateOnly, dateOnly } from '../shared/date-window.util';
 import { buildCancelledProducts } from './cancellation-products';
 import { buildOrderArrivalTrend } from './order-arrival-trend';
 import { buildSalesOverview, cairoToday, mongoCairoDay, salesOverviewMonth } from './sales-overview';
@@ -113,6 +121,8 @@ export interface InventoryItem {
   imageUrl: string;
   sellPrice: number;
   buyPrice: number;
+  /** متوسط التكلفة (خطوة 3) — null = لسه ماتحسبش، والتكلفة = buyPrice (`currentUnitCost`). */
+  avgCost: number | null;
   minStock: number;
   openingBalance: number;
   purchases: number;
@@ -159,6 +169,67 @@ export interface DashboardData {
 @Injectable()
 export class TransactionsService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
+  // Promotions audit log (global module) — records an offer taken off an invoice line.
+  @PushOptional() @PushInject(PromotionAuditService) private readonly promoAudit?: PromotionAuditService;
+  @PushOptional() @PushInject(ShopifyDepositMetafieldsService) private readonly depositMetafields?: ShopifyDepositMetafieldsService;
+  /** أسعار الموردين (خطوة 4) — فاتورة الشراء بتحدّثها. سعر عرض، مش تكلفة ربح. */
+  @PushOptional() @PushInject(ProductSuppliersService) private readonly productSuppliers?: ProductSuppliersService;
+  /** متوسط التكلفة (خطوة 3) — فواتير الشراء بس بتغيّره. */
+  @PushOptional() @PushInject(ProductCostService) private readonly productCost?: ProductCostService;
+
+  /**
+   * يوم البيع (القاهرة) اللي العرض بيتحدد عليه. ⚠ فورم البيع بيحفظ `date` = لحظة الحفظ بتوقيت UTC
+   * و`transactionDate` = اليوم المختار؛ قراءة أول 10 حروف من UTC بين 12 و2 بالليل بتطلع امبارح.
+   */
+  private saleDayOf(tx: { transactionDate?: string; date?: string }): string {
+    const chosen = String(tx?.transactionDate || '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(chosen)) return chosen;
+    const d = tx?.date ? new Date(tx.date) : null;
+    return d && !isNaN(d.getTime()) ? cairoToday(d) : cairoToday();
+  }
+
+  /** أسعار وعروض المنتجات لسطور فاتورة بيع (بالكود). قراءة صغيرة: الحقول المطلوبة بس. */
+  /**
+   * shared/price-offer.util.ts → settleOfferRemovals, with the perm rule and HTTP errors.
+   * `callerPerms === undefined` = an internal caller copying lines it already holds (after-sales),
+   * which is allowed — every HTTP entry passes the caller's perms.
+   */
+  settleOfferRemovalsOrThrow(items: any[] | undefined, stored: any[] | undefined, actor: string, callerRole: string | undefined,
+    callerPerms: string[] | undefined, productOf: (line: any) => any) {
+    const allowed = callerPerms === undefined || callerRole === 'admin' || callerPerms.includes('promotions-offers');
+    try {
+      return settleOfferRemovals(items, stored, { actor: actor || 'غير معروف', allowed, productOf });
+    } catch (e) {
+      if (e instanceof OfferRemovalError) throw e.kind === 'forbidden' ? new ForbiddenException(e.message) : new BadRequestException(e.message);
+      throw e;
+    }
+  }
+
+  /** After the write succeeded: one audit line per offer taken off an invoice line. */
+  logOfferRemovals(actor: string, txRef: string, added: Array<{ code: string; name: string; offerName: string; reason: string }>) {
+    for (const a of added) void this.promoAudit?.recordManage({ name: actor }, { kind: 'offer', action: 'removed-from-invoice',
+      label: a.offerName, ref: a.code, txRef, reason: `${a.name}: ${a.reason}` });
+  }
+
+  private async productsForPricing(items: any[] | undefined): Promise<Map<string, any>> {
+    const codes = [...new Set((items || []).map((i) => String(i?.code || '').trim()).filter(Boolean))];
+    if (!codes.length) return new Map();
+    const rows: any[] = await this.transactionModel.db.collection('products')
+      .find({ code: { $in: codes } }, { projection: { code: 1, sellPrice: 1, priceOffers: 1 } }).toArray();
+    const m = new Map<string, any>();
+    for (const r of rows) if (!m.has(String(r.code).trim())) m.set(String(r.code).trim(), r);
+    return m;
+  }
+
+  /** المخزون الإجمالي الحالي لكل كود (كل المخازن) — للمتوسط. */
+  private async stockOfFn(session?: ClientSession): Promise<(code: string) => number> {
+    const inv = session ? await this.getInventory(session) : await this.getInventory();
+    return this.stockOfFromInventory(inv);
+  }
+  private stockOfFromInventory(inv: InventoryItem[]): (code: string) => number {
+    const map = new Map(inv.map((r) => [String(r.code || '').trim(), Number(r.current) || 0]));
+    return (code: string) => map.get(String(code || '').trim()) ?? 0;
+  }
 
   async reactToComment(id: string, commentId: string, userId: string, userName: string, reaction: unknown) {
     const result = await setCommentReaction(this.transactionModel, id, commentId, false, userId, userName, reaction, async event => {
@@ -203,6 +274,19 @@ export class TransactionsService {
     private readonly followUpsService: FollowUpsService,
     private readonly depositReceiptsService: DepositReceiptsService,
   ) {}
+
+  /**
+   * Queues the Shopify deposit metafields of a linked sale after its deposit may have changed
+   * (edit, cancellation, undo, restore). Called after the save; never throws, never calls Shopify.
+   */
+  private async queueDepositMetafields(tx: any, reason: string): Promise<void> {
+    if (!tx?.shopifyOrderId || tx.type !== 'مبيعات' || !this.depositMetafields) return;
+    try {
+      const hasDeposits = Array.isArray(tx.deposits) && tx.deposits.length > 0;
+      if (hasDeposits) await this.depositMetafields.requestSync(tx.shopifyOrderId, reason);
+      else await this.depositMetafields.requestSyncIfTracked(tx.shopifyOrderId, reason);
+    } catch { /* the queue logs its own failures */ }
+  }
 
   // ── Concurrent edit lock: txId → { user, since } ──
   private readonly _editLocks = new Map<string, { user: string; since: number }>();
@@ -338,6 +422,7 @@ export class TransactionsService {
   ): number {
     let lost = 0;
     for (const ret of approvedReturns) {
+      let linePrices = 0;
       for (const item of (ret.items || []) as {
         code?: string;
         price?: number;
@@ -345,12 +430,17 @@ export class TransactionsService {
         condition?: string;
       }[]) {
         const product = products.find((p) => p.code === item.code);
-        const cost = product ? Number(product.buyPrice) || 0 : 0;
-        const price = Number(item.price) || 0;
+        const cost = lineUnitCost(item, product ? product.buyPrice : 0);
         const qty = Number(item.qty) || 0;
         const damaged = String(item.condition || '').trim() === 'تالف';
-        lost += (damaged ? price : price - cost) * qty;
+        linePrices += (Number(item.price) || 0) * qty;
+        // A sound piece comes back into stock, so its cost returns; a damaged one does not.
+        if (!damaged) lost -= cost * qty;
       }
+      // ⚠ The revenue reversed is the refund (`total`) — the same figure net sales subtract — not
+      // the original line price, which is before the invoice discount. Using the line price made the
+      // profit side and the sales side reverse different amounts for one return.
+      lost += Number(ret.total) > 0 ? Number(ret.total) : linePrices;   // old rows without a total
     }
     return lost;
   }
@@ -1164,7 +1254,9 @@ export class TransactionsService {
 
   async create(dto: CreateTransactionDto, callerRole?: string,
     receiptUpload?: { draftId: string; actor: ReceiptActor }, notificationActor?: string,
-    context?: DatabaseWriteContext, scannedSale = false, afterSalesInternal = false): Promise<TransactionDocument> {
+    context?: DatabaseWriteContext, scannedSale = false, afterSalesInternal = false,
+    /** Perms of the person behind an HTTP request. Omitted by internal callers (after-sales copies). */
+    callerPerms?: string[]): Promise<TransactionDocument> {
     if (afterSalesInternal && (!context || !['مبيعات', 'مرتجع'].includes(dto.type))) throw new BadRequestException('After-sales documents require an atomic workflow');
     if (context && !afterSalesInternal && !(scannedSale && dto.type === 'مبيعات') && (!['مشتريات', 'مرتجع مشتريات'].includes(dto.type) || receiptUpload)) throw new BadRequestException('سياق المخزون الذري مخصص لمشتريات المورد أو مرتجعاته');
     if (context && dto.type === 'مشتريات' && !this.transactionAddsSupplierPurchases(dto as unknown as TransactionDocument)) throw new BadRequestException('تحويل الاستلام يتطلب مشتريات مورد فعلية، وليس سجلاً قديماً لمرتجع عميل');
@@ -1245,13 +1337,32 @@ export class TransactionsService {
     //   full ISO timestamp is what produced 326 of 521 rows in the mixed state that made the
     //   last day of every report period drop those rows (see date-window.util.ts). The window
     //   helpers tolerate both formats; this stops new rows joining them.
+    // عروض الأسعار: السطر بيسجّل السعر الأساسي ومصدر سعره (عرض / أساسي / يدوي) حسب يوم البيع،
+    // و«شيل العرض من السطر» بيتثبّت هنا — قبل أي أثر جانبي (حجز إيصال العربون)، فالرفض مايسيبش حاجة.
+    const priceOf = dto.type === 'مبيعات' ? await this.productsForPricing(dto.items as any[]) : new Map();
+    const saleDay = this.saleDayOf(dto as any);
+    let pricedSaleItems: any[] | undefined;
+    let offerRemovalsAdded: Array<{ code: string; name: string; offerName: string; reason: string }> = [];
+    if (dto.type === 'مبيعات') {
+      const stamped = stampSaleLinePrices(dto.items as any[], (code) => priceOf.get(code) ?? null, saleDay);
+      const settled = this.settleOfferRemovalsOrThrow(stamped, [], notificationActor || employee, callerRole, callerPerms,
+        (line) => priceOf.get(String(line?.code || '').trim()) ?? null);
+      pricedSaleItems = settled.items;
+      offerRemovalsAdded = settled.added;
+    }
     const receipt = receiptUpload
       ? await this.depositReceiptsService.claimManualReceipt(receiptUpload.draftId, dto, receiptUpload.actor, context?.session)
       : undefined;
     let tx: TransactionDocument;
     try {
+      // خطوة 2: سطر البيع ياخد تكلفته لحظة الإنشاء، من نفس لقطة المخزون اللي فوق
+      // (فيها سعر تكلفة كل منتج). أي تكلفة جاية مع الطلب بتتشال. shared/line-cost.util.ts
+      const costAt = new Date().toISOString();
+      // خطوة 3: التكلفة = متوسط التكلفة لو اتحسب، وإلا سعر الكارت (currentUnitCost).
+      const costByCode = new Map(_invSnapshotBefore.map((row) => [String(row.code || '').trim(), knownUnitCost(row)]));
       const data = {
         ...dto,
+        ...(dto.type === 'مبيعات' ? { items: stampSaleLineCosts(pricedSaleItems as any[], (code) => costByCode.get(code) ?? null, costAt) } : {}),
         warehouseCode: destinationWarehouse,
         ...carrier,
         ...(receipt ? { depositReceipts: [receipt] } : {}),
@@ -1263,6 +1374,7 @@ export class TransactionsService {
       throw error;
     }
     if (receipt) await this.depositReceiptsService.consumeManualReceipt(receipt.id, String(tx._id), context?.session);
+    if (offerRemovalsAdded.length) this.logOfferRemovals(notificationActor || employee, tx.ref || '', offerRemovalsAdded);
 
     // Link discount OTP to created transaction (audit trail)
     const otpIdForLink = (dto as unknown as { highValueDiscountOtpId?: string }).highValueDiscountOtpId || '';
@@ -1307,13 +1419,39 @@ export class TransactionsService {
       else await this.recordVaultForTransaction(tx, receipt?.id);
     }
 
+    // التدقيق المحاسبي: مرتجع للمورد بيطلّع القطع بتكلفتها الفعلية ويعيد حساب المتوسط
+    // (applySupplierReturn) — بالمخزون اللي قبل المرتجع، وبعد الـcommit لو فيه transaction.
+    if (tx.type === 'مرتجع مشتريات' && this.productCost) {
+      const stockBeforeReturn = this.stockOfFromInventory(_invSnapshotBefore);
+      const applyReturn = () => this.productCost?.applySupplierReturn(tx.toObject ? tx.toObject() : tx, stockBeforeReturn, notificationActor || employee || 'النظام');
+      if (context) context.afterCommit.push(() => { void applyReturn(); });
+      else await applyReturn();
+    }
+
     if (tx.type === 'مشتريات' && this.transactionAddsSupplierPurchases(tx)) {
+      // خطوة 3: الفاتورة تحدّث متوسط تكلفة كل صنف فيها، بالمخزون اللي كان قبلها (نفس لقطة
+      // حركة المخزون). بعد الـcommit لو فيه transaction. applyPurchase مابترميش استثناء.
+      const stockBefore = this.stockOfFromInventory(_invSnapshotBefore);
+      const applyAvg = () => this.productCost?.applyPurchase(tx.toObject ? tx.toObject() : tx, stockBefore, notificationActor || employee || 'النظام');
+      if (context) context.afterCommit.push(() => { void applyAvg(); });
+      else await applyAvg();
       const supplierId = await this.resolveSupplierIdForLedger(
         tx.supplierId,
         tx.client || '',
       );
       const creditApplied = Number((dto as unknown as { creditApplied?: number }).creditApplied) || 0;
       if (supplierId) {
+        // فاتورة الشراء كانت بتتحفظ بالاسم بس (34 من 39) — نثبّت المورد اللي اتطابق.
+        if (!tx.supplierId) {
+          await this.transactionModel.updateOne({ _id: tx._id }, { $set: { supplierId } }, context ? { session: context.session } : {});
+          tx.supplierId = supplierId;
+        }
+        // خطوة 4: أسعار الموردين. بعد الـcommit لو فيه transaction، عشان فاتورة اتلغت
+        // ماتسيبش سعر بيشاور عليها. recordPurchase مابترميش استثناء.
+        const recordPrices = () => this.productSuppliers?.recordPurchase(
+          tx.toObject ? tx.toObject() : tx, supplierId, tx.client || '', notificationActor || employee || 'النظام');
+        if (context) context.afterCommit.push(() => { void recordPrices(); });
+        else await recordPrices();
         const debt = {
           supplierId,
           supplierName: tx.client || '',
@@ -1641,6 +1779,7 @@ export class TransactionsService {
     if (!existing) {
       throw new NotFoundException('المعاملة غير موجودة');
     }
+    let offerRemovalsAdded: Array<{ code: string; name: string; offerName: string; reason: string }> = [];
     const purchaseEdit = existing.type === 'مشتريات' && dto.items !== undefined;
     if (purchaseEdit) dto = { ...dto, items: await normalizePurchaseEdit(this.transactionModel.db, existing, dto.items!) };
     const purchaseFilter = purchaseEdit ? { items: existing.items, $or: [
@@ -1808,6 +1947,34 @@ export class TransactionsService {
       priceOrigin: (existing as any).source === 'shopify' ? 'shopify' : undefined,
     });
 
+    // ⚠ التكلفة المثبّتة على سطور البيع (`unitCost`) مش في الـDTO، فالتعديل كان هيمسحها.
+    // بتتنقل من السطور المخزّنة — ومابتتاخدش أبدًا من الطلب. انظر shared/line-cost.util.ts
+    if (dto.items !== undefined && existing.type !== 'مشتريات') {
+      let items = carryLineCosts(existing.items as any[], dto.items as any[]);
+      // خطوة 2: سطر جديد (مالقاش تكلفة يتنقل منها) ياخد التكلفة الحالية.
+      if (existing.type === 'مبيعات') {
+        const products = await this.productsService.findAll();
+        const costByCode = new Map<string, { cost: number; basis: string } | null>();
+        for (const p of products) if (!costByCode.has(p.code)) costByCode.set(p.code, knownUnitCost(p as any));
+        items = stampMissingSaleLineCosts(items, (code) => costByCode.get(code) ?? null, new Date().toISOString());
+        // عروض الأسعار: السطور القديمة تحتفظ بمصدر سعرها (لو السعر ماتغيّرش)، والجديدة تتصنّف.
+        items = carryLinePrices(existing.items as any[], items);
+        const byCode = new Map<string, any>();
+        for (const p of products) if (!byCode.has(p.code)) byCode.set(p.code, p);
+        const day = this.saleDayOf({ transactionDate: (dto as any).transactionDate ?? (existing as any).transactionDate, date: (dto as any).date ?? existing.date });
+        items = (items || []).map((it: any) => it.listPrice !== undefined ? it : stampSaleLinePrices([it], (code) => byCode.get(code) ?? null, day)![0]);
+        // شيل عرض من سطر: شيل متسجل قبل كده بيعدّي، وشيل جديد محتاج promotions-offers.
+        const settled = this.settleOfferRemovalsOrThrow(items as any[], existing.items as any[], editedBy || notificationActor || '', callerRole, callerPerms,
+          (line) => byCode.get(String(line?.code || '').trim()) ?? null);
+        items = settled.items as any;
+        offerRemovalsAdded = settled.added;
+      }
+      dto = { ...dto, items: items as any };
+    }
+    // خطوة 3: تعديل فاتورة شراء دخلت المتوسط — المخزون قبل الحفظ (شامل كميتها القديمة).
+    const avgEditStock = existing.type === 'مشتريات' && (dto.items !== undefined || (dto as any).discount !== undefined)
+      && this.productCost && await this.productCost.purchaseIsInAverage(String(existing._id))
+      ? await this.stockOfFn() : null;
     const { depositVaultCorrections: _corrections, ...writeDto } = dto;
     let tx: TransactionDocument | null;
     if (vaultCorrections.length) {
@@ -1839,6 +2006,15 @@ export class TransactionsService {
     } else {
       tx = await this.transactionModel.findOneAndUpdate({_id:id,...purchaseFilter}, {...writeDto,...editCarrier,editHistory,...purchaseRevision}, {new:true}).exec();
       if (!tx) throw new BadRequestException('تغيرت الفاتورة أو أكواد القطع أثناء التعديل؛ حدّث البيانات وأعد المحاولة');
+    }
+
+    if (avgEditStock && tx) {
+      await this.productCost?.correctPurchase(String(tx._id), tx.toObject(), avgEditStock, editedBy || 'النظام',
+        String((tx as any).updatedAt?.toISOString?.() || Date.now()));
+    }
+    // سعر المورد محسوب من الفواتير: تعديل فاتورة شراء (سعر، كمية، أصناف، أو المورد نفسه) يعيد حسابه.
+    if (tx && tx.type === 'مشتريات') {
+      await this.productSuppliers?.recomputeForPurchase(existing.toObject(), tx.toObject(), editedBy || 'النظام');
     }
 
     // يُرفع عند أي تعديل على `deposits`، ليقرر الحفظ الختامي أسفل الدالة.
@@ -2088,6 +2264,8 @@ export class TransactionsService {
         { actorName: notificationActor || d.by, amount: d.amount, vaultName: d.method, receiptId: d.receiptId, depositId: d.id });
     }
     if (changes.length) await notifyApproval(this.notifications, 'approval:tx:' + id + ':' + historyEntry.editedAt, tx!.ref, 'tx:' + id, { actorName: editedBy || notificationActor, actionKey: 'edit-tx', status: 'modified' });
+    await this.queueDepositMetafields(tx, 'tx-edit');
+    if (offerRemovalsAdded.length) this.logOfferRemovals(editedBy || notificationActor || '', tx?.ref || '', offerRemovalsAdded);
     return tx!;
   }
 
@@ -2174,6 +2352,11 @@ export class TransactionsService {
     if ((tx as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بتحويل بوسطة مجمع — يلزم تسوية الدفعة قبل إلغاء الطلب');
     }
+    // خطوة 3: المخزون قبل الإلغاء (شامل كمية الفاتورة) — لتصحيح المتوسط بعد الإلغاء.
+    const avgCancelStock = tx.type === 'مشتريات' && this.productCost && await this.productCost.purchaseIsInAverage(String(tx._id))
+      ? await this.stockOfFn() : null;
+    // عكس مرتجع مورد (إلغاء معاملته): القطع بترجع المخزن بنفس تكلفتها.
+    const avgReturnStock = tx.type === 'مرتجع مشتريات' && this.productCost ? await this.stockOfFn() : null;
     // An automatic Bosta settlement is undone FIRST and the document reloaded. Left in place, the
     // COD reversal below would subtract the full COD (510) where the settlement booked the net
     // (396), and the shipping outflow of a prepaid order would never come back.
@@ -2462,6 +2645,12 @@ export class TransactionsService {
       items: (saved.items || []).map((it) => ({ name: it.name, qty: it.qty })),
     });
     this.emit('vault:changed', { reason: 'tx:cancelled', txId: String(saved._id) });
+    await this.queueDepositMetafields(saved, 'tx-cancelled');
+    // خطوة 3: فاتورة شراء دخلت متوسط التكلفة واتلغت — مساهمتها تطلع منه.
+    if (avgCancelStock) await this.productCost?.correctPurchase(String(saved._id), null, avgCancelStock, cancelledBy, 'cancel');
+    // فاتورة شراء اتلغت: سعر المورد يرجع لآخر فاتورة سارية منه (أو السعر اليدوي لو أحدث).
+    if (saved.type === 'مشتريات') await this.productSuppliers?.recomputeForPurchase((saved as any).toObject?.() || saved, null, cancelledBy);
+    if (avgReturnStock) await this.productCost?.reverseSupplierReturn(String(saved._id), avgReturnStock, cancelledBy);
     return saved;
   }
 
@@ -3694,6 +3883,7 @@ export class TransactionsService {
       }
 
       this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
+      await this.queueDepositMetafields(saved, 'deposit-undo');
       return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: 'deposit' };
     }
 
@@ -3903,6 +4093,7 @@ export class TransactionsService {
     this.recordRestoreInventoryMovement(restored!, restoredBy).catch((err) =>
       this.logger.error(`[restore] inventory movement logging failed for ${id}: ${(err as Error).message}`, (err as Error).stack),
     );
+    await this.queueDepositMetafields(restored, 'tx-restored');
     return restored!;
   }
 
@@ -4066,6 +4257,7 @@ export class TransactionsService {
         imageUrl: (product as { imageUrl?: string }).imageUrl || '',
         sellPrice: product.sellPrice,
         buyPrice: product.buyPrice,
+        avgCost: (product as { avgCost?: number | null }).avgCost ?? null,
         minStock: product.minStock,
         openingBalance: openingBal,
         purchases,
@@ -4088,9 +4280,17 @@ export class TransactionsService {
     const { start, next, broadStart, broadEnd } = salesOverviewMonth(selectedYear, selectedMonth);
     const inBroadRange = (field: string) => ({ [field]: { $gte: broadStart, $lt: broadEnd } });
     const number = (field: string) => ({ $convert: { input: field, to: 'double', onError: 0, onNull: 0 } });
+    // Net of the invoice discount — the same rule as getReports (shared/sale-discount.util):
+    // the stored discount, else the one implied by the totals (= total − shipping).
+    const goodsCharged = { $max: [0, { $subtract: [number('$total'), number('$shipCost')] }] };
     const productRevenue = { $cond: [
-      { $ne: [number('$itemsTotal'), 0] }, number('$itemsTotal'),
-      { $subtract: [number('$total'), number('$shipCost')] },
+      { $ne: [number('$itemsTotal'), 0] },
+      { $cond: [
+        { $gt: [number('$discount'), 0] },
+        { $max: [0, { $subtract: [number('$itemsTotal'), { $min: [number('$discount'), number('$itemsTotal')] }] }] },
+        { $min: [number('$itemsTotal'), goodsCharged] },
+      ] },
+      goodsCharged,
     ] };
     // Match Shopify KPIs: source-order arrivals and confirmation, independently of invoice creation.
     // Net accounting revenue remains a separate aggregate over all sales invoices.
@@ -4170,8 +4370,10 @@ export class TransactionsService {
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
     // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
     const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
-    const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
-    const totalSales = Math.max(0, grossProductSales - totalReturns);
+    // صافي المبيعات = الأصناف − خصومات الفواتير − المرتجعات (shared/sale-discount.util) — زي التقارير.
+    const grossProductSales = salesTx.reduce((s, t) => s + invoiceItemsTotal(t), 0);
+    const totalDiscounts = salesTx.reduce((s, t) => s + invoiceDiscount(t), 0);
+    const totalSales = Math.max(0, grossProductSales - totalDiscounts - totalReturns);
     // Purchases are reported NET of settled supplier returns — goods sent back are not spend we
     // kept. Mirrors totalSales being net of customer returns above. No date window here: the
     // dashboard is all-time.
@@ -4194,18 +4396,6 @@ export class TransactionsService {
       .reduce((sum, t) => sum + (t.remaining || 0), 0);
     const totalRemaining =
       customerReceivables + otherRemaining + supplierPayables;
-    const totalDiscounts = salesTx.reduce((s, t) => {
-      // Use stored discount if present; otherwise infer from itemsTotal vs total
-      const stored = Number(t.discount) || 0;
-      if (stored > 0) return s + stored;
-      const items = Number(t.itemsTotal) || 0;
-      const ship  = Number(t.shipCost)   || 0;
-      if (items > 0) {
-        const inferred = Math.max(0, items - (t.total - ship));
-        return s + inferred;
-      }
-      return s;
-    }, 0);
     const totalDeposit = salesTx.reduce((s, t) => s + (Number(t.deposit) || 0), 0);
     const productByCode = new Map<string, (typeof products)[number]>();
     for (const product of products) {
@@ -4213,10 +4403,11 @@ export class TransactionsService {
     }
     let grossProfit = 0;
     salesTx.forEach((tx) => {
+      const keep = 1 - invoiceDiscountRatio(tx);   // invoice discount spread over its lines
       tx.items.forEach((item) => {
         const product = productByCode.get(item.code);
         grossProfit +=
-          (item.price - (product ? product.buyPrice : 0)) * item.qty;
+          (item.price * keep - lineUnitCost(item, product ? product.buyPrice : 0)) * item.qty;
       });
     });
 
@@ -4332,9 +4523,11 @@ export class TransactionsService {
     const totalShipLoss = salesTx.reduce((s, t) => s + (Number(t.shipLoss) || 0), 0);
     // The carrier took less than the invoice tariff — written only by the automatic Bosta settlement.
     const totalShipSaving = salesTx.reduce((s, t) => s + (Number((t as any).shipSaving) || 0), 0);
-    // صافي المبيعات = إجمالي المنتجات فقط (بدون شحن) - المرتجعات
-    const grossProductSales = salesTx.reduce((s, t) => s + (Number(t.itemsTotal) || t.total - (Number(t.shipCost) || 0)), 0);
-    const totalSales = Math.max(0, grossProductSales - totalReturns);
+    // صافي المبيعات = الأصناف (بدون شحن) − خصومات الفواتير − المرتجعات (shared/sale-discount.util).
+    // ⚠ الخصم كان مش متطروح (Nov 12, 2026) — المبيعات والربح كانوا أعلى بقيمة كل الخصومات.
+    const grossProductSales = salesTx.reduce((s, t) => s + invoiceItemsTotal(t), 0);
+    const totalDiscounts = salesTx.reduce((s, t) => s + invoiceDiscount(t), 0);
+    const totalSales = Math.max(0, grossProductSales - totalDiscounts - totalReturns);
     // Purchases are reported NET of settled supplier returns — goods sent back are not spend we
     // kept. Mirrors how totalSales is net of customer returns just above.
     const grossPurchases = pursTx.reduce((s, t) => s + t.total, 0);
@@ -4358,17 +4551,34 @@ export class TransactionsService {
       string,
       { qty: number; rev: number; cost: number; profit: number }
     > = {};
+    // التدقيق المحاسبي: تصنيف مصدر التكلفة — للعرض بس، الربح فوق بيتحسب زي ما هو.
+    const costSources: Record<string, { lines: number; qty: number; cost: number }> = Object.fromEntries(
+      LINE_COST_SOURCE_KEYS.map((k) => [k, { lines: 0, qty: 0, cost: 0 }]));
+    let zeroCostLines = 0;
+    // تخفيضات عن السعر الأساسي حسب مصدرها (عرض / Shopify / يدوي) — سطور فيها listPrice بس (من Nov 12, 2026).
+    const priceMarkdowns: Record<string, { lines: number; qty: number; value: number }> = {};
+    salesTx.forEach((tx) => (tx.items || []).forEach((item: any) => {
+      const md = lineMarkdown(item);
+      if (!md || md.source === 'list') return;
+      const b = (priceMarkdowns[md.source] ||= { lines: 0, qty: 0, value: 0 });
+      b.lines++; b.qty += Number(item.qty) || 0; b.value = Math.round((b.value + md.value) * 100) / 100;
+    }));
     salesTx.forEach((tx) => {
+      // خصم الفاتورة متوزع على سطورها بنسبة قيمتها — الربح من السعر الصافي.
+      const keep = 1 - invoiceDiscountRatio(tx);
       tx.items.forEach((item) => {
         const p = products.find((x) => x.code === item.code);
-        const cost = p ? p.buyPrice : 0;
-        const profit = (item.price - cost) * item.qty;
+        const cost = lineUnitCost(item, p ? p.buyPrice : 0);
+        const profit = (item.price * keep - cost) * item.qty;
         grossProfit += profit;
+        const src = costSources[lineCostSourceKey(item, p ? p.buyPrice : null)];
+        src.lines++; src.qty += Number(item.qty) || 0; src.cost += cost * (Number(item.qty) || 0);
+        if (cost === 0) zeroCostLines++;
         if (!prodProfitMap[item.name]) {
           prodProfitMap[item.name] = { qty: 0, rev: 0, cost: 0, profit: 0 };
         }
         prodProfitMap[item.name].qty += item.qty;
-        prodProfitMap[item.name].rev += item.total;
+        prodProfitMap[item.name].rev += (Number(item.total) || 0) * keep;
         prodProfitMap[item.name].cost += cost * item.qty;
         prodProfitMap[item.name].profit += profit;
       });
@@ -4387,7 +4597,7 @@ export class TransactionsService {
     const netProfit = grossProfit - expenseTotal;
 
     const orderCount = salesTx.length;
-    const avgOrderValue = orderCount > 0 ? Math.round(grossProductSales / orderCount) : 0;
+    const avgOrderValue = orderCount > 0 ? Math.round((grossProductSales - totalDiscounts) / orderCount) : 0;
     const productProfits = Object.entries(prodProfitMap)
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.profit - a.profit);
@@ -4419,7 +4629,7 @@ export class TransactionsService {
       const name = String(tx.client || '').trim() || 'بدون اسم';
       if (!customerMap[name]) customerMap[name] = { orders: 0, revenue: 0 };
       customerMap[name].orders += 1;
-      customerMap[name].revenue += Number(tx.itemsTotal) || (tx.total - (Number(tx.shipCost) || 0));
+      customerMap[name].revenue += invoiceNetSales(tx);
     });
     const topCustomers = Object.entries(customerMap)
       .map(([name, data]) => ({ name, ...data }))
@@ -4432,6 +4642,10 @@ export class TransactionsService {
 
     return {
       totalSales,
+      // صافي المبيعات = grossSales − totalDiscounts − totalReturns.
+      grossSales: grossProductSales,
+      totalDiscounts,
+      priceMarkdowns,
       totalPurchases,
       // Breakdown behind the netted figure, so the UI can show "gross − returns" instead of an
       // unexplained number that no longer matches the invoices list.
@@ -4458,6 +4672,7 @@ export class TransactionsService {
       to: to || '',
       productProfits,
       stagnantStock,
+      costSources: { ...costSources, zeroCostLines },
       cancellations,
       shipping,
       salesMap: salesTx.reduce(
@@ -5308,8 +5523,8 @@ export class TransactionsService {
             code,
             name: p.name,
             stock: p.current,
-            buyPrice: p.buyPrice || 0,
-            frozenValue: Math.round((p.current || 0) * (p.buyPrice || 0)),
+            buyPrice: currentUnitCost(p) ?? 0, // خطوة 3: متوسط التكلفة (أو سعر الكارت لو لسه ماتحسبش)
+            frozenValue: Math.round((p.current || 0) * (currentUnitCost(p) ?? 0)),
             lastSale,
             daysSinceSale: Number.isNaN(lastMs)
               ? null
@@ -5374,8 +5589,8 @@ export class TransactionsService {
     salesTx.forEach((tx) => {
       const k = dayKey(tx.date);
       if (buckets[k]) {
-        const itemsTotal = Number(tx.itemsTotal) || (tx.total - (Number(tx.shipCost) || 0));
-        buckets[k].sales += itemsTotal;
+        // Net of the invoice discount, like the sales KPI it sits beside.
+        buckets[k].sales += invoiceNetSales(tx);
         buckets[k].orders += 1;
       }
     });
@@ -6310,5 +6525,104 @@ export class TransactionsService {
       // الأصناف اللي مالقيناش لها صورة — بالاسم، عشان تتراجع يدوي بدل ما تختفي في صمت.
       unmatched: [...unmatched].slice(0, 50),
     };
+  }
+
+  /**
+   * خطوة 1 من خطة تصحيح الربح: تثبيت تكلفة كل سطر بيع قديم بسعر الشراء الحالي في الكارت.
+   *
+   * - نفس قاعدة التقارير بالظبط: المنتج بالكود، وأول منتج يطابق يكسب (`products.find`)،
+   *   فالأرقام الظاهرة ماتتغيرش.
+   * - بيشمل الملغي والمؤرشف (لو اتسترجع يلاقي تكلفته)، وسطور طلبات المرتجع
+   *   (`computeReturnedProfitLoss` بيقراها).
+   * - السطر المتثبّت مايتلمسش، فالتشغيل آمن للتكرار. السطر اللي منتجه مش موجود يفضل
+   *   من غير تثبيت ويتبلّغ بالكود.
+   * - الكتابة مشروطة إن السطور ماتغيرتش من وقت القراءة؛ اللي اتغيّر يتعدّ ويتساب للتشغيلة الجاية.
+   * - dryRun افتراضيًا true.
+   */
+  /**
+   * خطوة 4: ملء أسعار الموردين من فواتير الشراء القديمة، من الأقدم للأحدث (فآخر فاتورة تكسب).
+   * المورد بيتطابق بنفس قاعدة دفتر المورد: `supplierId` لو موجود، وإلا الاسم بالظبط
+   * (بدون فرق حروف كبيرة/صغيرة). الفاتورة اللي اسمها مايطابقش أي مورد بتتساب وتتبلّغ —
+   * مفيش تخمين. dryRun افتراضيًا true.
+   */
+  async backfillSupplierPrices(dryRun = true) {
+    const purchases = await this.transactionModel
+      .find({ type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true } })
+      .sort({ date: 1, createdAt: 1 }).exec();
+    const stats = { dryRun, invoices: 0, matchedById: 0, matchedByName: 0, unmatched: 0, linesWritten: 0, skippedOlder: 0,
+      unmatchedNames: [] as string[], unmatchedCodes: [] as string[] };
+    const names = new Set<string>(), codes = new Set<string>();
+    for (const tx of purchases) {
+      if (!this.transactionAddsSupplierPurchases(tx)) continue;
+      stats.invoices++;
+      const supplierId = await this.resolveSupplierIdForLedger(tx.supplierId, tx.client || '');
+      if (!supplierId) { stats.unmatched++; names.add(String(tx.client || '—')); continue; }
+      if (tx.supplierId) stats.matchedById++; else stats.matchedByName++;
+      const r = await this.productSuppliers?.recordPurchase(tx.toObject(), supplierId, tx.client || '', 'استيراد من الفواتير', dryRun);
+      if (r) { stats.linesWritten += r.written; stats.skippedOlder += r.skippedOlder; r.unmatched.forEach((c) => codes.add(c)); }
+    }
+    stats.unmatchedNames = [...names];
+    stats.unmatchedCodes = [...codes].slice(0, 100);
+    this.logger.log(`[backfillSupplierPrices] ${JSON.stringify({ ...stats, unmatchedNames: stats.unmatchedNames.length })}`);
+    return stats;
+  }
+
+  /** سعر التكلفة الحالي لكل كود — نفس المصدر اللي التقارير بتستخدمه للسطر الغير مثبّت. */
+  async currentUnitCosts(): Promise<Map<string, number>> {
+    const products = await this.productsService.findAll();
+    const map = new Map<string, number>();
+    for (const p of products) if (!map.has(p.code)) map.set(p.code, currentUnitCost(p as any) ?? 0);
+    return map;
+  }
+
+  async freezeLegacyLineCosts(dryRun = true): Promise<{
+    dryRun: boolean; frozenAt: string;
+    sales: { scanned: number; updated: number; linesFrozen: number; linesAlreadyFrozen: number; conflicts: number };
+    returnRequests: { scanned: number; updated: number; linesFrozen: number; linesAlreadyFrozen: number; conflicts: number };
+    linesUnmatched: number; unmatchedCodes: string[];
+    /** سطور منتجها سعر الكارت فيه صفر: تكلفة ناقصة، ماتتثبّتش صفر وبتظهر في تقرير مصدر التكلفة. */
+    linesMissingCost: number; missingCostCodes: string[];
+  }> {
+    const frozenAt = new Date().toISOString();
+    const products = await this.productsService.findAll();
+    const buyPriceByCode = new Map<string, number>();
+    for (const p of products) if (!buyPriceByCode.has(p.code)) buyPriceByCode.set(p.code, p.buyPrice);
+    const unmatched = new Set<string>();
+    let linesUnmatched = 0;
+    const missingCost = new Set<string>();
+    let linesMissingCost = 0;
+
+    const run = async (model: Model<any>, filter: Record<string, unknown>) => {
+      const stats = { scanned: 0, updated: 0, linesFrozen: 0, linesAlreadyFrozen: 0, conflicts: 0 };
+      const docs = await model.find(filter, { items: 1 }).lean();
+      for (const doc of docs as any[]) {
+        stats.scanned++;
+        let changed = 0;
+        const next = (doc.items || []).map((item: any) => {
+          const live = buyPriceByCode.has(item?.code) ? buyPriceByCode.get(item.code)! : null;
+          const frozen = freezeLineCost(item, live, frozenAt);
+          if (frozen) { changed++; return frozen; }
+          if (frozenUnitCost(item) !== null) stats.linesAlreadyFrozen++;
+          else if (live === null) { linesUnmatched++; unmatched.add(String(item?.code || item?.name || '؟')); }
+          else if (!(Number(live) > 0)) { linesMissingCost++; missingCost.add(String(item?.code || '؟')); }
+          return item;
+        });
+        if (!changed) continue;
+        stats.linesFrozen += changed;
+        stats.updated++;
+        if (!dryRun) {
+          const res = await model.updateOne({ _id: doc._id, items: doc.items }, { $set: { items: next } });
+          if (!res.modifiedCount) { stats.conflicts++; stats.updated--; stats.linesFrozen -= changed; }
+        }
+      }
+      return stats;
+    };
+
+    const sales = await run(this.transactionModel, { type: 'مبيعات' });
+    const returnRequests = await run(this.returnRequestModel, {});
+    this.logger.log(`[freezeLegacyLineCosts] dryRun=${dryRun} sales=${JSON.stringify(sales)} ` +
+      `returnRequests=${JSON.stringify(returnRequests)} unmatched=${linesUnmatched}`);
+    return { dryRun, frozenAt, sales, returnRequests, linesUnmatched, unmatchedCodes: [...unmatched].slice(0, 100),
+      linesMissingCost, missingCostCodes: [...missingCost].slice(0, 100) };
   }
 }

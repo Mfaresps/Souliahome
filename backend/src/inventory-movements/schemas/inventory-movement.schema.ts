@@ -86,6 +86,29 @@ export class InventoryMovement {
 
   @Prop({ default: '' })
   notes: string;
+
+  /**
+   * تسوية يدوية (خطوة التدقيق): مفتاح الطلب — نفس الطلب لو اتبعت مرتين (ضغطتين على حفظ،
+   * إعادة محاولة بعد انقطاع) بيرجّع نفس الحركة بدل ما يسجّل تسوية تانية.
+   */
+  @Prop({ type: String, default: '' })
+  requestKey: string;
+
+  /** تكلفة القطعة وقت التسوية (متوسط التكلفة أو سعر الكارت) — للعرض والتقارير، مابتغيّرش الربح. */
+  @Prop({ type: Number, default: 0 })
+  unitCost: number;
+
+  /** qtyDelta × unitCost: سالب = قيمة خسارة، موجب = قيمة زيادة. */
+  @Prop({ type: Number, default: 0 })
+  costValue: number;
+
+  /**
+   * تسوية بالنقص من غير تحديد قطع: التأكيد الصريح وسببه، وإيه اللي كان النظام شايفه وقتها
+   * (قطع تالفة/مفقودة مسجّلة ومااتشطبتش، وقطع رجعت تالفة من عملاء) — للمراجعة.
+   * null = تسوية محددة القطع أو بالزيادة.
+   */
+  @Prop({ type: Object, default: null })
+  unidentified: Record<string, unknown> | null;
 }
 
 export const InventoryMovementSchema = SchemaFactory.createForClass(InventoryMovement);
@@ -95,3 +118,4 @@ InventoryMovementSchema.index({ productCode: 1, createdAt: -1 });
 InventoryMovementSchema.index({ type: 1, createdAt: -1 });
 InventoryMovementSchema.index({ sourceTransactionId: 1 });
 InventoryMovementSchema.index({ by: 1, createdAt: -1 });
+InventoryMovementSchema.index({ requestKey: 1 }, { unique: true, name: 'movement_request_key_unique', partialFilterExpression: { requestKey: { $type: 'string', $gt: '' } } });

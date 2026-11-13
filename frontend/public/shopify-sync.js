@@ -56,7 +56,42 @@
         } catch (e) { toast(errorMessage(e), true); b.disabled = false; }
       };
     } catch (e) { box.innerHTML = `<p class="ss-error">${h(errorMessage(e))}</p>`; }
+    renderDepositMetafieldsSettings(card);
   };
+
+  /* custom.deposit_* order metafields: own queue, own switch. Values are recomputed from the ERP at send time. */
+  async function renderDepositMetafieldsSettings(card) {
+    $('#shopify-deposit-mf-settings', card)?.remove();
+    const box = document.createElement('section');
+    box.id = 'shopify-deposit-mf-settings'; box.className = 'ss-settings';
+    const title = `<h4>${h(text('إرسال العربون إلى حقول الطلب في Shopify', 'Send deposits to Shopify order fields'))}</h4>`;
+    box.innerHTML = `${title}<p role="status">${h(text('جارٍ تحميل الحالة…', 'Loading…'))}</p>`;
+    card.append(box);
+    try {
+      const s = await api('/shopify/deposit-metafields/status');
+      if (!box.isConnected) return;
+      const c = s.counts || {};
+      const waiting = (c.pending || 0) + (c.running || 0) + (c.error || 0);
+      box.innerHTML = `${title}
+        <p role="status">${h(s.enabled ? text('الإرسال مفعّل', 'Sending is on') : text('الإرسال متوقف', 'Sending is off'))}
+          · ${h(text('آخر نجاح', 'Last success'))}: ${h(date(s.lastSuccessAt))}
+          ${waiting ? ` · ${h(text('في الانتظار', 'Waiting'))}: ${waiting}` : ''}</p>
+        <label><input type="checkbox" id="ss-deposit-mf" ${s.enabled ? 'checked' : ''}> ${h(text('تحديث مبلغ العربون والمتبقي وطريقة وتاريخ الدفع بعد كل عربون معتمد', 'Update deposit, remaining, method and date after every approved deposit'))}</label>
+        <p class="ss-note" dir="auto">${h(text('يكتب في custom.deposit_amount و custom.remaining_amount و custom.deposit_method و custom.deposit_date. التفعيل يتحقق أولًا من وجود الحقول وأنواعها في Shopify. تعطل Shopify لا يوقف تسجيل العربون؛ يُعاد الإرسال تلقائيًا.', 'Writes custom.deposit_amount, custom.remaining_amount, custom.deposit_method and custom.deposit_date. Turning it on first checks the fields and their types in Shopify. If Shopify is down, deposits are still recorded and the send is retried automatically.'))}</p>
+        ${(s.problems || []).map(p => `<p class="ss-error" dir="auto">#${h(p.ref || p.orderId)} · ${h(p.error)} ${button(text('إعادة المحاولة', 'Retry'), 'mf-retry', `data-order="${h(p.orderId)}"`)}</p>`).join('')}
+        <div class="ss-actions">${button(text('حفظ', 'Save'), 'mf-save')}</div>`;
+      box.onclick = async event => {
+        const b = event.target.closest('[data-ss-action]'); if (!b || !isAdmin()) return;
+        b.disabled = true;
+        try {
+          if (b.dataset.ssAction === 'mf-retry') await api(`/shopify/deposit-metafields/orders/${encodeURIComponent(b.dataset.order)}/retry`, { method: 'POST', body: '{}' });
+          else await api('/shopify/deposit-metafields/config', { method: 'POST', body: JSON.stringify({ enabled: $('#ss-deposit-mf', box).checked }) });
+          await renderDepositMetafieldsSettings(card);
+          toast(text('تم الحفظ.', 'Saved.'));
+        } catch (e) { toast(errorMessage(e), true); b.disabled = false; }
+      };
+    } catch (e) { box.innerHTML = `${title}<p class="ss-error">${h(errorMessage(e))}</p>`; }
+  }
 
   function message(value, bad = false) {
     const el = $('#ss-message', dialog); if (el) { el.textContent = value; el.className = bad ? 'ss-error' : ''; }

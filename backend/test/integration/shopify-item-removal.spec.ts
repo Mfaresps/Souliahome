@@ -55,13 +55,16 @@ describe('Shopify current quantities and removed products', () => {
     const mapped = await service.mapItems([{ ...line('A', 2, 2), fulfillable_quantity: 0 }]);
     expect(mapped[0].qty).toBe(2);
   });
-  it('preserves local prices and the saved manual discount after removing a line', async () => {
+  // Nov 12, 2026: the line is priced at what Shopify charged (the price the customer saw at
+  // checkout); the system's own price is kept as `listPrice`. It used to be the reverse, which
+  // recorded — and collected — an order on offer in Shopify at the full system price.
+  it('prices a line at what Shopify charged, keeps the system price beside it and the saved manual discount', async () => {
     const { service, order } = fixture();
     order.manualDiscount = 20;
     await service.handleOrderUpdate(payload([line('A', 2, 0), { ...line('B', 1, 1), price: '999' }]));
-    expect(order.items[0].price).toBe(100);
+    expect(order.items[0]).toMatchObject({ price: 999, listPrice: 100 });
     expect(order.manualDiscount).toBe(20);
-    expect(order.total).toBe(130);
+    expect(order.total).toBe(1029);   // 999 + 50 shipping − 20 manual discount
   });
   it('repeated identical updates do not repeat the item-change event', async () => {
     const { service } = fixture();

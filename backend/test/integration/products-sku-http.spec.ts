@@ -3,6 +3,7 @@ import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs
 import { ProductsController } from '../../src/products/products.controller';
 import { ProductsService } from '../../src/products/products.service';
 import { ProductAnalyticsService } from '../../src/products/product-analytics.service';
+import { ProductCostService } from '../../src/products/product-cost.service';
 import { JwtAuthGuard } from '../../src/core/guards/jwt-auth.guard';
 import { productsSkuFixture } from '../helpers/products-sku.fixture';
 
@@ -15,6 +16,7 @@ describe('Product SKU HTTP permissions and validation', () => {
           'requestProductEdit', 'approveProductEdit', 'rejectProductEdit', 'syncProductRefs'].map(key =>
           [key, (...args: any[]) => (f.service as any)[key](...args)])) },
       { provide: ProductAnalyticsService, useValue: {} },
+      { provide: ProductCostService, useValue: {} },
     ] }).overrideGuard(JwtAuthGuard).useValue({ canActivate(context: any) {
       const req = context.switchToHttp().getRequest();
       const user = req.headers['x-test-user'];

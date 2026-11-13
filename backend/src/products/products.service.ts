@@ -15,6 +15,9 @@ import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { MentionsService } from '../mentions/mentions.service';
 import { isDuplicateProductKey, productCodePrefix } from './product-code.util';
+import { setPrimarySupplier } from '../suppliers/primary-supplier.util';
+import { offersOverlap, offerStatusOn, PriceOffer } from '../shared/price-offer.util';
+import { cairoToday } from '../transactions/sales-overview';
 
 @Injectable()
 export class ProductsService {
@@ -133,6 +136,158 @@ export class ProductsService {
     return this.productModel.findOne({ name }).exec();
   }
 
+  /**
+   * خانة «المورد» في الكارت = المورد الأساسي: بتتكتب في جدول أسعار الموردين (مصدر واحد —
+   * suppliers/primary-supplier.util.ts) والاسم على المنتج نسخة منه. الصنف اتحفظ خلاص، فالفشل
+   * هنا بيتسجل ومابيرجّعش خطأ.
+   */
+  private async syncPrimarySupplier(product: any, supplier: unknown, actor: string): Promise<void> {
+    if (!product?._id) return;
+    try {
+      const r = await setPrimarySupplier(this.productModel.db, String(product._id), { name: String(supplier ?? '') }, actor || 'النظام');
+      if (typeof product.set === 'function') product.set({ supplier: r.supplier, supplierId: r.supplierId });
+      else Object.assign(product, { supplier: r.supplier, supplierId: r.supplierId });
+    } catch (e: any) {
+      console.error(`[products] primary supplier sync failed for ${product._id}: ${e?.message || e}`);
+    }
+  }
+
+  // ── عروض أسعار البيع (shared/price-offer.util.ts) ────────────────────────────────────────
+  /** عروض المنتج: الجاري والقادم الأول، بعدهم المنتهي — الأحدث أولًا. */
+  async listOffers(id: string): Promise<Array<PriceOffer & { status: string }>> {
+    if (!isValidObjectId(id)) throw new BadRequestException('الصنف غير صالح');
+    const p: any = await this.productModel.findById(id, { priceOffers: 1 }).lean().exec();
+    if (!p) throw new NotFoundException('الصنف غير موجود');
+    const today = cairoToday();
+    const rank = { active: 0, upcoming: 1, ended: 2, cancelled: 3 } as Record<string, number>;
+    return ((p.priceOffers || []) as PriceOffer[]).map((o) => ({
+      ...o,
+      status: offerStatusOn(o, today),
+    })).sort((a, b) => rank[a.status] - rank[b.status] || String(b.from).localeCompare(String(a.from)));
+  }
+
+  /**
+   * كل العروض على كل الأصناف (صفحة العروض والخصومات): العرض + بيانات الصنف اللي محتاجها الجدول.
+   * نفس قاعدة الحالة بتاعة listOffers بالظبط — لو اختلفوا الصفحة وكارت الصنف هيقولوا حاجتين.
+   */
+  async listAllOffers() {
+    const today = cairoToday();
+    const docs: any[] = await this.productModel
+      .find({ 'priceOffers.0': { $exists: true } }, { name: 1, code: 1, sellPrice: 1, imageUrl: 1, priceOffers: 1, isActive: 1 })
+      .lean().exec();
+    const rows: any[] = [];
+    for (const p of docs) {
+      for (const o of (p.priceOffers || []) as PriceOffer[]) {
+        rows.push({
+          ...o,
+          status: offerStatusOn(o, today),
+          productId: String(p._id), productName: p.name || '', productCode: p.code || '',
+          productImage: p.imageUrl || '', basePrice: Number(p.sellPrice) || 0,
+        });
+      }
+    }
+    const rank = { active: 0, upcoming: 1, ended: 2, cancelled: 3 } as Record<string, number>;
+    rows.sort((a, b) => rank[a.status] - rank[b.status] || String(b.from).localeCompare(String(a.from)));
+    return { today, rows };
+  }
+
+  /**
+   * عرض جديد. ⚠ السعر الأساسي (`sellPrice`) مابيتغيّرش — العرض بيغطّيه في أيامه بس.
+   * قواعد: السعر أقل من السعر الأساسي، التاريخين صح ومن ≤ إلى، النهاية مش في الماضي، مفيش تداخل
+   * مع عرض تاني شغال أو جاي، والسبب مطلوب (بيتسجل في سجل الصنف).
+   */
+  async addOffer(id: string, body: { price?: unknown; from?: unknown; to?: unknown; reason?: unknown }, by: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('الصنف غير صالح');
+    const price = Math.round(Number(body?.price) * 100) / 100;
+    const from = String(body?.from || '').trim(), to = String(body?.to || '').trim();
+    const reason = String(body?.reason || '').trim().slice(0, 200);
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (!Number.isFinite(price) || price <= 0) throw new BadRequestException('سعر العرض لازم يكون أكبر من صفر');
+    if (!day.test(from) || !day.test(to) || from > to) throw new BadRequestException('تواريخ العرض غير صحيحة — «من» لازم تكون قبل أو نفس «إلى»');
+    if (to < cairoToday()) throw new BadRequestException('نهاية العرض في الماضي');
+    if (reason.length < 2) throw new BadRequestException('سبب العرض مطلوب');
+    const p: any = await this.productModel.findById(id, { sellPrice: 1, priceOffers: 1, name: 1 }).lean().exec();
+    if (!p) throw new NotFoundException('الصنف غير موجود');
+    if (!(price < Number(p.sellPrice))) throw new BadRequestException(`سعر العرض لازم يكون أقل من السعر الأساسي (${p.sellPrice})`);
+    const clash = ((p.priceOffers || []) as PriceOffer[]).find((o) => !o.cancelled && o.to >= cairoToday() && !(o.endedOn && o.endedOn <= cairoToday()) && offersOverlap(o, { from, to }));
+    if (clash) throw new ConflictException(`في عرض تاني في نفس الفترة (${clash.from} → ${clash.to}) — اوقفه الأول أو اختار أيام تانية`);
+    const offer: PriceOffer = { id: new Types.ObjectId().toHexString(), price, from, to, reason, by, createdAt: new Date().toISOString(), endedAt: null };
+    // ⚠ The write re-checks the list it read, so two offers saved at the same moment cannot both land.
+    // A product that never had an offer has no field at all — `priceOffers: []` would not match it.
+    const unchanged = (p.priceOffers || []).length
+      ? { priceOffers: p.priceOffers }
+      : { $or: [{ priceOffers: { $exists: false } }, { priceOffers: { $size: 0 } }] };
+    const res = await this.productModel.updateOne({ _id: id, ...unchanged }, { $push: { priceOffers: offer } }).exec();
+    if (!res.modifiedCount) throw new ConflictException('عروض الصنف اتغيّرت أثناء الحفظ — حدّث الصفحة وحاول تاني');
+    await this.logActivity(id, 'عرض سعر', `${price} من ${from} إلى ${to} — ${reason}`, by);
+    this.emit('product:changed', { action: 'offer', productId: id });
+    return offer;
+  }
+
+  /**
+   * تعديل عرض شغال أو جاي: السعر، النهاية، السبب — وكمان البداية لو لسه مابدأش.
+   * ⚠ عرض شغال مابيتغيّرش بدايته: أيامه اللي فاتت اتباع فيها بسعره، وتحريكها يخلّي سجله يكدب.
+   * التعديل بيأثر على البيعات الجاية بس — كل بيعة اتسجل عليها سعرها ومصدره. عرض خلص أو اتلغى مابيتعدّلش.
+   */
+  async updateOffer(id: string, offerId: string, body: { price?: unknown; from?: unknown; to?: unknown; reason?: unknown }, by: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('الصنف غير صالح');
+    const p: any = await this.productModel.findById(id, { sellPrice: 1, priceOffers: 1 }).lean().exec();
+    if (!p) throw new NotFoundException('الصنف غير موجود');
+    const offers = (p.priceOffers || []) as PriceOffer[];
+    const o = offers.find((x) => x.id === offerId);
+    const today = cairoToday();
+    if (!o || o.cancelled) throw new NotFoundException('العرض غير موجود');
+    if (o.to < today || (o.endedOn && o.endedOn <= today)) throw new BadRequestException('العرض خلص — اعمل عرض جديد بدل ما تعدّله');
+    const started = o.from <= today;
+    const price = body?.price !== undefined ? Math.round(Number(body.price) * 100) / 100 : o.price;
+    const from = body?.from !== undefined ? String(body.from).trim() : o.from;
+    const to = body?.to !== undefined ? String(body.to).trim() : o.to;
+    const reason = body?.reason !== undefined ? String(body.reason).trim().slice(0, 200) : String(o.reason || '');
+    const day = /^\d{4}-\d{2}-\d{2}$/;
+    if (started && from !== o.from) throw new BadRequestException('العرض بدأ بالفعل — بدايته مابتتغيّرش');
+    if (!Number.isFinite(price) || price <= 0) throw new BadRequestException('سعر العرض لازم يكون أكبر من صفر');
+    if (!day.test(from) || !day.test(to) || from > to) throw new BadRequestException('تواريخ العرض غير صحيحة — «من» لازم تكون قبل أو نفس «إلى»');
+    if (to < today) throw new BadRequestException('نهاية العرض في الماضي');
+    if (reason.length < 2) throw new BadRequestException('سبب العرض مطلوب');
+    if (!(price < Number(p.sellPrice))) throw new BadRequestException(`سعر العرض لازم يكون أقل من السعر الأساسي (${p.sellPrice})`);
+    const clash = offers.find((x) => x.id !== offerId && !x.cancelled && x.to >= today && !(x.endedOn && x.endedOn <= today) && offersOverlap(x, { from, to }));
+    if (clash) throw new ConflictException(`في عرض تاني في نفس الفترة (${clash.from} → ${clash.to})`);
+    const changes: string[] = [];
+    if (price !== o.price) changes.push(`السعر ${o.price} ← ${price}`);
+    if (from !== o.from) changes.push(`البداية ${o.from} ← ${from}`);
+    if (to !== o.to) changes.push(`النهاية ${o.to} ← ${to}`);
+    if (reason !== String(o.reason || '')) changes.push(`السبب «${o.reason || ''}» ← «${reason}»`);
+    if (!changes.length) return o;
+    const next: PriceOffer = { ...o, price, from, to, reason, editedAt: new Date().toISOString(), editedBy: by } as PriceOffer;
+    const res = await this.productModel.updateOne({ _id: id, priceOffers: offers }, { $set: { priceOffers: offers.map((x) => (x.id === offerId ? next : x)) } }).exec();
+    if (!res.modifiedCount) throw new ConflictException('عروض الصنف اتغيّرت أثناء الحفظ — حدّث الصفحة وحاول تاني');
+    await this.logActivity(id, 'تعديل عرض سعر', changes.join(' · '), by);
+    this.emit('product:changed', { action: 'offer', productId: id });
+    return next;
+  }
+
+  /** إيقاف عرض بدري: مابيطبّقش من النهارده (`endedOn`)، والبيعات اللي اتعملت بسعره قبل كده تفضل زي ما هي.
+   *  عرض لسه مابدأش بيتلغي. */
+  async endOffer(id: string, offerId: string, by: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('الصنف غير صالح');
+    const p: any = await this.productModel.findById(id, { priceOffers: 1 }).lean().exec();
+    if (!p) throw new NotFoundException('الصنف غير موجود');
+    const offers = (p.priceOffers || []) as PriceOffer[];
+    const o = offers.find((x) => x.id === offerId);
+    if (!o || o.cancelled) throw new NotFoundException('العرض غير موجود');
+    const today = cairoToday();
+    if (o.to < today || (o.endedOn && o.endedOn <= today)) throw new BadRequestException('العرض خلص بالفعل');
+    const now = new Date().toISOString();
+    const next: PriceOffer = o.from > today
+      ? { ...o, cancelled: true, endedAt: now, endedBy: by }
+      : { ...o, endedOn: today, endedAt: now, endedBy: by };
+    const res = await this.productModel.updateOne({ _id: id, priceOffers: offers }, { $set: { priceOffers: offers.map((x) => (x.id === offerId ? next : x)) } }).exec();
+    if (!res.modifiedCount) throw new ConflictException('عروض الصنف اتغيّرت أثناء الحفظ — حدّث الصفحة وحاول تاني');
+    await this.logActivity(id, next.cancelled ? 'إلغاء عرض سعر' : 'إيقاف عرض سعر', `${o.price} (${o.from} → ${o.to})`, by);
+    this.emit('product:changed', { action: 'offer', productId: id });
+    return next;
+  }
+
   async create(dto: CreateProductDto, actor = ''): Promise<ProductDocument> {
     await this.validateStorageLocation(dto.storageLocationId);
     const name = String(dto.name || '').trim();
@@ -172,6 +327,7 @@ export class ProductsService {
     if (dto.collectionId) {
       await this.syncCollectionLink(created._id.toString(), dto.collectionId, actor);
     }
+    if (String(dto.supplier || '').trim()) await this.syncPrimarySupplier(created, dto.supplier, actor);
 
     this.emit('product:changed', { action: 'created', product: created });
     this.emit('inventory:changed', { reason: 'product:created', code });
@@ -243,6 +399,7 @@ export class ProductsService {
 
     const product = await this.productModel.findByIdAndUpdate(id, patch, { new: true }).exec();
     if (!product) throw new NotFoundException('الصنف غير موجود');
+    if (dto.supplier !== undefined) await this.syncPrimarySupplier(product, dto.supplier, actor);
 
     if (changedFields.length) {
       const changes = changedFields.map((f) => ({
@@ -361,6 +518,9 @@ export class ProductsService {
       .updateMany({ _id: { $in: ids } }, update)
       .exec();
     
+    if (fields.supplier !== undefined) {
+      for (const pid of ids) await this.syncPrimarySupplier({ _id: pid }, fields.supplier, 'تعديل جماعي');
+    }
     if (result.modifiedCount > 0) {
       this.emit('product:changed', { action: 'bulk-updated', ids, count: result.modifiedCount });
       this.emit('inventory:changed', { reason: 'product:bulk-updated', ids, count: result.modifiedCount });
@@ -677,6 +837,7 @@ export class ProductsService {
         }
         const { code: _sku, ...patch } = row;
         await this.productModel.findByIdAndUpdate(existing._id, patch).exec();
+        if (item.supplier !== undefined) await this.syncPrimarySupplier({ _id: existing._id }, item.supplier, actor);
         if (item.collectionId !== undefined) {
           await this.syncCollectionLink(existing._id.toString(), item.collectionId || null, actor);
         }
@@ -694,6 +855,7 @@ export class ProductsService {
         if (item.collectionId) {
           await this.syncCollectionLink(createdProduct._id.toString(), item.collectionId, actor);
         }
+        if (String(item.supplier || '').trim()) await this.syncPrimarySupplier(createdProduct, item.supplier, actor);
         created++;
       }
     }

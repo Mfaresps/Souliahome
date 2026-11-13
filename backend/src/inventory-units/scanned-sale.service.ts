@@ -59,7 +59,7 @@ export class ScannedSaleService {
       }
       const payload = { ...invoice, items: lines, employee: name };
       const receipt = invoice.manualDepositReceiptId ? { draftId: invoice.manualDepositReceiptId, actor: { id: actor.userId!, username: actor.username || '', name, isAdmin: actor.role === 'admin' } } : undefined;
-      const transaction = await this.transactions.create(payload, actor.role, receipt, name, context, true);
+      const transaction = await this.transactions.create(payload, actor.role, receipt, name, context, true, false, actor.perms || []);
       for (const row of reservations) await this.tracking.actionInSession(row.id, {
         operationKey: dto.operationKey, reason: request.reason, action: 'reserve', expectedVersion: row.version,
         transactionId: String(transaction._id), lineId: row.lineId, physicalPossessionConfirmed: true,

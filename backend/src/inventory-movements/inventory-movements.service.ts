@@ -5,7 +5,9 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
+import { currentUnitCost } from '../shared/avg-cost.util';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
 import { DatabaseWriteContext, sessionQuery } from '../shared/database-write-context';
@@ -184,6 +186,13 @@ export class InventoryMovementsService {
     reason: string;
     by: string;
     byUserId?: string;
+    /** القطع المحددة اللي التسوية بتشطبها (اختياري، للنقص بس). */
+    unitIds?: string[];
+    /** مفتاح الطلب — نفس المفتاح = نفس التسوية، مابتتسجلش مرتين. */
+    requestKey?: string;
+    /** تسوية بالنقص من غير قطع: تأكيد صريح + سبب عدم التحديد. */
+    unidentifiedConfirmed?: boolean;
+    unidentifiedNote?: string;
   }): Promise<InventoryMovementDocument> {
     const reason = (params.reason || '').trim();
     if (!reason) {
@@ -193,8 +202,36 @@ export class InventoryMovementsService {
     if (!qtyDelta || Number.isNaN(qtyDelta)) {
       throw new BadRequestException('كمية التعديل غير صالحة');
     }
+    const requestKey = String(params.requestKey || '').trim();
+    if (requestKey && !/^[A-Za-z0-9:_-]{8,120}$/.test(requestKey)) throw new BadRequestException('مفتاح الطلب غير صالح');
+    // ⚠ نفس الطلب اتبعت قبل كده (ضغطتين، أو إعادة محاولة بعد انقطاع) → نفس الحركة، من غير تسوية تانية.
+    if (requestKey) {
+      const prior = await this.model.findOne({ requestKey }).exec();
+      if (prior) return prior;
+    }
 
     const product = await this.productsService.findById(params.productId);
+    const unitIds = [...new Set((params.unitIds || []).map((id) => String(id).trim()).filter(Boolean))];
+    if (unitIds.length) {
+      if (qtyDelta > 0) throw new BadRequestException('تحديد القطع للتسوية بالنقص بس');
+      if (unitIds.length !== Math.abs(qtyDelta)) throw new BadRequestException(`حددت ${unitIds.length} قطعة والتسوية بـ ${Math.abs(qtyDelta)} — لازم يتساووا`);
+      await this.assertUnitsCanBeWrittenOff(unitIds, String(product._id));
+    }
+    // ⚠ نقص من غير تحديد قطع: مسموح (مخزون قديم من غير أكواد)، بس بتأكيد صريح وسبب مكتوب،
+    // وبيتسجل اللي النظام كان شايفه وقتها. الأدمن بيشوف قبل التأكيد لو فيه قطع ممكن يحددها.
+    let unidentified: Record<string, unknown> | null = null;
+    if (qtyDelta < 0 && !unitIds.length) {
+      const facts = await this.unidentifiedFacts(String(product._id));
+      const note = String(params.unidentifiedNote || '').trim();
+      if (params.unidentifiedConfirmed !== true || note.length < 5) {
+        throw new ConflictException({
+          code: 'UNIDENTIFIED_CONFIRM_REQUIRED',
+          message: 'التسوية بالنقص من غير تحديد قطع محتاجة تأكيد صريح وسبب مكتوب (5 حروف على الأقل)',
+          ...facts,
+        });
+      }
+      unidentified = { note: note.slice(0, 300), confirmedBy: params.by, confirmedAt: new Date().toISOString(), ...facts };
+    }
     const inventory = await this.transactionsService.getInventory();
     const invRow = inventory.find((i) => i._id === String(product._id));
     const location = await requireWarehouse(this.model.db, params.warehouseCode);
@@ -203,24 +240,137 @@ export class InventoryMovementsService {
     if (qtyAfter < 0) throw new BadRequestException('التسوية تتجاوز الرصيد المتاح في المخزن المختار');
     const adjustmentRef = await this.generateAdjustmentRef();
     const movementId = await this.generateMovementId();
+    // قيمة التسوية بتكلفة القطعة الحالية (متوسط التكلفة أو سعر الكارت) — للعرض بس، الربح مابيتغيّرش.
+    const unitCost = currentUnitCost(product as any) ?? 0;
 
-    return this.model.create({
-      warehouseCode: location,
-      movementId,
-      productId: String(product._id),
-      productCode: product.code,
-      productName: product.name,
-      type: 'تسوية مخزون',
-      qtyDelta,
-      qtyBefore,
-      qtyAfter,
-      sourceTransactionId: '',
-      sourceTransactionRef: adjustmentRef,
-      sourceType: 'manual-adjustment',
-      by: params.by,
-      byUserId: params.byUserId || '',
-      reason,
+    // ⚠ حجز القطع قبل كتابة الحركة: فهرس فريد على `unitId`، فالقطعة مايتشطبش خسارتها مرتين أبدًا
+    // حتى لو تسويتين اتعملوا في نفس اللحظة. لو كتابة الحركة فشلت، الحجز بيتشال.
+    // (حقل منفصل مش `_id`: الاسترجاع من نسخة احتياطية بيحوّل `_id` النصي، فالحماية كانت هتضيع.)
+    const claims = this.model.db.collection('inventorywriteoffs');
+    if (unitIds.length) {
+      await claims.createIndex({ unitId: 1 }, { unique: true, name: 'writeoff_unit_unique' });
+      try {
+        await claims.insertMany(unitIds.map((id) => ({ unitId: id, movementId, adjustmentRef, productId: String(product._id), by: params.by, at: new Date().toISOString() })), { ordered: true });
+      } catch (e: any) {
+        if (e?.code === 11000) {
+          await claims.deleteMany({ movementId });
+          const dupId = String(e?.keyValue?.unitId || '');
+          const prior: any = dupId ? await claims.findOne({ unitId: dupId }) : null;
+          throw new ConflictException(`القطعة دي خسارتها اتسجلت قبل كده${prior?.adjustmentRef ? ` في التسوية ${prior.adjustmentRef}` : ''} — مش هتتسجل مرتين`);
+        }
+        throw e;
+      }
+    }
+
+    try {
+      return await this.model.create({
+        warehouseCode: location,
+        movementId,
+        productId: String(product._id),
+        productCode: product.code,
+        productName: product.name,
+        type: 'تسوية مخزون',
+        qtyDelta,
+        qtyBefore,
+        qtyAfter,
+        sourceTransactionId: '',
+        sourceTransactionRef: adjustmentRef,
+        sourceType: 'manual-adjustment',
+        by: params.by,
+        byUserId: params.byUserId || '',
+        reason,
+        unitIds,
+        requestKey,
+        unitCost: Math.round(unitCost * 10000) / 10000,
+        costValue: Math.round(qtyDelta * unitCost * 100) / 100,
+        unidentified,
+      });
+    } catch (e: any) {
+      if (unitIds.length) await claims.deleteMany({ movementId });
+      // نفس المفتاح اتسجل في نفس اللحظة من طلب تاني → رجّع اللي اتسجل.
+      if (e?.code === 11000 && requestKey) {
+        const prior = await this.model.findOne({ requestKey }).exec();
+        if (prior) return prior;
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * القطع اللي نافذة التسوية بتعرضها لمنتج: كل قطعة تالفة/مفقودة وحالتها **من نفس قواعد
+   * `assertUnitsCanBeWrittenOff`** — فالواجهة مابتخمّنش: `selectable` = السيرفر هيقبلها.
+   * `blockedReason`: 'written-off' (اتشطبت قبل كده، ومعاها رقم التسوية) أو 'customer-return'.
+   */
+  async writeoffCandidates(productId: string) {
+    if (!/^[a-f\d]{24}$/i.test(String(productId))) throw new BadRequestException('المنتج غير صالح');
+    const db = this.model.db;
+    const units = await db.collection('inventoryunits')
+      .find({ productId: String(productId), status: { $in: ['damaged', 'lost'] } }, { projection: { status: 1, barcode: 1 } })
+      .sort({ _id: -1 }).limit(200).toArray();
+    const ids = units.map((u: any) => String(u._id));
+    const [claimed, returned, codes] = ids.length ? await Promise.all([
+      db.collection('inventorywriteoffs').find({ unitId: { $in: ids } }, { projection: { unitId: 1, adjustmentRef: 1 } }).toArray(),
+      db.collection('inventoryunitevents').find({ unitId: { $in: ids }, action: 'returned' }, { projection: { unitId: 1 } }).toArray(),
+      db.collection('inventoryunitcodes').find({ _id: { $in: units.map((u: any) => u._id) } }, { projection: { code: 1 } }).toArray(),
+    ]) : [[], [], []];
+    const claimedBy = new Map(claimed.map((c: any) => [String(c.unitId), String(c.adjustmentRef || '')]));
+    const returnedSet = new Set(returned.map((e: any) => String(e.unitId)));
+    const codeOf = new Map(codes.map((c: any) => { const s = String(c.code || ''); return [String(c._id), s.length >= 9 ? `U-${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}` : '']; }));
+    const pieces = (units as any[]).map((u) => {
+      const id = String(u._id);
+      const blockedReason = claimedBy.has(id) ? 'written-off' : (u.status === 'damaged' && returnedSet.has(id) ? 'customer-return' : '');
+      return { unitId: id, code: codeOf.get(id) || u.barcode, status: u.status, selectable: !blockedReason, blockedReason, adjustmentRef: claimedBy.get(id) || '' };
     });
+    return { pieces, ...(await this.unidentifiedFacts(String(productId))) };
+  }
+
+  /**
+   * اللي النظام شايفه عن قطع المنتج وقت تسوية بالنقص من غير تحديد:
+   * - `unclaimedDamagedLost`: قطع مسجّلة تالفة/مفقودة ولسه خسارتها مااتسجلتش — الأدمن يقدر يحددها.
+   * - `customerDamagedReturns`: قطع رجعت تالفة من عملاء — خسارتها متسجلة في المرتجع ومش في الرصيد.
+   */
+  async unidentifiedFacts(productId: string): Promise<{ unclaimedDamagedLost: number; customerDamagedReturns: number }> {
+    const db = this.model.db;
+    const units = await db.collection('inventoryunits')
+      .find({ productId, status: { $in: ['damaged', 'lost'] } }, { projection: { _id: 1, status: 1 } }).toArray();
+    if (!units.length) return { unclaimedDamagedLost: 0, customerDamagedReturns: 0 };
+    const ids = units.map((u: any) => String(u._id));
+    const [claimed, returned] = await Promise.all([
+      db.collection('inventorywriteoffs').find({ unitId: { $in: ids } }, { projection: { unitId: 1 } }).toArray(),
+      db.collection('inventoryunitevents').find({ unitId: { $in: ids }, action: 'returned' }, { projection: { unitId: 1 } }).toArray(),
+    ]);
+    const claimedSet = new Set(claimed.map((c: any) => String(c.unitId)));
+    const returnedSet = new Set(returned.map((e: any) => String(e.unitId)));
+    let unclaimedDamagedLost = 0, customerDamagedReturns = 0;
+    for (const u of units as any[]) {
+      const id = String(u._id);
+      if (u.status === 'damaged' && returnedSet.has(id)) customerDamagedReturns++;
+      else if (!claimedSet.has(id)) unclaimedDamagedLost++;
+    }
+    return { unclaimedDamagedLost, customerDamagedReturns };
+  }
+
+  /**
+   * القطع المحددة لازم تكون من نفس المنتج، ومسجّل عليها حالة «تالف» أو «مفقود».
+   * ⚠ القطعة اللي رجعت من عميل تالفة **مرفوضة**: المرتجع سجّل خسارتها خلاص ومارجعتش رصيد
+   *   المخزن أصلًا (`returnedItemQtyForStock`)، فتسويتها تاني = خصم المخزن والخسارة مرتين.
+   */
+  private async assertUnitsCanBeWrittenOff(unitIds: string[], productId: string) {
+    if (unitIds.some((id) => !/^[a-f\d]{24}$/i.test(id))) throw new BadRequestException('رقم قطعة غير صالح');
+    const db = this.model.db;
+    const units = await db.collection('inventoryunits')
+      .find({ _id: { $in: unitIds.map((id) => new Types.ObjectId(id)) } }, { projection: { productId: 1, status: 1, barcode: 1 } }).toArray();
+    if (units.length !== unitIds.length) throw new BadRequestException('قطعة من القطع المحددة مش موجودة');
+    for (const u of units as any[]) {
+      if (String(u.productId) !== productId) throw new BadRequestException(`القطعة ${u.barcode} مش من المنتج ده`);
+      if (!['damaged', 'lost'].includes(u.status)) throw new BadRequestException(`القطعة ${u.barcode} مش مسجّلة تالفة أو مفقودة — سجّل حالتها الأول`);
+    }
+    const returned = await db.collection('inventoryunitevents')
+      .find({ unitId: { $in: unitIds }, action: 'returned' }, { projection: { unitId: 1 } }).toArray();
+    const damagedReturns = (units as any[]).filter((u) => u.status === 'damaged' && returned.some((ev: any) => String(ev.unitId) === String(u._id)));
+    if (damagedReturns.length) {
+      throw new ConflictException(`القطعة ${damagedReturns[0].barcode} رجعت من عميل تالفة — خسارتها اتسجلت في المرتجع ومش داخلة في رصيد المخزن، فمش محتاجة تسوية`);
+    }
   }
 
   /**

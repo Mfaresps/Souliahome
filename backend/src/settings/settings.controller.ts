@@ -13,6 +13,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -21,6 +22,9 @@ import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/set
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
+import { PromotionAuditService } from '../promotions/promotion-audit.service';
 import { UsersService } from '../users/users.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { PresenceGateway } from '../auth/presence.gateway';
@@ -37,6 +41,7 @@ export class SettingsController {
     private readonly usersService: UsersService,
     private readonly auditService: SecurityAuditService,
     private readonly presenceGateway: PresenceGateway,
+    @Optional() private readonly promoAudit?: PromotionAuditService,
   ) {}
 
   @Get()
@@ -361,21 +366,28 @@ export class SettingsController {
   }
 
   // ─── Discount Codes ───────────────────────────────────────────────────────
+  // Writes were @Roles('admin'); they now follow the promotions page perms (PermsGuard passes
+  // admins unconditionally, so nothing changes for them). Reads stay open — the sale form needs
+  // the codes and bundles to suggest and validate a discount.
 
   @Get('discount-codes')
   async getDiscountCodes() {
     return this.settingsService.getDiscountCodes();
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-codes')
   @Post('discount-codes')
   async addDiscountCode(@Body() dto: DiscountCodeDto, @Req() req: any) {
     const by = req.user?.name || req.user?.username || 'admin';
     const updated = await this.settingsService.addDiscountCode(dto, by);
+    void this.promoAudit?.recordManage(req.user, { kind: 'code', action: 'created', ref: dto.code, label: dto.code,
+      reason: dto.type === 'percent' ? `${dto.value}%` : `${dto.value} EGP` });
     return updated.discountCodes;
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-codes')
   @Put('discount-codes/:id')
   async updateDiscountCode(
     @Param('id') id: string,
@@ -384,14 +396,22 @@ export class SettingsController {
   ) {
     const by = req.user?.name || req.user?.username || 'admin';
     const updated = await this.settingsService.updateDiscountCode(id, dto, by);
+    const code = (updated.discountCodes || []).find((c: any) => c.id === id);
+    const onlyToggle = Object.keys(dto || {}).length === 1 && dto.active !== undefined;
+    void this.promoAudit?.recordManage(req.user, { kind: 'code', ref: id, label: code?.code || id,
+      action: onlyToggle ? (dto.active ? 'enabled' : 'disabled') : 'updated' });
     return updated.discountCodes;
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-codes')
   @Delete('discount-codes/:id')
   async deleteDiscountCode(@Param('id') id: string, @Req() req: any) {
     const by = req.user?.name || req.user?.username || 'admin';
+    const before = ((await this.settingsService.getDiscountCodes()) || []) as any[];
     const updated = await this.settingsService.deleteDiscountCode(id, by);
+    const code = before.find((c: any) => c.id === id);
+    void this.promoAudit?.recordManage(req.user, { kind: 'code', action: 'deleted', ref: id, label: code?.code || id });
     return { success: true, discountCodes: updated.discountCodes };
   }
 
@@ -418,15 +438,18 @@ export class SettingsController {
     return this.settingsService.getDiscountBundles();
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-bundles')
   @Post('discount-bundles')
   async addDiscountBundle(@Body() dto: DiscountBundleDto, @Req() req: any) {
     const by = req.user?.name || req.user?.username || 'admin';
     const updated = await this.settingsService.addDiscountBundle(dto, by);
+    void this.promoAudit?.recordManage(req.user, { kind: 'bundle', action: 'created', label: dto.name });
     return updated.discountBundles;
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-bundles')
   @Put('discount-bundles/:id')
   async updateDiscountBundle(
     @Param('id') id: string,
@@ -435,13 +458,21 @@ export class SettingsController {
   ) {
     const by = req.user?.name || req.user?.username || 'admin';
     const updated = await this.settingsService.updateDiscountBundle(id, dto, by);
+    const bundle = (updated.discountBundles || []).find((b: any) => b.id === id);
+    const onlyToggle = Object.keys(dto || {}).length === 1 && dto.active !== undefined;
+    void this.promoAudit?.recordManage(req.user, { kind: 'bundle', ref: id, label: bundle?.name || id,
+      action: onlyToggle ? (dto.active ? 'enabled' : 'disabled') : 'updated' });
     return updated.discountBundles;
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('promotions-bundles')
   @Delete('discount-bundles/:id')
-  async deleteDiscountBundle(@Param('id') id: string) {
+  async deleteDiscountBundle(@Param('id') id: string, @Req() req: any) {
+    const before = ((await this.settingsService.getDiscountBundles()) || []) as any[];
     const updated = await this.settingsService.deleteDiscountBundle(id);
+    const bundle = before.find((b: any) => b.id === id);
+    void this.promoAudit?.recordManage(req.user, { kind: 'bundle', action: 'deleted', ref: id, label: bundle?.name || id });
     return { success: true, discountBundles: updated.discountBundles };
   }
 }

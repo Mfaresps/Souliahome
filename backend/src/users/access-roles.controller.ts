@@ -1,36 +1,46 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { AccessRolesService, RoleInput } from './access-roles.service';
 
+type Req = { user?: { userId?: string; sub?: string; username?: string } };
+const actorId = (req: Req) => String(req.user?.userId || req.user?.sub || '');
+
+/**
+ * Roles are the ONLY place access is granted (Nov 13, 2026): an account gets its permissions
+ * by being assigned a role, never by a per-user list. Every administrator manages roles; the
+ * owner account itself stays protected in the service, and nobody can change their own role.
+ */
 @Controller('roles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AccessRolesController {
   constructor(private readonly service: AccessRolesService) {}
 
-  private requireOwner(req: { user?: { username?: string } }) {
-    if (req.user?.username !== 'admin') throw new ForbiddenException('Only the Super Admin can manage roles and assignments');
-  }
-
   @Get()
-  async list(@Req() req: {user?: {username?: string}}) {
-    return { roles: await this.service.list(), canManage: req.user?.username === 'admin' };
+  async list() {
+    const [roles, unassigned] = await Promise.all([this.service.list(), this.service.unassigned()]);
+    return { roles, unassigned, canManage: true };
   }
 
   @Post()
-  create(@Req() req: any, @Body() input: RoleInput) { this.requireOwner(req); return this.service.create(input); }
+  create(@Body() input: RoleInput) { return this.service.create(input); }
+
+  /** Moves accounts that still hold their own permission list onto roles. Dry run unless
+   *  `{dryRun:false}` is sent. Declared before `:id` routes. */
+  @Post('migrate-legacy')
+  migrateLegacy(@Body() body: { dryRun?: boolean }) { return this.service.migrateLegacy(body?.dryRun !== false); }
 
   @Patch(':id')
-  update(@Req() req: any, @Param('id') id: string, @Body() input: RoleInput) { this.requireOwner(req); return this.service.update(id, input); }
+  update(@Param('id') id: string, @Body() input: RoleInput) { return this.service.update(id, input); }
 
   @Delete(':id')
-  delete(@Req() req: any, @Param('id') id: string) { this.requireOwner(req); return this.service.delete(id); }
+  delete(@Param('id') id: string) { return this.service.delete(id); }
 
   @Post(':id/assign')
-  assign(@Req() req: any, @Param('id') id: string, @Body() body: { userId:string }) { this.requireOwner(req); return this.service.assign(id, body.userId); }
+  assign(@Req() req: Req, @Param('id') id: string, @Body() body: { userId: string }) { return this.service.assign(id, body?.userId, actorId(req)); }
 
   @Post(':id/unassign')
-  unassign(@Req() req: any, @Param('id') id: string, @Body() body: { userId:string }) { this.requireOwner(req); return this.service.unassign(id, body.userId); }
+  unassign(@Req() req: Req, @Param('id') id: string, @Body() body: { userId: string }) { return this.service.unassign(id, body?.userId, actorId(req)); }
 }

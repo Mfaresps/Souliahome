@@ -34,6 +34,9 @@ import { VaultService } from '../vault/vault.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { normalizeCity, cityToShipZone } from '../shared/normalize-city.util';
 import { ShopifyAdminService } from './shopify-admin.service';
+import { stampSaleLineCosts } from '../shared/line-cost.util';
+import { knownUnitCost } from '../shared/avg-cost.util';
+import { stampSaleLinePrices } from '../shared/price-offer.util';
 import {
   approvedDepositTotal,
   computeDepositFieldsFromReceipts,
@@ -43,6 +46,7 @@ import {
   visibleReceipts,
 } from './deposit-receipts.util';
 import { DepositReceiptsService } from './deposit-receipts.service';
+import { ShopifyDepositMetafieldsService } from './sync/deposit-metafields.service';
 import { shopifyContact } from '../clients/client-profile.util';
 import { EmployeeShiftService } from '../employee-performance/employee-shift.service';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
@@ -108,6 +112,7 @@ export class ShopifyService {
     private readonly settingsService: SettingsService,
     private readonly discountOtpService: DiscountOtpService,
     private readonly depositReceipts: DepositReceiptsService,
+    @PushOptional() private readonly depositMetafields?: ShopifyDepositMetafieldsService,
   ) {}
 
   /** Writes the deposit summary derived from APPROVED receipts onto the order (not saved). */
@@ -179,7 +184,7 @@ export class ShopifyService {
       const notes = orderData.note || '';
       const shipCost = this.parsePrice(orderData.shipping_lines?.[0]?.price);
       const discount = this.parsePrice(orderData.total_discounts);
-      // نحسب الإجمالي من أسعار النظام الفعلية (وليس total_price من Shopify)
+      // الإجمالي من أسعار Shopify (اللي العميل شافها وقت الطلب) — mapItems بيسعّر السطر بيها.
       const itemsTotal = items.reduce((s, i) => s + (i.price * i.qty), 0);
       const total = Math.max(0, itemsTotal + shipCost - discount);
 
@@ -658,6 +663,8 @@ export class ShopifyService {
       }
 
       await order.save();
+      // A Shopify-side total edit changes custom.remaining_amount of an order already sent.
+      await this.depositMetafields?.requestSyncIfTotalChanged(shopifyId, orderData.current_total_price);
 
       if (order.status === 'pending') {
         this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
@@ -1414,6 +1421,23 @@ export class ShopifyService {
     ).exec();
     if (!claimed) throw new BadRequestException('تغيّر الأوردر أو العربون — حدّث البيانات وأعد المحاولة');
 
+    // ⚠ This invoice skips TransactionsService.create, so it stamps its own lines here: the cost
+    // from the same stock snapshot (shared/line-cost.util.ts) and the price source — 'shopify',
+    // the system price kept as listPrice (shared/price-offer.util.ts).
+    const confirmedItems = stampSaleLinePrices(
+      stampSaleLineCosts(
+        (order.toObject ? order.toObject().items : order.items) as any[],
+        (code) => { const row = (invSnapshotBefore as any[]).find((r) => String(r.code || '').trim() === code); return row ? knownUnitCost(row) : null; },
+        confirmedAt,
+      ),
+      (code) => (invSnapshotBefore as any[]).find((r) => String(r.code || '').trim() === code) || null,
+      String(confirmedAt).slice(0, 10), 'shopify',
+    );
+    // A line whose offer was taken off before confirming keeps that record on the invoice
+    // (identical to what the order holds, so no perm is involved here).
+    const settledConfirmed = this.transactionsService.settleOfferRemovalsOrThrow(confirmedItems as any[],
+      (order.toObject ? order.toObject().items : order.items) as any[], approvedBy, 'admin', [],
+      (line) => (invSnapshotBefore as any[]).find((r) => String(r.code || '').trim() === String(line?.code || '').trim()) || null).items;
     let tx: TransactionDocument;
     let createdTxId = '';
     try {
@@ -1435,7 +1459,9 @@ export class ShopifyService {
       remaining,
       deposits: depositsLog,
       depositReceipts: depositReceiptsSnapshot,
-      items: order.items,
+      // ⚠ الفاتورة دي مابتعدّيش على TransactionsService.create، فلازم تحفظ تكلفة سطورها هنا
+      // من نفس لقطة المخزون (خطوة 2 — shared/line-cost.util.ts).
+      items: settledConfirmed,
       total: order.total,
       itemsTotal: order.itemsTotal,
       shipCost: order.shipCost,
@@ -1534,6 +1560,9 @@ export class ShopifyService {
       this.followUpsService?.closeForOrder({ transactionId: String(tx._id), shopifyOrderIds: [String(order._id), order.shopifyId], orderRef: order.ref }, 'confirmed', paidNow > 0 ? 'تم دفع الديبوزت' : 'سيتم الشحن بدون ديبوزت', approvedBy),
       this.depositReceipts.discardDrafts(String(order._id)),
     ]);
+    // The transaction now owns the deposit (a note-only deposit is first booked here).
+    if (paidNow > 0) await this.depositMetafields?.requestSync(order.shopifyId, 'order-confirmed');
+    else await this.depositMetafields?.requestSyncIfTracked(order.shopifyId, 'order-confirmed');
     return { success: true, txId: String(tx._id) };
   }
 
@@ -1874,6 +1903,16 @@ export class ShopifyService {
         changes.push(source === 'shopify' ? 'استخدام أصناف Shopify المتعارضة' : 'الاحتفاظ بأصناف النظام');
       }
       patch.items = validEditItems(items!);
+      // شيل عرض من سطر: نفس قاعدة الفاتورة — شيل جديد محتاج promotions-offers، والقديم بيعدّي كما هو.
+      if (patch.items.some((i: any) => i.offerRemoved)) {
+        const codes = [...new Set(patch.items.map((i: any) => String(i.code || '').trim()).filter(Boolean))];
+        const prods: any[] = codes.length ? await this.productModel.find({ code: { $in: codes } }, { code: 1, priceOffers: 1 }).lean() : [];
+        const settled = this.transactionsService.settleOfferRemovalsOrThrow(patch.items, order.items || [], actor.name, actor.role, actor.perms || [],
+          (line) => prods.find((p) => String(p.code).trim() === String(line?.code || '').trim()) || null);
+        patch.items = settled.items;
+        for (const a of settled.added) changes.push(`إزالة عرض «${a.offerName}» من ${a.name} — ${a.reason}`);
+        (patch as any).__offerRemovals = settled.added;
+      }
       patch.itemsTotal = patch.items.reduce((sum: number, item: any) => sum + item.price * item.qty, 0);
       if (!Number.isFinite(patch.itemsTotal)) throw new BadRequestException('إجمالي الأصناف غير صالح');
       patch.localItemsBaseline = order.localItemsBaseline ?? before.items;
@@ -1915,6 +1954,8 @@ export class ShopifyService {
     if (!order) throw new NotFoundException('الأوردر غير موجود');
     if (order.editRequest?.status === 'معلق') throw new BadRequestException('يوجد طلب تعديل ينتظر المراجعة');
     const { before, patch, changes } = await this.prepareOrderEdit(order, input, actor);
+    const offerRemovals = (patch as any).__offerRemovals || [];
+    delete (patch as any).__offerRemovals;
     if (!changes.length) return { success: true, pendingApproval: false, total: order.total };
     const direct = actor.role === 'admin' || actor.perms.includes('shopify-edit-direct');
     const now = new Date().toISOString();
@@ -1927,6 +1968,7 @@ export class ShopifyService {
     } };
     const saved = await this.shopifyOrderModel.findOneAndUpdate({ ...this.editWriteFilter(order), 'editRequest.status': { $ne: 'معلق' } }, update, { new: true });
     if (!saved) throw new BadRequestException('تغيّر الأوردر أثناء التعديل — حدّثه وأعد المحاولة');
+    if (offerRemovals.length) this.transactionsService.logOfferRemovals(actor.name, order.ref || '', offerRemovals);
     if (!direct) await notifyApproval(this.notifications, 'shopify-edit:' + request.id + ':pending', order.ref, 'shopify:' + orderId,
       { actorName: actor.name, actionKey: 'edit-shopify', status: 'pending', editRequestId: request.id });
     this.emit('shopify:edit-changed', { orderId, status: request.status });
@@ -2730,13 +2772,18 @@ export class ShopifyService {
           }
         }
 
+        // ⚠ The line is priced at what Shopify charged — the price the customer saw at checkout
+        // (Nov 12, 2026). It used to take the system's current sellPrice, so a product on offer in
+        // Shopify (800) was recorded — and collected on delivery — at the system price (1000).
+        // The system price is kept as `listPrice` for the «سعر مختلف» check and offer reporting.
         return {
           productId: product ? String((product as any)._id) : '',
           code: sku || 'SHOPIFY',
           name: product ? (product as any).name : (item.title || item.name || 'منتج'),
           qty,
-          price: product ? (product as any).sellPrice : shopifyPrice,
-          total: (product ? (product as any).sellPrice : shopifyPrice) * qty,
+          price: shopifyPrice,
+          total: shopifyPrice * qty,
+          listPrice: product ? Number((product as any).sellPrice) || 0 : shopifyPrice,
           imageUrl: product ? ((product as any).imageUrl || '') : '',
           shopifyPrice,
           shopifyName: item.title || item.name || '',

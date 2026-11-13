@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, isValidObjectId } from 'mongoose';
+import { Model, isValidObjectId, Types } from 'mongoose';
 import {
   Transaction,
   TransactionDocument,
@@ -716,6 +716,25 @@ export class DemandPlanningService {
         if (key && price > 0) map.set(key, price);
       });
     });
+    // أسعار الموردين (خطوة 4) أحدث معلومة عن سعر الشراء الجاي: بتتحدّث من كل فاتورة، وكمان
+    // يدويًا لما المورد يغيّر سعره. الأحدث تاريخًا يكسب. لو الجدول فاضي يفضل آخر سعر فاتورة.
+    try {
+      const rows = await this.txModel.db.collection('productsuppliers')
+        .find({ active: true, price: { $gt: 0 } }, { projection: { productId: 1, price: 1, priceDate: 1, priceUpdatedAt: 1 } })
+        .sort({ priceDate: 1, priceUpdatedAt: 1 }).toArray();
+      if (rows.length) {
+        const ids = [...new Set(rows.map((r: any) => String(r.productId)))].filter((id) => /^[a-f\d]{24}$/i.test(id));
+        const products = await this.txModel.db.collection('products')
+          .find({ _id: { $in: ids.map((id) => new Types.ObjectId(id)) } }, { projection: { code: 1 } }).toArray();
+        const codeById = new Map(products.map((p: any) => [String(p._id), p.code]));
+        for (const r of rows as any[]) {
+          const key = this.skuKey(codeById.get(String(r.productId)));
+          if (key) map.set(key, Number(r.price));
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[demand-planning] supplier prices unavailable: ${e?.message || e}`);
+    }
     return map;
   }
 

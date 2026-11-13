@@ -187,10 +187,13 @@
         const label = document.createElement('span'); label.textContent = text(code, lang);
         const identity = document.createElement('bdi'); identity.dir = 'ltr'; identity.textContent = result?.unit?.manualCode || result?.unit?.barcode || '';
         get('message').replaceChildren(label, identity);
+        const supplier = supplierText(result, lang);
+        if (supplier) { const line = document.createElement('span'); line.className = 'scan-supplier-line'; line.dir = 'auto'; line.style.cssText = 'display:block;flex-basis:100%;margin-top:3px;font-size:.88em;font-weight:600'; line.textContent = supplier; get('message').append(line); }
       }
       get('message').dataset.level = code === 'VALIDATED' ? 'success' : ['DUPLICATE_SCAN', 'UNRESOLVED', 'RESTORED_PENDING', 'REQUEST_PENDING', 'BUSY'].includes(code) ? 'warning' : 'error';
       if (code === 'VALIDATED' && ['returned-to-supplier', 'supplier-return-pending'].includes(result?.unit?.status)) {
         get('message').textContent = (window.SupplierReturnPieces?.returnMessage(result.supplierReturn, result.unit.status === 'supplier-return-pending') || tr('Piece linked to a supplier return', 'القطعة مرتبطة بمرتجع مورد')) + ' · ' + (result.unit.manualCode || result.unit.barcode);
+        { const supplier = supplierText(result, lang); if (supplier) get('message').textContent += ' · ' + supplier; }
         get('message').dataset.level = 'warning';
       }
       options.onResult?.(code, result); update();
@@ -333,4 +336,22 @@
     return { client, destroy, stopCamera };
   }
   window.SouliaScanner = { ScanClient, normalize, mount };
+  /**
+   * «المورد: X» for a scanned piece or pack — one wording on every scan screen. Reads the server's
+   * `supplier` (+ `suppliers` for a pack holding pieces from several invoices). A piece with no
+   * purchase states where it came from rather than naming a supplier it never had.
+   */
+  function supplierText(result, lang) {
+    const en = (lang || (typeof currentLang !== "undefined" ? currentLang : "")) === "en";
+    const t = (a, b) => en ? a : b;
+    const list = Array.isArray(result?.suppliers) && result.suppliers.length ? result.suppliers : (result?.supplier ? [result.supplier] : []);
+    const names = [...new Set(list.map(s => String(s?.name || '').trim()).filter(Boolean))];
+    if (names.length) return t('Supplier: ', 'المورد: ') + names.join(en ? ', ' : '، ');
+    const sup = result?.supplier || list[0];
+    if (!sup) return '';
+    if (sup.origin === 'purchase') return t('Supplier: not recorded on the purchase invoice', 'المورد: غير مسجّل في فاتورة الشراء');
+    if (sup.origin === 'opening-stock') return t('No supplier — opening stock', 'بدون مورد — رصيد افتتاحي');
+    return t('No supplier — counted stock with no purchase invoice', 'بدون مورد — رصيد جرد بلا فاتورة شراء');
+  }
+  window.SouliaUnitSupplier = { text: supplierText };
 }());

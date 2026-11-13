@@ -1026,6 +1026,13 @@ export class SettingsService {
     'purchaseorders',
     'supplierreturnorders',
     'supplierledgerentries',
+    // «بيانات المرتجعات» — documentation-only supplier return statements and their photos.
+    'supplierreturnstatements',
+    'supplierreturnstatementimages',
+    // Per-product supplier prices (step 4 of the profit fix) — reference prices, not costs.
+    'productsuppliers',
+    'productcostevents',
+    'inventorywriteoffs',
     // ── Catalogue: categories / collections and the product↔collection join table ──
     'categories',
     'collections',
@@ -1369,6 +1376,11 @@ export class SettingsService {
     'purchaseorders',
     'supplierreturnorders',
     'supplierledgerentries',
+    'supplierreturnstatements',
+    'supplierreturnstatementimages',
+    'productsuppliers',
+    'productcostevents',
+    'inventorywriteoffs',
     'categories',
     'collections',
     'collectionproducts',
@@ -1928,10 +1940,10 @@ export class SettingsService {
   // produces a leaderboard of ids nobody can read.
   // Covered by the settings.service SECTION_COLLECTIONS coverage test.
   private static SECTION_COLLECTIONS: Record<string, string[]> = {
-    transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'carrierimports', 'carrierpayouts'],
+    transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'inventorywriteoffs', 'carrierimports', 'carrierpayouts'],
     inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks', 'inventoryunitcodes', 'inventoryunitcodecounters'],
-    products:       ['products', 'categories', 'collections', 'collectionproducts'],
-    customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries'],
+    products:       ['products', 'categories', 'collections', 'collectionproducts', 'productsuppliers', 'productcostevents'],
+    customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries', 'supplierreturnstatements', 'supplierreturnstatementimages'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
     other:          ['brandlogos', 'complaints', 'complaintevidence', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',

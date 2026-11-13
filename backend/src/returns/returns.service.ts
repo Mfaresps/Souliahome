@@ -21,6 +21,7 @@ import {
   ReturnsValidationService,
   ReturnLineInput,
 } from './returns-validation.service';
+import { returnLineCost } from '../shared/line-cost.util';
 import {
   MAX_RETURN_DAYS,
   RETURN_ONLY_REASONS,
@@ -136,6 +137,15 @@ export class ReturnsService {
 
     // ── The four checks that previously did not run ──
     this.validation.assertItemsMatchOriginal(tx, items);
+
+    // سطر المرتجع ياخد تكلفة سطر البيع الأصلي (shared/line-cost.util.ts). بيتنسخ بعدين كما هو
+    // على معاملة الـ'مرتجع' وقت الاعتماد، و`computeReturnedProfitLoss` بيقراه.
+    const liveCosts = await this.transactionsService.currentUnitCosts();
+    const costAt = new Date().toISOString();
+    for (const item of items as any[]) {
+      const original = (tx.items || []).find((line: any) => String(line.code || '').trim() === String(item.code || '').trim());
+      Object.assign(item, returnLineCost(original, liveCosts.get(String(item.code || '').trim()) ?? null, costAt));
+    }
     const existingReturns = await this.validation.findActiveReturnsForInvoice(
       dto.originalTransactionId,
     );

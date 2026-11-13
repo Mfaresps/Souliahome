@@ -70,7 +70,7 @@
     const unit = session.summary.units.find(unit => [unit.barcode, unit.manualCode].some(value => value && String(value).toUpperCase() === code));
     if (!unit) feedback(tr('This code is not in this product’s counted warehouse stock.', 'الكود ليس ضمن رصيد هذا المنتج في المخزن المختار.'), true);
     else if (session.checked.has(String(unit._id))) feedback(tr('Already scanned. Count unchanged.', 'تم مسح هذه القطعة من قبل؛ لم تُحتسب مرتين.'));
-    else { session.checked.add(String(unit._id)); render(); feedback(tr('Piece scanned: ', 'تم مسح القطعة: ') + (unit.manualCode || unit.barcode)); }
+    else { session.checked.add(String(unit._id)); render(); feedback(tr('Piece scanned: ', 'تم مسح القطعة: ') + (unit.manualCode || unit.barcode) + ((sup => sup ? ' · ' + sup : '')(window.SouliaUnitSupplier?.text(unit) || ''))); }
     el('code').value = ''; el('code').focus();
   }
   function finish() {

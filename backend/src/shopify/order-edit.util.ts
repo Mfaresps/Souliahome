@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { cleanOfferRemoval } from '../shared/price-offer.util';
 
 export interface OrderEditActor { id: string; name: string; username: string; role: string; perms: string[]; }
 export interface OrderEditInput {
@@ -35,7 +36,9 @@ export function validEditItems(items: any[]): any[] {
     return { productId: String(item.productId || ''), code: String(item.code || ''),
       name: String(item.name || ''), qty, price, total: qty * price,
       imageUrl: String(item.imageUrl || ''), shopifyName: String(item.shopifyName || ''),
-      ...(Number.isFinite(Number(item.shopifyPrice)) ? { shopifyPrice: Number(item.shopifyPrice) } : {}) };
+      ...(Number.isFinite(Number(item.shopifyPrice)) ? { shopifyPrice: Number(item.shopifyPrice) } : {}),
+      // «العرض اتشال من السطر» — cleaned here, decided by settleOfferRemovals (perm + coherence).
+      ...(cleanOfferRemoval(item.offerRemoved) ? { offerRemoved: cleanOfferRemoval(item.offerRemoved) } : {}) };
   });
 }
 

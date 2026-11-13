@@ -10,6 +10,8 @@ import {
 import { Product, ProductDocument } from '../products/schemas/product.schema';
 import { ShopifyOrder, ShopifyOrderDocument } from './schemas/shopify-order.schema';
 import { OrderAudit, OrderAuditDocument } from './schemas/order-audit.schema';
+import { lineUnitCost } from '../shared/line-cost.util';
+import { currentUnitCost } from '../shared/avg-cost.util';
 import { ShopifyAdminService } from './shopify-admin.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { approvedDepositTotal, computeDepositFieldsFromReceipts, receiptsIn, round2 } from './deposit-receipts.util';
@@ -308,9 +310,10 @@ export class OrderAuditService {
 
     // ── Product cost lookup ────────────────────────────────────────────────
     const productCodes = [...new Set([...txByRef.values(), ...shopByRef.values()].flatMap(order => (order.items || []).map((item: any) => String(item.code || ''))))];
-    const products = productCodes.length ? await this.productModel.find({ code: { $in: productCodes } }, 'code buyPrice').lean() : [];
+    const products = productCodes.length ? await this.productModel.find({ code: { $in: productCodes } }, 'code buyPrice avgCost').lean() : [];
     const costByCode = new Map<string, number>();
-    for (const p of products) costByCode.set(String(p.code), Number(p.buyPrice) || 0);
+    // خطوة 3: الأوردر اللي لسه ماتأكدش يتقدّر بنفس التكلفة اللي هتتحفظ عليه وقت التأكيد.
+    for (const p of products) costByCode.set(String(p.code), currentUnitCost(p as any) ?? 0);
 
     // ── Build one row per expected order number ────────────────────────────
     const rows: AuditRow[] = [];
@@ -327,8 +330,9 @@ export class OrderAuditService {
           price: Number(i.price) || 0,
         }));
 
-        const productCost = items.reduce(
-          (s, i) => s + (costByCode.get(i.code) ?? 0) * i.qty,
+        // التكلفة المثبّتة على سطر الفاتورة لو موجودة، وإلا سعر الكارت الحالي (shared/line-cost.util.ts).
+        const productCost = (tx.items || []).reduce(
+          (s: number, i: any) => s + lineUnitCost(i, costByCode.get(String(i.code || '')) ?? 0) * (Number(i.qty) || 0),
           0,
         );
         const itemsTotal = items.reduce((s, i) => s + i.price * i.qty, 0);

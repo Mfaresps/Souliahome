@@ -8,3 +8,14 @@
 .sale-piece-codes{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.sale-piece-codes button{max-width:100%;overflow-wrap:anywhere;text-align:start;cursor:pointer;font:inherit;font-size:.68rem;border-radius:6px;border:1px solid #b4d5bf;background:#edf7f0;color:#19683f;padding:4px 6px}
 body.dark-mode .sale-reader-feedback,body.dark-mode .sale-piece-codes button{background:#19392b;color:#a2dfb8;border-color:#3e7958}body.dark-mode .sale-reader-feedback.is-error{background:#432924;border-color:#84483d;color:#ffd1c7}
 @keyframes saleReaderPulse{to{opacity:.45}}@media(prefers-reduced-motion:reduce){.sale-reader-dot.is-busy{animation:none}}@media(max-width:600px){#tx-sale-scanner input{font-size:16px!important}.sale-reader-bar strong{min-width:130px}}
+
+.sale-line-scan{margin-top:7px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sale-line-status{display:inline-flex;align-items:center;gap:7px;font-size:.74rem;font-weight:600;color:var(--muted)}.sale-line-status bdi{unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:500}
+.sale-line-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sale-line-scan.is-need .sale-line-status{color:#a5531a}.sale-line-scan.is-done .sale-line-status{color:#19683f}
+.sale-line-scan .sale-piece-codes{margin-top:0}
+.sale-line-actions{display:flex;gap:6px;flex-wrap:wrap}.sale-line-actions button{font:inherit;font-size:.72rem;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);padding:5px 9px;min-height:30px;cursor:pointer}.sale-line-actions button:hover{border-color:var(--primary);color:var(--primary)}
+.tx-item-card.sale-line-flash{animation:saleLineFlash 1.2s ease-out}
+@keyframes saleLineFlash{0%,40%{box-shadow:0 0 0 2px #e08a3c}100%{box-shadow:0 0 0 2px transparent}}
+body.dark-mode .sale-line-scan.is-need .sale-line-status{color:#f2b47c}body.dark-mode .sale-line-scan.is-done .sale-line-status{color:#a2dfb8}
+@media(prefers-reduced-motion:reduce){.tx-item-card.sale-line-flash{animation:none;box-shadow:0 0 0 2px #e08a3c}}

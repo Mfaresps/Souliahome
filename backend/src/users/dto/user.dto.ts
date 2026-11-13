@@ -20,9 +20,15 @@ export class CreateUserDto {
   @IsNotEmpty()
   readonly name: string;
 
+  // Ignored: access comes from `roleId` (kept optional so an older client still validates).
   @IsString()
   @IsIn(['admin', 'staff', 'viewer'])
-  readonly role: string;
+  @IsOptional()
+  readonly role?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly roleId?: string;
 
   @IsString()
   @IsOptional()

@@ -62,7 +62,7 @@ function syncNavigationShell(incomingRows) {
     const sections = [
       [shellText('نظرة عامة','OVERVIEW'),['dashboard','transaction']],
       [shellText('المبيعات والطلبات','SALES & ORDERS'),['shopify-orders','movements','pickup-orders']],
-      [shellText('الكتالوج','CATALOG'),['inventory','barcodes','products','categories']],
+      [shellText('الكتالوج','CATALOG'),['inventory','barcodes','products','promotions','categories']],
       [shellText('خدمة العملاء','CUSTOMER CARE'),['complaints','csp','clients']],
       [shellText('المالية والفريق','FINANCE & TEAM'),['approvals','suppliers','expenses','reports','vault','users']]
     ];
@@ -118,18 +118,19 @@ function syncNavigationShell(incomingRows) {
       'supplier-profile': qs('#sp-name')?.textContent,
       'category-profile': qs('#catp-name')?.textContent,
       'collection-profile': qs('#colp-name')?.textContent,
+      product: qs('#prd-host .prd-title')?.textContent,
     };
     const label = currentPage === 'userhub' ? 'UserHub' : currentPage === 'profile' ? t('profile') : detailLabels[currentPage] || (entry ? (currentLang === 'en' ? entry.labelEn || entry.label : entry.label) : qs('.page.active .page-title')?.textContent || currentPage);
     const sep = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
     let html = '<a class="shell-workspace" href="#dashboard" onclick="event.preventDefault();goHomeFromLogo()">'+esc(shellText('مساحة العمل','Workspace'))+'</a><span class="shell-root-sep">'+sep+'</span>';
-    const sourcePath = currentPage === 'invoice-view' ? qs('#inv-view-content .shell-page-breadcrumb') : currentPage === 'category-profile' ? qs('#catp-breadcrumb') : currentPage === 'collection-profile' ? qs('#colp-breadcrumb') : null;
+    const sourcePath = currentPage === 'invoice-view' ? qs('#inv-view-content .shell-page-breadcrumb') : currentPage === 'category-profile' ? qs('#catp-breadcrumb') : currentPage === 'collection-profile' ? qs('#colp-breadcrumb') : currentPage === 'product' ? qs('#prd-breadcrumb') : null;
     if (sourcePath && sourcePath.children.length) {
       const children = [...sourcePath.children].slice(currentPage === 'invoice-view' ? 2 : 0);
       html += children.map((node, idx) => {
         if (node.tagName === 'SPAN' && node.textContent.trim() === '/') return '<span class="shell-path-sep">'+sep+'</span>';
         const clone = node.cloneNode(true);
         clone.removeAttribute('style');
-        if (clone.tagName === 'A' && !clone.hasAttribute('href')) clone.setAttribute('href','#'+_pageSlug('categories'));
+        if (clone.tagName === 'A' && !clone.hasAttribute('href')) clone.setAttribute('href','#'+_pageSlug(currentPage === 'product' ? 'products' : 'categories'));
         if (clone.tagName === 'A') { const action = clone.getAttribute('onclick') || ''; if (!action.includes('preventDefault')) clone.setAttribute('onclick','event.preventDefault();'+action); }
         if (idx === children.length - 1) clone.setAttribute('aria-current','page');
         return clone.outerHTML;

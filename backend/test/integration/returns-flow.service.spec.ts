@@ -143,6 +143,7 @@ describe('Customer return — cumulative flow on one invoice', () => {
           provide: TransactionsService,
           useValue: {
             findById: jest.fn().mockResolvedValue(INVOICE),
+            currentUnitCosts: jest.fn().mockResolvedValue(new Map()),
             create: jest.fn().mockImplementation(async (dto: any) => {
               const t = { _id: 'tx-' + (createdTxs.length + 1), ...dto };
               createdTxs.push(t);

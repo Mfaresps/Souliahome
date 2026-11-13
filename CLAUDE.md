@@ -12,6 +12,714 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## Access Is Granted by Roles Only — One Place, One Vocabulary (Nov 13, 2026)
+
+Two editors wrote the same `role`/`perms` on an account: the user window (84 checkboxes, 9 job
+templates, any admin) and the Roles page (90 keys, 6 roles, owner only). An edit in the window
+silently unlinked the account from its role, the six product/supplier write keys existed only on
+the Roles page, and «مدير» meant three things. Now **the Roles page is the only place access is
+granted** (owner's decision): an account gets its permissions by being given a role.
+
+**Words** — مستوى الوصول (tier: مدير النظام / موظف / مشاهد) · **الدور** (role: a named set of
+permissions) · **الصلاحية** (one key, one name, one group — `roles-permissions.js`) · المسمى
+الوظيفي (job title: a label only, never access). The Users table's «الوظيفة» column shows the job
+title or «—», never the tier; «الدور» shows the role name, «بدون دور» for an account not on one.
+
+### Backend
+- `PUT /users/:id` and `UsersService.updateUser` **drop `role` and `perms`**. `POST /users` needs
+  `roleId`; the account is created with no grants and assigned in the same request (an unknown
+  role fails before anything is written; a failed assignment deletes the new account).
+- `/roles` writes are open to **every admin** (was owner-only). The owner account stays protected;
+  **nobody can change their own role** (`assign/unassign(…, actorId)` → 403).
+- 4 more default roles from the old job templates: `fulfillment`, `cashier`, `purchasing`,
+  `marketing` (`DEFAULT_ACCESS_ROLES`, `$setOnInsert`, so existing roles are untouched).
+- `GET /roles` also returns `unassigned` (accounts still on per-user grants). The old rule that
+  counted every role-less viewer as «Viewer» was removed.
+- **`POST /roles/migrate-legacy`** (admin, dry run unless `{dryRun:false}`): each active legacy
+  account joins the role whose tier + permission set equals its own exactly, else a role is created
+  for that set (identical sets share one, named «<name> (custom)»). Legacy alias `categories` →
+  `categories-view`; `users`/`settings` (admin-only by policy) are reported as not grantable.
+  Because the managed check refuses product edits / supplier writes without explicit keys, the
+  move adds `products-edit` (had `products`), `products-create/-delete` (had `products-sku-manage`),
+  `suppliers-create/-edit/-delete` (had `suppliers`) — staff only. **Disabled accounts and accounts
+  with no permissions are skipped.** Writes are conditional on the account being unchanged since
+  the read; a second run moves nobody.
+
+### ⚠ The managed-role check broke the app for any account on a role (fixed here)
+Measured in the real app on a scratch copy: after the move, three employees were refused startup
+requests they always had — `/transactions/startup-overview` (boot-critical), `/products`,
+`/transactions/inventory`, `/suppliers`, `/expenses`, `/purchase-orders`, `/supplier-returns`. No
+employee had been on a role before, so nobody had hit it. Now in `managed-role-access.ts`:
+- **GET `/products`, `/transactions/inventory`, `/transactions/startup-overview` are open to every
+  account** — reference data every order screen reads.
+- **`MANAGED_READERS`** names every screen that reads `/suppliers`, `/expenses`, `/purchase-orders`,
+  `/supplier-returns` (e.g. `approvals` reads supplier returns and expenses; `products` reads
+  suppliers). Writes keep their own key.
+- `loadAllData` skips those four for an account on a role that holds none of their readers
+  (`_BOOT_READERS` / `_bootMayLoad`) — a refused request would read as «failed to load». Accounts
+  not on a role load exactly as before. ⚠ `_BOOT_READERS` ≡ `MANAGED_READERS`, pinned by
+  `access-roles.spec.ts`.
+
+### Frontend
+- User window: the «الصلاحيات» tab became **«الدور والصلاحيات»**: pick a role (radio list), see a
+  short read-only summary grouped like the Roles page, «تعديل الدور» opens it there. Own account
+  and the owner are read-only. A legacy account says how many permissions it holds without a role.
+  A job title only **suggests** its role (`UM_JOB_ROLE`). Removed: `PERM_MODULES`,
+  `ROLE_TEMPLATES`, `JOB_TEMPLATES`, `renderPermSystem` and its CSS, `UM_ROLE_CARDS`.
+- `window.SouliaRBAC` (roles-permissions.js) is the shared surface: `ensure/reload/roles/find/
+  slugOf/roleName/roleDescription/tierName/permName/groups/open`.
+- Roles page: a notice «N حساب بدون دور» → «مراجعة ونقل» (dry-run table → move); saving a role that
+  has accounts names them first; the assign list shows each account's current role; numbers use
+  Latin digits (`ar-EG-u-nu-latn`, they were Arabic-Indic).
+
+### Verification
+- `access-roles.spec.ts` 11 (any admin, own role refused, migration plan/skip/conditional write,
+  guard readers, `_BOOT_READERS` mirror) — revert-checked (self-guard + conditional write → 2 fail).
+  `pickup-permissions` / `shopify-prepare-ship` / `shopify-reassign` specs moved from the removed
+  modal code to the Roles page `reconcile()` and `DEFAULT_ACCESS_ROLES` (revert-checked: 2 fail).
+- Compiled API on a scratch copy (`soulia_rolescheck`, credentials blanked, dropped after): 23
+  checks — dry run writes nothing, 3/3 active accounts moved, every held permission kept, account ≡
+  role, rerun moves 0, PUT ignores perms, assign/role edit propagate, own role 403, create needs a
+  role. **Real app as each moved employee, every allowed page, before vs after: 0 newly refused
+  requests.**
+- Browser: `users-roles-unified.cjs` 46 (ar 1440 / en 390 dark), `roles-permissions.cjs`,
+  `expenses-users-layout.cjs`.
+- ⚠ Pre-existing unit failures, not from this change: `header-refresh` (anchors a function that does
+  not exist), `language-preference`, `shopify-peek-status`, `pickup-status-consistency`,
+  `notification-setup`.
+- **Not run on live.** After deploy: Roles page → «مراجعة ونقل» (it previews first).
+
+---
+
+## Frozen Sale-Line Cost, Average Cost & Supplier Prices — the Profit Fix (Nov 12, 2026)
+
+Every profit figure costed each sale line at the product's **current** `buyPrice`, so editing
+the purchase price on a product card rewrote the profit of every past month. Step 1 freezes
+the cost on existing lines; step 2 saves it on every new sale; step 3 makes that saved cost a
+moving average from purchase invoices; step 4 keeps per-supplier prices. All four are built.
+
+### Step 3 — moving-average cost (`Product.avgCost`, `productcostevents`)
+- `shared/avg-cost.util.ts` (pure): `currentUnitCost(p)` = `avgCost` if set, else `buyPrice`
+  (⚠ mirrored by `_unitCostOf` in `index.html`); `averageAfterPurchase`,
+  `averageAfterCorrection`, `purchaseLotsByCode` (invoice discount spread by line value).
+- **Decisions:** the average starts from the card price (`avgCost: null` until the first
+  purchase — no migration, no jump). **Only purchase invoices move it**; returns,
+  cancellations, adjustments and supplier returns enter/leave at the current average.
+  Stock ≤ 0 → the new price exactly. A purchase from before go-live is outside the average,
+  so editing it changes nothing.
+- `ProductCostService` (products module): `applyPurchase` (create, stock = the pre-invoice
+  `_invSnapshotBefore`, after commit under a write context), `correctPurchase` (edit in
+  `update()` and cancel in `performCancellation` — a **chronological replay**, see "Final
+  requirements" below),
+  `revalue` (admin, reason required, `POST /products/:id/revalue-cost`), `history`
+  (`GET /products/:id/cost-history`, admin or `purchase-edit-price`).
+- ⚠ The average is written with a compare-on-read (`avgCost` must equal what was read; 3
+  retries), and each event has a unique `eventKey`, so a repeat never applies twice.
+- ⚠ `avgCost` is in **no DTO** on purpose and is `@Prop({ type: Number, default: null })` —
+  a nullable prop without `type` kills the API at load.
+- Readers: sale stamping (create, `update`, Shopify approve, `currentUnitCosts`) now saves
+  `currentUnitCost`; inventory value (screen + export, which gained «متوسط التكلفة»),
+  stagnant-stock value, the inventory detail, and product analytics (cost from the lines'
+  saved costs, sound returns subtracted). Report fallbacks for **unfrozen** lines still use
+  `buyPrice`, so nothing moves before the step-1 backfill runs.
+- UI: `.ac-row` under التسعير on the card (`_acRowHtml` / `_acLoadHistory`): the average, its
+  gap to the card price, and a collapsed change log. The card's own margin still uses the
+  card price — it is a pricing tool, not realised profit.
+- Verified on a scratch copy through the real services (14 checks: weighted average after
+  discount, stock-before logged, a sale stores it, edit and cancel corrections match the
+  formula, earlier sale keeps its cost, pre-go-live purchase ignored, empty stock = new price,
+  past months unchanged, revalue needs a reason) and 11 browser checks (1440 ar / 390 en).
+  Revert-checked: without `applyPurchase` 5 checks fail. 9 cases in `test/unit/avg-cost.spec.ts`.
+
+### Final accounting audit (same day)
+- **Duplicate inventory loss.** A piece marked damaged/lost changes no stock; the manual
+  adjustment (`adjustStock`) does. Two real double-counts existed: the same adjustment saved
+  twice (double click / retry), and a −1 adjustment for a piece a customer returned damaged —
+  that return already recorded the loss and never re-entered derived stock
+  (`returnedItemQtyForStock`). Now: `requestKey` (unique partial index on
+  `inventorymovements`) returns the same movement on a repeat; optional `unitIds` (negative
+  only, count = |qty|) must be this product's pieces in status damaged/lost, are refused if the
+  piece has a `returned` event while damaged, and are claimed in **`inventorywriteoffs`**
+  (unique index on `unitId`, not `_id` — a restore converts string `_id`s) before the movement
+  is written; claims are removed if the write fails. Each adjustment stores `unitCost` and
+  `costValue` (display only — profit unchanged). The adjust window lists the product's
+  damaged/lost pieces for a negative quantity and keeps one key per adjustment.
+- **Untracked (Skip) sales.** Cost is saved when the line is created, before any scan, so a
+  skipped piece costs exactly what a scanned one does, and no supplier is written on a sale
+  line. ⚠ `knownUnitCost` returns **null** (not 0) when there is no average and the card
+  price is 0: the line stays unstamped and reports as «تكلفة ناقصة»; the freeze tool skips
+  such lines too (`linesMissingCost`). Sale lines now carry `costBasis: 'avg' | 'card'`.
+- **Supplier returns.** Leaving at the average would drop the gap between the purchase cost
+  and the average out of every figure. `applySupplierReturn` (on `مرتجع مشتريات` create)
+  removes the pieces at their allocated purchase cost (`supplierReturnLots`) and recomputes
+  the average; cancelling the return (`reverseSupplierReturn`) adds them back. Only products
+  that already have an average; nothing historical is rewritten. The purchases KPI already nets
+  `SupplierReturnOrder.total`; the cost difference now stays in stock value and future COGS.
+- **Editing an old purchase invoice** (`openEditMovement`): a newly added product is priced
+  from the invoice's supplier (`_editLoadSupplierPrices` / `_editPurchasePrice`), card price
+  as fallback. Saved sale costs are untouched by any purchase edit.
+- **Cost source in the profit report**: `getReports().costSources` — `frozen-history`,
+  `sale-avg`, `sale-card`, `live-card`, `missing` (lines / qty / cost) + `zeroCostLines`,
+  classified by `lineCostSourceKey`; the panel sits under the money-flow chart
+  (`renderCostSourcesPanel`). Classification only — its cost total equals the cost the profit
+  used (checked).
+- Verified on a scratch copy: 19 scenarios (duplicate write-off, same key, damaged customer
+  return refused, unflagged piece refused, count mismatch, simultaneous write-offs → one
+  wins, untracked sale cost + no supplier, missing cost not 0, classification totals, supplier
+  return out/in at cost, average untouched without one, purchase edit leaves sale costs, past
+  months unchanged) + 7 browser checks. Revert-checked: without the write-off claim 4 fail.
+- ⚠ `supplier-returns-complete/-reverse.service.spec.ts` fail before this change (their test
+  module lacks `InventoryUnitsService`) — not caused here.
+
+### Final requirements (same day)
+- **A negative adjustment that names no piece** (`unitIds` empty) is refused with 409
+  `UNIDENTIFIED_CONFIRM_REQUIRED` unless it carries `unidentifiedConfirmed: true` and a written
+  `unidentifiedNote` (≥5 chars). The 409 body and the stored `movement.unidentified`
+  `{note, confirmedBy, confirmedAt, unclaimedDamagedLost, customerDamagedReturns}` state how many
+  damaged/lost pieces were not yet written off and how many came back damaged from a customer —
+  the two ways a loss is counted twice. Legacy stock with no unit ids still works (confirm +
+  note); positive adjustments are unchanged. `GET /inventory-movements/writeoff-candidates`
+  (before `adjust`) lists the product's damaged/lost pieces with `selectable` / `blockedReason`
+  (`written-off` | `customer-return`); the adjust window shows them, and the confirm block
+  (`#inv-adj-unid`) when none is ticked. ⚠ `warehouse-routing.spec.ts` was updated to confirm.
+- **Editing / cancelling a purchase after part of it sold** — `replayAverage` (avg-cost.util):
+  every purchase is re-applied **at its original place in time** with its latest qty/cost (the
+  edited invoice with the new values); stock recorded at each later event is shifted by
+  (final qty − qty recorded then); supplier returns and revalues replay as recorded. Sales do
+  not move a moving average, so this is exact however much was sold. The old method (remove at
+  today's stock) was approximate: on the test case 314.58 vs the exact 320.56.
+  ⚠ **Sales in between are never re-costed.** The edit event stores `method:'replay'`,
+  `soldQtySince` and `costVariance` = Σ(correct average at the sale − saved cost) × qty, shown
+  in the card history («فرق التكلفة … البيعات ماتغيّرتش»). A product added to the invoice in
+  the edit enters the average now, as a `purchase` event with `method:'added-now'`.
+  Accounting: profit already booked stays as booked; the variance is the size of the
+  correction an accountant may post by hand (no automatic journal entry is made).
+- **Mirrors** pinned by `test/unit/cost-mirrors.spec.ts` (reads the shipped `index.html`):
+  profit-analysis frozen list = `LINE_COST_SOURCES`, `_REP_COST_SRC` = `LINE_COST_SOURCE_KEYS`,
+  `_AC_KIND_KEY` = the event `kind` enum (supplier returns were labelled «فاتورة شراء»),
+  `priceSource` labels (a purchase price with no ref read «يدوي»), `_unitCostOf` ≡
+  `currentUnitCost` (a negative card price). Revert-checked: 2 fail.
+- Verified on a scratch copy: 16 checks (`verify-final`: replay after 7 of 10 sold, sales
+  unchanged, variance −101.67, qty edit, added product, cancel, the four unidentified rules,
+  past months unchanged); revert-checked (replay ignoring the edit → 4 fail); 11 browser checks
+  (ar 1440 / en 390). 7 replay cases in `avg-cost.spec.ts`.
+
+### Primary supplier — the card's «المورد» field and the price table are one fact (same day)
+The card had a free-text `product.supplier` (a name, no id) while step 4 added a per-supplier price
+table: two places answering "who supplies this", able to disagree, and a renamed supplier left
+every product on the old name. Now:
+- **One source**: `productsuppliers.primary: true` — at most one row per product (unique partial
+  index `product_primary_supplier_unique`). `product.supplier` (name) and `product.supplierId` are
+  a display copy written **only** by `suppliers/primary-supplier.util.ts` → `setPrimarySupplier`.
+  ⚠ `supplierId` is in no DTO; any new path that changes a product's supplier must call it.
+- Callers: card save (`ProductsService.update/create`, via `syncPrimarySupplier`), bulk edit,
+  Excel import, «اجعله الأساسي» (`PUT /product-suppliers/:productId/primary`), removing the
+  primary row (product back to «— بدون —»), supplier rename (name follows on products and rows),
+  supplier delete (its products cleared). Saving the card with the same supplier writes nothing.
+- **First purchase** of a product with no supplier makes that invoice's supplier primary;
+  ⚠ a later purchase from someone else **never** changes an existing choice.
+- A primary chosen before any price has a row with `price: null` («بدون سعر») — never used to
+  fill an invoice (`pricesForSupplier` and demand planning skip it); the card price is used.
+- A name matching no supplier (old import) stays as text with `supplierId: ''`, and the card
+  keeps an option for it («غير مربوط بمورد») so a save never wipes it silently.
+- Migration: `POST /product-suppliers/backfill/primary` (admin, dry run by default). Local copy:
+  80/80 named products matched, 0 unmatched. No effect on cost or profit (checked).
+- UI: the card field is labelled «المورد الأساسي»; the table shows a «الأساسي» pill, the
+  primary row first, a star to make another row primary (the card field follows without marking
+  the form edited).
+- Verified on a scratch copy: 22 checks (`verify-primary`: backfill, card ↔ table agree on every
+  product, move / same / clear, make-primary, remove, first purchase vs later purchase, rename,
+  delete, legacy text, two simultaneous changes → one primary, profit unchanged) + 13 browser
+  checks (ar 1440 / en 390). Revert-checked: without the card-save sync it fails.
+
+### Supplier price is derived from the invoices (same day)
+- **One rule** (`ProductSuppliersService.recomputePrice`): a supplier's price for a product =
+  its **latest valid purchase** (non-cancelled, by invoice date, ties by entry time), unless a
+  manual price is newer (later date, or same day and entered after). `lastPurchase` is always
+  the latest valid invoice. Nothing left → `price: null`, row kept. The manual price is kept
+  apart in `manualPrice {price,date,at,by}` so it survives an invoice being edited away.
+- `recomputeForPurchase(before, after)` runs after **every purchase edit** (price, qty, lines,
+  or the supplier itself — both suppliers are recomputed) and **every purchase cancel**.
+  Before this an edited or cancelled invoice left its old price on the card.
+- ⚠ «استرجاع» (restore) only un-archives: `cancelled` stays true, so a restored purchase stays
+  out of the average and the prices — correct. Pre-existing and **not touched**: restore
+  re-records the vault entry of a transaction that is still cancelled.
+- Backdated purchases enter the average in **entry order** (perpetual moving average); the
+  stock on an old date is not recorded anywhere, so there is nothing to replay against.
+- Verified: `verify-scenarios` — 38 checks, each against a hand-computed figure and the KPIs it
+  reaches (card price change, discounted purchase, sale, second supplier, manual price, edit
+  after sale with variance, moving an invoice to another supplier, newer purchase vs manual,
+  cancel → fallback, cancel → replay, revalue, cost-source panel, product card, all past months
+  unchanged). Revert-checked: without the recompute 5 fail.
+
+### Product page — `#product/{id}` · `#product/new` (same day)
+The product modal (nine sections in one 880px column) became a page: `renderProductPage()`
+into `#page-product > #prd-root`. Header: back, photo, name, SKU, status, primary supplier,
+then five figures (stock vs minimum, sell price, unit cost + its basis, margin, stock value —
+cost figures need admin / `purchase-edit-price`). Main column: basic details → pricing & cost
+(+ average row) → supplier prices → specifications → stock & storage → activity (edit history
+· stock movements · performance, loaded per tab). Side column: status, organisation (primary
+supplier, category, collection), media, system info. A sticky save bar shows only when
+something changed (always on a new product). Below 1080px one column.
+- ⚠ **Every field id is unchanged** (`#pm-name`, `#pm-sell`, `#pm-supplier`, …): `saveProduct`,
+  the staff OTP / edit-request flows, SKU and name checks run as before.
+  `openProductModal(id, draft)` is kept (13 callers) and routes to `openProductPage`.
+- After a save the page **stays** and re-renders; a new product moves to its own URL
+  (`replaceState`). Deleting leaves to the list (`_prdLeaveDeleted`, both admin and OTP paths).
+- Unsaved changes are asked about on every exit: `navigateTo`, `_navConfirmTarget` (back
+  buttons), and `_routeCurrentHash` (browser Back). ⚠ `closeModal()` no longer clears the
+  product's dirty flag while on the page — a dialog closing over it must not drop the edits.
+- Routing wired in the usual places: boot deep link, hash router, `validPages` (×2),
+  `_canAccessPage` (parent `products`), `_startupPageDependencies`, `_navSnapshot`,
+  `_NAV_FALLBACK`, `navBackTarget` named list, `syncNavBackButtons`, and the header breadcrumb
+  (`#prd-breadcrumb`, read by `navigation-shell.js` — `?v=` bumped).
+- The movement tab filters the log's substring search down to this product (`productId`/code).
+- **Save bar** is a compact floating pill (max 460px), centred on the page column (never over the sidebar), inverted colours (`background:var(--text)`, text 17:1 light / 15:1 dark) with an amber unsaved dot. ⚠ Phones: `#main`/`.page` are `overflow-x:hidden` and that killed `sticky` (the bar sat at the end of the page) — `#main:has(#page-product.active),#page-product{overflow-x:clip}`, and the bar sits 92px up, above the mobile nav.
+- ⚠ Supplier add row: the generic `.ps-input{width:auto!important}` comes later in the file and beat the column width, so the price box spilled over the dropdown — the rule is scoped as `.ps-row .ps-price-input`.
+- `openProductPage` scrolls to the top: the window kept the products list's scroll, so a product opened mid-page. (Back restores the list position through the navigation history.)
+- **The products list opens newest first** (`fxState.prod.sort = 'date-desc'` in the initial state and in `fxResetAll`, label «الأحدث أولاً»). `_fxSyncSortLabel(ctx)` renames the sort button on «إعادة ضبط الكل» — it used to keep the previous sort's name.
+- **Supplier-price table** (same day): one shared column template on every row (`.ps-row`: name · 10rem price · 8.5rem date · 6.75rem actions) — rows sized by their own content made prices and dates drift. Prices end-aligned; under each price «الأقل» (strictly unique only) or «أعلى من الأقل بـ X (Y%)», plus the after-discount cost. The actions column always has three slots (filled star = primary, outline star = make primary), so icons never shift. The add form is the table's last row with the app's own select (`_pmEnhanceSelects`), not the OS list. ⚠ Figures in that line are `<bdi dir="ltr">` and the wording carries no +/− sign — a bare «+150» reversed to «150+» in RTL. 16 browser checks.
+- Verified: 21 browser checks (ar 1440, en 390 dark): own URL and no modal, 5 figures, every
+  field id, save bar, leave/Back guards, save stays, reload opens the same product, new →
+  own URL, duplicate, unknown id state, list row still opens it, no overflow, no page errors.
+
+### Sell price, invoice discounts and price offers (same day)
+**A sell-price change on the card moves nothing historical**: every sale line stores its own
+price; only new lines (the form, an edit's added line, a product swap) take today's price.
+
+**The invoice discount was never subtracted** from «المبيعات» or gross profit in `getReports` /
+`getDashboard` (the frontend «تحليل الأرباح» did subtract it — two profits for one month).
+Measured on the local copy: 105,631 EGP over 460 invoices, profit overstated 8.6% (12.1% in
+July). Now `shared/sale-discount.util.ts` is the one rule (stored discount, else inferred from
+the totals — same as product analytics): net sales = items − discounts − returns; gross profit
+uses each line's price × (1 − invoice discount ratio). Also moved to it: `productProfits` rev,
+`avgOrderValue`, top customers, the daily series, the dashboard «نظرة على المبيعات» Mongo
+aggregation, and «ملخص المدير» (it summed `total` incl. shipping).
+⚠ **Returned profit now reverses the refund** (`ret.total`, what net sales subtract) minus the
+cost of sound pieces back in stock — it used the pre-discount line price before. The report
+returns `grossSales` and `totalDiscounts`; the sales card shows «بعد خصومات الفواتير X».
+Verified (`verify-discount`, 25 checks): net sales + returns = what customers paid for goods
+in every month and all-time; product revenue sums to it; the dashboard chart equals the report.
+⚠ **This lowers past profit figures by the discounts** — owner-approved correction.
+
+**Shopify lines are priced at what Shopify charged** (`mapItems`), the system price kept as
+`listPrice`. Before, a matched SKU took the system's current `sellPrice` and the order total was
+built from it («نحسب الإجمالي من أسعار النظام»), so a product on offer in Shopify was recorded and
+collected at full price, the gap pushed into `discount` (#2537: Shopify discount 120, stored
+1,995). Most of the 41 mismatched local lines are bundles split by hand (one Shopify product
+«Bow dining (12 pieces)» → 6 × Code 42 + 6 × Code 43): after the discount fix their revenue is
+the 1,550 charged. `shopify-item-removal.spec` updated to the new rule (it locked the old one).
+
+**Price offers** (`shared/price-offer.util.ts`, `Product.priceOffers`, no DTO):
+`POST /products/:id/offers` {price, from, to, reason} and `POST …/offers/:offerId/end` (admin),
+`GET …/offers`. Rules: price below the base, `from ≤ to`, end not in the past, reason required,
+no overlap; writes are compare-on-write; every change goes to the product's activity log.
+Effective price on a Cairo day = the running offer, else `sellPrice` — computed when used, so an
+offer starts and ends by itself (no cron). Stopping one sets `endedOn` = today (it stops now;
+sales already made keep it); one not started yet is cancelled. Raising the base during an offer
+keeps the offer, and the new base applies after it.
+- Sale lines get `listPrice`, `priceSource` ('offer' | 'list' | 'manual' | 'shopify') and
+  `offerId`, stamped by the server (anything sent by the client is discarded):
+  `TransactionsService.create`, `approveOrder`; `update()` carries them (`carryLinePrices`) while
+  the price is unchanged — an edited price becomes 'manual'. ⚠ The day comes from
+  `transactionDate` (`saleDayOf`): the form saves `date` as the UTC instant, which is yesterday
+  between midnight and 2 a.m. Cairo.
+- Reports: `priceMarkdowns` (Σ (listPrice − price) × qty by source) + invoice discounts in a
+  «الخصومات والتخفيضات» panel under the cost sources. Lines from before Nov 12 carry no
+  `listPrice` and are not counted there.
+- Frontend: `_effectiveSellPrice` (mirror, checked by `cost-mirrors.spec`) pre-fills the sale
+  form (its business date), an edit's new lines (that sale's date) and Shopify product swaps;
+  product page «عروض السعر» (`_poLoad/_poSave/_poEnd`) and «سجل سعر البيع» from the activity log;
+  the header figure shows the running offer; a «عرض» chip in the products table and grid.
+- **Editing**: `PATCH /products/:id/offers/:offerId` (admin) — price, end, name; the start only before it begins (a running offer's past days were sold at its price). Ended/stopped offers are not edited — «تشغيله تاني» opens a new offer pre-filled from them; the old record stays. Every edit is logged («تعديل عرض سعر» with what changed) and applies to new sales only.
+- **Offer name** = `reason`, with suggestion chips (`PO_REASONS`). Running/upcoming offers on top, ended ones folded under «عروض سابقة».
+- **One price display**: `_offerPriceHtml(p, day)` — offer price highlighted, base struck (`.po-pricepair`). Used by the products table/grid, the new-sale and edit pickers, the sale line (`_txLinePriceHtml`), the Shopify product picker and global search (admin price row, from the in-memory product). Dates use the system calendar (`sdp-input`).
+- ⚠ When the offers block was rewritten, `_poSectionHtml` was dropped by the splice and the product page failed to open — caught by the browser check. Splice by function name, not by a range that may hold neighbours.
+- **The offer is named where a line is handled** — `_offerNoticeHtml(p, linePrice, opts)`:
+  a line at the offer price shows «tag · offer name · price ~~base~~» (`.po-notice.is-applied`);
+  a line NOT at the offer price shows an amber «عليه عرض X بـ Y» (`.is-warn`), and in the Shopify
+  edit window a «طبّق سعر العرض» button (`_spApplyOfferPrice(idx)`). Used by the Shopify items
+  popover (which no longer flags «سعر مختلف» when the line is at the offer), the Shopify edit
+  window's line rows, and the new-sale line (sales only, by the form's business date).
+  Verified: 13 browser checks (ar/en) in `browser-notice.cjs`.
+- **Order Summary names the offer like a discount code**: «الأصناف قبل العروض X» then «عرض
+  [name pill] − saved» above «إجمالي الأصناف» — invoice page, invoice window, edit window, new-sale
+  summary, Shopify edit-window bar and the Shopify quick view's payment chips. `_lineOfferOf(item,
+  day, since)` / `_offerSummaryOf(items, day, since)` / `_offerTagHtml(name)`. Display only: the
+  items total, profit and the stored lines are unchanged.
+  - A stamped line names its offer (`offerId` + **`offerName`**, now in `LINE_PRICE_FIELDS` and
+    written by the server, so the invoice still names an offer after it ends or is renamed). A
+    Shopify line keeps `priceSource:'shopify'` but also gets `offerId`/`offerName` when its price is
+    the running offer.
+  - With a `day`, an unstamped line (a pending Shopify order, a line just added) is read against the
+    offer running that day. A line stamped 'list'/'manual' is never re-read.
+  - ⚠ **An offer speaks only for orders placed after it was created** (`_offerCoversOrder(offer,
+    since)`, owner's rule): a Shopify order placed before it keeps its own price with no hint, no
+    «apply» button, no chip. Shopify uses the order's own day and time (`_spOfferCtx(o)`), never today.
+  - The «not at the offer» hint is blue (`.po-notice.is-hint`), not orange — it is information, not
+    an error. The struck base price is the number alone (`.po-was .amt-cur{display:none}`); a line
+    through the space after «EGP» read as «-650». The sale line's price box holds one price
+    (`.po-line-now`); the name and the struck base sit under the product.
+  - Verified: `browser-offersum.cjs` (25 checks ar/en: six summaries, an order from before the offer
+    gets nothing, hint colour), `browser-linefmt.cjs` (10), `browser-notice.cjs` (13).
+- **Round 4 (Nov 13)**:
+  - A product added in the Shopify edit window carries `_addedAt` (display only — `validEditItems`
+    drops it): it is sold now, so the offer running now speaks for it even on an order placed before
+    the offer (`_lineOfferOf` uses today + `_addedAt`). The edit window's own summary
+    (`_spDiscSummaryHtml`) now shows «الأصناف قبل العروض» + «عرض [name] −».
+  - **Additional discount = one field** `#sp-disc-entry` («50» = amount, «10%» / «١٠٪» = percent) and
+    one button. `_spDiscEntryInput` writes `_spDiscType` and the hidden numeric `#sp-disc-value`, which
+    every reader (preview, preflight, save, dirty check) already uses; a type change resets the OTP
+    like the old switch did. `_spSetDiscType` still exists (spec checks it).
+  - **Offer mark is fluorescent lime** (`--po-neon` #e3ff3c / dark #d4f531, ink #1d2a00): `.po-tag`,
+    `.po-notice.is-applied`, running-offer status pills. ⚠ Inside the neon notice the price inherits
+    the ink — the dark-mode green `.po-now` was unreadable on it.
+  - **Printed invoice** (`buildInvoiceHtml`) and the unsaved new-sale preview (`printTxInvoice` →
+    `_buildInvoicePageHTML`): offer tag under the product, old price struck under the unit price, and
+    «الأصناف قبل العروض» + «عرض X −» above «إجمالي الأصناف». The tag prints in colour
+    (`print-color-adjust:exact`).
+  - `shopify-order-edit.spec.ts` sandboxes stub `_spOfferCtx/_offerSummaryOf/_offerTagHtml`. Its
+    «كل شريط يصرّف…» case fails before and after (it looks for `\nfunction _spRenderBulkBar`, which
+    is declared with a leading space).
+  - Verified: `browser-round4.cjs` (26 checks ar/en/dark: old order + added offer product, the four
+    discount inputs, neon colour, print sheet and preview).
+- **«أداء عروض السعر» in التقارير ← أكواد الخصم** (`renderOfferUsageReport(from, to)`, card
+  `#rep-offers-section`, called beside `renderDiscountCodesReport`): per offer — name, product, offer
+  price with the base struck, period, status, **times used = invoices** with a line stamped with that
+  offer (`_lineOfferOf`, stamped lines only), pieces, sales at the offer (line price, before the
+  invoice discount) and markdown = (base − offer) × qty. Same date rule as the discount-code table
+  (`date`), cancelled invoices left out; an offer that ran in the period with no sale is listed with 0.
+  Computed in the browser from `transactions` like the code table. Verified: `browser-offerreport.cjs`
+  (19 checks: 2 invoices / 3 pieces with a full-price line and a cancelled offer sale ignored, ar/en/
+  dark/390).
+- **Shopify edit window footer** (`#shopify-edit-summary.sp-sumbar`): one labelled figure per fact
+  (`.sp-sb-stat`: items · each offer · total · paid · remaining · unlinked warning), not one line of
+  text. ⚠ The footer and the bar carried a hard-coded `direction:rtl`, so in English the segments ran
+  backwards and wrapped mid-amount; both now follow the page direction, summary first, buttons at the
+  end (stacked on phones). Verified: `browser-sumbar.cjs` (21 checks, ar/en, dark, 390).
+- Not done (option ب): prices are not pushed to Shopify — an offer there is set in Shopify.
+- Verified: `verify-offers` (17 checks, the 1000 → 800 → 1100 scenario), 12 unit cases in
+  `price-offer.spec.ts`, 15 browser checks (ar 1440 / en 390).
+
+### KPIs moved onto the same cost (same day)
+- **Order analysis** (`order-audit.service`): a not-yet-confirmed Shopify order is costed with
+  `currentUnitCost` — the cost it will be saved with on confirmation — so the estimated profit,
+  total product cost and profit-after-advertising agree with what is booked later.
+- **Product performance card**: `summary.netCost` (saved sale costs − sound returns, the cost
+  the profit is computed from) and `summary.currentUnitCost`; the card shows both instead of the
+  lifetime pre-discount `avgBuyPrice` (still returned, no longer displayed there).
+- **Products and inventory tables**: `_avgCostSubHtml(p)` — a quiet «متوسط X» under the
+  purchase price, only for admin / `purchase-edit-price`, only when it differs from the card.
+  Not a new column, so no colspan or width changed. The inventory Excel export (both) carries
+  «متوسط التكلفة»; global search shows it too (from the in-memory product, no backend change).
+- **Demand planning**: `buildLastPurchasePriceMap` ends with the newest active supplier price
+  (`productsuppliers`, by `priceDate`), else the last invoice price, else the card.
+- **After-sales return fallback** (original line never frozen): `currentUnitCost`, not `buyPrice`.
+- Verified on a scratch copy: pending-order cost = 2 × average (154, card would be 850),
+  newest supplier price wins, `netProfit = netRevenue − netCost`; 5 browser checks (tables,
+  card, no page errors). All order-audit specs pass (43).
+
+- `backend/src/shared/line-cost.util.ts` is the one rule: `lineUnitCost(item, liveBuyPrice)`
+  returns `item.unitCost` when `costSource` is in `LINE_COST_SOURCES`
+  (`legacy-frozen` | `sale-snapshot` | `return-original`), else the live card price,
+  **exactly as before**. A frozen 0 is a real value. ⚠ `index.html` mirrors that list.
+
+### Step 2 — where the cost is written
+- `TransactionsService.create` (type مبيعات): `stampSaleLineCosts` from the same
+  `_invSnapshotBefore` the movement log uses. Covers manual sales, `scanned-sale` and the
+  after-sales replacement (all go through `create`).
+- ⚠ `ShopifyService.approveOrder` writes with `txModel.create` directly, so it stamps itself.
+- `update()`: `carryLineCosts` then `stampMissingSaleLineCosts` — existing lines keep their
+  cost (also when their qty changes), only new lines take today's cost.
+- Return lines take the **original sale line's** cost (`returnLineCost`): `ReturnsService.create`
+  and the after-sales case lines (they flow on via `...line` to receipt/damaged splits).
+- ⚠ **The server always decides the cost.** Internal callers pass raw objects (no validation
+  pipe), so `stampSaleLineCosts` strips any incoming cost first. Revert-checked: without it, a
+  cost of 1 sent with the sale was stored as-is.
+- A product unknown at sale time is left unstamped (live fallback, = 0 today).
+- Readers switched: `getDashboard`, `getReports` (gross profit + `productProfits`),
+  `computeReturnedProfitLoss`, `order-audit.service` (confirmed orders), and the frontend
+  profit analysis (hand-kept mirror in `index.html`, ~line 58140). ⚠ A new place that costs
+  a sale line must go through `lineUnitCost`, or two screens show two profits for one month.
+- `POST /transactions/backfill/freeze-line-costs` (admin, `{dryRun:false}` to write) →
+  `freezeLegacyLineCosts`. Same matching as the reports (code, first product wins). Covers
+  cancelled/archived sales and `returnrequests` lines. Never re-freezes; a line whose product
+  is missing stays unfrozen and is listed. Writes are conditional on the items being unchanged.
+- ⚠ **Edits would have wiped the cost**: the DTO whitelist and Shopify's `validEditItems` both
+  drop unknown line fields (`validEditItems` also drops `lineId`). `update()` calls
+  `carryLineCosts(existing.items, dto.items)` right before the write: match by `lineId`, else
+  by a code unique on both sides. **A cost sent by the client is always discarded.**
+- Verified on a scratch copy (`soulia_costcheck`, credentials blanked) through the real
+  services: 1,947 sale lines + 20 return lines frozen, gross/net/returned profit and
+  per-product profit identical for all 24 months 2025–2026 and the dashboard, **unchanged
+  after halving every `buyPrice`** (control: unfrozen, Oct 2026 would move 382,844 → 480,781),
+  second run freezes 0, manual and Shopify edits keep the cost. Revert-checked: without
+  `carryLineCosts` a Shopify edit loses it.
+- Step 2 on the same scratch copy: a new manual sale, an edit adding a line (after changing
+  the card price), a Shopify confirmation and a return request all stored the expected cost;
+  this month's gross profit unchanged after halving every `buyPrice`; the return kept the
+  original 295 after the card moved twice. 20 cases in `test/unit/line-cost.spec.ts`.
+- Not run on live yet. Deploy, then run the step-1 endpoint (dry run first) — sales made
+  between deploy and the run are frozen by it. One local line («عياشة») has no product.
+
+### Step 4 — supplier prices on the product card (`productsuppliers`)
+One row per (product, supplier): `price` (the invoice line price, before the invoice
+discount), `priceSource` `purchase|manual`, `priceDate`, `lastPurchase {txId, ref, date, qty,
+price, unitCost}` (`unitCost` after the line's share of the invoice discount), `activityLog`.
+⚠ **A reference price only — profit never reads it.**
+- `ProductSuppliersService` (suppliers module), routes `GET/PUT/DELETE /product-suppliers`.
+  Read: admin, `purchase-edit-price` or `purchase-create` (the purchase form needs it). Write:
+  admin or `purchase-edit-price` — same rule as editing the card's purchase price.
+- `TransactionsService.create` (purchase branch) calls `recordPurchase` — after commit when a
+  write context is present. ⚠ **An older-dated invoice never overwrites a newer price.**
+  Remove = `active:false`; the next purchase from that supplier brings the row back.
+- The purchase form now saves `supplierId` (from the option's `data-id`); the server also
+  stamps it when it matches the name — 34 of 39 local invoices had only the name.
+- `POST /transactions/backfill/supplier-prices` (admin, dry run by default): oldest invoice
+  first, supplier matched by id or exact name (the ledger's rule), unmatched names listed.
+  Local: 39/39 matched, 106 rows. ⚠ The earlier "41 products with several suppliers" counted
+  name-only and id-linked invoices of one supplier twice; the real figure is **9**.
+- Frontend: card section `#ps-sec` (`_psLoad/_psRender/_psSave/_psRemove`) — its input events
+  stop at the section so they never mark the product form dirty. «الأقل» shows only for a
+  strictly unique lowest price. The new-purchase form fills each line from the chosen
+  supplier (`_txPurchasePrice`), falls back to the card price, tags the source under the
+  line, and re-prices on supplier change **only** lines still at their automatic price.
+  PO conversion fills and compares against the PO supplier's price (`_convReferencePrice`).
+- Verified: compiled backend on a scratch copy (backfill, a name-only purchase stamping its
+  `supplierId`, backdated invoice ignored, manual edit/remove, negative rejected) and 16 checks
+  in a real browser against that backend (1440 ar / 390 en, no overflow, no page errors).
+
+---
+
+## «بيانات المرتجعات» — Supplier Return Statements, Documentation Only (Nov 13, 2026)
+
+A tab in the supplier profile (after «مرتجعات الموردين») to record defective goods found when a
+delivery arrives, and send the supplier a printed statement — **without** entering the goods in
+stock or making an accounting return. Named «بيانات المرتجعات» on purpose so staff never confuse it
+with «مرتجعات الموردين», which moves stock, the ledger and the vault.
+- Backend `backend/src/supplier-return-statements/` (raw collections `supplierreturnstatements` +
+  `supplierreturnstatementimages`, in BACKUP/SECTION(customers)/ALLOWED lists). ⚠ **It writes only
+  those two.** It reads suppliers/products/purchaseorders/transactions to check a reference and copy a
+  name — never through another module's service. The integration test snapshots 11 other collections
+  (products, transactions, inventorymovements, ledger, vault, POs, supplier returns, cost events…)
+  and asserts they are identical after create/edit/photos/status/delete.
+- Statement: `SR-00001` (`seq`, unique index, retried on a race), supplier, date (Cairo today by
+  default), optional linked PO or purchase invoice (must belong to the supplier; a purchase matches by
+  `supplierId`, else by the name in `client`), notes, lines `{lineId, productId, code, name, qty,
+  reason, reasonNote, notes, attachments}`. ⚠ Code and name are copied at creation and kept when the
+  product is renamed; photos are carried from the stored line, never from the client.
+- Reasons (`code` stored, mirrored in the frontend): manufacturing-defect · shipping-damage ·
+  wrong-color · wrong-size · material-quality · not-as-agreed · missing-parts · wrong-product ·
+  damaged-packaging · other (description required, server and UI).
+- Statuses draft → sent → received → resolved → closed, freely changeable by `-status`; leaving
+  draft requires ≥1 complete line (`rsCompletenessError`). A draft may have empty qty/reason. Closed =
+  no edits or photos until reopened. Edits are compare-on-write (`revision`); every action goes to
+  `history` (created/edited/status/photo/printed/exported/deleted). Delete is soft (`deletedAt`).
+  `requestKey` makes a retried create return the same statement.
+- Photos: ≤6 per line. The browser shrinks each to ≤1600 px before upload (`shrinkPhoto`), the server
+  to ≤1280 px / **≤90 KB** JPEG (`compressRsPhoto` — tighter than receipts' 180 KB; even pure noise
+  lands at 89 KB, real photos 25–80 KB). Stored in R2 under
+  `supplier-return-statements/` when R2 is configured, else as base64 in the images collection.
+- **Round 2 — photo, highlighted reason, supplier price (same day).** Each line stores `imageUrl`
+  (catalogue snapshot at creation) and a price snapshot `unitPrice` / `priceSource` / `priceRef`,
+  set by the server (`priceLines`): linked purchase-invoice line → linked PO line → this supplier's
+  row in `productsuppliers` → the card `buyPrice` (`'card'`) → `null` («بدون سعر», left out of the
+  total and stated). Priced once; re-priced only for a new/changed product or when the linked
+  document changes. ⚠ Prices are a documentation snapshot — nothing posts them. ⚠ They are stripped
+  from every response (`present(doc, user)`, `pricesHidden`) for users without admin /
+  `purchase-edit-price` / `purchase-create` (same rule as supplier prices), and an edit by such a user
+  keeps the stored prices (carried from the stored line). Details window and print sheet show the
+  photo, the reason as an orange tag, unit price × qty = total, the source, and a grand total; the
+  list gains a «القيمة» column. Print page forces `color-scheme:light` + white background.
+  Tests: +1 integration case (source order, re-price on unlink, no rewrite after a later supplier
+  price change, hidden for staff, kept on their edit), browser checks now 45.
+- Perms (both layers): `suppliers-rs-view/-create/-edit/-status/-delete/-export`; any of them opens
+  the tab; the creator may edit their own **draft** with `-create` alone. Registered in index.html
+  PERMS/PERMS_AR, roles-permissions.js, access-role-permissions.ts (viewer: `-view`) and the managed
+  role boundary. `canSeeSupTab('statements')` asks the module, not `suppliers-tab-*`.
+- Frontend `supplier-return-statements.js/.css` (`window.SupplierReturnStatements.render(host,
+  supplierId)`), loaded lazily per supplier (refetched after 60s) — never at boot. Editor: searchable
+  product picker, several lines, queued photos uploaded after save. Details: status change with note,
+  history, print / PDF (A4 sheet in a hidden iframe, photos included, signature lines), download photos.
+- Verified: `test/integration/supplier-return-statements.service.spec.ts` (7, scratch DB on 27018;
+  revert-checked: dropping the «Other» rule or adding a product write fails 2) and
+  `test/browser/supplier-return-statements.cjs` (36 checks: create/validate/photos/status/print/
+  filters/delete/perms/English/dark/390px). Compiled API maps all 11 routes.
+
+---
+
+## FIFO Cost Layers — Phase 1 + 2 Only: Utility and Read-Only Preview (Nov 13, 2026)
+
+The owner approved moving from the moving average (step 3 above) to FIFO by purchase batch, in
+phases. **Only phases 1–2 exist. Nothing live uses FIFO; no data was written; no module imports it.**
+- `shared/fifo.util.ts` — `FifoBook`, pure. Oldest layer first; an uncovered outflow is costed at a
+  provisional cost (newest layer, else the fallback) and kept as a deficit that the next layer
+  settles, the difference posted as a `variance` at that layer's time — **the outflow's own cost
+  never changes**. `eventKey` idempotency; `release` returns qty to the SAME layers (newest first);
+  `revalueLayer` (variance on consumed qty); `resizeLayer` refuses below consumed (`needsReplay`).
+  19 cases in `test/unit/fifo.spec.ts` (the owner's 10 + returns/cancel/edit/adjust/purchase edit).
+  Revert-checked: LIFO order fails 9, release to other layers fails 2.
+- `inventory-costing/fifo-preview.ts` — `loadFifoHistory(db)` + `buildFifoPreview(h, {order, openingOverrides})`.
+  Stock events mirror `getInventory()` exactly (115/115 products: FIFO balance = derived stock);
+  "before" cost = `lineUnitCost(item, card)` and gross profit = the getReports formula — ⚠ not yet
+  compared against the live endpoint. Opening stock: every candidate is listed (card at creation
+  from `activityLog`, current card, supplier price, first purchase **as reference only**), and the
+  recommendation is never the first purchase. Order = entry time (`createdAt`) by default.
+- `scripts/fifo-preview.cjs --db <scratch>` — compiles the preview alone, writes
+  `artifacts/fifo-preview/{preview.json,fifo-preview.xlsx,fifo-preview.html}` (gitignored),
+  ⚠ refuses `--db soulia`. Scratch copy used: `soulia_fifocheck` (credentials blanked).
+- **Owner's rules (round 2, Nov 13)**: every sale-line cost must trace to a purchase invoice or an
+  APPROVED opening batch (`status: traced`); nothing else gets a default cost — `opening-pending`
+  (proposed cost, marked) and `unresolved` (keeps today's cost unchanged, marked) stay listed and
+  block approval. Decisions come only from the owner, through `fifo-decisions.xlsx` →
+  `--import` → `fifo-decisions.json`: per-product opening approve/edit (+ optional qty), shortfall
+  SKU → `opening-batch` (optional write-off of the remainder, default date = the day the opening was
+  zeroed) or `historical-purchase` (qty, cost, supplier, ref, date), unknown code → map/accept.
+  A decision with no cost is refused (`decisionErrors`). Decisions are simulated layers only.
+- **Timing by the movement log**: a line leaves stock when `inventorymovements`
+  (transaction-create/update) shows its full qty moved — a product added to a sale in a later edit
+  left at that edit. This cleared the three "sold before invoice" cases (2751, 2787: lines added
+  after invoices 900015/900016; units from 900016 scanned on 2787). A covered deficit counts only
+  with evidence (units from that invoice on the sale, or shipped after the invoice was entered).
+- **Opening history** comes from `activityLog` (`openingBalance` changes): the 8 `CUS-45-*` cushions
+  had openings of 100/10–15 zeroed on 2026-11-01 when deactivated — that, not missing purchases,
+  is their negative stock (−128). 21 products have opening edits; all are shown.
+- Local result (no decisions yet): 1,785 lines traced, 58 on unapproved opening, 61 unresolved
+  (cushions), 1 late entry verified (Code 45, shipped after invoice 900006); 32 opening products
+  pending; 115/115 products reconcile. 9 preview cases in `test/unit/fifo-preview.spec.ts`;
+  revert-checked 5 rules (pending counted as traced, unresolved at a fallback, card adopted
+  without a decision, no movement-log timing, decision without cost) — each fails a case.
+- **Owner decisions applied (Nov 13, scratch only)**: all 32 opening products approved at the card purchase
+  price (6 whose card changed later take the price at creation); «عياشة» (deleted product, cost 0) accepted
+  as is; the 8 CUS-45 cushions were **free gift samples** → resolution `gift` (explicit zero cost,
+  sold qty only, 128 pcs, no supplier/payable). `gift` is the ONLY decision allowed a zero cost.
+  Files: `artifacts/fifo-preview/fifo-decisions-owner-2026-11-13*.xlsx` (c = current).
+  Result: 0 blockers, gross +13,332.43 (cushions now cost 0), 1,904 lines traced + 1 verified late entry, every month final, 115/115 reconcile.
+  ⚠ Ran on a LOCAL copy: deploying the code changes no data. Phase 3 must re-run the preview on a
+  scratch copy of the LIVE database with the same decisions file and be re-approved (quantities differ).
+- Not built yet (phases 3+): apply/rollback, live consumption, reports. Apply must not proceed
+  while `preview.blockers` is non-empty and without the owner's explicit approval.
+
+---
+
+## «العروض والخصومات» — Its Own Page Under الأصناف (Nov 12, 2026)
+
+Settings ← العروض moved to `#promotions` (sidebar CATALOG group, after الأصناف), drawn entirely by
+**`frontend/public/promotions.js` + `.css`** into `#page-promotions > #promo-root`. Tabs: عروض الأسعار ·
+أكواد الخصم · الباقات الذكية · إدارة TAGs · سجل المراجعة (`#promotions/<tab>`, last tab remembered per user).
+- **Offers tab** = every offer on every product: `GET /products/offers/all` (`listAllOffers`, status via the
+  shared `offerStatusOn` — the product card's `listOffers` uses the same function). Actions: إيقاف (end),
+  تفعيل الآن (upcoming → `PATCH from = today`), إلغاء, تعديل, تشغيله تاني, bulk stop (sequential, partial
+  failure named), and a new-offer dialog with a product picker, −% chips and duration chips. Usage per
+  offer = stamped sale lines (`_lineOfferOf`), cancelled sales excluded. After a load the in-memory
+  `products[].priceOffers` are replaced so the sale form prices by the same offers.
+- **Codes / bundles / tags** keep their old write functions in index.html (modals, toggles, deletes,
+  `addMasterTag` — ⚠ it reads `#new-master-tag-*`, kept on the tags tab). `renderDiscountCodes /
+  renderDiscountBundles / renderTagMgmt / renderDiscAuditLog` now only call `Promotions.refresh(tab)`.
+  Tags gained a colour picker (`PATCH /tags/:id {bg}`) and a usage count.
+- ⚠ **All clicks are `data-act` delegation** — code, bundle and tag names are typed by people and neither
+  `esc` nor `escHtml` escapes `'`, so no name may go inside an inline `onclick` string.
+- ⚠ Filter inputs are drawn once per tab; typing redraws only `#pr-tbl` (focus is kept).
+- Offer names use the app's offer tag (`_offerTagHtml`), codes the discount badge (`discBadgeHtml`,
+  `noClick`); the offer dialog's dates use the system calendar (`.sdp-input` inside `.dmy-date`, DD/MM/YYYY
+  overlay kept in step when a duration chip writes the end date). Arabic copy on this page and in the
+  offer-removal dialog is Modern Standard Arabic, not colloquial.
+
+### Permissions — six `promotions-*`
+`promotions-view` (open the page) · `-offers` · `-codes` · `-bundles` · `-tags` · `-audit`. Any of them opens
+the page read-only (`promoPerm('view')` / backend `canViewPromotions`); actions without the perm stay
+visible but disabled; the audit tab is hidden without `-audit`. Every write function starts with
+`requirePromoPerm(area)`. Sidebar, first page, destination check and Back all use `_navItemAllowed(n)`.
+- Backend: discount-code/bundle writes, `PATCH/DELETE /tags/:id` and the three offer writes moved from
+  `@Roles('admin')` to `PermsGuard` + `@RequirePerms` (admins still pass). `POST /tags` stays open (the
+  transaction form creates tags inline). Revalue-cost stays admin-only.
+- Registered in `PERMS`/`PERMS_AR`/`PERM_MODULES`, `ACCESS_ROLE_PERMISSIONS` (+ implies `-view` in
+  `normalizeRolePermissions`, `-view` allowed for viewers), the RBAC group in `roles-permissions.js`, and
+  `managed-role-access.ts` (⚠ `/products/:id/offers` is matched BEFORE the products block, or a managed
+  role with `-offers` but no `products-edit` could not stop an offer).
+
+### Taking an offer off ONE invoice line (Nov 13, 2026)
+An applied offer chip (`_offerNoticeHtml`) now carries a × (`opts.removeAct`) in the new-sale form
+(`_txOfferOff`), the invoice edit window (`_editOfferOff` — that window showed no offer before) and the
+Shopify edit window (`_spOfferOff`). It opens `_offerRemoveAsk` (on `<body>`, z 10050, above the
+Shopify editor's 9999): the line price before → after, the amount added to the customer, a Shopify
+warning when the order came from Shopify, and a required reason. The line goes back to the base price
+and carries `offerRemoved {offerId, offerName, reason, by, at}`; the chip becomes «عرض X اتشال · السبب ·
+مين» with «رجّع العرض». The offer itself is untouched. Invoice page + popup list removed lines under
+the offer rows (`is-offer-removed`). Audit action `removed-from-invoice`.
+- ⚠ **The server decides** — `settleOfferRemovals` (price-offer.util): by/at from the session; a NEW
+  removal needs `promotions-offers` (403 otherwise); a stored one passes any later edit unchanged (match
+  by `lineId`, else a code unique on both sides); a line at the offer price drops the record; an unknown
+  offer or empty reason → 400. Called in `create` (before the deposit receipt is claimed), `update`,
+  Shopify `prepareOrderEdit` and `approveOrder`. `callerPerms === undefined` = internal caller (after-sales).
+- ⚠ The field had to be added in **four** pass-throughs or it vanished: `TransactionItemDto.offerRemoved`
+  (whitelist pipe), `validEditItems`, `saveTx`'s item map, and `saveEditMovement`'s load + item map.
+- Tests: `test/unit/offer-removal.spec.ts` (7, revert-checked: dropping the perm check fails 2),
+  `test/browser/offer-remove-line.cjs` (18).
+
+### The audit log is persisted
+`_bundleDiscAuditLog` was browser memory — lost on reload and only ever this device's attempts.
+`_logBundleDiscAction` now also `POST /promotions/audit` (fire-and-forget). `PromotionsModule` is
+`@Global`; `PromotionAuditService.recordManage` is injected `@Optional` into the settings, tags and
+products controllers and logs every successful create/edit/enable/disable/delete/start/stop/cancel.
+Raw collection `promotionauditlogs`, employee and time from the token, capped at 5,000 rows. Read:
+`promotions-audit`; clear: admin only (leaves a «مسح السجل» line). ⚠ Not in `BACKUP_COLLECTIONS`.
+
+### Verification
+`backend/test/browser/promotions-page.cjs` — 48 checks over the shipped files (summary figures, usage
+excluding cancelled sales, stop / start-now / bulk / new-offer requests, inline validation, a code named
+`O'NEIL` reaching delete intact, search focus, tag colour, audit filter, perms: view-only, codes-only, none,
+the real guard refusing; no overflow at 1440/1280/390 ar+en+dark). `nest build` + `tsc` clean; the
+compiled API maps `/api/promotions/*` on a scratch DB.
+
+## Deposit → Shopify Order Metafields (Nov 12, 2026)
+
+The ERP deposit is mirrored onto four EXISTING Shopify order metafields: `custom.deposit_amount`
+(money), `custom.remaining_amount` (money), `custom.deposit_method` (single_line_text_field),
+`custom.deposit_date` (date_time). Nothing creates a definition.
+
+- `backend/src/shopify/sync/deposit-metafields.util.ts` — pure rules; `deposit-metafields.service.ts`
+  — the queue (collection `shopifydepositmetafieldjobs`, one job per Shopify order id); controller
+  `shopify/deposit-metafields` (admin: `status`, `config`, `orders/:id/retry`); switch in
+  الإعدادات ← Shopify («إرسال العربون إلى حقول الطلب في Shopify», `shopify-sync.js`).
+- ⚠ **Off by default** (config doc `deposit-metafields` in `shopifysyncconfigs`), like the shipping
+  sync — a local copy with live credentials must not write. Enabling checks the four keys + types
+  and the `write_orders` scope. Events queue while off; enabling sends the latest figure for each.
+- **What counts**: before confirmation, approved receipts **with a `vaultEntryId`** («معتمد» without
+  one is a booking in flight). After confirmation, the transaction's `deposits` log (not the
+  `deposit` FIELD — `collect()` adds COD to it), minus `cancellationDepositRefunds`, capped at
+  `deposit`; a cancelled sale = 0. Remaining = Shopify `currentTotalPriceSet` − deposit, floor 0;
+  a non-EGP order goes to review. Method = distinct English labels first-paid first, joined « + »;
+  date = the latest counted deposit's approval time (`reviewedAt`), never the send time. With no
+  deposit left, method and date are deleted (`metafieldsDelete`).
+- ⚠ **Values are recomputed from the DB when the job runs**, never carried in the event. A trigger
+  only bumps `seq`; a running job is never flipped back to pending — its worker sees the new `seq`
+  and runs again. That plus the atomic claim/lease is why an older value cannot land last.
+- ⚠ **Every `metafieldsSet` is compare-and-set** (`compareDigest` from the read; `null` = must not
+  exist yet). Shopify refuses the whole call if a field changed since the read → re-read and resend
+  at once. The lease is re-asserted right before each mutation, so a worker that lost its lease
+  never writes (`metafieldsDelete` has no digest — this is its guard).
+- ⚠ **A half-finished booking is never sent**: «معتمد» without `vaultEntryId` or «مُسترد» without
+  `refundVaultEntryId` → retry with backoff (`depositBookingInFlight`), not a guess either way.
+- ⚠ **The webhook trigger queues each distinct Shopify total once** (`queuedTotalCents`). The first
+  version re-queued any non-synced job on every `orders/updated`, which reset the backoff during an
+  outage. Revert-checked: seq condition, vaultEntryId rule, compareDigest, lease re-check, in-flight
+  rule and the webhook rule each fail a case when removed (21 cases).
+- Triggers (all after the ERP write, never awaited on Shopify): `DepositReceiptsService.refreshDerived`
+  (approve / refund / cancel-settle / auto-approve), `approveOrder`, `handleOrderUpdate` only when
+  Shopify's total moved for an order already sent (`requestSyncIfTotalChanged`, no API call), and
+  `TransactionsService` update / cancellation / deposit undo / restore (`queueDepositMetafields`).
+- Retries: transient errors back off 1→30 min, 8 attempts, then «review»; userErrors and missing
+  definitions go straight to review. Only differing values are written; values are absolute, so
+  re-sending after an uncertain result cannot double anything.
+- Tests: `test/integration/deposit-metafields.service.spec.ts` (21, real Mongo + the real receipt
+  service, fake Shopify). Run with
+  `TEST_MONGODB_URI=mongodb://127.0.0.1:27018/soulia_test_deposit_metafields?replicaSet=souliaDev`.
+- **Not done**: no backfill of orders paid before enabling (a later deposit event, or a retry, sends
+  them); manual-sale deposit receipts are not Shopify orders and are untouched.
+
+---
+
 ## The Printed Invoice — Rebuilt as an A4 Commercial Document (Aug 28, 2026)
 
 `buildInvoiceHtml` + `_invoiceSharedCss` — the sheet behind **every** print path
@@ -1983,6 +2691,9 @@ The key simplification: **the vault side is always decided by the sign of `norma
 
 ## User Modal — Rebuilt as a Three-Band Frame (Aug 8, 2026)
 
+> ⚠ **Superseded Nov 13, 2026** — the permissions tab, role cards and `JOB_TEMPLATES` described
+> below were removed. Access is granted by roles only; see «Access Is Granted by Roles Only».
+
 `openUserModal` put account fields, an avatar URL row, a role `<select>` and all 51 permissions in one scrolling column. On an account with twelve modules expanded, both the title and the save button were off-screen — the two things the user came for. Rebuilt around `.um2-*`: **fixed head / tabbed scroll area / fixed foot**, with `.um2-scroll` as the only scroller.
 
 ### `.modal` had to stop being the scroller
@@ -3839,10 +4550,77 @@ Locally there are no webhooks and one user, so no events, so it never showed.
 
 ---
 
+## Every Piece Scan Names Its Supplier (Nov 13, 2026)
+
+Scanning a piece or pack anywhere states who it was bought from («المورد: X»).
+- Server: `InventoryUnitsService.unitSuppliers(units)` / `suppliersOf(units)` read the piece's own
+  purchase invoice (`origin.purchaseTransactionId`); the supplier's CURRENT name (by `supplierId`) wins
+  over the name typed on the invoice. Returned as `supplier` (+ `suppliers` for a pack of several
+  invoices) by `GET /inventory-units/:identifier`, pack lookup, `POST scans/validate`, the picking
+  scans (pieces and packs, via `withScanSupplier` in the controllers), customer piece receipt, and on
+  each row of `GET stocktake`. A piece with no purchase says «بدون مورد — رصيد افتتاحي / جرد».
+- Frontend: one wording, `window.SouliaUnitSupplier.text(result, lang)` in `inventory-scanner.js`, used
+  by the scan station message, global-search scanner card, piece actions dialog, new-sale scan
+  (feedback + chip tooltip), prep workspace, customer piece return and stocktake.
+- Local data: 627/627 purchased pieces resolve to a name; 65 counted pieces state no supplier.
+
+## Settings Save Bar — «في تعديلات مش محفوظة · تجاهل · تحديث» (Nov 12, 2026)
+
+The product page's dark save bar (`.prd-savebar`) now also serves the Settings page (`#stg-savebar`,
+at the end of `.stg-content`, sticky at the bottom). It covers the four forms that are TYPED into,
+each marked `data-stg-form`: `company` (بيانات الشركة على الفاتورة), `print` (سياسة الطباعة),
+`perf` (معايير نقاط الأداء), `autosettle` (تسوية بوسطة التلقائية).
+- Those forms lost their own «حفظ» buttons and their per-field `onchange` auto-saves; editing shows the
+  bar, «تحديث» runs each edited form's OWN save function in turn (payloads unchanged), «تجاهل» asks and
+  restores the saved values. Switches elsewhere in Settings still save instantly — they are not forms.
+- `STG_BAR_FORMS` (beside `saveSettings`) is the registry: `save` must return true/false (the four
+  functions now do), optional `reset`/`extra` (the Bosta card's vault pick is not an input).
+- ⚠ Each form's render (`renderSettings`, `_initPerfCriteriaUI`, `renderCsSettingsCard`) calls
+  `stgBarBaseline(key)` after filling and **skips the fill while the form is dirty** — a live refresh
+  must not wipe typing. `_stgBarQuiet` turns off the forms' own toasts and `renderSettings()` during a
+  bar save (one would overwrite another form's pending edits).
+- Leaving with edits asks: `navigateTo`, `_navConfirmTarget`, `_routeCurrentHash`, plus the
+  `settings` unsaved guard for reload/close. To add a form: mark it `data-stg-form`, add an entry,
+  baseline it in its render.
+- Verified: `test/browser/settings-savebar.cjs` (20 checks over the shipped functions). Other settings
+  browser suites pass; `settings-workspace.cjs` fails on the shipping add-form width (561 > 220),
+  unrelated to this change.
+
+---
+
+## New Sale — Every Piece Scanned or «بيع بدون مسح» (Nov 12, 2026)
+
+In the new-sale form (`sales-scanner.js`) a product picked from the list deducted stock with no
+physical piece linked. Now each sale line shows «امسح القطعة، أو اختر «بيع بدون مسح»» with
+`linked / qty`, the scanned codes, and the buttons «بيع بدون مسح» / «تراجع عن التخطي» — the same
+idea as «تجهيز بدون مسح» in the prep workspace.
+- `item._saleSkip` = pieces explicitly sold without a scan (clamped to the unlinked quantity by
+  `skipped()`); asks «كم قطعة؟» when more than one is open. Merged by `mergeDuplicateTxItems`.
+- **Save gate**: `saveTx` calls `SalesScanner.ready()` right after the empty-items check; it
+  toasts, scrolls to and flashes the first open line. `attach()` refuses the same state.
+- ⚠ **A scanned piece fills the line's unlinked quantity first** (pick product → scan → qty stays 1);
+  only extra pieces raise the qty. Once a line is full, a scan replaces a skipped piece.
+- ⚠ Removing a scan chip now **unlinks only** — the line keeps its quantity and asks again.
+- ⚠ **Frontend rule only**: the skip is not stored on the transaction or checked by the server.
+  A user without `inventory-units-view/-allocate` cannot scan, so they mark lines «بدون مسح».
+- Test: `backend/test/browser/sales-scan-gate.cjs` (14 checks).
+
+---
+
 ## Recent Changes Summary
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 13, 2026 | Access is granted by roles only: the user window picks a role and shows a summary (no per-user checkboxes), any admin manages roles, nobody changes their own role, old accounts move onto roles after a preview; fixed the managed-role check refusing startup data to role-assigned accounts | See "Access Is Granted by Roles Only" above |
+| Nov 13, 2026 | «بيانات المرتجعات» in the supplier profile: documentation-only return statements (SR-00001) with several items, reasons, photos, statuses, history and a printable A4/PDF sheet; touches no stock, ledger, vault or cost | See "«بيانات المرتجعات» — Supplier Return Statements" above |
+| Nov 13, 2026 | FIFO phases 1–2: pure FIFO cost-layer rules (19 tests) and a read-only historical preview report on a scratch copy (opening stock candidates, shortfall cases, monthly profit and stock value before/after); nothing live changed | See "FIFO Cost Layers — Phase 1 + 2 Only" above |
+| Nov 12, 2026 | Promotions moved out of Settings into its own page under الأصناف: control of every price offer (stop, start now, bulk stop, new offer with product picker), restyled codes/bundles/tags tables, a persisted audit log, and six `promotions-*` permissions on both layers | See "«العروض والخصومات» — Its Own Page" above |
+| Nov 12, 2026 | New sale: each line must be scanned or marked «بيع بدون مسح» before saving; a scan links to the picked line instead of raising the quantity | See "New Sale — Every Piece Scanned" above |
+| Nov 12, 2026 | Settings got the product page's «unsaved changes» bar: company details, print policy, performance points and Bosta auto-settlement save together via «تحديث», «تجاهل» restores, leaving asks | See "Settings Save Bar" above |
+| Nov 12, 2026 | Approved deposits are mirrored to Shopify order metafields custom.deposit_amount / remaining_amount / deposit_method / deposit_date through a retrying queue (off until enabled in Settings) | See "Deposit → Shopify Order Metafields" above |
+| Nov 12, 2026 | The card's supplier field became the primary supplier, stored once in the supplier-price table (rename/delete/first purchase keep it in step); editing a purchase after part of it sold now recalculates the average in date order; negative stock adjustments without identified pieces need a written reason + confirmation | See "Primary supplier" and "Final requirements" above |
+| Nov 12, 2026 | Moving-average cost from purchase invoices (step 3): new sales are costed at the average after supplier discounts, stock is valued at it, and the product card shows it with a change log | See "Frozen Sale-Line Cost, Average Cost & Supplier Prices" above |
+| Nov 12, 2026 | Sale-line cost frozen on the invoice (steps 1 & 2 of the profit fix): old lines frozen by a backfill endpoint, every new sale / Shopify confirmation / edit / return saves its cost, so editing a product's purchase price no longer rewrites profit; supplier prices per product (card table + purchase-form prefill) | See "Frozen Sale-Line Cost & Supplier Prices" above |
 | Nov 11, 2026 | QR label generator: a batch can be issued as packs (e.g. 12 pieces, 6 per pack → 2 pack labels); linking at receipt seals real packs under the printed PK codes | See "QR Label Generator — Pack Batches" above |
 | Nov 10, 2026 | Shopify orders page: the window no longer scrolls — only the orders table scrolls | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |
 | Nov 9, 2026 | Shopify orders table sized to the room left under the pinned head, so reaching the last row no longer scrolls the page and hides the column titles | See "Cascade Reveal" → "…and the page moved once the table reached its last row" |

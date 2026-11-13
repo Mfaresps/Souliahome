@@ -17,3 +17,6 @@ scripts/cloud-backup.env
 
 # Carrier settlement sample files — contain real customer names and phone numbers
 scripts/samples/
+
+# FIFO preview reports — business costs, generated locally, never committed
+/artifacts/fifo-preview/

@@ -23,6 +23,7 @@ import { SettingsService } from '../settings/settings.service';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { DepositReceiptOcrService } from './deposit-receipt-ocr.service';
+import { ShopifyDepositMetafieldsService } from './sync/deposit-metafields.service';
 import { MAX_STORED_RECEIPT_BYTES, receiptContentWarnings } from './receipt-upload-policy.util';
 import { receiptImageKey } from './receipt-storage-path.util';
 import { ManualDepositReceipt, ManualDepositReceiptDocument } from './schemas/manual-deposit-receipt.schema';
@@ -90,6 +91,7 @@ export class DepositReceiptsService {
   @PushOptional() @PushInject(FollowUpsService) private readonly followUpsService?: FollowUpsService;
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
   @PushOptional() @PushInject(DiscountOtpService) private readonly discountOtp?: DiscountOtpService;
+  @PushOptional() @PushInject(ShopifyDepositMetafieldsService) private readonly depositMetafields?: ShopifyDepositMetafieldsService;
 
   private readonly logger = new Logger(DepositReceiptsService.name);
   private imageLimitQueue: Promise<unknown> = Promise.resolve();
@@ -196,6 +198,8 @@ export class DepositReceiptsService {
       order.depositPercentage = f.depositPercentage;
       order.depositDetectedAt = new Date().toISOString();
       await order.save();
+      // The deposit is now committed in the ERP — only then is Shopify told (queued, never awaited on the store).
+      await this.depositMetafields?.requestSync(order.shopifyId, 'deposit-receipt');
       this.employeeScoringService.scoreDepositDetection(order).catch((err) =>
         this.logger.error(`Deposit re-scoring failed for order ${orderId}: ${(err as Error).message}`),
       );

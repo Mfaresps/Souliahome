@@ -39,6 +39,17 @@ export class Product {
   @Prop({ default: 0 })
   buyPrice: number;
 
+  /**
+   * متوسط التكلفة المرجّح من فواتير الشراء (خطوة 3). null = لسه ماتحسبش، فالتكلفة = buyPrice.
+   * ⚠ مش في أي DTO عن قصد: بيتكتب من ProductCostService بس. و`type: Number` إلزامي —
+   * nullable من غير type بيوقّع الـAPI كله وقت التحميل.
+   */
+  @Prop({ type: Number, default: null })
+  avgCost: number | null;
+
+  @Prop({ type: String, default: '' })
+  avgCostUpdatedAt: string;
+
   @Prop({ default: 10 })
   minStock: number;
 
@@ -47,6 +58,16 @@ export class Product {
 
   @Prop({ default: '' })
   supplier: string;
+
+  /** عروض أسعار البيع لفترة محددة (shared/price-offer.util.ts). ⚠ في مافيش DTO — بتتعدّل من
+   *  `POST /products/:id/offers` بس، عشان كل عرض يتسجل بسببه ومين عمله. */
+  @Prop({ type: [Object], default: [] })
+  priceOffers: Array<Record<string, unknown>>;
+
+  /** المورد الأساسي (id). ⚠ في مافيش DTO — بيتكتب من primary-supplier.util بس، و`supplier`
+   *  نسخة الاسم للعرض. '' = مافيش، أو اسم قديم مش مطابق لمورد. */
+  @Prop({ default: '' })
+  supplierId: string;
 
   @Prop({ default: '' })
   imageUrl: string;

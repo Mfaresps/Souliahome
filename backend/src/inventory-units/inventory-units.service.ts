@@ -98,6 +98,50 @@ export class InventoryUnitsService implements OnModuleInit {
     return new Types.ObjectId(value);
   }
   identifierFilter(identifier: string, session?: ClientSession) { return this.manualCodes.filter(identifier, session); }
+  /**
+   * Who each piece was bought from, for every scan and lookup. Read from the piece's own purchase
+   * invoice (`origin.purchaseTransactionId`); the supplier's CURRENT name wins over the name typed
+   * on the invoice, so a renamed supplier reads correctly. A piece with no purchase (opening stock,
+   * physical count) states its origin instead of inventing a supplier.
+   */
+  async unitSuppliers(units: any[], session?: ClientSession) {
+    const out = new Map<string, { origin: string; supplierId: string; name: string; purchaseRef: string; purchaseTransactionId: string } | null>();
+    const purchaseIds = [...new Set(units.map(u => String(u?.origin?.purchaseTransactionId || '')).filter(id => OBJECT_ID_PATTERN.test(id)))];
+    const purchases: any[] = purchaseIds.length ? await this.connection.collection('transactions').find({ _id: { $in: purchaseIds.map(id => this.id(id)) } },
+      { session, projection: { ref: 1, client: 1, supplier: 1, supplierId: 1 } }).toArray() : [];
+    const supplierIds = [...new Set(purchases.map(p => String(p.supplierId || '')).filter(id => OBJECT_ID_PATTERN.test(id)))];
+    const suppliers: any[] = supplierIds.length ? await this.connection.collection('suppliers').find({ _id: { $in: supplierIds.map(id => this.id(id)) } },
+      { session, projection: { name: 1 } }).toArray() : [];
+    for (const unit of units) {
+      if (!unit) continue;
+      const kind = String(unit.origin?.kind || 'legacy-unknown');
+      const purchase = purchases.find(p => String(p._id) === String(unit.origin?.purchaseTransactionId || ''));
+      if (!purchase) { out.set(String(unit._id), { origin: kind, supplierId: '', name: '', purchaseRef: '', purchaseTransactionId: '' }); continue; }
+      const linked = suppliers.find(s => String(s._id) === String(purchase.supplierId || ''));
+      out.set(String(unit._id), { origin: 'purchase', supplierId: linked ? String(linked._id) : String(purchase.supplierId || ''),
+        name: String(linked?.name || purchase.client || purchase.supplier || '').trim(), purchaseRef: String(purchase.ref || ''),
+        purchaseTransactionId: String(purchase._id) });
+    }
+    return out;
+  }
+  /** Adds `supplier`/`suppliers` to a picking-scan reply (piece or pack), read after the write. */
+  async withScanSupplier<T extends Record<string, any>>(result: T): Promise<T> {
+    try {
+      const ids = [...(Array.isArray(result?.units) ? result.units : []), result?.unit].map((u: any) => String(u?.unitId || u?._id || '').toLowerCase())
+        .filter(id => OBJECT_ID_PATTERN.test(id));
+      if (!ids.length) return result;
+      const units = await this.units.find({ _id: { $in: [...new Set(ids)].map(id => this.id(id)) } }, { origin: 1 }).lean();
+      return { ...result, ...(await this.suppliersOf(units)) };
+    } catch { return result; }
+  }
+  /** The distinct suppliers behind a set of pieces (a pack can hold pieces of several invoices). */
+  async suppliersOf(units: any[], session?: ClientSession) {
+    const map = await this.unitSuppliers(units, session);
+    const rows = [...map.values()].filter(Boolean) as any[];
+    const named = rows.filter(r => r.name);
+    const unique = named.filter((r, i) => named.findIndex(x => (x.supplierId || x.name) === (r.supplierId || r.name)) === i);
+    return { supplier: unique[0] || rows[0] || null, suppliers: unique };
+  }
   async supplierReturnInfo(unit: any, session?: ClientSession) {
     let id = unit.supplierReturnId;
     if (!id && unit.status === 'returned-to-supplier') {
@@ -536,10 +580,12 @@ export class InventoryUnitsService implements OnModuleInit {
       date: order.date || null, createdAt: order.createdAt || null, pickupStatus: order.pickupStatus || '', prepChecked: order.prepChecked === true, cancelled: order.cancelled === true, archived: order.archived === true } : null;
     const purchase: any = unit.origin?.purchaseTransactionId ? await this.connection.collection('transactions').findOne({ _id: this.id(unit.origin.purchaseTransactionId), type: 'مشتريات' },
       { projection: { ref: 1, date: 1, createdAt: 1 } }) : null;
-    const purchaseInvoice = purchase ? { transactionId: String(purchase._id), ref: purchase.ref || '', date: purchase.date || null, createdAt: purchase.createdAt || null } : null;
+    const { supplier } = await this.suppliersOf([unit]);
+    const purchaseInvoice = purchase ? { transactionId: String(purchase._id), ref: purchase.ref || '', date: purchase.date || null, createdAt: purchase.createdAt || null,
+      supplier: supplier?.name || '', supplierId: supplier?.supplierId || '' } : null;
     const [displayUnit] = await this.units.aggregate([{ $match: { _id: unit._id } }, ...this.deliveryDisplayStages()]);
     const [identified] = await this.withManualCodes([displayUnit || unit]);
-    return { unit: identified, assignmentOrder, purchaseInvoice, supplierReturn: await this.supplierReturnInfo(unit), events: await this.events.find({ unitId: String(unit._id) }).sort({ sequence: -1 }).limit(200).lean() };
+    return { unit: identified, assignmentOrder, purchaseInvoice, supplier, supplierReturn: await this.supplierReturnInfo(unit), events: await this.events.find({ unitId: String(unit._id) }).sort({ sequence: -1 }).limit(200).lean() };
   }
 
   async lookupPack(identifier: string, session?: ClientSession) {
@@ -555,7 +601,7 @@ export class InventoryUnitsService implements OnModuleInit {
       warehouseCode: pack.warehouseCode, packId: String(pack._id), quantity: pack.quantity, isPack: true,
       status: pack.state === 'opened' ? 'opened' : !valid ? 'inconsistent' : statuses.size === 1 ? members[0].status : 'mixed',
       assignment: sameAssignment ? assignment : null },
-      pack: { id: String(pack._id), state: pack.state, quantity: pack.quantity }, supplierReturn: null,
+      pack: { id: String(pack._id), state: pack.state, quantity: pack.quantity }, supplierReturn: null, ...(await this.suppliersOf(members, session)),
       assignmentOrder: order ? { transactionId: String(order._id), ref: order.ref || '', client: order.client || '', pickupStatus: order.pickupStatus || '', prepChecked: order.prepChecked === true } : null, events: [] };
   }
 
@@ -656,7 +702,8 @@ export class InventoryUnitsService implements OnModuleInit {
     const units = await this.units.find({ productId: summary.product._id, warehouseCode: { $in: aliases }, assignment: null,
       status: { $in: ['available', 'returned', 'inspection-required', 'damaged', 'supplier-return-pending'] } }).sort({ _id: 1 }).lean();
     if (units.length !== summary.registered) throw new ConflictException('Stock changed while loading. Reload the count.');
-    return { ...summary, units: await this.withManualCodes(units) };
+    const suppliers = await this.unitSuppliers(units);
+    return { ...summary, units: (await this.withManualCodes(units)).map((u: any) => ({ ...u, supplier: suppliers.get(String(u._id)) || null })) };
   }
 
   identifyLegacyStock(dto: LegacyStockIdentifyDto, actor: TrackingActor) {

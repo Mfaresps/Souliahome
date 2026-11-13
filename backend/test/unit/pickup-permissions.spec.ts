@@ -13,7 +13,19 @@ import { BostaController } from '../../src/bosta/bosta.controller';
 import { InventoryUnitsController } from '../../src/inventory-units/inventory-units.controller';
 import { InventoryPacksController } from '../../src/inventory-units/inventory-packs.controller';
 
+import { normalizeRolePermissions } from '../../src/users/access-role-permissions';
+
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+const rbacSource = readFileSync(resolve(__dirname, '../../../frontend/public/roles-permissions.js'), 'utf8');
+/** The Roles page editor's dependency rule (the only place grants are edited, Nov 13, 2026). */
+function rbacReconcile(start: string[], changed?: string, checked?: boolean): Set<string> {
+  const fn = rbacSource.match(/function reconcile\(changedKey, checked\) \{[\s\S]*?\n  \}/)?.[0];
+  if (!fn) throw new Error('reconcile() not found in roles-permissions.js');
+  const env: any = { ui: { draft: new Set(start) } };
+  runInNewContext(fn + '\nreconcile(' + JSON.stringify(changed ?? null) + ',' + JSON.stringify(checked ?? null) + ');', env);
+  return env.ui.draft;
+}
+
 const grab = (name: string) => {
   const match = html.match(new RegExp('(?:async )?function ' + name + '\\([^]*?\\n\\}'));
   if (!match) throw new Error('Missing function: ' + name);
@@ -90,14 +102,10 @@ describe('Pick-Up Orders access', () => {
   });
 
   it('automatically includes view when granting edit and removes edit when revoking view', () => {
-    const view = { value: 'pickup-orders', checked: false }, edit = { value: 'pickup-orders-edit', checked: true };
-    const env: any = { qsa: () => [], qs: (selector: string) => selector === '.perm-cb[value="pickup-orders"]' ? view
-      : selector === '.perm-cb[value="pickup-orders-edit"]' ? edit : null };
-    runInNewContext(grab('onPermCbChange') + '\n' + grab('refreshPermModules'), env);
-    env.onPermCbChange(edit);
-    expect(view.checked).toBe(true);
-    view.checked = false; env.onPermCbChange(view);
-    expect(edit.checked).toBe(false);
+    // Grants are edited on the Roles page only; the same rule holds on the server.
+    expect(rbacReconcile(['pickup-orders-edit'], 'pickup-orders-edit', true).has('pickup-orders')).toBe(true);
+    expect(rbacReconcile(['pickup-orders-edit'], 'pickup-orders', false).has('pickup-orders-edit')).toBe(false);
+    expect(normalizeRolePermissions(['pickup-orders-edit'])).toContain('pickup-orders');
   });
 });
 

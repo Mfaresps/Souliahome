@@ -41,33 +41,71 @@
     const active = document.activeElement, typing = active?.id === 'sale-scan-code';
     const draft = typing ? active.value : '';
     host.innerHTML = `<div class="sale-reader-bar"><span class="sale-reader-dot ${running?'is-busy':''}" aria-hidden="true"></span><strong>${running?tr('Checking scan… Keep scanning','جارٍ التحقق… يمكنك متابعة المسح'):tr('Scanner ready — scan a piece or product code','الماسح جاهز — امسح قطعة أو كود صنف')}</strong>${jobs.length>1?`<span>${jobs.length-1} ${tr('waiting','قيد الانتظار')}</span>`:''}<button type="button" data-sale-manual aria-expanded="${manual}">${manual?tr('Close manual entry','إغلاق الإدخال اليدوي'):tr('Manual entry','إدخال يدوي')}</button></div>
-      <small>${tr('Scanned piece identities are linked to the order when you save. Product codes add quantity without choosing a physical piece.','تُربط القطع الممسوحة بالطلب عند الحفظ. كود الصنف يضيف الكمية دون اختيار قطعة بعينها.')}</small>
+      <small>${tr('Every piece sold must be scanned, or marked «Sell without scan» on its line, before the invoice can be saved.','كل قطعة تُباع لازم تتمسح، أو تختار «بيع بدون مسح» على سطرها، قبل حفظ الفاتورة.')}</small>
       ${manual?`<form data-sale-form><label for="sale-scan-code">${tr('Piece, pack or product code','كود القطعة أو الباك أو الصنف')}</label><div><input id="sale-scan-code" data-scan-input dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" required value="${html(draft)}"><button type="submit">${tr('Add','إضافة')}</button></div></form>`:''}
       ${feedback?`<div class="sale-reader-feedback ${feedback.error?'is-error':'is-success'}" role="${feedback.error?'alert':'status'}"><b aria-hidden="true">${feedback.error?'!':'✓'}</b> <span>${html(feedback.text)}</span>${feedback.code?` <code dir="ltr">${html(feedback.code)}</code>`:''}${feedback.hint?`<small>${html(feedback.hint)}</small>`:''}</div>`:''}`;
     host.querySelector('[data-sale-manual]').onclick = () => { manual = !manual; buffer = ''; render(); if (manual) host.querySelector('input')?.focus(); };
     host.querySelector('form')?.addEventListener('submit', event => { event.preventDefault(); const input = host.querySelector('input'); const code = input.value; input.value = ''; submit(code); });
     if (typing) { const input = host.querySelector('input'); input?.focus({ preventScroll: true }); if (input) input.setSelectionRange(draft.length,draft.length); }
     document.querySelectorAll('#tx-items .tx-item-card').forEach((card, index) => {
-      card.querySelector('.sale-piece-codes')?.remove();
-      const scans = txItems[index]?._saleScans || [];
-      if (!scans.length) return;
-      const wrap = document.createElement('div'); wrap.className = 'sale-piece-codes';
-      scans.forEach((scan, scanIndex) => {
-        const button = document.createElement('button'); button.type = 'button'; button.dir = 'ltr';
-        button.textContent = `✓ ${scan.code}${scan.quantity>1?' ×'+scan.quantity:''} ×`;
-        button.setAttribute('aria-label', tr('Remove scanned selection ','إزالة القطعة الممسوحة ') + scan.code);
-        button.onclick = () => remove(index,scanIndex); wrap.append(button);
-      });
+      card.querySelector('.sale-piece-codes')?.remove(); card.querySelector('.sale-line-scan')?.remove();
+      const item = txItems[index];
+      if (!item?.productId || !(Number(item.qty) > 0)) return;
+      const scans = item._saleScans || [], qty = Number(item.qty), linked = minimum(item), skip = skipped(item), need = Math.max(0, qty - linked - skip);
+      const label = need ? (linked || skip ? tr(`Scan ${need} more piece(s), or sell them without a scan`, `امسح ${need} قطعة كمان، أو بيعها بدون مسح`) : tr('Scan the piece, or choose «Sell without scan»', 'امسح القطعة، أو اختر «بيع بدون مسح»'))
+        : skip ? (linked ? tr(`Complete · ${skip} without scan`, `مكتمل · ${skip} بدون مسح`) : tr('Sold without scan', 'بيع بدون مسح')) : tr('Pieces linked ✓', 'تم ربط القطع ✓');
+      const wrap = document.createElement('div');
+      wrap.className = `sale-line-scan ${need ? 'is-need' : skip ? 'is-skip' : 'is-done'}`;
+      wrap.innerHTML = `<div class="sale-line-status" role="status"><span class="sale-line-dot" aria-hidden="true"></span><span>${html(label)}</span><bdi dir="ltr">${linked + skip} / ${qty}</bdi></div>`
+        + (scans.length ? `<div class="sale-piece-codes">${scans.map((scan, scanIndex) => `<button type="button" dir="ltr" data-unlink="${scanIndex}" aria-label="${html(tr('Unlink scanned piece ', 'إلغاء ربط القطعة ') + scan.code)}" title="${html((scan.supplier ? scan.supplier + ' — ' : '') + tr('Unlink this piece', 'إلغاء ربط القطعة'))}">✓ ${html(scan.code)}${scan.quantity > 1 ? ' ×' + scan.quantity : ''} ×</button>`).join('')}</div>` : '')
+        + (need || skip ? `<div class="sale-line-actions">${need ? `<button type="button" data-skip>${html(tr('Sell without scan', 'بيع بدون مسح'))}</button>` : ''}${skip ? `<button type="button" data-unskip>${html(tr('Undo skip', 'تراجع عن التخطي'))}</button>` : ''}</div>` : '');
+      wrap.querySelectorAll('[data-unlink]').forEach(button => { button.onclick = () => remove(index, Number(button.dataset.unlink)); });
+      wrap.querySelector('[data-skip]')?.addEventListener('click', () => skipLine(index));
+      wrap.querySelector('[data-unskip]')?.addEventListener('click', () => { item._saleSkip = 0; feedback = null; markTxDirty(); render(); });
       card.querySelector('.tx-item-info')?.append(wrap);
     });
   }
   function reset(discardRequest = false) { epoch++; jobs.length = 0; buffer = ''; clearSearch(); feedback = null; manual = false; if (discardRequest) { pendingRequest = null; sessionStorage.removeItem('sale-scanner-request'); } render(); }
   function minimum(item) { return (item?._saleScans || []).reduce((sum, scan) => sum + Number(scan.quantity), 0); }
+  // Pieces the operator chose to sell without a scan («بيع بدون مسح») — never more than the unlinked quantity.
+  function skipped(item) {
+    if (!item) return 0;
+    const free = Math.max(0, (Number(item.qty) || 0) - minimum(item));
+    item._saleSkip = Math.min(Math.max(0, Math.floor(Number(item._saleSkip) || 0)), free);
+    return item._saleSkip;
+  }
+  function needOf(item) { return Math.max(0, (Number(item?.qty) || 0) - minimum(item) - skipped(item)); }
+  function pending() { return txType !== 'مبيعات' ? [] : txItems.map((item, index) => ({ index, need: item?.productId ? needOf(item) : 0 })).filter(row => row.need > 0); }
+  function pendingMessage(total) { return tr(`${total} piece(s) are not linked. Scan each piece, or choose «Sell without scan» on its line.`, `${total} قطعة مش مربوطة. امسح كل قطعة، أو اختر «بيع بدون مسح» على سطرها.`); }
+  async function skipLine(index) {
+    const item = txItems[index]; if (!item || _txSaving) return;
+    const need = needOf(item); if (need < 1) return;
+    let count = 1;
+    if (need > 1) {
+      const answer = await showPrompt(tr(`How many pieces will you sell without scanning? (1–${need})`, `كم قطعة تبيعها بدون مسح؟ (1–${need})`), { title: tr('Sell without scan', 'بيع بدون مسح'), placeholder: `1–${need}`, required: true });
+      if (answer === null || answer === undefined) return;
+      const normalized = String(answer).trim().replace(/[٠-٩۰-۹]/g, char => String(char.charCodeAt(0) - (char <= '٩' ? 0x660 : 0x6f0)));
+      count = /^\d+$/.test(normalized) ? Number(normalized) : NaN;
+      if (!Number.isSafeInteger(count) || count < 1 || count > needOf(item)) { toast(tr(`Enter a whole number from 1 to ${need}.`, `أدخل عدد صحيح من 1 إلى ${need}.`), true); return; }
+    }
+    item._saleSkip = (item._saleSkip || 0) + count;
+    if (feedback?.error && !pending().length) feedback = null;
+    markTxDirty(); render();
+  }
+  /** Save gate: every sold piece is scanned or explicitly skipped. Points at the first open line. */
+  function ready() {
+    const rows = pending(); if (!rows.length) return true;
+    const total = rows.reduce((sum, row) => sum + row.need, 0);
+    feedback = { error: true, text: pendingMessage(total) }; render();
+    const card = document.querySelectorAll('#tx-items .tx-item-card')[rows[0].index];
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.remove('sale-line-flash'); void card.offsetWidth; card.classList.add('sale-line-flash'); }
+    toast(feedback.text, true);
+    return false;
+  }
   function remove(index, scanIndex) {
     const item = txItems[index], scan = item?._saleScans?.[scanIndex]; if (!scan) return;
-    item._saleScans.splice(scanIndex,1); item.qty = Math.max(0,item.qty-scan.quantity);
-    if (!item.qty) txItems.splice(index,1);
-    feedback = null; markTxDirty(); renderTxItems(); calcTxSummary(); render();
+    item._saleScans.splice(scanIndex,1); // the line keeps its quantity; the piece now needs a scan or a skip
+    feedback = null; markTxDirty(); render();
   }
   function submit(raw) {
     const typed = String(raw || '').trim().replace(/[٠-٩۰-۹]/g, char => String(char.charCodeAt(0) - (char <= '٩' ? 0x660 : 0x6f0)));
@@ -90,27 +128,30 @@
         let product = !physical && matches.length===1 ? matches[0] : null, quantity = 1, scan = null;
         if (!product) {
           if (!hasPerm('inventory-units-view') || !hasPerm('inventory-units-allocate')) throw Error(tr('Scanning pieces requires inventory view and allocation permissions. You can add a product by its code.','مسح القطع يحتاج صلاحية عرض القطع وتخصيصها. يمكنك إضافة الصنف بكوده.'));
-          const { unit } = await api(`/inventory-units/${encodeURIComponent(job.code)}`, { background: true });
+          const lookup = await api(`/inventory-units/${encodeURIComponent(job.code)}`, { background: true }), { unit } = lookup;
           if (!unit || unit.status!=='available' || unit.assignment) throw Error(tr('This piece is unavailable or linked to another order. Scan an available piece.','القطعة غير متاحة أو مرتبطة بطلب آخر. امسح قطعة متاحة.'));
           if (!unit.isPack && unit.packId) throw Error(tr('Scan the sealed pack label, or open the pack before scanning individual pieces.','امسح ملصق الباك المغلق أو افتحه قبل مسح القطع منفردة.'));
           if (canonicalWarehouse(unit.warehouseCode)!==canonicalWarehouse(job.warehouse)) throw Error(tr('This piece belongs to a different warehouse. Choose its warehouse or scan another piece.','القطعة من مخزن مختلف. اختر مخزنها أو امسح قطعة من المخزن الحالي.'));
           product = products.find(row=>String(row._id)===String(unit.productId));
           quantity = unit.isPack ? Number(unit.quantity) : 1;
           if (!product || !Number.isSafeInteger(quantity) || quantity<1 || !/^[a-f\d]{24}$/i.test(String(unit._id))) throw Error(tr('Piece or product data is invalid. Review it in Inventory.','بيانات القطعة أو الصنف غير صحيحة. راجعها في المخزون.'));
-          scan = { id:String(unit._id).toLowerCase(),isPack:!!unit.isPack,quantity,code:unit.manualCode||unit.barcode||job.code,productId:product._id,warehouseCode:unit.warehouseCode };
+          scan = { id:String(unit._id).toLowerCase(),isPack:!!unit.isPack,quantity,code:unit.manualCode||unit.barcode||job.code,productId:product._id,warehouseCode:unit.warehouseCode,supplier:window.SouliaUnitSupplier?.text(lookup)||'' };
         }
         if (!enabled() || job.epoch!==epoch || job.warehouse!==warehouse()) throw Error(tr('The form changed. Scan this piece again.','تغيرت المعاملة. أعد مسح هذه القطعة.'));
         if (typeof isProductListable === 'function' && !isProductListable(product)) throw Error(tr('This product is inactive. Review it before adding it to a sale.','هذا الصنف غير نشط. راجعه قبل إضافته للبيع.'));
         if (scan && selections().some(previous=>previous.id===scan.id)) throw Error(tr('This piece is already in the invoice. Scan a different piece.','القطعة موجودة بالفعل في الفاتورة. امسح قطعة أخرى.'));
         const item = txItems.find(row=>row.productId===product._id), currentQty=txItems.filter(row=>row.productId===product._id).reduce((sum,row)=>sum+Number(row.qty),0);
+        // A scanned piece first fills the line's unlinked quantity (product picked, then scanned).
+        const free = item ? Math.max(0, Number(item.qty) - minimum(item)) : 0;
+        const add = scan ? Math.max(0, quantity - free) : quantity;
         const available = getTxAvailableStock(product._id);
-        if (available>=0 && currentQty+quantity>available) throw Error(tr(`Only ${available} pieces are available in this warehouse.`,`المتاح في هذا المخزن ${available} قطعة فقط.`));
+        if (available>=0 && currentQty+add>available) throw Error(tr(`Only ${available} pieces are available in this warehouse.`,`المتاح في هذا المخزن ${available} قطعة فقط.`));
         const target = item || { productId:product._id,qty:0,price:product.sellPrice||0 };
-        target.qty += quantity;
-        if (scan) (target._saleScans ||= []).push(scan);
+        target.qty += add;
+        if (scan) { (target._saleScans ||= []).push(scan); skipped(target); } // a scan replaces a «without scan» piece once the line is full
         if (!item) txItems.push(target);
         _dsbDismissed = false; markTxDirty(); renderTxItems(); calcTxSummary();
-        feedback={text:tr(`${product.name} added · ${quantity} piece(s).`, `تمت إضافة ${product.name} · ${quantity} قطعة.`),code:job.code};
+        feedback={text:tr(`${product.name} added · ${quantity} piece(s).`, `تمت إضافة ${product.name} · ${quantity} قطعة.`)+(scan?.supplier?' · '+scan.supplier:''),code:job.code};
       } catch(error) {
         if (job.epoch===epoch) feedback={error:true,text:error.status===404?tr('Code not found. Check the label or enter the product code.','الكود غير مسجل. راجع الملصق أو أدخل كود الصنف.'):error.message||tr('Could not read the code. Try again.','تعذر قراءة الكود. أعد المحاولة.'),code:job.code};
       } finally { if (jobs[0]===job) jobs.shift(); render(); }
@@ -120,6 +161,7 @@
   function attach(invoice) {
     if (txType!=='مبيعات') return;
     if (running || jobs.length) throw Error(tr('Wait until all scanned pieces have been checked.','انتظر انتهاء التحقق من القطع الممسوحة.'));
+    const open = pending(); if (open.length) throw Error(pendingMessage(open.reduce((sum, row) => sum + row.need, 0)));
     const bindings=[];
     for (const item of txItems) {
       const scans=item._saleScans||[]; if (!scans.length) continue;
@@ -191,6 +233,6 @@
   document.addEventListener('focusout',event=>{if (searchBurst?.input===event.target) flushSearch();},true);
   document.addEventListener('pointerdown',flushSearch,true);
   window.addEventListener('blur',()=>{buffer='';flushSearch();});
-  window.SalesScanner={render,reset,submit,minimum,attach,save,ownsKeyboard};
+  window.SalesScanner={render,reset,submit,minimum,skipped,ready,attach,save,ownsKeyboard};
   render();
 })();

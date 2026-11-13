@@ -105,7 +105,7 @@ function baseBody(overrides: Record<string, unknown> = {}) {
 describe('ReturnsService', () => {
   let service: ReturnsService;
   let returnModel: ReturnType<typeof createMockMongooseModel>;
-  let transactionsService: { create: jest.Mock; findById: jest.Mock };
+  let transactionsService: { create: jest.Mock; findById: jest.Mock; currentUnitCosts: jest.Mock };
   let vaultService: ReturnType<typeof createMockVaultService>;
 
   /** No prior returns on the invoice unless a test says otherwise. */
@@ -120,6 +120,8 @@ describe('ReturnsService', () => {
         .fn()
         .mockImplementation(async (dto: any) => ({ _id: 'tx-ret-1', ref: dto.ref })),
       findById: jest.fn().mockResolvedValue(buildOriginalSale()),
+      // ReturnsService.create stamps each return line with the original sale line's cost.
+      currentUnitCosts: jest.fn().mockResolvedValue(new Map()),
     };
     vaultService = createMockVaultService();
 

@@ -48,6 +48,13 @@ export class InventoryMovementsController {
     );
   }
 
+  /** قطع المنتج التالفة/المفقودة وحالتها لنافذة التسوية — بنفس قواعد السيرفر. */
+  @Roles('admin')
+  @Get('writeoff-candidates')
+  async writeoffCandidates(@Query('productId') productId: string) {
+    return this.service.writeoffCandidates(productId);
+  }
+
   @Roles('admin')
   @Post('adjust')
   async adjust(
@@ -62,6 +69,10 @@ export class InventoryMovementsController {
       reason: dto.reason,
       by,
       byUserId: req.user?.userId || '',
+      unitIds: dto.unitIds,
+      requestKey: dto.requestKey,
+      unidentifiedConfirmed: dto.unidentifiedConfirmed,
+      unidentifiedNote: dto.unidentifiedNote,
     });
   }
 }

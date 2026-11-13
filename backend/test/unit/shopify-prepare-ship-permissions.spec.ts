@@ -9,7 +9,20 @@ import { ShopifyController } from '../../src/shopify/shopify.controller';
 import { PermsGuard } from '../../src/core/guards/perms.guard';
 import { PERMS_KEY } from '../../src/core/decorators/perms.decorator';
 
+import { normalizeRolePermissions } from '../../src/users/access-role-permissions';
+import { DEFAULT_ACCESS_ROLES } from '../../src/users/access-roles.service';
+
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+const rbacSource = readFileSync(resolve(__dirname, '../../../frontend/public/roles-permissions.js'), 'utf8');
+/** The Roles page editor's dependency rule (the only place grants are edited, Nov 13, 2026). */
+function rbacReconcile(start: string[], changed?: string, checked?: boolean): Set<string> {
+  const fn = rbacSource.match(/function reconcile\(changedKey, checked\) \{[\s\S]*?\n  \}/)?.[0];
+  if (!fn) throw new Error('reconcile() not found in roles-permissions.js');
+  const env: any = { ui: { draft: new Set(start) } };
+  runInNewContext(fn + '\nreconcile(' + JSON.stringify(changed ?? null) + ',' + JSON.stringify(checked ?? null) + ');', env);
+  return env.ui.draft;
+}
+
 
 function extract(fn: string) {
   const match = html.match(new RegExp('(?:async )?function ' + fn + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}'));
@@ -40,33 +53,17 @@ describe('Prepare and ship permission', () => {
     expect(canApprove(undefined)).toBe(false);
   });
 
-  it('grants preparation and order access through the fulfillment job preset', () => {
-    const templates = html.match(/const JOB_TEMPLATES = \{[\s\S]*?\n\};/);
-    expect(templates).not.toBeNull();
-    const perms = runInNewContext(templates![0] + '\nJOB_TEMPLATES.fulfillment.perms');
+  it('grants preparation and order access through the fulfillment role', () => {
+    const perms = DEFAULT_ACCESS_ROLES.find(role => role.slug === 'fulfillment')!.perms;
     expect(perms).toEqual(expect.arrayContaining(['shopify-orders', 'shopify-prepare-ship']));
     expect(canApprove({ role: 'staff', perms })).toBe(true);
   });
 
   it('includes order access when granting Prep & Ship and revokes the action when order access is removed', () => {
-    const orders = { value: 'shopify-orders', checked: false };
-    const prepareShip = { value: 'shopify-prepare-ship', checked: true };
-    const env: any = {
-      qs: (selector: string) => selector === '.perm-cb[value="shopify-orders"]' ? orders
-        : selector === '.perm-cb[value="shopify-prepare-ship"]' ? prepareShip : null,
-      qsa: () => [],
-    };
-    runInNewContext(extract('onPermCbChange') + '\n' + extract('refreshPermModules'), env);
-    env.onPermCbChange(prepareShip);
-    expect(orders.checked).toBe(true);
-    expect(prepareShip.checked).toBe(true);
-    orders.checked = false;
-    env.onPermCbChange(orders);
-    expect(orders.checked).toBe(false);
-    expect(prepareShip.checked).toBe(false);
-    orders.checked = true;
-    env.onPermCbChange(orders);
-    expect(prepareShip.checked).toBe(false);
+    expect([...rbacReconcile(['shopify-prepare-ship'], 'shopify-prepare-ship', true)].sort()).toEqual(['shopify-orders', 'shopify-prepare-ship']);
+    const revoked = rbacReconcile(['shopify-prepare-ship'], 'shopify-orders', false);
+    expect(revoked.has('shopify-prepare-ship')).toBe(false);
+    expect(normalizeRolePermissions(['shopify-prepare-ship'])).toContain('shopify-orders');
   });
 
   it('keeps every inline frontend script syntactically valid', () => {

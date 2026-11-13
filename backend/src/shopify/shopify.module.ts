@@ -9,6 +9,8 @@ import { ShopifyAdminService } from './shopify-admin.service';
 import { ShopifySyncService } from './sync/sync.service';
 import { ShopifySyncApiService } from './sync/sync-api.service';
 import { ShopifySyncController } from './sync/sync.controller';
+import { ShopifyDepositMetafieldsService } from './sync/deposit-metafields.service';
+import { ShopifyDepositMetafieldsController } from './sync/deposit-metafields.controller';
 import { OrderAuditController } from './order-audit.controller';
 import { OrderAuditService } from './order-audit.service';
 import { OrderAuditExportService } from './order-audit-export.service';
@@ -70,13 +72,15 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
     forwardRef(() => InventoryMovementsModule),
     forwardRef(() => TransactionsModule),
   ],
-  controllers: [ShopifySyncController, ShopifyController, OrderAuditController],
+  controllers: [ShopifySyncController, ShopifyDepositMetafieldsController, ShopifyController, OrderAuditController],
   providers: [
     OrderAuditMarketingService,
     ShopifyService,
     ShopifyAdminService,
     ShopifySyncApiService,
     ShopifySyncService,
+    // Mirrors the ERP deposit onto custom.deposit_* order metafields — own queue, off by default.
+    ShopifyDepositMetafieldsService,
     OrderAuditService,
     OrderAuditExportService,
     // Deposit receipts: upload → OCR → manager approval → vault. Hosts the 04:30 cleanup cron.
@@ -86,6 +90,6 @@ import { ManualDepositReceipt, ManualDepositReceiptSchema } from './schemas/manu
     // Hosts the once-a-minute cron; calls DepositReceiptsService.approve(), never writes directly.
     DepositAutoApproveService,
   ],
-  exports: [ShopifyAdminService, OrderAuditService, DepositReceiptsService],
+  exports: [ShopifyAdminService, OrderAuditService, DepositReceiptsService, ShopifyDepositMetafieldsService],
 })
 export class ShopifyModule {}

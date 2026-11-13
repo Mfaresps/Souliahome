@@ -114,9 +114,13 @@ describe('KPI الخصومات يقرأ الحقل الصحيح', () => {
    *   لأن `discount` هناك يحتويه أصلاً.
    */
   it('totalDiscounts يقرأ tx.discount وحده — والمصدر هو ما يجب أن يكون كاملاً', () => {
-    const agg = slice(tx, 'const totalDiscounts = salesTx.reduce', 'const totalDeposit');
-    expect(agg).toContain('Number(t.discount)');
-    expect(agg).not.toContain('manualDiscount');
+    // Nov 12, 2026: the KPI (and now net sales and profit) go through one helper —
+    // shared/sale-discount.util.ts. Same rule: the stored tx.discount, never manualDiscount.
+    const agg = slice(tx, 'const totalDiscounts = salesTx.reduce', 'const totalSales');
+    expect(agg).toContain('invoiceDiscount(t)');
+    const util = fs.readFileSync(path.resolve(__dirname, '../../src/shared/sale-discount.util.ts'), 'utf8');
+    expect(util).toContain('Number(tx?.discount)');
+    expect(util).not.toContain('manualDiscount');
   });
 
   it('لا يقرأ الخادم manualDiscount في أي تجميع', () => {

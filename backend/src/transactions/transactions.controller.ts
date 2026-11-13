@@ -379,7 +379,8 @@ export class TransactionsController {
       }
     }
     return this.transactionsService.create(dto, req.user?.role, dto.manualDepositReceiptId
-      ? { draftId: dto.manualDepositReceiptId, actor: this.receiptActor(req) } : undefined, req.user?.name || req.user?.username || '');
+      ? { draftId: dto.manualDepositReceiptId, actor: this.receiptActor(req) } : undefined, req.user?.name || req.user?.username || '',
+      undefined, false, false, req.user?.perms || []);
   }
 
   @Roles('admin')
@@ -877,6 +878,27 @@ export class TransactionsController {
   @Post('backfill/item-images')
   async backfillItemImages(@Body('dryRun') dryRun?: boolean) {
     return this.transactionsService.backfillItemImages(dryRun !== false);
+  }
+
+  /**
+   * خطوة 1 من خطة تصحيح الربح: تثبيت تكلفة سطور البيع القديمة بسعر الكارت الحالي،
+   * عشان تعديل سعر الشراء بعد كده مايغيّرش أرباح الشهور اللي فاتت.
+   * dryRun افتراضيًا true — ابعت {"dryRun": false} للكتابة. آمن للتكرار.
+   */
+  @Roles('admin')
+  @Post('backfill/freeze-line-costs')
+  async freezeLegacyLineCosts(@Body('dryRun') dryRun?: boolean) {
+    return this.transactionsService.freezeLegacyLineCosts(dryRun !== false);
+  }
+
+  /**
+   * خطوة 4: ملء أسعار الموردين لكل منتج من فواتير الشراء القديمة. المورد بيتطابق بالـid أو
+   * بالاسم بالظبط بس، واللي مايطابقش بيتبلّغ. dryRun افتراضيًا true — ابعت {"dryRun": false}.
+   */
+  @Roles('admin')
+  @Post('backfill/supplier-prices')
+  async backfillSupplierPrices(@Body('dryRun') dryRun?: boolean) {
+    return this.transactionsService.backfillSupplierPrices(dryRun !== false);
   }
 
   @Roles('admin')

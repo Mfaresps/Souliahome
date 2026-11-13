@@ -29,6 +29,7 @@ describe('Shopify preparation actor', () => {
     service.transactionsService = {
       getInventory: jest.fn().mockResolvedValue([{ _id: 'product-id', code: '40', current: 2 }]),
       assertWarehouseSale: jest.fn(),
+      settleOfferRemovalsOrThrow: jest.fn((items: any[]) => ({ items, added: [] })),
     };
     service.inventoryMovementsService = { record: jest.fn() };
     service.depositReceipts = { discardDrafts: jest.fn() };

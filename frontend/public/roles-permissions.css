@@ -113,3 +113,15 @@
 .rbac-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
 @media(max-width:900px){.rbac-layout{grid-template-columns:1fr}.rbac-role-sidebar{position:static}.rbac-role-sidebar #rbac-role-list{display:flex;overflow-x:auto;padding:4px;scroll-snap-type:x proximity}.rbac-role-item{min-width:176px;max-width:220px;scroll-snap-align:start}.rbac-role-menu{flex:none}.rbac-detail-head{padding:18px}.rbac-meta div{padding:12px 15px}}
 @media(max-width:600px){.rbac-header{align-items:flex-start}.rbac-header h1{font-size:22px}.rbac-header .rbac-primary{font-size:0;min-width:36px;padding:6px}.rbac-header .rbac-primary span{display:none}.rbac-detail-head{display:block}.rbac-detail-actions{margin-top:14px}.rbac-meta{grid-template-columns:1fr 1fr}.rbac-meta div:last-child{grid-column:1 / -1;border-top:1px solid var(--border)}.rbac-section-head{align-items:flex-start;flex-direction:column}.rbac-section-actions{width:100%}.rbac-search{flex:1}.rbac-perm-header,.rbac-perm-row{grid-template-columns:minmax(0,1fr) 55px 38px}.rbac-perm-row{padding-inline-start:23px}.rbac-users-table th:nth-child(3),.rbac-users-table td:nth-child(3){display:none}.rbac-users-table th,.rbac-users-table td{padding:10px}.rbac-savebar{bottom:5px}.rbac-savebar .rbac-unsaved,.rbac-savebar .rbac-saved{max-width:110px}}
+
+/* Accounts still on per-user grants (Nov 13, 2026): a notice, not an alarm. */
+#rbac-legacy:not([hidden]){margin-bottom:18px}
+.rbac-legacy{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--border);border-inline-start:3px solid var(--primary);border-radius:8px;background:var(--surface);font-size:12px;color:var(--muted)}
+.rbac-legacy strong{color:var(--text)}
+.rbac-dialog .rbac-migrate,.rbac-migrate{max-width:640px}
+.rbac-migrate td small{display:block;color:var(--muted);font-size:10.5px}
+.rbac-migrate td small.rbac-added,.rbac-migrate td small.rbac-dropped{display:inline;margin-inline-start:4px}
+.rbac-migrate .rbac-added{color:var(--primary)}
+.rbac-migrate .rbac-dropped{color:#a83232}
+body.dark-mode .rbac-migrate .rbac-dropped{color:#f19999}
+.rbac-quiet-note{color:var(--muted);font-size:11.5px}

@@ -88,7 +88,7 @@ export class InventoryScanningService {
         const result = await this.tracking.lookupPack(dto.identifier, session);
         if (!result) return { outcome: 'rejected', code: 'UNKNOWN_BARCODE', stockChanged: false, lifecycleChanged: false };
         if (dto.intent !== 'lookup') return { outcome: 'rejected', code: 'UNAVAILABLE_UNIT', stockChanged: false, lifecycleChanged: false };
-        return { outcome: 'accepted', code: 'VALIDATED', unit: result.unit, eligibilityOnly: true, stockChanged: false, lifecycleChanged: false };
+        return { outcome: 'accepted', code: 'VALIDATED', unit: result.unit, supplier: (result as any).supplier || null, suppliers: (result as any).suppliers || [], eligibilityOnly: true, stockChanged: false, lifecycleChanged: false };
       }
       const unit: any = await this.units.findOne(await this.tracking.identifierFilter(dto.identifier, session)).session(session).lean();
       const prelabel = !unit ? await this.connection.collection('inventoryunitprelabels').findOne(
@@ -108,7 +108,8 @@ export class InventoryScanningService {
           manualSelectionConfirmed: manual, custodyConfirmed: false } }).save({ session });
       const [identified] = await this.tracking.withManualCodes([unit]);
       return { outcome: 'accepted', code: 'VALIDATED', unit: { _id: String(unit._id), barcode: unit.barcode, manualCode: identified.manualCode, productId: unit.productId, warehouseCode: unit.warehouseCode, status: unit.status, version: unit.__v },
-        supplierReturn: await this.tracking.supplierReturnInfo(unit, session), stockChanged: false, lifecycleChanged: false, eligibilityOnly: true };
+        supplierReturn: await this.tracking.supplierReturnInfo(unit, session), supplier: (await this.tracking.suppliersOf([unit], session)).supplier,
+        stockChanged: false, lifecycleChanged: false, eligibilityOnly: true };
     });
   }
   async operation(key: string, actor: TrackingActor) {

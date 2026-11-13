@@ -109,7 +109,7 @@ export class InventoryUnitsController {
   returnPieces(@Param('id') id: string) { return this.service.customerReturnCandidates(id); }
   @Post('orders/:id/return-pieces') @RequirePerms('inventory-units-view', 'inventory-units-condition')
   receivePiece(@Param('id') id: string, @Body() dto: ReceiveCustomerPieceDto, @Req() req: { user: TrackingActor }) {
-    return this.service.receiveCustomerPiece(id, dto, req.user);
+    return this.service.receiveCustomerPiece(id, dto, req.user).then(r => this.service.withScanSupplier(r));
   }
   @Post('orders/:id/picking/exceptions') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
   pickException(@Param('id') id: string, @Body() dto: OrderPickExceptionDto, @Req() req: { user: TrackingActor }) { return this.service.pickException(id, dto, req.user); }
@@ -118,9 +118,9 @@ export class InventoryUnitsController {
     const identifier = dto.identifier.trim().replace(/^\][A-Za-z]\d/, '').toUpperCase();
     if (/^PK-[A-F\d]{24}$/.test(identifier)) {
       if (!this.packs) throw new ServiceUnavailableException('Pack scanning service unavailable');
-      return this.packs.scan(id, { ...dto, identifier }, req.user);
+      return this.packs.scan(id, { ...dto, identifier }, req.user).then(r => this.service.withScanSupplier(r));
     }
-    return this.service.pickScan(id, dto, req.user);
+    return this.service.pickScan(id, dto, req.user).then(r => this.service.withScanSupplier(r));
   }
   @Post('orders/:id/picking/prepare') @RequirePerms('inventory-units-allocate', 'pickup-orders', 'pickup-orders-edit')
   preparePicking(@Param('id') id: string, @Body() dto: PrepareOrderPickingDto, @Req() req: { user: TrackingActor }) {

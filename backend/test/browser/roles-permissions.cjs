@@ -73,6 +73,10 @@ const fixtureRoles = [
     await page.click('[data-perm="dashboard"]');
     assert.match(await page.$eval('.rbac-unsaved',el=>el.textContent),/Unsaved|محفوظة/);
     await page.click('#rbac-save');
+    // A role with accounts on it names them before its access changes.
+    await page.waitForFunction(()=>document.querySelector('#rbac-dialog').open);
+    assert.match(await page.$eval('#rbac-dialog',el=>el.textContent),/Mona/,'role edit names the accounts it changes');
+    await page.click('#rbac-confirm');
     await page.waitForFunction(()=>document.querySelector('#rbac-status').textContent.includes('saved') || document.querySelector('#rbac-status').textContent.includes('حفظ'));
     assert.ok(writes.some(write=>write.path==='/api/roles/manager'&&write.method==='PATCH'));
     await page.click('[data-expand="cash"]');

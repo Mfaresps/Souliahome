@@ -20,6 +20,10 @@ export const ACCESS_ROLE_PERMISSIONS = new Set([
   // Managed-role action keys. Legacy per-user grants remain unchanged.
   'products-create','products-edit','products-delete',
   'suppliers-create','suppliers-edit','suppliers-delete',
+  // Promotions page (Nov 12, 2026) — see promotions/promotion-perms.ts.
+  'promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit',
+  // «بيانات المرتجعات» (Nov 13, 2026) — documentation only, see supplier-return-statements/.
+  'suppliers-rs-view','suppliers-rs-create','suppliers-rs-edit','suppliers-rs-status','suppliers-rs-delete','suppliers-rs-export',
 ]);
 
 // These routes use the legacy admin guard rather than a delegable permission.
@@ -31,7 +35,7 @@ export const VIEWER_PERMISSIONS = new Set([
   'shopify-orders','csp-view','purchase-view','inventory-units-view',
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns',
   'suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
-  'carrier-settle-view','delivery-view-audit',
+  'carrier-settle-view','delivery-view-audit','promotions-view','suppliers-rs-view',
 ]);
 
 export function validateRolePermissionTier(baseRole: 'staff' | 'viewer', perms: string[]) {
@@ -57,5 +61,7 @@ export function normalizeRolePermissions(value: unknown): string[] {
   if (perms.some(key => ['products-create','products-delete'].includes(key)) && !perms.includes('products-sku-manage')) perms.push('products-sku-manage');
   if (perms.some(key => ['suppliers-create','suppliers-edit','suppliers-delete'].includes(key)) && !perms.includes('suppliers')) perms.push('suppliers');
   if (perms.some(key => key.startsWith('reports-')) && !perms.includes('reports')) perms.push('reports');
+  // Every promotions action is done on the promotions page, so it implies opening it.
+  if (perms.some(key => key.startsWith('promotions-') && key !== 'promotions-view') && !perms.includes('promotions-view')) perms.push('promotions-view');
   return perms;
 }

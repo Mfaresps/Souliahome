@@ -11,6 +11,8 @@ import { RolesGuard } from '../../src/core/guards/roles.guard';
 import { JwtAuthGuard } from '../../src/core/guards/jwt-auth.guard';
 import { PERMS_KEY } from '../../src/core/decorators/perms.decorator';
 
+import { DEFAULT_ACCESS_ROLES } from '../../src/users/access-roles.service';
+
 const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
 function extract(name: string) {
   const match = html.match(new RegExp('(?:async )?function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}'));
@@ -45,16 +47,17 @@ describe('Shopify assignment permission', () => {
     expect(service.reassignOrder).toHaveBeenCalledWith('order', 'other-employee', 'Handover', 'Sara', 'employee');
   });
 
-  it('lists the grant under Shopify and keeps it opt-in for staff and viewers', () => {
-    const start = html.indexOf('const PERMS = '), end = html.indexOf('\n};', html.indexOf('const ROLE_TEMPLATES = ', start)) + 3;
+  it('lists the grant under Orders and keeps it opt-in for staff and viewers', () => {
+    const start = html.indexOf('const PERMS = '), end = html.indexOf('\n};', html.indexOf('const PERMS_AR = ', start)) + 3;
     const env: any = {};
-    runInNewContext(html.slice(start, end) + '\nthis.catalog = { PERMS, PERMS_AR, PERM_MODULES, ROLE_TEMPLATES };', env);
-    const { PERMS, PERMS_AR, PERM_MODULES, ROLE_TEMPLATES } = env.catalog;
-    expect(PERMS).toContain('shopify-reassign');
-    expect(PERM_MODULES.find((group: any) => group.key === 'shopify').perms).toContain('shopify-reassign');
-    expect(PERMS_AR['shopify-reassign']).toContain('Assignee');
-    expect(ROLE_TEMPLATES.staff).not.toContain('shopify-reassign');
-    expect(ROLE_TEMPLATES.viewer).not.toContain('shopify-reassign');
+    runInNewContext(html.slice(start, end) + '\nthis.catalog = { PERMS, PERMS_AR };', env);
+    expect(env.catalog.PERMS).toContain('shopify-reassign');
+    expect(env.catalog.PERMS_AR['shopify-reassign']).toContain('Assignee');
+    // The Roles page matrix (the one editor) lists it under Orders.
+    const rbac = readFileSync(resolve(__dirname, '../../../frontend/public/roles-permissions.js'), 'utf8');
+    expect(rbac.match(/\['orders','Orders','[^']*',\[([^\]]*)\]\]/)?.[1]).toContain("'shopify-reassign'");
+    // No default role below admin hands it out.
+    expect(DEFAULT_ACCESS_ROLES.filter(role => role.perms.includes('shopify-reassign'))).toEqual([]);
   });
 
   it.each(['openReassignOrderModal', 'saveReassignOrder', 'openSpAssignModal', 'saveSpAssign'])(

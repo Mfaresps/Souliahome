@@ -3,7 +3,8 @@ import { resolve } from 'path';
 import { runInNewContext } from 'vm';
 import { TransactionsService } from '../../src/transactions/transactions.service';
 
-const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8');
+// Line endings depend on the checkout (core.autocrlf) — the helper slices below look for '\n}\n'.
+const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8').replace(/\r\n/g, '\n');
 const rows = () => [
   { code: 'inactive-low', name: 'Inactive low', current: 1, minStock: 5, status: 'low', isActive: false },
   { code: 'inactive-zero', name: 'Inactive zero', current: 0, minStock: 5, status: 'zero', isActive: false },
@@ -57,7 +58,9 @@ it('excludes inactive products from inventory shortage counts and filters, and k
     _fxInRange: () => true, _fxMatchSupplier: () => true, _fxMatchSpecs: () => true, _fxApplySort: (_: string, data: any) => data,
     _fxBuildChips: () => {}, renderEmptyState: () => '', productThumbHtml: () => '', renderPagination: () => {},
   };
-  runInNewContext(source, c);
+  // The table values stock at the moving average (shipped helpers, not copies).
+  const helper = (name: string) => html.slice(html.indexOf(`function ${name}(`), html.indexOf('\n}\n', html.indexOf(`function ${name}(`)) + 3);
+  runInNewContext(helper('_unitCostOf') + helper('_avgCostSubHtml') + source, c);
   c.renderInventory();
   expect(element('#inv-count-all').textContent).toBe('6');
   expect(element('#inv-count-low').textContent).toBe('2');

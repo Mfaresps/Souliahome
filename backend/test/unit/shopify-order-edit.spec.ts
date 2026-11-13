@@ -109,6 +109,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
     const render = new Function('_spEditOrder', 'grand', `
       const currentLang='en', t=String, esc=String, fmtJ=String, _payMethodLabel=String;
       const fmtJSigned=(amount,sign)=>sign+amount;
+      const _spOfferCtx=()=>({}), _offerSummaryOf=()=>null, _offerTagHtml=String, _shopifyEditItems=[]; // offers are covered by their own browser checks
       ${extractFn(src, '_spDepositOf')}
       ${extractFn(src, '_spDiscSummaryHtml')}
       return _spDiscSummaryHtml(grand,0,0,0,0,grand);
@@ -143,6 +144,7 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       let pending=false, closed=false, reloads=0,accepted=true;
       const _spConfirmEditSubmission=async()=>accepted;
       const currentLang='en', _spEditRemoveModal=()=>{closed=true;}, loadShopifyOrders=async()=>{reloads++;};
+      const _spOfferCtx=()=>({}), _offerSummaryOf=()=>null, _offerTagHtml=String; // offers are covered by their own browser checks
       const footer={innerHTML:''}, sum={innerHTML:''};
       const host={set innerHTML(html) { input={value:html.match(/id="sp-disc-value"[^>]*value="([^"]*)"/)[1]}; }};
       const document={getElementById:()=>footer};

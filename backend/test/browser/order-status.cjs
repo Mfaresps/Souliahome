@@ -138,9 +138,9 @@ const sale = { _id: 't1', ref: '2950', client: 'مريم نبيه', type: 'مب�
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       qs('#page-invoice-view').classList.add('active'); renderInvoiceViewPage();
     }, sale);
-    await page.waitForSelector('#inv-view-content .inv-order-state-heading .order-state');
+    await page.waitForSelector('#inv-view-content .inv2-head-meta-row .order-state');
     assert.equal(await page.$$eval('#inv-view-content [data-order-state="Ready"]', els => els.length), 1, 'Invoice shows its current order state only once');
-    assert.ok(await page.$eval('#inv-view-content .inv-order-state-heading .order-state', el => el.textContent.includes('جاهز للشحن') && !el.querySelector('.order-state-carrier')));
+    assert.ok(await page.$eval('#inv-view-content .inv2-head-meta-row .order-state', el => el.textContent.includes('جاهز للشحن') && !el.querySelector('.order-state-carrier')));
     await page.screenshot({ path: path.join(output, 'invoice-app-ar-390.png'), fullPage: true });
     await page.goto('http://soulia.test/invoice.html?tx=t1', { waitUntil: 'networkidle0' });
     await page.waitForSelector('.inv-order-state .order-state');

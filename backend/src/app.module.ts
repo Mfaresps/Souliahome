@@ -37,6 +37,8 @@ import { DraftsModule } from './drafts/drafts.module';
 import { CustomerServicePlaybookModule } from './customer-service-playbook/customer-service-playbook.module';
 import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { SupplierReturnStatementsModule } from './supplier-return-statements/supplier-return-statements.module';
+import { PromotionsModule } from './promotions/promotions.module';
 import { SeedService } from './seed/seed.service';
 import { WarehousesModule } from './warehouses/warehouses.module';
 import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
@@ -85,6 +87,8 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     CustomerServicePlaybookModule,
     EmployeePerformanceModule,
     AnnouncementsModule,
+    SupplierReturnStatementsModule,
+    PromotionsModule,
   ],
   providers: [SeedService],
 })

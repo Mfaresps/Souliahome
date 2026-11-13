@@ -71,16 +71,10 @@ export class UsersService {
     delete update.username;
     delete update.roleId;
     delete update.roleAssignedAt;
-    // A changed per-user access grant overrides the assigned role. Existing user
-    // forms submit unchanged role/perms alongside profile fields, so compare first.
-    if (data.role !== undefined || data.perms !== undefined) {
-      const current = await this.userModel.findById(id).select('role perms roleId').lean().exec();
-      if (current?.roleId && ((data.role !== undefined && data.role !== current.role)
-        || (data.perms !== undefined && [...data.perms].sort().join('\0') !== [...(current.perms || [])].sort().join('\0')))) {
-        update.roleId = null;
-        update.roleAssignedAt = null;
-      }
-    }
+    // Access is granted by a role only (AccessRolesService.assign / role edits). A profile
+    // edit never writes the tier or the permission list.
+    delete update.role;
+    delete update.perms;
     if (data.password && data.password.length >= 6) {
       update.password = await bcrypt.hash(data.password, 10);
       update.plainPassword = data.password;

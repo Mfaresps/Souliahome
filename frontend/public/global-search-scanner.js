@@ -89,6 +89,7 @@
         const source = document.createElement('div'); source.className = 'gs-unit-invoice gs-purchase-invoice';
         const title = document.createElement('strong'); title.textContent = tr('Purchase invoice ', 'فاتورة الشراء ') + (purchase.ref ? '#' + String(purchase.ref).replace(/^#+/,'') : '');
         source.append(title);
+        { const supplierLine = window.SouliaUnitSupplier?.text(identity); if (supplierLine) { const sup = document.createElement('span'); sup.className = 'gs-unit-supplier'; sup.dir = 'auto'; sup.style.fontWeight = '600'; sup.textContent = supplierLine; source.append(sup); } }
         if (purchase.date || purchase.createdAt) { const date = document.createElement('span'); date.textContent = tr('Invoice date: ', 'تاريخ الفاتورة: ') + when(purchase.date || purchase.createdAt); source.append(date); }
         if (purchase.createdAt) { const registered = document.createElement('small'); registered.textContent = tr('Invoice recorded: ', 'تسجيل الفاتورة: ') + when(purchase.createdAt, true); source.append(registered); }
         details.append(source);
@@ -96,7 +97,9 @@
         const source = document.createElement('div'); source.className = 'gs-unit-invoice gs-purchase-invoice';
         const title = document.createElement('strong'); title.textContent = tr('Purchase invoice','فاتورة الشراء');
         const note = document.createElement('small'); note.textContent = tr('Purchase invoice details are unavailable.','بيانات فاتورة الشراء غير متاحة.');
-        source.append(title,note);details.append(source);
+        source.append(title,note);
+        { const supplierLine = window.SouliaUnitSupplier?.text(identity); if (supplierLine) { const sup = document.createElement('span'); sup.className = 'gs-unit-supplier'; sup.dir = 'auto'; sup.style.fontWeight = '600'; sup.textContent = supplierLine; source.append(sup); } }
+        details.append(source);
       }
       if (row.createdAt) { const registered = document.createElement('small'); registered.className = 'gs-unit-recorded'; registered.textContent = tr('Piece registered: ', 'تسجيل القطعة: ') + when(row.createdAt, true); details.append(registered); }
       details.append(state);
