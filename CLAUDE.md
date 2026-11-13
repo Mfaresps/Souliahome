@@ -4611,6 +4611,7 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 13, 2026 | Full restore of any backup taken before Nov 12 was refused («Inventory units/events exist…»): those backups lack the newer label/pack/transfer collections. `fillLaterInventoryDatasets` (inventory-unit-maintenance.ts) now treats them as empty in a FULL restore (live copies are wiped with the rest); core datasets stay mandatory, partial restore/reset stays blocked | 23 of 25 local backups were unrestorable → all 25 pass |
 | Nov 13, 2026 | Access is granted by roles only: the user window picks a role and shows a summary (no per-user checkboxes), any admin manages roles, nobody changes their own role, old accounts move onto roles after a preview; fixed the managed-role check refusing startup data to role-assigned accounts | See "Access Is Granted by Roles Only" above |
 | Nov 13, 2026 | «بيانات المرتجعات» in the supplier profile: documentation-only return statements (SR-00001) with several items, reasons, photos, statuses, history and a printable A4/PDF sheet; touches no stock, ledger, vault or cost | See "«بيانات المرتجعات» — Supplier Return Statements" above |
 | Nov 13, 2026 | FIFO phases 1–2: pure FIFO cost-layer rules (19 tests) and a read-only historical preview report on a scratch copy (opening stock candidates, shortfall cases, monthly profit and stock value before/after); nothing live changed | See "FIFO Cost Layers — Phase 1 + 2 Only" above |

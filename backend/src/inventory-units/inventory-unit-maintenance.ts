@@ -5,6 +5,25 @@ const PRELABELS = ['inventoryunitprelabelbatches', 'inventoryunitprelabels', 'in
 const TRACKING = [...CORE_TRACKING, ...PRELABELS, 'inventoryunitcodes', 'inventorypacks', 'warehousetransfers'];
 const RELATED = ['products', 'transactions', 'inventorymovements', 'returnrequests', 'supplierreturnorders', 'purchaseorders', 'suppliers', 'supplierledgerentries', 'vaultentries', 'warehouses', ...TRACKING, 'inventoryunitcodecounters'];
 
+/**
+ * Collections introduced after full backups were already being taken. A FULL backup written
+ * before a collection existed cannot contain it, and the truth at that moment is "empty":
+ * the feature did not exist yet. Filling them with [] makes the restore WIPE the live copy
+ * (it only clears collections named in the backup), so the restored database is exactly the
+ * state at backup time — never live labels/packs pointing at products from the newer data.
+ * ⚠ Only datasets whose absence implies "no rows then" belong here. Core datasets
+ * (products, transactions, units, events, counters…) stay mandatory.
+ */
+export const LATER_INVENTORY_DATASETS = [...PRELABELS, 'inventorypacks', 'warehousetransfers'];
+
+/** For a full restore of an older backup: add the later datasets as empty. Returns what was added. */
+export function fillLaterInventoryDatasets(data: Record<string, any>): string[] {
+  if (!data || typeof data !== 'object') return [];
+  const added = LATER_INVENTORY_DATASETS.filter(name => !Array.isArray(data[name]));
+  for (const name of added) data[name] = [];
+  return added;
+}
+
 /** Reject unsafe partial maintenance. A true result requires an atomic full restore. */
 export async function assertInventoryUnitMaintenance(
   connection: Connection, collections: string[], backup?: Record<string, any[]>, fullRestore = false,
@@ -28,8 +47,11 @@ export async function assertInventoryUnitMaintenance(
   if (liveTracking.some(count => count > 0)) {
     // The caller must use one MongoDB transaction when this returns true. Never
     // permit a partial restore, or interpret missing datasets as empty datasets.
-    if (!fullRestore || ![...RELATED, 'users'].every(name => collections.includes(name) && Array.isArray(backup?.[name]))) {
-      throw new Error('Inventory units/events exist: a complete coordinated backup is required; partial restore/reset is blocked (coordinated offline restore is available for older backups)');
+    const missing = [...RELATED, 'users'].filter(name => !collections.includes(name) || !Array.isArray(backup?.[name]));
+    if (!fullRestore || missing.length) {
+      throw new Error(fullRestore
+        ? `النسخة الاحتياطية ناقصة ولا يمكن استعادتها بأمان مع وجود تتبع القطع — الجداول الناقصة: ${missing.join(', ')} (coordinated offline restore required)`
+        : 'يوجد تتبع للقطع (QR) في قاعدة البيانات: الاستعادة الجزئية أو المسح الجزئي يكسران الربط بين القطع والمخزون والفواتير. استخدم «استعادة كاملة» لنسخة احتياطية (coordinated offline restore)');
     }
     return true;
   }

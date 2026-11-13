@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { Cron } from '@nestjs/schedule';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, ClientSession } from 'mongoose';
-import { assertInventoryUnitMaintenance } from '../inventory-units/inventory-unit-maintenance';
+import { assertInventoryUnitMaintenance, fillLaterInventoryDatasets } from '../inventory-units/inventory-unit-maintenance';
 import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/settings.dto';
@@ -1653,8 +1653,14 @@ export class SettingsService {
     }
 
     let atomic: boolean | void;
+    let laterDatasets: string[] = [];
     try {
       this.validateBackup(backupData);
+      // ⚠ After validateBackup (format 2 checks counts against data keys). A backup taken
+      // before the label/pack/transfer collections existed holds none of them — restoring it
+      // must empty them too, or it was refused outright on any database with tracked units.
+      laterDatasets = fillLaterInventoryDatasets(backupData.data);
+      if (laterDatasets.length) this.logger.log(`Older backup: treating ${laterDatasets.join(', ')} as empty`);
       atomic = await assertInventoryUnitMaintenance(this.connection, Object.keys(backupData.data), backupData.data, true);
     }
     catch (e: any) { return { success: false, message: e.message }; }
@@ -1672,7 +1678,7 @@ export class SettingsService {
       await session.withTransaction(async () => {
         result = await this.restoreBackupData(backupData, safeFilename, session);
       }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } });
-      return { ...result, safetyBackup: safety.filename };
+      return { ...result, safetyBackup: safety.filename, emptiedLaterDatasets: laterDatasets };
     } catch (e: any) {
       this.logger.error('Coordinated restore failed', e?.message);
       const transactionHint = e?.code === 20 || /Transaction numbers are only allowed|replica set|mongos/i.test(e?.message || '')

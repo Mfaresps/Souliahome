@@ -3939,6 +3939,16 @@ body.dark-mode .inv2-pay-progress-bar{background:#6b7280}
 .inv2-credit-note-ico{display:flex;color:#2563eb;margin-top:2px;flex-shrink:0}
 .inv2-credit-note-head{font-weight:700;color:#1d4ed8;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .inv2-credit-note-sub{color:var(--muted);margin-top:2px}
+.cr-src{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.cr-src[hidden]{display:none!important}
+.cr-src-line{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:5px 8px;border-radius:7px;background:rgba(255,255,255,.6);border:1px solid rgba(59,130,246,.18);font-size:.76rem;color:var(--text)}
+.cr-src-what{display:inline-flex;align-items:center;gap:4px}
+.cr-src-what svg,.cr-src-what img{flex-shrink:0}
+.cr-src-meta{color:var(--muted);font-size:.72rem}
+.cr-src-amt{margin-inline-start:auto;font-weight:600}
+.cr-src-tag{font-size:.7rem;font-weight:600;color:#1d4ed8;background:rgba(59,130,246,.1);border-radius:999px;padding:1px 7px;margin-inline-start:4px}
+body.dark-mode .cr-src-line{background:rgba(255,255,255,.04);border-color:rgba(59,130,246,.3)}
+body.dark-mode .cr-src-tag{color:#93c5fd;background:rgba(59,130,246,.18)}
 body.dark-mode .inv2-credit-note{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3)}
 body.dark-mode .inv2-credit-note-ico{color:#60a5fa}
 body.dark-mode .inv2-credit-note-head{color:#93c5fd}
@@ -12354,6 +12364,17 @@ body.dark-mode .exp-kpi-stat.is-pending .exp-kpi-stat-val{color:#f59e0b}
 
 /* Search & Filter Bar */
 .exp-filter-bar{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+.exp-fsum{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin:-6px 0 14px;padding:10px 14px;background:var(--primary-pale,var(--bg-alt));border:1px solid var(--border);border-radius:12px;font-size:.84rem}
+.exp-fsum[hidden]{display:none!important}
+.exp-fsum-scope{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--text);font-weight:600}
+.exp-fsum-dot{color:var(--muted);font-weight:400}
+.exp-fsum-scope bdi{unicode-bidi:isolate;font-weight:500;color:var(--muted)}
+.exp-fsum-money{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}
+.exp-fsum-total{font-size:1.02rem;font-weight:700;color:var(--text)}
+.exp-fsum-lbl{font-size:.78rem;font-weight:500;color:var(--muted);margin-inline-end:4px}
+.exp-fsum-side{font-size:.8rem;color:var(--muted)}
+.exp-fsum-side.is-pending{color:#b45309}
+body.dark-mode .exp-fsum-side.is-pending{color:#fbbf24}
 .exp-search-wrap{position:relative}
 .exp-search-input{width:100%;padding:10px 40px 10px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:.88rem;font-family:inherit;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
 .exp-search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,66,.1)}
@@ -19685,6 +19706,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <button class="btn btn-outline btn-sm" onclick="clearExpFilters()" style="white-space:nowrap;flex-shrink:0" data-i18n="expClearBtn">مسح</button>
     </div>
   </div>
+
+  <!-- ── Filtered total — shown only while a filter narrows the list ── -->
+  <div id="exp-filter-summary" class="exp-fsum" hidden></div>
 
   <!-- ── Desktop Table ── -->
   <div class="exp-table-wrap">
@@ -54551,7 +54575,8 @@ function _buildEditMetaSummary(tx) {
   const discNow = num('#edit-tx-discount', tx.discount);
   const shipNow = isSale ? num('#edit-tx-shipcost', tx.shipCost) : 0;
   const totalNow = Math.max(0, itemsSum - discNow + shipNow);
-  const remainNow = Math.max(0, totalNow - dep);
+  const creditNow = _editCreditKept(tx, totalNow, dep).kept;
+  const remainNow = Math.max(0, totalNow - dep - creditNow);
 
   // ① المدفوع مقدماً — يُعرض بخزنته الحقيقية (`depMethod`)، وهي المصححة إن غُيّرت.
   const depMethodNow = val('#edit-tx-dep-method', tx.depMethod);
@@ -54568,9 +54593,14 @@ function _buildEditMetaSummary(tx) {
       `<span class="edit-tx-meta-lbl">${t('editTxPaidUpfront')}</span> <strong>${fmtJT(dep)}</strong>`,
       'is-pay',
     ));
-  } else {
+  } else if (!(creditNow > 0)) {
     // بلا عربون: تُذكر الحالة صراحةً بدل إخفاء السطر، فـ«لا شيء» معلومة أيضاً.
     parts.push(chip(ICO.deposit, `<span class="edit-tx-meta-empty">${t('editTxNoDeposit')}</span>`));
+  }
+  // سداد من رصيد المورد — ليس عربوناً ولا خزنة، فله شريحته.
+  if (creditNow > 0) {
+    const _cv = _creditSrcVaults(tx._id); _ensureCreditSources(tx._id);
+    parts.push(chip(_cv.length ? payMethodIcon(_cv[0], 14) : ICO.deposit, `<span class="edit-tx-meta-lbl">${currentLang === 'en' ? 'Earlier balance' : 'رصيد سابق مدفوع'}<span data-credit-chip="${esc(String(tx._id))}">${_cv.length ? ` · ${esc(_cv.map(_payMethodLabel).join(' + '))}` : ''}</span></span> <strong>${fmtJT(creditNow)}</strong>`, 'is-pay'));
   }
 
   // ② المتبقي — يظهر فقط عند وجوده. طريقته «متوقَّعة» لا مؤكدة: المال لم يتحرك بعد،
@@ -54583,7 +54613,7 @@ function _buildEditMetaSummary(tx) {
       `<span class="edit-tx-meta-lbl">${t('editTxRemainingDue')}</span> <strong>${fmtJT(remainNow)}</strong>`,
       'is-due',
     ));
-  } else if (dep > 0 && totalNow > 0) {
+  } else if ((dep > 0 || creditNow > 0) && totalNow > 0) {
     parts.push(chip(ICO.paid, `<span class="edit-tx-meta-lbl">${t('editTxFullyPaidChip')}</span>`, 'is-paid'));
   }
 
@@ -56216,6 +56246,87 @@ function _refreshEditSaveBtnVisibility() {
   btn.style.display = _editHasChanges() ? '' : 'none';
 }
 
+/* Supplier credit already applied to a purchase invoice (`creditApplied`). It is a real
+   settlement — the invoice was paid from the supplier's standing balance — and an edit
+   must keep it, never fall back to total − deposit (#900021 read 7,000 of credit as
+   12,000 of debt). Capped at what is left after the deposit; the server applies the
+   same rule and returns any excess to the supplier's credit. */
+function _editCreditKept(tx, total, deposit) {
+  if (!tx || tx.type !== 'مشتريات') return { applied: 0, kept: 0, returned: 0 };
+  const applied = Math.max(0, Number(tx.creditApplied) || 0);
+  const kept = Math.min(applied, Math.max(0, total - deposit));
+  return { applied, kept, returned: Math.round((applied - kept) * 100) / 100 };
+}
+
+/* ── Supplier credit: where it came from ───────────────────────────────────
+   A purchase settled from «رصيد عند المورد» used money paid EARLIER — usually an
+   advance that left a named vault. GET /supplier-ledger/credit-sources/:txId traces it
+   (FIFO over the supplier ledger). Fetched once per invoice, cached, and painted into
+   every element tagged data-credit-src / data-credit-vault for that invoice, so any
+   renderer can drop a slot in its template and call _ensureCreditSources(id). */
+const _CREDIT_SEG_METHOD = { cash: 'كاش', vodafone: 'فودافون كاش', instapay: 'Instapay', bank: 'تحويل بنكي' };
+const _creditSrcCache = {};
+function _creditSrcMethod(s) { const v = String(s?.vaultSeg || ''); return _CREDIT_SEG_METHOD[v] || v; }
+function _creditSrcVaults(id) {
+  const list = _creditSrcCache[id];
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.map(_creditSrcMethod).filter(Boolean))];
+}
+function _creditSrcDate(d) {
+  if (!d) return '';
+  const dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
+  return isNaN(dt) ? '' : dt.toLocaleDateString(currentLang === 'en' ? 'en-US' : 'ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function _creditSrcLinesHtml(id) {
+  const list = _creditSrcCache[id];
+  if (!Array.isArray(list) || !list.length) return '';
+  const en = currentLang === 'en';
+  return list.map(s => {
+    const m = _creditSrcMethod(s), date = _creditSrcDate(s.date);
+    const vaultHtml = m ? `${payMethodIcon(m, 14)} <b>${esc(_payMethodLabel(m))}</b>` : '';
+    let what;
+    if (s.entryType === 'advance-deposit' || (m && s.entryType === 'payment')) {
+      what = en ? `Paid earlier from ${vaultHtml || 'the vault'}` : `مدفوع سابقاً من خزنة ${vaultHtml || '—'}`;
+    } else if (s.entryType === 'return-credit') {
+      const ref = s.sourceRef ? ` <bdi>#${esc(s.sourceRef)}</bdi>` : '';
+      what = en ? `From a supplier return${ref}` : `من مرتجع للمورد${ref}`;
+    } else if (s.entryType === 'payment') {
+      const ref = s.sourceRef ? ` <bdi>#${esc(s.sourceRef)}</bdi>` : '';
+      what = en ? `Earlier overpayment${ref}` : `دفعة زائدة سابقة${ref}`;
+    } else {
+      what = en ? 'Earlier balance' : 'رصيد سابق';
+    }
+    const meta = [date && `<bdi>${esc(date)}</bdi>`, s.vaultTxNo && `<bdi>${esc(s.vaultTxNo)}</bdi>`].filter(Boolean).join(' · ');
+    return `<div class="cr-src-line"><span class="cr-src-what">${what}</span>${meta ? `<span class="cr-src-meta">${meta}</span>` : ''}<span class="cr-src-amt"><bdi>${fmtJ(s.amount)}</bdi></span></div>`;
+  }).join('');
+}
+function _creditVaultHtml(id) {
+  const v = _creditSrcVaults(id);
+  if (!v.length) return '';
+  const en = currentLang === 'en';
+  return `${v.map(m => payMethodIcon(m, 16)).join('')}<span>${v.map(m => esc(_payMethodLabel(m))).join(' + ')}</span><span class="cr-src-tag">${en ? 'earlier balance' : 'رصيد سابق مدفوع'}</span>`;
+}
+function _paintCreditSources(id) {
+  const key = CSS.escape(String(id));
+  document.querySelectorAll(`[data-credit-src="${key}"]`).forEach(el => { const h = _creditSrcLinesHtml(id); el.innerHTML = h; el.hidden = !h; });
+  document.querySelectorAll(`[data-credit-vault="${key}"]`).forEach(el => { const h = _creditVaultHtml(id); if (h) el.innerHTML = h; });
+  document.querySelectorAll(`[data-credit-chip="${key}"]`).forEach(el => { const v = _creditSrcVaults(id); if (v.length) el.textContent = ` · ${v.map(_payMethodLabel).join(' + ')}`; });
+}
+function _ensureCreditSources(id) {
+  if (!id) return '';
+  if (Array.isArray(_creditSrcCache[id])) return '';
+  if (_creditSrcCache[id] === 'loading') return '';
+  _creditSrcCache[id] = 'loading';
+  api(`/supplier-ledger/credit-sources/${encodeURIComponent(id)}`)
+    .then(list => { _creditSrcCache[id] = Array.isArray(list) ? list : []; _paintCreditSources(id); })
+    .catch(() => { delete _creditSrcCache[id]; });
+  return '';
+}
+function _creditSrcSlot(id) {
+  const h = _creditSrcLinesHtml(id);
+  return `<div class="cr-src" data-credit-src="${esc(String(id))}"${h ? '' : ' hidden'}>${h}</div>${_ensureCreditSources(id)}`;
+}
+
 function recalcEditTx() {
   // Validate applied codes against current edit cart; auto-remove violated ones
   _checkEditAppliedCodesValidity();
@@ -56244,7 +56355,8 @@ function recalcEditTx() {
     depInput.title = depositExceedsTotal ? `${t('txMaxAmount')}: ${fmtN(total)} EGP` : '';
   }
   const deposit = Math.min(depositRaw, total > 0 ? total : 0);
-  const remaining = Math.max(0, total - deposit);
+  const _cr = _editCreditKept(origTx, total, deposit);
+  const remaining = Math.max(0, total - deposit - _cr.kept);
   const el = qs('#edit-tx-summary');
   if (!el) return;
 
@@ -56329,6 +56441,8 @@ function recalcEditTx() {
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('txItemsTotalLabel')}</span><strong>${fmtJ(itemsTotal)}</strong></div>
       ${discRowHtml}
       <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('editTxDepositPrepaid')} <span class="text-xs text-muted">(${esc(depMethod)})</span></span><span style="color:var(--green)">${fmtJ(deposit)}</span></div>
+      ${_cr.applied > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>${t('txSumSupplierCreditUsed')}</span><span style="color:var(--green)">${fmtJ(_cr.kept)}</span></div><div style="margin-bottom:6px">${_creditSrcSlot(origTx._id)}</div>` : ''}
+      ${_cr.returned > 0 ? `<div style="margin-bottom:6px;padding:7px 10px;background:rgba(37,99,235,.07);border-radius:8px;font-size:.78rem;border-inline-start:3px solid #2563eb">${currentLang === 'en' ? `<bdi>${fmtJ(_cr.returned)}</bdi> goes back to your credit with the supplier` : `يرجع <bdi>${fmtJ(_cr.returned)}</bdi> لرصيدك عند المورد`}</div>` : ''}
       <div style="display:flex;justify-content:space-between;padding-top:6px;border-top:2px solid var(--border);font-size:1rem;margin-bottom:4px"><strong>${t('editTxFinalTotal')}</strong><strong style="color:var(--primary)">${fmtJ(total)}</strong></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px"><span>${t('txRemainingSupplierRow')}</span><strong style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmtJ(remaining) : '<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> ' + t('txFullyPaidLabel')}</strong></div>
       ${vaultDeltaHtml}`;
@@ -56596,7 +56710,7 @@ async function saveEditMovement(id) {
   const confirmMsg = changes.map(c => c.text).join('\n');
 
   const isPurchaseEdit = tx.type === 'مشتريات';
-  const newRemaining = Math.max(0, total - deposit);
+  const newRemaining = Math.max(0, total - deposit - _editCreditKept(tx, total, deposit).kept);
   const editDiscCodeId = qs('#edit-tx-discount-code-id')?.value || '';
   const editDiscCode = qs('#edit-tx-discount-code')?.value || '';
   const editDiscCodeType = qs('#edit-tx-discount-code-type')?.value || '';
@@ -63332,7 +63446,7 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
           ${(tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 ? `
           <div class="inv-breakdown">
             ${_previewDepositTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? t('ivDepositPaid') : t('ivPrepaidDeposit')}${_spInvoiceVaultLabel(tx) ? `<span style="font-size:.78rem;opacity:.7">· ${esc(_spInvoiceVaultLabel(tx))}</span>` : ''}</span><span class="amount">${fmtJ(_previewDepositTotal)}</span></div>` : ''}
-            ${_creditUsedM > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>${t('ivCreditSettled')}</span><span class="amount">${fmtJ(_creditUsedM)}</span></div>` : ''}
+            ${_creditUsedM > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>${t('ivCreditSettled')}</span><span class="amount">${fmtJ(_creditUsedM)}</span></div>${_creditSrcSlot(tx._id)}` : ''}
             ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? t('ivExtraPayments') : t('ivmCollectedFrom', { v: tx.shipCo || t('ivmShippingGeneric') })}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${esc(_payMethodLabel(tx.collectMethod))}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
             ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label" style="display:flex;align-items:center;gap:5px">${isPurchase ? t('ivRemainingSupplier') : t('ivRemainingCollect')}${_showRemainingMethod ? `<span style="font-size:.75rem;opacity:.7;display:inline-flex;align-items:center;gap:3px">${payMethodIcon(tx.payment,12)}${esc(_payMethodLabel(tx.payment))}</span>` : ''}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
           </div>` : ''}
@@ -64594,12 +64708,13 @@ function renderInvoiceViewPage() {
           <div>
             <div class="inv2-credit-note-head">${t('ivCreditSettled')} · <bdi>${fmt(_creditUsed)}</bdi></div>
             <div class="inv2-credit-note-sub">${_noCashMoved ? t('ivCreditNoCashNote') : t('ivCreditPartialNote')}</div>
+            ${_creditSrcSlot(tx._id)}
           </div>
         </div>` : ''}
         <div class="inv2-sec-div"></div>
         ${isReturn ? `<div class="inv2-kv"><span class="k">${t('ivRefundedToCustomer')}</span><span class="v" style="font-weight:700">${fmt(tx.total||0)}</span></div>` : ''}
         ${(tx.depositReceipts || []).length && !isReturn ? _spInvoiceReceiptsHtml(tx) : _payMethodForDisplay ? `<div class="inv2-kv"><span class="k">${isReturn ? t('ivRefundMethod') : _depTotal>0 ? t(isPurchase?'ivDepositPaid':'ivPrepaidDeposit') : t('ivPaymentMethod')}</span><span class="v" title="${esc(_payMethodLabel(_payMethodForDisplay))}" aria-label="${esc(_payMethodLabel(_payMethodForDisplay))}">${!isReturn && _depTotal>0 ? fmt(_depTotal) : ''}${payMethodIcon(_payMethodForDisplay,18)}</span></div>` : ''}
-        ${_noCashMoved ? `<div class="inv2-kv"><span class="k">${t('ivPaymentMethod')}</span><span class="v">${_CREDIT_ICON}${t('ivPaidFromCredit')}</span></div>` : ''}
+        ${_noCashMoved ? `<div class="inv2-kv"><span class="k">${t('ivPaymentMethod')}</span><span class="v" data-credit-vault="${esc(String(tx._id))}">${_creditVaultHtml(tx._id) || `${_CREDIT_ICON}${t('ivPaidFromCredit')}`}</span></div>` : ''}
         ${isReturn && _payMethodForDisplay ? `<div class="inv2-kv"><span class="k">${t('ivRefundVault')}</span><span class="v">${esc(_payMethodLabel(_payMethodForDisplay))}</span></div>` : ''}
         <div class="inv2-kv"><span class="k">${t('ivInvoiceNo')}</span><span class="v" onclick="navigator.clipboard?.writeText('${esc(String(tx.ref || invNumber))}').then(()=>toast(t('ivInvoiceNoCopied')))" title="${esc(t('ivCopyInvoiceNoTitle'))}" style="cursor:pointer;direction:ltr">${invNumber}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="opacity:.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></span></div>
         ${tx.employee ? `<div class="inv2-kv"><span class="k">${t('ivEmployee')}</span><span class="v">${esc(tx.employee)}</span></div>` : ''}
@@ -76124,6 +76239,7 @@ function renderExpenses() {
     return true;
   });
   data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  _renderExpFilterSummary(data, { from, to, cat, acc, search });
 
   const EXP_PAGE_SIZE = expPerPage;
   const total = data.length;
@@ -76229,6 +76345,38 @@ function renderExpenses() {
   renderPagination('exp-pagination', total, expPage, EXP_PAGE_SIZE, 'setExpPage', [25,50,100], 'setExpPerPage');
 }
 const debouncedRenderExpenses = debounce(() => { expPage = 1; renderExpenses(); }, 250);
+
+/* Total of the rows the filters left — the KPI strip above counts everything,
+   so a filtered list (one category, one period) had no total of its own.
+   Sums the WHOLE filtered result, not the current page. Approved is the lead
+   figure (it is what the reports count as spent); pending/rejected are stated
+   beside it only when present. Amounts are admin-only, like the KPI strip. */
+function _renderExpFilterSummary(data, f) {
+  const box = qs('#exp-filter-summary');
+  if (!box) return;
+  const active = !!(f.from || f.to || f.cat || f.acc || f.search || expStatusFilter !== 'all');
+  if (!active) { box.hidden = true; box.innerHTML = ''; return; }
+  const ar = currentLang !== 'en';
+  const sum = (st) => data.filter(e => e.status === st).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const cnt = (st) => data.filter(e => e.status === st).length;
+  const locale = ar ? 'ar-EG-u-nu-latn' : 'en-US';
+  const d = (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '…';
+  const parts = [];
+  if (f.cat) parts.push(esc(expCatLabel(f.cat)));
+  if (f.acc) parts.push(esc(_payMethodLabel(f.acc)));
+  if (f.from || f.to) parts.push(`<bdi>${esc(d(f.from))} — ${esc(d(f.to))}</bdi>`);
+  const n = data.length;
+  const countTxt = ar ? `${fmtN(n)} مصروف` : `${fmtN(n)} expense${n === 1 ? '' : 's'}`;
+  let money = '';
+  if (isAdmin()) {
+    const appr = sum('معتمد'), pend = sum('معلق'), rej = sum('مرفوض');
+    money = `<span class="exp-fsum-total"><span class="exp-fsum-lbl">${ar ? 'الإجمالي المعتمد' : 'Approved total'}</span> ${fmtJ(appr)}</span>`;
+    if (cnt('معلق')) money += `<span class="exp-fsum-side is-pending">${ar ? 'معلق' : 'Pending'} ${fmtJ(pend)}</span>`;
+    if (cnt('مرفوض')) money += `<span class="exp-fsum-side">${ar ? 'مرفوض' : 'Rejected'} ${fmtJ(rej)}</span>`;
+  }
+  box.innerHTML = `<div class="exp-fsum-scope">${parts.length ? parts.join('<span class="exp-fsum-dot">·</span>') + '<span class="exp-fsum-dot">·</span>' : ''}<span>${countTxt}</span></div><div class="exp-fsum-money">${money}</div>`;
+  box.hidden = false;
+}
 
 function clearExpFilters() {
   qs('#exp-from').value = ''; qs('#exp-to').value = ''; qs('#exp-cat-filter').value = ''; qs('#exp-acc-filter').value = ''; qs('#exp-search').value = '';

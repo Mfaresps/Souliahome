@@ -2154,11 +2154,20 @@ export class TransactionsService {
           );
         }
 
-        // إعادة حساب المتبقي وحالة الدفع
-        const newRemaining = Math.max(0, newTotal - newDeposit);
+        // إعادة حساب المتبقي وحالة الدفع.
+        // ⚠ الرصيد الآجل المطبَّق (`creditApplied`) سدادٌ حقيقي للفاتورة، ولا يُرسله العميل
+        // في التعديل — فهو يُقرأ من الفاتورة المحفوظة. نسيانه هنا كان يحوّل فاتورة سُدِّد منها
+        // 7,000 من الرصيد إلى دَيْن كامل عند أي تعديل (#900021)، ويُضيف 7,000 دَيْناً وهمياً
+        // في سجل المديونية. لا يتجاوز الرصيد المطبَّق ما بقي بعد العربون: إن نزل الإجمالي
+        // تحته، يرجع الفائض لرصيد المورد عبر فرق السجل أدناه (المحسوب على المبلغ غير المقصوص).
+        const creditBefore = Math.max(0, Number((existing as unknown as { creditApplied?: number }).creditApplied) || 0);
+        const creditKept = Math.min(creditBefore, Math.max(0, newTotal - newDeposit));
+        const owedRaw = Math.round((newTotal - newDeposit - creditBefore) * 100) / 100;
+        const newRemaining = Math.max(0, newTotal - newDeposit - creditKept);
         if (tx) {
           tx.remaining = newRemaining;
           tx.payStatus = newRemaining <= 0 ? 'مكتمل' : 'معلق';
+          if (creditKept !== creditBefore) (tx as unknown as { creditApplied: number }).creditApplied = creditKept;
           await tx.save();
         }
 
@@ -2166,7 +2175,10 @@ export class TransactionsService {
         // still owe), NOT on `total`: a total change absorbed entirely by the deposit — the money
         // already left the vault — changes nothing about the outstanding debt. Without this, a
         // discount like #012's (20,880 → 19,488) silently left 1,392 of phantom debt in the ledger.
-        const remainingDelta = newRemaining - previousRemaining;
+        // owedRaw (not the clamped newRemaining): a total pushed below deposit + credit leaves the
+        // supplier owing us the difference, i.e. that slice of credit returns to the balance.
+        // Without credit this is exactly the old rule (newRemaining).
+        const remainingDelta = Math.round(((creditBefore > 0 ? owedRaw : newRemaining) - previousRemaining) * 100) / 100;
         if (remainingDelta !== 0) {
           await this.adjustSupplierLedgerForPayableChange(
             tx || existing,

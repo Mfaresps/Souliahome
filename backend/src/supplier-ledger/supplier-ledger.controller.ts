@@ -55,6 +55,16 @@ export class SupplierLedgerController {
     return this.supplierLedgerService.findBySupplier(supplierId, query);
   }
 
+  /**
+   * Where the credit used on one purchase invoice came from (advance payment + its vault, a
+   * supplier return, …). Read by the invoice page beside the credit line it explains; it only
+   * names amounts the invoice itself already shows, so it carries no extra perm.
+   */
+  @Get('credit-sources/:transactionId')
+  async creditSources(@Param('transactionId') transactionId: string) {
+    return this.supplierLedgerService.creditSourcesForTransaction(transactionId);
+  }
+
   @Get('supplier/:supplierId/balance')
   async getBalance(@Param('supplierId') supplierId: string) {
     return this.supplierLedgerService.getBalanceSummary(supplierId);

@@ -1,3 +1,4 @@
+import { allocateCreditSources, CreditSource } from './credit-sources.util';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -130,6 +131,16 @@ export class SupplierLedgerService {
       };
     }
     return this.ledgerModel.find(query).sort({ createdAt: 1 }).exec();
+  }
+
+  /** The earlier ledger events that funded the credit a purchase invoice consumed — see
+   *  allocateCreditSources. Empty when the invoice used no credit. */
+  async creditSourcesForTransaction(transactionId: string): Promise<CreditSource[]> {
+    const used: any = await this.ledgerModel.findOne({ entryType: 'credit-used', sourceId: String(transactionId) }).lean().exec();
+    if (!used) return [];
+    const rows: any[] = await this.ledgerModel.find({ supplierId: used.supplierId }).sort({ createdAt: 1, _id: 1 }).lean().exec();
+    const idx = rows.findIndex((r) => String(r._id) === String(used._id));
+    return idx < 0 ? [] : allocateCreditSources(rows, idx);
   }
 
   async findById(id: string): Promise<SupplierLedgerEntryDocument | null> {

@@ -1557,6 +1557,8 @@ describe('TransactionsService (integration with mocks)', () => {
       txModel.findByIdAndUpdate.mockReturnValue({
         exec: jest.fn().mockResolvedValue(tx),
       });
+      // update() writes with findOneAndUpdate now; without this the saved doc had no save().
+      txModel.findOneAndUpdate = jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(tx) });
     }
     /** القيود المكتوبة على الخزنة من هذا التعديل فقط. */
     function vaultAmounts(): number[] {
@@ -1590,6 +1592,38 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(supplierLedgerService.postManualAdjustment).toHaveBeenCalledWith(
         expect.objectContaining({ amount: 7940 }),
       );
+    });
+
+    // #900021: 12,000 purchase, 7,000 paid from earlier supplier credit, 5,000 owed.
+    // An edit (deposit 0, nothing about credit in the DTO) used to read it as 12,000 of debt.
+    it('رصيد المورد المطبَّق يبقى سداداً عند التعديل — المتبقي 5,000 لا 12,000 ولا دَيْن وهمي', async () => {
+      const tx = buildInvoice({ total: 12000, deposit: 0, creditApplied: 7000, remaining: 5000, payStatus: 'معلق' });
+      mockUpdatable(tx);
+      await service.update('tx-cash-rule', { total: 12000, deposit: 0, notes: 'x' } as any, 'Fares', '', 'admin');
+      expect(tx.remaining).toBe(5000);
+      expect(tx.creditApplied).toBe(7000);
+      expect(supplierLedgerService.postManualAdjustment).not.toHaveBeenCalled();
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
+    });
+
+    it('فاتورة حُفظت بالخطأ (متبقي 12,000): إعادة الحفظ ترجّع 7,000 من الدَيْن الوهمي', async () => {
+      const tx = buildInvoice({ total: 12000, deposit: 0, creditApplied: 7000, remaining: 12000, payStatus: 'معلق' });
+      mockUpdatable(tx);
+      await service.update('tx-cash-rule', { total: 12000, deposit: 0, notes: 'y' } as any, 'Fares', '', 'admin');
+      expect(tx.remaining).toBe(5000);
+      expect(supplierLedgerService.postManualAdjustment).toHaveBeenCalledWith(expect.objectContaining({ amount: -7000 }));
+    });
+
+    it('نزول الإجمالي تحت الرصيد المطبَّق يرجّع الفائض لرصيد المورد', async () => {
+      const tx = buildInvoice({ total: 12000, deposit: 0, creditApplied: 7000, remaining: 5000, payStatus: 'معلق' });
+      mockUpdatable(tx);
+      await service.update('tx-cash-rule', { total: 6000, deposit: 0 } as any, 'Fares', '', 'admin');
+      expect(tx.remaining).toBe(0);
+      expect(tx.payStatus).toBe('مكتمل');
+      expect(tx.creditApplied).toBe(6000);
+      // 5,000 of debt gone + 1,000 back to credit = −6,000 on the supplier balance.
+      expect(supplierLedgerService.postManualAdjustment).toHaveBeenCalledWith(expect.objectContaining({ amount: -6000 }));
+      expect(vaultService.addSystemEntry).not.toHaveBeenCalled();
     });
 
     it('يصحّح payStatus المضلِّل فيصبح «معلق» بعد التعديل', async () => {
@@ -1872,7 +1906,7 @@ describe('TransactionsService (integration with mocks)', () => {
         '',
         'admin',
       );
-      const entry = txModel.findByIdAndUpdate.mock.calls[0][1].editHistory.at(-1);
+      const entry = txModel.findOneAndUpdate.mock.calls[0][1].editHistory.at(-1);
       expect(entry.before.depMethod).toBe('Instapay');
       expect(entry.after.depMethod).toBe('فودافون كاش');
     });
