@@ -44631,7 +44631,7 @@ function getTxAvailableStock(productId) {
 }
 
 function getEditAvailableStock(productId, includeOriginal = false) {
-  const tx = transactions.find(item => item._id === editTxId);
+  const tx = _editTx();
   const stock = getProductAvailableStock(productId, tx?.type === 'مبيعات' ? tx.warehouseCode || 'MAIN' : null);
   if (stock < 0 || !includeOriginal || tx?.type !== 'مبيعات' || tx.cancelled || tx.archived) return stock;
   const product = products.find(item => item._id === productId);
@@ -44648,7 +44648,7 @@ function getPickerAvailableStock(productId) {
 
 function updateSaleWarehouseCaption() {
   const overlay = qs('#tx-picker-overlay');
-  const editing = overlay?._editMode ? transactions.find(item => item._id === editTxId) : null;
+  const editing = overlay?._editMode ? _editTx() : null;
   const sale = !overlay?._poMode && (editing ? editing.type === 'مبيعات' : txType === 'مبيعات');
   const location = editing?.warehouseCode || window.SouliaWarehouses?.read('tx') || 'MAIN';
   for (const id of ['tx-stock-warehouse', 'tx-picker-warehouse']) {
@@ -46079,7 +46079,7 @@ let _editDiscSuggestions = [];
 let _editDiscRemovedForReapply = {};
 
 function _computeEditDiscountSuggestions() {
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   if (!tx || tx.type !== 'مبيعات') { _editDiscSuggestions = []; return; }
   const now = new Date();
   const bundles = (settings.discountBundles || []).filter(b => b.active);
@@ -54502,6 +54502,15 @@ let editManualDiscount = 0; // separate manual discount for edit modal
 // every writer of #edit-tx-discount adds it back, so editing a code cannot charge the customer shipping.
 let editShipDiscount = 0;
 let editTxId = '';
+// The invoice open in the edit window. Every lookup goes through _editTx(): if the transaction list
+// is reloaded in the background while the window is open, a bare transactions.find() missed the
+// invoice — a purchase was then treated as a sale (picker showed SELL prices, «Stock in» caption).
+let _editTxRef = null;
+function _editTx() {
+  if (!editTxId) return null;
+  return (Array.isArray(transactions) ? transactions.find(x => x._id === editTxId) : null)
+    || (_editTxRef && _editTxRef._id === editTxId ? _editTxRef : null);
+}
 /* مفتاح لافتة التحذير داخل مودال التعديل (يُملأ من txEditGate عند السماح المشروط) */
 let _editTxWarnKey = '';
 let _editOrigNotes = ''; // notes snapshot at modal-open — compared against on save so a background socket update to tx.notes (e.g. from another user/Bosta sync) can't be mistaken for an edit the user made
@@ -54764,7 +54773,7 @@ function toggleEditMetaPanel(force) {
 // يعيد رسم سطر الملخص بعد أي تعديل في حقول القسم
 function _refreshEditMetaSummary() {
   const el = qs('#edit-tx-meta-summary');
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   if (el && tx) el.innerHTML = _buildEditMetaSummary(tx);
 }
 
@@ -54791,6 +54800,9 @@ function _onEditSupplierChange(sel) {
   const phone = opt ? (opt.dataset.phone || '') : '';
   const ph = qs('#edit-tx-phone');
   if (ph) ph.value = phone;
+  // Products added from now on are priced from the NEWLY chosen supplier.
+  const tx = _editTx();
+  if (tx && tx.type === 'مشتريات') _editLoadSupplierPrices(tx, opt?.dataset?.id || '');
 }
 function _onNewSupplierChange(sel) {
   const opt = sel.options[sel.selectedIndex];
@@ -54902,7 +54914,7 @@ function _salePriceOf(p) {
 }
 /** Price a line added while editing an existing sale (that sale's business date). */
 function _editTxDay() {
-  const tx = (typeof editTxId !== 'undefined' && editTxId) ? (transactions || []).find(x => x._id === editTxId) : null;
+  const tx = _editTx();
   return String(tx?.transactionDate || '').slice(0, 10) || String(tx?.date || '').slice(0, 10) || todayLocalISO();
 }
 function _editSalePrice(p) {
@@ -55066,7 +55078,7 @@ function _editOfferProduct(it) {
   return (it?.productId ? products.find(p => p._id === it.productId) : null) || (it?.code ? products.find(p => p.code === it.code) : null) || null;
 }
 async function _editOfferOff(i) {
-  const it = editTxItems[i]; const tx = transactions.find(x => x._id === editTxId);
+  const it = editTxItems[i]; const tx = _editTx();
   if (await _offerTakeOff(it, _editOfferProduct(it), { day: _editTxDay(), shopify: tx?.source === 'shopify' })) { renderEditTxItems(); recalcEditTx(); }
 }
 function _editOfferBack(i) {
@@ -55548,22 +55560,55 @@ function releaseEditMovementLock(id) {
 let _editSupplierPrices = {};
 let _editSupplierPricesFor = '';
 let _editSupplierPricesSeq = 0;
-async function _editLoadSupplierPrices(tx) {
+let _editSupplierPricesTask = null;
+/** The supplier the edit window prices from: the one chosen in its supplier field, else the
+ *  invoice's own (by id, then by name). Loads the supplier list first if it is not in memory —
+ *  without it a name-only invoice found no supplier and every new line silently took the card price. */
+async function _editResolveSupplierId(tx, override) {
+  if (override) return String(override);
+  // The supplier field is read only after the user changed it (override !== undefined); on open
+  // it may not be drawn yet, or belong to a window closed earlier.
+  const sel = override !== undefined ? qs('#edit-tx-client') : null;
+  const opt = sel && sel.options[sel.selectedIndex];
+  if (opt?.dataset?.id) return opt.dataset.id;
+  if (tx?.supplierId) return String(tx.supplierId);
+  const nm = String((sel?.value) || tx?.client || '').trim().toLowerCase();
+  const find = () => (Array.isArray(suppliers) ? suppliers : []).find(s => String(s.name || '').trim().toLowerCase() === nm)?._id || '';
+  if (!find() && !(Array.isArray(suppliers) && suppliers.length)) {
+    try { const list = await api('/suppliers'); if (Array.isArray(list) && list.length) suppliers = list; } catch (_) {}
+  }
+  return String(find() || '');
+}
+function _editLoadSupplierPrices(tx, supplierId) {
   const seq = ++_editSupplierPricesSeq;
   _editSupplierPrices = {}; _editSupplierPricesFor = '';
-  const nm = String(tx.client || '').trim().toLowerCase();
-  const sid = tx.supplierId || ((Array.isArray(suppliers) ? suppliers : []).find(s => String(s.name || '').trim().toLowerCase() === nm)?._id) || '';
-  if (!sid) return;
-  try {
-    const prices = await api('/product-suppliers?supplierId=' + encodeURIComponent(sid));
-    if (seq !== _editSupplierPricesSeq) return; // another invoice was opened meanwhile
-    _editSupplierPrices = prices && typeof prices === 'object' ? prices : {};
-    _editSupplierPricesFor = tx._id;
-  } catch (e) { /* the card price stays the fallback */ }
+  _editSupplierPricesTask = (async () => {
+    const sid = await _editResolveSupplierId(tx, supplierId);
+    if (!sid || seq !== _editSupplierPricesSeq) return;
+    try {
+      const prices = await api('/product-suppliers?supplierId=' + encodeURIComponent(sid));
+      if (seq !== _editSupplierPricesSeq) return; // another invoice / supplier was chosen meanwhile
+      _editSupplierPrices = prices && typeof prices === 'object' ? prices : {};
+      _editSupplierPricesFor = tx._id;
+    } catch (e) { /* the card price stays the fallback */ }
+    // The product list may already be open with card prices — redraw it with the supplier's.
+    const overlay = qs('#tx-picker-overlay');
+    if (overlay?._editMode && overlay.style.display !== 'none') filterEditPicker(qs('#tx-picker-q')?.value || '');
+  })();
+  return _editSupplierPricesTask;
+}
+function _editSupplierPriceOf(p) {
+  const sp = _editSupplierPricesFor && _editSupplierPricesFor === editTxId ? _editSupplierPrices[p._id] : null;
+  return sp && Number.isFinite(Number(sp.price)) ? sp : null;
 }
 function _editPurchasePrice(p) {
-  const sp = _editSupplierPricesFor && _editSupplierPricesFor === editTxId ? _editSupplierPrices[p._id] : null;
-  return sp && Number.isFinite(Number(sp.price)) ? Number(sp.price) : (p.buyPrice || 0);
+  const sp = _editSupplierPriceOf(p);
+  return sp ? Number(sp.price) : (p.buyPrice || 0);
+}
+/** Under the price in the product list: where it comes from, so nobody has to guess. */
+function _editPurchasePriceTag(p) {
+  if (_editSupplierPriceOf(p)) return `<span class="tx-item-price-src" title="${esc(t('psTagSupplierTitle'))}">${esc(t('psTagSupplier'))}</span>`;
+  return `<span class="tx-item-price-src is-card" title="${esc(t('psTagCardTitle'))}">${esc(t('psTagCard'))}</span>`;
 }
 
 async function openEditMovement(id) {
@@ -55607,6 +55652,7 @@ async function openEditMovement(id) {
   }
 
   editTxId = id;
+  _editTxRef = tx;
   // دمج العناصر المكررة بنفس المنتج عند التحميل — يطابق بـ productId أو code أو name
   editTxItems = (tx.items || []).reduce((acc, it) => {
     // Resolve productId from live products list — verify stored ID still exists, fallback to code/name
@@ -55789,7 +55835,7 @@ async function openEditMovement(id) {
 function renderEditTxItems() {
   const container = qs('#edit-tx-items');
   if (!container) return;
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   const isSale = tx?.type === 'مبيعات';
   // عدّاد الأصناف — يُحدَّث هنا لأن هذه الدالة تُستدعى بعد كل إضافة/حذف/دمج
   const countEl = qs('#edit-tx-items-count');
@@ -55817,7 +55863,7 @@ function renderEditTxItems() {
     const rawAvailable = resolvedProductId ? getEditAvailableStock(resolvedProductId) : null;
     // When editing an existing sale, the original qty of this product is already deducted from
     // inventory. Add it back so we compare against "what would be available if this edit hadn't happened".
-    const originalTx = transactions.find(t => t._id === editTxId);
+    const originalTx = _editTx();
     const originalQtyForProduct = resolvedProductId && originalTx?.items
       ? (originalTx.items.filter(oi => {
           const op = products.find(p => p._id === (oi.productId || '') || p.code === (oi.code || '') || p.name === (oi.name || ''));
@@ -55945,7 +55991,7 @@ function removeEditTxItem(i) {
   renderEditTxItems(); recalcEditTx(); _editDsbDismissed = false; _renderEditDiscountSuggestionBanner();
 }
 function openEditProductPicker() {
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   const savedType = txType;
   txType = tx?.type || txType;
   const overlay = qs('#tx-picker-overlay');
@@ -55972,7 +56018,7 @@ function openEditProductPicker() {
 }
 function filterEditPicker(q) {
   updateSaleWarehouseCaption();
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   const isSale = tx?.type === 'مبيعات';
   const isPurchase = tx?.type === 'مشتريات';
   const tokens = normalizeUiSearch(q).split(/\s+/).filter(Boolean);
@@ -56002,14 +56048,14 @@ function filterEditPicker(q) {
         ${p.code ? `<div class="tx-picker-code">${esc(p.code)}</div>` : ''}
         ${stockBadge}
       </div>
-      <div class="tx-picker-price">${isPurchase ? fmtJ(price) : _offerPriceHtml(p, _editTxDay(), { compact: true })}</div>
+      <div class="tx-picker-price">${isPurchase ? `${fmtJ(price)}<div class="tx-picker-price-src">${_editPurchasePriceTag(p)}</div>` : _offerPriceHtml(p, _editTxDay(), { compact: true })}</div>
       ${addCtrl}
     </div>`;
   }).join('');
 }
 /** Sales edits are capped by available stock; purchases/returns are uncapped (-1). */
 function _editPickerMaxFor(productId) {
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   if (tx?.type !== 'مبيعات') return -1;
   const stock = getEditAvailableStock(productId, true);
   return stock >= 0 ? stock : -1;
@@ -56023,7 +56069,7 @@ function _editPickerSync(productId) {
 }
 function editPickerAddItem(productId) {
   const p = products.find(x => x._id === productId); if (!p) return;
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   const price = tx?.type === 'مشتريات' ? _editPurchasePrice(p) : _editSalePrice(p);
   const existing = editTxItems.find(it => it.productId === productId);
   if (existing) {
@@ -56041,7 +56087,7 @@ function editPickerChangeQty(productId, delta) {
   const newQty = editTxItems[idx].qty + delta;
   if (newQty <= 0) { editTxItems.splice(idx, 1); }
   else {
-    const tx = transactions.find(t => t._id === editTxId);
+    const tx = _editTx();
     if (delta > 0 && tx?.type === 'مبيعات') {
       const stock = getEditAvailableStock(productId, true);
       if (stock >= 0 && newQty > stock) { toast(`الكمية المتاحة هي ${stock} فقط`, true); _editPickerSync(productId); return; }
@@ -56356,7 +56402,7 @@ function _editInvoiceLinksChanged(tx) {
 }
 
 function _editHasChanges() {
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   if (!tx) return false;
 
   // روابط فواتير المورد — إضافتها أو حذفها تعديل يستحق الحفظ.
@@ -56443,7 +56489,7 @@ function _editHasChanges() {
 function _syncEditDepMethodField() {
   const wrap = qs('#edit-tx-dep-method-wrap');
   if (!wrap) return;
-  const tx = transactions.find(t => t._id === editTxId);
+  const tx = _editTx();
   const dep = Number(qs('#edit-tx-deposit')?.value) || 0;
   const hadDep = (Number(tx?.deposit) || 0) > 0;
   if (dep > 0) wrap.removeAttribute('hidden'); else wrap.setAttribute('hidden', '');
@@ -56550,7 +56596,7 @@ function recalcEditTx() {
     const rowEl = document.querySelector(`.edit-row-total[data-row="${i}"]`);
     if (rowEl) rowEl.textContent = fmtJT(it.qty * it.price);
   });
-  const origTx = transactions.find(t => t._id === editTxId);
+  const origTx = _editTx();
   const isPurTx = origTx?.type === 'مشتريات';
   const isSaleTx = origTx?.type === 'مبيعات';
   const itemsTotal = editTxItems.reduce((s, it) => s + (it.qty * it.price), 0);
