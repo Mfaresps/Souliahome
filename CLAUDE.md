@@ -18,8 +18,9 @@ A card at the top of Settings ← البيانات, **local copy only**: downloa
 the live server, takes a safety backup of local data, then runs the same full restore as «استرجاع
 كامل» (vault password required). Button only — nothing syncs on start.
 - **Live** exports: `GET /api/settings/sync-export` (`live-sync-export.controller.ts`), no JWT —
-  header `x-soulia-sync-token` must equal `LIVE_SYNC_EXPORT_TOKEN` (≥32 chars, docker-compose reads
-  it from the server's `.env`). Unset → 404. Body = `SettingsService.buildBackupData()` (the same
+  header `x-soulia-sync-token` must equal `LIVE_SYNC_EXPORT_TOKEN` (≥32 chars). Set it in Jenkins as a
+  Secret-text credential `soulia-live-sync-token`; the Deploy stage passes it to docker-compose (a
+  missing credential deploys normally with the export off). The server's `.env` also works. Unset → 404. Body = `SettingsService.buildBackupData()` (the same
   document `createBackup` writes; secrets stripped by `backupConfiguration`). Nothing written on live.
 - **Local** imports: `LIVE_SYNC_URL` + `LIVE_SYNC_TOKEN` in `backend/.env`; `GET live-sync/status`,
   `POST live-sync` (admin + vault password) → `runLiveSync`. Rules in `live-sync.util.ts`.

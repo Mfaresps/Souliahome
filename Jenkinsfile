@@ -62,7 +62,27 @@ pipeline {
         // Update only app containers; --no-deps keeps soulia-mongodb (the live DB) untouched.
         // BUILD_NUMBER is consumed by frontend's build args (see docker-compose.yml) and
         // becomes /version.json inside the image — the deploy marker clients poll.
-        sh 'BUILD_NUMBER=${BUILD_NUMBER} GIT_COMMIT=${GIT_COMMIT} docker compose -p soulia up -d --build --no-deps backend frontend'
+        //
+        // «مزامنة من النسخة الحية»: مفتاح التصدير يُحفظ في Jenkins ← Credentials كـ
+        // Secret text بالمعرّف soulia-live-sync-token، ويُمرَّر هنا كمتغير بيئة يقرأه
+        // docker-compose (LIVE_SYNC_EXPORT_TOKEN). غياب المفتاح لا يُفشل النشر — يبقى
+        // التصدير مغلقاً (404) كما كان.
+        script {
+          def deployCmd = 'BUILD_NUMBER=${BUILD_NUMBER} GIT_COMMIT=${GIT_COMMIT} docker compose -p soulia up -d --build --no-deps backend frontend'
+          def hasSyncKey = false
+          try {
+            withCredentials([string(credentialsId: 'soulia-live-sync-token', variable: 'SYNC_KEY_PROBE')]) { hasSyncKey = true }
+          } catch (e) {
+            echo 'Live sync export key (soulia-live-sync-token) not set in Jenkins — export stays off.'
+          }
+          if (hasSyncKey) {
+            withCredentials([string(credentialsId: 'soulia-live-sync-token', variable: 'LIVE_SYNC_EXPORT_TOKEN')]) {
+              sh deployCmd
+            }
+          } else {
+            sh deployCmd
+          }
+        }
       }
     }
 
