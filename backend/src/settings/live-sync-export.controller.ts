@@ -32,6 +32,9 @@ export class LiveSyncExportController {
     this.logger.log(`Sync export sent to ${ip}: ${(body.length / 1048576).toFixed(1)} MB in ${Date.now() - startedAt} ms`);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
+    // Uncompressed size, so the local copy can show real download progress even when
+    // nginx gzips the reply (Content-Length is then the compressed size, or absent).
+    res.setHeader('x-soulia-export-bytes', String(Buffer.byteLength(body)));
     res.send(body);
   }
 }

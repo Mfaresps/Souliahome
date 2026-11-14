@@ -159,6 +159,10 @@ export class ReturnRequest {
   @Prop({ default: 0 })
   damagedValue: number;
 
+  /** Part of damagedValue: pieces the carrier lost on their way back (lines with lostInTransit). */
+  @Prop({ default: 0 })
+  lostInTransitValue: number;
+
   /**
    * Set when the approved return's transaction is cancelled. Every aggregate filters on it
    * (NOT_REVERSED_FILTER) — status stays 'معتمد', mirroring how SupplierReturnOrder marks reversal.

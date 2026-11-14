@@ -204,6 +204,7 @@ export class SettingsController {
     @Body('password') password: string,
     @Body('collections') collections: string[],
     @Body('resetVault') resetVault: boolean,
+    @Body('fullWipe') fullWipe: boolean,
   ) {
     const isValid = await this.settingsService.verifyVaultPassword(password);
     if (!isValid) {
@@ -212,7 +213,7 @@ export class SettingsController {
     if (!Array.isArray(collections) || collections.length === 0) {
       throw new UnauthorizedException('يجب اختيار نوع واحد على الأقل للحذف');
     }
-    return await this.settingsService.resetSelectiveData(collections, !!resetVault);
+    return await this.settingsService.resetSelectiveData(collections, !!resetVault, fullWipe === true);
   }
 
   @Roles('admin')

@@ -24,6 +24,16 @@ export function fillLaterInventoryDatasets(data: Record<string, any>): string[] 
   return added;
 }
 
+/**
+ * «مسح شامل» (select-all wipe): piece tracking is wiped together with everything that points
+ * at it, so nothing is left referencing a deleted piece. The datasets in WIPE_REQUIRED must
+ * all be in the wipe, or it is partial and refused. ⚠ `inventoryunitcodecounters` is KEPT:
+ * printed QR stickers still exist physically, and a counter reset to 0 would hand their
+ * codes to new pieces. `warehouses` and `users` are kept (they reference no piece).
+ */
+export const FULL_WIPE_TRACKING = [...TRACKING];
+export const FULL_WIPE_REQUIRED = RELATED.filter(name => !TRACKING.includes(name) && !['warehouses', 'inventoryunitcodecounters'].includes(name));
+
 /** Reject unsafe partial maintenance. A true result requires an atomic full restore. */
 export async function assertInventoryUnitMaintenance(
   connection: Connection, collections: string[], backup?: Record<string, any[]>, fullRestore = false,

@@ -27,6 +27,12 @@ the live server, takes a safety backup of local data, then runs the same full re
   ⚠ Import is refused unless `MONGODB_URI` is loopback and `LIVE_SYNC_EXPORT_TOKEN` is unset — that
   is what keeps the live server from ever importing over itself. https required except to localhost.
   An empty reply (no transactions or no users) is refused before anything is touched.
+- **Real progress 0→100%**: the server measures each step (`liveSyncProgress`, returned by
+  `GET live-sync/status` while running): connect 0–5 · download 5–50 by bytes (size from the
+  exporter's `x-soulia-export-bytes`, else uncompressed Content-Length, else the last sync's
+  `bytes`) · safety backup 52–60 · restore 60–98 by records written (`restoreBackup`'s
+  `onProgress`, per collection) · 100. The card polls every 500ms and ends on a «تمت المزامنة
+  بنجاح» panel before reloading.
 - Kept: `backup_live_*.json` (newest 3) + the safety `backup_*.json` + `backups/live-sync.json`
   (last sync, shown on the card). Local settings keep their own keys and vault password (restore
   never overwrites them); existing accounts keep their local passwords (`restoreUsersMerge`).

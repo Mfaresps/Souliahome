@@ -2495,6 +2495,20 @@ body.dark-mode .settings-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2)}
 /* Backup & data — one card, one row per job (Settings ← البيانات) */
 .bk-card{padding-bottom:4px}
 .bk-head{margin-bottom:4px}
+/* «مزامنة من النسخة الحية» — real progress + success state */
+.ls-prog{display:flex;flex-direction:column;gap:8px}
+.ls-prog-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:.8rem;color:var(--text)}
+.ls-prog-head bdi{font-weight:600;font-variant-numeric:tabular-nums;font-size:.9rem}
+.ls-prog-note{margin:0;font-size:.72rem;color:var(--muted)}
+.ls-bar{height:8px;border-radius:99px;background:var(--bg-alt);overflow:hidden;border:1px solid var(--border)}
+.ls-bar>i{display:block;height:100%;border-radius:inherit;background:var(--primary,#2e7d4f);transition:width .45s ease}
+.ls-done{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;margin-bottom:10px;border-radius:10px;background:#ecf8f0;border:1px solid #bfe5cc;color:#14532d}
+.ls-done strong{display:block;font-size:.88rem;margin-bottom:2px}
+.ls-done span{font-size:.76rem;line-height:1.6}
+.ls-done-ic{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#16a34a;color:#fff;animation:lsPop .35s ease-out}
+@keyframes lsPop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+body.dark-mode .ls-done{background:#13261a;border-color:#245a36;color:#bbf7d0}
+@media (prefers-reduced-motion:reduce){.ls-bar>i{transition:none}.ls-done-ic{animation:none}}
 .bk-head>.bk-btn{margin-inline-start:auto}
 /* settings-responsive.css gives every card title a bottom border; the rows draw their own */
 #page-settings .stg-card-title.bk-head{border-bottom:0;padding-bottom:12px;margin-bottom:0}
@@ -16530,6 +16544,9 @@ body.dark-mode .dashboard-v2 .ds-ship-tab.is-danger .ds-ship-tab-count{backgroun
 .csi-impact b.is-high{color:var(--red)}
 .csi-fail-list{max-width:560px;margin:0 auto;text-align:start;font-size:.79rem;display:flex;flex-direction:column;gap:4px}
 .csi-fail-list>div{background:var(--bg-alt);border-radius:6px;padding:5px 9px}
+.csi-fail-row{display:flex;align-items:center;gap:10px}
+.csi-fail-row>span{flex:1;min-width:0}
+.csi-fail-open{flex-shrink:0;min-height:30px!important;padding:4px 12px!important;font-size:.76rem!important;white-space:nowrap}
 body.dark-mode .csi-proof.is-ok{background:rgba(16,185,129,.16);color:#34d399}
 body.dark-mode .csi-warn{background:rgba(245,158,11,.16);color:#fbbf24}
 body.dark-mode .csi-badge.is-warn,body.dark-mode .csi-flag{color:#fbbf24}
@@ -24479,7 +24496,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
 <script src="/cancellations-analytics.js?v=20261030-details"></script>
 <link rel="stylesheet" href="/after-sales.css?v=20261110-smooth-request">
-<script src="/after-sales.js?v=20261110-smooth-request"></script>
+<script src="/after-sales.js?v=20261114-bosta-collect"></script>
 <link rel="stylesheet" href="/complaint-flow.css?v=20261110-inline-solution">
 <script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
@@ -30660,6 +30677,7 @@ const TRANSLATIONS = {
   spBatchLastSaved:{ar:'تم تسجيل الطلب #{ref}',en:'Order #{ref} recorded'},
   spSendingProgress:{ar:'⏳ جارٍ الإرسال للتحضير والشحن... {done}/{n}',en:'⏳ Processing Prepare & Ship... {done}/{n}'},
   spSendFailedFor:{ar:'#{ref}: تعذر الإرسال للتحضير والشحن',en:'#{ref}: Prepare & Ship failed'},
+  spOpenFailedOrder:{ar:'فتح الطلب',en:'Open order'},
   spBulkSendFailed:{ar:'تعذر إرسال {n} طلب للتحضير والشحن:',en:'Prepare & Ship failed for {n} orders:'},
   /* Bulk-send result screen — replaces the toast that used to fade before it could be read */
   spBulkDoneTitle:{ar:'تم إرسال الطلبات للتحضير والشحن',en:'Orders added for preparation and shipping'},
@@ -92696,6 +92714,10 @@ async function loadLiveSyncStatus() {
   if (!host) return;
   try { _liveSyncState = await api('/settings/live-sync/status'); }
   catch (_) { _liveSyncState = null; }
+  if (_liveSyncState?.running && !_lsRun) {
+    _lsRun = { phase: 'running', pct: 0, step: 'connect', ...(_liveSyncState.progress || {}), watchOnly: true };
+    _lsStartPoll();
+  }
   renderLiveSyncCard();
 }
 
@@ -92721,6 +92743,31 @@ function renderLiveSyncCard(busy = false) {
     'bad-url': en ? 'LIVE_SYNC_URL is not a valid address.' : 'LIVE_SYNC_URL ليس عنواناً صحيحاً.',
   }[st.reason];
   const running = busy || st.running;
+  const run = _lsRun;
+  const body = configMsg
+    ? `<p class="text-xs" style="margin:0;color:var(--red)">${esc(configMsg)}</p>`
+    : run?.phase === 'success'
+      ? `<div class="ls-done" role="status" aria-live="polite">
+           <span class="ls-done-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+           <div>
+             <strong>${en ? 'Sync completed successfully' : 'تمت المزامنة بنجاح'}</strong>
+             <span>${en
+               ? `<bdi>${fmtN(run.result?.transactions || 0)}</bdi> transactions · <bdi>${fmtN(run.result?.documents || 0)}</bdi> records in total · <bdi>${fmtN(run.result?.seconds || 0)}</bdi>s. Reloading…`
+               : `<bdi>${fmtN(run.result?.transactions || 0)}</bdi> معاملة · <bdi>${fmtN(run.result?.documents || 0)}</bdi> سجل إجمالاً · خلال <bdi>${fmtN(run.result?.seconds || 0)}</bdi> ثانية. جارٍ إعادة تحميل الصفحة…`}</span>
+           </div>
+         </div>
+         ${_lsBarHtml(100)}`
+      : (run || running)
+        ? `<div class="ls-prog" role="status" aria-live="polite">
+             <div class="ls-prog-head"><span id="ls-prog-step">${_lsStepText(run)}</span><bdi id="ls-prog-pct">${Math.floor(run?.pct || 0)}%</bdi></div>
+             ${_lsBarHtml(run?.pct || 0)}
+             <p class="ls-prog-note">${en ? 'Keep this page open until it finishes.' : 'أبقِ هذه الصفحة مفتوحة حتى تنتهي العملية.'}</p>
+           </div>`
+        : `<p class="text-xs text-muted" style="margin:0 0 10px;line-height:1.6" role="status" aria-live="polite">${lastLine}</p>
+           <button id="btn-live-sync" class="btn btn-primary" onclick="runLiveSync()" style="justify-content:center;font-size:.82rem;padding:7px 14px">
+             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 12a9 9 0 01-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0115.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
+             <span>${en ? 'Sync now' : 'مزامنة الآن'}</span>
+           </button>`;
   host.innerHTML = `
     <div class="settings-section-label">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0115.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
@@ -92736,14 +92783,60 @@ function renderLiveSyncCard(busy = false) {
             : `يستبدل بيانات هذا الجهاز بنسخة جديدة من <bdi>${esc(st.source || '')}</bdi>. تؤخذ نسخة احتياطية من البيانات المحلية أولاً.`}</span>
         </div>
       </div>
-      ${configMsg
-        ? `<p class="text-xs" style="margin:0;color:var(--red)">${esc(configMsg)}</p>`
-        : `<p class="text-xs text-muted" style="margin:0 0 10px;line-height:1.6" role="status" aria-live="polite">${lastLine}</p>
-           <button id="btn-live-sync" class="btn btn-primary" onclick="runLiveSync()" ${running ? 'disabled' : ''} style="justify-content:center;font-size:.82rem;padding:7px 14px">
-             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0${running ? ';animation:spin 1s linear infinite' : ''}"><path d="M21 12a9 9 0 01-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0115.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
-             <span>${running ? (en ? 'Syncing… (may take a minute)' : 'جارٍ المزامنة… (قد تستغرق دقيقة)') : (en ? 'Sync now' : 'مزامنة الآن')}</span>
-           </button>`}
+      ${body}
     </div>`;
+}
+
+// ── Real progress: the server measures each step (download bytes, restored records) and
+// the card polls /live-sync/status while the POST runs. Ranges are set by the server.
+let _lsRun = null;          // { phase:'running'|'success', pct, step, done, total, result }
+let _lsPollTimer = null;
+function _lsBarHtml(pct) {
+  return `<div class="ls-bar" aria-hidden="true"><i id="ls-prog-fill" style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
+}
+function _lsStepText(p) {
+  const en = currentLang === 'en';
+  const mb = n => (n / 1048576).toFixed(1);
+  const step = p?.step || 'connect';
+  if (step === 'download') {
+    const size = p.done ? (p.total ? ` · <bdi>${mb(p.done)} / ${mb(p.total)} MB</bdi>` : ` · <bdi>${mb(p.done)} MB</bdi>`) : '';
+    return (en ? 'Downloading the live data' : 'تنزيل بيانات النظام الحي') + size;
+  }
+  if (step === 'restore') {
+    const n = p.total ? ` · <bdi>${fmtN(p.done || 0)} / ${fmtN(p.total)}</bdi> ${en ? 'records' : 'سجل'}` : '';
+    return (en ? 'Replacing the local data' : 'استبدال البيانات المحلية') + n;
+  }
+  return ({
+    connect: en ? 'Connecting to live and preparing the copy' : 'الاتصال بالنظام الحي وتجهيز النسخة',
+    verify:  en ? 'Checking the downloaded copy' : 'التحقق من النسخة المنزّلة',
+    safety:  en ? 'Backing up the local data first' : 'أخذ نسخة احتياطية من البيانات المحلية',
+    finish:  en ? 'Finishing' : 'إنهاء العملية',
+  })[step] || '';
+}
+function _lsPaint() {
+  const fill = qs('#ls-prog-fill'), pct = qs('#ls-prog-pct'), step = qs('#ls-prog-step');
+  if (!fill || !pct || !step) { renderLiveSyncCard(true); return; }
+  fill.style.width = `${_lsRun.pct}%`;
+  pct.textContent = `${Math.floor(_lsRun.pct)}%`;
+  step.innerHTML = _lsStepText(_lsRun);
+}
+function _lsStopPoll() { if (_lsPollTimer) { clearInterval(_lsPollTimer); _lsPollTimer = null; } }
+function _lsStartPoll() {
+  _lsStopPoll();
+  let inFlight = false;
+  _lsPollTimer = setInterval(async () => {
+    if (inFlight || !_lsRun || _lsRun.phase !== 'running') return;
+    inFlight = true;
+    try {
+      const s = await api('/settings/live-sync/status');
+      const p = s?.progress;
+      if (_lsRun?.watchOnly && !s?.running) {   // a sync started before this page opened has ended
+        _lsStopPoll(); _lsRun = null; _liveSyncState = s; renderLiveSyncCard(); return;
+      }
+      if (p && _lsRun?.phase === 'running' && p.pct >= _lsRun.pct) { Object.assign(_lsRun, p); _lsPaint(); }
+    } catch (_) { /* a missed poll only delays the bar */ }
+    finally { inFlight = false; }
+  }, 500);
 }
 
 async function runLiveSync() {
@@ -92756,19 +92849,26 @@ async function runLiveSync() {
     { title: en ? 'Sync from live' : 'مزامنة من النسخة الحية', icon: 'danger', required: true, placeholder: en ? 'Password' : 'كلمة السر' }
   );
   if (!password) return;
+  _lsRun = { phase: 'running', pct: 0, step: 'connect' };
   renderLiveSyncCard(true);
+  _lsStartPoll();
   try {
     const res = await api('/settings/live-sync', { method: 'POST', body: JSON.stringify({ password }) });
+    _lsStopPoll();
     if (res?.success) {
-      toast(res.message, false);
+      _lsRun = { phase: 'success', pct: 100, result: res };
+      renderLiveSyncCard(true);
+      toast(en ? 'Sync completed successfully' : 'تمت المزامنة بنجاح', false);
       allowUnload();   // إعادة تحميل متعمَّدة بعد استبدال البيانات
-      setTimeout(() => location.reload(), 1500);
+      setTimeout(() => location.reload(), 2600);
       return;
     }
     toast(res?.message || (en ? 'Sync failed' : 'فشلت المزامنة'), true);
   } catch (e) {
     toast((en ? 'Error: ' : 'خطأ: ') + (e.message || (en ? 'Sync failed' : 'فشلت المزامنة')), true);
   }
+  _lsStopPoll();
+  _lsRun = null;
   await loadLiveSyncStatus().catch(() => renderLiveSyncCard(false));
 }
 
@@ -93995,7 +94095,7 @@ function confirmResetAllData() {
         </div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;font-weight:600;color:#dc2626;padding:10px 12px;background:rgba(220,38,38,.06);border-radius:10px;border:1px solid rgba(220,38,38,.2);margin-bottom:14px">
           <input type="checkbox" id="sdm-select-all" style="width:15px;height:15px;accent-color:#dc2626" onchange="sdmToggleAll(this.checked)">
-          تحديد الكل (مسح شامل لجميع البيانات)
+          تحديد الكل (مسح شامل لجميع البيانات، بما فيها تتبع القطع QR)
         </label>
         <div style="font-size:.76rem;color:var(--muted);margin-bottom:16px;padding:8px 12px;background:var(--bg-alt);border-radius:8px;line-height:1.5">
           🔒 سيُطلب منك كلمة سر الخزنة في الخطوة التالية<br>📦 نسخة احتياطية تلقائية قبل أي حذف
@@ -94022,6 +94122,11 @@ async function sdmProceed() {
   const collectionsRaw = checked.flatMap(cb => cb.value.split(','));
   const resetVault = collectionsRaw.includes('__vault__');
   const collections = collectionsRaw.filter(c => c !== '__vault__');
+  // Every section ticked = a full wipe: the server also clears stock movements and the piece
+  // tracking (QR) that points at the deleted products/invoices. A partial wipe is refused
+  // while pieces are tracked, because it would leave pieces linked to deleted records.
+  const fullWipe = checked.length === document.querySelectorAll('#sdm-options input[type=checkbox]').length;
+  if (fullWipe && !collections.includes('inventorymovements')) collections.push('inventorymovements');
 
   const password = await showPrompt(
     'أدخل كلمة سر الخزنة للتأكيد:',
@@ -94035,8 +94140,14 @@ async function sdmProceed() {
   try {
     const result = await api('/settings/reset-selective-data', {
       method: 'POST',
-      body: JSON.stringify({ password, collections, resetVault })
+      body: JSON.stringify({ password, collections, resetVault, fullWipe })
     });
+    if (!result?.success) {
+      // The server refused (nothing was deleted) — keep the dialog open and say why.
+      toast(result?.message || 'فشل في مسح البيانات', true);
+      if (btn) { btn.disabled = false; btn.textContent = 'متابعة ←'; btn.style.opacity = ''; }
+      return;
+    }
     document.getElementById('selective-delete-modal')?.remove();
     toast(result.message, false);
     allowUnload();   // إعادة تحميل متعمَّدة بعد حذف انتقائي
@@ -116424,7 +116535,7 @@ async function _confirmBulkSendShopify() {
         status.textContent = tf('spBatchLastSaved',{ref:order.ref});
       } catch (error) {
         const message = tf('spSendFailedFor',{ref:order.ref});
-        errors.push(message + (error?.message ? ': ' + error.message : ''));
+        errors.push({ id: String(order._id), text: message + (error?.message ? ': ' + error.message : '') });
         status.textContent = message;
       } finally {
         // A rejected request also finishes an attempt; never leave the bar stuck.
@@ -116510,7 +116621,11 @@ function _spShowBulkResult(modal, { okCount, total, errors, items, vaultBySeg, p
       </div>` : ''}
 
     ${errors.length ? `<div class="csi-done-note csi-done-rise"><span class="csi-done-chip is-bad">${esc(tf('spBulkSendFailed', { n: errors.length }))}</span></div>
-      <div class="csi-fail-list csi-done-rise">${errors.map(e => `<div dir="auto">${esc(e)}</div>`).join('')}</div>` : ''}
+      <div class="csi-fail-list csi-done-rise">${errors.map(e => {
+        const txt = typeof e === 'string' ? e : e.text;
+        const id = typeof e === 'string' ? '' : e.id;
+        return `<div class="csi-fail-row"><span dir="auto">${esc(txt)}</span>${id ? `<button type="button" class="btn btn-outline btn-sm csi-fail-open" data-id="${escHtml(id)}" onclick="_spOpenFailedOrder(this.dataset.id)">${esc(t('spOpenFailedOrder'))}</button>` : ''}</div>`;
+      }).join('')}</div>` : ''}
 
     <div class="sp-bulk-result-actions csi-done-rise">
       ${modal._prepRef && hasPerm('pickup-orders') ? `<button type="button" class="btn btn-primary csi-done-btn" onclick="_spOpenBulkPreparation()">${esc(t('spGoToPreparation'))}</button>` : ''}
@@ -116533,6 +116648,15 @@ function _spShowBulkResult(modal, { okCount, total, errors, items, vaultBySeg, p
   // sound for the same event would be the thing CLAUDE.md warns against
   // (ka-ching vs cha-ching colliding). Respects the existing mute preference.
   // Receipt approval already booked the deposit; confirmation moves no cash.
+}
+
+// Opens a failed order from the bulk-send result — the quick view holds the confirm
+// action, so the problem (e.g. a difference from Shopify) can be answered there.
+function _spOpenFailedOrder(id) {
+  if (!id) return;
+  _spdHide(qs('#sp-bulk-confirm-modal'));
+  if (currentPage !== 'shopify-orders') navigateTo('shopify-orders');
+  setTimeout(() => openSpOrderPeek(id), currentPage === 'shopify-orders' ? 0 : 300);
 }
 
 function _spOpenBulkPreparation() {

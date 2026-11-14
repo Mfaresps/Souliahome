@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { Cron } from '@nestjs/schedule';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model, ClientSession } from 'mongoose';
-import { assertInventoryUnitMaintenance, fillLaterInventoryDatasets } from '../inventory-units/inventory-unit-maintenance';
+import { FULL_WIPE_REQUIRED, FULL_WIPE_TRACKING, assertInventoryUnitMaintenance, fillLaterInventoryDatasets } from '../inventory-units/inventory-unit-maintenance';
 import { ObjectId } from 'mongodb';
 import { Settings, SettingsDocument } from './schemas/settings.schema';
 import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/settings.dto';
@@ -1412,16 +1412,28 @@ export class SettingsService {
   ];
 
   async resetAllData() {
-    return this.resetSelectiveData(SettingsService.ALLOWED_COLLECTIONS, true);
+    return this.resetSelectiveData(SettingsService.ALLOWED_COLLECTIONS, true, true);
   }
 
-  async resetSelectiveData(selectedCollections: string[], resetVault: boolean) {
+  async resetSelectiveData(selectedCollections: string[], resetVault: boolean, fullWipe = false) {
     // Whitelist check
     const allowed = SettingsService.ALLOWED_COLLECTIONS;
     const safeCollections = selectedCollections.filter(c => allowed.includes(c));
 
-    try { await assertInventoryUnitMaintenance(this.connection, safeCollections); }
-    catch (e: any) { return { success: false, message: e.message }; }
+    if (fullWipe) {
+      // A full wipe also clears piece tracking — but only when everything that references
+      // a piece is wiped in the same run (see FULL_WIPE_REQUIRED).
+      const missing = FULL_WIPE_REQUIRED.filter(c => !safeCollections.includes(c));
+      if (missing.length) {
+        return { success: false, message: `المسح الشامل يتطلب تحديد كل الأقسام — الجداول الناقصة: ${missing.join(', ')}` };
+      }
+      for (const c of [...FULL_WIPE_TRACKING, 'productsuppliers', 'productcostevents', 'inventorywriteoffs']) {
+        if (!safeCollections.includes(c)) safeCollections.push(c);
+      }
+    } else {
+      try { await assertInventoryUnitMaintenance(this.connection, safeCollections); }
+      catch (e: any) { return { success: false, message: e.message }; }
+    }
 
     // Step 1: Create backup first
     const backup = await this.createBackup();
@@ -1638,7 +1650,7 @@ export class SettingsService {
     }
   }
 
-  async restoreBackup(filename: string, opts: { safetyFilename?: string } = {}) {
+  async restoreBackup(filename: string, opts: { safetyFilename?: string; onProgress?: (done: number, total: number) => void } = {}) {
     const backupDir = this.getBackupDir();
 
     // Prevent path traversal and normalize filename
@@ -1678,7 +1690,7 @@ export class SettingsService {
     }
     catch (e: any) { return { success: false, message: e.message }; }
 
-    if (!atomic) return this.restoreBackupData(backupData, safeFilename);
+    if (!atomic) return this.restoreBackupData(backupData, safeFilename, undefined, opts.onProgress);
 
     let session: ClientSession | undefined;
     try {
@@ -1692,7 +1704,7 @@ export class SettingsService {
       session = await this.connection.startSession();
       let result: any;
       await session.withTransaction(async () => {
-        result = await this.restoreBackupData(backupData, safeFilename, session);
+        result = await this.restoreBackupData(backupData, safeFilename, session, opts.onProgress);
       }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } });
       return { ...result, safetyBackup: safety.filename, emptiedLaterDatasets: laterDatasets };
     } catch (e: any) {
@@ -1712,6 +1724,14 @@ export class SettingsService {
   /** Downloaded live copies kept on disk (older ones are deleted after a successful sync). */
   static readonly LIVE_SYNC_KEEP = 3;
   private liveSyncRunning = false;
+  /** Measured progress of the running sync, read by the status endpoint the card polls. */
+  private liveSyncProgress: { pct: number; step: string; done?: number; total?: number } | null = null;
+
+  /** Never moves backwards (withTransaction may retry the restore callback). */
+  private setLiveSyncProgress(pct: number, step: string, extra: { done?: number; total?: number } = {}) {
+    const prev = this.liveSyncProgress?.pct || 0;
+    this.liveSyncProgress = { pct: Math.max(prev, Math.min(100, Math.round(pct * 10) / 10)), step, ...extra };
+  }
 
   private liveSyncStatePath(): string {
     return path.join(this.getBackupDir(), 'live-sync.json');
@@ -1726,6 +1746,7 @@ export class SettingsService {
       reason: cfg.reason || null,
       source: cfg.source || null,
       running: this.liveSyncRunning,
+      progress: this.liveSyncRunning ? this.liveSyncProgress : null,
       last,
     };
   }
@@ -1739,10 +1760,14 @@ export class SettingsService {
       return { success: false, message: 'مزامنة أخرى قيد التنفيذ الآن' };
     }
     this.liveSyncRunning = true;
+    this.liveSyncProgress = null;
+    this.setLiveSyncProgress(1, 'connect');
     const startedAt = Date.now();
     let downloadPath: string | undefined;
     try {
       // 1. Download. A failure here changes nothing locally.
+      // Progress: connect + live builds the copy 0–5 · download 5–50 · save 50–52 ·
+      // safety backup 52–60 · restore 60–98 · done 100.
       let res: Response;
       try {
         res = await fetch(exportUrl(cfg.url), {
@@ -1756,7 +1781,8 @@ export class SettingsService {
       if (res.status === 401) return { success: false, message: 'مفتاح المزامنة مرفوض من النظام الحي — راجع LIVE_SYNC_TOKEN' };
       if (res.status === 404) return { success: false, message: 'التصدير غير مفعّل على النظام الحي — أضف LIVE_SYNC_EXPORT_TOKEN هناك' };
       if (!res.ok) return { success: false, message: `النظام الحي ردّ بخطأ ${res.status} — لم تتغير البيانات المحلية` };
-      const raw = await res.text();
+      const raw = await this.readLiveSyncBody(res);
+      this.setLiveSyncProgress(50, 'verify');
 
       let backup: any;
       try { backup = JSON.parse(raw); } catch {
@@ -1776,16 +1802,22 @@ export class SettingsService {
       this.updateBackupRegistry(filename, false);
 
       // 3. Safety copy of the local data BEFORE anything is replaced.
+      this.setLiveSyncProgress(52, 'safety');
       const safety = await this.createBackup();
       if (!safety.success) {
         return { success: false, message: 'تعذّر إنشاء نسخة أمان من البيانات المحلية — لم تتغير البيانات' };
       }
 
       // 4. The same full restore the «استرجاع كامل» button runs.
-      const result: any = await this.restoreBackup(filename, { safetyFilename: safety.filename });
+      this.setLiveSyncProgress(60, 'restore', { done: 0, total: documents });
+      const result: any = await this.restoreBackup(filename, {
+        safetyFilename: safety.filename,
+        onProgress: (done, total) => this.setLiveSyncProgress(60 + 38 * (total ? done / total : 1), 'restore', { done, total }),
+      });
       if (!result?.success) {
         return { ...result, safetyBackup: safety.filename, liveBackup: filename };
       }
+      this.setLiveSyncProgress(99, 'finish');
 
       const state = {
         at: new Date().toISOString(),
@@ -1796,6 +1828,7 @@ export class SettingsService {
         transactions,
         liveBackup: filename,
         safetyBackup: safety.filename,
+        bytes: Buffer.byteLength(raw),
         seconds: Math.round((Date.now() - startedAt) / 1000),
       };
       try { fs.writeFileSync(this.liveSyncStatePath(), JSON.stringify(state, null, 2)); } catch { /* status only */ }
@@ -1811,7 +1844,37 @@ export class SettingsService {
       return { success: false, message: `${e?.message || 'فشلت المزامنة'} — لم تتغير البيانات المحلية` };
     } finally {
       this.liveSyncRunning = false;
+      this.liveSyncProgress = null;
     }
+  }
+
+  /**
+   * Reads the export while reporting real download progress (5 → 50).
+   * Size: `x-soulia-export-bytes` from the live server (exact, uncompressed); else
+   * Content-Length when the reply is not compressed; else the previous sync's size
+   * (an estimate, held below 50 until the last byte arrives).
+   */
+  private async readLiveSyncBody(res: Response): Promise<string> {
+    const header = Number(res.headers.get('x-soulia-export-bytes')) || 0;
+    const plainLength = res.headers.get('content-encoding') ? 0 : Number(res.headers.get('content-length')) || 0;
+    let previous = 0;
+    try { previous = Number(JSON.parse(fs.readFileSync(this.liveSyncStatePath(), 'utf8'))?.bytes) || 0; } catch { /* first sync */ }
+    const total = header || plainLength || previous;
+    this.setLiveSyncProgress(5, 'download', { done: 0, total: total || undefined });
+    if (!res.body) return await res.text();
+    const reader = (res.body as any).getReader();
+    const chunks: Buffer[] = [];
+    let received = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const buf = Buffer.from(value);
+      chunks.push(buf);
+      received += buf.length;
+      const frac = total ? Math.min(received / total, 0.98) : 0;
+      this.setLiveSyncProgress(5 + 45 * frac, 'download', { done: received, total: total || undefined });
+    }
+    return Buffer.concat(chunks).toString('utf8');
   }
 
   /** Keeps the newest LIVE_SYNC_KEEP downloaded copies. Housekeeping: never fails a sync. */
@@ -1827,7 +1890,7 @@ export class SettingsService {
     }
   }
 
-  private async restoreBackupData(backupData: any, safeFilename: string, session?: ClientSession) {
+  private async restoreBackupData(backupData: any, safeFilename: string, session?: ClientSession, onProgress?: (done: number, total: number) => void) {
     const options = session ? { session } : {};
     const restoreResults: Record<string, number> = {};
 
@@ -1857,7 +1920,13 @@ export class SettingsService {
       }
     }
 
-    // Step 2: Restore each collection.
+    // Step 2: Restore each collection. Progress = documents written / documents in the backup.
+    const progressTotal: number = (Object.values(backupData.data) as any[]).reduce((n: number, d: any) => n + (Array.isArray(d) ? d.length : 0), 0);
+    let progressDone = 0;
+    const report = (docs: any) => {
+      progressDone += Array.isArray(docs) ? docs.length : 0;
+      try { onProgress?.(progressDone, progressTotal); } catch { /* display only */ }
+    };
     for (const [collectionName, docs] of Object.entries(backupData.data)) {
       // Users take the merge path, not the wipe-and-insert path every other collection
       // uses. Skipping them entirely (the old behaviour) meant a restore onto a fresh
@@ -1866,6 +1935,7 @@ export class SettingsService {
       // came back empty even though its rows had been captured correctly.
       if (collectionName === 'users') {
         restoreResults['users'] = await this.restoreUsersMerge(docs as any[], session);
+        report(docs);
         continue;
       }
       try {
@@ -1923,6 +1993,7 @@ export class SettingsService {
         this.logger.error(`Failed to restore collection ${collectionName}`, e?.message);
         restoreResults[collectionName] = -1;
       }
+      report(docs);
     }
 
     // Step 3: Restore vault balances and offers

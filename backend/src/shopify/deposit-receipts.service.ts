@@ -1253,7 +1253,12 @@ export class DepositReceiptsService {
     if (r.imageDeleted) throw new NotFoundException('صورة الإيصال حُذفت من التخزين');
     const cfg = await this.r2();
     const res = await r2GetObjectBuffer(cfg, r.imageKey);
-    if (!res.ok) throw new NotFoundException('تعذّر تحميل صورة الإيصال');
+    if (!res.ok) {
+      // Keep R2's own reason: «not found» (image in another bucket — e.g. a local copy synced
+      // from live) and «access denied» (wrong keys) need different fixes.
+      this.logger.warn(`Receipt image read failed (${receiptId}, bucket ${cfg.bucket}, key ${r.imageKey}): ${res.status} ${res.message}`);
+      throw new NotFoundException('تعذّر تحميل صورة الإيصال');
+    }
     return res.body;
   }
 
@@ -1351,14 +1356,23 @@ export class DepositReceiptsService {
       }
     }
     // Manual sales have no Shopify order. Count their images once and protect them from orphan cleanup.
-    const transactions = await this.txModel.find({ 'depositReceipts.0': { $exists: true } })
-      .select('depositReceipts').lean().exec();
+    const transactions = await this.txModel.find({ $or: [{ 'depositReceipts.0': { $exists: true } }, { 'depositRequests.0': { $exists: true } }] })
+      .select('depositReceipts depositRequests').lean().exec();
     const seen = new Set(stored.map(x => x.r.id));
     for (const tx of transactions as any[]) {
       for (const r of tx.depositReceipts || []) {
         if (r.imageDeleted || !r.imageKey || seen.has(r.id)) continue;
         seen.add(r.id);
         stored.push({ orderId: '', r: { ...r, status: 'معتمد', uploadedAt: r.submittedAt } });
+      }
+      // ⚠ Another deposit on a confirmed sale waits in `depositRequests` (its manual upload is
+      // already «consumed»). Without this its image counted as an orphan and was deleted after
+      // 24h while a manager had still to decide on it.
+      for (const r of tx.depositRequests || []) {
+        if (r.imageDeleted || !r.imageKey || seen.has(r.id)) continue;
+        if (r.status !== 'معلق' && r.status !== 'قيد التسجيل') continue;
+        seen.add(r.id);
+        stored.push({ orderId: '', r: { ...r, status: 'معلق' } });
       }
     }
     if (this.manualReceiptModel) {

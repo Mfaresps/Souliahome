@@ -456,22 +456,29 @@ export class AfterSalesService {
       const items: any[] = [], seen = new Set<number>();
       for (const receipt of body.items) {
         const line = w.selectedLines.find((i: any) => i.lineIndex === receipt.lineIndex);
-        if (!line || seen.has(receipt.lineIndex) || !['سليم', 'تالف', 'mixed'].includes(receipt.condition)) throw new BadRequestException('حالة الاستلام غير صالحة');
+        if (!line || seen.has(receipt.lineIndex) || !['سليم', 'تالف', 'مفقود', 'mixed'].includes(receipt.condition)) throw new BadRequestException('حالة الاستلام غير صالحة');
         seen.add(receipt.lineIndex);
+        // ⚠ A piece lost by the carrier on its way back is stored as «تالف» + lostInTransit: every
+        //   stock / profit / credit reader treats anything that is not «تالف» as sound, so a new
+        //   condition code would put a piece that never arrived back on sale.
+        if (receipt.condition === 'مفقود') { items.push({ ...line, condition: 'تالف', lostInTransit: true }); continue; }
         if (receipt.condition !== 'mixed') { items.push({ ...line, condition: receipt.condition }); continue; }
-        const damagedQty = Number(receipt.damagedQty), soundQty = line.qty - damagedQty;
-        if (!Number.isSafeInteger(damagedQty) || damagedQty < 1 || soundQty < 1) throw new BadRequestException('حدد عدد القطع التالفة بين قطع البند');
+        const damagedQty = Number(receipt.damagedQty || 0), lostQty = Number(receipt.lostQty || 0), soundQty = line.qty - damagedQty - lostQty;
+        if (![damagedQty, lostQty, soundQty].every(n => Number.isSafeInteger(n) && n >= 0) || damagedQty + lostQty < 1) throw new BadRequestException('حدد عدد القطع التالفة أو المفقودة بين قطع البند');
         const assigned = labels.filter(label => line.unitIds.includes(label.unitId));
-        if (assigned.some(label => !['سليم', 'تالف'].includes(label.condition))) throw new BadRequestException('حدد حالة كل هوية في البند المختلط');
-        const damagedIds = assigned.filter(label => label.condition === 'تالف').map(label => label.unitId);
-        const soundIds = assigned.filter(label => label.condition === 'سليم').map(label => label.unitId);
-        if (damagedIds.length > damagedQty || soundIds.length > soundQty) throw new BadRequestException('حالات الهويات لا تطابق الكميات المفحوصة');
-        const damagedTotal = money(line.total * damagedQty / line.qty);
-        items.push({ ...line, qty: soundQty, total: money(line.total - damagedTotal), condition: 'سليم', unitIds: soundIds },
-          { ...line, qty: damagedQty, total: damagedTotal, condition: 'تالف', unitIds: damagedIds });
+        if (assigned.some(label => !['سليم', 'تالف', 'مفقود'].includes(label.condition))) throw new BadRequestException('حدد حالة كل هوية في البند المختلط');
+        const idsOf = (c: string) => assigned.filter(label => label.condition === c).map(label => label.unitId);
+        const soundIds = idsOf('سليم'), damagedIds = idsOf('تالف'), lostIds = idsOf('مفقود');
+        if (damagedIds.length > damagedQty || soundIds.length > soundQty || lostIds.length > lostQty) throw new BadRequestException('حالات الهويات لا تطابق الكميات المفحوصة');
+        const damagedTotal = money(line.total * damagedQty / line.qty), lostTotal = money(line.total * lostQty / line.qty);
+        if (soundQty) items.push({ ...line, qty: soundQty, total: money(line.total - damagedTotal - lostTotal), condition: 'سليم', unitIds: soundIds });
+        if (damagedQty) items.push({ ...line, qty: damagedQty, total: damagedTotal, condition: 'تالف', unitIds: damagedIds });
+        if (lostQty) items.push({ ...line, qty: lostQty, total: lostTotal, condition: 'تالف', lostInTransit: true, unitIds: lostIds });
       }
-      if (labels.length !== w.selectedUnits.length || new Set(labels.map(l => l.unitId)).size !== labels.length || w.selectedUnits.some((id: string) => !labels.some(l => l.unitId === id && ['intact', 'reprinted'].includes(l.labelState) && l.labelAttached === true))) throw new BadRequestException('راجع ملصق كل هوية وأكد لصقه');
-      for (const label of labels.filter(l => l.labelState === 'reprinted')) {
+      const lostUnitIds = new Set<string>(items.filter(i => i.lostInTransit).flatMap(i => i.unitIds || []));
+      // A lost piece has no label to check — it never reached the warehouse.
+      if (labels.length !== w.selectedUnits.length || new Set(labels.map(l => l.unitId)).size !== labels.length || w.selectedUnits.some((id: string) => !lostUnitIds.has(id) && !labels.some(l => l.unitId === id && ['intact', 'reprinted'].includes(l.labelState) && l.labelAttached === true))) throw new BadRequestException('راجع ملصق كل هوية وأكد لصقه');
+      for (const label of labels.filter(l => l.labelState === 'reprinted' && !lostUnitIds.has(l.unitId))) {
         if (!label.printOperationKey || !await this.connection.collection('inventoryunitevents').findOne({ unitId: label.unitId, operationKey: identityOperationKey(actor.userId, label.printOperationKey), action: { $in: ['label-print-requested', 'label-reprint-requested'] }, createdAt: { $gte: row.createdAt } }, { session: ctx.session })) throw new BadRequestException('اطبع الهوية المطموسة قبل إتاحتها للمخزن');
       }
       const doc: any = { date: new Date().toISOString(), type: 'مرتجع', ref: await this.nextReference('RT', ctx), client: row.client, phone: row.phone,
@@ -481,17 +488,19 @@ export class AfterSalesService {
       const tx = await this.transactions.create(doc, 'admin', undefined, by, ctx, false, true);
       row.returnTxId = String(tx._id); row.returnTxRef = tx.ref; row.status = 'معتمد'; row.approvedAt = new Date().toISOString(); row.approvedBy = by; row.items = items;
       row.damagedValue = money(items.filter(i => i.condition === 'تالف').reduce((n, i) => n + i.total, 0));
+      row.lostInTransitValue = money(items.filter(i => i.lostInTransit).reduce((n, i) => n + i.total, 0));
       await row.save({ session: ctx.session });
       ctx.afterSalesCaseId = String(row._id);
       for (const label of labels) {
         const unit: any = await this.connection.collection('inventoryunits').findOne({ _id: this.id(label.unitId) }, { session: ctx.session });
         if (!unit || unit.assignment?.transactionId !== row.originalTransactionId) throw new ConflictException('هوية القطعة لم تعد مرتبطة بالفاتورة الأصلية');
         const line = items.find(i => i.unitIds.includes(label.unitId));
-        const reason = `After-sales ${w.ref}: physical receipt and inspection`;
+        const lost = lostUnitIds.has(label.unitId);
+        const reason = lost ? `After-sales ${w.ref}: lost by the carrier on its way back — never reached the warehouse` : `After-sales ${w.ref}: physical receipt and inspection`;
         await this.tracking.actionInSession(label.unitId, { operationKey: body.operationKey + ':return', reason, action: 'return', expectedVersion: unit.__v, physicalPossessionConfirmed: true }, actor, ctx.session, by, undefined, ctx);
         const fresh: any = await this.connection.collection('inventoryunits').findOne({ _id: unit._id }, { session: ctx.session });
-        await this.tracking.actionInSession(label.unitId, { operationKey: body.operationKey + ':inspect', reason, action: line.condition === 'سليم' ? 'inspect' : 'damage',
-          expectedVersion: fresh.__v, physicalPossessionConfirmed: true, inspectionPassed: true }, actor, ctx.session, by, undefined, ctx);
+        await this.tracking.actionInSession(label.unitId, { operationKey: body.operationKey + ':inspect', reason, action: lost ? 'lost' : line.condition === 'سليم' ? 'inspect' : 'damage',
+          expectedVersion: fresh.__v, physicalPossessionConfirmed: !lost, inspectionPassed: true, ...(lost ? { physicalCountConfirmed: true } : {}) }, actor, ctx.session, by, undefined, ctx);
       }
       w.receivedAt = new Date().toISOString(); w.receivedBy = by; w.labelChecks = labels; w.stage = 'settlement';
     });
@@ -532,6 +541,8 @@ export class AfterSalesService {
         amount = -q.refundDue; source = 'رد مرتجع';
       } else if (body.kind === 'collection') {
         if (!w.replacementDeliveredAt || w.collection || !q.collectDue) throw new ConflictException('التحصيل غير مستحق أو تم تنفيذه');
+        // Through Bosta the difference is the shipment's COD — it arrives in Bosta's transfer («carrier»).
+        if (w.fulfillmentChannel !== 'direct') throw new BadRequestException('فرق العميل تحصّله بوسطة مع الشحنة — سجّله في تسوية بوسطة عند وصول التحويل');
         amount = q.collectDue;
       } else if (body.kind === 'carrier') {
         if (w.fulfillmentChannel === 'direct') throw new BadRequestException('التنفيذ المباشر لا توجد له تسوية ناقل');
