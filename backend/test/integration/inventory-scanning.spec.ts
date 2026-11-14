@@ -178,6 +178,23 @@ describe('Shared scanning backend: real disposable Mongo transactions and HTTP',
     expect(await second.json()).toMatchObject({ lineId: 'line-2', unit: { status: 'picking' } });
     expect((await scan((await fixture()).barcode)).status).toBe(409);
   });
+  it('answers a product that is not in the order the same way, whatever the piece state', async () => {
+    // Two wrong products scanned one after the other used to get two different answers: one piece was
+    // free («does not match»), the other assigned to another order («assigned elsewhere»).
+    const otherProduct = key();
+    await raw('products').insertOne({ _id: new Types.ObjectId(otherProduct), code: 'SKU-2', name: 'Towel', openingBalance: 10 });
+    const otherSale = key();
+    await raw('transactions').insertOne({ _id: new Types.ObjectId(otherSale), type: 'مبيعات', pickupStatus: 'Preparing', items: [{ code: 'SKU-2', qty: 1, lineId: 'o-1' }] });
+    const free = await fixture('available', { productId: otherProduct });
+    const elsewhere = await fixture('picking', { productId: otherProduct, assignment: { transactionId: otherSale, lineId: 'o-1' } });
+    const scan = (identifier: string) => tracking.pickScan(saleId, { operationKey: key(), reason: 'Wrong product scan', identifier,
+      physicalPossessionConfirmed: true }, actor);
+    for (const piece of [free, elsewhere]) {
+      const error: any = await scan(piece.barcode).catch(e => e);
+      expect(error.getResponse()).toMatchObject({ code: 'WRONG_PRODUCT', message: 'Barcode does not match one exact sale line' });
+    }
+    expect(await Unit.findById(free._id).lean()).toMatchObject({ status: 'available', assignment: null });
+  });
   it('matches a reserved piece without requiring an additional available slot', async () => {
     const reserved = await Unit.findById(unit._id);
     reserved!.status = 'reserved'; reserved!.assignment = { transactionId: saleId, lineId: 'line-1' }; await reserved!.save();

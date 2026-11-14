@@ -2289,6 +2289,91 @@ describe('TransactionsService (integration with mocks)', () => {
   });
 
 
+  /* mergePrepGroups — drag one prep card onto another.
+     The moved orders join the target's identity and keep their «prepared» tick;
+     a source that changed since the screen read it is refused, not half-moved. */
+  describe('mergePrepGroups — merging two preparation groups', () => {
+    const ID_A = '507f1f77bcf86cd799439021';
+    const ID_B = '507f1f77bcf86cd799439022';
+    const TARGET_META = {
+      prepNote: 'دفعة الصباح', prepShipCo: 'Bosta',
+      prepCreatedAt: '2026-11-14T08:00:00.000Z', prepCreatedBy: 'سارة',
+    };
+    const chain = (value: any) => ({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(value) }),
+      }),
+    });
+    const sourceHas = (ids: string[]) => txModel.find.mockReturnValue(chain(ids.map(_id => ({ _id }))));
+    const targetIs = (doc: any) => txModel.findOne.mockReturnValue(chain(doc));
+
+    beforeEach(() => {
+      txModel.updateMany = jest.fn().mockImplementation((filter: any) =>
+        Promise.resolve({ modifiedCount: filter._id.$in.length }),
+      );
+    });
+
+    it('moves the source orders into the target with the target identity, ticks untouched', async () => {
+      sourceHas([ID_A, ID_B]);
+      targetIs(TARGET_META);
+      const res = await service.mergePrepGroups('101-14NOV', '202-14NOV', [ID_A, ID_B], 'أحمد');
+      expect(res).toEqual({ moved: 2, pickupRef: '202-14NOV' });
+      const [filter, update] = txModel.updateMany.mock.calls[0];
+      expect(filter.pickupRef).toBe('101-14NOV');
+      expect(filter.pickupStatus).toBe('Preparing');
+      expect(update.$set.pickupRef).toBe('202-14NOV');
+      expect(update.$set.prepNote).toBe(TARGET_META.prepNote);
+      expect(update.$set.prepCreatedAt).toBe(TARGET_META.prepCreatedAt);
+      // The picking already happened: a merge never clears «prepared».
+      expect(update.$set).not.toHaveProperty('prepChecked');
+      expect(update.$push.pickupHistory).toMatchObject({ action: 'merge-prep', fromRef: '101-14NOV', pickupRef: '202-14NOV' });
+    });
+
+    it('refuses when the source group changed since the screen read it', async () => {
+      sourceHas([ID_A, ID_B]); // an order joined meanwhile
+      targetIs(TARGET_META);
+      await expect(service.mergePrepGroups('101-14NOV', '202-14NOV', [ID_A], 'أحمد')).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses when the target group no longer exists', async () => {
+      sourceHas([ID_A]);
+      targetIs(null);
+      await expect(service.mergePrepGroups('101-14NOV', '202-14NOV', [ID_A], 'أحمد')).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('split: moves an order to a new server-named group, keeps its tick and the carrier', async () => {
+      txModel.find.mockReturnValue(chain([{ _id: ID_A, prepShipCo: 'Bosta' }, { _id: ID_B, prepShipCo: 'Bosta' }]));
+      txModel.exists = jest.fn().mockResolvedValue(null);
+      const res = await service.splitPrepGroup('101-14NOV', [ID_A], 'أحمد');
+      expect(res.moved).toBe(1);
+      expect(res.pickupRef).toMatch(/^\d{3}-\d{2}[A-Z]{3}$/);
+      const [filter, update] = txModel.updateMany.mock.calls[0];
+      expect(filter.pickupRef).toBe('101-14NOV');
+      expect(update.$set.pickupRef).toBe(res.pickupRef);
+      expect(update.$set.prepShipCo).toBe('Bosta');
+      expect(update.$set).not.toHaveProperty('prepChecked');
+    });
+
+    it('split: refuses moving every order out of the group', async () => {
+      txModel.find.mockReturnValue(chain([{ _id: ID_A }]));
+      await expect(service.splitPrepGroup('101-14NOV', [ID_A], 'أحمد')).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('split: refuses an order that is no longer in the group', async () => {
+      txModel.find.mockReturnValue(chain([{ _id: ID_B }, { _id: '507f1f77bcf86cd799439023' }]));
+      await expect(service.splitPrepGroup('101-14NOV', [ID_A], 'أحمد')).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses merging a group into itself', async () => {
+      await expect(service.mergePrepGroups('101-14NOV', '101-14NOV', [ID_A], 'أحمد')).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
   /* ══════════════════════════════════════════════════════════════════════
      setPickupPreparing — a group's identity belongs to the group
      ══════════════════════════════════════════════════════════════════════

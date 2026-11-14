@@ -123,7 +123,7 @@ const add = (n) => new Date(Date.parse(TODAY) + n * 864e5).toISOString().slice(0
 
     // ── entry, summary, tabs ────────────────────────────────────────────────────────────────
     await page.evaluate(() => Promotions.enter()); await settle();
-    ok(await page.$$eval('#pr-tabs .pr-tab', (b) => b.length) === 5, 'admin sees five tabs incl. the audit log');
+    ok(await page.$$eval('#pr-tabs .pr-tab', (b) => b.length) === 6, 'admin sees six tabs incl. Shopify bundles and the audit log');
     const sum = await page.$$eval('.pr-sum-item', (els) => els.map((e) => e.querySelector('.pr-sum-val').textContent.trim()));
     ok(sum[0] === '1' && sum[1] === '2' && sum[2] === '1', `summary: 1 running offer, 2 active codes, 1 active bundle (${sum.slice(0, 3)})`);
     ok(/300/.test(sum[3]), `month markdown = (400−300)×3 on non-cancelled sales = 300 (${sum[3]})`);
@@ -217,7 +217,7 @@ const add = (n) => new Date(Date.parse(TODAY) + n * 864e5).toISOString().slice(0
 
     // ── permissions ────────────────────────────────────────────────────────────────────────
     await page.evaluate(() => { currentUser = { role: 'staff', perms: ['promotions-view'] }; Promotions.render(); }); await settle();
-    ok(await page.$$eval('#pr-tabs .pr-tab', (b) => b.length) === 4, 'view-only staff: no audit tab');
+    ok(await page.$$eval('#pr-tabs .pr-tab', (b) => b.length) === 5, 'view-only staff: no audit tab');
     ok(await page.$eval('.pr-head-act .pr-btn-primary', (b) => b.disabled), 'view-only staff: the primary action is disabled, not hidden');
     await page.evaluate(() => Promotions.tab('codes')); await settle();
     ok(await page.$$eval('#pr-tbl [data-act="code-toggle"]', (b) => b.every((x) => x.disabled)), 'view-only staff: every switch is disabled');

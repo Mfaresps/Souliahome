@@ -1,0 +1,53 @@
+/* «أداء الباقات» — bundle-analytics.js. Violet = bundle (same accent as the bundle marks). */
+.ba-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.ba-title{display:flex;align-items:center;gap:8px}
+.ba-title h3{margin:0;font-size:1rem}
+.ba-ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;flex-shrink:0;
+  background:var(--bdl-bg,#f3effd);color:var(--bdl-ink,#5b3fc4)}
+.ba-ic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ba-sum{font-size:.82rem;color:var(--muted)}
+.ba-sum bdi{color:var(--text);font-weight:600}
+.ba-h4{margin:14px 0 6px;font-size:.88rem;font-weight:600}
+.ba-note{margin:6px 0 8px;font-size:.75rem;color:var(--muted);line-height:1.6}
+.ba-empty{padding:16px;text-align:center;font-size:.82rem;color:var(--muted);border:1px dashed var(--border);border-radius:10px}
+.ba-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+.ba-tbl{width:100%;border-collapse:collapse;font-size:.82rem;min-width:620px}
+.ba-tbl th{background:var(--bg-alt);color:var(--muted);font-weight:600;font-size:.74rem;padding:8px 10px;text-align:start;border-bottom:1px solid var(--border);white-space:nowrap}
+.ba-tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.ba-tbl tbody tr:last-child td{border-bottom:none}
+.ba-tbl th.ba-num,.ba-tbl td.ba-num{text-align:end;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ba-tbl th.ba-c,.ba-tbl td.ba-c{text-align:center;white-space:nowrap}
+.ba-row{cursor:pointer}
+.ba-row:hover,.ba-row:focus-visible{background:var(--bg-alt);outline:none}
+.ba-name{display:flex;align-items:center;gap:7px;font-weight:600}
+.ba-name .ba-ic{width:22px;height:22px;border-radius:6px}
+.ba-name .ba-ic svg{width:13px;height:13px}
+.ba-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.ba-chip{font-family:ui-monospace,monospace;font-size:.68rem;padding:1px 6px;border:1px solid var(--border);border-radius:5px;color:var(--muted);unicode-bidi:isolate}
+.ba-chip.is-more{font-family:inherit}
+.ba-sub{display:block;font-size:.7rem;color:var(--muted);font-weight:400;margin-top:2px}
+.ba-sub.is-warn{color:#b45309}
+.ba-saved{color:var(--bdl-ink,#5b3fc4)}
+.ba-tbl td.is-neg{color:var(--red,#dc2626)}
+.ba-gap{display:block;font-size:.68rem;margin-top:2px;color:var(--muted)}
+.ba-gap.is-down{color:#b45309}
+.ba-gap.is-up{color:#047857}
+.ba-broken{display:inline-block;min-width:22px;padding:1px 7px;border-radius:999px;background:#fff7ed;color:#b45309;font-weight:600;font-size:.74rem}
+.ba-muted{color:var(--muted)}
+.ba-ref{font-weight:600;unicode-bidi:isolate}
+body.dark-mode .ba-broken{background:rgba(245,158,11,.15);color:#fcd34d}
+body.dark-mode .ba-sub.is-warn,body.dark-mode .ba-gap.is-down{color:#fcd34d}
+body.dark-mode .ba-gap.is-up{color:#6ee7b7}
+
+.ba-dlg{display:flex;flex-direction:column;max-height:min(80vh,640px);background:var(--surface)}
+.ba-dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.ba-dlg-title{display:flex;align-items:center;gap:8px;font-weight:700}
+.ba-dlg-sub{font-size:.76rem;color:var(--muted);margin-top:3px}
+.ba-dlg-body{overflow:auto;padding:12px 18px 16px}
+.ba-dlg-body .ba-tbl{min-width:0}
+@media (max-width:640px){.ba-tbl{min-width:560px}}
+
+/* Promotions → smart bundles: the usage count opens the invoices */
+.pr-linkbtn{border:none;background:none;padding:0;font:inherit;font-size:.82rem;color:var(--bdl-ink,#5b3fc4);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.pr-linkbtn:hover{color:var(--text)}
+.pr-track-note{margin:0 0 8px;font-size:.75rem}

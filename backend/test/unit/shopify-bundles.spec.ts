@@ -2,7 +2,7 @@
  * Shopify native bundles (Phase 2). Fixture = the real #3146 payload, trimmed to the fields read:
  * two component lines in group 35343434029, priced at their share of a 3000 bundle (1302.75 + 1697.25).
  */
-import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles } from '../../src/shopify/shopify-bundles.util';
+import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles, stampBundleItems } from '../../src/shopify/shopify-bundles.util';
 import { carryShopifyLineFields } from '../../src/shared/shopify-line.util';
 import { itemKey } from '../../src/shopify/shopify-item-merge.util';
 import { lineMarkdown } from '../../src/shared/price-offer.util';
@@ -124,5 +124,37 @@ describe('bundle fields survive edits and are never taken from the client', () =
   it('reports a bundle part\'s gap to the system price as «bundle», not «shopify»', () => {
     expect(lineMarkdown({ listPrice: 1850, price: 1697.25, qty: 1, priceSource: 'shopify', bundleGroupId: 'g1' })).toEqual({ source: 'bundle', value: 152.75 });
     expect(lineMarkdown({ listPrice: 1850, price: 1697.25, qty: 1, priceSource: 'shopify' })!.source).toBe('shopify');
+  });
+});
+
+describe('stampBundleItems — lines mapped before bundle support', () => {
+  // The real #3146 as stored locally: no shopifyLineId, no bundleGroupId on its lines.
+  const oldItems = () => [
+    { code: 'Code 10', name: 'Boho Charm Basket L', qty: 1, price: 1302.75 },
+    { code: 'HEARTH-BLANKET-BRN-S-001', name: 'Hearth Blanket Throw', qty: 1, price: 1697.25 },
+    { code: 'SOLO', name: 'Solo', qty: 1, price: 500 },
+  ];
+  it('marks both parts by code + qty + price, leaves the ordinary line alone, keeps prices', () => {
+    const items: any[] = oldItems();
+    expect(stampBundleItems(items, order3146())).toBe(2);
+    expect(items.map(i => i.bundleGroupId)).toEqual(['35343434029', '35343434029', undefined]);
+    expect(items[0]).toMatchObject({ priceBasis: 'bundle', shopifyLineId: '17278319132973', price: 1302.75, qty: 1 });
+  });
+  it('a second run marks nothing', () => {
+    const items: any[] = oldItems();
+    stampBundleItems(items, order3146());
+    expect(stampBundleItems(items, order3146())).toBe(0);
+  });
+  it('matches by Shopify line id first', () => {
+    const items: any[] = [{ code: 'X', qty: 1, price: 1, shopifyLineId: '17278319132973' }];
+    expect(stampBundleItems(items, order3146())).toBe(1);
+    expect(items[0].bundleGroupId).toBe('35343434029');
+  });
+  it('never guesses: two identical unmarked lines, or a changed price, are left unmarked', () => {
+    const twin: any[] = [{ code: 'Code 10', qty: 1, price: 1302.75 }, { code: 'Code 10', qty: 1, price: 1302.75 }];
+    stampBundleItems(twin, order3146());
+    expect(twin.every(i => !i.bundleGroupId)).toBe(true);
+    const edited: any[] = [{ code: 'Code 10', qty: 1, price: 1420 }];
+    expect(stampBundleItems(edited, order3146())).toBe(0);
   });
 });

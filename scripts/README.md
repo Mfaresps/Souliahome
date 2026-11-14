@@ -175,3 +175,16 @@ crontab -e
 
 **التحقق بعد الرفع.** خروج `rclone copy` بنجاح ليس دليلاً كافياً — السكريبت
 يسأل السحابة عن الملف فعلياً قبل أن يحذف أي شيء.
+
+---
+
+## تشغيل النظام محلياً تلقائياً (Windows)
+
+| السكربت | ماذا يفعل |
+|---|---|
+| `start-local.ps1` | يشغّل MongoDB المحلي (27018) ثم الباك إند (4000، وضع المراقبة) ثم الفرونت (8080). أي جزء شغّال بالفعل يُترك كما هو، فتشغيله أكثر من مرة آمن. |
+| `install-local-autostart.ps1` | يسجّل مهمة «SOULIA Local» في Task Scheduler تشغّل `start-local.ps1` مخفياً بعد تسجيل الدخول بـ20 ثانية. بدون صلاحيات أدمن. للإزالة: `-Remove`. |
+| `stop-local.ps1` | يوقف الباك إند والفرونت (ومعهما MongoDB مع `-Mongo`). |
+
+السجلّات في `backend/.local-mongodb/`: `start-local.log` (ملخص كل تشغيل)، و`backend.*.log` و`frontend.*.log`.
+تشغيل يدوي: `powershell -ExecutionPolicy Bypass -File scripts\start-local.ps1` أو `Start-ScheduledTask -TaskName 'SOULIA Local'`.

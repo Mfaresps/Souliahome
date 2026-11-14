@@ -69,7 +69,7 @@ import { resolveShopifyPhone } from './shopify-phone.util';
 import { resolveShopifyClientName } from './shopify-client-name.util';
 import { shopifyLineQuantity } from './shopify-line-quantity.util';
 import { clampShippingDiscount, shopifyShippingDiscount, shopifyShippingDiscountCodes } from './shopify-discounts.util';
-import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles, lineDiscountOf } from './shopify-bundles.util';
+import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles, lineDiscountOf, stampBundleItems } from './shopify-bundles.util';
 import { ShopifySyncApiService } from './sync/sync-api.service';
 import { carryShopifyLineFields } from '../shared/shopify-line.util';
 import { BundleGuardError, bundleGuard, hasBundleLines, nonBundleSubtotal } from '../shared/bundle-guard.util';
@@ -136,6 +136,9 @@ export class ShopifyService {
       order.markModified('bundleHistory');
       return true;
     }
+    // Lines mapped before bundle support carry no bundleGroupId — mark them from the payload.
+    const stamped = stampBundleItems(o.items, raw);
+    if (stamped) order.markModified('items');
     const plain = buildBundleSnapshot(raw, null);
     const sameAsCurrent = o.bundleCurrent?.verified && compositionKey(o.bundleCurrent) === compositionKey(plain);
     let snap = sameAsCurrent ? o.bundleCurrent : plain;
@@ -149,7 +152,7 @@ export class ShopifyService {
         this.logger.warn(`Bundle details unavailable for ${o.ref}: ${(e as Error).message}`);
       }
     }
-    let changed = false;
+    let changed = stamped > 0;
     if (!o.bundleFirstComposition) { o.bundleFirstComposition = compositionKey(plain); changed = true; }
     const prev = o.bundleCurrent;
     if (!prev || compositionKey(prev) !== compositionKey(snap) || (!prev.verified && snap.verified)) {
@@ -176,7 +179,9 @@ export class ShopifyService {
         //   bundle parts with ordinary lines (any element null → excluded).
         const pending = await this.shopifyOrderModel.find({
           'rawData.line_items': { $elemMatch: { sales_line_item_group_id: { $nin: [null, ''] } } },
-          $or: [{ bundleCurrent: null }, { bundleCurrent: { $exists: false } }],
+          // no bundle data yet, OR lines never marked as bundle parts (mapped before bundle support)
+          $or: [{ bundleCurrent: null }, { bundleCurrent: { $exists: false } },
+            { items: { $not: { $elemMatch: { bundleGroupId: { $nin: [null, ''] } } } } }],
         }).limit(200);
         let n = 0;
         for (const order of pending) {
@@ -1567,6 +1572,12 @@ export class ShopifyService {
     const confirmedSdCodes = confirmedSd > 0 ? shopifyShippingDiscountCodes(order.rawData) : [];
     const confirmedLines = (settledConfirmed as any[]).map((it: any) => (it.shopifyLineId && !it.lineId ? { ...it, lineId: 'sh:' + it.shopifyLineId } : it));
     const confirmedBundleField = confirmedBundleSnapshot ? { bundleSnapshot: confirmedBundleSnapshot } : {};
+    const confirmedDiscount = Math.min((Number(order.discount) || 0) + (Number(order.codesDiscount) || 0) + (Number(order.manualDiscount) || 0),
+      Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER);
+    const confirmedSmartBundles = await this.transactionsService.smartBundlesFor({
+      items: confirmedLines, discountCodeId: order.discountCodeId || '', discount: confirmedDiscount,
+      shippingDiscount: confirmedSd, shipCost: order.shipCost, itemsTotal: order.itemsTotal, total: order.total,
+    });
     const confirmedDivergenceField = acknowledgedDivergence ? { shopifyDivergence: acknowledgedDivergence } : {};
     const confirmedShippingDiscount = confirmedSd > 0
       ? { shippingDiscount: confirmedSd, shippingDiscountSource: 'order', ...(confirmedSdCodes.length ? { shippingDiscountCodes: confirmedSdCodes } : {}) }
@@ -1627,6 +1638,7 @@ export class ShopifyService {
       discountCodeId: order.discountCodeId || '',
       discountCode: order.discountCode || '',
       discountCodeType: order.discountType || '',
+      appliedBundles: confirmedSmartBundles,
       // التعليقات تنتقل مع الأوردر إلى حركته فتبقى مقروءة بعد التحوّل لفاتورة، ومربوطة
       // برقم الأوردر عبر shopifyOrderId/ref أدناه.
       comments: order.comments || [],
@@ -2229,6 +2241,9 @@ export class ShopifyService {
       : [`${labels[key] || key}: ${before[key] ?? '—'} ← ${patch[key]}`]);
     if (patch.depositVaultCorrections?.length) changes.push(...patch.depositVaultCorrections.map((c: any) => `تصحيح خزنة الدفعة ${c.id}: ${c.method}`));
     if (!changes.length) return { success: true, pendingApproval: false };
+    // Bundle break / bundle discount / Shopify-total difference: asked of the person editing NOW (the same
+    // checks update() applies at approval), so a request is never stored that its approval would refuse.
+    await this.transactionsService.preflightSaleEdit(tx, patch, { name: actor.name, role: actor.role, perms: actor.perms || [] });
     const amount = validDiscountAmount(patch.discount ?? tx.discount);
     const itemsTotal = (patch.items || tx.items || []).reduce((sum: number, item: any) => sum + Number(item.qty) * Number(item.price), 0);
     if (amount > itemsTotal) throw new BadRequestException('الخصم يتجاوز إجمالي الأصناف');
@@ -2279,7 +2294,7 @@ export class ShopifyService {
         if (!lock) throw new BadRequestException('تمت مراجعة الطلب بالفعل');
         claimed = true;
         const updatedTx = await this.transactionsService.update(request.transactionId, request.patch, request.requestedBy, actor.name,
-          direct ? actor.role : 'admin', actor.name, direct ? actor.perms : []);
+          direct ? actor.role : 'admin', actor.name, direct ? actor.perms : [], actor.id);
         // Keep the order list aligned with the authoritative invoice after its
         // inventory and money effects have been applied by the invoice service.
         appliedPatch = {

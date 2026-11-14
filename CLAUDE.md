@@ -12,6 +12,30 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+## Sync the Local Copy From Live — «مزامنة من النسخة الحية» (Nov 14, 2026)
+
+A card at the top of Settings ← البيانات, **local copy only**: downloads a fresh full backup from
+the live server, takes a safety backup of local data, then runs the same full restore as «استرجاع
+كامل» (vault password required). Button only — nothing syncs on start.
+- **Live** exports: `GET /api/settings/sync-export` (`live-sync-export.controller.ts`), no JWT —
+  header `x-soulia-sync-token` must equal `LIVE_SYNC_EXPORT_TOKEN` (≥32 chars, docker-compose reads
+  it from the server's `.env`). Unset → 404. Body = `SettingsService.buildBackupData()` (the same
+  document `createBackup` writes; secrets stripped by `backupConfiguration`). Nothing written on live.
+- **Local** imports: `LIVE_SYNC_URL` + `LIVE_SYNC_TOKEN` in `backend/.env`; `GET live-sync/status`,
+  `POST live-sync` (admin + vault password) → `runLiveSync`. Rules in `live-sync.util.ts`.
+  ⚠ Import is refused unless `MONGODB_URI` is loopback and `LIVE_SYNC_EXPORT_TOKEN` is unset — that
+  is what keeps the live server from ever importing over itself. https required except to localhost.
+  An empty reply (no transactions or no users) is refused before anything is touched.
+- Kept: `backup_live_*.json` (newest 3) + the safety `backup_*.json` + `backups/live-sync.json`
+  (last sync, shown on the card). Local settings keep their own keys and vault password (restore
+  never overwrites them); existing accounts keep their local passwords (`restoreUsersMerge`).
+- Tests: `test/unit/live-sync.spec.ts` (8, revert-checked: dropping the loopback rule fails 1);
+  end-to-end on two compiled instances over scratch copies — 18 checks (401 without/with wrong key,
+  404 on a non-exporter, secrets absent, wrong password changes nothing, 1,076 transactions arrive,
+  local-only rows replaced, safety copy kept; ~11s).
+
+---
+
 ## Access Is Granted by Roles Only — One Place, One Vocabulary (Nov 13, 2026)
 
 Two editors wrote the same `role`/`perms` on an account: the user window (84 checkboxes, 9 job
@@ -491,6 +515,304 @@ price, unitCost}` (`unitCost` after the line's share of the invoice discount), `
 
 ---
 
+## Editing an Order Before the Courier Collects It Updates Bosta (Nov 14, 2026)
+
+Editing a sale in سجل المعاملات whose Bosta shipment is still «Created» (not picked up) now also
+changes the delivery at Bosta: **COD** (= the new remaining), **receiver** (name + phone),
+**drop-off address** (city + line), **notes**. Rules in `shared/bosta-shipment-edit.util.ts`.
+- Endpoint: `PUT /deliveries/{bostaOrderId}` with any of `cod`/`receiver`/`dropOffAddress`/`notes` —
+  from Bosta's official SDKs (bosta-python `Delivery.update`, bosta-nodejs `updateDelivery`).
+  Bosta's help centre («Orders modifications»): Created → the business edits; picked up → only Bosta
+  staff; out for delivery / exception → nobody. ⚠ This corrects the older note «Bosta has no endpoint
+  to edit a live shipment» — true after pickup, not before.
+- `TransactionsService.update`: when the edit touches money or any shipment field and
+  `shipmentLocallyEditable` (bostaStatus CREATED, not Picked-Up/Shipped, no after-sales case),
+  `BostaService.shipmentEditableNow` reads Bosta's LIVE state first. Editable → the live-shipment
+  block (admin-only + confirmation) is skipped; anything else → that block applies as before.
+- After the save, `updateShipmentAfterEdit` PUTs only what changed, re-reads the delivery to confirm
+  the COD, then sets `bostaOriginalCod`, `codCollectionStatus`, `bostaShippedAddress`, clears the
+  cached AWB (re-prefetched) and pushes `shipmentEvents` `updated`. ⚠ Never throws: on refusal the
+  order stays saved and gets `bostaEditSync {status:'failed', error}` + an `update-failed` event; the
+  settlement's COD-mismatch review still catches the difference.
+- ⚠ `shippingBostaCity` was missing from both transaction DTOs, so the whitelist dropped it on every
+  edit (and create): a changed city kept the old English name, which createOrder prefers. Added.
+- **Must be done at Bosta → a notice with a link** (`_bostaLinkNotice`, stays 20s / until ×): opens
+  the order on Bosta's business dashboard (`_bostaBizUrl`, business.bosta.co/orders/{tracking}).
+  Shown when Bosta refuses the update, and when the server refuses a value edit on a collected
+  shipment — that refusal is now coded `BOSTA_SHIPMENT_LOCKED` + `trackingNumber`
+  (`_bostaLockedEditError`, in both edit-save catches).
+- Frontend: `_bostaEditSyncToast` after the save (asks to reprint the label), the shipment log shows
+  «عُدّلت الشحنة في بوسطة» / «تعذّر تعديل الشحنة» with the fields and the new COD.
+- Tests: `test/unit/bosta-shipment-edit.spec.ts` (10; revert-checked: dropping the COD read-back
+  fails 1). ⚠ **Not yet run against Bosta** — try one test shipment before relying on it.
+
+## Bosta Pickup — One Request per Warehouse per Day; Late Orders Join It (Nov 14, 2026)
+
+40 orders ready → a 40-parcel pickup request → 7 more prepared before the courier comes. Bosta refuses a
+second request for the same warehouse and day, so those 7 must JOIN today's request.
+- **Shipped column groups by the day the courier COLLECTED** (`shippedAt`, else the `SH-<day>` ref),
+  not the day the order was sent to Bosta (`_puDailyShipment`) — 47 orders sent over two days but picked
+  up together are one card. Orders still awaiting pickup keep the send day.
+- The pickup dialog offers, per request on the chosen warehouse: `ext:<id>` «إضافة لطلب قائم وتحديث
+  العدد في بوسطة» (existing `extendPickup`, PUT to Bosta, only while `canExtend`) and `att:<id>` «ضمها
+  لطلب الاستلام دون تعديل العدد في بوسطة» → `POST /shipping/pickups/:id/attach-orders` →
+  `attachToPickup`: **no Bosta call**, orders added to `orderIds` (the unique reservation) and to
+  `extraOrderIds`, history `outcome:'attached'`. Allowed by `pickupCanAttach` (created, has a Bosta id,
+  no unconfirmed update, `scheduledDate ≥` Cairo today) — so it works after the cutoff and after the
+  courier is assigned, when `extendPickup` is refused. When an «ext» attempt is refused the dialog
+  reopens on «att» for the same request.
+- Board chip: joined orders read «مضافة لطلب الاستلام»; unjoined ready orders read «جاهزة بعد طلب
+  الاستلام — ضمها له» when a joinable request exists (was «لم يُسجَّل طلب استلام»).
+- Tests: 3 cases in `bosta-pickup-extension.spec.ts`; `test/browser/bosta-pickup.cjs` (option values
+  are now `ext:`/`att:`) + a 40 + 7 case.
+
+## Merging Prep Groups — Drag a «قيد التجهيز» Card onto Another (Nov 14, 2026)
+
+With two or more prep cards, dragging one card's header onto another merges the dragged group INTO
+the one it is dropped on (1 onto 2 → group 2 holds both).
+- Backend `POST /transactions/pickup-orders/merge-prep {sourceRef, targetRef, ids}` →
+  `TransactionsService.mergePrepGroups` (perm `pickup-orders-edit`). Moves only orders still
+  `Preparing` under `sourceRef`; ⚠ refused (409) when the source no longer holds exactly `ids`
+  (an order joined, left or went to Ready meanwhile) or the target is gone; a group onto itself → 400.
+  The target keeps its identity (note, carrier, created at/by — same rule as joining a group);
+  **each order keeps its `prepChecked`** (the picking already happened). History `merge-prep` with `fromRef`.
+- ⚠ Live event action is **`merge-prep`**, not `preparing` — `_puApplyRealtimeEvent` clears
+  `prepChecked` on `preparing`, which would wipe ticks on every other screen.
+- Frontend: `_puIsPrepMergeDrag`, `puMergePrepGroups` (confirm names both groups and the merged size,
+  warns when the source's note/carrier differs), `_puEndBoardDrag` (one cleanup for every drag trace).
+  Hovered card: dashed outline + «أفلت للدمج هنا»; other cards get a faint dashed outline while a
+  prep card is dragged (`body.pu-prep-merge-drag`). ⚠ `puBoardDragOver` returns BEFORE
+  `preventDefault` for prep-over-prep, so the column itself never accepts the drop (only a card does).
+  Dropping on its own card / cancelling the confirm changes nothing. Pending rows dropped on a card
+  still join it as before.
+- Tests: 4 cases in `transactions.service.spec.ts` (`mergePrepGroups`, revert-checked: without the
+  source check 1 fails); `test/browser/pickup-prep-merge.cjs` (30 checks, ar/en: self-drop refused,
+  hint, confirm text, one request, 3 orders in one group, tick kept 1/3, cancel, 409 keeps both).
+- Not done: no touch path (HTML5 drag and right-click do not work on phones).
+
+### Quick sort inside a prep group (same day)
+One compact «ترتيب» button beside the workspace search (`#pw-sort-btn` in `#pw-sortbar`,
+`pwOpenSortMenu` → the shared `_puShowCtxMenu`): ترتيب المجموعة · «الأقدم انتظاراً» · «الأحدث» ·
+«الأعلى قيمة» · «الأقل قيمة» · «الأسرع تحضيراً» (fewest pieces, then fewest products, then oldest).
+The button names the active sort (`.is-set`). (Was five chips — owner asked for a short menu.) The sort lives INSIDE
+`_pwOrderForDisplay`, so completed orders still sink to the bottom and **auto-advance follows the
+sort** (`_pwNextPending` reads the same order). Choosing a sort opens its top order still to pick.
+Order time = `shopifyCreatedAt` → `date` → `createdAt` (`_pwOrderTime`); the age sorts add a
+«منذ N يوم» chip on each card. Remembered per user (`_colsPrefKey('soulia_pw_sort')`), ⚠ read lazily
+(`_pwLoadSortPref`) — at parse time nobody is signed in, so the key would lack the user id.
+Test: `test/browser/pickup-prep-sort.cjs` (56 checks ar/en, incl. reload memory and auto-advance).
+
+### «تحضير هذا الطلب» locked until every piece is handled (same day)
+- For anyone who can scan (`inventory-units-view` + `-allocate`), the prepare button is **disabled**
+  (`.is-locked`, grey, with a «handled / needed» counter, `data-locked="1"`) until every piece is
+  scanned or marked «تجهيز بدون مسح». Then it turns solid green «اعتماد التحضير» with a tick that
+  draws itself + one soft ring (`.pw-tick-unlock`, kept ~900ms via `pickState.unlockAt` because the
+  summary reload re-renders twice). Full scan still auto-approves (`_pwAutoPrepareScannedOrder`);
+  with skips the operator clicks it; then the usual Bosta dialog. Users without scan perms: unchanged.
+- ⚠ `pucoTickOrder`'s busy reset sets `disabled = data-locked === '1'` (it used to force `false`),
+  and `_pucoTickOrderImpl` refuses an incomplete order with `_pwWarnIncompletePicking` before any
+  request — keyboard/console/stale render cannot approve.
+- Test: `test/browser/pickup-prep-lock.cjs` (30 checks ar/en: locked 0/2 → 1/2 → unlocked, animation
+  once, focus, one prepare request, Bosta dialog). ⚠ Puppeteer element/clip screenshots resize the
+  page (re-render) unless `captureBeyondViewport:false` — the tick then looks undrawn.
+
+### Compact order header + one-row scan station (same day)
+Owner: the header and scan box were taller than the product cards. `prep-workspace-compact.css`
+(loaded right after `scan-station-redesign.css`, so equal-specificity rules win) + `.pw-head-compact`:
+- Header = two quiet lines: `#ref [copy] | name`, then status · carrier · employee · date and the money
+  as plain figures (`.pw-cust-money` / `.pw-cm`: total, remaining in blue, paid, discount). The
+  `.pw-money` tiles and the discount/paid chips are gone. «تحضير هذا الطلب» is a solid green 44px
+  button (done = quiet outline); full width on phones.
+- Scan station = one grid row: next item · «تم مسحها / مطلوبة» · scanner status + «إدخال باركود
+  يدوي»; the duplicate «متبقية» box is hidden; progress is a 3px line along the bottom. Below 1100px
+  the scanner row drops under. Measured at 1440: header 93px, station 56px, first product 206px below
+  the header top.
+- Tests: `test/browser/prep-workspace-compact.cjs` (32 checks: ar/en, dark, 1440/1024/390).
+  `preparation-workspace.cjs` now reads the prepare button's background, and its scan wait read the
+  «Required» counter (could never be 1) — fixed to «Scanned»; it then stops at a pre-existing
+  `after-sales.js printOrderCase` stub error (`popup.close`). `pickup-preparation-flow.cjs` moves the
+  mouse away before reading the send button colour (it was measuring a hover).
+  ⚠ `picking-scan.cjs` fails on the committed code too: it extracts `items.map(it => {`, which is now
+  `items.map((it, index) => {`.
+
+### Send to Bosta later + exchange labels in the prep workspace (same day)
+- A prepared Bosta order whose send offer was postponed («لاحقاً») shows **«إرسال Bosta»** in the
+  workspace bottom bar (`_pwShipStateHtml` → `pwSendToBosta` → the same `_bsfMaybeOffer` dialog). Once
+  sent: «أُرسل لبوسطة» + the tracking number (click copies it). Nothing for an unprepared order.
+- ⚠ **Exchange labels**: an exchange ships from its after-sales case; the replacement sale gets
+  `bostaTrackingNumber` but deliberately **no `bostaOrderId`** (`after-sales-shipment.ts`). Every
+  print gate required `bostaOrderId`, so the label was never offered. `_bsfIsSent(o)` now also counts
+  `bostaTrackingNumber` + an after-sales case, and the workspace print/preview buttons, the invoice
+  ⋮ «طباعة بوليصة Bosta» and the label cache use it. The backend `getAwb` already printed by
+  tracking number. An unshipped exchange's button opens its case («ملف الاستبدال»), as before.
+- **Compact bottom bar** (owner: too crowded): one chip «✓ بوسطة | tracking» (click copies),
+  then icon buttons — print label (green with a ✓/count badge once printed), invoice, and «⋯»
+  (`pwOpenMoreMenu`, opens upward via `_above` in `_puOpenCtxPanel`): preview label · copy tracking ·
+  TAG · move to a new prep group · back to pending. The primary «نقل … للجاهز» stays at the end.
+  Before sending: the green «إرسال Bosta» button in place of the chip.
+- ⚠ `_pwSiblingNoteHtml` guards `_unshippedSiblingsFor`: in the split runtime it is a lazy bridge
+  that returns a Promise until the Shopify module loads; opening the workspace first threw
+  «.filter is not a function» (seen intermittently; pre-existing).
+- Test: `test/browser/pickup-prep-bosta-later.cjs` (36 checks ar/en, incl. one-row bar and «⋯»).
+- Order cards in the group list (`_pwOrderCardHtml`) no longer print the phone or the «متبقي» chip
+  (owner: crowding; the total is on the card and the remaining is in the header). Phone search still works. `preparation-exchange.cjs` and
+  `pickup-preparation-flow.cjs` still pass.
+
+### Scan sounds + wrong-product alarm in the prep workspace (same day)
+- `_pwScanSound(kind)` (WebAudio, no files): `ok` a light two-note success chime (C6→G6) · `warn` one
+  short soft low tone on any other rejected scan (already registered, quantity complete, other order, not
+  found, queue full…) with its usual message · `alarm` a short «error buzz» (two quick ~150 Hz square
+  buzzes, low-pass, ~0.25 s; peak 0.24, measured offline) on a product NOT in the order. ⚠ The owner
+  rejected a long bass buzzer as annoying — keep it short.
+- Once every piece is accounted for, «إدخال باركود يدوي» (and its field) is not drawn. `_pwScanSoundFor(feedback)`
+  is called only where a scan outcome is decided (both scan functions, the queue drain), never on a
+  render — a re-render plays nothing.
+- Wrong product = `_pwScanError` sets `wrongProduct` when the reason is the server's «Barcode does not
+  match one exact sale line» or the pack-path «Wrong product» (not «Assigned piece…»): solid red
+  banner `.is-wrong-product` «منتج خطأ · لم يُضف» / «هذا المنتج غير موجود في الطلب» + a shake and a red
+  outline on the station (`prep-workspace-compact.css`, dark-mode overrides needed — picking-scan.css
+  tints dark error text pink). The next correct scan clears it.
+- ⚠ **«Not in the order» is checked FIRST** (`pickUnitInSession`, code `WRONG_PRODUCT`; the browser's pack
+  path in `pwScanAnyOrderUnit` too) — before pack membership, supplier return or «assigned to another
+  order». Otherwise two wrong products scanned in a row got different messages and sounds, depending on
+  each piece's own state. Test: «answers a product that is not in the order the same way» in
+  `inventory-scanning.spec.ts` (revert-checked).
+- Test: `test/browser/pickup-prep-scan-sound.cjs` (36, ar light / en dark; revert-checked). ⚠ The
+  result fades in — a clip screenshot needs `captureBeyondViewport:false` or it captures mid-fade.
+
+### Order edited while it is being prepared (same day)
+Scenario: 4 products, A scanned, then the order is edited and A removed. Before, A's piece stayed
+`picking` on a line that no longer existed — out of the picking summary and out of stock for good; a
+lowered quantity made approval impossible (scanned + skipped had to equal qty).
+- `inventory-units/picking-edit-reconcile.ts`, called at the end of `TransactionsService.update()`
+  when a sale's items were sent (Preparing/Ready, not handed to the courier): pieces whose line was
+  removed or now holds another product → `available` (event `picking-undone`, reason «Order edited
+  during preparation»); a lower quantity drops «without scan» skips first, then the newest scans; skips
+  on removed lines switched off; «تم التحضير» cleared only if the order is no longer fully covered;
+  sale `unitTrackingRevision` +1 (a scan in flight retries). Stores `prepEditNotice {id, at, by,
+  removed, added, changed, released:[{manualCode,code,name}], prepReset}` + pickupHistory
+  `edit-during-prep`. Nothing touches stock balances or money. Needs the editor's user id:
+  `update(…, actorUserId)` from the controller (`req.user.userId`) and Shopify's edit approval
+  (`actor.id`). ⚠ A normal edit emitted NO live event before — now `tx:updated {_id, action:'edit'}`.
+- `POST /transactions/pickup-orders/:id/prep-edit-ack {noticeId}` clears it (conditional on the id).
+- Prep screen: `_pwPrepEditNoticeHtml` — amber card above the scan station: who/when, removed (struck),
+  quantity from→to, added, and «أرجع هذه القطعة إلى الرف» with the U-code. Scanning AND approval pause
+  only while a piece has to go back (`_pwPrepEditBlocks`); additions/quantity raises never pause. One
+  warning tone when the notice arrives (once per notice). «تم الإرجاع — متابعة التحضير» resumes.
+- Tests: `test/unit/picking-edit-reconcile.spec.ts` (7), `test/integration/picking-edit-reconcile.service.spec.ts`
+  (4, scratch Mongo 27018; revert-checked: not releasing the piece fails 1), `test/browser/pickup-prep-edited.cjs` (34).
+- Not done: a Ready order given a NEW line keeps «Ready» (only its released pieces are handled).
+
+### Tag colours after a refresh + product photo fill (same day)
+- TAG pills drew in the default green after a refresh: on a quick startup `/tags` is held back and the
+  first paint ran with an empty `masterTags`. Now `masterTags` starts from a browser copy
+  (`localStorage['soulia_master_tags']`, names + colours only) and every load goes through
+  `_setMasterTags` (startup, background, `loadMasterTags`, promotions.js `?v=6`); the startup publishes
+  tags as soon as their own request lands (index 7) and repaints the prep board / Movements.
+  Test: `test/browser/pickup-tag-colour.cjs` (first load + a refresh with /tags slow; revert-checked).
+- Prep cards: product photos fill their square (`object-fit: cover`, pickup-workspace.css line ~591;
+  was `contain`, which left grey bands on non-square photos).
+
+### Right-click menus + TAGs on prep cards (same day)
+- **Group card on the board** (`_puPrepGroupCtx`): فتح الطلبات · TAG لكل طلبات المجموعة · دمجها في
+  <each other group> (→ `puMergePrepGroups`) · إرجاع المجموعة إلى المعلّق (`prepGroupBackToPending`,
+  same rule as dragging to Pending).
+- **Order card in the workspace** (`_pwOrderCtx`, `oncontextmenu` on `.pw-ocard`): نقله إلى مجموعة
+  تحضير جديدة (`puSplitOrderToNewGroup`; disabled when the order is alone) · TAG · إرجاعه إلى المعلّق
+  (existing `pucoRemoveFromPrep`).
+- Split = `POST /transactions/pickup-orders/split-prep {sourceRef, ids}` → `splitPrepGroup`: the
+  SERVER names the new group (RRR-DDMON, Cairo date, never a ref in use), the source must keep ≥1
+  order, ids must still be in the source (409), carrier inherited, `prepChecked` kept, live event
+  `split-prep` (handled like `merge-prep`).
+- One menu component `_puShowCtxMenu` / `_puOpenCtxPanel` (`.pu-ctx`, on `<body>`, z 100001, above the
+  workspace): ↑/↓, Escape (focus back), closes on outside click / scroll / resize / blur. Read-only
+  users see actions disabled.
+- **TAGs are the Movements TAGs** (`masterTags`, `PATCH /transactions/:id/tags`, one PATCH per order,
+  partial failures named). Picker `_puOpenTagPicker(e, orderIds, subject)`: a tag on every target
+  order = filled (click removes from all), on some = dashed «n/total» (click adds to all); a typed
+  name creates the master tag. Shown outside as pills by `_puCardTagsHtml(orders, 3)` on the board
+  card (a tag on only some orders reads «1/2») and on each workspace order card; +N beyond 3.
+- Tests: 3 split cases in `transactions.service.spec.ts`; `test/browser/pickup-prep-context-menu.cjs`
+  (38 checks ar/en). Screenshots `artifacts/pickup-ctx-*.png`, `artifacts/pickup-tags-*.png`.
+
+---
+
+## Invoice Edit Window — Locked Fields, Deposit Card, Another Deposit on a Confirmed Sale (Nov 14, 2026)
+
+**Fields** («بيانات الطلب»): ordinary editable inputs (owner, Nov 14 — the per-field pencils were removed). `_efEnhance`
+(run at the end of `openEditMovement`) only adds `.ef-flow` (widths follow the content, per-field `:has(#edit-tx-…)` bases),
+`.ef-field` (on a soft `--surface2` panel; label above; white input, 1px #c3cbd4 border (#3d4d43 dark), hover darker, 8px radius, 42px, brand-green focus; values start-aligned,
+right in RTL) and the amber dot on a changed field. ⚠ The base rule's `:not()` selectors outweigh plain `:focus`/RTL rules —
+match the same selector. The city input is `readonly` (it opens a picker) and is exempt from the grey readonly look.
+Every control keeps its id, so `saveEditMovement` is unchanged; a refused save focuses the field with the error
+(`_efOpenInvalid`). The deposit card's amount pencil (`.ef-pen`) stays.
+Opening: the window stays invisible until lines/totals are drawn, then rises in once at its final size (`.etx-ready` →
+`etxIn`, 600ms fallback; ⚠ the hidden rule must outweigh window-system.css's generic fade-in), the
+cursor shows progress while the full record loads. The window fits its content (max 85vh / 92vh phone) and stays centred (owner's call); «بيانات الطلب»
+slides open/closed in `toggleEditMetaPanel`, so the window grows smoothly. «طريقة دفع المتبقي» uses the app's list
+(`_pmEnhanceSelects`, `data-icons="pay-method"` → vault logos, a clock for «آجل»). The reference field shows `#` before it.
+⚠ **Shipping cost could not be set to 100+ (fixed Nov 14):** its `oninput` cleanup regex `/(\..*?)\..*/` sat inside a template
+literal, which ate the backslashes → `/(..*?)..*/`, cutting 145 to «1» (zone change and typing alike). Now a backslash-free
+split on «.». ⚠ Never put a `\` regex escape in an inline handler inside a template literal. The deposit vault pickers
+(amount editor + «تصحيح خزنة عربون») use the app's list with logos too.
+«حفظ التعديلات» shows a spinner + «جارٍ الحفظ…» for the whole save and ignores further clicks: `saveEditMovement` is a
+wrapper (`_editSaveBusy`, waits one frame so the spinner paints before the synchronous checks) around
+`_saveEditMovementImpl`; the button is restored in `finally`.
+
+**«العربون» card** (sales, `_editDepositCardHtml`): paid / remaining, each deposit with its vault logo, date, who,
+vault entry no. and the receipt thumbnail (`_spReceiptPreviewHtml`); requests waiting for a manager; «تصحيح خزنة
+عربون» (the existing per-receipt vault selects) and the amount behind pencils. ⚠ The amount opens for an **admin
+only**, only when no deposit came from a receipt (the server refuses that change), and states the vault impact
+(`_edcardImpact`: an increase enters the chosen vault; a decrease moves nothing — overpayment). ⚠ `.edcard-fix[hidden]
+{display:none!important}` — `display:flex` beat the attribute and showed the hidden inputs (revert-checked).
+
+**Another deposit on a confirmed sale** — owner's decisions: like Shopify (staff → a manager approves; a manager's
+own is approved in the same call); amount edit admin-only.
+- Backend (`DepositReceiptsService`): `submitSaleReceipt` (a receipt already uploaded/confirmed through
+  `/transactions/deposit-receipts/upload` + `/:rid/submit`), `submitSaleNoImage` (same perms + manager OTP as Shopify;
+  the OTP binds to the sale id), `approveSaleDeposit` (atomic claim `معلق → قيد التسجيل`, room re-checked, vault
+  «ديبوزت مبيعات», then `deposit += amount`, a `deposits[]` row `source:'deposit-receipt'`, a `depositReceipts[]`
+  snapshot, remaining/payStatus by `reconcile`, Shopify metafields queued), `rejectSaleDeposit`, `withdrawSaleDeposit`,
+  `pendingSaleDeposits`. Routes `/transactions/:id/deposit-requests[...]` + `GET /transactions/deposit-requests/pending`.
+- ⚠ **Pending/rejected requests live in `transaction.depositRequests`, never in `depositReceipts`** — every reader
+  (invoice, receipt history, invoice image, metafields) treats a sale's `depositReceipts` as approved money.
+- Blocked: not a sale, cancelled, after-sales case, carrier settlement, delivered, or nothing left once waiting
+  requests are counted (`saleDepositBlock` ⇄ frontend `_saleDepBlock`).
+- Frontend: the same dialogs (`openSpReceiptForm` manual mode, `openSpNoImageDeposit`) fed a stand-in order whose
+  `_id` is the sale id (`_saleDepOrder`, `_saleDepBuildOrder`); its receipts = the sale's deposits + waiting requests,
+  so the dialogs' own cap is the true remaining. ⚠ The dialogs share the modal with the edit window: «إضافة عربون»
+  closes the edit window (asks if unsaved) and reopens it afterwards (`_saleDepAfter`). The invoice page lists waiting
+  requests with approve/reject/withdraw (`_saleDepInvoiceHtml`) — a `tx:` approval notification opens it.
+- Tests: `test/integration/sale-deposit-requests.service.spec.ts` (9, scratch DB; revert-checked: a non-atomic claim
+  books twice), `test/browser/edit-window-deposit.cjs` (29). ⚠ `after-sales.cjs`, `navigation-shell.cjs` and
+  `shopify-deposit-receipts.cjs` fail identically on the file from before this change; the integration
+  `shopify-deposit-receipts.service.spec.ts` lacks `settleOfferRemovalsOrThrow` in its stub (Nov 13).
+- ⚠ **«تعذّر تحديد الموظف» on every receipt (fixed Nov 14):** `TransactionsController.receiptActor` read `sub`, but
+  JwtStrategy sets `userId` — every route above (and a new sale's receipt deposit) arrived with an empty actor. Test:
+  `test/unit/receipt-actor.spec.ts`. The service tests passed because they build the actor themselves.
+- «احفظ تعديل إجمالي الفاتورة أولًا، ثم صحّح خزن الدفعات» fired on a vault-only correction (#3148): the guard compared the
+  window's totals with the in-memory list row. It now compares with `_editOpenBaseline` (`_editCurrentTotals`, taken when
+  the window finishes opening) and logs `[edit] vault correction refused` with the numbers when it does refuse.
+- **Not done:** a «الموافقات» row for these requests (managers get the notification → invoice page).
+- **Phone stored without its 0** (Shopify «1007133065»): the edit window shows it normalised, so `_editHasChanges`
+  read every such order as already changed («حفظ التعديلات» visible, «إضافة عربون» warned of unsaved edits). It now
+  compares `cleanPastedPhone(tx.phone)` (revert-checked).
+
+## Invoice Window Compact + Shopify Sync Line (Nov 14, 2026)
+- **`showInvoiceDetail`** (the window from the movements list): CSS-only, scoped `#inv-detail-content`. No decorative
+  circle; title/number/date together; status a thin strip; 32px avatar, name + phone on one line; totals one list with
+  a bold total row (the big «الإجمالي الكلي» box removed); smaller chips. ⚠ The items table is `table-layout:fixed` with
+  set column widths — it was 48px wider than the 520px window and cut the total column. ⚠ On phones the piece-identity
+  column collapses to zero width, NOT `display:none`: the bundle heading row spans 6 columns, and removing one made a
+  phantom column that squeezed the product names into the prices. Measured: 920 → 750px for a 3-line bundle invoice.
+  `test/browser/invoice-window-compact.cjs` (7; revert-checked: without the fixed layout the phone check fails).
+- **Shopify sync on the invoice page** (`mountShopifyOrderSync`, shopify-sync.js/.css `?v=20261114-compact`): was a
+  full-width bordered card at the TOP of the page; now one small line at the END of the side column (icon · Shopify ·
+  status · time, full text in `title`) with an icon-only button for «معاينة المزامنة / إعادة المحاولة». Admins only, as before.
+
+
+---
+
 ## Shipping Discount Classification + Shopify Native Bundles (Nov 13, 2026)
 
 ### Phase 1 — free shipping is no longer a product discount
@@ -550,6 +872,41 @@ parent_line_item_id}` — name and quantity come from GraphQL `LineItem.lineItem
   bundle lines and no data. ⚠ `onApplicationBootstrap` was never called in this app — use `onModuleInit`.
   ⚠ Query the array with `$elemMatch` — `$nin:[null]` on `rawData.line_items.<field>` drops any order
   that mixes bundle parts with ordinary lines.
+- ⚠ **Orders that arrived before bundle support showed no bundle** (Nov 14): the start-up backfill stored
+  `bundleCurrent` but never marked the lines, so #3146 rendered as two ordinary lines. `stampBundleItems(items,
+  raw)` (shopify-bundles.util) marks them from the payload — by Shopify line id, else a code + qty + price
+  unique among unmarked lines; ambiguous or edited lines are never guessed, prices never change. Called by
+  `refreshBundles`; the backfill also picks orders whose lines carry no `bundleGroupId`. Local run: #3146 and
+  #9999 marked. 4 cases in `shopify-bundles.spec.ts` (revert-checked: allowing a non-unique match fails 1).
+- **Invoice edit = Shopify edit window (Nov 14)**: editing a confirmed sale (سجل المعاملات) shows the bundle like the
+  Shopify window — heading + lock line, part price/qty `readonly`, «+» adds a separate line at the normal price,
+  «−»/× breaks the bundle after a confirm priced on the ORDER's day (`_editBreakBundle`, sends `confirmBundleBreak`),
+  discount note. ⚠ Load never merges a bundle part with another line (`!it.bundleGroupId` in the merge), and each line
+  carries `lineId` + `shopifyLineId` on load and save — the server carries bundle fields by them; without them a part
+  next to a separate line of the same product lost its bundle mark. Server: `TransactionsService.saleEditGuards`
+  (raising a discount over `nonBundleSubtotal` → `BUNDLE_DISCOUNT_BLOCKED` unless admin/`shopify-bundle-discount-override`
+  + reason ≥5 → `bundleDiscountOverride`; a Shopify sale whose total moves away from Shopify's →
+  `SHOPIFY_DIVERGENCE_ACK_REQUIRED` with MSA change lines, `acknowledgeDivergence` → `shopifyDivergence`). ⚠ Shopify
+  sales carry no `source` field — keyed on `shopifyOrderId`. ⚠ Shopify sales save through
+  `PATCH /shopify/transactions/:id/edit`, which STORES a request before `update()` runs: `preflightSaleEdit` runs the same
+  checks first, so the person editing answers them (`_editAnswerServerQuestion`, both save paths) and a request the
+  approval would refuse is never stored. The difference dialog lists this edit's lines with photos (`_txDivergenceExplainHtml`,
+  rows shared with the Shopify notice via `_spDxItemRows`).
+- **Bundle price display (Nov 14)**: icon is «layers» (the box was the «ship together» mark). A part's price shows its
+  own price struck under it (`_bundlePriceHtml`, `_bundleListPrice`: `listPrice`, else the card) on the invoice page,
+  window, print, Shopify and Movements popovers, prep cards. `_offerSummaryOf(items, day, since, doc)` also counts bundle
+  savings as a group `{bundle:true}` → «الأصناف قبل الباقة» + «باقة [name] −X» in every summary (`_sumBeforeLabel`,
+  `_sumGroupLabelHtml`/`_sumGroupTagHtml`). Prep workspace + pickup cards show the heading and marked parts.
+- Tests: `sale-edit-guards.spec.ts` (10), `shopify-bundle-display.cjs` now 36 (revert-checked: the «+»/«−» bundle branch).
+  ⚠ `preparation-workspace.cjs` times out at its scan step with or without this change (pre-existing).
+- **Look (Nov 14)**: one violet accent means «bundle» (`--bdl-ink/-bg/-bg-soft/-line/-chip`, light + dark) —
+  green stays money, lime stays offers, amber stays warnings. The heading (`_bundleLabelHtml`: box icon in a
+  violet square + «باقة» pill + name) and every part share a violet start rail and a faint tint, so the
+  bundle reads as one block. Lists: `_bundleMarkHtml(doc)` puts a «باقة» chip (name in `title`) in the items
+  cell of the Shopify table and Movements; the Movements items popover got headings too. Edit window:
+  `_bundleLockNoteHtml()` states what is locked and what breaks it (was hover-only). Printed invoice: violet
+  rail + name. A bundle whose name has not arrived reads «باقة · Shopify» (not «باقة باقة Shopify»).
+  `shopify-bundle-display.cjs` 28 checks (+5) + screenshots `artifacts/shopify-bundle-display/lists-ar*.png`.
 
 ### Phase 3 — bundle protection on edits
 One rule, `shared/bundle-guard.util.ts` (`bundleGuard`), used by `prepareOrderEdit` (Shopify edit window)
@@ -571,6 +928,51 @@ and `TransactionsService.update` (confirmed invoice):
 - ⚠ `shopifyDivergence` / `bundleDiscountOverride` are schema props — strict mode drops undeclared $set fields.
 - Tests: `bundle-guard.spec.ts` (12), `shopify-bundle-edit.spec.ts` (6, real service code; revert-checked),
   `test/browser/shopify-bundle-edit.cjs` (13).
+
+### Edit history window + «what changed» on the difference dialog (Nov 14, 2026)
+- The pencil / edit mark (`openShopifyEditReview`) now opens **«سجل تعديلات الطلب»**: every edit, newest first,
+  as a folded timeline (approved / direct / rejected with its reason / item & discount edits), each with the
+  touched products' photos in its line and the full before→after comparison inside. A pending request is drawn
+  first, from memory, with the approve/reject controls (`#sp-edit-rejection-reason` unchanged).
+  ⚠ The list payload leaves out `editRequestHistory`/`editHistory`, so the history is read from
+  `GET /shopify/orders/detail/:id`. An `editHistory` row that mirrors a request (same time) is skipped
+  (`_spEditHistoryEntries`). Photos: `_spEditThumb` (Shopify page thumb, else `_pwItemImgUrl`, else initials).
+- The «الإجمالي مختلف عن Shopify» confirm lists what changed since Shopify, with photos
+  (`_spDivergenceExplainHtml`: the order before its first applied edit vs now — products added/removed/qty/price,
+  manual/code discount, shipping); falls back to the server's change lines. The difference row is isolated
+  (⁦+830⁩ — it read «830+»).
+- Why «تغيّر الأوردر منذ إرسال الطلب» happens: approval compares `orderEditSnapshot` byte-for-byte, and any
+  Shopify `orders/updated` on a pending order rewrites `items` (image URL, warnings, listPrice). Not changed yet.
+- `test/browser/shopify-edit-history.cjs` (26, ar 1440 / en 390). `order-status.cjs` fails before this change too.
+
+### A cancelled invoice showed «المتبقي عند الاستلام = الإجمالي» (#2636, Nov 14, 2026)
+`performCancellation` sets `remaining = total` (the deposit is refunded) and keeps `deposit`, so both invoice
+renderers printed «المدفوع 500 · المتبقي عند الاستلام 1,450» on a cancelled, refused order. Display only — the
+vault was right (+500 deposit, −500 refund CAN-018, +500 kept as shipping SAL-1167). Now a cancelled sale/purchase
+shows `_cancelledSettlementRows(tx)`: deposit paid → kept as non-refundable shipping (`failedDelivery.shipRetained`)
+→ refunded (the rest), then «ملغي — مفيش مبلغ مستحق». Both `renderInvoiceViewPage` and `showInvoiceDetail`.
+`remaining` on cancelled rows is unchanged in the data.
+
+---
+
+## «أداء الباقات» — Bundle Analytics (Nov 14, 2026)
+
+- **Shopify bundles** (lines with `bundleGroupId`, named by `tx.bundleSnapshot`): `frontend/public/bundle-analytics.js/.css`
+  (`window.SouliaBundleStats.compute(from,to)`), from the in-memory `transactions` like «أداء عروض السعر». Per bundle
+  (identity: Shopify product id → title → its codes): invoices, bundles, revenue (line price, before the invoice discount),
+  customer saving (list − bundle price), cost (frozen line cost, else card), profit, margin, the margin of the same codes
+  sold separately in the period, and «فُكّت» (lines with `brokenFrom`; ⚠ excluded from the separate-sales margin).
+  Cancelled sales out. Cost/profit/margin only for admin or `purchase-edit-price`.
+- **«الباقات الذكية»**: the SERVER decides which bundle a sale used — `shared/smart-bundle.util.ts` →
+  `TransactionsService.smartBundlesFor` in `create`, `update` (only an invoice already carrying the field) and Shopify
+  `approveOrder`. A bundle is attributed only when its code is on the invoice AND its products meet the minimums
+  (partial code → `kind:'partial'`). Stored as `tx.appliedBundles` (`@Prop({type:[Object], default: undefined})`, no DTO).
+  ⚠ Owner's decision: counting starts with this change — an invoice without the field is never counted and nothing is guessed
+  from its code. The card states the start date.
+- Shown in التقارير (`#rep-bundles-section`, under «أداء عروض السعر») and العروض والخصومات (new tab «باقات Shopify» with
+  30/90/all, rows open their invoices; «الاستخدام» column on «الباقات الذكية»). ⚠ `promotions-page.cjs` now expects 6 tabs.
+- Tests: `test/unit/smart-bundle.spec.ts` (5; revert-checked: dropping the code rule fails 1), `test/browser/bundle-analytics.cjs` (20).
+  Local data: «blanket with boho basket» margin 69.2% vs 65.9% sold separately; «طقم سلال Terra Red» 62.1% vs 68.1%.
 
 ---
 
@@ -4694,6 +5096,21 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 14, 2026 | Editing a sale whose Bosta shipment is not picked up yet now updates Bosta too (COD, name, phone, address, notes), confirmed by reading it back; shippingBostaCity no longer dropped on edit | See "Editing an Order Before the Courier Collects It Updates Bosta" above |
+| Nov 14, 2026 | «أداء الباقات»: Shopify bundle analytics (sales, saving, profit, margin vs separate sales, broken) in Reports and a «باقات Shopify» Promotions tab; smart bundles are now recorded on each new sale by the server and counted from this change | See "«أداء الباقات» — Bundle Analytics" above |
+| Nov 14, 2026 | Invoice edit window «بيانات الطلب»: per-field pencils removed — plain editable inputs (label above, white 42px field, 8px radius, green focus); «كلّمه واتساب» → «مراسلة عبر واتساب» | index.html, edit-window-deposit.cjs |
+| Nov 14, 2026 | Settings ← البيانات backup section redesigned: one card with a row per job (restore / import / sync product references), one filled button («إنشاء نسخة الآن»), a translatable file picker (`_bkFileLabel`), and a «منطقة الخطر» card holding delete-backups + wipe. `.bk-*` CSS; ids unchanged (backup-create-btn, backup-select, backup-download-btn, backup-upload). ⚠ `settings-responsive.css` borders every card title — `.bk-head` removes it | index.html |
+| Nov 14, 2026 | «مزامنة من النسخة الحية»: a button on the local copy pulls a fresh full copy of live (secret-key export endpoint on live, safety backup first, vault password) | See "Sync the Local Copy From Live" above |
+| Nov 14, 2026 | «تحضير هذا الطلب» stays locked (grey, piece counter) until every piece is scanned or «تجهيز بدون مسح», then unlocks with a tick animation; approve → Bosta dialog as before | See "«تحضير هذا الطلب» locked until every piece is handled" above |
+| Nov 14, 2026 | Prep workspace: header is two quiet lines + a solid «تحضير هذا الطلب» button, scan station one row; products start ~200px higher | See "Compact order header + one-row scan station" above |
+| Nov 14, 2026 | Prep workspace bottom bar compacted: one «بوسطة | tracking» chip + icon buttons (print, invoice, ⋯); preview / copy / TAG / new group / back to pending moved into «⋯» | See "Send to Bosta later + exchange labels" above |
+| Nov 14, 2026 | Prep workspace: «إرسال Bosta» for a prepared order sent «later», «أُرسل لبوسطة» + tracking once sent; exchange replacements can print their Bosta label (gates required bostaOrderId, which exchanges never get); sort chips became one «ترتيب» menu | See "Send to Bosta later + exchange labels" above |
+| Nov 14, 2026 | Prep-group workspace: quick sort chips — waiting longest / newest / highest / lowest value / quickest to pick; auto-advance follows the sort | See "Quick sort inside a prep group" above |
+| Nov 14, 2026 | «قيد التجهيز» right-click menus: an order → new prep group / TAG / back to pending; a group → open / TAG all / merge into / back to pending; TAGs (same as Movements) shown as pills on the cards | See "Right-click menus + TAGs on prep cards" above |
+| Nov 14, 2026 | «قيد التجهيز»: drag one prep card onto another to merge the two groups (confirm first; target keeps its note/carrier, prepared ticks kept; refused if the dragged group changed meanwhile) | See "Merging Prep Groups" above |
+| Nov 14, 2026 | Invoice edit window: fields locked until their own pencil and sized to content; a deposit card (vault logos, receipts, waiting requests); another deposit can be added to a confirmed sale through the same receipt / no-image dialogs, approved by a manager | See "Invoice Edit Window — Locked Fields, Deposit Card" above |
+| Nov 14, 2026 | Editing a confirmed sale follows the Shopify edit window's rules (bundle lock/break, discount outside the bundle, acknowledged difference from Shopify, asked before the request is stored); bundle lines show their own price struck, summaries show the bundle savings, new «layers» icon, bundle shown in prep and pickup cards | See Phase 2 «Invoice edit» above |
+| Nov 14, 2026 | Shopify bundles made easy to spot: one violet accent for the heading and its parts (one block), a «باقة» chip in the Shopify and Movements order lists, headings in the Movements items popover, a plain lock line in the edit window, violet rail on the printed invoice | See Phase 2 «Look» above |
 | Nov 13, 2026 | Shopify quick view: «تحضير وشحن» is back at the bottom of the window (`.sp-pk-foot`, calls `approveShopifyOrder`) — the footer had been dropped, so an order could only be confirmed from its table row. Shown only for a pending, uncancelled order without a cancel request and with `shopify-prepare-ship`. `test/browser/shopify-peek-prepare-ship.cjs` (15) | index.html, shopify-order-peek.css |
 | Nov 13, 2026 | «تحضير وشحن» on an order edited away from Shopify's total only showed «إجمالي الطلب في النظام … يختلف عن Shopify» and could never be confirmed: `HttpExceptionFilter` kept `code` and details only for `PURCHASE_RECEIPT_RECONCILIATION_REQUIRED`, so `SHOPIFY_DIVERGENCE_ACK_REQUIRED` (and BUNDLE_*/UNIDENTIFIED_* codes) reached the page as plain text and the acknowledge dialog never opened. The filter now passes every coded error's fields (standard fields still win). `test/unit/http-exception-filter.spec.ts` (3, revert-checked) | backend core |
 | Nov 13, 2026 | Arrows in Arabic: «→» inside Arabic text renders reversed, so every from/to and before/after arrow now follows the UI language (`_dirArrow()` in index.html, `_spEditArrow`/`_spEditPair` in shopify-edit-approvals.js — ← Arabic, → English); range/sort chips, filter-drawer separators, period label, warehouse moves and guide examples fixed. Values beside the arrow are isolated (FSI…PDI / `<bdi>`) because a Latin product name before them flipped the arrow back. Edit-details window: drawn SVG arrow on the value line | index.html, shopify-edit-approvals.* |

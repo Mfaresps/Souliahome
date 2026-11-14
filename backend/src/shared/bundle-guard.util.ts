@@ -56,7 +56,7 @@ export function bundleGuard(opts: {
 
   if (!brokenIds.length) return { items: incoming, broken: [] };
   if (opts.delivered) {
-    throw new BundleGuardError('BUNDLE_LOCKED_AFTER_DELIVERY', 'الطلب اتسلّم — تكوين الباقة لا يتغيّر بعد التسليم. استخدم المرتجعات أو خدمة ما بعد البيع');
+    throw new BundleGuardError('BUNDLE_LOCKED_AFTER_DELIVERY', 'سُلِّم الطلب، ولا يتغيّر تكوين الباقة بعد التسليم. استخدم المرتجعات أو خدمة ما بعد البيع');
   }
 
   const broken: BundleBreak[] = [];
@@ -76,7 +76,7 @@ export function bundleGuard(opts: {
   // Groups broken by removing every part leave nothing to reprice — still a break worth confirming.
   for (const g of brokenIds) if (!broken.find((x) => x.groupId === g)) broken.push({ groupId: g, title: opts.titleOf?.(g) || '', lines: [], addedToCustomer: 0 });
   if (!opts.confirmBreak) {
-    throw new BundleGuardError('BUNDLE_BREAK_CONFIRM_REQUIRED', 'شيل جزء من الباقة يلغي سعرها — الأجزاء الباقية ستُسعَّر بسعرها العادي يوم الطلب. أكّد للمتابعة', broken);
+    throw new BundleGuardError('BUNDLE_BREAK_CONFIRM_REQUIRED', 'حذف جزء من الباقة يُلغي سعرها، وتُسعَّر الأجزاء المتبقية بسعرها العادي في تاريخ الطلب. أكِّد للمتابعة', broken);
   }
   return { items, broken };
 }

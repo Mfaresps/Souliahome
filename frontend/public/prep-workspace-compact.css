@@ -1,0 +1,357 @@
+/* Prep workspace — compact header + one-row scan station (Nov 14, 2026).
+   The order header and the scan station took more height than the product cards.
+   Products are the work, so the header became two quiet lines and the station one row.
+   Loaded after scan-station-redesign.css: equal specificity → these rules win. */
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+#pu-card-orders-modal .pw-work-head.pw-head-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 18px;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cust { flex: 1 1 auto; min-width: 0; }
+#pu-card-orders-modal .pw-head-compact .pw-cust-ref {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cust-refno {
+  font-size: 1.22rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cust-name {
+  font-size: .98rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  padding-inline-start: 10px;
+  border-inline-start: 1px solid var(--border);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cust-meta {
+  margin-top: 4px;
+  font-size: .74rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+#pu-card-orders-modal .pw-head-compact .pw-meta-date { unicode-bidi: isolate; }
+#pu-card-orders-modal .pw-head-compact .pw-cust-money {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 5px;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cm {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cm>span { font-size: .72rem; color: var(--muted); }
+#pu-card-orders-modal .pw-head-compact .pw-cm>b {
+  font-size: .86rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+#pu-card-orders-modal .pw-head-compact .pw-cm.is-due>b { color: #1d4ed8; }
+body.dark-mode #pu-card-orders-modal .pw-head-compact .pw-cm.is-due>b { color: #93c5fd; }
+#pu-card-orders-modal .pw-head-compact .pw-cm .amt-cur { font-weight: 500; opacity: .7; }
+#pu-card-orders-modal .pw-head-compact [data-pw-notes-alert]:empty { display: none; }
+
+/* The one decision on this screen: a solid, unmistakable button. */
+#pu-card-orders-modal[data-workspace="prep"] .pw-head-compact .pw-head-tick,
+#pu-card-orders-modal .pw-head-compact .pw-head-tick {
+  flex-shrink: 0;
+  align-self: center;
+  min-height: 44px;
+  padding: 0 20px 0 16px;
+  gap: 10px;
+  border-radius: 11px;
+  font-size: .92rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--pw-accent, var(--accent));
+  border: 1.5px solid var(--pw-accent, var(--accent));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--pw-accent, var(--accent)) 28%, transparent);
+}
+#pu-card-orders-modal .pw-head-compact .pw-head-tick:hover:not(.is-done) { filter: brightness(1.06); }
+#pu-card-orders-modal .pw-head-compact .pw-head-tick:not(.is-done) .pw-tickhead-c { border-color: #fff; color: #fff; background: transparent; }
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.is-done {
+  color: var(--pw-accent, var(--accent));
+  background: color-mix(in srgb, var(--pw-accent, var(--accent)) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--pw-accent, var(--accent)) 35%, var(--border));
+  box-shadow: none;
+}
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.is-done .pw-tickhead-c { border-color: currentColor; background: transparent; }
+#pu-card-orders-modal .pw-head-compact .pw-head-tick:focus-visible { outline: 2px solid var(--pw-accent, var(--accent)); outline-offset: 3px; }
+
+/* ── Scan station: one row ──────────────────────────────────────────── */
+#pu-card-orders-modal[data-workspace="prep"] .pw-barcode-tools { margin-bottom: 10px; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>* { grid-column: 1 / -1; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-station-main {
+  grid-column: 1;
+  border: 0;
+  padding: 9px 14px;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-station-target {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 1px;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-station-eyebrow { font-size: .7rem; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-station-target>strong { font-size: 1rem; line-height: 1.3; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-station-target>small { flex-basis: 100%; font-size: .73rem; }
+/* «2 متبقية» repeated the counter beside it */
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-station-remaining { display: none; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-scan-overview {
+  grid-column: 2;
+  align-self: stretch;
+  align-items: center;
+  border: 0;
+  border-inline-start: 1px solid var(--pw-divider, var(--border));
+  background: transparent;
+  padding: 0 14px;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-scan-overview>span {
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding-inline-end: 12px;
+  margin-inline-end: 12px;
+  font-size: .66rem;
+  line-height: 1.2;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-scan-overview b { font-size: 1.05rem; color: var(--text); }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-reader-bar {
+  grid-column: 3;
+  align-self: stretch;
+  min-height: 0;
+  padding: 6px 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
+  border-inline-start: 1px solid var(--pw-divider, var(--border));
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-reader-bar strong {
+  flex: 0 1 auto;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-reader-light { width: 16px; height: 16px; flex-basis: 16px; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-manual-toggle {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+/* Progress: a thin line along the bottom edge, not a hidden element */
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-scan-progress {
+  position: static;
+  width: 100%;
+  height: 3px;
+  margin: 0;
+  clip-path: none;
+  overflow: hidden;
+  border-radius: 0;
+  border-top: 1px solid var(--pw-divider, var(--border));
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-station-result { border-top: 1px solid var(--pw-divider, var(--border)); }
+
+/* ── Items heading ──────────────────────────────────────────────────── */
+#pu-card-orders-modal[data-workspace="prep"] .pw-items-bar { margin-bottom: 8px; }
+#pu-card-orders-modal[data-workspace="prep"] .pw-items-title { font-size: .88rem; }
+
+/* ── Narrow: the counter and the scanner drop under the next item ─────── */
+@media (max-width: 1100px) {
+  #pu-card-orders-modal[data-workspace="prep"] .pw-scan-station { grid-template-columns: minmax(0, 1fr) auto; }
+  #pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-reader-bar {
+    grid-column: 1 / -1;
+    border-inline-start: 0;
+    border-top: 1px solid var(--pw-divider, var(--border));
+    padding: 5px 14px;
+  }
+  #pu-card-orders-modal[data-workspace="prep"] .pw-scan-station .pw-reader-bar strong { flex: 1; }
+}
+@media (max-width: 640px) {
+  #pu-card-orders-modal .pw-work-head.pw-head-compact { flex-wrap: wrap; padding: 10px 12px; gap: 10px; }
+  #pu-card-orders-modal .pw-head-compact .pw-head-tick { width: 100%; justify-content: center; }
+  #pu-card-orders-modal .pw-head-compact .pw-cust-name { border: 0; padding: 0; flex-basis: 100%; }
+}
+
+/* ── Prepare button: locked until every piece is handled ────────────── */
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.is-locked,
+#pu-card-orders-modal .pw-head-compact .pw-head-tick:disabled:not([aria-busy="true"]) {
+  color: var(--muted);
+  background: var(--bg-alt);
+  border-color: var(--border);
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: none;
+}
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.is-locked .pw-tickhead-c { border-color: var(--border); border-style: dashed; }
+#pu-card-orders-modal .pw-head-compact .pw-tick-count {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: .74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* Ready to approve: the circle fills white and the tick shows */
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.is-scan-ready:not(.is-done) .pw-tickhead-c {
+  background: #fff;
+  border-color: #fff;
+  color: var(--pw-accent, var(--accent));
+}
+/* Unlock moment: the button pops, the tick draws itself, one soft ring */
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock { animation: pwUnlockPop .46s cubic-bezier(.34,1.56,.64,1) both, pwUnlockRing .9s ease-out .1s both; }
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock .pw-tickhead-c { animation: pwUnlockCircle .32s cubic-bezier(.34,1.56,.64,1) both; }
+#pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock .pw-tickhead-c polyline { stroke-dasharray: 22; animation: pwUnlockDraw .34s cubic-bezier(.4,0,.2,1) .16s both; }
+@keyframes pwUnlockPop { 0% { transform: scale(.94); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes pwUnlockRing {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pw-accent, var(--accent)) 45%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--pw-accent, var(--accent)) 0%, transparent); }
+}
+@keyframes pwUnlockCircle { from { transform: scale(.4); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+@keyframes pwUnlockDraw { from { stroke-dashoffset: 22; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock,
+  #pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock .pw-tickhead-c,
+  #pu-card-orders-modal .pw-head-compact .pw-head-tick.pw-tick-unlock .pw-tickhead-c polyline { animation: none; }
+}
+
+/* Wrong product scanned (not in this order): a solid red banner the picker cannot miss,
+   played with the alarm sound (_pwScanSound('alarm')). Other rejected scans keep the
+   pale style and only beep. */
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station.has-wrong-product {
+  box-shadow: 0 0 0 2px #c0271b;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-station-result.is-wrong-product {
+  background: #c0271b;
+  border-top-color: #c0271b;
+  color: #fff;
+  padding-block: 12px;
+  animation: pw-wrong-shake .42s ease-in-out 1;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-mark {
+  background: #fff;
+  color: #c0271b;
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy strong {
+  color: #fff;
+  font-size: 1.02rem;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy span,
+#pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy small {
+  color: #fff;
+  font-weight: 600;
+}
+#pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy code {
+  color: #fff;
+  background: rgba(255, 255, 255, .18);
+  border-color: rgba(255, 255, 255, .35);
+}
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-station-result.is-wrong-product {
+  background: #b3261c;
+  border-top-color: #b3261c;
+}
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product,
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy strong,
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy span,
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy small,
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-copy code {
+  color: #fff;
+}
+body.dark-mode #pu-card-orders-modal[data-workspace="prep"] .pw-station-result.is-wrong-product .pw-result-mark {
+  background: #fff;
+  color: #b3261c;
+}
+@keyframes pw-wrong-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #pu-card-orders-modal[data-workspace="prep"] .pw-scan-station>.pw-station-result.is-wrong-product { animation: none; }
+}
+
+/* «تم تعديل الطلب أثناء التحضير» — quiet amber card above the scan station. Stronger only
+   while a scanned piece has to go back to the shelf (.is-blocking); scanning is paused then. */
+#pu-card-orders-modal .pw-prep-edit {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #ecd39b;
+  border-inline-start: 4px solid #c98a0b;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #4a3608;
+  font-size: .82rem;
+}
+#pu-card-orders-modal .pw-prep-edit.is-blocking { border-color: #e6b866; border-inline-start-color: #b45309; background: #fff4e0; }
+#pu-card-orders-modal .pw-pe-head { display: flex; gap: 10px; align-items: flex-start; }
+#pu-card-orders-modal .pw-pe-head strong { display: block; font-size: .9rem; color: #5b3d02; }
+#pu-card-orders-modal .pw-pe-head small { color: #7a5a1a; }
+#pu-card-orders-modal .pw-pe-ic {
+  flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: #c98a0b; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: .85rem;
+}
+#pu-card-orders-modal .pw-pe-list, #pu-card-orders-modal .pw-pe-back ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+#pu-card-orders-modal .pw-pe-list li, #pu-card-orders-modal .pw-pe-back li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+#pu-card-orders-modal .pw-pe-list li>span {
+  min-width: 52px; padding: 1px 6px; border-radius: 6px; font-size: .72rem; font-weight: 700; text-align: center;
+  background: rgba(0, 0, 0, .06);
+}
+#pu-card-orders-modal .pw-pe-list li.is-removed>span { background: #fde3df; color: #9c2a1c; }
+#pu-card-orders-modal .pw-pe-list li.is-removed b { text-decoration: line-through; }
+#pu-card-orders-modal .pw-pe-list li.is-added>span { background: #dcf3e5; color: #19683f; }
+#pu-card-orders-modal .pw-pe-code, #pu-card-orders-modal .pw-pe-unit {
+  unicode-bidi: isolate; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; color: #6b5420;
+}
+#pu-card-orders-modal .pw-pe-back { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2c37f; }
+#pu-card-orders-modal .pw-pe-back strong { color: #8a3a00; }
+#pu-card-orders-modal .pw-pe-back small { display: block; margin-top: 4px; color: #7a5a1a; }
+#pu-card-orders-modal .pw-pe-unit { padding: 1px 6px; border-radius: 6px; background: #fff; border: 1px solid #e6cf9b; }
+#pu-card-orders-modal .pw-pe-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; }
+#pu-card-orders-modal .pw-pe-paused { margin-inline-end: auto; font-size: .76rem; font-weight: 700; color: #8a3a00; }
+#pu-card-orders-modal .pw-pe-ok {
+  min-height: 34px; padding: 6px 14px; border-radius: 8px; border: 0; cursor: pointer;
+  background: #19683f; color: #fff; font: inherit; font-weight: 700;
+}
+#pu-card-orders-modal .pw-pe-ok:disabled { opacity: .6; cursor: default; }
+body.dark-mode #pu-card-orders-modal .pw-prep-edit { background: #2f2715; border-color: #6b5420; color: #f3e2b8; }
+body.dark-mode #pu-card-orders-modal .pw-prep-edit.is-blocking { background: #3a2a12; border-inline-start-color: #e08a1e; }
+body.dark-mode #pu-card-orders-modal .pw-pe-head strong, body.dark-mode #pu-card-orders-modal .pw-pe-back strong { color: #ffd08a; }
+body.dark-mode #pu-card-orders-modal .pw-pe-head small, body.dark-mode #pu-card-orders-modal .pw-pe-back small,
+body.dark-mode #pu-card-orders-modal .pw-pe-code, body.dark-mode #pu-card-orders-modal .pw-pe-unit { color: #d9c08a; }
+body.dark-mode #pu-card-orders-modal .pw-pe-unit { background: #1f1a10; border-color: #6b5420; }
+body.dark-mode #pu-card-orders-modal .pw-pe-list li.is-removed>span { background: #4a2420; color: #ffb4a8; }
+body.dark-mode #pu-card-orders-modal .pw-pe-list li.is-added>span { background: #1d3b2a; color: #a2dfb8; }
+body.dark-mode #pu-card-orders-modal .pw-pe-paused { color: #ffb36b; }

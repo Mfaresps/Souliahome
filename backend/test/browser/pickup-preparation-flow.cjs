@@ -121,6 +121,8 @@ const base = { type: 'مبيعات', client: 'Pickup customer', date: '2026-10-2
       await centered();
       assert.equal(await page.evaluate(() => _pwSelId), orders[0]._id);
       assert.equal(await page.$eval('#puco-progress-fill', el => el.style.width).catch(() => page.$eval('#puco-progress-wrap', el => el.textContent)), '50%');
+      // The pointer may rest where the dialog's button now sits (it clicked the scanner line) — measure without hover.
+      await page.mouse.move(0, 0); await new Promise(r => setTimeout(r, 250));
       const sendGreen = await page.$eval('#bsf-overlay .bsf-btn.is-primary', el => getComputedStyle(el).backgroundColor);
       assert.equal(sendGreen, 'rgb(8, 123, 73)', 'send action uses the shared green');
       await page.evaluate(() => qs('#bsf-overlay .bsf-card').focus());

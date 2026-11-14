@@ -214,6 +214,22 @@ export class Transaction {
   @Prop({ type: Object, default: null })
   shopifyDivergence: Record<string, any> | null;
 
+  /** Another deposit submitted on this confirmed sale and its review: 'معلق' → 'معتمد' (then also in depositReceipts +
+   *  deposits) / 'مرفوض' / 'مسحوب'. Kept apart from depositReceipts, which every reader treats as approved money. */
+  @Prop({ type: [Object], default: [] })
+  depositRequests: Record<string, any>[];
+
+
+
+  /** «الباقات الذكية» this sale used, decided by the server when it is saved (shared/smart-bundle.util.ts).
+   *  ⚠ default undefined: an invoice saved before tracking began has NO field, and is never counted. */
+  @Prop({ type: [Object], default: undefined })
+  appliedBundles?: Record<string, any>[];
+
+  /** A discount raised over the lines outside intact bundles, with its reason (Shopify edit window or invoice edit). */
+  @Prop({ type: Object, default: null })
+  bundleDiscountOverride: Record<string, any> | null;
+
   @Prop({ default: '' })
   discountCodeId: string; // ID of applied discount code (empty if manual)
 
@@ -508,6 +524,11 @@ export class Transaction {
   @Prop({ default: 0 })
   unitTrackingRevision: number;
 
+  /** What an edit during preparation changed (removed/added/changed lines, pieces put back).
+   *  Shown to the picker until acknowledged; see picking-edit-reconcile.ts. */
+  @Prop({ type: Object, default: null })
+  prepEditNotice: Record<string, any> | null;
+
   /** Audited one-piece damaged-label exceptions; never barcode matches. */
   @Prop({ type: [Object], default: [] })
   pickingExceptions: any[];
@@ -599,14 +620,23 @@ export class Transaction {
    * that a shipment ever existed. Never edited, never trimmed. */
   @Prop({ type: [Object], default: [] })
   shipmentEvents: {
-    type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed';
+    type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed' | 'updated' | 'update-failed';
     at: string;
     by?: string;
     source?: string;
     trackingNumber?: string;
     bostaOrderId?: string;
     prevTrackingNumber?: string;
+    fields?: string[];
+    cod?: number;
+    error?: string;
   }[];
+
+  /** Last attempt to push an invoice edit to a not-yet-picked-up Bosta delivery
+   * (BostaService.updateShipmentAfterEdit). `failed` means the order and Bosta now differ.
+   * ⚠ `type: Object` is mandatory (nullable @Prop rule). */
+  @Prop({ type: Object, default: null })
+  bostaEditSync: { status: 'updated' | 'failed'; at: string; by?: string; fields?: string[]; cod?: number; error?: string } | null;
 
   /**
    * Bosta shipment status — mirrors Bosta state codes:

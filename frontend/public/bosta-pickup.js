@@ -129,53 +129,77 @@ function _bpFillContact() {
   qs('#bp-name').value = location.contactName || '';
   qs('#bp-phone').value = location.contactPhone || '';
 }
-function _bpRenderTargets() {
+function _bpTargetOf(value) {
+  const [mode, id] = String(value || '').split(':');
+  const request = id && (_bostaPickupForm?.preview.requests || []).find(r => r.id === id);
+  return request ? { mode, request } : null;
+}
+function _bpRenderTargets(preferred) {
   const select = qs('#bp-target');
   if (!select || !_bostaPickupForm) return;
   const location = qs('#bp-location')?.value;
-  const targets = (_bostaPickupForm.preview.requests || []).filter(r => r.canExtend && r.businessLocationId === location);
-  select.innerHTML = `<option value="">${_bpText('طلب استلام جديد','New pickup request')}</option>` + targets.map(r => `<option value="${escHtml(r.id)}">${_bpText('إضافة لطلب قائم','Add to existing request')} · ${esc(r.scheduledDate)} · ${esc(String(r.numberOfParcels))} ${_bpText('طرد','parcels')}</option>`).join('');
-  select.value = targets[0]?.id || '';
+  // One pickup per warehouse per day: orders that became ready after a request join it.
+  // ext = update the count in Bosta (only while Bosta still allows it);
+  // att = join without changing the Bosta count (cutoff passed / courier already assigned).
+  const requests = (_bostaPickupForm.preview.requests || []).filter(r => r.businessLocationId === location);
+  const options = [];
+  requests.filter(r => r.canExtend).forEach(r => options.push({ value: 'ext:' + r.id, label: `${_bpText('إضافة لطلب قائم وتحديث العدد في بوسطة','Add to existing request and update the Bosta count')} · ${r.scheduledDate} · ${r.numberOfParcels} ${_bpText('طرد','parcels')}` }));
+  requests.filter(r => r.canAttach).forEach(r => options.push({ value: 'att:' + r.id, label: `${_bpText('ضمها لطلب الاستلام دون تعديل العدد في بوسطة','Join the request without changing the Bosta count')} · ${r.scheduledDate} · ${r.numberOfParcels} ${_bpText('طرد','parcels')}` }));
+  select.innerHTML = `<option value="">${_bpText('طلب استلام جديد','New pickup request')}</option>` + options.map(o => `<option value="${escHtml(o.value)}">${esc(o.label)}</option>`).join('');
+  select.value = (preferred && options.some(o => o.value === preferred) ? preferred : options[0]?.value) || '';
   _bpTargetChanged();
 }
 function _bpTargetChanged() {
   if (!_bostaPickupForm || !qs('#bp-target')) return;
-  const target = (_bostaPickupForm.preview.requests || []).find(r => r.id === qs('#bp-target').value);
+  const choice = _bpTargetOf(qs('#bp-target').value);
+  const target = choice?.request;
+  const attach = choice?.mode === 'att';
   for (const selector of ['#bp-date','#bp-name','#bp-phone']) {
     const input = qs(selector);
     input.closest('.form-group').hidden = !!target;
     input.disabled = !!target || _bostaPickupBusy;
   }
-  qs('#bp-extension-summary').textContent = target ? _bpText(
+  const extra = _bostaPickupForm.preview.numberOfParcels;
+  qs('#bp-extension-summary').textContent = attach ? _bpText(
+    `${extra} أوردر جاهز بعد طلب الاستلام سيُضم إلى طلب ${target.scheduledDate}. العدد في بوسطة يبقى ${target.numberOfParcels}، والمندوب يستلم كل الطرود الجاهزة. لن يُرسل طلب جديد لبوسطة.`,
+    `${extra} orders ready after the request will join the ${target.scheduledDate} request. The Bosta count stays ${target.numberOfParcels}; the courier collects every ready parcel. No new request is sent to Bosta.`)
+    : target ? _bpText(
     `${target.numberOfParcels} + ${_bostaPickupForm.preview.numberOfParcels} = ${target.numberOfParcels + _bostaPickupForm.preview.numberOfParcels} طردًا. نفس المخزن والموعد. لن تتأكد الإضافة إلا بعد التحقق من العدد في بوسطة.`,
     `${target.numberOfParcels} + ${_bostaPickupForm.preview.numberOfParcels} = ${target.numberOfParcels + _bostaPickupForm.preview.numberOfParcels} parcels. Same warehouse and date. Addition is confirmed only after verifying Bosta's total.`) : '';
   const submit = qs('#bosta-pickup-form button[type="submit"]');
-  submit.textContent = target ? _bpText('تأكيد الإضافة للطلب القائم','Confirm addition to existing request') : _bpText('تأكيد طلب الاستلام','Confirm pickup request');
+  submit.textContent = attach ? _bpText('ضمها لطلب الاستلام','Join the pickup request') : target ? _bpText('تأكيد الإضافة للطلب القائم','Confirm addition to existing request') : _bpText('تأكيد طلب الاستلام','Confirm pickup request');
   submit.disabled = _bostaPickupBusy || (!target && !_bostaPickupForm.schedule?.earliestDate);
 }
 async function _bpSubmitAddition(form) {
   if (!_puRequireEdit()) return;
   const state = _bostaPickupForm;
-  const target = (state.preview.requests || []).find(r => r.id === qs('#bp-target').value && r.canExtend && r.businessLocationId === qs('#bp-location').value);
+  const choice = _bpTargetOf(qs('#bp-target').value);
+  const attach = choice?.mode === 'att';
+  const target = choice && choice.request.businessLocationId === qs('#bp-location').value
+    && (attach ? choice.request.canAttach : choice.request.canExtend) ? choice.request : null;
   if (!target) { qs('#bp-error').textContent = _bpText('أعد فتح النافذة لمراجعة طلب الاستلام.','Reopen the dialog to review the pickup request.'); return; }
   _bostaPickupBusy = true;
   form.querySelectorAll('button,input,select').forEach(el => el.disabled = true);
   const orderIds = state.preview.orders.map(o => o.id);
   try {
-    const result = await api('/shipping/pickups/' + encodeURIComponent(target.id) + '/add-orders', {
+    const result = await api('/shipping/pickups/' + encodeURIComponent(target.id) + (attach ? '/attach-orders' : '/add-orders'), {
       method: 'POST', body: JSON.stringify({ orderIds, expectedNumberOfParcels: target.numberOfParcels }),
     });
     if (result.success !== true) throw new Error(_bpText('لم تتأكد الإضافة.','Addition has not been confirmed.'));
-    _bpSetRequests(_bostaPickupRequests.map(r => r.id === target.id ? { ...r, ...result, orderIds: [...r.orderIds, ...orderIds], updateState: 'idle', pendingOrderIds: [] } : r));
+    _bpSetRequests(_bostaPickupRequests.map(r => r.id === target.id ? { ...r, ...result, orderIds: [...r.orderIds, ...orderIds], extraOrderIds: attach ? [...(r.extraOrderIds || []), ...orderIds] : (r.extraOrderIds || []), updateState: 'idle', pendingOrderIds: [] } : r));
     _bostaPickupForm = null;
     if (typeof renderPickupBoard === 'function') renderPickupBoard();
-    openModal(`<div class="bp-dialog bp-success" role="status"><div class="bp-success-icon">${_bpCheck}</div><h3>${_bpText('أكدت بوسطة إضافة الطلبات','Bosta confirmed the addition')}</h3><p><bdi>${esc(String(target.numberOfParcels))} + ${orderIds.length} = ${esc(String(result.numberOfParcels))}</bdi> ${_bpText('طردًا','parcels')}</p><p>${_bpText('نفس طلب الاستلام والمخزن والموعد. تظل الشحنات جاهزة حتى يصل تأكيد استلام كل شحنة من بوسطة.','Same pickup request, warehouse and date. Shipments stay ready until Bosta confirms collection of each shipment.')}</p><button type="button" class="btn btn-primary" onclick="closeModal()">${_bpText('تم','Done')}</button></div>`, 'width:480px;max-width:calc(100vw - 32px)');
+    if (attach) openModal(`<div class="bp-dialog bp-success" role="status"><div class="bp-success-icon">${_bpCheck}</div><h3>${_bpText('انضمت الأوردرات لطلب الاستلام','Orders joined the pickup request')}</h3><p><bdi>${esc(String(orderIds.length))}</bdi> ${_bpText('أوردر مع طلب','orders with the request of')} <bdi>${esc(target.scheduledDate)}</bdi></p><p>${_bpText(`العدد في بوسطة ${target.numberOfParcels} طردًا. سلّم المندوب كل الطرود الجاهزة؛ كل شحنة تنتقل إلى «تم الشحن» عندما تؤكد بوسطة استلامها.`, `The Bosta count is ${target.numberOfParcels} parcels. Hand the courier every ready parcel; each shipment moves to Shipped when Bosta confirms collection.`)}</p><button type="button" class="btn btn-primary" onclick="closeModal()">${_bpText('تم','Done')}</button></div>`, 'width:480px;max-width:calc(100vw - 32px)');
+    else openModal(`<div class="bp-dialog bp-success" role="status"><div class="bp-success-icon">${_bpCheck}</div><h3>${_bpText('أكدت بوسطة إضافة الطلبات','Bosta confirmed the addition')}</h3><p><bdi>${esc(String(target.numberOfParcels))} + ${orderIds.length} = ${esc(String(result.numberOfParcels))}</bdi> ${_bpText('طردًا','parcels')}</p><p>${_bpText('نفس طلب الاستلام والمخزن والموعد. تظل الشحنات جاهزة حتى يصل تأكيد استلام كل شحنة من بوسطة.','Same pickup request, warehouse and date. Shipments stay ready until Bosta confirms collection of each shipment.')}</p><button type="button" class="btn btn-primary" onclick="closeModal()">${_bpText('تم','Done')}</button></div>`, 'width:480px;max-width:calc(100vw - 32px)');
     refreshBostaPickupRequests().then(() => { if (typeof renderPickupBoard === 'function') renderPickupBoard(); }).catch(() => {});
   } catch (e) {
     _bostaPickupBusy = false;
     await openBostaPickup();
+    // Bosta refused the new count (cutoff passed / courier assigned): offer to join without it.
+    const fallback = !attach && qs('#bp-target') && [...qs('#bp-target').options].some(o => o.value === 'att:' + target.id);
+    if (fallback) _bpRenderTargets('att:' + target.id);
     const dialog = qs('#modal-content .bp-dialog') || qs('.bp-dialog');
-    if (dialog) dialog.insertAdjacentHTML('afterbegin', `<p role="alert" style="color:var(--red)">${esc(e.message)}</p>`);
+    if (dialog) dialog.insertAdjacentHTML('afterbegin', `<p role="alert" style="color:var(--red)">${esc(e.message)}${fallback ? ' — ' + esc(_bpText('يمكنك ضمها لنفس الطلب دون تعديل العدد في بوسطة.', 'You can join them to the same request without changing the Bosta count.')) : ''}</p>`);
     else toast(e.message, true);
   } finally {
     _bostaPickupBusy = false;

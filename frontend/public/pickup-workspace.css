@@ -588,7 +588,7 @@ body.dark-mode .pw-manual-review-note{color:#fbbf24}
 #pu-card-orders-modal[data-workspace="prep"] .pw-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,340px),1fr)); gap: 12px; }
 #pu-card-orders-modal[data-workspace="prep"] .pw-grid>.pw-item { max-width: none; min-width: 0; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); padding: 11px; gap: 12px; align-items: start; border-radius: 11px; }
 #pu-card-orders-modal[data-workspace="prep"] .pw-item .product-thumb { width: 100%; height: auto; min-width: 0; aspect-ratio: 1; border-radius: 9px; }
-#pu-card-orders-modal[data-workspace="prep"] .pw-item img { object-fit: contain; background: var(--bg-alt); }
+#pu-card-orders-modal[data-workspace="prep"] .pw-item img { object-fit: cover; object-position: center; background: var(--bg-alt); } /* fills the square (owner, Nov 14): contain left grey bands on non-square photos */
 #pu-card-orders-modal[data-workspace="prep"] .pw-item-pic .pw-mult { display: inline-flex; min-width: 40px; padding: 3px 7px; inset-block-end: 5px; inset-inline-end: 5px; box-shadow: 0 1px 3px #00000012; }
 #pu-card-orders-modal[data-workspace="prep"] .pw-mult-n { font-size: 1.65rem; font-weight: 800; }
 #pu-card-orders-modal[data-workspace="prep"] .pw-mult-x { font-size: .8rem; }

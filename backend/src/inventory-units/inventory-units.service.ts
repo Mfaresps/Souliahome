@@ -1050,6 +1050,14 @@ export class InventoryUnitsService implements OnModuleInit {
       }
       const unit: any = await this.units.findOne(await this.identifierFilter(dto.identifier, session)).session(session);
       if (!unit) throw new NotFoundException('Barcode is not registered');
+      // A product that is not in the order is answered FIRST, the same way every time — before
+      // the piece's own state (pack, supplier return, another order). Otherwise two wrong products
+      // scanned one after the other got two different messages and sounds.
+      const scannedProduct: any = await this.connection.collection('products').findOne({ _id: this.id(unit.productId) }, { session, projection: { code: 1 } });
+      const orderLines: any = await this.connection.collection('transactions').findOne({ _id: this.id(transactionId) }, { session, projection: { items: 1 } });
+      if (orderLines && scannedProduct && !(orderLines.items || []).some((line: any) => String(line.code || '').trim() === String(scannedProduct.code || '').trim())) {
+        throw new ConflictException({ code: 'WRONG_PRODUCT', message: 'Barcode does not match one exact sale line' });
+      }
       if (unit.packId && unit.packId !== packId) throw new ConflictException('Scan the sealed pack label, or open the pack before scanning a single piece');
       const product = await this.lockProduct(unit.productId, session);
       if (['supplier-return-pending', 'returned-to-supplier'].includes(unit.status)) throw new ConflictException({

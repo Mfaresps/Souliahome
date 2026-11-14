@@ -202,10 +202,13 @@
     if (!isAdmin() || !tx?.shopifyOrderId || !wrap) return;
     wrap.querySelector('.ss-order')?.remove();
     const box = document.createElement('div'); box.className = 'ss-order';
-    box.innerHTML = `<strong>Shopify</strong><span role="status">${h(text('جارٍ تحميل المزامنة…', 'Loading sync…'))}</span>${button(text('معاينة المزامنة / إعادة المحاولة', 'Preview sync / retry'), 'open')}`;
-    wrap.prepend(box);
+    // A small status line at the END of the side column (owner, Nov 14): sync is housekeeping, not the invoice's headline.
+    const label = text('معاينة المزامنة / إعادة المحاولة', 'Preview sync / retry');
+    box.innerHTML = `<svg class="ss-order-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg><strong>Shopify</strong><span role="status">${h(text('جارٍ تحميل المزامنة…', 'Loading sync…'))}</span><button type="button" class="ss-order-btn" title="${h(label)}" aria-label="${h(label)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>`;
+    const side = wrap.querySelector('.inv2-col-side');
+    (side || wrap).append(box);
     $('button', box).onclick = () => window.openShopifySync(String(tx.ref || ''));
-    try { const job = await call('orders/' + encodeURIComponent(tx._id)); $('[role="status"]', box).textContent = state(job) + ' · ' + date(job?.lastSuccessAt); }
+    try { const job = await call('orders/' + encodeURIComponent(tx._id)); $('[role="status"]', box).textContent = state(job) + ' · ' + date(job?.lastSuccessAt); box.title = $('[role="status"]', box).textContent; }
     catch (e) { $('[role="status"]', box).textContent = errorMessage(e); }
   };
 

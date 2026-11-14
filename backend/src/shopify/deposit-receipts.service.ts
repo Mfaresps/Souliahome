@@ -38,6 +38,7 @@ import {
   receiptBudgetExpr,
   round2,
 } from './deposit-receipts.util';
+import { reconcile } from '../shared/payment-reconciliation.util';
 
 export interface ReceiptActor {
   id: string;
@@ -336,6 +337,203 @@ export class DepositReceiptsService {
       // The saved receipt already owns the unique fingerprint. Metadata must not make a successful confirmation look failed.
       this.logger.warn(`Receipt identity metadata update failed (${receiptId}): ${(error as Error).message}`);
     }
+  }
+
+  // ── Another deposit on a CONFIRMED sale (Nov 14, 2026) ──────────────────────────────────────────────
+  //   The same flow as a Shopify order: upload → OCR → the employee confirms (or «بدون صورة تحويل» with the same
+  //   permissions/OTP) → a manager approves → THE VAULT MOVES HERE, once. A manager's own submission is approved
+  //   in the same call. ⚠ Pending/rejected requests live in `transaction.depositRequests`, NOT in `depositReceipts`:
+  //   every existing reader (invoice, receipt history, invoice image, Shopify metafields) treats a sale's
+  //   `depositReceipts` as approved money, so a request joins that list only when approved.
+
+  /** Why a sale cannot take another deposit now, or '' when it can. */
+  private saleDepositBlock(tx: any): string {
+    if (!tx) return 'الفاتورة غير موجودة';
+    if (tx.type !== 'مبيعات') return 'العربون متاح لفواتير المبيعات فقط';
+    if (tx.cancelled) return 'لا يمكن إضافة عربون لفاتورة ملغاة';
+    if (tx.afterSales?.caseId) return 'سجّل المبالغ من ملف الاسترجاع والاستبدال المرتبط';
+    const cs = tx.carrierSettlement || {};
+    if (cs.payoutId || ['processing', 'review', 'pending', 'settled'].includes(String(cs.status || ''))) return 'الطلب في تسوية شركة الشحن — لا يُضاف عربون الآن';
+    const delivered = tx.bostaStatus === 'DELIVERED' || String(tx.pickupStatus || '') === 'Delivered'
+      || ['تم التسليم', 'delivered', 'Delivered'].includes(String(tx.deliveryStatus || ''));
+    if (delivered) return 'الطلب سُلِّم — يُسجَّل المتبقي بالتحصيل لا بالعربون';
+    return '';
+  }
+  /** Remaining on the sale minus requests still waiting — what a new deposit may not exceed. */
+  private saleDepositRoom(tx: any): number {
+    const pending = (tx.depositRequests || []).filter((r: any) => r.status === 'معلق').reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+    return round2(reconcile(tx).remaining - pending);
+  }
+  private saleRequestGuard(tx: any) {
+    return { _id: tx._id, cancelled: { $ne: true },
+      $expr: { $and: [
+        { $eq: [{ $ifNull: ['$deposit', 0] }, Number(tx.deposit) || 0] },
+        { $eq: [{ $size: { $ifNull: ['$deposits', []] } }, (tx.deposits || []).length] },
+        { $eq: [{ $size: { $ifNull: ['$payments', []] } }, (tx.payments || []).length] },
+        { $eq: [{ $size: { $ifNull: ['$depositRequests', []] } }, (tx.depositRequests || []).length] },
+      ] } };
+  }
+  private emitSale(txId: string, receiptId: string, status: string): void {
+    try {
+      this.presence?.emitEvent('tx:updated', { _id: String(txId) });
+      this.presence?.emitEvent('sale:deposit-changed', { txId: String(txId), receiptId, status });
+    } catch { /* swallow */ }
+  }
+
+  /** Requests waiting for a manager (approvals list). */
+  async pendingSaleDeposits(actor: ReceiptActor) {
+    if (!actor.isAdmin) throw new ForbiddenException('مراجعة العربون للمدير فقط');
+    const rows = await this.txModel.find({ 'depositRequests.status': 'معلق', cancelled: { $ne: true } })
+      .select('ref client phone total deposit remaining shopifyOrderId depositRequests createdAt').lean().exec();
+    return rows.map((t: any) => ({ txId: String(t._id), ref: t.ref, client: t.client, total: t.total, deposit: t.deposit, remaining: t.remaining,
+      requests: (t.depositRequests || []).filter((r: any) => r.status === 'معلق') }));
+  }
+
+  /** A receipt already uploaded + confirmed through /transactions/deposit-receipts (upload → submit) joins this sale. */
+  async submitSaleReceipt(txId: string, receiptId: string, actor: ReceiptActor) {
+    if (!actor.id) throw new ForbiddenException('تعذّر تحديد الموظف');
+    const tx: any = await this.txModel.findById(txId).lean().exec();
+    const blocked = this.saleDepositBlock(tx);
+    if (blocked) throw new BadRequestException(blocked);
+    const draft = await this.manualReceiptModel!.findOneAndUpdate({ receiptId, ownerId: actor.id, state: 'submitted',
+      expiresAt: { $gt: new Date().toISOString() } }, { $set: { state: 'claiming', ref: tx.ref || '', client: tx.client || '' } }, { new: true }).exec();
+    if (!draft) throw new BadRequestException('ارفع الإيصال وافحصه وأكّد المبلغ والخزنة أولًا');
+    const r = draft.receipt;
+    const room = this.saleDepositRoom(tx);
+    if (r.amount > room + DEPOSIT_TOLERANCE) {
+      await this.releaseManualReceipt(receiptId);
+      throw new BadRequestException(`المبلغ (${r.amount} ج) أكبر من المتبقي على الفاتورة (${Math.max(0, room)} ج)`);
+    }
+    const request = { ...r, status: 'معلق', submittedAt: r.submittedAt || new Date().toISOString() };
+    const saved = await this.txModel.findOneAndUpdate(this.saleRequestGuard(tx), { $push: { depositRequests: request } }, { new: true }).exec();
+    if (!saved) { await this.releaseManualReceipt(receiptId); throw new BadRequestException('تغيّرت مدفوعات الفاتورة الآن — أعد المحاولة'); }
+    await this.consumeManualReceipt(receiptId, String(tx._id));
+    return this.afterSaleRequest(saved, request, actor);
+  }
+
+  /** «بدون صورة تحويل» on a sale — same permissions and manager OTP as on a Shopify order (the OTP binds to the sale id). */
+  async submitSaleNoImage(txId: string, body: { amount: unknown; method: unknown; reason?: string; otpId?: string }, actor: ReceiptActor, access: { role?: string; perms?: string[] }) {
+    if (!actor.id) throw new ForbiddenException('تعذّر تحديد الموظف');
+    const perms = access.perms || [];
+    const direct = actor.isAdmin || access.role === 'admin' || perms.includes('shopify-deposit-no-image');
+    const viaOtp = !direct && perms.includes('shopify-deposit-no-image-otp');
+    if (!direct && !viaOtp) throw new ForbiddenException('لا تملك صلاحية إضافة عربون بدون صورة');
+    const { amount, method } = this.validateEntry(body?.amount, body?.method);
+    const reason = String(body?.reason || '').replace(/[\u0000-\u001f‪-‮⁦-⁩]/g, ' ').trim().slice(0, 300);
+    const tx: any = await this.txModel.findById(txId).lean().exec();
+    const blocked = this.saleDepositBlock(tx);
+    if (blocked) throw new BadRequestException(blocked);
+    const room = this.saleDepositRoom(tx);
+    if (amount > room + DEPOSIT_TOLERANCE) throw new BadRequestException(`المبلغ أكبر من المتبقي على الفاتورة (${Math.max(0, room)} ج)`);
+    const id = `dr_${Date.now().toString(36)}${crypto.randomBytes(4).toString('hex')}`;
+    let auth = actor.isAdmin || access.role === 'admin' ? 'admin' : 'direct';
+    let releaseOtp: (() => Promise<void>) | null = null;
+    let otpId = '';
+    if (viaOtp) {
+      const settings: any = await this.settingsService.getSettings();
+      if (settings?.depositNoImageSkipOtp === true) auth = 'otp-skipped';
+      else {
+        if (!this.discountOtp) throw new BadRequestException('نظام كود التحقق غير متاح الآن');
+        otpId = String(body?.otpId || '');
+        releaseOtp = await this.discountOtp.consumeDepositNoImageOtp(otpId, String(tx._id), amount, method, id);
+        auth = 'otp';
+      }
+    }
+    const now = new Date().toISOString();
+    const request: any = { id, status: 'معلق', noImage: true, noImageReason: reason, noImageAuth: auth, ...(otpId ? { noImageOtpId: otpId } : {}),
+      imageKey: '', imageSha256: `no-image:${id}`, imageBytes: 0, imageDeleted: false, amount, method,
+      ocr: { amount: null, method: '', pattern: '', reference: '', dateText: '', confident: false, ran: false, ms: 0 },
+      needsReview: true, warnings: [], uploadedAt: now, submittedBy: actor.name || actor.username, submittedById: actor.id, submittedAt: now };
+    let saved: any = null;
+    try { saved = await this.txModel.findOneAndUpdate(this.saleRequestGuard(tx), { $push: { depositRequests: request } }, { new: true }).exec(); }
+    catch (error) { if (releaseOtp) await releaseOtp().catch(() => undefined); throw error; }
+    if (!saved) { if (releaseOtp) await releaseOtp().catch(() => undefined); throw new BadRequestException('تغيّرت مدفوعات الفاتورة الآن — أعد المحاولة'); }
+    return this.afterSaleRequest(saved, request, actor);
+  }
+
+  /** A manager's own request is approved in the same call; staff requests notify the managers. */
+  private async afterSaleRequest(saved: any, request: any, actor: ReceiptActor) {
+    if (actor.isAdmin) return this.approveSaleDeposit(String(saved._id), request.id, actor);
+    await notifyApproval(this.notifications, 'approval:sale-deposit:' + request.id + ':pending', saved.ref, 'tx:' + saved._id,
+      { actorName: request.submittedBy, actionKey: 'deposit', status: 'pending', receiptId: request.id });
+    this.emitSale(String(saved._id), request.id, 'معلق');
+    return { success: true, pendingApproval: true, request };
+  }
+
+  /** Manager approval: claim once, check the room, book the vault, then record the deposit on the sale. */
+  async approveSaleDeposit(txId: string, receiptId: string, admin: ReceiptActor) {
+    if (!admin.isAdmin) throw new ForbiddenException('اعتماد العربون للمدير فقط');
+    const now = new Date().toISOString();
+    const claimed: any = await this.txModel.findOneAndUpdate(
+      { _id: txId, cancelled: { $ne: true }, depositRequests: { $elemMatch: { id: receiptId, status: 'معلق' } } },
+      { $set: { 'depositRequests.$.status': 'قيد التسجيل', 'depositRequests.$.reviewedBy': admin.name || admin.username,
+        'depositRequests.$.reviewedById': admin.id, 'depositRequests.$.reviewedAt': now } }, { new: true }).lean().exec();
+    if (!claimed) throw new BadRequestException('الطلب ليس قيد المراجعة — رُوجع بالفعل أو سُحب');
+    const r = (claimed.depositRequests || []).find((x: any) => x.id === receiptId);
+    const revert = () => this.txModel.updateOne({ _id: txId, depositRequests: { $elemMatch: { id: receiptId, status: 'قيد التسجيل' } } },
+      { $set: { 'depositRequests.$.status': 'معلق' }, $unset: { 'depositRequests.$.reviewedBy': '', 'depositRequests.$.reviewedById': '', 'depositRequests.$.reviewedAt': '' } }).exec();
+    const blocked = this.saleDepositBlock(claimed);
+    const remaining = reconcile(claimed).remaining;
+    if (blocked || r.amount > remaining + DEPOSIT_TOLERANCE) {
+      await revert();
+      throw new BadRequestException(blocked || `المبلغ (${r.amount} ج) أكبر من المتبقي على الفاتورة (${Math.max(0, remaining)} ج) — ارفض الطلب`);
+    }
+    const ref = cleanRef(claimed.ref);
+    let entry: any;
+    try {
+      this.validateEntry(r.amount, r.method);
+      entry = await this.vaultService.addSystemEntry(r.amount, r.method,
+        `عربون إضافي مبيعات #${ref} — ${claimed.client || ''} (${r.noImage ? 'بدون صورة تحويل' : 'إيصال تحويل'})`,
+        businessDate(), 'ديبوزت مبيعات', ref, { customer: claimed.client }, r.submittedBy, { receiptId, transactionId: String(claimed._id) });
+    } catch (err) { await revert(); throw err; }
+    const vaultTxNo = entry?.txNo || '';
+    const deposit = { id: receiptId, amount: r.amount, method: r.method, note: `عربون إضافي — ${r.noImage ? 'بدون صورة تحويل' : 'إيصال تحويل'} معتمد`,
+      date: now, by: r.submittedBy, source: 'deposit-receipt', receiptId, vaultTxNo };
+    const snapshot = { id: receiptId, amount: r.amount, method: r.method, imageKey: r.imageKey || '', imageDeleted: !!r.imageDeleted,
+      ...(r.noImage ? { noImage: true, noImageReason: r.noImageReason || '' } : {}), needsReview: !!r.needsReview,
+      submittedBy: r.submittedBy, submittedAt: r.submittedAt, reviewedBy: admin.name || admin.username, reviewedAt: now, vaultTxNo,
+      senderName: r.senderName ?? r.ocr?.senderName ?? '', senderBank: r.senderBank ?? r.ocr?.senderBank ?? '', senderHandle: r.senderHandle ?? r.ocr?.senderHandle ?? '',
+      senderPhone: r.senderPhone ?? r.ocr?.senderPhone ?? '', transferDateText: r.transferDateText ?? r.ocr?.dateText ?? '',
+      transferReference: r.transferReference ?? r.ocr?.reference ?? '', ocrAmount: r.ocr?.amount ?? null, ocrMethod: r.ocr?.method ?? '' };
+    const after = reconcile({ ...claimed, deposit: round2((Number(claimed.deposit) || 0) + r.amount), deposits: [...(claimed.deposits || []), deposit] });
+    const written = await this.txModel.updateOne({ _id: txId, depositRequests: { $elemMatch: { id: receiptId, status: 'قيد التسجيل' } } }, {
+      $set: { 'depositRequests.$.status': 'معتمد', 'depositRequests.$.vaultTxNo': vaultTxNo, 'depositRequests.$.vaultEntryId': String(entry?._id || ''),
+        remaining: after.remaining, payStatus: after.remaining <= 0.009 ? 'مكتمل' : 'معلق' },
+      $inc: { deposit: r.amount }, $push: { deposits: deposit, depositReceipts: snapshot } }).exec();
+    if (!written.modifiedCount) this.logger.error(`Sale deposit ${receiptId} booked to the vault (${vaultTxNo}) but the sale was not updated — check ${txId}`);
+    if (claimed.shopifyOrderId) await this.depositMetafields?.requestSync(String(claimed.shopifyOrderId), 'deposit-receipt').catch(() => undefined);
+    await notifyApproval(this.notifications, 'approval:sale-deposit:' + receiptId + ':approved', claimed.ref, 'tx:' + txId,
+      { actorName: r.submittedBy, actionKey: 'deposit', status: 'approved', receiptId }, r.submittedById);
+    this.emitSale(txId, receiptId, 'معتمد');
+    return { success: true, pendingApproval: false, vaultTxNo, remaining: after.remaining };
+  }
+
+  async rejectSaleDeposit(txId: string, receiptId: string, admin: ReceiptActor, reason = '') {
+    if (!admin.isAdmin) throw new ForbiddenException('رفض العربون للمدير فقط');
+    const why = String(reason || '').trim().slice(0, 300);
+    const saved: any = await this.txModel.findOneAndUpdate({ _id: txId, depositRequests: { $elemMatch: { id: receiptId, status: 'معلق' } } },
+      { $set: { 'depositRequests.$.status': 'مرفوض', 'depositRequests.$.reviewedBy': admin.name || admin.username, 'depositRequests.$.reviewedById': admin.id,
+        'depositRequests.$.reviewedAt': new Date().toISOString(), 'depositRequests.$.rejectReason': why, 'depositRequests.$.imageDeleted': true } }, { new: true }).lean().exec();
+    if (!saved) throw new BadRequestException('الطلب ليس قيد المراجعة');
+    const r = (saved.depositRequests || []).find((x: any) => x.id === receiptId);
+    await this.deleteImage(r?.imageKey || '');
+    await notifyApproval(this.notifications, 'approval:sale-deposit:' + receiptId + ':rejected', saved.ref, 'tx:' + txId,
+      { actorName: r?.submittedBy, actionKey: 'deposit', status: 'rejected', receiptId }, r?.submittedById);
+    this.emitSale(txId, receiptId, 'مرفوض');
+    return { success: true };
+  }
+
+  async withdrawSaleDeposit(txId: string, receiptId: string, actor: ReceiptActor) {
+    const tx: any = await this.txModel.findById(txId).select('depositRequests').lean().exec();
+    const r = (tx?.depositRequests || []).find((x: any) => x.id === receiptId);
+    if (!r) throw new NotFoundException('طلب العربون غير موجود');
+    if (!actor.isAdmin && r.submittedById !== actor.id) throw new ForbiddenException('هذا الطلب سجّله موظف آخر');
+    const saved = await this.txModel.findOneAndUpdate({ _id: txId, depositRequests: { $elemMatch: { id: receiptId, status: 'معلق' } } },
+      { $set: { 'depositRequests.$.status': 'مسحوب', 'depositRequests.$.imageDeleted': true } }, { new: true }).exec();
+    if (!saved) throw new BadRequestException('الطلب لم يعد قيد المراجعة');
+    await this.deleteImage(r.imageKey || '');
+    this.emitSale(txId, receiptId, 'مسحوب');
+    return { success: true };
   }
 
   // ── Employee side ────────────────────────────────────────────────────────────────────────
@@ -1035,11 +1233,18 @@ export class DepositReceiptsService {
     const tx = order ? null : await this.txModel
       .findOne({ 'depositReceipts.id': receiptId }, { depositReceipts: { $elemMatch: { id: receiptId } } })
       .lean().exec();
-    const manual = !order && !tx && this.manualReceiptModel ? await this.manualReceiptModel
+    // Another deposit on a confirmed sale, still waiting for a manager (or rejected).
+    const saleRequest: any = order || tx ? null : await this.txModel
+      .findOne({ 'depositRequests.id': receiptId }, { depositRequests: { $elemMatch: { id: receiptId } } }).lean().exec();
+    if (saleRequest) {
+      const q = saleRequest.depositRequests?.[0];
+      if (q && !actor.isAdmin && q.submittedById !== actor.id) throw new ForbiddenException('الإيصال خاص بالموظف الذي رفعه');
+    }
+    const manual = !order && !tx && !saleRequest && this.manualReceiptModel ? await this.manualReceiptModel
       .findOne({ receiptId, state: { $in: ['draft', 'submitted'] }, expiresAt: { $gt: new Date().toISOString() } })
       .lean().exec() : null;
     if (manual && manual.ownerId !== actor.id && !(actor.isAdmin && manual.state === 'submitted')) throw new ForbiddenException('الإيصال خاص بالموظف الذي رفعه');
-    const r = order?.depositReceipts?.[0] || tx?.depositReceipts?.[0] || manual?.receipt;
+    const r = order?.depositReceipts?.[0] || tx?.depositReceipts?.[0] || (saleRequest as any)?.depositRequests?.[0] || manual?.receipt;
     if (!r) throw new NotFoundException('إيصال العربون غير موجود');
     if ('status' in r && r.status === 'مسودة' && (!actor.id || r.submittedById !== actor.id)) {
       throw new ForbiddenException('مسودة الإيصال خاصة بموظفها');

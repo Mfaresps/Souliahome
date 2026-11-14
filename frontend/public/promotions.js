@@ -26,7 +26,7 @@
 
   const en = () => currentLang === 'en';
   const L = (ar, enText) => (en() ? enText : ar);
-  const TABS = ['offers', 'codes', 'bundles', 'tags', 'audit'];
+  const TABS = ['offers', 'codes', 'bundles', 'shopify', 'tags', 'audit'];
   const PAGE_SIZE = 50;
 
   const S = {
@@ -37,6 +37,7 @@
       offers: { q: '', status: 'live' },
       codes: { q: '', status: '', type: '' },
       bundles: { q: '', status: '' },
+      shopify: { q: '', period: '90' },
       tags: { q: '' },
       audit: { q: '', kind: '', group: '' },
     },
@@ -135,7 +136,7 @@
     ]);
     if (Array.isArray(codes)) settings.discountCodes = codes;
     if (Array.isArray(bundles)) settings.discountBundles = bundles;
-    if (Array.isArray(tags)) masterTags = tags;
+    if (Array.isArray(tags)) { if (typeof _setMasterTags === 'function') _setMasterTags(tags); else masterTags = tags; }
   }
 
   // ── derived figures ──────────────────────────────────────────────────────────────────────
@@ -190,6 +191,7 @@
       { id: 'offers', icon: ICO.tag, label: L('عروض الأسعار', 'Price offers'), n: (S.offers.status === 'loading' || S.offers.status === 'idle') ? null : offers, nTitle: L('سارية الآن', 'running now') },
       { id: 'codes', icon: ICO.code, label: L('أكواد الخصم', 'Discount codes'), n: codes },
       { id: 'bundles', icon: ICO.bundle, label: L('الباقات الذكية', 'Smart bundles'), n: bundles },
+      { id: 'shopify', icon: ICO.bundle, label: L('باقات Shopify', 'Shopify bundles'), n: window.SouliaBundleStats ? window.SouliaBundleStats.compute('', '').shopify.length : null, nTitle: L('باقات بيعت', 'bundles sold') },
       { id: 'tags', icon: ICO.tags, label: L('إدارة TAGs', 'Manage tags'), n: (masterTags || []).length },
       ...(promoPerm('audit') ? [{ id: 'audit', icon: ICO.audit, label: L('سجل المراجعة', 'Audit log'), n: null }] : []),
     ];
@@ -264,6 +266,9 @@
     } else if (tab === 'bundles') {
       tools = `${searchBox('bundles', L('ابحث باسم الباقة أو منتج فيها…', 'Search bundle or a product in it…'))}
         ${seg('bundles', 'status', [['', L('الكل', 'All')], ['on', L('مفعّلة', 'Active')], ['off', L('معطّلة', 'Disabled')]])}`;
+    } else if (tab === 'shopify') {
+      tools = `${searchBox('shopify', L('ابحث باسم الباقة أو كود منتج فيها…', 'Search bundle or a product code…'))}
+        ${seg('shopify', 'period', [['30', L('آخر 30 يوماً', 'Last 30 days')], ['90', L('آخر 90 يوماً', 'Last 90 days')], ['all', L('الكل', 'All time')]])}`;
     } else if (tab === 'tags') {
       tools = `${searchBox('tags', L('ابحث عن تاج أو تصنيف…', 'Search tags or categories…'))}`;
     } else if (tab === 'audit') {
@@ -276,6 +281,7 @@
       offers: L('سعر مؤقت للصنف خلال فترة محددة. لا يتغير السعر الأساسي، وتحتفظ المبيعات التي تمت بسعر العرض به بعد إيقافه.', 'A temporary product price for a period. The base price never changes, and sales made at the offer keep it after the offer stops.'),
       codes: L('أكواد يكتبها الموظف أو العميل في الفاتورة. الاستخدام محسوب من الفواتير الفعلية غير الملغاة.', 'Codes entered on an invoice. Usage is counted from real, non-cancelled invoices.'),
       bundles: L('ربط منتجات بكود خصم يُقترح تلقائياً عند اختيارها في فاتورة البيع — كاملة أو جزئية.', 'Link products to a discount code suggested automatically when they are picked on a sale — full or partial.'),
+      shopify: L('الباقات التي يبيعها Shopify كمنتج واحد ثم يقسّمها على منتجاتها. الأرقام من الفواتير المؤكدة غير الملغاة، والإيراد بسعر السطر قبل خصم الفاتورة. اضغط على باقة لعرض فواتيرها.', 'Bundles Shopify sells as one product and splits into its products. Figures come from confirmed, non-cancelled invoices; revenue is at the line price before the invoice discount. Click a bundle to see its invoices.'),
       tags: L('قائمة التاجات التي تُضاف إلى المعاملات والطلبات. حذف التاج لا يزيله من المعاملات السابقة.', 'The tags put on transactions and orders. Deleting one keeps it on past transactions.'),
       audit: L('كل محاولة خصم بباقة من نموذج البيع، وكل تعديل على العروض والأكواد والباقات والتاجات — مع اسم الموظف والوقت.', 'Every bundle-discount attempt from the sale form, and every change to offers, codes, bundles and tags — with employee and time.'),
     }[tab];
@@ -293,7 +299,7 @@
   function drawTable() {
     const host = qs('#pr-tbl');
     if (!host) return;
-    const fn = { offers: offersTable, codes: codesTable, bundles: bundlesTable, tags: tagsTable, audit: auditTable }[S.tab];
+    const fn = { offers: offersTable, codes: codesTable, bundles: bundlesTable, shopify: shopifyBundlesTable, tags: tagsTable, audit: auditTable }[S.tab];
     const { html, shown, total } = fn();
     host.innerHTML = html;
     const cnt = qs('#pr-count');
@@ -446,6 +452,10 @@
     if (!all.length) return { html: `<div class="pr-empty"><span class="pr-empty-ico">${ICO.bundle}</span><p>${esc(L('لا توجد باقات خصم — أضف باقة لربط منتجات بكود خصم تلقائي.', 'No bundles yet — add one to link products to an automatic discount code.'))}</p></div>`, shown: 0, total: 0 };
     if (!rows.length) return { html: emptyRow(8, L('لا توجد باقات تطابق الفلتر.', 'No bundles match the filter.'), true), shown: 0, total: all.length };
     const can = promoPerm('bundles');
+    const BS = window.SouliaBundleStats;
+    const usage = BS ? BS.compute('', '') : null;
+    const useOf = new Map((usage?.smart || []).map((u) => [String(u.id), u]));
+    if (BS && usage) BS.smartTableHtml(usage.smart); // remembers the rows so a usage click opens the invoices
     const body = rows.map((b) => {
       const code = codes.find((c) => c.id === b.discountCodeId);
       const partial = b.partialDiscountCodeId ? codes.find((c) => c.id === b.partialDiscountCodeId) : null;
@@ -459,6 +469,9 @@
         <td data-label="${attr(L('جزئي', 'Partial'))}" class="pr-c-mid">${b.allowPartial ? `<span class="pr-yes">${esc(L('نعم', 'Yes'))}</span>` : `<span class="pr-muted">${esc(L('لا', 'No'))}</span>`}</td>
         <td data-label="${attr(L('الحد الأدنى', 'Min qty'))}" class="pr-c-mid"><bdi class="pr-strong">${fmtN(b.minQty || 1)}</bdi></td>
         <td data-label="${attr(L('الأولوية', 'Priority'))}" class="pr-c-mid"><bdi class="pr-strong">${fmtN(b.priority || 1)}</bdi></td>
+        <td data-label="${attr(L('الاستخدام', 'Usage'))}" class="pr-c-mid">${(() => { const u = useOf.get(String(b.id)); return u
+          ? `<button type="button" class="pr-linkbtn" data-ba-smart="${attr(b.id)}" title="${attr(L('عرض الفواتير', 'Show invoices'))}"><b>${fmtN(u.invoices)}</b> ${esc(L('فاتورة', u.invoices === 1 ? 'invoice' : 'invoices'))}</button>${u.discount > 0 ? `<div class="pr-sub">− ${money(u.discount)}</div>` : ''}`
+          : `<span class="pr-muted">0</span>`; })()}</td>
         <td data-label="${attr(L('مفعّلة', 'Enabled'))}">${switchHtml('bundle-toggle', b.id, !!b.active, can, b.name)}</td>
         <td class="pr-c-act"><div class="pr-actions">
           <button type="button" class="pr-iconbtn" data-act="bundle-edit" data-id="${attr(b.id)}" aria-label="${attr(L('تعديل', 'Edit') + ' ' + b.name)}" title="${attr(can ? L('تعديل', 'Edit') : lockTitle())}"${can ? '' : ' disabled'}>${ICO.edit}</button>
@@ -466,8 +479,22 @@
         </div></td>
       </tr>`;
     }).join('');
-    const head = `<thead><tr><th>${esc(L('الباقة', 'Bundle'))}</th><th>${esc(L('المنتجات', 'Products'))}</th><th>${esc(L('كود الخصم', 'Discount code'))}</th><th class="pr-c-mid">${esc(L('جزئي', 'Partial'))}</th><th class="pr-c-mid" title="${attr(L('الحد الأدنى للكمية لتفعيل الاقتراح', 'Minimum quantity to trigger the suggestion'))}">${esc(L('الحد الأدنى', 'Min qty'))}</th><th class="pr-c-mid">${esc(L('الأولوية', 'Priority'))}</th><th>${esc(L('مفعّلة', 'Enabled'))}</th><th class="pr-c-act"><span class="pr-sr">${esc(L('إجراءات', 'Actions'))}</span></th></tr></thead>`;
-    return { html: `<div class="pr-tbl-wrap"><table class="pr-table pr-t-bundles">${head}<tbody>${body}</tbody></table></div>`, shown: rows.length, total: all.length };
+    const head = `<thead><tr><th>${esc(L('الباقة', 'Bundle'))}</th><th>${esc(L('المنتجات', 'Products'))}</th><th>${esc(L('كود الخصم', 'Discount code'))}</th><th class="pr-c-mid">${esc(L('جزئي', 'Partial'))}</th><th class="pr-c-mid" title="${attr(L('الحد الأدنى للكمية لتفعيل الاقتراح', 'Minimum quantity to trigger the suggestion'))}">${esc(L('الحد الأدنى', 'Min qty'))}</th><th class="pr-c-mid">${esc(L('الأولوية', 'Priority'))}</th><th class="pr-c-mid" title="${attr(L('فواتير طُبّقت عليها الباقة منذ بدء التتبّع', 'Invoices that used the bundle since tracking began'))}">${esc(L('الاستخدام', 'Usage'))}</th><th>${esc(L('مفعّلة', 'Enabled'))}</th><th class="pr-c-act"><span class="pr-sr">${esc(L('إجراءات', 'Actions'))}</span></th></tr></thead>`;
+    const tracked = usage ? `<p class="pr-intro pr-track-note">${esc(BS.trackedNote(usage))}</p>` : '';
+    return { html: `${tracked}<div class="pr-tbl-wrap"><table class="pr-table pr-t-bundles">${head}<tbody>${body}</tbody></table></div>`, shown: rows.length, total: all.length };
+  }
+
+  // Shopify bundles — bundle-analytics.js computes; this tab filters and draws.
+  function shopifyBundlesTable() {
+    const BS = window.SouliaBundleStats;
+    if (!BS) return { html: '', shown: 0, total: 0 };
+    const f = S.f.shopify;
+    const from = (!f.period || f.period === 'all') ? '' : addDays(today(), -(Number(f.period) - 1));
+    const all = BS.compute(from, '').shopify;
+    const rows = all.filter((r) => matches(f.q, r.title, ...r.components.map((c) => c.code), ...r.components.map((c) => c.name)));
+    if (!all.length) return { html: `<div class="pr-empty"><span class="pr-empty-ico">${ICO.bundle}</span><p>${esc(L('لا مبيعات بباقات Shopify في هذه الفترة.', 'No Shopify bundle sales in this period.'))}</p></div>`, shown: 0, total: 0 };
+    if (!rows.length) return { html: emptyRow(6, L('لا توجد باقات تطابق البحث.', 'No bundles match the search.'), true), shown: 0, total: all.length };
+    return { html: BS.shopifyTableHtml(rows, { clickable: true }), shown: rows.length, total: all.length };
   }
 
   // tags

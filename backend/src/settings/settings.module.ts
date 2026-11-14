@@ -4,6 +4,7 @@ import { Settings, SettingsSchema } from './schemas/settings.schema';
 import { SettingsService } from './settings.service';
 import { SettingsController } from './settings.controller';
 import { DeployController } from './deploy.controller';
+import { LiveSyncExportController } from './live-sync-export.controller';
 import { BrandLogo, BrandLogoSchema } from './schemas/brand-logo.schema';
 import { BrandingService } from './branding.service';
 import { BrandingController } from './branding.controller';
@@ -21,7 +22,7 @@ import { AuthModule } from '../auth/auth.module';
     forwardRef(() => SecurityAuditModule),
     forwardRef(() => AuthModule),
   ],
-  controllers: [SettingsController, DeployController, BrandingController],
+  controllers: [SettingsController, LiveSyncExportController, DeployController, BrandingController],
   providers: [SettingsService, BrandingService],
   exports: [SettingsService],
 })

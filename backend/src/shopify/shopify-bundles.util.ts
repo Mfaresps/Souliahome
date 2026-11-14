@@ -52,6 +52,38 @@ export function bundleLines(order: any): any[] {
 export function hasBundles(order: any): boolean { return bundleLines(order).length > 0; }
 
 /**
+ * Marks the order's stored lines as bundle parts from Shopify's own payload — for orders whose lines were
+ * mapped before bundle support (they carry no `bundleGroupId`, so no screen shows the bundle). A line is
+ * matched by its Shopify line id, else by a code + qty + price that is unique among the unmarked lines;
+ * an ambiguous or unmatched line is left as it is (never guessed). Prices and quantities are never changed.
+ * Returns how many lines were marked.
+ */
+export function stampBundleItems(items: any[], order: any): number {
+  if (!Array.isArray(items)) return 0;
+  let n = 0;
+  for (const line of bundleLines(order)) {
+    const g = String(line.sales_line_item_group_id);
+    const id = line.id != null ? String(line.id) : '';
+    if (id && items.some((it) => String(it?.shopifyLineId || '') === id && it?.bundleGroupId)) continue;
+    let hit = id ? items.find((it) => String(it?.shopifyLineId || '') === id && !it?.bundleGroupId) : undefined;
+    if (!hit) {
+      const sku = String(line.sku || '').trim();
+      const price = money(line.price);
+      const cands = sku ? items.filter((it) => !it?.bundleGroupId && !it?.shopifyLineId
+        && String(it?.code || '').trim() === sku && Number(it?.qty) === qtyOf(line)
+        && Math.abs((Number(it?.price) || 0) - price) < 0.01) : [];
+      if (cands.length === 1) hit = cands[0];
+    }
+    if (!hit) continue;
+    hit.bundleGroupId = g;
+    hit.priceBasis = 'bundle';
+    if (!hit.shopifyLineId && id) hit.shopifyLineId = id;
+    n++;
+  }
+  return n;
+}
+
+/**
  * Builds the bundle snapshot from the REST payload plus, when available, GraphQL group info keyed by the
  * numeric group id. Without GraphQL info for every group the snapshot is NOT verified (title/quantity null).
  */

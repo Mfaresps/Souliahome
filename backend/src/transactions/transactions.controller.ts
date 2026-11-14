@@ -343,7 +343,8 @@ export class TransactionsController {
 
   private receiptActor(req: any): ReceiptActor {
     const user = req.user || {};
-    return { id: String(user.sub || user._id || user.id || ''), username: user.username || '',
+    // ⚠ JwtStrategy puts the account id in `userId` (not `sub`) — without it every receipt route here was refused.
+    return { id: String(user.userId || user.sub || user._id || user.id || ''), username: user.username || '',
       name: user.name || user.username || '', isAdmin: user.role === 'admin' };
   }
 
@@ -367,6 +368,37 @@ export class TransactionsController {
   @Delete('deposit-receipts/:rid')
   async withdrawDepositReceipt(@Param('rid') id: string, @Req() req: any) {
     return this.depositReceipts.withdrawManualReceipt(id, this.receiptActor(req));
+  }
+
+  // ── Another deposit on a confirmed sale (upload/submit above, then joined to the sale here) ──
+  @Get('deposit-requests/pending')
+  async pendingSaleDeposits(@Req() req: any) {
+    return this.depositReceipts.pendingSaleDeposits(this.receiptActor(req));
+  }
+
+  @Post(':id/deposit-requests')
+  async submitSaleDeposit(@Param('id') id: string, @Body('receiptId') receiptId: string, @Req() req: any) {
+    return this.depositReceipts.submitSaleReceipt(id, String(receiptId || ''), this.receiptActor(req));
+  }
+
+  @Post(':id/deposit-requests/no-image')
+  async submitSaleDepositNoImage(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    return this.depositReceipts.submitSaleNoImage(id, body || {}, this.receiptActor(req), { role: req.user?.role, perms: req.user?.perms || [] });
+  }
+
+  @Patch(':id/deposit-requests/:rid/approve')
+  async approveSaleDeposit(@Param('id') id: string, @Param('rid') rid: string, @Req() req: any) {
+    return this.depositReceipts.approveSaleDeposit(id, rid, this.receiptActor(req));
+  }
+
+  @Patch(':id/deposit-requests/:rid/reject')
+  async rejectSaleDeposit(@Param('id') id: string, @Param('rid') rid: string, @Body('reason') reason: string, @Req() req: any) {
+    return this.depositReceipts.rejectSaleDeposit(id, rid, this.receiptActor(req), reason);
+  }
+
+  @Delete(':id/deposit-requests/:rid')
+  async withdrawSaleDeposit(@Param('id') id: string, @Param('rid') rid: string, @Req() req: any) {
+    return this.depositReceipts.withdrawSaleDeposit(id, rid, this.receiptActor(req));
   }
 
   @Post()
@@ -434,6 +466,37 @@ export class TransactionsController {
       createdAt: body.createdAt || '',
       createdBy: by,
     });
+  }
+
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/merge-prep')
+  async mergePrepGroups(
+    @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.mergePrepGroups(body.sourceRef, body.targetRef, body.ids, by);
+  }
+
+  /** The picker read «the order changed during preparation» and resumes. Clears only that notice. */
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/:id/prep-edit-ack')
+  async ackPrepEdit(
+    @Param('id') id: string,
+    @Body() body: { noticeId: string },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    return this.transactionsService.ackPrepEditNotice(id, String(body?.noticeId || ''), req.user.name || req.user.username || 'مستخدم');
+  }
+
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/split-prep')
+  async splitPrepGroup(
+    @Body() body: { sourceRef: string; ids: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.splitPrepGroup(body.sourceRef, body.ids, by);
   }
 
   @RequirePerms('pickup-orders', 'pickup-orders-edit')
@@ -840,7 +903,7 @@ export class TransactionsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTransactionDto,
-    @Req() req: { user: { name: string; username: string; role?: string; perms?: string[] } },
+    @Req() req: { user: { name: string; username: string; role?: string; perms?: string[]; userId?: string } },
     @Query('editedBy') editedByOverride?: string,
     @Query('approvedBy') approvedByOverride?: string,
   ) {
@@ -859,6 +922,7 @@ export class TransactionsController {
         callerRole,
         req.user.name || req.user.username || '',
         req.user.perms || [],
+        req.user.userId || '',
       );
     } finally {
       this.transactionsService.releaseEditLock(id);

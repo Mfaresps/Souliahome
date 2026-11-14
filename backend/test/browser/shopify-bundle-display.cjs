@@ -39,6 +39,10 @@ const products = [{ _id: 'p1', code: 'Code 10', name: 'Boho Charm Basket L', sel
       const local = path.join(PUB, url.pathname.slice(1));
       if (url.origin === 'http://soulia.test' && /\.(js|css)$/.test(url.pathname) && fs.existsSync(local))
         return request.respond({ status: 200, contentType: url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript', body: fs.readFileSync(local, 'utf8') });
+      const txById = { 'tx-b1': saleVerified, 'tx-b2': saleUnverified, 'tx-p': plainSale };
+      const txm = /\/api\/transactions\/(tx-[a-z0-9]+)$/.exec(url.pathname);
+      if (txm && txById[txm[1]] && request.method() === 'GET') return request.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(txById[txm[1]]) });
+      if (/\/api\/transactions\/tx-[a-z0-9]+\/lock$/.test(url.pathname)) return request.respond({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
       if (url.pathname === '/config.js') return request.respond({ status: 200, contentType: 'text/javascript', body: 'window.BACKEND_URL="http://soulia.test/api";' });
       if (request.resourceType() === 'script') return request.respond({ status: 200, contentType: 'text/javascript', body: 'window.Chart=class{static register(){} destroy(){}};window.XLSX={utils:{}};window.io=()=>({on(){},emit(){},disconnect(){}});' });
       return request.respond({ status: 200, contentType: request.resourceType() === 'stylesheet' ? 'text/css' : 'application/json', body: request.resourceType() === 'stylesheet' ? '' : '[]' });
@@ -87,6 +91,93 @@ const products = [{ _id: 'p1', code: 'Code 10', name: 'Boho Charm Basket L', sel
     ok(sp.pop.includes('sp-bundle-head') && sp.pop.includes('is-bundle-part'), 'items popover: bundle heading and marked parts');
     ok(!/سعر مختلف/.test(sp.pop), 'items popover: no «price differs» flag on bundle parts');
     ok(!sp.edit.startsWith('ERR') && sp.edit.includes('sp-bundle-head') && sp.edit.includes('is-bundle-part'), 'edit window: bundle heading and marked parts' + (sp.edit.startsWith('ERR') ? ' — ' + sp.edit : ''));
+
+    // Lists: a violet «باقة» mark on the items cell — only on orders that hold a bundle.
+    const lists = await page.evaluate(() => {
+      currentLang = 'ar';
+      const tx = id => transactions.find(x => x._id === id);
+      const movPop = _movItemsDetailHtml(tx('tx-b1'));
+      let editHtml = '';
+      const ed = [...document.querySelectorAll('.sp-bundle-head')].find(h => h.nextElementSibling && h.nextElementSibling.classList.contains('sp-edit-item-row'));
+      if (ed) editHtml = ed.outerHTML;
+      return {
+        movB: _movItemsCell(tx('tx-b1')), movP: _movItemsCell(tx('tx-p')),
+        spB: _spItemsCell(_shopifyOrders[0]), spP: _spItemsCell({ ..._shopifyOrders[0], _id: 'so-x', items: [_shopifyOrders[0].items[2]] }),
+        movPop, editHtml,
+      };
+    });
+    ok(lists.movB.includes('bdl-mark') && !lists.movP.includes('bdl-mark'), 'Movements list: «باقة» mark only on the order with a bundle');
+    ok(lists.spB.includes('bdl-mark') && !lists.spP.includes('bdl-mark'), 'Shopify list: «باقة» mark only on the order with a bundle');
+    ok(/title="[^"]*blanket with boho basket/.test(lists.movB), 'list mark names the bundle in its tooltip');
+    ok(lists.movPop.includes('mid-bundle-head') && (lists.movPop.match(/is-bundle-part/g) || []).length === 2, 'Movements items popover: bundle heading + 2 marked parts');
+    ok(lists.editHtml.includes('bdl-lock'), 'edit window: the bundle states what is locked and what breaks it');
+
+    // Invoice edit window (سجل المعاملات) — same bundle rules as the Shopify edit window.
+    const ed = await page.evaluate(async () => {
+      currentLang = 'ar';
+      const out = {};
+      try { await openEditMovement('tx-b1'); } catch (e) { out.err = e.message; }
+      for (let i = 0; i < 20 && !document.querySelector('#edit-tx-items .tx-item-card'); i++) await new Promise(r => setTimeout(r, 100));
+      const box = document.querySelector('#edit-tx-items');
+      out.boxLen = box ? box.innerHTML.length : -1; out.cards = box ? box.querySelectorAll('.tx-item-card').length : -1; out.cls = box ? [...box.querySelectorAll('.tx-item-card')].map(c => c.className).join('|') : '';
+      out.head = !!box?.querySelector('.tx-bundle-head .bdl-lock');
+      out.parts = box ? box.querySelectorAll('.tx-item-card.is-bundle-part').length : -1;
+      out.locked = box ? [...box.querySelectorAll('.tx-item-card.is-bundle-part input')].every(i => i.readOnly) : false;
+      out.note = !!box?.querySelector('.sp-bundle-disc-note');
+      out.lineIds = editTxItems.filter(x => x.bundleGroupId).map(x => x.lineId || x.shopifyLineId).filter(Boolean).length;
+      adjustEditTxItemQty(0, 1);   // + on a part → a separate line at the normal price
+      out.afterPlus = editTxItems.map(x => [x.code, x.qty, x.price, !!x.bundleGroupId]);
+      // − on a part asks first; answer «cancel» → nothing changes
+      const realConfirm = window.showConfirm; let asked = 0;
+      window.showConfirm = async () => { asked++; return false; };
+      await _editBreakBundle(0, 0);
+      out.askedCancel = asked; out.stillBundle = editTxItems.filter(x => x.bundleGroupId).length;
+      window.showConfirm = async () => { asked++; return true; };
+      await _editBreakBundle(0, 0);
+      window.showConfirm = realConfirm;
+      out.afterBreak = editTxItems.map(x => [x.code, x.price, !!x.bundleGroupId]);
+      out.confirmFlag = _editConfirmBreak;
+      try { closeModal(); } catch (_) {}
+      // Movements items popover
+      const btn = document.createElement('button'); document.body.appendChild(btn);
+      document.querySelectorAll('.mov-items-popover').forEach(x => x.remove());
+      try { showMovItemsPopover('tx-b1', btn); } catch (e) { out.popErr = e.message; }
+      const pop = [...document.querySelectorAll('.mov-items-popover')].pop();
+      out.popHead = !!pop?.querySelector('.mid-bundle-head');
+      out.popWas = pop ? pop.querySelectorAll('.bdl-was').length : 0;
+      try { _closeMovItemsPopover(); } catch (_) {}
+      // summary groups
+      const os = _offerSummaryOf(transactions.find(x => x._id === 'tx-b1').items, undefined, undefined, transactions.find(x => x._id === 'tx-b1'));
+      out.sum = os && { before: os.before, saved: os.saved, bundle: os.hasBundle, name: os.groups[0]?.name, label: _sumBeforeLabel(os) };
+      return out;
+    });
+    ok(!ed.err && ed.head && ed.parts === 2 && ed.locked, 'invoice edit window: bundle heading with the lock line, 2 parts, price and qty locked ' + JSON.stringify({ err: ed.err, head: ed.head, parts: ed.parts, locked: ed.locked, ids: ed.lineIds, boxLen: ed.boxLen, cards: ed.cards, cls: ed.cls }));
+    ok(ed.note, 'invoice edit window: the discount note (outside the bundle only)');
+    ok(ed.lineIds === 2, 'invoice edit window: each part keeps its line id (the server matches it)');
+    ok(JSON.stringify(ed.afterPlus) === JSON.stringify([['Code 10', 1, 1302.75, true], ['HEARTH-1', 1, 1697.25, true], ['SOLO', 1, 500, false], ['Code 10', 1, 1420, false]]),
+      '+ on a part adds a separate line at the normal price ' + JSON.stringify(ed.afterPlus));
+    ok(ed.askedCancel === 1 && ed.stillBundle === 2, '− on a part asks first; cancelling changes nothing');
+    ok(ed.confirmFlag && ed.afterBreak.every(r => !r[2]) && ed.afterBreak.some(r => r[0] === 'HEARTH-1' && r[1] === 1850), 'confirmed break reprices the rest at its own price and flags the confirmation ' + JSON.stringify(ed.afterBreak));
+    ok(ed.popHead && ed.popWas === 2, 'Movements items popover: bundle heading and the struck own price on both parts ' + JSON.stringify({ h: ed.popHead, w: ed.popWas, e: ed.popErr }));
+    ok(ed.sum && ed.sum.bundle && ed.sum.saved === 270 && ed.sum.before === 3770 && ed.sum.name === 'blanket with boho basket' && ed.sum.label === 'الأصناف قبل الباقة',
+      'order summary: «الأصناف قبل الباقة» + the bundle savings by name ' + JSON.stringify(ed.sum));
+
+    // Screenshots: list cells, items popover and edit-window heading, light + dark.
+    for (const dark of [false, true]) {
+      await page.setViewport({ width: 760, height: 900 });
+      await page.evaluate(({ dark, l }) => {
+        document.documentElement.dir = 'rtl'; document.body.classList.toggle('dark-mode', dark);
+        let box = document.querySelector('#bdl-preview');
+        if (!box) { box = document.createElement('main'); box.id = 'bdl-preview'; document.body.appendChild(box); }
+        [...document.body.children].forEach(el => { if (el !== box && !['STYLE', 'SCRIPT', 'LINK'].includes(el.tagName)) el.style.display = 'none'; });
+        box.style.cssText = 'display:block;padding:16px;max-width:720px;margin:auto;background:var(--bg,#fff);color:var(--text);box-sizing:border-box;width:100%;font-family:inherit';
+        box.innerHTML = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' + l.movB + l.movP + l.spB + '</div>'
+          + '<div class="mov-items-popover" style="position:static;display:block;max-height:none;margin-bottom:14px;width:420px">' + l.movPop + '</div>'
+          + '<div style="width:520px">' + l.editHtml + '</div>';
+      }, { dark, l: lists });
+      const el = await page.$('#bdl-preview');
+      if (el) await el.screenshot({ path: path.join(output, `lists-ar${dark ? '-dark' : ''}.png`) });
+    }
 
     for (const [lang, width, dark] of [['ar', 1440, false], ['en', 390, false], ['ar', 390, true]]) {
       await page.setViewport({ width, height: 900 });

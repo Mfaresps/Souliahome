@@ -7,6 +7,9 @@ import { maskTransactionsForRole } from './purchase-mask.util';
 import { notifyApproval } from '../notifications/admin-events';
 import { pickingExceptions } from '../inventory-units/picking-exceptions';
 import { resetPickupPreparation } from '../inventory-units/pickup-preparation-reset';
+import { reconcilePickingAfterEdit } from '../inventory-units/picking-edit-reconcile';
+import { BostaService } from '../bosta/bosta.service';
+import { shipmentEditPayload, shipmentLocallyEditable } from '../shared/bosta-shipment-edit.util';
 import { checkReturnedIdentities, finishFailedDeliveryIdentities, ReturnedIdentity } from '../inventory-units/failed-delivery-identities';
 import { normalizePurchaseEdit } from '../inventory-units/purchase-edit-integrity';
 import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
@@ -74,9 +77,10 @@ import { shippingBreakdown, shippingClassificationStatus, ensureClassificationEf
 import { applyApprovedShippingCorrection, applyCorrectionPlan, buildCorrectionPlan, loadCorrectionInputs, rollbackCorrection } from './shipping-discount-correction';
 import { APPROVED_SHIPPING_CORRECTIONS } from './shipping-discount-approved';
 import { carryShopifyLineFields } from '../shared/shopify-line.util';
-import { BundleGuardError, bundleGuard, hasBundleLines } from '../shared/bundle-guard.util';
+import { BundleGuardError, bundleGuard, hasBundleLines, nonBundleSubtotal } from '../shared/bundle-guard.util';
 import { PromotionAuditService } from '../promotions/promotion-audit.service';
 import { carryLinePrices, lineMarkdown, OfferRemovalError, settleOfferRemovals, stampSaleLinePrices } from '../shared/price-offer.util';
+import { deriveAppliedBundles } from '../shared/smart-bundle.util';
 import {
   InventoryMovementsService,
   RecordMovementEntry,
@@ -180,6 +184,23 @@ export interface DashboardData {
   lowSellers: { name: string; qty: number }[];
 }
 
+/** Plain MSA lines describing how a sale's lines changed (matched by lineId, else code) — for the Shopify-difference notice. */
+export function describeSaleLineChanges(before: any[], after: any[]): string[] {
+  const key = (l: any) => String(l?.lineId || '') || 'c:' + String(l?.code || l?.name || '');
+  const name = (l: any) => String(l?.name || l?.code || 'صنف');
+  const a = new Map((after || []).map((l) => [key(l), l]));
+  const b = new Map((before || []).map((l) => [key(l), l]));
+  const out: string[] = [];
+  for (const [k, o] of b) {
+    const n = a.get(k);
+    if (!n) { out.push(`حُذف صنف: ${name(o)} (كمية ${Number(o.qty) || 0})`); continue; }
+    if ((Number(n.qty) || 0) !== (Number(o.qty) || 0)) out.push(`كمية ${name(o)}: ${Number(o.qty) || 0} ← ${Number(n.qty) || 0}`);
+    if (Math.abs((Number(n.price) || 0) - (Number(o.price) || 0)) > 0.005) out.push(`سعر ${name(o)}: ${Number(o.price) || 0} ← ${Number(n.price) || 0}`);
+  }
+  for (const [k, n] of a) if (!b.has(k)) out.push(`أُضيف صنف: ${name(n)} (كمية ${Number(n.qty) || 0})`);
+  return out;
+}
+
 @Injectable()
 export class TransactionsService implements ClassificationInit {
   /**
@@ -206,6 +227,8 @@ export class TransactionsService implements ClassificationInit {
   // Promotions audit log (global module) — records an offer taken off an invoice line.
   @PushOptional() @PushInject(PromotionAuditService) private readonly promoAudit?: PromotionAuditService;
   @PushOptional() @PushInject(ShopifyDepositMetafieldsService) private readonly depositMetafields?: ShopifyDepositMetafieldsService;
+  // Editing an order whose Bosta shipment is not picked up yet updates the delivery (shared/bosta-shipment-edit.util.ts).
+  @PushOptional() @PushInject(forwardRef(() => BostaService)) private readonly bostaShipments?: BostaService;
   /** أسعار الموردين (خطوة 4) — فاتورة الشراء بتحدّثها. سعر عرض، مش تكلفة ربح. */
   @PushOptional() @PushInject(ProductSuppliersService) private readonly productSuppliers?: ProductSuppliersService;
   /** متوسط التكلفة (خطوة 3) — فواتير الشراء بس بتغيّره. */
@@ -228,6 +251,21 @@ export class TransactionsService implements ClassificationInit {
    * `callerPerms === undefined` = an internal caller copying lines it already holds (after-sales),
    * which is allowed — every HTTP entry passes the caller's perms.
    */
+  /**
+   * «الباقات الذكية» a sale used — decided here, never from the client. Used by create, update
+   * (only for invoices already tracked) and Shopify approveOrder. Never throws: attribution is a
+   * report field and must not block a sale.
+   */
+  async smartBundlesFor(sale: { items?: any[]; discountCodeId?: string; discount?: number; shippingDiscount?: number; shipCost?: number; itemsTotal?: number; total?: number }, session?: any): Promise<any[]> {
+    try {
+      const settings: any = session ? await this.settingsService.getSettings(session) : await this.settingsService.getSettings();
+      return deriveAppliedBundles(sale.items, sale.discountCodeId, settings?.discountBundles || [], settings?.discountCodes || [],
+        invoiceDiscount(sale as any));
+    } catch {
+      return [];
+    }
+  }
+
   settleOfferRemovalsOrThrow(items: any[] | undefined, stored: any[] | undefined, actor: string, callerRole: string | undefined,
     callerPerms: string[] | undefined, productOf: (line: any) => any) {
     const allowed = callerPerms === undefined || callerRole === 'admin' || callerPerms.includes('promotions-offers');
@@ -1394,9 +1432,12 @@ export class TransactionsService implements ClassificationInit {
       const costAt = new Date().toISOString();
       // خطوة 3: التكلفة = متوسط التكلفة لو اتحسب، وإلا سعر الكارت (currentUnitCost).
       const costByCode = new Map(_invSnapshotBefore.map((row) => [String(row.code || '').trim(), knownUnitCost(row)]));
+      const saleItems = dto.type === 'مبيعات' ? stampSaleLineCosts(pricedSaleItems as any[], (code) => costByCode.get(code) ?? null, costAt) : undefined;
       const data = {
         ...dto,
-        ...(dto.type === 'مبيعات' ? { items: stampSaleLineCosts(pricedSaleItems as any[], (code) => costByCode.get(code) ?? null, costAt) } : {}),
+        ...(dto.type === 'مبيعات' ? { items: saleItems } : {}),
+        // Every sale saved from now on carries the field (empty when no bundle applied) — that is what "tracked" means.
+        ...(dto.type === 'مبيعات' ? { appliedBundles: await this.smartBundlesFor({ ...(dto as any), items: saleItems }, context?.session) } : {}),
         warehouseCode: destinationWarehouse,
         ...carrier,
         ...(receipt ? { depositReceipts: [receipt] } : {}),
@@ -1809,7 +1850,7 @@ export class TransactionsService implements ClassificationInit {
    * - A live Bosta shipment carries a fixed COD that Bosta cannot edit; changing the order's value
    *   behind it is admin-only and needs an explicit confirmation, recorded in the audit.
    */
-  private assertSaleFinancialEditAllowed(existing: TransactionDocument, dto: UpdateTransactionDto, callerRole: string): void {
+  private assertSaleFinancialEditAllowed(existing: TransactionDocument, dto: UpdateTransactionDto, callerRole: string, shipmentEditable = false): void {
     if (existing.type !== 'مبيعات') return;
     const differs = (a: unknown, b: unknown) => a !== undefined && Math.abs((Number(a) || 0) - (Number(b) || 0)) > RECON_TOLERANCE;
     const totalChanges = differs(dto.total, existing.total) || differs(dto.shipCost, existing.shipCost) || differs(dto.discount, existing.discount);
@@ -1820,14 +1861,97 @@ export class TransactionsService implements ClassificationInit {
     if (dto.deposit !== undefined && (Number(dto.deposit) || 0) < (Number(existing.deposit) || 0) - RECON_TOLERANCE) {
       throw new BadRequestException('لا يمكن تخفيض المبلغ المدفوع من تعديل الفاتورة — المدفوعات الفعلية لا تتغير، والزيادة تُعالَج كرصيد للعميل أو استرداد أو تحويل');
     }
-    if (totalChanges && hasLiveShipment(existing)) {
+    // Not picked up yet and Bosta still accepts edits: the new COD is sent to Bosta after the save.
+    if (totalChanges && hasLiveShipment(existing) && !shipmentEditable) {
+      // Coded, with the tracking number, so the edit window can link to the order on Bosta's dashboard.
+      const trackingNumber = String((existing as any).bostaTrackingNumber || '');
       if (callerRole !== 'admin') {
-        throw new BadRequestException('الشحنة مُنشأة في بوسطة بقيمة تحصيل ثابتة — تعديل قيمة الطلب الآن للمدير فقط، أو استخدم المرتجعات بعد التسليم');
+        throw new BadRequestException({ code: 'BOSTA_SHIPMENT_LOCKED', trackingNumber,
+          message: 'الشحنة لم تعد قابلة للتعديل من هنا — عدّل الطلب من لوحة بوسطة نفسها، ثم عدّل قيمته هنا (للمدير فقط)، أو استخدم المرتجعات بعد التسليم' });
       }
       if (!dto.shipmentChangeConfirmed) {
-        throw new BadRequestException('SHIPMENT_CHANGE_CONFIRM_REQUIRED: الشحنة مُنشأة في بوسطة ولا يمكن تعديل قيمة تحصيلها من هنا — أكّد أنك ستصحّحها مع بوسطة');
+        throw new BadRequestException({ code: 'BOSTA_SHIPMENT_LOCKED', trackingNumber,
+          message: 'SHIPMENT_CHANGE_CONFIRM_REQUIRED: الشحنة لم تعد قابلة للتعديل من هنا — عدّل مبلغ التحصيل من لوحة بوسطة نفسها' });
       }
     }
+  }
+
+  /**
+   * Editing a confirmed sale follows the same rules as the Shopify edit window (ShopifyService.prepareOrderEdit):
+   *  1) raising the discount above the lines outside intact bundles needs 'shopify-bundle-discount-override'
+   *     (admin passes) and a written reason (≥5) → BUNDLE_DISCOUNT_BLOCKED;
+   *  2) a Shopify sale whose total moves away from what Shopify charged needs an explicit acknowledgement
+   *     → SHOPIFY_DIVERGENCE_ACK_REQUIRED (with the change lines).
+   * Returns the fields to write (bundleDiscountOverride / shopifyDivergence). Writes nothing itself.
+   */
+  async saleEditGuards(existing: any, finalItems: any[], o: { oldDiscount: number; newDiscount: number; oldTotal: number; newTotal: number;
+    discountSent: boolean; reason?: string; acknowledged: boolean; actor: string; role: string; perms: string[] }): Promise<Record<string, any>> {
+    const out: Record<string, any> = {};
+    if (o.discountSent && hasBundleLines(finalItems)) {
+      const base = nonBundleSubtotal(finalItems);
+      const productDiscount = Math.round((o.newDiscount - (Number(existing.shippingDiscount) || 0)) * 100) / 100;
+      if (o.newDiscount > o.oldDiscount + 0.005 && productDiscount > base + 0.005) {
+        const reason = String(o.reason || '').trim();
+        const allowed = o.role === 'admin' || (o.perms || []).includes('shopify-bundle-discount-override');
+        if (!reason || reason.length < 5 || !allowed) {
+          throw new BadRequestException({ code: 'BUNDLE_DISCOUNT_BLOCKED', base, amount: productDiscount, allowed,
+            message: allowed ? 'الخصم يتجاوز الأصناف خارج الباقة — اكتب سبب استثناء الباقة (5 أحرف على الأقل)'
+              : `الخصم الإضافي يُطبَّق على الأصناف خارج الباقة فقط (${base}) — تطبيقه على الباقة يحتاج صلاحية خاصة` });
+        }
+        out.bundleDiscountOverride = { reason, by: o.actor, at: new Date().toISOString(), amount: productDiscount, base };
+      }
+    }
+    if (existing.shopifyOrderId && Math.abs(o.newTotal - o.oldTotal) > 0.005) {
+      let shopifyTotal = Number(existing.shopifyDivergence?.shopifyTotal);
+      if (!Number.isFinite(shopifyTotal) && existing.shopifyOrderId) {
+        const so: any = await this.shopifyOrderModel.findOne({ shopifyId: String(existing.shopifyOrderId) }).select('rawData.current_total_price').lean().exec();
+        shopifyTotal = parseFloat(String(so?.rawData?.current_total_price ?? ''));
+      }
+      if (Number.isFinite(shopifyTotal)) {
+        const diff = Math.round((o.newTotal - shopifyTotal) * 100) / 100;
+        const changes = [...describeSaleLineChanges(existing.items || [], finalItems),
+          ...(Math.abs(o.newDiscount - o.oldDiscount) > 0.005 ? [`الخصم: ${o.oldDiscount} ← ${o.newDiscount}`] : []),
+          `الإجمالي: ${o.oldTotal} ← ${o.newTotal}`].slice(0, 10);
+        const divergence = Math.abs(diff) > 0.5 ? { shopifyTotal, erpTotal: o.newTotal, diff, by: o.actor, at: new Date().toISOString(), changes } : null;
+        if (divergence && !o.acknowledged) {
+          throw new BadRequestException({ code: 'SHOPIFY_DIVERGENCE_ACK_REQUIRED', divergence,
+            message: `إجمالي الفاتورة بعد التعديل ${o.newTotal} يختلف عن Shopify ${shopifyTotal} (فرق ${diff}) — راجع الفرق وأكِّد قبل الحفظ` });
+        }
+        out.shopifyDivergence = divergence ? { ...divergence, acknowledgedBy: o.actor, acknowledgedAt: divergence.at } : null;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * The same checks BEFORE an edit request on a confirmed Shopify sale is stored (ShopifyService.submitConfirmedOrderEdit),
+   * so the person editing answers them now — not the approver later. `patch` = the normalized request patch.
+   */
+  async preflightSaleEdit(existing: any, patch: any, actor: { name: string; role: string; perms: string[] }): Promise<void> {
+    if (existing?.type !== 'مبيعات' || existing.cancelled) return;
+    let items: any[] = patch.items !== undefined ? (carryShopifyLineFields(existing.items || [], patch.items) as any[]) : (existing.items || []);
+    if (patch.items !== undefined && hasBundleLines(existing.items || [])) {
+      const products = await this.productsService.findAll();
+      const day = /^\d{4}-\d{2}-\d{2}/.test(String(existing.shopifyCreatedAt || ''))
+        ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(existing.shopifyCreatedAt))
+        : this.saleDayOf(existing);
+      const delivered = existing.bostaStatus === 'DELIVERED' || String(existing.pickupStatus || '') === 'Delivered'
+        || ['تم التسليم', 'delivered', 'Delivered'].includes(String(existing.deliveryStatus || ''));
+      try {
+        items = bundleGuard({ stored: existing.items, incoming: items, day, delivered, confirmBreak: patch.confirmBundleBreak === true,
+          titleOf: (g) => existing.bundleSnapshot?.groups?.find((x: any) => String(x.groupId) === g)?.title || '',
+          productOf: (line) => products.find((p: any) => String(p.code).trim() === String(line?.code || '').trim()) || null }).items as any[];
+      } catch (e) {
+        if (e instanceof BundleGuardError) throw new BadRequestException({ code: e.code, message: e.message, preview: e.preview || null });
+        throw e;
+      }
+    }
+    const oldTotal = Number(existing.total) || 0, oldDiscount = Number(existing.discount) || 0;
+    await this.saleEditGuards(existing, items, {
+      oldDiscount, newDiscount: patch.discount !== undefined ? Number(patch.discount) || 0 : oldDiscount,
+      oldTotal, newTotal: patch.total !== undefined ? Number(patch.total) || 0 : oldTotal,
+      discountSent: patch.discount !== undefined, reason: patch.bundleDiscountOverrideReason,
+      acknowledged: patch.acknowledgeDivergence === true, actor: actor.name, role: actor.role, perms: actor.perms });
   }
 
   async update(
@@ -1838,6 +1962,7 @@ export class TransactionsService implements ClassificationInit {
     callerRole = '',
     notificationActor?: string,
     callerPerms: string[] = [],
+    actorUserId = '',
   ): Promise<TransactionDocument> {
     const existing = await this.transactionModel.findById(id).exec();
     if (!existing) {
@@ -1874,7 +1999,18 @@ export class TransactionsService implements ClassificationInit {
     }
     this.assertNotExchangePendingCollect(existing);
     this.assertEditableByFulfillment(existing, existing.shopifyOrderId && callerPerms.includes('shopify-edit-direct') ? 'admin' : callerRole);
-    this.assertSaleFinancialEditAllowed(existing, dto, callerRole);
+    // A Bosta shipment the courier has not collected yet is edited at Bosta too (after the save).
+    let bostaEditBefore: any = null;
+    if (existing.type === 'مبيعات' && !existing.cancelled && this.bostaShipments && shipmentLocallyEditable(existing)) {
+      const plain = existing.toObject();
+      const moneyMoves = ['total', 'shipCost', 'discount', 'deposit'].some(k => (dto as any)[k] !== undefined
+        && Math.abs((Number((dto as any)[k]) || 0) - (Number((plain as any)[k]) || 0)) > RECON_TOLERANCE);
+      if (moneyMoves || shipmentEditPayload(plain, { ...plain, ...dto, remaining: plain.remaining })) {
+        const live = await this.bostaShipments.shipmentEditableNow(plain);
+        if (live.editable) bostaEditBefore = plain;
+      }
+    }
+    this.assertSaleFinancialEditAllowed(existing, dto, callerRole, !!bostaEditBefore);
     if (dto.ref !== undefined) {
       await this.assertRetailRefForPersist(
         existing.type,
@@ -2062,7 +2198,25 @@ export class TransactionsService implements ClassificationInit {
     const avgEditStock = existing.type === 'مشتريات' && (dto.items !== undefined || (dto as any).discount !== undefined)
       && this.productCost && await this.productCost.purchaseIsInAverage(String(existing._id))
       ? await this.stockOfFn() : null;
-    const { depositVaultCorrections: _corrections, confirmBundleBreak: _confirmBreak, ...writeDto } = dto as any;
+    const { depositVaultCorrections: _corrections, confirmBundleBreak: _confirmBreak,
+      bundleDiscountOverrideReason: _bundleReason, acknowledgeDivergence: _ackDivergence, ...writeDto } = dto as any;
+    // Same rules as the Shopify edit window (prepareOrderEdit / approveOrder) — see saleEditGuards.
+    if (existing.type === 'مبيعات' && !existing.cancelled) {
+      Object.assign(writeDto, await this.saleEditGuards(existing, ((writeDto as any).items ?? existing.items ?? []) as any[],
+        { oldDiscount, newDiscount, oldTotal, newTotal, discountSent: dto.discount !== undefined,
+          reason: _bundleReason, acknowledged: _ackDivergence === true, actor: editedBy || notificationActor || '', role: callerRole, perms: callerPerms }));
+    }
+    // «الباقات الذكية»: re-decided on edit, but only on an invoice tracked since the field existed.
+    if (existing.type === 'مبيعات' && Array.isArray((existing as any).appliedBundles)
+      && ((writeDto as any).items !== undefined || dto.discount !== undefined || (dto as any).discountCodeId !== undefined)) {
+      (writeDto as any).appliedBundles = await this.smartBundlesFor({
+        items: (writeDto as any).items ?? existing.items,
+        discountCodeId: (dto as any).discountCodeId ?? (existing as any).discountCodeId,
+        discount: dto.discount ?? existing.discount,
+        shippingDiscount: (writeDto as any).shippingDiscount ?? (existing as any).shippingDiscount,
+        shipCost: newShipCost, itemsTotal: (dto as any).itemsTotal ?? (existing as any).itemsTotal, total: newTotal,
+      });
+    }
     // خصم الشحن مش في الـDTO فبيفضل زي ما هو — بس لازم يفضل ≤ الشحن والخصم الجديدين لو التعديل نزّلهم.
     // ⚠ مابيأثرش على الإجمالي ولا الخزنة (shared/sale-discount.util.ts).
     const storedShipDisc = Number((existing as any).shippingDiscount) || 0;
@@ -2422,6 +2576,30 @@ export class TransactionsService implements ClassificationInit {
     if (changes.length) await notifyApproval(this.notifications, 'approval:tx:' + id + ':' + historyEntry.editedAt, tx!.ref, 'tx:' + id, { actorName: editedBy || notificationActor, actionKey: 'edit-tx', status: 'modified' });
     await this.queueDepositMetafields(tx, 'tx-edit');
     if (offerRemovalsAdded.length) this.logOfferRemovals(editedBy || notificationActor || '', tx?.ref || '', offerRemovalsAdded);
+    // An order edited while it is being prepared: put back pieces it no longer needs and tell
+    // the picker what changed (see picking-edit-reconcile.ts).
+    if (tx && tx.type === 'مبيعات' && dto.items !== undefined) {
+      try {
+        const notice = await reconcilePickingAfterEdit(this.transactionModel.db, String(tx._id),
+          JSON.parse(JSON.stringify(existing.items || [])), editedBy || notificationActor || '', actorUserId);
+        if (notice) {
+          const fresh = await this.transactionModel.findById(tx._id).exec();
+          if (fresh) tx = fresh;
+          if (notice.released.length) this.notifyUnitIdentitiesChanged(String(tx._id));
+        }
+      } catch (err) {
+        this.logger.error(`[update] preparation reconcile failed for tx ${id}: ${(err as Error).message}`);
+      }
+      // Other screens (the picker's) learn about the edit; they re-read the row with their own permissions.
+      this.emit('tx:updated', { _id: String(tx._id), action: 'edit' });
+    }
+    if (bostaEditBefore && tx && this.bostaShipments) {
+      const sync = await this.bostaShipments.updateShipmentAfterEdit(String(tx._id), bostaEditBefore, editedBy || notificationActor || '');
+      if (sync.status !== 'none') {
+        const fresh = await this.transactionModel.findById(tx._id).exec();
+        if (fresh) tx = fresh;
+      }
+    }
     return tx!;
   }
 
@@ -6338,6 +6516,122 @@ export class TransactionsService implements ClassificationInit {
     return { updated: result.modifiedCount };
   }
 
+  /**
+   * Merge one preparation group into another (drag a prep card onto another).
+   * Only orders still `Preparing` under `sourceRef` move; the client sends the ids
+   * it saw, and the merge is refused if the source group changed since (an order
+   * added, removed, moved to Ready). The target keeps its own identity (note,
+   * carrier, creation time/by) — same rule as joining a group — and every moved
+   * order keeps its own `prepChecked`, because the picking already happened.
+   */
+  async mergePrepGroups(
+    sourceRef: string,
+    targetRef: string,
+    ids: string[],
+    by: string,
+  ): Promise<{ moved: number; pickupRef: string }> {
+    const src = String(sourceRef || '').trim();
+    const dst = String(targetRef || '').trim();
+    if (!src || !dst) throw new BadRequestException('حدد مجموعتي التحضير');
+    if (src === dst) throw new BadRequestException('لا يمكن دمج المجموعة في نفسها');
+    const validIds = [...new Set((ids || []).map(String).filter(id => isValidObjectId(id)))];
+    if (!validIds.length) throw new BadRequestException('المجموعة المسحوبة فارغة');
+
+    const base = { type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: 'Preparing' };
+    const sourceNow = await this.transactionModel.find({ ...base, pickupRef: src }).select('_id').lean().exec();
+    const sourceIds = new Set(sourceNow.map((o: any) => String(o._id)));
+    if (sourceIds.size !== validIds.length || validIds.some(id => !sourceIds.has(id))) {
+      throw new ConflictException('تغيّرت المجموعة المسحوبة منذ فتح الصفحة؛ حدّث الصفحة وحاول مرة أخرى');
+    }
+
+    const target: any = await this.transactionModel.findOne({ ...base, pickupRef: dst })
+      .select('prepNote prepShipCo prepCreatedAt prepCreatedBy').lean().exec();
+    if (!target) throw new ConflictException('مجموعة التحضير المستهدفة لم تعد موجودة؛ حدّث الصفحة');
+
+    const now = new Date().toISOString().slice(0, 10);
+    const groupMeta = {
+      prepNote: target.prepNote || '',
+      prepShipCo: target.prepShipCo || '',
+      prepCreatedAt: target.prepCreatedAt || now,
+      prepCreatedBy: target.prepCreatedBy || by,
+    };
+    const result = await this.transactionModel.updateMany(
+      { ...base, _id: { $in: validIds }, pickupRef: src },
+      {
+        $set: { pickupRef: dst, ...groupMeta },
+        $push: { pickupHistory: { action: 'merge-prep', date: now, by, pickupRef: dst, fromRef: src } },
+      },
+    );
+    if (result.modifiedCount !== validIds.length) {
+      // Partial write: the orders that moved are already in the target, the rest stayed —
+      // both are valid groups. Report it rather than pretend the merge was whole.
+      this.emit('pickup:updated', { ids: validIds, action: 'merge-prep', pickupRef: dst, by, groupMeta, mergedFrom: src });
+      throw new ConflictException('تم نقل بعض الطلبات فقط؛ حدّث الصفحة وراجع المجموعتين');
+    }
+    this.emit('pickup:updated', { ids: validIds, action: 'merge-prep', pickupRef: dst, by, groupMeta, mergedFrom: src });
+    return { moved: result.modifiedCount, pickupRef: dst };
+  }
+
+  /**
+   * Take orders out of a preparation group into a NEW group of their own
+   * (right-click → «نقله لمجموعة تحضير جديدة»). The server names the new group
+   * (same RRR-DDMON shape as the board, Cairo date) and never reuses a ref in use.
+   * The source must keep at least one order — moving all of them is not a split.
+   * Each order keeps its «prepared» tick; the new group inherits the carrier.
+   */
+  async splitPrepGroup(
+    sourceRef: string,
+    ids: string[],
+    by: string,
+  ): Promise<{ moved: number; pickupRef: string }> {
+    const src = String(sourceRef || '').trim();
+    if (!src) throw new BadRequestException('حدد مجموعة التحضير');
+    const validIds = [...new Set((ids || []).map(String).filter(id => isValidObjectId(id)))];
+    if (!validIds.length) throw new BadRequestException('اختر طلباً واحداً على الأقل');
+
+    const base = { type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: 'Preparing' };
+    const members: any[] = await this.transactionModel.find({ ...base, pickupRef: src })
+      .select('_id prepShipCo').lean().exec();
+    const memberIds = new Set(members.map(o => String(o._id)));
+    if (validIds.some(id => !memberIds.has(id))) {
+      throw new ConflictException('الطلب لم يعد في هذه المجموعة؛ حدّث الصفحة وحاول مرة أخرى');
+    }
+    if (memberIds.size - validIds.length < 1) {
+      throw new BadRequestException('لا يمكن نقل كل طلبات المجموعة إلى مجموعة جديدة');
+    }
+
+    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', day: '2-digit', month: 'short' })
+      .formatToParts(new Date());
+    const day = parts.find(p => p.type === 'day')?.value || '01';
+    const mon = (parts.find(p => p.type === 'month')?.value || 'JAN').slice(0, 3).toUpperCase();
+    let newRef = '';
+    for (let attempt = 0; attempt < 12 && !newRef; attempt++) {
+      const candidate = `${Math.floor(100 + Math.random() * 900)}-${day}${mon}`;
+      if (!(await this.transactionModel.exists({ pickupRef: candidate }))) newRef = candidate;
+    }
+    if (!newRef) throw new ConflictException('تعذر إنشاء رقم مجموعة جديد؛ حاول مرة أخرى');
+
+    const now = new Date().toISOString();
+    const groupMeta = {
+      prepNote: '',
+      prepShipCo: members[0]?.prepShipCo || '',
+      prepCreatedAt: now,
+      prepCreatedBy: by,
+    };
+    const result = await this.transactionModel.updateMany(
+      { ...base, _id: { $in: validIds }, pickupRef: src },
+      {
+        $set: { pickupRef: newRef, ...groupMeta },
+        $push: { pickupHistory: { action: 'split-prep', date: now.slice(0, 10), by, pickupRef: newRef, fromRef: src } },
+      },
+    );
+    this.emit('pickup:updated', { ids: validIds, action: 'split-prep', pickupRef: newRef, by, groupMeta, splitFrom: src });
+    if (result.modifiedCount !== validIds.length) {
+      throw new ConflictException('تم نقل بعض الطلبات فقط؛ حدّث الصفحة وراجع المجموعتين');
+    }
+    return { moved: result.modifiedCount, pickupRef: newRef };
+  }
+
   /** Confirm pick-up for one or more transaction IDs — moves to Ready */
   async confirmPickup(ids: string[], by: string, date?: string, reuseOpenRun = false): Promise<{ updated: number; pickupRef: string }> {
     const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
@@ -6524,6 +6818,15 @@ export class TransactionsService implements ClassificationInit {
       pickupHistory: tx?.pickupHistory || [],
     });
     return { ok: true, updated: result.modifiedCount };
+  }
+
+  async ackPrepEditNotice(id: string, noticeId: string, by: string) {
+    if (!isValidObjectId(id) || !noticeId) throw new BadRequestException('طلب غير صالح');
+    // Conditional on the same notice: a newer edit that arrived meanwhile stays on screen.
+    const result = await this.transactionModel.updateOne({ _id: id, 'prepEditNotice.id': noticeId },
+      { $set: { prepEditNotice: null }, $push: { pickupHistory: { action: 'edit-during-prep-ack', date: new Date().toISOString(), by } } });
+    if (result.modifiedCount) this.emit('tx:updated', { _id: id, action: 'prep-edit-ack' });
+    return { ok: true, cleared: result.modifiedCount === 1 };
   }
 
   notifyPickingReopened(id: string, pickupRef: string | null, pickupHistory: any[]) {

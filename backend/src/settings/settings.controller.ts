@@ -226,6 +226,22 @@ export class SettingsController {
     return await this.settingsService.restoreBackup(filename);
   }
 
+  // «مزامنة من النسخة الحية» — local copy only (see live-sync.util.ts).
+  @Roles('admin')
+  @Get('live-sync/status')
+  getLiveSyncStatus() {
+    return this.settingsService.getLiveSyncStatus();
+  }
+
+  @Roles('admin')
+  @UseGuards(ThrottlerGuard)
+  @Post('live-sync')
+  async runLiveSync(@Body('password') password: string, @Req() req: any) {
+    const isValid = await this.settingsService.verifyVaultPassword(password);
+    if (!isValid) throw new UnauthorizedException('كلمة المرور خاطئة - لا يمكن المزامنة');
+    return await this.settingsService.runLiveSync(req.user?.name || req.user?.username || 'admin');
+  }
+
   @Roles('admin')
   @Post('preview-selective-restore')
   async previewSelectiveRestore(@Body('filename') filename: string, @Body('password') password: string) {

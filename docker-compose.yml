@@ -45,6 +45,9 @@ services:
       # الشراء وغيرها.
       # `BUSINESS_TZ` بتاعة الورديات مستقلة عن دي عن قصد — الورديات بتتحل عبر
       # `Intl` فبتفضل صح مهما كان توقيت الحاوية؛ ده بيظبّط الباقي.
+      # «مزامنة من النسخة الحية»: يفعّل GET /api/settings/sync-export لنسخة الجهاز المحلي.
+      # القيمة في ملف .env بجوار هذا الملف على السيرفر (32 حرفاً على الأقل)، لا هنا. فارغة = المسار غير موجود.
+      LIVE_SYNC_EXPORT_TOKEN: ${LIVE_SYNC_EXPORT_TOKEN:-}
       TZ: ${TZ:-Africa/Cairo}
       BUSINESS_TZ: ${BUSINESS_TZ:-Africa/Cairo}
     ports:

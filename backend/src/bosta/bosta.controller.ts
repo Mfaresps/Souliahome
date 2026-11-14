@@ -103,6 +103,13 @@ export class BostaController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
   @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickups/:id/attach-orders')
+  async attachToPickup(@Param('id') id: string, @Body() body: ExtendPickupDto, @Req() req: any) {
+    return this.bostaService.attachToPickup(id, body, req.user?.username || req.user?.name || 'system');
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickups/:id/verify-update')
   async verifyPickupUpdate(@Param('id') id: string) {
     return this.bostaService.verifyPickupUpdate(id);

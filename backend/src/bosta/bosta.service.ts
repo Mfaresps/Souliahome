@@ -21,6 +21,7 @@ import { SettingsService } from '../settings/settings.service';
 import { VaultService } from '../vault/vault.service';
 import { ShopifyAdminService } from '../shopify/shopify-admin.service';
 import { normalizeCity } from '../shared/normalize-city.util';
+import { BOSTA_EDITABLE_STATES, shipmentEditPayload, shipmentLocallyEditable } from '../shared/bosta-shipment-edit.util';
 import { EmployeeScoringService } from '../employee-performance/employee-scoring.service';
 import { FollowUpsService } from '../followups/followups.service';
 import { BostaPickup, BostaPickupDocument } from './schemas/bosta-pickup.schema';
@@ -323,6 +324,13 @@ export interface BostaTrackResult {
 }
 
 /** Stable ticket key for orders collected by a courier on the same day. */
+/** A confirmed request that has not passed its day can take orders that became ready
+ * after it — one pickup per warehouse per day; the courier collects every ready parcel. */
+export function pickupCanAttach(r: any, today: string): boolean {
+  return r?.status === 'created' && !!r.bostaPickupId && r.active !== false
+    && !['pending', 'uncertain'].includes(r.updateState) && String(r.scheduledDate || '') >= today;
+}
+
 function shippingReceivedRef(shipCo: unknown, date: string): string {
   const carrier = String(shipCo || 'Bosta');
   let hash = 0;
@@ -577,6 +585,8 @@ export class BostaService {
         bostaPickupId: r.bostaPickupId || '', businessLocationId: r.businessLocationId,
         scheduledDate: r.scheduledDate, numberOfParcels: r.numberOfParcels, status: r.status,
         canExtend: r.status === 'created' && !!r.bostaPickupId && !['pending', 'uncertain'].includes(r.updateState) && !pickupDateReason(r.scheduledDate, new Date(), policy),
+        extraOrderIds: r.extraOrderIds || [],
+        canAttach: pickupCanAttach(r, pickupClock(new Date()).today),
       })) };
   }
 
@@ -751,6 +761,39 @@ export class BostaService {
     }
   }
 
+  /** Join orders that became ready after today's request to it WITHOUT changing the count
+   * in Bosta (used when Bosta no longer accepts an update: cutoff passed, courier assigned).
+   * Nothing is sent to Bosta; the orders are reserved under the request as extras. */
+  async attachToPickup(id: string, dto: ExtendPickupDto, operator: string) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('طلب الاستلام غير موجود');
+    const existing = await this.pickupModel!.findById(id);
+    if (!existing || !pickupCanAttach(existing, pickupClock(new Date()).today)) {
+      throw new BadRequestException('طلب الاستلام انتهى يومه أو لم يتأكد من بوسطة — اطلب استلامًا جديدًا');
+    }
+    if (existing.numberOfParcels !== dto.expectedNumberOfParcels) throw new BadRequestException('تغير العدد — أعد فتح النافذة لمراجعة الإجمالي');
+    const preview = await this.pickupPreview();
+    const expected = new Set(dto.orderIds);
+    if (!preview.orders.length || expected.size !== preview.orders.length || preview.orders.some(o => !expected.has(o.id))) {
+      throw new BadRequestException('تغيرت الأوردرات الجاهزة — أعد فتح النافذة لمراجعة العدد');
+    }
+    await this.pickupModel!.init();
+    let record: BostaPickupDocument | null;
+    try {
+      record = await this.pickupModel!.findOneAndUpdate(
+        { _id: id, status: 'created', numberOfParcels: existing.numberOfParcels, updateState: { $nin: ['pending', 'uncertain'] } },
+        { $addToSet: { orderIds: { $each: dto.orderIds }, extraOrderIds: { $each: dto.orderIds } },
+          $push: { updateHistory: { at: new Date(), by: operator, from: existing.numberOfParcels, to: existing.numberOfParcels, orderIds: dto.orderIds, outcome: 'attached' } } },
+        { new: true },
+      );
+    } catch (e: any) {
+      if (e.code === 11000) throw new BadRequestException('الأوردرات محجوزة لطلب استلام آخر — أعد فتح النافذة');
+      throw e;
+    }
+    if (!record) throw new BadRequestException('يوجد تعديل آخر أو تغير العدد — أعد فتح النافذة');
+    return { success: true, id: String(record._id), bostaPickupId: record.bostaPickupId, scheduledDate: record.scheduledDate,
+      numberOfParcels: record.numberOfParcels, attached: dto.orderIds.length, extraCount: (record.extraOrderIds || []).length };
+  }
+
   async verifyPickupUpdate(id: string) {
     if (!Types.ObjectId.isValid(id)) throw new BadRequestException('طلب الاستلام غير موجود');
     const record = await this.pickupModel!.findById(id);
@@ -808,7 +851,7 @@ export class BostaService {
 
   /** One shipment-history entry. `deleted` is pushed only on the transition INTO
    * DELETED (see deletedEventPush), so a repeated sync never duplicates it. */
-  private shipEvent(type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed', tx: any, extra: Record<string, unknown> = {}) {
+  private shipEvent(type: 'sent' | 'resent' | 'deleted' | 'cancelled' | 'printed' | 'updated' | 'update-failed', tx: any, extra: Record<string, unknown> = {}) {
     return {
       type,
       at: new Date().toISOString(),
@@ -1933,6 +1976,81 @@ export class BostaService {
     } catch (err: any) {
       this.logger.error(`Bosta cancelOrder failed tx=${txId}: ${err.message}`);
       return { success: false, error: err.message };
+    }
+  }
+
+  // ── Edit a shipment that has not been picked up yet ───────────────────
+  // See shared/bosta-shipment-edit.util.ts for the rules and Bosta's endpoint.
+
+  /** Before an edit is saved: may this delivery still be changed at Bosta (live state)? */
+  async shipmentEditableNow(tx: any): Promise<{ editable: boolean; state: string; error?: string }> {
+    if (!shipmentLocallyEditable(tx)) return { editable: false, state: String(tx?.bostaStatus || '') };
+    try {
+      const res = await this.fetchDelivery(String(tx.bostaOrderId));
+      const state = resolveBostaStatus(res?.data || res, res);
+      return { editable: BOSTA_EDITABLE_STATES.includes(state), state };
+    } catch (err: any) {
+      this.logger.warn(`Bosta editable check failed tx=${tx?._id}: ${err?.message || err}`);
+      return { editable: false, state: '', error: err?.message || String(err) };
+    }
+  }
+
+  /**
+   * After an edit was saved: send what changed (COD, receiver, address, notes) to the live
+   * delivery, then read it back to confirm the COD. Never throws — the order is already saved;
+   * the outcome is stored on `bostaEditSync` and in the shipment log.
+   */
+  async updateShipmentAfterEdit(txId: string, before: any, by = ''): Promise<{ status: 'updated' | 'none' | 'failed'; fields?: string[]; error?: string }> {
+    const tx: any = await this.txModel.findById(txId).lean();
+    if (!tx?.bostaOrderId) return { status: 'none' };
+    const edit = shipmentEditPayload(before, tx);
+    if (!edit) return { status: 'none' };
+    const at = new Date().toISOString();
+    const codExtra = edit.fields.includes('cod') ? { cod: edit.next.cod } : {};
+    try {
+      const apiKey = await this.resolveApiKey();
+      if (!apiKey) throw new Error('Bosta API Key غير مضبوط');
+      await Promise.race([
+        this.request('PUT', `/deliveries/${encodeURIComponent(tx.bostaOrderId)}`, edit.payload, apiKey),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة الاتصال ببوسطة')), 20000)),
+      ]);
+      if (edit.fields.includes('cod')) {
+        const res = await this.fetchDelivery(String(tx.bostaOrderId));
+        const liveCod = Number((res?.data || res)?.cod);
+        if (Number.isFinite(liveCod) && Math.abs(liveCod - edit.next.cod) > 0.5) {
+          throw new Error(`بوسطة قبلت الطلب لكن مبلغ التحصيل عندها ما زال ${liveCod}`);
+        }
+      }
+      const set: Record<string, unknown> = {
+        bostaEditSync: { status: 'updated', at, by, fields: edit.fields, ...codExtra },
+        // The label printed before carries the old amount/address.
+        bostaAwbBase64: '', bostaAwbType: '',
+        bostaLastSync: at,
+      };
+      if (edit.fields.includes('cod')) {
+        set.bostaOriginalCod = edit.next.cod;
+        set.codCollectionStatus = edit.next.cod > 0 ? 'PendingPayment' : '';
+      }
+      if (edit.fields.includes('address')) {
+        set.bostaShippedAddress = { firstLine: edit.next.firstLine, city: edit.next.city, phone: edit.next.phone, sentAt: at };
+      }
+      await this.txModel.findByIdAndUpdate(txId, {
+        $set: set,
+        $push: { shipmentEvents: this.shipEvent('updated', tx, { by, fields: edit.fields, ...codExtra }) },
+      });
+      this.logger.log(`Bosta delivery updated tx=${txId} fields=${edit.fields.join(',')}`);
+      this.emit('tx:updated', { _id: txId });
+      setTimeout(() => { this.getAwb(txId).catch(() => undefined); }, 4000);
+      return { status: 'updated', fields: edit.fields };
+    } catch (err: any) {
+      const error = err?.message || String(err);
+      this.logger.error(`Bosta delivery update failed tx=${txId}: ${error}`);
+      await this.txModel.findByIdAndUpdate(txId, {
+        $set: { bostaEditSync: { status: 'failed', at, by, fields: edit.fields, error, ...codExtra } },
+        $push: { shipmentEvents: this.shipEvent('update-failed', tx, { by, fields: edit.fields, error, ...codExtra }) },
+      }).catch(() => undefined);
+      this.emit('tx:updated', { _id: txId });
+      return { status: 'failed', fields: edit.fields, error };
     }
   }
 

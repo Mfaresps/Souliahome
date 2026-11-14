@@ -9,6 +9,7 @@ import { UpdateSettingsDto, DiscountCodeDto, DiscountBundleDto } from './dto/set
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { LIVE_SYNC_HEADER, checkLiveBackup, exportUrl, liveSyncConfig } from './live-sync.util';
 import { CARRIERS, carrierCodeFromName, carrierCodeFromLooseName } from '../shared/carriers.constants';
 import {
   R2Config,
@@ -1157,6 +1158,44 @@ export class SettingsService {
    * The prefix is part of the FILENAME, not just the registry, so the distinction
    * survives a lost or hand-edited registry.json.
    */
+  /**
+   * The full backup document, in memory. Shared by createBackup() (written to a file) and the
+   * live-sync export (sent to the local copy), so the two can never capture different data.
+   * ⚠ Secrets are stripped by backupConfiguration(); vault passwords and API keys never leave.
+   */
+  async buildBackupData(): Promise<Record<string, any>> {
+    const settings = await this.settingsModel.findOne().exec();
+
+    const data: Record<string, any[]> = {};
+    for (const col of this.backupCollections()) {
+      try {
+        data[col] = await this.connection.collection(col).find({}).toArray();
+      } catch (e: any) {
+        // An absent collection already returns []; a read failure must never become empty data.
+        throw new Error(`تعذّر نسخ جدول ${col}: ${e?.message || 'خطأ في قراءة البيانات'}`);
+      }
+    }
+
+    return {
+      formatVersion: 2,
+      timestamp: new Date().toISOString(),
+      data,
+      collectionCounts: Object.fromEntries(Object.entries(data).map(([name, docs]) => [name, docs.length])),
+      configuration: this.backupConfiguration(settings?.toObject() || {}),
+      vault_balances: {
+        vaultCash: settings?.vaultCash || 0,
+        vaultVodafone: settings?.vaultVodafone || 0,
+        vaultInstapay: settings?.vaultInstapay || 0,
+        vaultBank: settings?.vaultBank || 0,
+        vaultReceiptOperations: settings?.vaultReceiptOperations || [],
+      },
+      offers: {
+        discountCodes: (settings?.discountCodes as any[]) || [],
+        discountBundles: (settings?.discountBundles as any[]) || [],
+      },
+    };
+  }
+
   async createBackup(auto = false): Promise<{ success: boolean; filename: string; message: string }> {
     let temporaryPath: string | undefined;
     try {
@@ -1166,37 +1205,7 @@ export class SettingsService {
       const filename = fs.existsSync(path.join(backupDir, `${base}.json`))
         ? `${base}_${crypto.randomBytes(6).toString('hex')}.json` : `${base}.json`;
       const filepath = path.join(backupDir, filename);
-
-      const settings = await this.settingsModel.findOne().exec();
-
-      const data: Record<string, any[]> = {};
-      for (const col of this.backupCollections()) {
-        try {
-          data[col] = await this.connection.collection(col).find({}).toArray();
-        } catch (e: any) {
-          // An absent collection already returns []; a read failure must never become empty data.
-          throw new Error(`تعذّر نسخ جدول ${col}: ${e?.message || 'خطأ في قراءة البيانات'}`);
-        }
-      }
-
-      const backupData = {
-        formatVersion: 2,
-        timestamp: new Date().toISOString(),
-        data,
-        collectionCounts: Object.fromEntries(Object.entries(data).map(([name, docs]) => [name, docs.length])),
-        configuration: this.backupConfiguration(settings?.toObject() || {}),
-        vault_balances: {
-          vaultCash: settings?.vaultCash || 0,
-          vaultVodafone: settings?.vaultVodafone || 0,
-          vaultInstapay: settings?.vaultInstapay || 0,
-          vaultBank: settings?.vaultBank || 0,
-          vaultReceiptOperations: settings?.vaultReceiptOperations || [],
-        },
-        offers: {
-          discountCodes: (settings?.discountCodes as any[]) || [],
-          discountBundles: (settings?.discountBundles as any[]) || [],
-        },
-      };
+      const backupData = await this.buildBackupData();
 
       temporaryPath = `${filepath}.${crypto.randomBytes(6).toString('hex')}.tmp`;
       fs.writeFileSync(temporaryPath, JSON.stringify(backupData, null, 2));
@@ -1629,7 +1638,7 @@ export class SettingsService {
     }
   }
 
-  async restoreBackup(filename: string) {
+  async restoreBackup(filename: string, opts: { safetyFilename?: string } = {}) {
     const backupDir = this.getBackupDir();
 
     // Prevent path traversal and normalize filename
@@ -1675,7 +1684,10 @@ export class SettingsService {
     try {
       // Keep a recovery file as well as the transaction rollback. The unique
       // filename prevents this safety copy from overwriting the selected backup.
-      const safety = await this.createBackup();
+      // A caller that already took the safety copy (live sync) passes its name instead.
+      const safety = opts.safetyFilename
+        ? { success: true, filename: opts.safetyFilename }
+        : await this.createBackup();
       if (!safety.success) return { success: false, message: 'تعذّر إنشاء نسخة أمان قبل الاستعادة؛ لم تتغير البيانات' };
       session = await this.connection.startSession();
       let result: any;
@@ -1690,6 +1702,128 @@ export class SettingsService {
       return { success: false, message: `تعذّرت الاستعادة الكاملة للمخزون وتم إلغاء التغييرات.${transactionHint} ${e.message}` };
     } finally {
       if (session) await session.endSession();
+    }
+  }
+
+  // ─── Live → local sync («مزامنة من النسخة الحية») ─────────────────────────
+  // The local copy downloads a fresh backup from the live server and restores it here.
+  // Rules in live-sync.util.ts. Only ever imports; the live server only ever exports.
+
+  /** Downloaded live copies kept on disk (older ones are deleted after a successful sync). */
+  static readonly LIVE_SYNC_KEEP = 3;
+  private liveSyncRunning = false;
+
+  private liveSyncStatePath(): string {
+    return path.join(this.getBackupDir(), 'live-sync.json');
+  }
+
+  getLiveSyncStatus() {
+    const cfg = liveSyncConfig(process.env);
+    let last: any = null;
+    try { last = JSON.parse(fs.readFileSync(this.liveSyncStatePath(), 'utf8')); } catch { /* never synced */ }
+    return {
+      enabled: cfg.enabled,
+      reason: cfg.reason || null,
+      source: cfg.source || null,
+      running: this.liveSyncRunning,
+      last,
+    };
+  }
+
+  async runLiveSync(by: string) {
+    const cfg = liveSyncConfig(process.env);
+    if (!cfg.enabled || !cfg.url || !cfg.token) {
+      return { success: false, message: 'المزامنة غير مفعّلة على هذا الجهاز' };
+    }
+    if (this.liveSyncRunning) {
+      return { success: false, message: 'مزامنة أخرى قيد التنفيذ الآن' };
+    }
+    this.liveSyncRunning = true;
+    const startedAt = Date.now();
+    let downloadPath: string | undefined;
+    try {
+      // 1. Download. A failure here changes nothing locally.
+      let res: Response;
+      try {
+        res = await fetch(exportUrl(cfg.url), {
+          headers: { [LIVE_SYNC_HEADER]: cfg.token, 'Accept-Encoding': 'gzip' },
+          signal: AbortSignal.timeout(10 * 60_000),
+        });
+      } catch (e: any) {
+        this.logger.warn(`Live sync: could not reach ${cfg.source}: ${e?.message}`);
+        return { success: false, message: `تعذّر الاتصال بالنظام الحي (${cfg.source}) — لم تتغير البيانات المحلية` };
+      }
+      if (res.status === 401) return { success: false, message: 'مفتاح المزامنة مرفوض من النظام الحي — راجع LIVE_SYNC_TOKEN' };
+      if (res.status === 404) return { success: false, message: 'التصدير غير مفعّل على النظام الحي — أضف LIVE_SYNC_EXPORT_TOKEN هناك' };
+      if (!res.ok) return { success: false, message: `النظام الحي ردّ بخطأ ${res.status} — لم تتغير البيانات المحلية` };
+      const raw = await res.text();
+
+      let backup: any;
+      try { backup = JSON.parse(raw); } catch {
+        return { success: false, message: 'النسخة القادمة من النظام الحي غير مكتملة — لم تتغير البيانات المحلية' };
+      }
+      const { documents, transactions } = checkLiveBackup(backup);
+      const liveTimestamp: string | null = backup.timestamp || null;
+      backup = null; // restoreBackup reads the file itself
+
+      // 2. Keep the downloaded copy as an ordinary backup file (listed under «النسخ المحفوظة»).
+      const dir = this.getBackupDir();
+      const filename = `backup_live_${this.formatDateTime()}_${crypto.randomBytes(3).toString('hex')}.json`;
+      downloadPath = path.join(dir, filename);
+      const tmp = `${downloadPath}.tmp`;
+      fs.writeFileSync(tmp, raw);
+      fs.renameSync(tmp, downloadPath);
+      this.updateBackupRegistry(filename, false);
+
+      // 3. Safety copy of the local data BEFORE anything is replaced.
+      const safety = await this.createBackup();
+      if (!safety.success) {
+        return { success: false, message: 'تعذّر إنشاء نسخة أمان من البيانات المحلية — لم تتغير البيانات' };
+      }
+
+      // 4. The same full restore the «استرجاع كامل» button runs.
+      const result: any = await this.restoreBackup(filename, { safetyFilename: safety.filename });
+      if (!result?.success) {
+        return { ...result, safetyBackup: safety.filename, liveBackup: filename };
+      }
+
+      const state = {
+        at: new Date().toISOString(),
+        by,
+        source: cfg.source,
+        liveTimestamp,
+        documents,
+        transactions,
+        liveBackup: filename,
+        safetyBackup: safety.filename,
+        seconds: Math.round((Date.now() - startedAt) / 1000),
+      };
+      try { fs.writeFileSync(this.liveSyncStatePath(), JSON.stringify(state, null, 2)); } catch { /* status only */ }
+      this.pruneLiveCopies(filename);
+      this.logger.log(`Live sync from ${cfg.source}: ${documents} documents in ${state.seconds}s (safety: ${safety.filename})`);
+      return {
+        success: true,
+        message: `تمت المزامنة من النظام الحي — ${transactions} معاملة، ${documents} سجل إجمالاً`,
+        ...state,
+      };
+    } catch (e: any) {
+      this.logger.error('Live sync failed', e?.message);
+      return { success: false, message: `${e?.message || 'فشلت المزامنة'} — لم تتغير البيانات المحلية` };
+    } finally {
+      this.liveSyncRunning = false;
+    }
+  }
+
+  /** Keeps the newest LIVE_SYNC_KEEP downloaded copies. Housekeeping: never fails a sync. */
+  private pruneLiveCopies(keepName: string) {
+    try {
+      const dir = this.getBackupDir();
+      const live = fs.readdirSync(dir).filter(f => /^backup_live_.*\.json$/.test(f)).sort().reverse();
+      for (const f of live.slice(SettingsService.LIVE_SYNC_KEEP)) {
+        if (f !== keepName) fs.unlinkSync(path.join(dir, f));
+      }
+    } catch (e: any) {
+      this.logger.warn(`Live sync prune skipped: ${e?.message}`);
     }
   }
 

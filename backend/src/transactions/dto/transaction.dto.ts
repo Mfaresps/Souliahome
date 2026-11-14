@@ -184,6 +184,11 @@ export class CreateTransactionDto {
   @IsOptional()
   readonly shippingGov?: string;
 
+  /** Bosta's English city name chosen in the city picker (BostaService.createOrder prefers it). */
+  @IsString()
+  @IsOptional()
+  readonly shippingBostaCity?: string;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -262,6 +267,12 @@ export class UpdateTransactionDto {
   @IsOptional()
   @IsBoolean()
   readonly confirmBundleBreak?: boolean;
+  /** Raising the discount above the lines outside intact bundles: the written reason (≥5 chars) for the exception. Never stored as-is. */
+  @IsOptional() @IsString()
+  readonly bundleDiscountOverrideReason?: string;
+  /** A Shopify sale whose new total differs from what Shopify charged: explicit acknowledgement. Never stored. */
+  @IsOptional() @IsBoolean()
+  readonly acknowledgeDivergence?: boolean;
 
   @IsOptional() @IsString()
   readonly warehouseCode?: string;
@@ -351,6 +362,11 @@ export class UpdateTransactionDto {
   @IsString()
   @IsOptional()
   readonly shippingGov?: string;
+
+  /** Bosta's English city name chosen in the city picker (BostaService.createOrder prefers it). */
+  @IsString()
+  @IsOptional()
+  readonly shippingBostaCity?: string;
 
   @IsNumber()
   @Min(0)

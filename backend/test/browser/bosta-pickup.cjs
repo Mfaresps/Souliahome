@@ -40,6 +40,11 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
           requests[0]={...requests[0],numberOfParcels:32,orderIds:[...requests[0].orderIds,...body.orderIds]};orders=[];
           return {success:true,id:requests[0].id,numberOfParcels:32,scheduledDate:requests[0].scheduledDate,bostaPickupId:requests[0].bostaPickupId};
         }
+        if (url.endsWith('/attach-orders')) {
+          const body=JSON.parse(options.body); calls.push({url,...body});
+          requests[0]={...requests[0],orderIds:[...requests[0].orderIds,...body.orderIds],extraOrderIds:body.orderIds};orders=[];
+          return {success:true,id:requests[0].id,numberOfParcels:requests[0].numberOfParcels,scheduledDate:requests[0].scheduledDate,attached:body.orderIds.length};
+        }
         if (url.endsWith('/verify-update')) {
           calls.push({url});
           if(!window.remoteConfirmed)throw new Error('Bosta has not confirmed the requested total');
@@ -125,14 +130,14 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
         requests=[{id:'existing',businessLocationId:'warehouse',scheduledDate:'2099-10-18',status:'created',canExtend:true,numberOfParcels:30,orderIds:['old'],bostaPickupId:'B-30'}];
       },language);
       await page.evaluate(()=>openBostaPickup());
-      assert.equal(await page.$eval('#bp-target',el=>el.value),'existing');
+      assert.equal(await page.$eval('#bp-target',el=>el.value),'ext:existing');
       assert.ok((await page.$eval('#bp-extension-summary',el=>el.textContent)).includes('30 + 2 = 32'));
       assert.equal(await page.$eval('#bp-date',el=>el.disabled&&el.closest('.form-group').hidden),true);
       assert.equal(await page.$eval('#bosta-pickup-form',el=>el.reportValidity()),true);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       await page.select('#bp-target','');
       assert.equal(await page.$eval('#bp-name',el=>el.disabled||el.closest('.form-group').hidden),false);
-      await page.select('#bp-target','existing');
+      await page.select('#bp-target','ext:existing');
       fs.mkdirSync(path.join(publicDir,'../../artifacts/bosta-pickup-extension'),{recursive:true});
       await page.evaluate(()=>document.getAnimations().forEach(animation=>animation.finish()));
       await page.screenshot({path:path.join(publicDir,`../../artifacts/bosta-pickup-extension/${language}-390.png`),fullPage:true});
@@ -159,6 +164,22 @@ assert.ok(html.includes('onclick="openBostaPickup(this)"'));
     await page.waitForFunction(()=>!document.querySelector('[data-pickup-verify]'));
     assert.equal(await page.evaluate(()=>calls.filter(c=>c.url.endsWith('/add-orders')).length),1);
     assert.ok((await page.$eval('.bp-history',el=>el.textContent)).includes('32 parcels'));
+    // Cutoff passed / courier assigned: Bosta no longer takes a new count, so the 7 orders
+    // ready after the 40-parcel request join it without a second request.
+    await page.evaluate(()=>{
+      closeModal();calls=[];orders=Array.from({length:7},(_,i)=>({id:'late-'+i}));
+      requests=[{id:'today',businessLocationId:'warehouse',scheduledDate:'2099-10-13',status:'created',canExtend:false,canAttach:true,numberOfParcels:40,orderIds:['old'],bostaPickupId:'B-40'}];
+    });
+    await page.evaluate(()=>openBostaPickup());
+    await page.waitForSelector('#bp-target');
+    assert.equal(await page.$eval('#bp-target',el=>el.value),'att:today');
+    assert.equal(await page.$eval('#bp-date',el=>el.closest('.form-group').hidden),true);
+    assert.ok((await page.$eval('#bp-extension-summary',el=>el.textContent)).includes('40'));
+    await page.click('button[type="submit"]');
+    await page.waitForSelector('.bp-success');
+    assert.equal(await page.evaluate(()=>calls.length),1);
+    assert.ok(await page.evaluate(()=>calls[0].url.endsWith('/shipping/pickups/today/attach-orders')));
+    assert.equal(await page.evaluate(()=>calls[0].orderIds.length),7);
     await page.evaluate(() => {
       closeModal(); document.body.insertAdjacentHTML('beforeend', '<div id="stg-bosta-pickup-policy"></div>');
       window.settings = {}; window.isAdmin = () => true; renderBostaPickupPolicy();

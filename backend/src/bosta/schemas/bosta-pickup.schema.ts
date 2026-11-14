@@ -20,6 +20,9 @@ export class BostaPickup {
   @Prop({ default: 0 }) pendingNumberOfParcels: number;
   @Prop({ default: '' }) updateRequestedBy: string;
   @Prop() updateRequestedAt?: Date;
+  // Orders that became ready after the request and joined it WITHOUT changing Bosta's count
+  // (cutoff passed or the courier was already assigned). The courier collects every ready parcel.
+  @Prop({ type: [String], default: [] }) extraOrderIds: string[];
   @Prop({ type: [Object], default: [] }) updateHistory: Array<Record<string, unknown>>;
 }
 export type BostaPickupDocument = HydratedDocument<BostaPickup>;

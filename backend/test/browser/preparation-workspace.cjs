@@ -70,7 +70,7 @@ fs.mkdirSync(output, { recursive: true });
         probe.style.color='var(--accent)';const accent=getComputedStyle(probe).color;
         probe.style.color='var(--primary)';const primary=getComputedStyle(probe).color;probe.remove();
         return {accent,primary,selected:getComputedStyle(qs('.pw-ocard.is-sel')).borderTopColor,
-          prepare:getComputedStyle(qs('.pw-head-tick')).color,send:getComputedStyle(qs('.pw-cmt-send')).backgroundColor};
+          prepare:getComputedStyle(qs('.pw-head-tick')).backgroundColor,send:getComputedStyle(qs('.pw-cmt-send')).backgroundColor};
       });
       assert.equal(themeColors.selected,themeColors.accent,'Selection follows the system green accent');
       const actualGreen=themeColors.prepare.match(/\d+/g).map(Number),expectedGreen=themeColors.accent.match(/\d+/g).map(Number);
@@ -120,7 +120,7 @@ fs.mkdirSync(output, { recursive: true });
       await page.evaluate(()=>{qs('#pw-work .pw-side').scrollTop=0;qs('#pw-work .pw-items-wrap').scrollTop=0;});
       await page.screenshot({path:path.join(output,`preparation-${lang}-${width}${dark?'-dark':''}.png`)});
       await page.evaluate(async () => { await _pwSubmitScan(_pwSelId,'TEST-PIECE'); });
-      await page.waitForFunction(() => qs('.pw-scan-overview>span:nth-child(2)>b').textContent === '1');
+      await page.waitForFunction(() => qs('.pw-scan-overview>span:nth-child(1)>b').textContent === '1');
       assert.equal(await page.evaluate(()=>scanWrites.length),1,'One physical piece writes once');
       assert.equal(await page.$$eval('.pw-piece-dots .matched',nodes=>nodes.length),1);
       await page.evaluate(async () => { await _pwSubmitScan(_pwSelId,'TEST-PIECE'); });

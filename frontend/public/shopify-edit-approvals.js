@@ -58,9 +58,7 @@ function _spEditComparisonHtml(before = {}, patch = {}, fallback = []) {
       if (oldItem && newItem && oldItem.name !== newItem.name) changes.push(row(spEditText('اسم الصنف', 'Item name'), oldItem.name, newItem.name));
       const item = newItem || oldItem;
       const imageItem = { ...oldItem, ...item, imageUrl: item.imageUrl || oldItem?.imageUrl, image: item.image || oldItem?.image };
-      const inventoryItem = imageIndex && typeof _spLookupInvItem === 'function' ? _spLookupInvItem(imageItem, imageIndex) : null;
-      const thumbnail = typeof _spThumbHtml === 'function' ? _spThumbHtml(imageItem, inventoryItem, 'edit-product-thumb')
-        : `<span class="edit-product-thumb" aria-hidden="true">${e(item.name.slice(0, 1))}</span>`;
+      const thumbnail = _spEditThumb(imageItem, imageIndex, 'edit-product-thumb');
       const context = !oldItem || !newItem ? `<p class="edit-product-context">${e(spEditText('سعر الوحدة', 'Unit price'))}: <bdi>${e(_spEditMoneyText(item.price))}</bdi> · ${e(spEditText('إجمالي الصنف', 'Item total'))}: <bdi>${e(_spEditMoneyText(item.amount))}</bdi></p>` : '';
       productRows.push(`<article class="edit-diff-product is-${kind}"><header><div class="edit-product-heading">${thumbnail}<b dir="auto">${e(item.name)}</b></div><span>${e(label)}</span></header>${changes.join('')}${context}</article>`);
     }
@@ -96,6 +94,16 @@ function _spEditComparisonHtml(before = {}, patch = {}, fallback = []) {
   const legacy = !productRows.length && !fields.length && !totalSummary && !corrections ? _spEditLegacyComparisonHtml(fallback) : '';
   return `<div class="edit-diff">${productRows.length ? `<section class="edit-diff-products" aria-label="${e(spEditText('تعديلات المنتجات', 'Product changes'))}">${productRows.join('')}</section>` : ''}
     ${fields.length ? `<section class="edit-diff-fields" aria-label="${e(spEditText('تفاصيل التعديل', 'Changed details'))}">${fields.join('')}</section>` : ''}${totalSummary}${corrections}${legacy}</div>`;
+}
+/* Product photo for an edit line: the Shopify page's thumb when that page is loaded, else the line
+   snapshot / live catalogue (_pwItemImgUrl), else initials. A broken image removes itself. */
+function _spEditThumb(item, imageIndex, cls) {
+  const inventoryItem = imageIndex && typeof _spLookupInvItem === 'function' ? _spLookupInvItem(item, imageIndex) : null;
+  if (typeof _spThumbHtml === 'function') return _spThumbHtml(item, inventoryItem, cls);
+  const name = String(item?.name || item?.code || '?');
+  const url = (typeof _pwItemImgUrl === 'function' ? _pwItemImgUrl(item) : '') || item?.imageUrl || '';
+  const safe = /^https?:\/\//i.test(String(url)) ? url : '';
+  return `<span class="${cls}" aria-hidden="true"><span class="sp-th-ini">${esc(name.trim().slice(0, 2))}</span>${safe ? `<img src="${escHtml(safe)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 }
 function _spEditLegacyComparisonHtml(changes) {
   return `<div class="edit-diff-fields">${changes.map(change => {
@@ -239,21 +247,178 @@ function _spEditReviewActions(order) {
     <button type="button" class="btn btn-outline btn-sm" onclick="decideShopifyEdit('${esc(order._id)}',false)">✕ ${esc(spEditText('رفض التعديل', 'Reject edit'))}</button></div>`;
 }
 
+/* ── Edit history: every edit on the order, newest first ──────────────────────────────────────────
+   Requests (approved / rejected / direct) come from editRequestHistory + the current editRequest;
+   other edits (items, discount, item-conflict review) from editHistory. An editHistory row that
+   only mirrors a request (same time) is skipped, so nothing is listed twice. The list endpoint
+   leaves both histories out, so they are read from GET /shopify/orders/detail/:id. */
+const _SP_EH_REQUEST_ACTIONS = new Set(['تعديل أوردر', 'اعتماد تعديل أوردر', 'اعتماد تعديل الفاتورة']);
+const _SP_EH_ACTION_EN = { 'تعديل الأصناف': 'Items edited', 'تعديل الخصم': 'Discount edited', 'مراجعة تعارض الأصناف': 'Item conflict reviewed' };
+function _spEditHistoryEntries(order) {
+  const requests = new Map();
+  for (const r of [...(order.editRequestHistory || []), ...(order.editRequest ? [order.editRequest] : [])]) {
+    if (r) requests.set(r.id || `${r.requestedAt}|${r.status}`, r);
+  }
+  const requestTimes = new Set();
+  const entries = [...requests.values()].map(r => {
+    if (r.requestedAt) requestTimes.add(r.requestedAt);
+    if (r.reviewedAt) requestTimes.add(r.reviewedAt);
+    const pending = r.status === 'معلق' || r.status === 'قيد التنفيذ';
+    const direct = !pending && r.status === 'معتمد' && r.reviewedBy && r.reviewedBy === r.requestedBy && r.reviewedAt === r.requestedAt;
+    return { request: r, at: r.requestedAt || r.reviewedAt || '', by: r.requestedBy || '',
+      state: pending ? 'pending' : r.status === 'معتمد' ? 'approved' : 'rejected', direct,
+      before: r.before || {}, after: r.patch || {}, changes: r.changes || [] };
+  });
+  for (const h of order.editHistory || []) {
+    if (_SP_EH_REQUEST_ACTIONS.has(h.action) && requestTimes.has(h.editedAt)) continue;
+    entries.push({ at: h.editedAt || '', by: h.editedBy || '', state: 'approved', direct: true, action: h.action,
+      approvedBy: h.approvedBy, before: h.before || {}, after: h.after || {}, changes: h.changes || [] });
+  }
+  return entries.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
+function _spEhTitle(entry) {
+  if (entry.action) return currentLang === 'en' ? (_SP_EH_ACTION_EN[entry.action] || 'Order edited') : entry.action;
+  if (entry.state === 'pending') return _spEditPendingLabel();
+  if (entry.state === 'rejected') return spEditText('تعديل مرفوض', 'Edit rejected');
+  return entry.direct ? spEditText('تعديل مباشر', 'Direct edit') : spEditText('تعديل معتمد', 'Approved edit');
+}
+/* The products an edit touched, for the summary line's photos. */
+function _spEhTouchedItems(before, after) {
+  if (!Array.isArray(after.items)) return [];
+  const oldItems = _spEditGroupItems(before.items), newItems = _spEditGroupItems(after.items), out = [];
+  for (const key of new Set([...oldItems.keys(), ...newItems.keys()])) {
+    const o = oldItems.get(key), n = newItems.get(key);
+    if (o && n && o.qty === n.qty && o.amount === n.amount && o.name === n.name) continue;
+    out.push({ ...o, ...n });
+  }
+  return out;
+}
+function _spEhEntryHtml(entry, index, open) {
+  const imageIndex = typeof _spBuildInvIndex === 'function' ? _spBuildInvIndex() : null;
+  const touched = _spEhTouchedItems(entry.before, entry.after);
+  const thumbs = touched.slice(0, 3).map(i => _spEditThumb(i, imageIndex, 'sp-eh-thumb')).join('')
+    + (touched.length > 3 ? `<span class="sp-eh-more">+${touched.length - 3}</span>` : '');
+  const totalMoved = 'total' in entry.after && Number(entry.before.total || 0) !== Number(entry.after.total || 0);
+  const total = totalMoved ? `<span class="sp-eh-total"><bdi>${esc(_spEditMoneyText(entry.before.total))}</bdi><span aria-hidden="true">${_spEditArrow()}</span><b><bdi>${esc(_spEditMoneyText(entry.after.total))}</bdi></b></span>` : '';
+  const r = entry.request;
+  const audit = [
+    r?.reviewedBy && !entry.direct ? `${esc(spEditText(entry.state === 'approved' ? 'اعتمدها' : 'رفضها', entry.state === 'approved' ? 'Approved by' : 'Rejected by'))} <b>${esc(r.reviewedBy)}</b> · ${esc(fmtDateTime(r.reviewedAt))}` : '',
+    entry.approvedBy && entry.approvedBy !== entry.by ? `${esc(spEditText('اعتمدها', 'Approved by'))} <b>${esc(entry.approvedBy)}</b>` : '',
+  ].filter(Boolean).join('<br>');
+  const reason = r?.rejectedReason ? `<p class="sp-eh-reason">${esc(spEditText('سبب الرفض', 'Rejection reason'))}: <span dir="auto">${esc(r.rejectedReason)}</span></p>` : '';
+  return `<details class="sp-eh-entry is-${entry.state}"${open ? ' open' : ''}>
+    <summary><span class="sp-eh-dot" aria-hidden="true"></span>
+      <span class="sp-eh-head"><span class="sp-eh-titleline"><b>${esc(_spEhTitle(entry))}</b><span class="sp-eh-no">#${index}</span></span>
+        <small><bdi>${esc(entry.by || '—')}</bdi> · ${esc(fmtDateTime(entry.at))}</small>${total}</span>
+      ${thumbs ? `<span class="sp-eh-thumbs">${thumbs}</span>` : ''}
+      <svg class="sp-eh-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+    <div class="sp-eh-body">${_spEditComparisonHtml(entry.before, entry.after, entry.changes)}${reason}${audit ? `<p class="edit-review-audit">${audit}</p>` : ''}</div>
+  </details>`;
+}
+function _spEhListHtml(order, focusRequestId) {
+  const entries = _spEditHistoryEntries(order).filter(e => e.state !== 'pending');
+  if (!entries.length) return `<p class="sp-eh-empty">${esc(spEditText('لا توجد تعديلات سابقة على هذا الطلب.', 'No earlier edits on this order.'))}</p>`;
+  const focusIdx = focusRequestId ? entries.findIndex(e => e.request?.id === focusRequestId) : -1;
+  return entries.map((e, i) => _spEhEntryHtml(e, entries.length - i, focusIdx >= 0 ? i === focusIdx : i === 0)).join('');
+}
+function _spEhSummaryHtml(order) {
+  const all = _spEditHistoryEntries(order).filter(e => e.state !== 'pending');
+  if (!all.length) return '';
+  const rejected = all.filter(e => e.state === 'rejected').length;
+  const firstWithTotal = [...all].reverse().find(e => 'total' in (e.before || {}));
+  const chips = [`<span><b>${all.length - rejected}</b> ${esc(spEditText('تعديل مطبّق', 'applied'))}</span>`];
+  if (rejected) chips.push(`<span class="is-rej"><b>${rejected}</b> ${esc(spEditText('مرفوض', 'rejected'))}</span>`);
+  if (firstWithTotal && Number(firstWithTotal.before.total || 0) !== Number(order.total || 0)) {
+    chips.push(`<span>${esc(spEditText('الإجمالي', 'Total'))} <bdi>${esc(_spEditMoneyText(firstWithTotal.before.total))}</bdi> ${_spEditArrow()} <b><bdi>${esc(_spEditMoneyText(order.total))}</bdi></b></span>`);
+  }
+  return `<div class="sp-eh-summary">${chips.join('')}</div>`;
+}
+
+/* ── «What changed since Shopify», short, with product photos — for the confirm-with-a-difference dialog.
+   Baseline = the order as it stood before its FIRST applied edit (what Shopify sent); compared with the
+   order now. Returns '' when there is nothing to show, so the caller falls back to the server's lines. */
+const _spSignedIso = n => `⁦${n > 0 ? '+' : '−'}${_spEditMoneyText(Math.abs(n)).replace('EGP ', '')}⁩`;
+/** One row per product whose line changed between two item lists: photo, name, what changed, signed amount. */
+function _spDxItemRows(beforeItems, afterItems) {
+  const imageIndex = typeof _spBuildInvIndex === 'function' ? _spBuildInvIndex() : null;
+  const oldItems = _spEditGroupItems(beforeItems || []), newItems = _spEditGroupItems(afterItems || []);
+  const rows = [];
+  for (const key of new Set([...oldItems.keys(), ...newItems.keys()])) {
+    const o = oldItems.get(key), n = newItems.get(key);
+    if (o && n && o.qty === n.qty && Math.abs(o.amount - n.amount) < 0.01) continue;
+    const item = { ...o, ...n };
+    let what;
+    if (!o) what = spEditText('أُضيف', 'Added') + ` · <bdi>${n.qty} × ${esc(_spEditMoneyText(n.price))}</bdi>`;
+    else if (!n) what = spEditText('حُذف', 'Removed') + ` · <bdi>${o.qty} × ${esc(_spEditMoneyText(o.price))}</bdi>`;
+    else {
+      const parts = [];
+      if (o.qty !== n.qty) parts.push(`${esc(spEditText('الكمية', 'Qty'))} <bdi>${_spEditPair(o.qty, n.qty)}</bdi>`);
+      if (Math.abs(o.price - n.price) >= 0.01) parts.push(`${esc(spEditText('السعر', 'Price'))} <bdi>${esc(_spEditPair(_spEditMoneyText(o.price), _spEditMoneyText(n.price)))}</bdi>`);
+      what = parts.join(' · ');
+    }
+    const delta = (n?.amount || 0) - (o?.amount || 0);
+    rows.push(`<li class="sp-dx-row is-${!o ? 'add' : !n ? 'rem' : 'chg'}">${_spEditThumb(item, imageIndex, 'sp-dx-thumb')}<span class="sp-dx-txt"><b><bdi>${esc(item.name || item.code || '')}</bdi></b><small>${what}</small></span><span class="sp-dx-amt">${_spSignedIso(delta)}</span></li>`);
+  }
+  return rows;
+}
+function _spDivergenceExplainHtml(order) {
+  const applied = _spEditHistoryEntries(order).filter(e => e.state === 'approved' && Array.isArray(e.before?.items));
+  const first = applied[applied.length - 1];
+  if (!first) return '';
+  const before = first.before;
+  const rows = _spDxItemRows(before.items, order.items);
+  const money = [['manualDiscount', 'الخصم اليدوي', 'Manual discount', -1], ['codesDiscount', 'خصم الأكواد', 'Code discount', -1], ['shipCost', 'الشحن', 'Shipping', 1]];
+  for (const [k, ar, en, sign] of money) {
+    const a = Number(before[k] || 0), b = Number(order[k] || 0);
+    if (Math.abs(a - b) < 0.01) continue;
+    rows.push(`<li class="sp-dx-row is-money"><span class="sp-dx-ico" aria-hidden="true">${k === 'shipCost' ? '⛟' : '%'}</span><span class="sp-dx-txt"><b>${esc(spEditText(ar, en))}</b><small><bdi>${esc(_spEditPair(_spEditMoneyText(a), _spEditMoneyText(b)))}</bdi></small></span><span class="sp-dx-amt">${_spSignedIso(sign * (b - a))}</span></li>`);
+  }
+  if (!rows.length) return '';
+  const shown = rows.slice(0, 6), more = rows.length - shown.length;
+  return `<div class="sp-dx"><p class="sp-dx-head">${esc(spEditText('التغييرات منذ استلام الطلب من Shopify:', 'What changed from the Shopify order:'))}</p><ul>${shown.join('')}</ul>${more > 0 ? `<p class="sp-dx-more">${esc(spEditText(`و${more} تغيير آخر — التفاصيل في سجل التعديلات`, `and ${more} more — see the edit history`))}</p>` : ''}</div>`;
+}
+/** The same notice for editing a CONFIRMED Shopify sale: this edit's lines before → after, plus the discount. */
+function _txDivergenceExplainHtml(beforeItems, afterItems, oldDiscount, newDiscount) {
+  const rows = _spDxItemRows(beforeItems, afterItems);
+  const a = Number(oldDiscount) || 0, b = Number(newDiscount) || 0;
+  if (Math.abs(a - b) >= 0.01) rows.push(`<li class="sp-dx-row is-money"><span class="sp-dx-ico" aria-hidden="true">%</span><span class="sp-dx-txt"><b>${esc(spEditText('الخصم', 'Discount'))}</b><small><bdi>${esc(_spEditPair(_spEditMoneyText(a), _spEditMoneyText(b)))}</bdi></small></span><span class="sp-dx-amt">${_spSignedIso(a - b)}</span></li>`);
+  if (!rows.length) return '';
+  const shown = rows.slice(0, 6), more = rows.length - shown.length;
+  return `<div class="sp-dx"><p class="sp-dx-head">${esc(spEditText('التغييرات في هذا التعديل:', 'What this edit changes:'))}</p><ul>${shown.join('')}</ul>${more > 0 ? `<p class="sp-dx-more">${esc(spEditText(`و${more} تغيير آخر`, `and ${more} more`))}</p>` : ''}</div>`;
+}
+function _spDivergenceLinesHtml(divergence) {
+  const lines = (divergence?.changes || []).slice(0, 6);
+  return lines.length ? `<div class="sp-dx"><p class="sp-dx-head">${esc(spEditText('التغييرات:', 'What changed:'))}</p><ul class="sp-dx-plain">${lines.map(l => `<li dir="auto">${esc(String(l))}</li>`).join('')}</ul></div>` : '';
+}
+
 function openShopifyEditReview(id, requestId = '') {
   if (typeof _canAccessPage === 'function' && !_canAccessPage('shopify-orders') && !_canAccessPage('invoice-view')) {
     _requirePageAccess('shopify-orders'); return;
   }
-  let order = (_shopifyOrders || []).find(o => o._id === id);
-  if (requestId && order?.editRequest?.id !== requestId) {
-    const archived = (order?.editRequestHistory || []).find(r => r.id === requestId);
-    if (!archived) return;
-    order = { ...order, editRequest: archived };
-  }
-  if (!order?.editRequest) return;
-  openModal(`<h3>${esc(spEditText('تفاصيل تعديل الفاتورة', 'Invoice edit details'))} <bdi>#${esc(order.ref)}</bdi></h3>
-    ${_spEditRequestDetail(order)}${isAdmin() && order.editRequest.status === 'معلق' ? `<label for="sp-edit-rejection-reason">${esc(spEditText('سبب الرفض (اختياري)', 'Rejection reason (optional)'))}</label><textarea id="sp-edit-rejection-reason" rows="2" maxlength="500" style="width:100%;margin:8px 0 16px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit"></textarea>` : ''}${_spEditReviewActions(order)}`);
+  const order = (_shopifyOrders || []).find(o => o._id === id);
+  if (!order) return;
+  const pending = order.editRequest && (order.editRequest.status === 'معلق' || order.editRequest.status === 'قيد التنفيذ');
+  // The pending request is drawn now, from memory, and never redrawn — a typed rejection reason survives
+  // the history arriving; decideShopifyEdit reads #sp-edit-rejection-reason right after this call.
+  const pendingHtml = pending ? `<section class="sp-eh-pending">${_spEditRequestDetail(order)}${isAdmin() && order.editRequest.status === 'معلق' ? `<label for="sp-edit-rejection-reason">${esc(spEditText('سبب الرفض (اختياري)', 'Rejection reason (optional)'))}</label><textarea id="sp-edit-rejection-reason" rows="2" maxlength="500" style="width:100%;margin:8px 0 16px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit"></textarea>` : ''}${_spEditReviewActions(order)}</section>` : '';
+  const skeleton = `<div class="sp-eh-loading" aria-busy="true">${'<span class="sp-eh-skel"></span>'.repeat(2)}<span class="sr-only">${esc(spEditText('جارٍ تحميل سجل التعديلات…', 'Loading edit history…'))}</span></div>`;
+  openModal(`<div class="sp-eh" data-order-id="${esc(id)}"><h3>${esc(spEditText('سجل تعديلات الطلب', 'Order edit history'))} <bdi>#${esc(order.ref)}</bdi></h3>
+    ${pendingHtml}<div id="sp-eh-summary"></div>
+    ${pending ? `<h4 class="sp-eh-subhead">${esc(spEditText('التعديلات السابقة', 'Earlier edits'))}</h4>` : ''}
+    <div id="sp-eh-list" class="sp-eh-list">${skeleton}</div></div>`);
   qs('#modal-overlay').classList.add('shopify-edit-review');
   qs('#sp-edit-rejection-reason')?.setAttribute('data-order-id', id);
+  api(`/shopify/orders/detail/${encodeURIComponent(id)}`).then(full => {
+    const host = qs('#sp-eh-list');
+    if (!host || host.closest('.sp-eh')?.dataset.orderId !== id) return;  // closed or another order opened
+    const merged = { ...order, ...full, editRequest: full.editRequest || order.editRequest };
+    host.innerHTML = _spEhListHtml(merged, requestId);
+    const summary = qs('#sp-eh-summary'); if (summary) summary.innerHTML = _spEhSummaryHtml(merged);
+  }).catch(() => {
+    const host = qs('#sp-eh-list');
+    if (!host || host.closest('.sp-eh')?.dataset.orderId !== id) return;
+    host.innerHTML = `<p class="sp-eh-empty is-error">${esc(spEditText('تعذّر تحميل سجل التعديلات.', 'Could not load the edit history.'))} <button type="button" class="btn btn-outline btn-sm" onclick="openShopifyEditReview('${esc(id)}','${esc(requestId)}')">${esc(spEditText('إعادة المحاولة', 'Retry'))}</button></p>`;
+  });
 }
 
 const _spEditDecisionsBusy = new Set();
@@ -336,7 +501,16 @@ async function _submitShopifyInvoiceEdit(id, body) {
   try {
     const original = transactions.find(tx => tx._id === id);
     if (!original || !(await _spConfirmEditSubmission(original, { invoice: body }))) return;
-    const res = await api(`/shopify/transactions/${id}/edit`, { method: 'PATCH', body: JSON.stringify(body) });
+    // The server may ask first (bundle break · discount over the lines outside a bundle · a total that now
+    // differs from Shopify) — answered here by whoever is editing, then resent (index.html _editAnswerServerQuestion).
+    let res;
+    for (let i = 0; i < 4 && !res; i++) {
+      try { res = await api(`/shopify/transactions/${id}/edit`, { method: 'PATCH', body: JSON.stringify(body) }); }
+      catch (e) {
+        if (typeof _editAnswerServerQuestion !== 'function' || !(await _editAnswerServerQuestion(e, body, original))) throw e;
+      }
+    }
+    if (!res) return;
     releaseEditMovementLock(id);
     closeModal();
     await loadShopifyOrders();

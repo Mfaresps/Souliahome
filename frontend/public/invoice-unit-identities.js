@@ -94,15 +94,27 @@
   }
   function actions(tx) {
     if (!isSale(tx) || !allowed() || typeof hasPerm !== 'function' || !hasPerm('inventory-units-condition')) return '';
-    return `<div class="ivi-invoice-actions"><button type="button" class="ivi-return-button" data-customer-piece-return="${html(tx._id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 5 4 10l5 5M4 10h10a6 6 0 0 1 0 12"/></svg><span>${tr('Receive return without label', 'استلام مرتجع بدون ملصق')}</span></button></div>`;
+    // Hidden until the invoice's pieces are loaded: shown only when one can actually be received (returnable()).
+    const known = cache.get(String(tx._id));
+    return `<div class="ivi-invoice-actions" data-ivi-return-slot="${html(tx._id)}"${known && returnable(known) ? '' : ' hidden'}><button type="button" class="ivi-return-button" data-customer-piece-return="${html(tx._id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 5 4 10l5 5M4 10h10a6 6 0 0 1 0 12"/></svg><span>${tr('Receive return without label', 'استلام مرتجع بدون ملصق')}</span></button></div>`;
   }
+  /* Mirrors InventoryUnitsService.customerReturnCandidates: a piece scanned onto this invoice that is with the
+     carrier / delivered, or already received back and awaiting review. With none, the receive dialog lists
+     nothing — so the button is not offered (an invoice with no scanned pieces, or not shipped yet). */
+  function returnable(data) {
+    return (data?.lines || []).some(line => entries(line).some(unit => unit.matchesProduct !== false &&
+      ((unit.active && ['shipped', 'delivered'].includes(unit.orderStatus)) || (unit.returnedAt && unit.status === 'returned'))));
+  }
+  function returnSlots(id) { return [...document.querySelectorAll('[data-ivi-return-slot]')].filter(node => !id || node.dataset.iviReturnSlot === id); }
+  function paintReturn(id, data) { for (const node of returnSlots(id)) node.hidden = !(data && returnable(data)); }
   function slots(id) { return [...document.querySelectorAll('[data-invoice-piece-line]')].filter(node => !id || node.dataset.invoicePieceLine === id); }
   async function refresh(id) {
-    const targets = slots(id); if (!targets.length) return;
+    const targets = slots(id); if (!targets.length && !returnSlots(id).length) return;
     const revision = revisions.get(id) || 0;
     try {
       const data = await load(id, true);
       if (revision !== (revisions.get(id) || 0)) return;
+      paintReturn(id, data);
       for (const target of targets) {
         if (!target.isConnected) continue;
         if (!data || !allowed()) { target.replaceChildren(); continue; }
@@ -148,6 +160,7 @@
   function mount() {
     const ids = new Set();
     for (const target of slots()) if (!mounted.has(target)) { mounted.add(target); ids.add(target.dataset.invoicePieceLine); }
+    for (const target of returnSlots()) if (!mounted.has(target)) { mounted.add(target); ids.add(target.dataset.iviReturnSlot); }
     for (const id of ids) refresh(id);
   }
   function start() {

@@ -77,7 +77,13 @@ function _puDailyShipment(order) {
     && Number.isFinite(Date.parse(event.at))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   const registered = !!order.bostaOrderId || !!order.bostaTrackingNumber || events.length > 0;
   if (!registered && !['Shipped', 'Delivered'].includes(order.pickupStatus)) return null;
-  const day = _puDailyDay(events[0]?.at || order.bostaCreatedAt || order.shippedAt || order.pickupDate)
+  // Once the courier has the parcel, the group is the day it was COLLECTED
+  // (shippedAt / the SH-<day> ref the status sync writes), not the day it was
+  // sent to Bosta: 47 orders sent over two days but collected in one pickup
+  // must stay one group. Orders still awaiting pickup keep the send day.
+  const collectedDay = _puDailyAwaitingPickup(order) ? '' : (_puDailyDay(order.shippedAt)
+    || _puDailyDay(/^SH-(\d{4}-\d{2}-\d{2})-/.exec(order.pickupRef || '')?.[1]));
+  const day = collectedDay || _puDailyDay(events[0]?.at || order.bostaCreatedAt || order.shippedAt || order.pickupDate)
     || _puDailyDay(/^SH-(\d{4}-\d{2}-\d{2})-/.exec(order.pickupRef || '')?.[1]) || '';
   const rawCarrier = String(order.shipCo || (registered ? 'Bosta' : '')).trim();
   const carrier = /^(bosta|بوسطة|بوسطه)$/i.test(rawCarrier) ? 'Bosta' : rawCarrier;
@@ -139,7 +145,7 @@ function _puDailyPickupHtml(orders, compact = false) {
     const failed = typeof _bostaPickupRequestsState !== 'undefined' && _bostaPickupRequestsState === 'error';
     return `<span class="pu-daily-pickup is-unknown">${esc(failed ? _puDailyText('تعذر تحميل حالة طلب الاستلام', 'Pickup request status unavailable') : _puDailyText('جارٍ التحقق من طلب الاستلام', 'Checking pickup request'))}</span>`;
   }
-  const covered = { created: new Set(), pending: new Set(), rejected: new Set() };
+  const covered = { created: new Set(), joined: new Set(), pending: new Set(), rejected: new Set() };
   const requestDays = new Set();
   for (const order of orders) {
     const matching = _bostaPickupRequests.filter(request => (request.orderIds || []).map(String).includes(String(order._id)));
@@ -147,17 +153,21 @@ function _puDailyPickupHtml(orders, compact = false) {
     const pending = matching.find(r => r.status === 'pending');
     const rejected = matching.find(r => r.status === 'rejected');
     const request = created || pending;
-    if (request) { covered[created ? 'created' : 'pending'].add(String(order._id)); if (request.scheduledDate) requestDays.add(request.scheduledDate); }
+    const joined = created && (created.extraOrderIds || []).map(String).includes(String(order._id));
+    if (request) { covered[joined ? 'joined' : created ? 'created' : 'pending'].add(String(order._id)); if (request.scheduledDate) requestDays.add(request.scheduledDate); }
     else if (rejected) covered.rejected.add(String(order._id));
   }
   const title = esc([...requestDays].sort().join(' · '));
   const counts = count => compact && orders.length === 1 ? '' : `<bdi>${count}/${orders.length}</bdi>`;
   const parts = [];
   if (covered.created.size) parts.push(`<span class="pu-daily-pickup is-requested" title="${title}">✓ ${esc(_puDailyText('تم إرسال طلب الاستلام لبوسطة', 'Pickup request sent to Bosta'))} ${counts(covered.created.size)}</span>`);
+  if (covered.joined.size) parts.push(`<span class="pu-daily-pickup is-requested" title="${esc(_puDailyText('انضمت لطلب الاستلام بعد إرساله — العدد في بوسطة لم يتغير، والمندوب يستلم كل الطرود الجاهزة', 'Joined the pickup request after it was sent — the Bosta count is unchanged; the courier collects every ready parcel'))}">✓ ${esc(_puDailyText('مضافة لطلب الاستلام', 'Joined the pickup request'))} ${counts(covered.joined.size)}</span>`);
   if (covered.pending.size) parts.push(`<span class="pu-daily-pickup is-pending" title="${title}">◷ ${esc(_puDailyText('طلب الاستلام قيد التأكيد', 'Pickup awaiting confirmation'))} ${counts(covered.pending.size)}</span>`);
   if (covered.rejected.size) parts.push(`<span class="pu-daily-pickup is-rejected">${esc(_puDailyText('رُفض طلب الاستلام', 'Pickup request rejected'))} ${counts(covered.rejected.size)}</span>`);
-  const missing = orders.length - covered.created.size - covered.pending.size - covered.rejected.size;
-  if (missing) parts.push(`<span class="pu-daily-pickup is-missing">${esc(_puDailyText('لم يُسجَّل طلب استلام', 'No pickup request recorded'))} ${counts(missing)}</span>`);
+  const missing = orders.length - covered.created.size - covered.joined.size - covered.pending.size - covered.rejected.size;
+  // A request that can still take them exists: the fix is to join it, not a new request.
+  const joinable = missing && _bostaPickupRequests.some(r => r.canAttach || r.canExtend);
+  if (missing) parts.push(`<span class="pu-daily-pickup is-missing">${esc(joinable ? _puDailyText('جاهزة بعد طلب الاستلام — ضمها له', 'Ready after the pickup request — join it') : _puDailyText('لم يُسجَّل طلب استلام', 'No pickup request recorded'))} ${counts(missing)}</span>`);
   if (requestDays.size && !compact) parts.push(`<span class="pu-daily-pickup is-schedule">${esc(_puDailyText('موعد الاستلام', 'Scheduled pickup'))}: <bdi>${title}</bdi></span>`);
   return parts.join('');
 }

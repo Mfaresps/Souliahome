@@ -24,7 +24,7 @@ function fixture() {
   }
   function apply(update:any) {
     Object.assign(state, structuredClone(update.$set || {}));
-    if(update.$addToSet)state.orderIds=[...new Set([...state.orderIds,...update.$addToSet.orderIds.$each])];
+    for(const [k,v] of Object.entries(update.$addToSet||{}))state[k]=[...new Set([...(state[k]||[]),...(v as any).$each])];
     if(update.$pull)state.orderIds=state.orderIds.filter((id:string)=>!update.$pull.orderIds.$in.includes(id));
     if(update.$push)state.updateHistory=[...(state.updateHistory||[]),structuredClone(update.$push.updateHistory)];
   }
@@ -146,5 +146,28 @@ describe('adding orders to an existing Bosta pickup',()=>{
   it('does not reconcile while another worker may still be sending the update',async()=>{
     const {svc,state}=fixture();Object.assign(state,{updateState:'pending',pendingOrderIds:additions,pendingNumberOfParcels:32,updateRequestedAt:new Date()});
     await expect(svc.verifyPickupUpdate(requestId)).rejects.toThrow('التعديل جارٍ');expect(svc.request).not.toHaveBeenCalled();
+  });
+
+  it('joins orders ready after the request without calling Bosta (one pickup per warehouse per day)',async()=>{
+    const {svc,state}=fixture();
+    expect(await svc.attachToPickup(requestId,dto,'Mona')).toMatchObject({success:true,numberOfParcels:30,attached:2,extraCount:2});
+    expect(svc.request).not.toHaveBeenCalled();
+    expect(state.numberOfParcels).toBe(30);expect(state.orderIds).toHaveLength(32);
+    expect(state.extraOrderIds).toEqual(additions);
+    expect(state.updateHistory[0]).toMatchObject({from:30,to:30,outcome:'attached',by:'Mona'});
+  });
+
+  it('refuses to join a request whose day has passed',async()=>{
+    const {svc,state}=fixture();state.scheduledDate='2020-01-01';
+    await expect(svc.attachToPickup(requestId,dto,'Mona')).rejects.toThrow('انتهى يومه');
+    expect(state.orderIds).toHaveLength(30);
+  });
+
+  it('refuses to join while an update is unconfirmed, or when the ready list changed',async()=>{
+    const {svc,state}=fixture();state.updateState='uncertain';
+    await expect(svc.attachToPickup(requestId,dto,'Mona')).rejects.toThrow();
+    state.updateState='idle';
+    await expect(svc.attachToPickup(requestId,{...dto,orderIds:[additions[0]]},'Mona')).rejects.toThrow('تغيرت الأوردرات');
+    expect(state.orderIds).toHaveLength(30);
   });
 });
