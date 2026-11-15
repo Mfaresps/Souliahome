@@ -7,6 +7,6 @@ export function isOpenShippingIssue(tx: any): boolean {
   const stages = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'DELIVERED', 'RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
   const hasShippingStage = stages.includes(tx.bostaStatus) || tx.deliverySource === 'MANUAL' || ['Ready', 'Picked-Up', 'Shipped', 'Delivered'].includes(tx.pickupStatus);
   if (!hasShippingStage) return false;
-  if (['open', 'awaiting'].includes(tx.shipIssueState)) return true;
+  if (['attempt', 'open', 'awaiting'].includes(tx.shipIssueState)) return true;
   return ['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'].includes(tx.bostaStatus);
 }

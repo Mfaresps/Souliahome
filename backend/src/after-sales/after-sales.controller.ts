@@ -30,6 +30,9 @@ export class AfterSalesController {
     return { quote, requiresReview, days, allowedDays };
   }
   @Post() create(@Body() body: any, @Req() req: any) { return this.completed(this.service.create(body, req.user)); }
+  @Get(':id/bundle-candidates') bundleCandidates(@Param('id') id: string) { return this.service.bundleCandidates(id); }
+  @Post(':id/bundle') bundle(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.completed(this.service.bundle(id, body, req.user)); }
+  @Post(':id/unbundle') unbundle(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.completed(this.service.unbundle(id, body, req.user)); }
   @Get(':id') get(@Param('id') id: string) { return this.service.get(id); }
   @Post(':id/approve') @Roles('admin') approve(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.completed(this.service.approve(id, body, req.user)); }
   @Post(':id/rollback') @Roles('admin') rollback(@Param('id') id: string, @Body() body: any, @Req() req: any) { return this.completed(this.service.rollback(id, body, req.user)); }

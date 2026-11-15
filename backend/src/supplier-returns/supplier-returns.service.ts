@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
@@ -27,6 +28,7 @@ import { SuppliersService } from '../suppliers/suppliers.service';
 import { SupplierLedgerService } from '../supplier-ledger/supplier-ledger.service';
 import { SrAllocationService } from './allocation.service';
 import { ProductsService } from '../products/products.service';
+import { allocateReturnOffset } from '../shared/purchase-settlement.util';
 
 const VAULT_AR_LABELS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'] as const;
 
@@ -833,6 +835,13 @@ export class SupplierReturnsService {
       employee: completedBy,
     }, context);
 
+    // STEP 4b: the debt-offset reduces the INVOICES too, not only the ledger — otherwise the
+    // invoices kept showing the full remaining, and paying or writing off that stale remaining
+    // created supplier credit that never existed. Same DB transaction as the ledger rows.
+    const offsetResult = debtOffsetAmount > 0
+      ? await this.applyReturnOffsetToInvoices(r, debtOffsetAmount, completedBy, returnDate, context)
+      : { rows: [], unallocated: 0 };
+
     // STEP 5: persist settlement outcome + status on the return order.
     r.status = 'مكتمل';
     r.linkedTransactionId = String(tx._id);
@@ -855,6 +864,8 @@ export class SupplierReturnsService {
       debtBalanceAfter: settlementResult.balanceAfter,
       decidedBy: completedBy,
       decidedAt: returnDate,
+      invoiceOffsets: offsetResult.rows,
+      unallocatedOffset: offsetResult.unallocated,
     };
     r.statusHistory.push({
       status: 'مكتمل',
@@ -878,6 +889,220 @@ export class SupplierReturnsService {
       by: completedBy,
     });
     return saved;
+  }
+
+  /**
+   * Spreads `amount` over the supplier's open purchase invoices (the invoices the goods came from
+   * first, then oldest first — `allocateReturnOffset`) and writes each share onto the invoice:
+   * `remaining` drops, `supplierReturnOffsets` records it. Each write is conditional on the
+   * remaining read here, so a payment landing in between aborts the whole completion.
+   */
+  private async applyReturnOffsetToInvoices(
+    r: SupplierReturnOrderDocument,
+    amount: number,
+    by: string,
+    at: string,
+    context: DatabaseWriteContext,
+  ): Promise<{ rows: Array<{ transactionId: string; ref: string; amount: number }>; unallocated: number }> {
+    const col = this.srModel.db.collection('transactions');
+    const sid = String(r.supplierId || '');
+    const docs = await col.find(
+      {
+        type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true }, remaining: { $gt: 0 },
+        ref: { $not: /-RET/ },
+        $or: [{ supplierId: sid }, { supplierId: { $in: ['', null] }, client: r.supplierName }],
+      },
+      { session: context.session, projection: { ref: 1, remaining: 1, date: 1, createdAt: 1 } },
+    ).toArray();
+    const plan = allocateReturnOffset(
+      amount,
+      docs.map((d: any) => ({ id: String(d._id), ref: String(d.ref || ''), remaining: Number(d.remaining) || 0, date: String(d.date || ''), createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : '' })),
+      (r.linkedInvoices || []).map((li) => ({ id: String(li.transactionId), cap: Number(li.allocatedTotal) || 0 })),
+    );
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    for (const row of plan.rows) {
+      const doc: any = docs.find((d: any) => String(d._id) === row.id);
+      const newRemaining = r2((Number(doc.remaining) || 0) - row.amount);
+      const done = newRemaining < 0.005;
+      const res = await col.updateOne(
+        { _id: doc._id, remaining: doc.remaining, cancelled: { $ne: true } },
+        {
+          $set: { remaining: done ? 0 : newRemaining, ...(done ? { payStatus: 'مكتمل' } : {}) },
+          $push: { supplierReturnOffsets: { returnId: String(r._id), returnNumber: r.returnNumber, amount: row.amount, at, by } } as any,
+        },
+        { session: context.session },
+      );
+      if (!res.matchedCount) {
+        throw new ConflictException(`تغيّرت الفاتورة #${row.ref} أثناء إتمام المرتجع — أعد المحاولة`);
+      }
+    }
+    return { rows: plan.rows.map((x) => ({ transactionId: x.id, ref: x.ref, amount: x.amount })), unallocated: plan.unallocated };
+  }
+
+  /**
+   * One-time correction for data from before Nov 15, 2026: writes onto the invoices what the
+   * supplier ledger already holds but no invoice shows, so the sum of invoice remainings equals
+   * the ledger again.
+   *  (a) every completed, non-reversed return whose «خصم من المديونية» was never written onto an
+   *      invoice (no `settlement.invoiceOffsets`) — spread like a new return (`allocateReturnOffset`);
+   *  (b) the manual ledger reductions the admin names (`ledgerEntryIds`: negative, non-reversed
+   *      'manual-adjustment' rows) — a supplier discount or an uncoded return booked in the ledger only.
+   * Touches no vault entry and no ledger row (both are already right). Dry run unless
+   * `dryRun === false`; a second run finds nothing to do (returns are marked, ledger rows are
+   * recorded on the invoice by id).
+   */
+  async backfillInvoiceOffsets(
+    opts: { dryRun?: boolean; supplierId?: string; ledgerEntryIds?: string[] },
+    by: string,
+  ) {
+    const dryRun = opts.dryRun !== false;
+    const db = this.srModel.db;
+    const txCol = db.collection('transactions');
+    const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+    const at = new Date().toISOString();
+
+    const returns = await this.srModel.find({
+      status: 'مكتمل', reversal: null, 'settlement.debtOffsetAmount': { $gt: 0 },
+      'settlement.invoiceOffsets': { $exists: false },
+      ...(opts.supplierId ? { supplierId: opts.supplierId } : {}),
+    }).sort({ createdAt: 1 }).exec();
+
+    const ids = (opts.ledgerEntryIds || []).filter((x) => Types.ObjectId.isValid(x));
+    const ledgerRows: any[] = ids.length
+      ? await db.collection('supplierledgerentries').find({ _id: { $in: ids.map((x) => new Types.ObjectId(x)) } }).toArray()
+      : [];
+    const refused: string[] = [];
+    for (const id of opts.ledgerEntryIds || []) {
+      const e = ledgerRows.find((x) => String(x._id) === String(id));
+      if (!e) { refused.push(`${id}: قيد غير موجود`); continue; }
+      if (e.entryType !== 'manual-adjustment' || !(Number(e.amount) < 0) || e.reversed) refused.push(`${id}: ليس قيد تخفيض يدوي سارياً`);
+      else if (opts.supplierId && String(e.supplierId) !== String(opts.supplierId)) refused.push(`${id}: لمورد آخر`);
+      else if (await txCol.findOne({ 'supplierReturnOffsets.ledgerEntryId': String(e._id) })) refused.push(`${id}: سُجِّل على فاتورة من قبل`);
+    }
+    if (refused.length) throw new BadRequestException('قيود غير صالحة للتصحيح — ' + refused.join(' | '));
+
+    // Open invoices per supplier, kept in memory so the plan accounts for earlier shares.
+    const open = new Map<string, any[]>();
+    const openOf = async (supplierId: string, supplierName: string) => {
+      if (!open.has(supplierId)) {
+        const docs = await txCol.find({
+          type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true }, remaining: { $gt: 0 }, ref: { $not: /-RET/ },
+          $or: [{ supplierId }, { supplierId: { $in: ['', null] }, client: supplierName }],
+        }).project({ ref: 1, remaining: 1, date: 1, createdAt: 1 }).toArray();
+        open.set(supplierId, docs.map((d: any) => ({
+          _id: d._id, id: String(d._id), ref: String(d.ref || ''), remainingRead: Number(d.remaining) || 0,
+          remaining: Number(d.remaining) || 0, date: String(d.date || ''), createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : '',
+        })));
+      }
+      return open.get(supplierId)!;
+    };
+    const writes = new Map<string, { doc: any; push: any[] }>();
+    const plan: any[] = [];
+    const spread = async (supplierId: string, supplierName: string, amount: number, caps: Array<{ id: string; cap: number }>, entry: Record<string, unknown>, label: string) => {
+      const invs = await openOf(supplierId, supplierName);
+      const res = allocateReturnOffset(amount, invs.map((i) => ({ id: i.id, ref: i.ref, remaining: i.remaining, date: i.date, createdAt: i.createdAt })), caps);
+      for (const row of res.rows) {
+        const inv = invs.find((i) => i.id === row.id);
+        inv.remaining = r2(inv.remaining - row.amount);
+        const w = writes.get(row.id) || { doc: inv, push: [] as any[] };
+        w.push.push({ ...entry, amount: row.amount, at, by, backfilled: true });
+        writes.set(row.id, w);
+      }
+      plan.push({ source: label, supplier: supplierName, amount: r2(amount), toInvoices: res.rows.map((x) => ({ ref: x.ref, amount: x.amount })), unallocated: res.unallocated });
+      return res;
+    };
+
+    const returnResults: Array<{ r: any; rows: Array<{ id: string; ref: string; amount: number }>; unallocated: number }> = [];
+    for (const r of returns) {
+      const st: any = r.settlement || {};
+      const res = await spread(String(r.supplierId), r.supplierName, Number(st.debtOffsetAmount) || 0,
+        (r.linkedInvoices || []).map((li) => ({ id: String(li.transactionId), cap: Number(li.allocatedTotal) || 0 })),
+        { returnId: String(r._id), returnNumber: r.returnNumber }, `مرتجع ${r.returnNumber}`);
+      returnResults.push({ r, rows: res.rows, unallocated: res.unallocated });
+    }
+    for (const e of ledgerRows) {
+      await spread(String(e.supplierId), String(e.supplierName || ''), -Number(e.amount), [],
+        { kind: 'ledger-adjustment', ledgerEntryId: String(e._id), reason: String(e.desc || '').slice(0, 200) },
+        `قيد يدوي: ${String(e.desc || '').slice(0, 80)}`);
+    }
+
+    const invoices = [...writes.values()].map((w) => ({
+      ref: w.doc.ref, remainingBefore: r2(w.doc.remainingRead), remainingAfter: r2(w.doc.remaining),
+      lines: w.push.map((x) => ({ amount: x.amount, from: x.returnNumber ? `مرتجع ${x.returnNumber}` : 'قيد يدوي' })),
+    }));
+    // For one supplier: how far the open invoices are above the ledger, and which manual ledger
+    // reductions could explain it (negative, non-reversed, not posted by an invoice edit/cancel,
+    // not yet written onto an invoice). The admin chooses among them — never guessed.
+    let reconcile: any = null;
+    if (opts.supplierId) {
+      const rows: any[] = await db.collection('supplierledgerentries').find({ supplierId: opts.supplierId }).sort({ createdAt: 1, _id: 1 }).toArray();
+      const balance = rows.length ? r2(rows[rows.length - 1].runningBalance) : 0;
+      const sup: any = await db.collection('suppliers').findOne({ _id: Types.ObjectId.isValid(opts.supplierId) ? new Types.ObjectId(opts.supplierId) : (opts.supplierId as any) });
+      const invs = await openOf(opts.supplierId, String(sup?.name || ''));
+      const openNow = r2(invs.reduce((sum, i) => sum + i.remainingRead, 0));
+      const applied = new Set((await txCol.find({ 'supplierReturnOffsets.ledgerEntryId': { $exists: true } }).project({ supplierReturnOffsets: 1 }).toArray())
+        .flatMap((t: any) => (t.supplierReturnOffsets || []).map((o: any) => String(o.ledgerEntryId || ''))));
+      const auto = /تعديل فاتورة مشتريات|إلغاء فاتورة مشتريات|تراجع عن|نقل فاتورة|عكس قيد/;
+      reconcile = {
+        ledgerBalance: balance, invoicesOpen: openNow, gap: r2(openNow - Math.max(0, balance)), // standing credit (balance < 0) is not an invoice gap
+        candidates: rows.filter((e) => e.entryType === 'manual-adjustment' && Number(e.amount) < 0 && !e.reversed && !auto.test(String(e.desc || '')) && !applied.has(String(e._id)))
+          .map((e) => ({ id: String(e._id), date: String(e.date || '').slice(0, 10), amount: r2(-Number(e.amount)), desc: String(e.desc || ''), employee: e.employee || '' })),
+      };
+    }
+    const summary = {
+      reconcile,
+      dryRun, returns: returns.length, ledgerEntries: ledgerRows.length, invoicesTouched: invoices.length,
+      totalWritten: r2(invoices.reduce((sum, i) => sum + (i.remainingBefore - i.remainingAfter), 0)), plan, invoices,
+    };
+    if (dryRun) return summary;
+
+    await this.atomic(async (context) => {
+      for (const [, w] of writes) {
+        const after = r2(w.doc.remaining);
+        const res = await txCol.updateOne(
+          { _id: w.doc._id, remaining: w.doc.remainingRead, cancelled: { $ne: true } },
+          { $set: { remaining: after < 0.005 ? 0 : after, ...(after < 0.005 ? { payStatus: 'مكتمل' } : {}) }, $push: { supplierReturnOffsets: { $each: w.push } } as any },
+          { session: context.session },
+        );
+        if (!res.matchedCount) throw new ConflictException(`تغيّرت الفاتورة #${w.doc.ref} أثناء التصحيح — أعد التجربة`);
+      }
+      for (const x of returnResults) {
+        await this.srModel.updateOne(
+          { _id: x.r._id, 'settlement.invoiceOffsets': { $exists: false } },
+          { $set: {
+            'settlement.invoiceOffsets': x.rows.map((row) => ({ transactionId: row.id, ref: row.ref, amount: row.amount })),
+            'settlement.unallocatedOffset': x.unallocated,
+            'settlement.invoiceOffsetsBackfilledAt': at,
+          } },
+          { session: context.session },
+        );
+      }
+    });
+    const touched = new Set([...returnResults.map((x) => String(x.r.supplierId)), ...ledgerRows.map((e) => String(e.supplierId))]);
+    for (const sid of touched) {
+      await this.suppliersService.addLog(sid, { action: 'تصحيح متبقي الفواتير', detail: `كُتب على الفواتير ${summary.totalWritten} ج من خصومات موجودة في سجل المديونية`, by }).catch(() => undefined);
+    }
+    return { ...summary, dryRun: false };
+  }
+
+  /** Gives each invoice back what this return took off it (idempotent: only open offsets). */
+  private async restoreReturnOffsets(r: SupplierReturnOrderDocument, by: string, at: string): Promise<void> {
+    const rows: Array<{ transactionId: string; amount: number }> = ((r.settlement as any)?.invoiceOffsets || []);
+    if (!rows.length) return;
+    const col = this.srModel.db.collection('transactions');
+    for (const row of rows) {
+      if (!Types.ObjectId.isValid(row.transactionId)) continue;
+      await col.updateOne(
+        {
+          _id: new Types.ObjectId(row.transactionId),
+          supplierReturnOffsets: { $elemMatch: { returnId: String(r._id), reversedAt: { $exists: false } } },
+        },
+        {
+          $inc: { remaining: Number(row.amount) || 0 },
+          $set: { payStatus: 'معلق', 'supplierReturnOffsets.$.reversedAt': at, 'supplierReturnOffsets.$.reversedBy': by },
+        },
+      );
+    }
   }
 
   async reject(
@@ -975,6 +1200,10 @@ export class SupplierReturnsService {
       by: reversedBy,
       reason,
     });
+
+    // The invoices get back what the return took off their remaining — after the ledger reversal
+    // (both are idempotent, so a retry after a failure further down is safe).
+    await this.restoreReturnOffsets(r, reversedBy, new Date().toISOString());
 
     const cancelledTx = await this.transactionsService.cancel(r.linkedTransactionId, {
       cancelReason: `عكس مرتجع مورد ${r.returnNumber}: ${reason}`,

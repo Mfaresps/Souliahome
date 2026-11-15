@@ -59,6 +59,16 @@ export class SupplierReturnsController {
     return this.supplierReturnsService.linkPieces(id, dto, req.user.name || req.user.username, req.user.userId);
   }
 
+  /** One-time correction (admin): writes ledger-only offsets onto invoices. Dry run unless {dryRun:false}. */
+  @Roles('admin')
+  @Post('backfill/invoice-offsets')
+  async backfillInvoiceOffsets(
+    @Body() body: { dryRun?: boolean; supplierId?: string; ledgerEntryIds?: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    return this.supplierReturnsService.backfillInvoiceOffsets(body || {}, req.user.name || req.user.username);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.supplierReturnsService.findById(id);

@@ -351,7 +351,16 @@ export class DepositReceiptsService {
     if (!tx) return 'الفاتورة غير موجودة';
     if (tx.type !== 'مبيعات') return 'العربون متاح لفواتير المبيعات فقط';
     if (tx.cancelled) return 'لا يمكن إضافة عربون لفاتورة ملغاة';
-    if (tx.afterSales?.caseId) return 'سجّل المبالغ من ملف الاسترجاع والاستبدال المرتبط';
+    if (tx.afterSales?.caseId) {
+      // «عربون على فرق الاستبدال»: the replacement sale carries the exchange difference as its remaining,
+      // so a deposit on it is a deposit on that difference — same receipt, OCR and approval flow.
+      // Once the waybill exists its COD is fixed; after delivery the case settles the rest.
+      if (tx.afterSales.role !== 'replacement') return 'سجّل المبالغ من ملف الاسترجاع والاستبدال المرتبط';
+      if (tx.afterSales.shipmentPending || tx.bostaTrackingNumber || tx.shippedAt) return 'أُنشئت بوليصة الاستبدال — يُحصَّل باقي الفرق مع الشحنة';
+      if (tx.afterSales.collection) return 'تم تحصيل فرق الاستبدال';
+    }
+    // Bundled into an exchange waybill: once it exists, Bosta collects the remaining it was created with.
+    if (tx.afterSalesBundle?.shipmentPending) return 'الطلب يُشحن مع شحنة استبدال أُنشئت بوليصتها — لا يُضاف عربون الآن';
     const cs = tx.carrierSettlement || {};
     if (cs.payoutId || ['processing', 'review', 'pending', 'settled'].includes(String(cs.status || ''))) return 'الطلب في تسوية شركة الشحن — لا يُضاف عربون الآن';
     const delivered = tx.bostaStatus === 'DELIVERED' || String(tx.pickupStatus || '') === 'Delivered'

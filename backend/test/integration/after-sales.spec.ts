@@ -542,4 +542,169 @@ describe('After-sales atomic workflow (isolated Mongo replica set)', () => {
     await expect(bosta.createAfterSalesShipment(manual)).rejects.toMatchObject({beforeSend:true});
     expect(bosta.request).not.toHaveBeenCalled();
   });
+  describe('a new sale shipped inside the exchange waybill', () => {
+    let saleB: string, colourId: string;
+    const prepareParcel = async (row: any) => {
+      const replacement: any = await Tx.findById(row.workflow.replacementTxId).lean();
+      await Unit.create({ productId: colourId, status: 'prepared', warehouseCode: 'MAIN', assignment: { transactionId: String(replacement._id), lineId: replacement.items[0].lineId },
+        origin: { kind: 'legacy-unknown', reconciliationRef: 'replacement-fixture' }, registeredByUserId: actor.userId, registeredBy: 'Test operator' });
+      await Tx.updateOne({ _id: replacement._id }, { $set: { prepChecked: true } });
+      const bUnit = await Unit.create({ productId, status: 'prepared', warehouseCode: 'MAIN', assignment: { transactionId: saleB, lineId: 'b1' },
+        origin: { kind: 'legacy-unknown', reconciliationRef: 'bundled-fixture' }, registeredByUserId: actor.userId, registeredBy: 'Test operator' });
+      return String(bUnit._id);
+    };
+    beforeEach(async () => {
+      colourId = String(oid());
+      await mongo.connection.collection('products').insertOne({ _id: new Types.ObjectId(colourId), code: 'ITEM-RED', name: 'Product in red', sellPrice: 600, buyPrice: 200, openingBalance: 10 });
+      // B: a new order of the same customer, with its own discount (100), shipping (50) and an approved deposit (300).
+      saleB = String(oid());
+      await Tx.create({ _id: saleB, ref: '1002', date: '2026-11-15', client: 'Test customer', employee: 'Test operator', type: 'مبيعات',
+        itemsTotal: 1000, discount: 100, shipCost: 50, total: 950, deposit: 300, remaining: 650, payStatus: 'معلق', pickupStatus: 'Pending', warehouseCode: 'MAIN',
+        items: [{ lineId: 'b1', code: 'ITEM', name: 'Product', qty: 1, price: 1000, total: 1000 }] });
+    });
+    const exchange = async () => {
+      const row: any = await service.create({ ...request('exchange'), exchangeItems: [{ productId: colourId, qty: 1 }] }, actor);
+      expect(row.workflow.quote).toMatchObject({ credit: 500, replacement: 600, customerFee: 50, collectDue: 150 });
+      return service.approve(String(row._id), op(), actor);
+    };
+    it('ships B with the replacement: one waybill, COD = difference + B remaining, one settlement closes both', async () => {
+      const row: any = await exchange(), id = String(row._id);
+      const candidates: any = await service.bundleCandidates(id);
+      expect(candidates.candidates).toEqual([expect.objectContaining({ transactionId: saleB, remaining: 650, deposit: 300, discount: 100, block: '' })]);
+      const bundled: any = await service.bundle(id, op({ transactionId: saleB }), actor);
+      expect(bundled.workflow.bundledSales).toEqual([expect.objectContaining({ transactionId: saleB, ref: '1002' })]);
+      expect((await service.get(id) as any).bundleCod).toBe(800);
+      expect(await Tx.findById(saleB).lean()).toMatchObject({ afterSalesBundle: { caseId: id, caseRef: row.workflow.ref } });
+      await expect(service.bundle(id, op({ transactionId: saleB }), actor)).rejects.toThrow('بالفعل');
+      // B stays an ordinary sale, but it cannot be collected or cancelled on its own while bundled.
+      await expect(transactions.collect(saleB, { collectMethod: 'كاش' }, 'operator', 'admin')).rejects.toThrow('شحنة الاستبدال');
+      await expect(transactions.cancel(saleB, { cancelReason: 'test', cancelledBy: 'operator' } as any)).rejects.toThrow('مضموم');
+
+      // Shipping waits for B to be prepared and for its deposit to be final.
+      const bUnit = await prepareParcel(row);
+      await expect(service.ship(id, op(), actor)).rejects.toThrow('أكمل تجهيز الطلب المضموم');
+      await Tx.updateOne({ _id: saleB }, { $set: { prepChecked: true, depositRequests: [{ id: 'r1', amount: 100, status: 'معلق' }] } });
+      await expect(service.ship(id, op(), actor)).rejects.toThrow('بانتظار موافقة');
+      await Tx.updateOne({ _id: saleB }, { $set: { depositRequests: [] } });
+      expect(carrier.createAfterSalesShipment).not.toHaveBeenCalled();
+
+      await service.ship(id, op(), actor);
+      const sent = (carrier.createAfterSalesShipment.mock.calls[0] as any[])[0];
+      expect(sent.workflow.shipment).toMatchObject({ cod: 800, bundled: [{ transactionId: saleB, ref: '1002', cod: 650, shipCharged: 50 }] });
+      const shippedB: any = await Tx.findById(saleB).lean();
+      expect(shippedB).toMatchObject({ bostaTrackingNumber: '123456', afterSalesBundle: { shipmentPending: true, shipment: { trackingNumber: '123456' } } });
+      expect(shippedB.bostaOrderId || '').toBe('');
+      await expect(service.unbundle(id, op({ transactionId: saleB }), actor)).rejects.toThrow('أُنشئت شحنة');
+
+      await service.receive(id, receive(), actor);
+      await service.delivery(id, op({ confirmed: true, note: 'Courier handed the parcel over' }), actor);
+      expect(await Tx.findById(saleB).lean()).toMatchObject({ pickupStatus: 'Delivered', remaining: 650 });
+      expect(await Unit.findById(bUnit).lean()).toMatchObject({ status: 'delivered' });
+      await expect(service.settle(id, settle('carrier', { actualCost: 70 }), actor)).rejects.toThrow('يشمل');
+
+      const closed: any = await service.settle(id, settle('carrier', { actualCost: 70, includesCollection: true }), actor);
+      expect(closed.workflow.stage).toBe('closed');
+      // 150 difference + 650 for B - 70 carrier fee, in one vault entry.
+      const entries = await Vault.find().lean();
+      expect(entries).toHaveLength(1);
+      expect(entries[0]).toMatchObject({ amount: 730, afterSales: { grossCollection: 800, carrierCost: 70, bundledSales: [{ ref: '1002', cod: 650 }] } });
+      expect(await Tx.findById(saleB).lean()).toMatchObject({ deposit: 950, remaining: 0, payStatus: 'مكتمل', discount: 100,
+        afterSalesBundle: { collection: { amount: 650, viaCarrier: true, caseRef: row.workflow.ref } } });
+      // The customer paid 50 (exchange fee) + 50 (B shipping); Bosta charged 70 once: 30 saved, booked once.
+      const replacement: any = await Tx.findById(row.workflow.replacementTxId).lean();
+      expect(replacement).toMatchObject({ deposit: 650, remaining: 0, shipSaving: 30 });
+      expect(replacement.shipLoss || 0).toBe(0);
+      expect((await Tx.findById(saleB).lean() as any).shipSaving || 0).toBe(0);
+    });
+    it("refuses another customer's order, a sale already sent to Bosta and the original invoice", async () => {
+      const row: any = await exchange(), id = String(row._id);
+      await Tx.updateOne({ _id: saleB }, { $set: { client: 'Someone else' } });
+      await expect(service.bundle(id, op({ transactionId: saleB }), actor)).rejects.toThrow('عميل آخر');
+      await Tx.updateOne({ _id: saleB }, { $set: { client: 'Test customer', bostaOrderId: 'bosta-1' } });
+      await expect(service.bundle(id, op({ transactionId: saleB }), actor)).rejects.toThrow('بوسطة');
+      await expect(service.bundle(id, op({ transactionId: saleId }), actor)).rejects.toThrow();
+    });
+    it('detaches B on unbundle and when the exchange is cancelled', async () => {
+      const row: any = await exchange(), id = String(row._id);
+      await service.bundle(id, op({ transactionId: saleB }), actor);
+      const detached: any = await service.unbundle(id, op({ transactionId: saleB }), actor);
+      expect(detached.workflow.bundledSales).toEqual([]);
+      expect((await Tx.findById(saleB).lean() as any).afterSalesBundle).toBeUndefined();
+      await service.bundle(id, op({ transactionId: saleB }), actor);
+      await service.cancel(id, op({ note: 'Customer withdrew the exchange' }), actor);
+      expect((await Tx.findById(saleB).lean() as any).afterSalesBundle).toBeUndefined();
+    });
+  });
+  describe('a deposit paid on the exchange difference', () => {
+    let colourId: string;
+    beforeEach(async () => {
+      colourId = String(oid());
+      await mongo.connection.collection('products').insertOne({ _id: new Types.ObjectId(colourId), code: 'ITEM-BLUE', name: 'Product in blue', sellPrice: 600, buyPrice: 200, openingBalance: 10 });
+    });
+    const exchange = async () => {
+      const row: any = await service.create({ ...request('exchange'), exchangeItems: [{ productId: colourId, qty: 1 }] }, actor);
+      expect(row.workflow.quote.collectDue).toBe(150);
+      return service.approve(String(row._id), op(), actor);
+    };
+    // What DepositReceiptsService.approveSaleDeposit writes on the replacement once a manager approves.
+    const approvedDeposit = async (txId: string, amount: number) => {
+      const tx: any = await Tx.findById(txId).lean();
+      await vault.addSystemEntry(amount, 'كاش', 'عربون إضافي', '2026-11-15', 'ديبوزت مبيعات', tx.ref);
+      await Tx.updateOne({ _id: txId }, { $inc: { deposit: amount }, $set: { remaining: Math.max(0, tx.remaining - amount) },
+        $push: { deposits: { id: 'r' + amount, amount, method: 'كاش', source: 'deposit-receipt', date: new Date().toISOString(), by: 'Test operator' } } });
+    };
+    const prepare = async (row: any) => {
+      const replacement: any = await Tx.findById(row.workflow.replacementTxId).lean();
+      await Unit.create({ productId: colourId, status: 'prepared', warehouseCode: 'MAIN', assignment: { transactionId: String(replacement._id), lineId: replacement.items[0].lineId },
+        origin: { kind: 'legacy-unknown', reconciliationRef: 'replacement-fixture' }, registeredByUserId: actor.userId, registeredBy: 'Test operator' });
+      await Tx.updateOne({ _id: replacement._id }, { $set: { prepChecked: true } });
+    };
+    it('lowers the waybill COD by the deposit and settles only the rest', async () => {
+      const row: any = await exchange(), id = String(row._id), replacementId = row.workflow.replacementTxId;
+      expect(await Tx.findById(replacementId).lean()).toMatchObject({ deposit: 500, remaining: 150 });
+      await approvedDeposit(replacementId, 100);
+      expect((await service.get(id) as any).advance).toMatchObject({ due: 150, paid: 100, left: 50, pending: 0 });
+      await prepare(row);
+      await Tx.updateOne({ _id: replacementId }, { $set: { depositRequests: [{ id: 'w1', amount: 50, status: 'معلق' }] } });
+      await expect(service.ship(id, op(), actor)).rejects.toThrow('بانتظار موافقة');
+      await Tx.updateOne({ _id: replacementId }, { $set: { depositRequests: [] } });
+      await service.ship(id, op(), actor);
+      expect((carrier.createAfterSalesShipment.mock.calls[0] as any[])[0].workflow.shipment).toMatchObject({ exchangeCod: 50, cod: 50 });
+      await service.receive(id, receive(), actor);
+      await service.delivery(id, op({ confirmed: true, note: 'Handed over' }), actor);
+      const closed: any = await service.settle(id, settle('carrier', { actualCost: 70, includesCollection: true }), actor);
+      expect(closed.workflow.stage).toBe('closed');
+      expect(closed.workflow.collection).toMatchObject({ amount: 50, advance: 100 });
+      const entries = (await Vault.find().lean()).map((e: any) => e.amount).sort((a: number, b: number) => a - b);
+      expect(entries).toEqual([-20, 100]);
+      expect(await Tx.findById(replacementId).lean()).toMatchObject({ deposit: 650, remaining: 0, payStatus: 'مكتمل' });
+    });
+    it('closes a difference paid in full in advance without collecting it again', async () => {
+      const row: any = await exchange(), id = String(row._id), replacementId = row.workflow.replacementTxId;
+      await approvedDeposit(replacementId, 150);
+      await prepare(row);
+      await service.ship(id, op(), actor);
+      expect((carrier.createAfterSalesShipment.mock.calls[0] as any[])[0].workflow.shipment).toMatchObject({ exchangeCod: 0, cod: 0 });
+      await service.receive(id, receive(), actor);
+      const delivered: any = await service.delivery(id, op({ confirmed: true, note: 'Handed over' }), actor);
+      expect(delivered.workflow.collection).toMatchObject({ amount: 0, prepaid: true, advance: 150 });
+      const closed: any = await service.settle(id, settle('carrier', { actualCost: 70 }), actor);
+      expect(closed.workflow.stage).toBe('closed');
+      expect((await Vault.find().lean()).map((e: any) => e.amount).sort((a: number, b: number) => a - b)).toEqual([-70, 150]);
+    });
+    it('gives the deposit back from its vault when the exchange is cancelled', async () => {
+      const row: any = await exchange(), id = String(row._id), replacementId = row.workflow.replacementTxId;
+      await approvedDeposit(replacementId, 100);
+      const cash = (await mongo.connection.collection('settings').findOne({}))!.vaultCash;
+      await Tx.updateOne({ _id: replacementId }, { $set: { depositRequests: [{ id: 'w1', amount: 50, status: 'معلق' }] } });
+      await expect(service.cancel(id, op({ note: 'Customer withdrew' }), actor)).rejects.toThrow('بانتظار قرار المدير');
+      await Tx.updateOne({ _id: replacementId }, { $set: { depositRequests: [] } });
+      await service.cancel(id, op({ note: 'Customer withdrew' }), actor);
+      const cancelled: any = await Tx.findById(replacementId).lean();
+      expect(cancelled.cancelled).toBe(true);
+      expect(cancelled.deposits[0]).toMatchObject({ reversed: true });
+      expect(cancelled.cancellationDepositRefunds).toEqual([expect.objectContaining({ method: 'كاش', amount: 100 })]);
+      expect((await mongo.connection.collection('settings').findOne({}))!.vaultCash).toBe(cash - 100);
+    });
+  });
 });

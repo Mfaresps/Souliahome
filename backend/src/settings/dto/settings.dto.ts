@@ -119,7 +119,9 @@ export class UpdateSettingsDto {
   @IsOptional()
   readonly shiftRotas?: Record<string, unknown>[];
 
+  // The system PIN (vault, reports, buy prices, permanent deletes) is exactly 4 digits — the lock screens draw 4 boxes.
   @IsString()
+  @Matches(/^\d{4}$/, { message: 'الرقم السري يجب أن يكون 4 أرقام' })
   @IsOptional()
   readonly vaultPass?: string;
 

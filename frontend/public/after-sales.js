@@ -50,18 +50,25 @@
   function orderCases(tx) {
     const linked=tx?.afterSales;
     if(linked?.caseId)return [{...linked,kind:linked.kind||(linked.role==='replacement'?'exchange':'return')}];
+    // A new sale shipped inside an exchange waybill.
+    if(tx?.afterSalesBundle?.caseId)return [{caseId:tx.afterSalesBundle.caseId,caseRef:tx.afterSalesBundle.caseRef,originalRef:tx.afterSalesBundle.originalRef,kind:'bundle'}];
     return Object.values(linked?.shipments||{}).filter(s=>s.caseId);
   }
   function orderBadge(tx, interactive=true) {
     return orderCases(tx).map(c=>{
-      const label=tr(c.kind==='exchange'?'استبدال':'استرجاع',c.kind==='exchange'?'Exchange':'Return');
+      const label=c.kind==='bundle'?tr('مع شحنة استبدال','With exchange shipment'):tr(c.kind==='exchange'?'استبدال':'استرجاع',c.kind==='exchange'?'Exchange':'Return');
       const title=[label,c.caseRef,c.originalRef?'#'+c.originalRef:''].filter(Boolean).join(' · ');
-      const content=operationIcon(c.kind)+'<span>'+label+'</span>';
+      const content=operationIcon(c.kind==='bundle'?'exchange':c.kind)+'<span>'+label+'</span>';
       return interactive?`<button type="button" class="as-order-type" onclick="event.stopPropagation();AfterSales.open('${esc(c.caseId)}')" title="${esc(title)}">${content}</button>`:`<span class="as-order-type" title="${esc(title)}">${content}</span>`;
     }).join(' ');
   }
   function preparationDetails(tx) {
-    return orderCases(tx).map(c=>`<section class="as-card as-preparation" data-as-preparation="${esc(c.caseId)}" data-as-view="${esc(navigationOwner()+':'+tr('ar','en'))}">
+    return orderCases(tx).map(c=>c.kind==='bundle'?`<section class="as-card as-preparation as-bundle-prep">
+      <h3>${tr('يُشحن مع شحنة استبدال','Ships inside an exchange shipment')}</h3>
+      <div class="as-prep-reference"><bdi dir="ltr">${esc(c.caseRef||'')}</bdi>${c.originalRef?'<span>'+tr('الفاتورة الأصلية','Original invoice')+' <bdi dir="ltr">#'+esc(c.originalRef)+'</bdi></span>':''}</div>
+      <p class="as-muted">${tr('جهّز هذا الطلب كالمعتاد. البوليصة تُنشأ من ملف الاستبدال، وتضم هذا الطلب مع البديل في طرد واحد.','Prepare this order as usual. The waybill is created from the exchange case and carries this order with the replacement in one parcel.')}</p>
+      <div class="as-actions"><button type="button" class="pw-abtn" onclick="AfterSales.open('${esc(c.caseId)}')">${tr('فتح ملف الاستبدال','Open exchange case')}</button></div>
+    </section>`:`<section class="as-card as-preparation" data-as-preparation="${esc(c.caseId)}" data-as-view="${esc(navigationOwner()+':'+tr('ar','en'))}">
       <h3>${tr(c.kind==='exchange'?'طلب الاستبدال':'طلب الاسترجاع',c.kind==='exchange'?'Exchange request':'Return request')}</h3>
       <div class="as-prep-reference"><bdi>${esc(c.caseRef||'')}</bdi>${c.originalRef?'<span>'+tr('الفاتورة الأصلية','Original invoice')+' <bdi>#'+esc(c.originalRef)+'</bdi></span>':''}</div>
       <div data-as-preparation-content>${tr('جارٍ تحميل التفاصيل…','Loading details…')}</div>
@@ -125,7 +132,7 @@
   }
   const stage = (v,kind) => v==='approved'&&kind==='return'?tr('معتمد — بانتظار سحب المرتجع','Approved — awaiting return collection'):({ requested:tr('بانتظار الموافقة','Awaiting approval'), approved:tr('معتمد — متابعة التجهيز','Approved — track preparation'), shipping:tr('قيد الشحن والاستلام','Shipping / receiving'), settlement:tr('بانتظار التسوية','Awaiting settlement'), closed:tr('مكتمل','Completed'), cancelled:tr('ملغي / مرفوض','Cancelled / rejected') }[v] || v);
   const reasonLabel = v => ({ 'customer-choice':tr('رغبة العميل','Customer preference'),defect:tr('عيب في المنتج','Product defect'),'wrong-item':tr('خطأ في المنتج المرسل','Wrong item sent') }[v]||v);
-  const actionLabel = v => ({'step-rolled-back':tr('التراجع عن خطوة','Step undone'),'shipment-created':tr('إنشاء بوليصة بوسطة','Bosta waybill created'),'carrier-status':tr('تحديث حالة بوسطة','Bosta status updated'),requested:tr('تسجيل الطلب','Request submitted'),approved:tr('اعتماد الطلب','Request approved'),cancelled:tr('إلغاء الطلب','Case cancelled'),'shipment-requested':tr('طلب شحنة بوسطة','Bosta shipment requested'),'shipment-linked':tr('مطابقة البوليصة','Shipment reconciled'),'received-and-inspected':tr('استلام وفحص المرتجع','Return received and inspected'),'replacement-delivered':tr('تأكيد تسليم البديل','Replacement delivered'),'settlement:refund':tr('رد المبلغ للعميل','Customer refunded'),'settlement:collection':tr('تحصيل فرق العميل','Customer difference collected'),'settlement:carrier':tr('تسوية بوسطة','Carrier settled'),exception:tr('تسجيل مشكلة','Issue recorded'),'exception-resolved':tr('معالجة المشكلة','Issue resolved')}[v]||v);
+  const actionLabel = v => ({'step-rolled-back':tr('التراجع عن خطوة','Step undone'),'shipment-created':tr('إنشاء بوليصة بوسطة','Bosta waybill created'),'carrier-status':tr('تحديث حالة بوسطة','Bosta status updated'),requested:tr('تسجيل الطلب','Request submitted'),approved:tr('اعتماد الطلب','Request approved'),cancelled:tr('إلغاء الطلب','Case cancelled'),'shipment-requested':tr('طلب شحنة بوسطة','Bosta shipment requested'),'shipment-linked':tr('مطابقة البوليصة','Shipment reconciled'),'received-and-inspected':tr('استلام وفحص المرتجع','Return received and inspected'),'replacement-delivered':tr('تأكيد تسليم البديل','Replacement delivered'),'settlement:refund':tr('رد المبلغ للعميل','Customer refunded'),'settlement:collection':tr('تحصيل فرق العميل','Customer difference collected'),'settlement:carrier':tr('تسوية بوسطة','Carrier settled'),exception:tr('تسجيل مشكلة','Issue recorded'),'exception-resolved':tr('معالجة المشكلة','Issue resolved'),'sale-bundled':tr('ضم طلب جديد للشحنة','New order added to the shipment'),'sale-unbundled':tr('فصل طلب عن الشحنة','Order removed from the shipment')}[v]||v);
   const reduceMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let entrance=null,resizeMotion=null,closingMotion=null;
   function cancelDialogClose(){if(closingMotion){const pending=closingMotion;closingMotion=null;pending.animation.cancel();}dialog?.classList.remove('as-is-closing');if(dialog)window.SouliaMotion?.cancelClose(dialog);}
@@ -288,11 +295,13 @@
     const w=row.workflow, exchange=row.requestKind==='exchange';
     const steps=[[exchange?tr('طلب استبدال','Exchange request'):tr('طلب استرجاع','Return request'),true,'status'],[tr('الاعتماد','Approval'),!!w.approvedAt,'approve']];
     if(exchange)steps.push([tr('البديل بانتظار التجهيز','Replacement awaiting prep'),!!w.replacementTxId,'orders'],[tr('تجهيز البديل','Prepare replacement'),['Preparing','Ready','Picked-Up','Shipped','Delivered'].includes(w.replacementPickupStatus)||!!w.shipment?.deliveryId,'orders']);
+    const bundled=row.bundleView||[];
+    if(exchange&&bundled.length)steps.push([tr('تجهيز الطلبات المضمومة','Prepare added orders'),!!w.shipment||bundled.every(b=>b.prepared&&!b.pendingDeposits),'bundle']);
     if(w.fulfillmentChannel!=='direct')steps.push([exchange?tr('شحنة الاستبدال','Exchange shipment'):tr('شحنة سحب المرتجع','Return collection'),!!w.shipment?.deliveryId,'ship']);
     steps.push([tr('استلام وفحص الراجع','Receive and inspect return'),!!w.receivedAt,'receive']);
     if(exchange)steps.push([tr('تسليم البديل','Deliver replacement'),!!w.replacementDeliveredAt,'delivery']);
     if(w.quote.refundDue)steps.push([exchange?tr('رد فرق السعر','Refund difference'):tr('رد مبلغ العميل','Refund customer'),!!w.refund,'settle']);
-    if(exchange&&w.quote.collectDue)steps.push([tr('تحصيل الفرق','Collect difference'),!!w.collection,'settle']);
+    if(exchange&&(w.quote.collectDue||bundled.some(b=>b.cod>0)))steps.push([bundled.length?tr('تحصيل الفرق والطلبات المضمومة','Collect difference and added orders'):tr('تحصيل الفرق','Collect difference'),w.fulfillmentChannel==='direct'?!!w.collection:!!w.carrierSettlement,'settle']);
     steps.push([tr('التسوية والإغلاق','Settle and close'),w.stage==='closed','settle']);
     const current=['closed','cancelled'].includes(w.stage)?-1:steps.findIndex(([,done])=>!done);
     const completed=steps.filter(([,done])=>done).length;
@@ -303,6 +312,9 @@
     let action, text;
     if(w.stage==='requested'){action='approve';text=tr('الطلب بانتظار اعتماد المسؤول قبل بدء التنفيذ.','Awaiting approval before processing.');}
     else if(['creating','reconcile'].includes(w.shipment?.status)){action='link-shipment';text=tr('طابق البوليصة الموجودة قبل أي إرسال جديد.','Reconcile the existing waybill before sending again.');}
+    else if(row.requestKind==='exchange'&&!w.shipment&&row.advance?.pending){action='advance';text=tr('عربون على فرق الاستبدال بانتظار موافقة المدير. اعتمده أو ارفضه قبل إنشاء الشحنة، لأنه يغيّر مبلغ التحصيل.','A deposit on the exchange difference awaits a manager. Approve or reject it before creating the shipment: it changes the COD.');}
+    else if(row.requestKind==='exchange'&&!w.shipment&&(row.bundleView||[]).some(b=>b.pendingDeposits)){action='bundle';text=tr('عربون أحد الطلبات المضمومة بانتظار موافقة المدير. اعتمده أو ارفضه أولًا، لأن متبقي الطلب يدخل في مبلغ التحصيل بالبوليصة.','A deposit on an added order awaits a manager. Approve or reject it first: the order\'s remaining goes into the waybill COD.');}
+    else if(row.requestKind==='exchange'&&!w.shipment&&(row.bundleView||[]).some(b=>!b.prepared)){action='bundle';text=tr('جهّز الطلبات المضمومة في شاشة التجهيز قبل إنشاء الشحنة.','Prepare the added orders on the preparation board before creating the shipment.');}
     else if(row.requestKind==='exchange'&&!w.shipment&&!w.replacementPrepared){action='orders';text=tr('ابدأ تجهيز البديل المسجّل، وأكمل فحص القطع قبل الشحن.','Start preparing the registered replacement and complete the item checks before shipping.');}
     else if(w.fulfillmentChannel!=='direct'&&!w.shipment&&!w.receivedAt){action='ship';text=tr('راجع عنوان العميل وأنشئ طلب الشحنة لدى بوسطة.','Review the customer address and create the Bosta shipment.');}
     else if(!w.receivedAt){action='receive';text=tr('بعد وصول القطع فعليًا، سجل استلام المخزن وحالة كل قطعة.','Once the items physically arrive, record warehouse receipt and each item condition.');}
@@ -312,8 +324,8 @@
   }
   function moveToCaseStep(button) {
     const target=button.dataset.asStep,done=button.dataset.asStepDone==='true';
-    const section=target==='settle'?'financial':['ship','receive','delivery'].includes(target)?'shipment':'status';
-    const actionButton=!done&&target!=='orders'?dialog.querySelector(`[data-as-action="${target}"]`):null;
+    const section=target==='settle'||target==='advance'?'financial':target==='bundle'?'bundle':['ship','receive','delivery'].includes(target)?'shipment':'status';
+    const actionButton=!done&&!['orders','bundle'].includes(target)?dialog.querySelector(`[data-as-action="${target}"]`):null;
     const destination=actionButton||(target==='orders'?el('[data-as-orders]'):null)||el(`[data-as-section="${section}"]`);
     if(!destination)return;
     destination.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
@@ -323,7 +335,105 @@
   }
   function financialStatus(row) {
     const w=row.workflow, exchange=row.requestKind==='exchange';
-    return `<p class="as-muted">${w.quote.refundDue?`${exchange?tr('رد فرق السعر','Difference refunded'):tr('رد مبلغ العميل','Customer refund')}: ${w.refund?date(w.refund.at):tr('بانتظار الدفع الفعلي','Awaiting actual payment')}<br>`:''}${exchange&&w.quote.collectDue?`${tr('تحصيل الفرق','Difference collected')}: ${w.collection?date(w.collection.at):tr('بانتظار التحصيل','Awaiting collection')}<br>`:''}${tr('تكلفة بوسطة الفعلية','Actual Bosta cost')}: ${w.fulfillmentChannel==='direct'?amount(0):w.carrierSettlement?amount(w.carrierSettlement.cost):tr('بانتظار التسوية','Awaiting settlement')}</p>${exchange?`<p class="as-muted">${tr('رصيد الراجع المسوّى مع البديل','Returned credit transferred to replacement')}: ${amount(w.quote.creditApplied)}</p>`:''}`;
+    return `<p class="as-muted">${w.quote.refundDue?`${exchange?tr('رد فرق السعر','Difference refunded'):tr('رد مبلغ العميل','Customer refund')}: ${w.refund?date(w.refund.at):tr('بانتظار الدفع الفعلي','Awaiting actual payment')}<br>`:''}${exchange&&w.quote.collectDue?`${tr('تحصيل الفرق','Difference collected')}: ${w.collection?(w.collection.prepaid?tr('مدفوع بالكامل كعربون','Paid in full as a deposit'):date(w.collection.at)):tr('بانتظار التحصيل','Awaiting collection')}<br>`:''}${tr('تكلفة بوسطة الفعلية','Actual Bosta cost')}: ${w.fulfillmentChannel==='direct'?amount(0):w.carrierSettlement?amount(w.carrierSettlement.cost):tr('بانتظار التسوية','Awaiting settlement')}</p>${exchange?`<p class="as-muted">${tr('رصيد الراجع المسوّى مع البديل','Returned credit transferred to replacement')}: ${amount(w.quote.creditApplied)}</p>`:''}${(row.bundleView||[]).length?`<p class="as-muted">${(row.bundleView||[]).map(b=>`${tr('الطلب المضموم','Added order')} <bdi dir="ltr">#${esc(b.ref)}</bdi>: ${amount(b.cod)} — ${b.collected?tr('حُصِّل مع تسوية بوسطة','collected in the Bosta settlement'):tr('يُحصَّل مع الشحنة','collected with the shipment')}`).join('<br>')}</p>`:''}`;
+  }
+  /** What is left of the exchange difference after deposits paid on it. */
+  function exchangeDueNow(row) {
+    const w=row.workflow;
+    return Number(w.shipment?.exchangeCod ?? row.advance?.left ?? w.quote?.collectDue ?? 0);
+  }
+  /** The waybill COD: frozen once the waybill exists, else what is left of the difference + bundled orders. */
+  function codNow(row) {
+    const w=row.workflow;
+    if(w.shipment?.cod!=null)return Number(w.shipment.cod);
+    return exchangeDueNow(row)+(row.bundleView||[]).reduce((n,b)=>n+Number(b.cod||0),0);
+  }
+  /** «عربون على فرق الاستبدال»: deposits paid on the replacement invoice, through the usual receipt flow. */
+  function advanceSection(row) {
+    const w=row.workflow,a=row.advance;
+    if(row.requestKind!=='exchange'||!a||!w.replacementTxId)return '';
+    const closed=['closed','cancelled'].includes(w.stage);
+    const pendingSum=(a.requests||[]).filter(r=>r.status==='معلق').reduce((n,r)=>n+Number(r.amount||0),0);
+    const open=!closed&&!w.shipment&&!w.collection&&a.left-pendingSum>0.009;
+    const noImage=typeof _spCanNoImageDeposit==='function'&&_spCanNoImageDeposit();
+    const deposits=(a.deposits||[]).map(d=>`<li class="as-adv-row"><span>${esc(typeof _payMethodLabel==='function'?_payMethodLabel(d.method):d.method)}${d.by?' · '+esc(d.by):''}${d.vaultTxNo?' · <bdi dir="ltr">'+esc(d.vaultTxNo)+'</bdi>':''}</span><b><bdi>${amount(d.amount)}</bdi></b></li>`).join('');
+    const waiting=(a.requests||[]).filter(r=>r.status==='معلق').map(r=>`<li class="as-adv-row is-pending"><span><span class="as-badge as-bundle-warn">${tr('بانتظار الموافقة','Awaiting approval')}</span> ${esc(typeof _payMethodLabel==='function'?_payMethodLabel(r.method):r.method)}${r.submittedBy?' · '+esc(r.submittedBy):''}${r.noImage?' · '+tr('بدون صورة تحويل','No transfer image'):''}</span><b><bdi>${amount(r.amount)}</bdi></b>${admin()?`<button type="button" class="btn btn-primary btn-sm" data-as-adv-approve="${esc(r.id)}">${tr('اعتماد','Approve')}</button>`:''}</li>`).join('');
+    return `<div class="as-adv" data-as-section="advance" tabindex="-1"><div class="as-adv-head"><strong>${tr('عربون على فرق الاستبدال','Deposit on the exchange difference')}</strong></div>
+      <dl class="as-bundle-money"><div><dt>${tr('الفرق','Difference')}</dt><dd><bdi>${amount(a.due)}</bdi></dd></div><div><dt>${tr('مدفوع مقدمًا','Paid in advance')}</dt><dd><bdi>${amount(a.paid)}</bdi></dd></div><div class="is-due"><dt>${w.shipment?tr('تحصّله بوسطة','Bosta collects'):tr('الباقي','Left')}</dt><dd><bdi>${amount(exchangeDueNow(row))}</bdi></dd></div></dl>
+      ${deposits||waiting?`<ul class="as-adv-list">${deposits}${waiting}</ul>`:''}
+      ${waiting?`<p class="as-muted">${tr('رفض الطلب أو سحبه من صفحة فاتورة البديل.','Reject or withdraw a request from the replacement invoice page.')} <button type="button" class="as-link" data-as-invoice="${esc(w.replacementTxId)}">${tr('فاتورة البديل','Replacement invoice')}</button></p>`:''}
+      ${open?`<div class="as-actions"><button type="button" class="btn btn-outline btn-sm" data-as-adv-add="image">${tr('إضافة عربون','Add a deposit')}</button>${noImage?`<button type="button" class="btn btn-outline btn-sm" data-as-adv-add="noimage">${tr('بدون صورة تحويل','Without a transfer image')}</button>`:''}</div>`:''}
+      ${!closed&&!w.shipment&&a.pending?`<p class="as-muted">${tr('الشحن ينتظر قرار المدير في العربون، لأنه يغيّر مبلغ التحصيل.','Shipping waits for the manager\'s decision on the deposit: it changes the COD.')}</p>`:''}</div>`;
+  }
+  async function addAdvance(row, mode) {
+    if(busy||typeof openSaleDeposit!=='function')return;
+    // The deposit dialogs live in the page's modal, under this dialog's top layer: close the case
+    // first; openSaleDeposit brings it back when the deposit dialog finishes.
+    const caseId=String(row._id),txId=row.workflow.replacementTxId;
+    await closeDialog();
+    await openSaleDeposit(txId,mode,false,caseId);
+  }
+  async function approveAdvance(row, receiptId) {
+    if(busy)return;setBusy(true);
+    try{await api('/transactions/'+encodeURIComponent(row.workflow.replacementTxId)+'/deposit-requests/'+encodeURIComponent(receiptId)+'/approve',{method:'PATCH'});
+      await open(row._id,true);message(tr('تم اعتماد العربون وتسجيله في الخزنة.','Deposit approved and recorded in the vault.'),false);void refresh(['transactions','vault']);}
+    catch(error){message(error.message);}finally{setBusy(false);}
+  }
+  /** «طلبات تُشحن مع البديل»: new sales of the same customer that ride the exchange waybill. */
+  function bundleSection(row) {
+    const w=row.workflow,q=w.quote,list=row.bundleView||[];
+    if(row.requestKind!=='exchange'||w.fulfillmentChannel==='direct')return '';
+    const canEdit=!w.shipment&&!['closed','cancelled'].includes(w.stage)&&allowed('shopify-prepare-ship');
+    if(!list.length&&!canEdit)return '';
+    const bundledDue=list.reduce((n,b)=>n+Number(b.cod||0),0);
+    const rows=list.map(b=>`<li class="as-bundle-row">
+      <div class="as-bundle-head"><button type="button" class="as-link" data-as-invoice="${esc(b.transactionId)}"><bdi dir="ltr">#${esc(b.ref)}</bdi></button>
+        <span class="as-bundle-state">${b.cancelled?`<span class="as-badge as-bundle-bad">${tr('ملغي — افصله','Cancelled — remove it')}</span>`:''}${b.pendingDeposits?`<span class="as-badge as-bundle-warn">${tr('عربون بانتظار الموافقة','Deposit awaiting approval')}</span>`:''}<span class="as-badge ${b.prepared?'as-bundle-ok':''}">${b.prepared?tr('تم التجهيز','Prepared'):tr('بانتظار التجهيز','Awaiting preparation')}</span></span>
+        ${canEdit?`<button type="button" class="btn btn-outline btn-sm" data-as-unbundle="${esc(b.transactionId)}" data-as-ref="${esc(b.ref)}">${tr('فصل','Remove')}</button>`:''}</div>
+      <p class="as-bundle-items">${(b.items||[]).map(i=>`${esc(i.name||i.code)} <bdi>× ${esc(i.qty)}</bdi>`).join(' · ')}</p>
+      <dl class="as-bundle-money"><div><dt>${tr('الإجمالي','Total')}</dt><dd><bdi>${amount(b.total)}</bdi></dd></div>${b.discount?`<div><dt>${tr('الخصم','Discount')}</dt><dd><bdi>${amount(b.discount)}</bdi></dd></div>`:''}<div><dt>${tr('العربون','Deposit')}</dt><dd><bdi>${amount(b.collected?b.deposit-b.cod:b.deposit)}</bdi></dd></div><div class="is-due"><dt>${b.collected?tr('حُصِّل مع الشحنة','Collected with shipment'):tr('تحصّله بوسطة','Bosta collects')}</dt><dd><bdi>${amount(b.cod)}</bdi></dd></div></dl>
+    </li>`).join('');
+    const total=list.length?`<div class="as-bundle-total"><div><span>${tr('مبلغ التحصيل في البوليصة','Waybill COD')}</span><b><bdi>${amount(codNow(row))}</bdi></b></div><small>${tr('فرق الاستبدال','Exchange difference')} <bdi>${amount(exchangeDueNow(row))}</bdi> + ${tr('الطلبات المضمومة','Added orders')} <bdi>${amount(bundledDue)}</bdi></small></div>`:'';
+    return `<section class="as-card as-bundle" data-as-section="bundle" tabindex="-1"><div class="as-bundle-title"><h3>${tr('طلبات تُشحن مع البديل','Orders shipped with the replacement')}</h3>${canEdit&&!row.bundleBlock?`<button type="button" class="btn btn-outline btn-sm" data-as-bundle-add>${tr('ضم طلب جديد','Add a new order')}</button>`:''}</div>
+      <p class="as-muted">${tr('طلب جديد لنفس العميل يُشحن في نفس الطرد. يبقى فاتورة مستقلة بعربونها وخصمها، وتحصّل بوسطة متبقيه مع فرق الاستبدال.','A new order of the same customer ships in the same parcel. It stays a separate invoice with its own deposit and discount; Bosta collects its remaining with the exchange difference.')}</p>
+      ${list.length?`<ul class="as-bundle-list">${rows}</ul>${total}`:''}</section>`;
+  }
+  async function bundlePicker(row) {
+    const w=row.workflow;
+    show(tr('ضم طلب جديد لشحنة الاستبدال','Add a new order to the exchange shipment'),w.ref,`<p class="as-muted">${tr('طلبات العميل التي لم تُشحن بعد. سجّل الطلب الجديد أولًا (من «حركة جديدة» أو بتأكيده من Shopify) ثم اختره هنا.','The customer\'s orders not shipped yet. Record the new order first (New transaction, or confirm it from Shopify), then pick it here.')}</p><div data-as-bundle-picker aria-busy="true"><div class="as-banner">${tr('جارٍ التحميل…','Loading…')}</div></div><footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button></footer>`);
+    el('[data-as-back]').onclick=()=>open(row._id,true);
+    const version=serial;
+    let data;
+    try{data=await api('/after-sales/'+encodeURIComponent(row._id)+'/bundle-candidates');}
+    catch(error){if(version!==serial)return;el('[data-as-bundle-picker]').innerHTML=`<div class="as-banner as-error">${esc(error.message)}</div><button type="button" class="btn btn-outline" data-as-retry>${tr('إعادة المحاولة','Retry')}</button>`;el('[data-as-retry]').onclick=()=>bundlePicker(row);return;}
+    if(version!==serial)return;
+    const host=el('[data-as-bundle-picker]');host.removeAttribute('aria-busy');
+    if(data.blocked){host.innerHTML=`<div class="as-banner as-error">${esc(data.blocked)}</div>`;return;}
+    if(!data.candidates.length){host.innerHTML=`<div class="as-banner">${tr('لا توجد طلبات غير مشحونة لنفس العميل.','No unshipped orders for this customer.')}</div>`;return;}
+    host.innerHTML=`<ul class="as-bundle-list">${data.candidates.map(c=>`<li class="as-bundle-row${c.block?' is-blocked':''}">
+      <div class="as-bundle-head"><strong><bdi dir="ltr">#${esc(c.ref)}</bdi></strong><span class="as-muted">${esc(String(c.date||'').slice(0,10))}</span>
+        ${c.block?'':`<button type="button" class="btn btn-primary btn-sm" data-as-bundle-pick="${esc(c.transactionId)}" data-as-ref="${esc(c.ref)}">${tr('اشحنه مع البديل','Ship with the replacement')}</button>`}</div>
+      <p class="as-bundle-items">${(c.items||[]).map(i=>`${esc(i.name||i.code)} <bdi>× ${esc(i.qty)}</bdi>`).join(' · ')}</p>
+      <dl class="as-bundle-money"><div><dt>${tr('الإجمالي','Total')}</dt><dd><bdi>${amount(c.total)}</bdi></dd></div>${c.discount?`<div><dt>${tr('الخصم','Discount')}</dt><dd><bdi>${amount(c.discount)}</bdi></dd></div>`:''}<div><dt>${tr('العربون','Deposit')}</dt><dd><bdi>${amount(c.deposit)}</bdi></dd></div><div class="is-due"><dt>${tr('المتبقي','Remaining')}</dt><dd><bdi>${amount(c.remaining)}</bdi></dd></div></dl>
+      ${c.block?`<p class="as-bundle-why">${esc(c.block)}</p>`:c.pendingDeposits?`<p class="as-bundle-why is-warn">${tr('عليه عربون بانتظار الموافقة؛ يمكن ضمه، لكن الشحن ينتظر قرار المدير.','It has a deposit awaiting approval: it can be added, but shipping waits for the decision.')}</p>`:''}
+    </li>`).join('')}</ul>`;
+    host.querySelectorAll('[data-as-bundle-pick]').forEach(button=>button.onclick=async()=>{
+      if(busy)return;const txId=button.dataset.asBundlePick;
+      // One pending request per action and case: a stored retry for another order must not be replayed.
+      const storage=requestStorage('bundle',row._id);try{const pending=JSON.parse(sessionStorage.getItem(storage)||'null');if(pending&&pending.transactionId!==txId)sessionStorage.removeItem(storage);}catch{}
+      setBusy(true);
+      try{const result=await post('bundle',row._id,{transactionId:txId});await savedStep(result,row._id,['returns','transactions']);message(tr('تم ضم الطلب #','Order #')+button.dataset.asRef+tr(' لشحنة الاستبدال. جهّزه في شاشة التجهيز، وسيُضاف متبقيه لمبلغ التحصيل عند إنشاء البوليصة.',' was added. Prepare it on the preparation board; its remaining joins the COD when the waybill is created.'),false);}
+      catch(error){message(error.message);}finally{setBusy(false);}
+    });
+  }
+  async function unbundle(row, txId, ref) {
+    if(busy)return;
+    const ok=typeof showConfirm==='function'?await showConfirm(tr(`فصل الطلب #${ref} عن شحنة الاستبدال؟ سيعود طلبًا عاديًا يُشحن وحده.`,`Remove order #${ref} from the exchange shipment? It goes back to shipping on its own.`)):true;
+    if(!ok)return;
+    const storage=requestStorage('unbundle',row._id);try{const pending=JSON.parse(sessionStorage.getItem(storage)||'null');if(pending&&pending.transactionId!==txId)sessionStorage.removeItem(storage);}catch{}
+    setBusy(true);
+    try{const result=await post('unbundle',row._id,{transactionId:txId});await savedStep(result,row._id,['returns','transactions']);message(tr('تم فصل الطلب عن الشحنة.','The order was removed from the shipment.'),false);}
+    catch(error){message(error.message);}finally{setBusy(false);}
   }
   function shipmentLabel(kind) {
     return kind==='exchange'?tr('شحن الاستبدال','Ship exchange'):tr('سحب المرتجع','Collect return');
@@ -559,8 +669,8 @@
         ${w.exception?`<div class="as-banner as-error">${esc(w.exception)}</div>`:''}
         ${admin()&&!closed&&row.rollback&&!row.rollback.available?`<p class="as-muted">${tr('الرجوع للخطوة السابقة: ','Undo previous step: ')}${esc(row.rollback.reason)}</p>`:''}
         <div class="as-grid"><div><section class="as-card" data-as-section="status" tabindex="-1"><div class="as-row"><h3>${tr('حالة الطلب','Case status')}</h3><span class="as-badge">${stage(w.stage,row.requestKind)}</span></div><div class="as-actions">${links(row)}</div>${row.requestKind==='exchange'&&w.replacementTxId?`<div class="as-banner">${tr('حالة طلب البديل','Replacement order status')}: ${SouliaOrderStatus.badge(SouliaOrderStatus.resolve({pickupStatus:w.replacementPickupStatus||'Pending',bostaOrderId:w.shipment?.deliveryId,bostaStatus:w.shipment?.carrierStatus},'transaction',tr('ar','en')))}<button type="button" class="btn btn-outline" data-as-orders>${tr('فتح الطلبات والتجهيز','Open orders and preparation')}</button></div>`:''}<p class="as-muted">${tr('سبب الطلب','Reason')}: ${esc(reasonLabel(row.reason))} · ${esc(row.reasonDetails||'')}</p><div class="as-table-wrap"><table class="as-table"><thead><tr><th>${tr('المنتج الراجع','Returned item')}</th><th>${tr('الكمية','Qty')}</th><th>${tr('القيمة','Value')}</th></tr></thead><tbody>${row.items.map(i=>`<tr><td>${productCard(i)}<small class="as-muted"> ${esc(i.condition||'')}</small></td><td>${i.qty}</td><td>${amount(i.total)}</td></tr>`).join('')}</tbody></table></div>${row.requestKind==='exchange'&&row.exchangeItems?.length?`<p class="as-muted">${tr('البديل','Replacement')}: ${row.exchangeItems.map(i=>productCard(i)+'<span class="as-badge">× '+i.qty+'</span>').join('')}</p>`:''}</section>
-        <section class="as-card" data-as-section="shipment" tabindex="-1"><h3>${tr('الشحن والاستلام','Shipment and receipt')}</h3><p>${esc(w.shipment?.trackingNumber||tr('لم تُنشأ بوليصة بعد','No waybill yet'))} <span class="as-badge">${esc(w.shipment?.carrierLabel||w.shipment?.status||'')}</span></p><p class="as-muted">${tr('استلام المخزن','Warehouse receipt')}: ${date(w.receivedAt)}${row.requestKind==='exchange'?`<br>${tr('تسليم البديل','Replacement delivery')}: ${date(w.replacementDeliveredAt)}` : ''}</p>${w.shipment?.trackingNumber?`<a class="as-link" href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(w.shipment.trackingNumber)}" target="_blank" rel="noopener">${tr('تتبع بوسطة','Track Bosta')}</a>`:''}</section><div class="as-actions">${actions.map(([action,label])=>`<button class="btn ${['approve','ship','receive','settle'].includes(action)?'btn-primary':'btn-outline'}" type="button" data-as-action="${action}">${label}</button>`).join('')}<button class="btn btn-outline" type="button" data-as-print>${tr('طباعة','Print')}</button></div></div>
-        <aside><section class="as-card" data-as-section="financial" tabindex="-1"><h3>${tr('التسوية المالية','Financial settlement')}</h3>${summary(w.quote,row.requestKind)}${financialStatus(row)}</section><section class="as-card"><h3>${tr('سجل الطلب','Case history')}</h3><ol class="as-history">${(w.history||[]).slice().reverse().map(h=>`<li>${esc(actionLabel(h.action))} · ${esc(h.by)}<time>${date(h.at)}</time>${h.note?`<div>${esc(h.note)}</div>`:''}</li>`).join('')}</ol></section></aside></div>`);
+        <section class="as-card" data-as-section="shipment" tabindex="-1"><h3>${tr('الشحن والاستلام','Shipment and receipt')}</h3><p>${esc(w.shipment?.trackingNumber||tr('لم تُنشأ بوليصة بعد','No waybill yet'))} <span class="as-badge">${esc(w.shipment?.carrierLabel||w.shipment?.status||'')}</span></p><p class="as-muted">${tr('استلام المخزن','Warehouse receipt')}: ${date(w.receivedAt)}${row.requestKind==='exchange'?`<br>${tr('تسليم البديل','Replacement delivery')}: ${date(w.replacementDeliveredAt)}` : ''}</p>${w.shipment?.trackingNumber?`<a class="as-link" href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(w.shipment.trackingNumber)}" target="_blank" rel="noopener">${tr('تتبع بوسطة','Track Bosta')}</a>`:''}</section>${bundleSection(row)}<div class="as-actions">${actions.map(([action,label])=>`<button class="btn ${['approve','ship','receive','settle'].includes(action)?'btn-primary':'btn-outline'}" type="button" data-as-action="${action}">${label}</button>`).join('')}<button class="btn btn-outline" type="button" data-as-print>${tr('طباعة','Print')}</button></div></div>
+        <aside><section class="as-card" data-as-section="financial" tabindex="-1"><h3>${tr('التسوية المالية','Financial settlement')}</h3>${summary(w.quote,row.requestKind)}${financialStatus(row)}${advanceSection(row)}</section><section class="as-card"><h3>${tr('سجل الطلب','Case history')}</h3><ol class="as-history">${(w.history||[]).slice().reverse().map(h=>`<li>${esc(actionLabel(h.action))} · ${esc(h.by)}<time>${date(h.at)}</time>${h.note?`<div>${esc(h.note)}</div>`:''}</li>`).join('')}</ol></section></aside></div>`);
       if(el('[data-as-orders]'))el('[data-as-orders]').onclick=()=>{closeDialog();navigateTo('pickup-orders');};
       dialog.querySelectorAll('[data-as-step]').forEach(button=>button.onclick=()=>moveToCaseStep(button));
       if(restorePosition&&caseReturn?.id===String(row._id))el('.as-body').scrollTop=caseReturn.top;
@@ -569,6 +679,10 @@
         action(row,button.dataset.asAction);
       });
       el('[data-as-print]').onclick=()=>printCase(row);
+      if(el('[data-as-bundle-add]'))el('[data-as-bundle-add]').onclick=()=>{caseReturn={id:String(row._id),top:el('.as-body').scrollTop};bundlePicker(row);};
+      dialog.querySelectorAll('[data-as-unbundle]').forEach(button=>button.onclick=()=>unbundle(row,button.dataset.asUnbundle,button.dataset.asRef));
+      dialog.querySelectorAll('[data-as-adv-add]').forEach(button=>button.onclick=()=>addAdvance(row,button.dataset.asAdvAdd));
+      dialog.querySelectorAll('[data-as-adv-approve]').forEach(button=>button.onclick=()=>approveAdvance(row,button.dataset.asAdvApprove));
     } catch(error){if(version===serial&&dialog?.open)message(error.message);}
   }
   function rollback(row) {
@@ -592,7 +706,7 @@
     if(name==='settle')return settle(row);
     if(name==='sync'){setBusy(true);try{const result=await api('/after-sales/'+row._id+'/sync',{method:'POST',body:'{}'});await savedStep(result,row._id,['returns','transactions']);}catch(error){message(error.message);}finally{setBusy(false);}return;}
     const labels={approve:tr('اعتماد الطلب','Approve request'),cancel:tr('إلغاء الطلب','Cancel request'),ship:shipmentLabel(row.requestKind),delivery:tr('تأكيد التسليم','Confirm delivery'),'link-shipment':tr('ربط بوليصة بوسطة','Link Bosta shipment'),exception:tr('إدارة مشكلة','Manage issue')};
-    show(labels[name],row.workflow.ref,`<form data-as-action-form><div class="as-banner">${name==='ship'?tr('سيتم إرسال طلب الشحنة إلى بوسطة. عند انقطاع الاتصال تتم مطابقة الطلب قبل إعادة الإرسال.','The shipment request will be sent to Bosta. An interrupted request must be reconciled before resending.'):name==='approve'?tr('الموافقة تبدأ التجهيز. الاستلام ورد المبلغ لهما خطوات مستقلة.','Approval starts preparation. Receipt and refund have separate steps.'):tr('سجّل التفاصيل والمرجع لإكمال الإجراء.','Record the details and reference to complete this action.')}</div>${name==='ship'?shippingAddressForm(row):''}${name==='link-shipment'?`<label class="as-field">${tr('معرّف الشحنة في بوسطة','Bosta delivery ID')}<input name="deliveryId" required></label>`:''}${name==='exception'&&admin()?`<label class="as-check"><input type="checkbox" name="resolve">${tr('تم حل المشكلة مع توثيق الإجراء','Issue resolved; document the resolution')}</label>`:''}<label class="as-field">${tr('الملاحظة / مرجع الإثبات','Note / evidence reference')}<textarea name="note" rows="3" maxlength="1000" ${['cancel','delivery','exception'].includes(name)||name==='approve'&&row.workflow.requiresReview?'required':''}></textarea></label>${name==='delivery'?`<label class="as-check"><input type="checkbox" name="confirmed" required>${tr('تأكدت من تسليم البديل للعميل','I verified delivery of the replacement to the customer')}</label>`:''}<footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary">${labels[name]}</button></footer></form>`);
+    show(labels[name],row.workflow.ref,`<form data-as-action-form><div class="as-banner">${name==='ship'?tr('سيتم إرسال طلب الشحنة إلى بوسطة. عند انقطاع الاتصال تتم مطابقة الطلب قبل إعادة الإرسال.','The shipment request will be sent to Bosta. An interrupted request must be reconciled before resending.')+(row.requestKind==='exchange'?'<br>'+tr('مبلغ التحصيل في البوليصة','Waybill COD')+': <b><bdi>'+amount(codNow(row))+'</bdi></b>'+((row.bundleView||[]).length||row.advance?.paid?' ('+tr('باقي فرق الاستبدال بعد العربون والطلبات المضمومة','rest of the exchange difference after deposits, plus added orders')+')':''):''):name==='approve'?tr('الموافقة تبدأ التجهيز. الاستلام ورد المبلغ لهما خطوات مستقلة.','Approval starts preparation. Receipt and refund have separate steps.'):tr('سجّل التفاصيل والمرجع لإكمال الإجراء.','Record the details and reference to complete this action.')}</div>${name==='ship'?shippingAddressForm(row):''}${name==='link-shipment'?`<label class="as-field">${tr('معرّف الشحنة في بوسطة','Bosta delivery ID')}<input name="deliveryId" required></label>`:''}${name==='exception'&&admin()?`<label class="as-check"><input type="checkbox" name="resolve">${tr('تم حل المشكلة مع توثيق الإجراء','Issue resolved; document the resolution')}</label>`:''}<label class="as-field">${tr('الملاحظة / مرجع الإثبات','Note / evidence reference')}<textarea name="note" rows="3" maxlength="1000" ${['cancel','delivery','exception'].includes(name)||name==='approve'&&row.workflow.requiresReview?'required':''}></textarea></label>${name==='delivery'?`<label class="as-check"><input type="checkbox" name="confirmed" required>${tr('تأكدت من تسليم البديل للعميل','I verified delivery of the replacement to the customer')}</label>`:''}<footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary">${labels[name]}</button></footer></form>`);
     el('[data-as-back]').onclick=()=>open(row._id,true);
     if(name==='ship')bindShippingAddress(row);
     el('form').onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);const form=event.target;try{const result=await post(name,row._id,{note:form.elements.note.value,confirmed:form.elements.confirmed?.checked===true,resolve:form.elements.resolve?.checked===true,deliveryId:form.elements.deliveryId?.value,addressMode:form.elements.addressMode?.value,customerAddress:form.elements.addressMode?.value==='manual'?{cityId:form.elements.customerCityId.value,districtId:form.elements.customerDistrictId.value,firstLine:form.elements.customerFirstLine.value,phone:form.elements.customerPhone.value,customerName:form.elements.customerName.value}:undefined});await savedStep(result,row._id);message(name==='approve'&&row.requestKind==='exchange'?tr('تم الاعتماد. طلب الاستبدال مسجّل وبانتظار التجهيز، ويمكن بدء تجهيزه من شاشة الطلبات.','Approved. The replacement is registered and awaiting prep on the orders board.'):tr('تم حفظ الإجراء وتحديث سجل الطلب.','The action was saved and the order history updated.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
@@ -649,7 +763,7 @@
     if(w.receivedAt&&(row.requestKind==='return'||w.replacementDeliveredAt)&&w.quote.refundDue&&!w.refund)options.push(['refund',tr('رد مستحق العميل','Refund customer')+' — '+amount(w.quote.refundDue)]);
     // ⚠ Through Bosta the difference is the exchange shipment's COD: Bosta collects it and pays it in its
     //   transfer, so it is settled in «تسوية بوسطة», never booked into a vault as cash in hand.
-    if(w.fulfillmentChannel==='direct'&&w.replacementDeliveredAt&&w.quote.collectDue&&!w.collection)options.push(['collection',tr('استلام فرق العميل مباشرة','Receive customer difference directly')+' — '+amount(w.quote.collectDue)]);
+    if(w.fulfillmentChannel==='direct'&&w.replacementDeliveredAt&&exchangeDueNow(row)>0&&!w.collection)options.push(['collection',tr('استلام فرق العميل مباشرة','Receive customer difference directly')+' — '+amount(exchangeDueNow(row))]);
     if(w.fulfillmentChannel!=='direct'&&w.receivedAt&&(row.requestKind==='return'||w.replacementDeliveredAt)&&!w.carrierSettlement)options.push(['carrier',tr('تسوية بوسطة: التحصيل والتكلفة','Bosta settlement: collection and cost')]);
     if(!options.length){
       const pending=[];
@@ -662,8 +776,9 @@
         '</section><footer class="as-foot"><button class="btn btn-primary" type="button" data-as-back>'+tr('متابعة خطوات الطلب','Continue case workflow')+'</button></footer>');
       el('[data-as-back]').onclick=()=>open(row._id,true);return;
     }
-    show(row.requestKind==='exchange'?tr('تسوية الاستبدال: الفرق والشحن','Exchange settlement: difference and shipping'):tr('تسوية الاسترجاع ورد المبلغ','Return settlement and refund'),w.ref,`<form><section class="as-card">${summary(w.quote,row.requestKind)}</section><label class="as-field">${tr('الحركة','Action')}<select name="kind">${options.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><div data-as-carrier-fields><label class="as-field">${tr('تكلفة بوسطة الفعلية','Actual Bosta cost')}<input type="number" min="0" step="0.01" name="actualCost" value="0"></label>${w.quote.collectDue&&!w.collection?`<label class="as-check"><input type="checkbox" name="includesCollection" checked disabled>${tr('التحويل يتضمن فرق العميل الذي حصّلته بوسطة','Transfer includes the customer difference Bosta collected')}</label>`:''}<div class="as-banner" data-as-net></div></div><div class="as-two"><label class="as-field">${tr('الخزنة','Vault')}<select name="method">${['كاش','فودافون كاش','Instapay','تحويل بنكي'].map(m=>`<option>${m}</option>`).join('')}</select></label><label class="as-field">${tr('مرجع التحويل أو الدفع','Payment / transfer reference')}<input name="reference" required maxlength="150"></label></div><label class="as-check"><input type="checkbox" name="confirmed" required>${tr('الحركة تمت فعليًا، والمبلغ والخزنة والمرجع صحيحون.','The payment happened and the amount, vault and reference are correct.')}</label><footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary" ${options.length?'':'disabled'}>${tr('تسجيل التسوية','Record settlement')}</button></footer></form>`);
-    const form=el('form');const update=()=>{el('[data-as-carrier-fields]').hidden=form.elements.kind.value!=='carrier';const net=(form.elements.includesCollection?.checked?w.quote.collectDue:0)-Number(form.elements.actualCost.value);el('[data-as-net]').textContent=tr('صافي حركة الخزنة: ','Net vault movement: ')+(net<0?tr('خروج ','Outflow '):tr('دخول ','Inflow '))+amount(Math.abs(net));};form.oninput=update;update();
+    const bundledDue=(w.shipment?.bundled||[]).reduce((n,b)=>n+Number(b.cod||0),0),exchangeDue=w.collection?0:exchangeDueNow(row),includeDue=exchangeDue>0||bundledDue>0;
+    show(row.requestKind==='exchange'?tr('تسوية الاستبدال: الفرق والشحن','Exchange settlement: difference and shipping'):tr('تسوية الاسترجاع ورد المبلغ','Return settlement and refund'),w.ref,`<form><section class="as-card">${summary(w.quote,row.requestKind)}</section><label class="as-field">${tr('الحركة','Action')}<select name="kind">${options.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><div data-as-carrier-fields><label class="as-field">${tr('تكلفة بوسطة الفعلية','Actual Bosta cost')}<input type="number" min="0" step="0.01" name="actualCost" value="0"></label>${includeDue?`<label class="as-check"><input type="checkbox" name="includesCollection" checked disabled>${bundledDue>0?tr('التحويل يتضمن ما حصّلته بوسطة من العميل: فرق الاستبدال والطلبات المضمومة','Transfer includes what Bosta collected: the exchange difference and the added orders')+' (<bdi>'+amount(exchangeDue+bundledDue)+'</bdi>)':tr('التحويل يتضمن فرق العميل الذي حصّلته بوسطة','Transfer includes the customer difference Bosta collected')+' (<bdi>'+amount(exchangeDue)+'</bdi>)'}</label>`:''}<div class="as-banner" data-as-net></div></div><div class="as-two"><label class="as-field">${tr('الخزنة','Vault')}<select name="method">${['كاش','فودافون كاش','Instapay','تحويل بنكي'].map(m=>`<option>${m}</option>`).join('')}</select></label><label class="as-field">${tr('مرجع التحويل أو الدفع','Payment / transfer reference')}<input name="reference" required maxlength="150"></label></div><label class="as-check"><input type="checkbox" name="confirmed" required>${tr('الحركة تمت فعليًا، والمبلغ والخزنة والمرجع صحيحون.','The payment happened and the amount, vault and reference are correct.')}</label><footer class="as-foot"><button type="button" class="btn btn-outline" data-as-back>${tr('رجوع','Back')}</button><button type="submit" class="btn btn-primary" ${options.length?'':'disabled'}>${tr('تسجيل التسوية','Record settlement')}</button></footer></form>`);
+    const form=el('form');const update=()=>{el('[data-as-carrier-fields]').hidden=form.elements.kind.value!=='carrier';const net=(form.elements.includesCollection?.checked?exchangeDue+bundledDue:0)-Number(form.elements.actualCost.value);el('[data-as-net]').textContent=tr('صافي حركة الخزنة: ','Net vault movement: ')+(net<0?tr('خروج ','Outflow '):tr('دخول ','Inflow '))+amount(Math.abs(net));};form.oninput=update;update();
     el('[data-as-back]').onclick=()=>open(row._id,true);
     form.onsubmit=async event=>{event.preventDefault();if(busy)return;setBusy(true);try{const result=await post('settle',row._id,{kind:form.elements.kind.value,method:form.elements.method.value,reference:form.elements.reference.value,actualCost:Number(form.elements.actualCost.value),includesCollection:!!form.elements.includesCollection,confirmed:true});await savedStep(result,row._id,['returns','transactions','vault']);message(tr('تم تسجيل التسوية المالية وربط قيد الخزنة بالطلب.','Settlement recorded and the vault entry linked to this case.'),false);}catch(error){message(error.message);}finally{setBusy(false);}};
   }
@@ -792,12 +907,17 @@
     const link=`<button type="button" class="as-link" style="font:inherit;padding:0;white-space:nowrap" data-as-case-id="${esc(id)}" onclick="AfterSales.open(this.dataset.asCaseId)" title="${esc(tr('فتح ملف الاسترجاع / الاستبدال','Open return / exchange case'))}"><bdi dir="ltr">${esc(ref)}</bdi></button>`;
     return notes.split(ref).map(esc).join(link);
   }
+  function bundleNotice(tx) {
+    const b=tx?.afterSalesBundle;if(!b?.caseId)return '';
+    const state=b.collection?tr('حُصِّل متبقيه مع تسوية بوسطة','its remaining was collected in the Bosta settlement'):b.shipmentPending?tr('تحصّل بوسطة متبقيه مع الشحنة','Bosta collects its remaining with the shipment'):tr('يُشحن ويُحصَّل متبقيه مع البديل','it ships and is collected with the replacement');
+    return `<div class="as-banner as-bundle-notice" dir="${tr('rtl','ltr')}">${operationIcon('exchange')}<span>${tr('يُشحن هذا الطلب مع شحنة الاستبدال','This order ships inside exchange shipment')} <bdi dir="ltr">${esc(b.caseRef||'')}</bdi> · ${state}</span><button type="button" class="as-link" data-as-case-id="${esc(b.caseId)}" onclick="AfterSales.open(this.dataset.asCaseId)">${tr('فتح ملف الاستبدال','Open exchange case')}</button></div>`;
+  }
   function invoiceActions(tx) {
     if(!tx?._id||tx.type!=='مبيعات'&&!tx.afterSales?.caseId||!allowed('transaction')&&!allowed('movements'))return '';
     const original=tx.afterSales?.originalTransactionId||tx._id;
     const linked=!!tx.afterSales?.caseId;
     const role=tx.afterSales?.role==='return'?tr('فاتورة مرتجع','Return invoice'):tr('فاتورة بديل','Replacement invoice');
-    return `<section class="as-invoice-section" dir="${tr('rtl','ltr')}"><div class="as-invoice-tools"><small>${linked?`${role} · ${tr('مرتبطة بملف','Linked to case')} <bdi dir="ltr">${esc(tx.afterSales.caseRef||'')}</bdi>`:tr('الاسترجاع والاستبدال والشحن والتسويات المرتبطة بالفاتورة','Returns, replacements, shipments and settlements linked to this invoice')}</small><div class="as-invoice-buttons">${tx.type==='مبيعات'&&!tx.cancelled&&allowed('transaction')&&(tx.deliveredAt||tx.pickupStatus==='Delivered'||tx.bostaStatus==='DELIVERED')?`<button type="button" class="btn btn-outline btn-sm" onclick="AfterSales.create('${esc(tx._id)}')">${tr('طلب استرجاع / استبدال','Return / exchange request')}</button>`:''}<button type="button" class="btn btn-outline btn-sm" onclick="AfterSales.list('${esc(original)}')">${tr('الطلبات المرتبطة','Related cases')}</button>${linked?`<button type="button" class="btn btn-primary btn-sm" onclick="AfterSales.open('${esc(tx.afterSales.caseId)}')">${tr('فتح ملف الاسترجاع / الاستبدال','Open return / exchange case')}</button>`:''}</div></div>${linked?`<div class="as-banner">${tr('تُدار الأصناف والمبالغ وحركة المخزون والخزنة من ملف الاسترجاع أو الاستبدال المرتبط.','Items, amounts, inventory and vault movements are managed from the linked return or exchange case.')}</div>`:''}${timeline(tx)}</section>`;
+    return bundleNotice(tx)+`<section class="as-invoice-section" dir="${tr('rtl','ltr')}"><div class="as-invoice-tools"><small>${linked?`${role} · ${tr('مرتبطة بملف','Linked to case')} <bdi dir="ltr">${esc(tx.afterSales.caseRef||'')}</bdi>`:tr('الاسترجاع والاستبدال والشحن والتسويات المرتبطة بالفاتورة','Returns, replacements, shipments and settlements linked to this invoice')}</small><div class="as-invoice-buttons">${tx.type==='مبيعات'&&!tx.cancelled&&allowed('transaction')&&(tx.deliveredAt||tx.pickupStatus==='Delivered'||tx.bostaStatus==='DELIVERED')?`<button type="button" class="btn btn-outline btn-sm" onclick="AfterSales.create('${esc(tx._id)}')">${tr('طلب استرجاع / استبدال','Return / exchange request')}</button>`:''}<button type="button" class="btn btn-outline btn-sm" onclick="AfterSales.list('${esc(original)}')">${tr('الطلبات المرتبطة','Related cases')}</button>${linked?`<button type="button" class="btn btn-primary btn-sm" onclick="AfterSales.open('${esc(tx.afterSales.caseId)}')">${tr('فتح ملف الاسترجاع / الاستبدال','Open return / exchange case')}</button>`:''}</div></div>${linked?`<div class="as-banner">${tr('تُدار الأصناف والمبالغ وحركة المخزون والخزنة من ملف الاسترجاع أو الاستبدال المرتبط.','Items, amounts, inventory and vault movements are managed from the linked return or exchange case.')}</div>`:''}${timeline(tx)}</section>`;
   }
   function mountLaunchers() {
     for(const [page,permission] of [['movements','movements'],['reports','reports'],['settings','settings']]){

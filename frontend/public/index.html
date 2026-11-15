@@ -410,6 +410,20 @@ body.dark-mode .sl-tbl tr.sl-totals td{background:#1e293b}
 .sl-foot-item{display:flex;align-items:center;gap:7px}
 .sl-foot-label{color:var(--muted)}
 .sl-foot-val{font-weight:700;font-variant-numeric:tabular-nums;direction:ltr}
+/* «مطابقة الفواتير مع السجل» — notice + dialog (admin, one-time correction) */
+.sp-rec-note{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border:1px solid var(--border);border-inline-start:3px solid #d97706;border-radius:var(--radius);background:var(--surface);font-size:.85rem}
+.sp-rec-note-text{flex:1;min-width:220px;color:var(--text)}
+.sp-rec-lead{margin:10px 0 14px;font-size:.86rem;color:var(--text)}
+.sp-rec-sec{margin:0 0 14px}
+.sp-rec-h{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+.sp-rec-list{margin:0;padding-inline-start:18px;font-size:.84rem}
+.sp-rec-cand{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:.84rem}
+.sp-rec-cand input{width:auto!important;margin-top:3px;flex-shrink:0}
+.sp-rec-cand-body{min-width:0}
+.sp-rec-tbl{width:100%;font-size:.82rem}
+.sp-rec-after{font-size:.85rem;margin:8px 0 0}
+.sp-rec-after .is-ok{color:#16a34a}.sp-rec-after .is-warn{color:#d97706}
+.sp-rec-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
 /* Row-count badge in a panel's caption bar: "عرض ٣٠ من ١٢٤". */
 .sl-cap{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
 .sl-cap-title{font-size:.82rem;font-weight:700;color:var(--text)}
@@ -4496,6 +4510,11 @@ body.dark-mode .inv-ticket-card.is-new{animation-name:invTicketFlashDark}
   background:#fef2f2;border:1px solid #fca5a5;border-inline-start:4px solid #dc2626}
 .fd-banner.is-await{background:#fffbeb;border-color:#fcd34d;border-inline-start-color:#d97706}
 .fd-banner.is-done{background:var(--bg-alt);border:1px solid var(--border);border-inline-start:4px solid var(--muted)}
+/* محاولة توصيل فاشلة: معلومة ومتابعة، مش خطر — أزرق، والشحنة لسه في الطريق. */
+.fd-banner.is-attempt{background:#eff6ff;border-color:#bfdbfe;border-inline-start-color:#2563eb}
+.fd-banner.is-attempt .fd-banner-ttl{color:#1e40af}
+body.dark-mode .fd-banner.is-attempt{background:#14213a;border-color:#1e3a8a;border-inline-start-color:#60a5fa}
+body.dark-mode .fd-banner.is-attempt .fd-banner-ttl{color:#93c5fd}
 body.dark-mode .fd-banner{background:#2a1615;border-color:#7f2724;border-inline-start-color:#f87171}
 body.dark-mode .fd-banner.is-await{background:#2a2311;border-color:#7c5e18;border-inline-start-color:#fbbf24}
 body.dark-mode .fd-banner.is-done{background:var(--bg-alt);border-color:var(--border);border-inline-start-color:var(--muted)}
@@ -7648,6 +7667,43 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
 .vault-locked .vault-lock-icon svg{width:28px;height:28px;color:var(--accent)}
 .vault-locked h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
 .vault-locked input{max-width:300px;margin:0 auto 12px;display:block;text-align:center}
+.stg-pin-set{display:flex;flex-wrap:wrap;gap:12px 28px;margin:4px 0 6px}
+.stg-pin-field label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.stg-pin-field .pinbx{margin-bottom:6px}
+.stg-pin-field .pinbx-ok{margin:0 0 4px}
+.stg-pin-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.stg-pin-hint{font-size:.78rem;color:var(--muted)}
+.stg-pin-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:9px 12px;font-size:.82rem;margin:0 0 12px}
+body.dark-mode .stg-pin-warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
+/* PIN boxes (Nov 15, 2026) — one real <input> (same id, so every caller reads .value) laid
+   transparently over drawn cells; cells grow while typing (the vault code has no fixed length). */
+.pinbx{position:relative;display:flex;justify-content:center;gap:8px;max-width:300px;margin:0 auto 14px;direction:ltr}
+.pinbx-cell{flex:1 1 0;max-width:46px;min-width:0;height:50px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface,#fff);display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s,box-shadow .15s}
+.pinbx-dot{width:10px;height:10px;border-radius:50%;background:var(--text);animation:pinbxPop .16s ease-out}
+.pinbx-cell.is-filled{border-color:color-mix(in srgb,var(--text) 35%,var(--border))}
+.pinbx.is-focus .pinbx-cell.is-next{border-color:var(--primary);box-shadow:0 0 0 3px rgba(22,163,74,.14)}
+.pinbx.is-focus .pinbx-cell.is-next::after{content:'';width:2px;height:20px;background:var(--primary);animation:pinbxBlink 1s steps(1) infinite}
+.pinbx.is-ok .pinbx-cell{border-color:#16a34a;background:#f0fdf4;box-shadow:none}
+.pinbx.is-ok .pinbx-dot{background:#16a34a}
+.pinbx.is-err .pinbx-cell{border-color:#dc2626;background:#fef2f2;box-shadow:none}
+.pinbx.is-err{animation:pinbxShake .36s}
+.pinbx input.pinbx-input{position:absolute;inset:0;width:100%!important;height:100%!important;min-height:0!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;color:transparent!important;caret-color:transparent;font-size:16px!important;opacity:0;cursor:text;box-shadow:none!important}
+.pinbx-ok{display:none;align-items:center;justify-content:center;gap:6px;margin:-4px auto 12px;color:#15803d;font-size:.82rem;font-weight:600}
+.pinbx-ok svg{width:16px;height:16px}
+.pinbx.is-ok + .pinbx-ok{display:flex;animation:pinbxFade .2s ease-out}
+body.dark-mode .pinbx-cell{background:var(--surface2,#1e2820)}
+body.dark-mode .pinbx.is-ok .pinbx-cell{background:rgba(22,163,74,.16);border-color:#22c55e}
+body.dark-mode .pinbx.is-ok .pinbx-dot{background:#22c55e}
+body.dark-mode .pinbx-ok{color:#4ade80}
+body.dark-mode .pinbx.is-err .pinbx-cell{background:rgba(220,38,38,.14);border-color:#f87171}
+.pinbx.is-start{justify-content:flex-start;margin-inline:0;width:max-content}
+.pinbx.is-start + .pinbx-ok{justify-content:flex-start;margin-inline:0}
+.pinbx-cell{width:46px;flex:0 0 46px}
+@keyframes pinbxPop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pinbxBlink{50%{opacity:0}}
+@keyframes pinbxShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pinbxFade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.pinbx,.pinbx *,.pinbx-ok{animation:none!important;transition:none!important}}
 .seg-cards{
   display:grid;
   grid-template-columns:repeat(5,1fr);
@@ -9512,6 +9568,9 @@ body.privacy-on .privacy-btn{
 /* Dark mode variants */
 body.dark-mode .mov-col-paid{color:#4ade80}
 body.dark-mode .mov-col-remaining-pos{color:#fbbf24!important}
+#mov-table .mov-col-remaining-pos.is-to-customer,.mov-col-remaining-pos.is-to-customer{color:#b91c1c!important}
+body.dark-mode .mov-col-remaining-pos.is-to-customer{color:#fca5a5!important}
+.mov-as-status{text-decoration:none;color:inherit}.mov-as-status:hover .badge{filter:brightness(.96)}
 body.dark-mode .mov-col-remaining-zero{color:#64748b!important}
 /* Completed row — prices display at full normal weight/color */
 /* Cancelled row — line-through already applied; just mute color */
@@ -14607,6 +14666,11 @@ body.dark-mode .pu-ctx-item.is-warn{color:#fbbf24}
 .pw-ocard .pu-card-tags{margin:3px 0 2px}
 .pu-group.pu-group-mergetarget{position:relative;outline:2.5px dashed #2563eb;outline-offset:-2px;background:color-mix(in srgb,#2563eb 7%,var(--surface));box-shadow:0 0 0 4px color-mix(in srgb,#2563eb 16%,transparent)}
 .pu-merge-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#1e40af;color:#fff;font-size:.74rem;font-weight:600;padding:5px 12px;border-radius:999px;pointer-events:none;z-index:10;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+body.pu-ready-merge-drag .pu-stage-ready:not(.pu-group-dragging):not(.pu-group-mergetarget){outline:1.5px dashed color-mix(in srgb,#2563eb 45%,transparent);outline-offset:-2px}
+.pu-group.pu-group-mergetarget.pu-group-mergeblocked{outline-color:#dc2626;background:color-mix(in srgb,#dc2626 6%,var(--surface));box-shadow:0 0 0 4px color-mix(in srgb,#dc2626 14%,transparent)}
+.pu-edit-ticket-why{margin-top:4px;font-size:.74rem;font-weight:600;color:#b91c1c}
+body.dark-mode .pu-edit-ticket-why{color:#fca5a5}
+.pu-merge-hint.is-blocked{background:#b91c1c;white-space:normal;width:max-content;max-width:calc(100% - 24px);text-align:center;line-height:1.45}
 body.pu-prep-merge-drag .pu-prep-card:not(.pu-group-dragging):not(.pu-group-mergetarget){outline:1.5px dashed color-mix(in srgb,#2563eb 45%,transparent);outline-offset:-2px}
 .pu-group.pu-group-droptarget .pu-group-accent{background:linear-gradient(90deg,#2563eb 0%,#60a5fa 100%)!important}
 .pu-pt-row:last-child{border-bottom:none}
@@ -19114,6 +19178,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg>
           <span class="fx-btn-text" data-i18n="movTypeReturns">مرتجعات</span> <span class="fx-btn-count" id="mov-count-return">0</span>
         </button>
+        <button class="fx-btn" data-mov-type="استبدال" onclick="setMovTypeTab('استبدال',this)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/></svg>
+          <span class="fx-btn-text" data-i18n="movTypeExchanges">استبدال</span> <span class="fx-btn-count" id="mov-count-exchange">0</span>
+        </button>
       </div>
     </div>
 
@@ -22302,7 +22370,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <div class="vault-lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
 <h3 data-i18n="vltLockedTitle">الخزنة محمية</h3>
 <p class="text-muted mb-16" data-i18n="vltLockedHint">أدخل كلمة المرور للوصول إلى بيانات الخزنة</p>
-<input type="password" id="vault-pass-input" data-i18n-placeholder="vltPassPh" placeholder="كلمة المرور" autocomplete="current-password">
+<div class="pinbx"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div><input type="password" id="vault-pass-input" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" data-pin-done="unlockVault" data-i18n-aria-label="vltPassPh" aria-label="الرقم السري" oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div>
+<div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="pinOk">الرقم السري صحيح</span></div>
 <button type="submit" class="btn btn-primary" data-i18n="vltUnlockBtn">فتح الخزنة</button>
 </form>
 <div id="vault-content" style="display:none">
@@ -23095,22 +23164,28 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
         <span data-i18n="settingsSectionSecurity">أمان الخزنة والتقارير</span>
       </div>
-      <div class="settings-card" data-stg-keywords="password vault lock reports security خزنة كلمة مرور قفل تقارير أمان">
+      <div class="settings-card" data-stg-keywords="password pin vault lock reports security خزنة كلمة مرور رقم سري قفل تقارير أمان">
         <div class="stg-card-title">
           <div class="stg-card-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
           <div class="stg-card-title-text">
-            <strong data-i18n="stgVaultPassTitle">كلمة مرور الخزنة</strong>
-            <span data-i18n="stgVaultPassDesc">تُستخدم لفتح الخزنة وسجلاتها الحساسة</span>
+            <strong data-i18n="stgVaultPassTitle">الرقم السري للنظام</strong>
+            <span data-i18n="stgVaultPassDesc">رقم من 4 أرقام يُطلب لفتح الخزنة والتقارير وأسعار الشراء، ولتأكيد الحذف النهائي</span>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <div style="position:relative;margin-bottom:8px">
-            <input type="password" id="set-vault-pass" data-i18n-placeholder="stgVaultPassPh" placeholder="كلمة المرور الجديدة" style="padding-inline-start:32px;width:100%">
-            <button type="button" style="position:absolute;inset-inline-start:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.95rem;color:var(--muted);padding:4px" onclick="togglePassField(event)">
-              <svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
+        <div class="stg-pin-warn" id="stg-pin-warn" role="alert" hidden><span data-i18n="stgPinLegacyWarn">الرقم السري الحالي ليس 4 أرقام، فلن يتمكن أحد من الفتح به. عيّن رقماً جديداً الآن.</span></div>
+        <div class="stg-pin-set">
+          <div class="stg-pin-field">
+            <label for="set-vault-pass" data-i18n="stgVaultPassPh">الرقم السري الجديد</label>
+            <div class="pinbx is-start"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div><input type="password" id="set-vault-pass" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" data-pin-done="_stgPinNext" data-i18n-aria-label="stgVaultPassPh" aria-label="الرقم السري الجديد" oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div><div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="stgPinOk1">تم</span></div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="saveVaultPass()" data-i18n="save">حفظ</button>
+          <div class="stg-pin-field">
+            <label for="set-vault-pass2" data-i18n="stgVaultPassConfirm">تأكيد الرقم السري</label>
+            <div class="pinbx is-start"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div><input type="password" id="set-vault-pass2" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" data-pin-done="_stgPinCheck" data-i18n-aria-label="stgVaultPassConfirm" aria-label="تأكيد الرقم السري" oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div><div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="stgPinMatch">الرقمان متطابقان</span></div>
+          </div>
+        </div>
+        <div class="stg-pin-actions">
+          <button class="btn btn-primary btn-sm" id="stg-pin-save" onclick="saveVaultPass()" disabled data-i18n="stgPinSave">حفظ الرقم السري</button>
+          <span class="stg-pin-hint" data-i18n="stgPinHint">أرقام فقط — يسري فوراً على جميع المستخدمين.</span>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--border)">
           <label class="lock-toggle-row">
@@ -24495,8 +24570,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/invoice-unit-identities.js?v=20261114-return-when-shipped"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
 <script src="/cancellations-analytics.js?v=20261030-details"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261110-smooth-request">
-<script src="/after-sales.js?v=20261114-bosta-collect"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261115-advance">
+<script src="/after-sales.js?v=20261115-advance"></script>
 <link rel="stylesheet" href="/complaint-flow.css?v=20261110-inline-solution">
 <script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
@@ -26181,6 +26256,9 @@ const TRANSLATIONS = {
   supKpiReturnsTip:{ar:'إجمالي قيمة المرتجعات المكتملة لهذا المورد (غير الملغاة) — هي المبلغ المخصوم من إجمالي المشتريات للوصول إلى صافي المشتريات. المرتجعات المسودة أو المعلقة أو المعتمدة لم تُسوَّ بعد ولا تدخل هنا.',en:'Total value of completed, non-reversed returns for this supplier — this is the amount deducted from gross purchases to give net purchases. Draft, pending and approved returns are not yet settled and are excluded.'},
   supKpiPaidTip:{ar:'إجمالي ما دفعته لهذا المورد فعلياً من الخزنة، بعد خصم أي مبالغ ردّها لك',en:'Total actually paid to this supplier from the vault, net of any refunds'},
   supKpiPaidToSupplier:{ar:'المسدَّد للمورد',en:'Paid to supplier'},
+  supKpiPaidWaived:{ar:'+ مُقفل {v}',en:'+ waived {v}'},
+  supKpiPaidCredit:{ar:'+ من الرصيد {v}',en:'+ from credit {v}'},
+  supKpiPaidReturned:{ar:'+ خصم مرتجعات {v}',en:'+ returns offset {v}'},
   supKpiOwedTip:{ar:'المبلغ الذي ما زال في ذمتك للمورد ولم تسدّده بعد',en:'The amount you still owe this supplier and have not yet paid'},
   supKpiOwedToSupplier:{ar:'المستحق عليك للمورد',en:'You owe the supplier'},
   supKpiCreditTip:{ar:'مبلغ لك عند المورد (من مرتجعات أو دفعات مقدمة) يمكن استخدامه لخصمه من فواتير شراء قادمة',en:'Credit you hold with this supplier (from returns or advances), usable against future purchase invoices'},
@@ -26593,7 +26671,7 @@ const TRANSLATIONS = {
   stgShortcutShipping:{ar:'الشحن والشركات',en:'Shipping & carriers'},
   stgShortcutShippingHint:{ar:'الشركات والأسعار الافتراضية',en:'Carriers and default prices'},
   settingsSectionPrefs:{ar:'المظهر واللغة',en:'Appearance & language'},
-  settingsSectionSecurity:{ar:'أمان الخزنة',en:'Vault security'},
+  settingsSectionSecurity:{ar:'الرقم السري والأقفال',en:'PIN & locks'},
   settingsSectionShipPrices:{ar:'أسعار الشحن الافتراضية',en:'Default shipping prices'},
   settingsSectionShipCos:{ar:'شركات الشحن',en:'Shipping companies'},
   settingsSectionData:{ar:'النسخ الاحتياطي والبيانات',en:'Backups & data'},
@@ -26702,13 +26780,13 @@ const TRANSLATIONS = {
   stgWebhookAuthValue:{ar:'مفتاح التوثيق (القيمة): نفس الرمز السري المحفوظ أعلاه',en:'Auth key value: the same secret saved above'},
   stgWebhookNote:{ar:'يعمل حتى لو تم إنشاء الشحنة مباشرة من Shopify إلى Bosta (بدون المرور بزر "إنشاء شحنة") — يتم ربط رقم التتبع بالمعاملة تلقائياً أول مرة يصل فيها تحديث.',en:'Works even when the shipment is created straight from Shopify to Bosta (without using the "Create shipment" button) — the tracking number is linked to the transaction automatically on the first update received.'},
   /* Security tab */
-  stgVaultPassTitle:{ar:'كلمة مرور الخزنة',en:'Vault password'},
-  stgVaultPassDesc:{ar:'تُستخدم لفتح الخزنة وسجلاتها الحساسة',en:'Used to unlock the vault and its sensitive records'},
-  stgVaultPassPh:{ar:'كلمة المرور الجديدة',en:'New password'},
-  stgLockVaultTitle:{ar:'قفل الخزنة برقم سري',en:'Lock the vault with a PIN'},
-  stgLockVaultSub:{ar:'عند التعطيل لن يُطلب رقم سري لفتح الخزنة',en:'When disabled, no PIN is required to open the vault'},
-  stgLockReportsTitle:{ar:'قفل التقارير برقم سري',en:'Lock reports with a PIN'},
-  stgLockReportsSub:{ar:'عند التعطيل ستُفتح التقارير مباشرة بدون رقم سري',en:'When disabled, reports open directly without a PIN'},
+  stgVaultPassTitle:{ar:'الرقم السري للنظام',en:'System PIN'},
+  stgVaultPassDesc:{ar:'رقم من 4 أرقام يُطلب لفتح الخزنة والتقارير وأسعار الشراء، ولتأكيد الحذف النهائي',en:'A 4-digit code required to open the vault, reports and buy prices, and to confirm permanent deletions'},
+  stgVaultPassPh:{ar:'الرقم السري الجديد',en:'New PIN'},
+  stgLockVaultTitle:{ar:'قفل الخزنة بالرقم السري',en:'Lock the vault with the PIN'},
+  stgLockVaultSub:{ar:'عند التعطيل لن يُطلب الرقم السري لفتح الخزنة',en:'When disabled, no PIN is required to open the vault'},
+  stgLockReportsTitle:{ar:'قفل التقارير بالرقم السري',en:'Lock reports with the PIN'},
+  stgLockReportsSub:{ar:'عند التعطيل ستُفتح التقارير مباشرة بدون الرقم السري',en:'When disabled, reports open directly without the PIN'},
   stgStaffDiscTitle:{ar:'السماح للموظفين بالخصم',en:'Allow staff to apply discounts'},
   stgStaffDiscSub:{ar:'عند التعطيل: الموظفون لا يستطيعون تطبيق أي خصم (رسالة: تواصل مع المدير) — عند التفعيل: يظهر خيارات OTP والحد',en:'When disabled: staff cannot apply any discount (message: contact the manager) — when enabled: OTP options and the threshold appear'},
   stgOtpDiscTitle:{ar:'تفعيل نظام OTP للخصم المرتفع',en:'Enable OTP for high discounts'},
@@ -26963,17 +27041,27 @@ const TRANSLATIONS = {
   dashWelcomeBack:{ar:'أهلاً بعودتك، {name}',en:'Welcome back, {name}'},
   dashWelcomeSubtitle:{ar:'إليك نظرة سريعة على أعمالك اليوم — {date}',en:"Here's your business overview for today — {date}"},
   lockReportsTitle:{ar:'التقارير محمية',en:'Reports are protected'},
-  lockReportsDesc:{ar:'أدخل رقم السر للخزنة للوصول إلى التقارير والأرقام الكاملة',en:'Enter the vault password to access reports and full figures'},
+  lockReportsDesc:{ar:'أدخل الرقم السري للوصول إلى التقارير والأرقام الكاملة',en:'Enter the PIN to access reports and full figures'},
   lockReportsBtn:{ar:'فتح التقارير',en:'Unlock reports'},
-  lockReportsEmptyErr:{ar:'يرجى إدخال رقم السر للوصول للتقارير',en:'Please enter the password to access reports'},
+  lockReportsEmptyErr:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
   lockReportsSuccess:{ar:'تم فتح التقارير بنجاح',en:'Reports unlocked successfully'},
   lockPurchaseTitle:{ar:'المشتريات محمية',en:'Purchases are protected'},
-  lockPurchaseDesc:{ar:'أدخل رقم السر للخزنة لفتح حركة الشراء (تعرض أسعار الشراء)',en:'Enter the vault password to open purchases (shows buy prices)'},
+  lockPurchaseDesc:{ar:'أدخل الرقم السري لفتح حركة الشراء (تعرض أسعار الشراء)',en:'Enter the PIN to open purchases (shows buy prices)'},
   lockPurchaseBtn:{ar:'فتح المشتريات',en:'Unlock purchases'},
-  lockPurchaseEmptyErr:{ar:'يرجى إدخال رقم السر لفتح المشتريات',en:'Please enter the password to unlock purchases'},
+  lockPurchaseEmptyErr:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
   lockPurchaseSuccess:{ar:'تم فتح المشتريات بنجاح',en:'Purchases unlocked successfully'},
-  lockPassPlaceholder:{ar:'رقم السر...',en:'Password…'},
-  lockWrongPass:{ar:'رقم السر غير صحيح - حاول مرة أخرى',en:'Incorrect password — please try again'},
+  lockPassPlaceholder:{ar:'الرقم السري',en:'PIN'},
+  pinOk:{ar:'الرقم السري صحيح',en:'Correct PIN'},
+  pinNeed4:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
+  stgVaultPassConfirm:{ar:'تأكيد الرقم السري',en:'Confirm PIN'},
+  stgPinOk1:{ar:'تم',en:'Done'},
+  stgPinMatch:{ar:'الرقمان متطابقان',en:'PINs match'},
+  stgPinMismatch:{ar:'الرقمان غير متطابقين',en:'The PINs do not match'},
+  stgPinSave:{ar:'حفظ الرقم السري',en:'Save PIN'},
+  stgPinSaved:{ar:'تم حفظ الرقم السري',en:'PIN saved'},
+  stgPinHint:{ar:'أرقام فقط — يسري فوراً على جميع المستخدمين.',en:'Digits only — applies to every user at once.'},
+  stgPinLegacyWarn:{ar:'الرقم السري الحالي ليس 4 أرقام، فلن يتمكن أحد من الفتح به. عيّن رقماً جديداً الآن.',en:'The current PIN is not 4 digits, so nobody can unlock with it. Set a new one now.'},
+  lockWrongPass:{ar:'الرقم السري غير صحيح، حاول مرة أخرى',en:'Incorrect PIN — please try again'},
   /* لوحة «يحتاج انتباهك» بجوار جدول الشحن. المفاتيح دي بتتحل ديناميكيًّا
      (`t(it.key)`) فمش هتلاقيها مكتوبة حرفيًّا في نداء t(). */
   dsAttnTitle:{ar:'يحتاج انتباهك',en:'Needs your attention'},
@@ -27368,8 +27456,8 @@ const TRANSLATIONS = {
   vltBtnLock:{ar:'قفل',en:'Lock'},
   vltBtnExport:{ar:'تصدير',en:'Export'},
   vltLockedTitle:{ar:'الخزنة محمية',en:'Vault is locked'},
-  vltLockedHint:{ar:'أدخل كلمة المرور للوصول إلى بيانات الخزنة',en:'Enter the password to access vault data'},
-  vltPassPh:{ar:'كلمة المرور',en:'Password'},
+  vltLockedHint:{ar:'أدخل الرقم السري للوصول إلى بيانات الخزنة',en:'Enter the PIN to access vault data'},
+  vltPassPh:{ar:'الرقم السري',en:'PIN'},
   vltUnlockBtn:{ar:'فتح الخزنة',en:'Unlock vault'},
   vltLocksIn:{ar:'سيُغلق بعد',en:'Locks in'},
   vltTotalBalance:{ar:'إجمالي الرصيد',en:'Total balance'},
@@ -28001,6 +28089,7 @@ const TRANSLATIONS = {
   movTypeSales:{ar:'مبيعات',en:'Sales'},
   movTypePurchase:{ar:'مشتريات',en:'Purchases'},
   movTypeReturns:{ar:'مرتجعات',en:'Returns'},
+  movTypeExchanges:{ar:'استبدال',en:'Exchanges'},
   movSearchHelpTitle:{ar:'بحث عادي — أو أدخل أرقام مراجع متعددة مفصولة بمسافة (مثال: 1845 1853) — أو اكتب #كلمة للفلترة بالوسم',en:'Regular search — or enter multiple reference numbers separated by spaces (e.g. 1845 1853) — or type #word to filter by tag'},
   clearAria:{ar:'مسح',en:'Clear'},
   today:{ar:'اليوم',en:'Today'},
@@ -28466,7 +28555,7 @@ const TRANSLATIONS = {
   deleteWarningPermanent:{ar:'المعاملة سيتم حذفها نهائياً من قاعدة البيانات',en:'The transaction will be permanently deleted from the database'},
   deleteWarningNoRestore:{ar:'لا يمكن استرجاع المعاملة بعد الحذف',en:'The transaction cannot be restored after deletion'},
   deleteWarningAlreadyFrozen:{ar:'المعاملة مجمدة بالفعل (لا تؤثر على المخزون أو الخزنة)',en:'The transaction is already archived (no effect on inventory or vault)'},
-  vaultPasswordVerifyLabel:{ar:'التحقق برقم سر الخزنة *',en:'Verify with vault password *'},
+  vaultPasswordVerifyLabel:{ar:'التحقق بالرقم السري *',en:'Verify with the PIN *'},
   enterPasswordPlaceholder:{ar:'أدخل رقم السر',en:'Enter password'},
   enterPassword:{ar:'أدخل رقم السر',en:'Enter password'},
   // Movements — export & Bosta
@@ -28633,6 +28722,11 @@ const TRANSLATIONS = {
   sdepOnlySales:{ar:'العربون متاح لفواتير المبيعات فقط',en:'Deposits apply to sales only'},
   sdepCancelled:{ar:'لا يمكن إضافة عربون لفاتورة ملغاة',en:'A cancelled invoice cannot take a deposit'},
   sdepAfterSales:{ar:'سجّل المبالغ من ملف الاسترجاع والاستبدال المرتبط',en:'Record payments from the linked after-sales case'},
+  sdepExchangeShipped:{ar:'أُنشئت بوليصة الاستبدال؛ تحصّل بوسطة باقي الفرق مع الشحنة',en:'The exchange waybill exists; Bosta collects the rest of the difference with the shipment'},
+  sdepExchangeCollected:{ar:'تم تحصيل فرق الاستبدال',en:'The exchange difference has been collected'},
+  sdepBundleShipped:{ar:'الطلب يُشحن مع شحنة استبدال أُنشئت بوليصتها؛ لا يُضاف عربون الآن',en:'This order ships inside an exchange waybill that already exists; no deposit can be added now'},
+  asOpenCaseTitle:{ar:'فتح ملف الاسترجاع / الاستبدال',en:'Open the return / exchange case'},
+  asBundleCollectBlocked:{ar:'يُحصَّل متبقي هذا الطلب مع شحنة الاستبدال {ref} في تسوية بوسطة',en:'This order\'s remaining is collected with exchange shipment {ref} in its Bosta settlement'},
   sdepCarrier:{ar:'الطلب في تسوية شركة الشحن — لا يُضاف عربون الآن',en:'This order is in a carrier settlement — no deposit now'},
   sdepDelivered:{ar:'سُلِّم الطلب — يُسجَّل المتبقي بالتحصيل لا بالعربون',en:'Delivered — record the rest as a collection, not a deposit'},
   sdepNothingLeft:{ar:'لا يوجد مبلغ متبقٍ على الفاتورة',en:'Nothing is left to pay on this invoice'},
@@ -28794,6 +28888,10 @@ const TRANSLATIONS = {
   fdOpenTitle:{ar:'أعادت شركة الشحن هذا الطلب — هل وصلت الشحنة المرتجعة إلى المخزن؟',en:'The courier returned this order — has the returned shipment reached the warehouse?'},
   fdOpenSub:{ar:'سيبقى الطلب ضمن مشكلات التوصيل حتى تؤكد الاستلام، وتظل البضاعة محسوبة مبيعةً إلى ذلك الحين.',en:'The order stays in delivery issues until you confirm receipt; until then the goods still count as sold.'},
   fdAwaitTitle:{ar:'في انتظار وصول المرتجع إلى المخزن',en:'Waiting for the return to reach the warehouse'},
+  fdAttemptTitle:{ar:'لم تنجح محاولة التوصيل — الشحنة ما زالت لدى شركة الشحن',en:'Delivery attempt failed — the parcel is still with the courier'},
+  fdAttemptReason:{ar:'السبب: {v}',en:'Reason: {v}'},
+  fdAttemptNext:{ar:'ستُعيد شركة الشحن المحاولة يوم {v}. تواصل مع العميل لتأكيد الاستلام.',en:'The courier will try again on {v}. Contact the customer to confirm.'},
+  fdAttemptNextNoDate:{ar:'ستُعيد شركة الشحن محاولة التوصيل. تواصل مع العميل لتأكيد الاستلام.',en:'The courier will try again. Contact the customer to confirm.'},
   fdAwaitSub:{ar:'أكّد الاستلام فور وصول الشحنة لإعادة البضاعة إلى المخزون',en:'Confirm receipt when it arrives so the stock comes back'},
   fdHeldMoney:{ar:'المبلغ المدفوع مقدمًا من العميل: {v}',en:'Paid in advance by the customer: {v}'},
   fdBtnReceived:{ar:'استلمت الشحنة',en:'I received it'},
@@ -30101,9 +30199,9 @@ const TRANSLATIONS = {
   hdWarnLine1:{ar:'• المعاملة سيتم حذفها <strong>نهائياً</strong> من قاعدة البيانات',en:'• The transaction will be <strong>permanently</strong> removed from the database'},
   hdWarnLine2:{ar:'• <strong>لا يمكن استرجاع</strong> المعاملة بعد الحذف',en:'• It <strong>cannot be recovered</strong> after deletion'},
   hdWarnLine3:{ar:'• المعاملة مجمدة بالفعل (لا تؤثر على المخزون أو الخزنة)',en:'• It is already frozen (no effect on inventory or the vault)'},
-  hdVaultPassLabel:{ar:'التحقق برقم سر الخزنة *',en:'Verify with the vault password *'},
-  hdVaultPassPlaceholder:{ar:'أدخل رقم السر',en:'Enter the password'},
-  hdEnterPassword:{ar:'أدخل رقم السر',en:'Enter the password'},
+  hdVaultPassLabel:{ar:'التحقق بالرقم السري *',en:'Verify with the PIN *'},
+  hdVaultPassPlaceholder:{ar:'أدخل الرقم السري',en:'Enter the PIN'},
+  hdEnterPassword:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
   /* Movements → Collections Log tab (سجل التحصيلات).
      Keys for this tab already defined further up are REUSED, not redefined here:
      collSearchPlaceholder, collColTime/Ref/Type/NetVault/ShipExtra/Collector,
@@ -31566,6 +31664,21 @@ const TRANSLATIONS = {
   puRtMergeTitle:{ar:'دُمج {n} طلب في مجموعة تحضير',en:'{n} order(s) merged into a prep group'},
   puMerged:{ar:'تم دمج {src} في {dst} · {n} طلب',en:'Merged {src} into {dst} · {n} order(s)'},
   puMergeSame:{ar:'لا يمكن دمج المجموعة في نفسها',en:'A group cannot be merged into itself'},
+  puReadyMergeTitle:{ar:'دمج مجموعتي شحن',en:'Merge shipping groups'},
+  puReadyMergeConfirm:{ar:'ستنتقل طلبات «{src}» ({n} طلب) إلى «{dst}» ({m} طلب)، فتصبح {total} طلب يستلمها المندوب معًا.',en:'The {n} order(s) of “{src}” move into “{dst}” ({m}), making {total} orders the courier collects together.'},
+  puReadyMergeDate:{ar:'موعد الاستلام يصبح موعد المجموعة المستهدفة: {date}.',en:'The pickup date becomes the target group’s: {date}.'},
+  puReadyMergeJoinNote:{ar:'الطلبات المنقولة ليست ضمن طلب الاستلام المسجل لدى بوسطة؛ بعد الدمج يمكن ضمها إليه.',en:'The moved orders are not in the Bosta pickup request yet; you can join them to it after the merge.'},
+  puReadyMergeTargetNoRequest:{ar:'تنبيه: طلبات المجموعة المستهدفة ليست ضمن طلب استلام.',en:'Note: the target group’s orders are not in a pickup request.'},
+  puReadyMergeUntouched:{ar:'لا يتغير شيء في شحنات بوسطة أو الخزنة أو المخزون — يتغير التجميع فقط.',en:'Bosta shipments, the vault and stock are unchanged — only the grouping changes.'},
+  puReadyMergeCollected:{ar:'لا يمكن الدمج: الطلب {refs} خرج مع شركة الشحن بالفعل',en:'Cannot merge: order {refs} is already with the courier'},
+  puReadyMergeCarrier:{ar:'لا يمكن الدمج: شركة الشحن مختلفة',en:'Cannot merge: different carriers'},
+  puReadyMergeWarehouse:{ar:'لا يمكن الدمج: المجموعتان من مخزنين مختلفين',en:'Cannot merge: the groups ship from different warehouses'},
+  puReadyMergeRequests:{ar:'لا يمكن الدمج: كل مجموعة ضمن طلب استلام مختلف في بوسطة',en:'Cannot merge: each group is in a different Bosta pickup request'},
+  puReadyMergeGone:{ar:'تغيّرت المجموعة؛ حدّث الصفحة وحاول مرة أخرى',en:'The group changed; refresh and try again'},
+  puReadyMergeJoinTitle:{ar:'ضم الطلبات لطلب الاستلام',en:'Join the pickup request'},
+  puReadyMergeJoinAsk:{ar:'الطلبات المنقولة ({n}) ليست ضمن طلب الاستلام بعد. هل تريد فتح نافذة طلب الاستلام لضمها الآن؟',en:'The {n} moved order(s) are not in the pickup request yet. Open the pickup request window to join them now?'},
+  puReadyMergeJoinOk:{ar:'فتح طلب الاستلام',en:'Open pickup request'},
+  puRtMergeReadyTitle:{ar:'دُمج {n} طلب في مجموعة شحن',en:'{n} order(s) merged into a shipping group'},
   puGroupDeleted:{ar:'تم حذف مجموعة التحضير — الطلبات عادت للمعلق',en:'Prep group deleted — its orders are back in pending'},
   puMovedToReady:{ar:'تم نقل {n} طلب إلى Ready to Ship · {ref}',en:'Moved {n} order(s) to Ready to Ship · {ref}'},
   puMovedLocally:{ar:'تم النقل محلياً · {v}',en:'Moved locally · {v}'},
@@ -31854,10 +31967,10 @@ const TRANSLATIONS = {
   expDeletedOne:{ar:'تم حذف المصروف',en:'Expense deleted'},
   expDelConfirmTitle:{ar:'تأكيد الحذف',en:'Confirm deletion'},
   expDelApprovedWarn:{ar:'هذا المصروف <strong>معتمد</strong> — سيتم إعادة مبلغ <strong>{amt}</strong> إلى خزنة {acc} تلقائياً عند الحذف.',en:'This expense is <strong>approved</strong> — <strong>{amt}</strong> will be returned automatically to the {acc} vault upon deletion.'},
-  expDelPassPrompt:{ar:'يجب إدخال رقم السر للخزنة لحذف المصروف <strong>{desc}</strong>',en:'The vault password is required to delete the expense <strong>{desc}</strong>'},
-  expDelPassLabel:{ar:'رقم السر *',en:'Password *'},
-  expDelPassPh:{ar:'أدخل رقم السر',en:'Enter the password'},
-  expDelPassRequired:{ar:'يجب إدخال رقم السر',en:'The password is required'},
+  expDelPassPrompt:{ar:'يجب إدخال الرقم السري لحذف المصروف <strong>{desc}</strong>',en:'The PIN is required to delete the expense <strong>{desc}</strong>'},
+  expDelPassLabel:{ar:'الرقم السري *',en:'PIN *'},
+  expDelPassPh:{ar:'أدخل الرقم السري',en:'Enter the PIN'},
+  expDelPassRequired:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
   expDelFinal:{ar:'حذف نهائي',en:'Delete permanently'},
   expDefaultDesc:{ar:'المصروف',en:'the expense'},
   expBulkNoneSelected:{ar:'لم يتم تحديد مصاريف',en:'No expenses selected'},
@@ -43395,7 +43508,7 @@ const ISSUE_SHIP_KEYS = ['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
 function _dashShipIssueSettled(tx) {
   // ⚠ An exchange / after-sales shipment ends at Bosta as RETURNED by design (it brings the old
   //   item back) — that is its own case's workflow, never a failed delivery to ask about.
-  if (tx?.afterSales?.caseId) return true;
+  if (tx?.afterSales?.caseId || tx?.afterSalesBundle?.caseId) return true;
   return !!(tx.deliveredAt || tx.bostaStatus === 'DELIVERED');
 }
 
@@ -43403,7 +43516,7 @@ function _dashIsOpenIssue(tx, status) {
   if (_dashShipIssueSettled(tx)) return false;
   const st = tx.shipIssueState || '';
   if (st === 'closed' || st === 'reshipped') return false;
-  if (st === 'open' || st === 'awaiting') return true;
+  if (st === 'attempt' || st === 'open' || st === 'awaiting') return true;
   // لسه ما اتّرحّلش: نرجع للسلوك القديم، بشرط إنه ما اتسلّمش أصلاً
   return ISSUE_SHIP_KEYS.includes(status.key) && !tx.deliveredAt;
 }
@@ -43414,9 +43527,18 @@ function _dashNeedsReceiptAnswer(tx) {
   if (tx.failedDelivery) return false;
   if (_dashShipIssueSettled(tx)) return false;
   const st = tx.shipIssueState || '';
-  if (st === 'closed' || st === 'reshipped') return false;
+  // ⚠ 'attempt' = محاولة توصيل فاشلة والشحنة لسه مع شركة الشحن وهتتعاد محاولتها —
+  //   مش مرتجع، فمفيش سؤال «وصلت المخزن؟». (backend/src/shared/ship-issue-state.util.ts)
+  if (st === 'closed' || st === 'reshipped' || st === 'attempt') return false;
   if (st === 'open' || st === 'awaiting') return true;
   return (tx.bostaStatus === 'RETURNED') && !tx.deliveredAt;
+}
+
+/** محاولة توصيل فاشلة لسه مفتوحة: متابعة مع العميل، والشحنة لسه عند شركة الشحن. */
+function _dashIsFailedAttempt(tx) {
+  if (!tx || tx.type !== 'مبيعات' || tx.cancelled || tx.failedDelivery) return false;
+  if (_dashShipIssueSettled(tx)) return false;
+  return tx.shipIssueState === 'attempt';
 }
 
 /* ── التواصل مع العميل من صف مشكلة الشحن ─────────────────────────────────────
@@ -43986,7 +44108,7 @@ function _dashShippingActions(tx, status) {
        أول خطوة في معالجة شحنة راجعة هي مكالمة للعميل. أيقونة واتساب بس من غير
        نص: الشيپ اللي جنبه («معالجة الطلب») هو الإجراء الأساسي، وده مساعد.
        ⚠ بيتخفي لو مافيش رقم على الطلب — زرار بيفتح نافذة فاضية أسوأ من غيابه. */
-    const contactChip = (needsAnswer && (tx.phone || '').trim())
+    const contactChip = ((needsAnswer || _dashIsFailedAttempt(tx)) && (tx.phone || '').trim())
       ? `<button type="button" class="ds-ship-contact" title="${escHtml(t('fdContactTip'))}" aria-label="${escHtml(t('fdContact'))}" onclick="event.stopPropagation();openCustomerContact(${esc(JSON.stringify(String(tx._id)))})">${_WA_ICON_SVG}</button>`
       : '';
     // شارة إعادة الشحن — نفس منطق جدول الحركات: الطلب اللي اتشحن ورجع لازم يبان
@@ -44384,7 +44506,29 @@ function isStatusNotCollectable(status) {
 }
 
 /** حالة صف سجل المعاملات — فرق استبدال للشركة تُعرض دائماً كمعلق بوضوح */
+/** Paid / remaining / status of a return or replacement document, as its after-sales case knows it today
+ *  (`tx.afterSalesMoney`, attached by the Movements page — shared/after-sales-money.util.ts). */
+function _movAsMoney(tx) {
+  const m = tx?.afterSalesMoney;
+  if (!m || tx.cancelled) return null;
+  const en = currentLang === 'en', L = (ar, e) => en ? e : ar;
+  const paidTitle = m.role === 'return'
+    ? [m.creditApplied > 0 && m.kind === 'exchange' ? L(`مسوّى مع البديل #${m.replacementRef}: ${m.creditApplied}`, `Applied to replacement #${m.replacementRef}: ${m.creditApplied}`) : '',
+       m.refunded > 0 ? L(`رُدّ للعميل: ${m.refunded}`, `Refunded to the customer: ${m.refunded}`) : '',
+       m.fee > 0 && m.kind === 'return' ? L(`خُصم رسوم ${m.fee}`, `Fee deducted: ${m.fee}`) : ''].filter(Boolean).join(' · ')
+    : (m.creditApplied > 0 ? L(`منها رصيد المرتجع ${m.creditApplied}`, `Includes return credit ${m.creditApplied}`) : '');
+  const remTitle = m.remaining > 0 ? (m.direction === 'to-customer' ? L('مستحق للعميل', 'Owed to the customer') : L('مستحق من العميل', 'Owed by the customer')) : '';
+  const badge = (cls, label, title) => `<span class="badge ${cls}"${title ? ` title="${escHtml(title)}"` : ''}>${esc(label)}</span>`;
+  const status = m.state === 'settled' ? statusBadge('مكتمل', tx)
+    : m.state === 'refunded' ? badge('badge-status-done', L('تم الرد', 'Refunded'), L('رُدّ المبلغ للعميل', 'The customer was paid back'))
+    : m.state === 'refund-due' ? badge('badge-status-pending', L('بانتظار الرد', 'Refund due'), L('مبلغ مستحق للعميل لم يُرد بعد', 'Money owed to the customer, not paid yet'))
+    : m.state === 'with-carrier' ? badge('badge-status-pending', L('تحصّله بوسطة', 'Bosta collects'), L('باقي الفرق يُحصَّل مع شحنة الاستبدال', 'The rest of the difference is collected with the exchange shipment'))
+    : statusBadge('معلق', tx);
+  return { paid: m.paid, remaining: m.remaining, paidTitle, remTitle, status, toCustomer: m.direction === 'to-customer' };
+}
 function movementStatusCell(tx) {
+  const _as = _movAsMoney(tx);
+  if (_as) return `<a href="#" class="mov-as-status" onclick="event.preventDefault();event.stopPropagation();window.AfterSales?.open('${esc(tx.afterSales.caseId)}')" title="${escHtml(t('asOpenCaseTitle'))}">${_as.status}</a>`;
   if (isExchangeSalePendingCollect(tx)) {
     return '<span class="badge badge-status-wait" title="فرق استبدال — انتظار الشحن"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:.9em;height:.9em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> انتظار التحصيل</span>';
   }
@@ -52390,7 +52534,8 @@ function renderMovMobileCard(tx) { return renderMovCompactCard(tx, false); }
 function renderMovCompactCard(tx, grid = false) {
   const en = currentLang === 'en';
   const isCancelled = tx.cancelled || isStatusCancelled(tx.payStatus);
-  const rem = Number(tx.remaining) || 0;
+  const _asMoneyC = _movAsMoney(tx);
+  const rem = _asMoneyC ? _asMoneyC.remaining : (Number(tx.remaining) || 0);
   const sale = tx.type === 'مبيعات';
   const phoneClean = (tx.phone || '').replace(/\D/g, '');
   const waItem = (tx.type === 'مبيعات' && phoneClean)
@@ -52421,7 +52566,7 @@ function renderMovCompactCard(tx, grid = false) {
           ${invoiceImageActions('transaction', tx._id)}
             <div class="dd-item" onclick="printInvoice('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> طباعة</div>
             ${!isCancelled && hasPerm('complaints') && tx.type!=='مشتريات' ? `<div class="dd-item" onclick="convertTxToFollowUp('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M5 8.2V13a4 4 0 004 4h1.5" stroke-dasharray="3 3"/></svg> ${t('spConvertToFollowup')}</div>` : ''}
-            ${rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
+            ${!_asMoneyC && rem > 0 && !tx.cancelled ? `<div class="dd-item" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg> تحصيل</div>` : ''}
             ${tx.type === 'مبيعات' && (tx.payments||[]).length > 0 && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:var(--orange)" onclick="openReverseCollect('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.4 7.4 11.5 4 18 5.5"/><path d="M21 17v-6h-6"/><path d="M21 11c-2.4 5.6-8.5 9-15 7.5"/></svg> ${t('undoCollection')}</div>` : ''}
             ${tx.type !== 'مبيعات' && ((tx.payments||[]).length > 0 || (tx.deposits||[]).length > 0) && !tx.cancelled && isAdmin() ? `<div class="dd-item" style="color:#f97316" onclick="openUndoPaymentSelector('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 010 8h-3"/></svg> ${t('undoSpecificPayment')}</div>` : ''}
             ${!isCancelled ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="openCancelMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> إلغاء</div>` : ''}
@@ -52432,7 +52577,7 @@ function renderMovCompactCard(tx, grid = false) {
     ${sale || carrier ? `<div class="mov-compact-shipping">${visibleCarrierName ? `<span class="mov-compact-carrier" title="${esc(visibleCarrierName)}">${esc(visibleCarrierName)}</span>` : ''}<div class="mov-compact-shipping-status" onclick="event.stopPropagation()">${shipping}</div></div>` : ''}
     <div class="mov-compact-financials" aria-label="${esc(en ? 'Order amounts' : 'مبالغ الطلب')}">
       <span><small>${esc(t('gcTotal'))}</small><bdi>${fmtJMasked(tx, 'total')}</bdi></span>
-      <span class="is-paid"><small>${esc(t('gcPaid'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : exchangeSalePaidDisplayAmount(tx)}</bdi></span>
+      <span class="is-paid"><small>${esc(t('gcPaid'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : _asMoneyC ? fmtJ(_asMoneyC.paid) : exchangeSalePaidDisplayAmount(tx)}</bdi></span>
       <span class="is-remaining"><small>${esc(t('gcRemaining'))}</small><bdi>${tx.purchaseDetailsHidden ? amtMaskedBadge() : fmtJ(rem)}</bdi></span>
     </div>
     <div class="mov-compact-footer">${sale ? `<span class="mov-compact-pickup"><span>${t('ivPickupStatus')}</span>${_puStatusBadge(_puDisplayStatus(tx), tx, false, true)}</span>` : _txTypeInlineBadge(tx)}${isCancelled ? `<span class="badge badge-status-cancelled">${esc(_statusLabel('ملغي'))}</span>` : ''}<span data-presence-tx="${esc(tx._id)}" style="display:none"></span></div>
@@ -52850,7 +52995,8 @@ function renderMovementTxRow(tx) {
   const isExcluded = movExcludedIds.has(String(tx._id));
   const rowStyle = isCancelledOrLocked ? 'style="opacity:0.6;text-decoration:line-through"' : isExcluded ? 'style="opacity:0.35;filter:grayscale(.6)"' : '';
   const _rtFlash = _rtFlashIds.has(String(tx._id)) ? ' rt-flash' : '';
-  const remAmt = tx.remaining || 0;
+  const _asMoney = _movAsMoney(tx);
+  const remAmt = _asMoney ? _asMoney.remaining : (tx.remaining || 0);
   // WhatsApp menu item — shown inside dropdown for sales w/ phone
   const phoneClean = (tx.phone || '').replace(/\D/g, '');
   const waMenuItem = (tx.type === 'مبيعات' && phoneClean)
@@ -52867,7 +53013,7 @@ function renderMovementTxRow(tx) {
     : '';
   const isNewShopify = tx.shopifyOrderId && tx.createdAt && (Date.now() - new Date(tx.createdAt).getTime() < 86400000);
   const rowStateClass = (tx.cancelled || isStatusCancelled(tx.payStatus)) ? ' mov-row-cancelled'
-    : (isStatusPending(tx.payStatus) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
+    : ((_asMoney ? _asMoney.remaining > 0 : isStatusPending(tx.payStatus)) || isExchangeSalePendingCollect(tx) || (tx.cancelRequest && tx.cancelRequest.status === 'معلق')) ? ' mov-row-pending'
     : isStatusCompleted(tx.payStatus) ? ' mov-row-completed' : '';
   return `<tr ${rowStyle} class="${isSelected ? 'mov-row-selected' : ''}${_rtFlash}${rowStateClass}${isNewShopify ? ' mov-row-new-shopify' : ''}" onclick="handleMovRowClick(event,'${esc(tx._id)}')">
     <td><input type="checkbox" class="checkbox mov-check" value="${esc(tx._id)}" ${isSelected ? 'checked' : ''} onclick="handleMovCheck(event,'${esc(tx._id)}')"></td>
@@ -52884,8 +53030,8 @@ function renderMovementTxRow(tx) {
       </div>
     </td>
     <td data-col="invoice" style="text-align:center"><span class="mov-col-total" ${tx.purchaseDetailsHidden ? '' : `title="${escHtml(fmtJT(tx.total))}"`}>${fmtJMaskedWhole(tx, 'total')}</span></td>
-    <td data-col="paid" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : `<span class="mov-col-paid">${exchangeSalePaidDisplayAmount(tx)}</span>`}</td>
-    <td data-col="remaining" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : `<span class="${remAmt > 0 ? 'mov-col-remaining-pos' : 'mov-col-remaining-zero'}">${fmtJ(remAmt)}</span>`}</td>
+    <td data-col="paid" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : _asMoney ? `<span class="mov-col-paid"${_asMoney.paidTitle ? ` title="${escHtml(_asMoney.paidTitle)}"` : ''}>${fmtJ(_asMoney.paid)}</span>` : `<span class="mov-col-paid">${exchangeSalePaidDisplayAmount(tx)}</span>`}</td>
+    <td data-col="remaining" style="text-align:center">${tx.purchaseDetailsHidden ? amtMaskedBadge() : `<span class="${remAmt > 0 ? (_asMoney?.toCustomer ? 'mov-col-remaining-pos is-to-customer' : 'mov-col-remaining-pos') : 'mov-col-remaining-zero'}"${_asMoney?.remTitle ? ` title="${escHtml(_asMoney.remTitle)}"` : ''}>${fmtJ(remAmt)}</span>`}</td>
     <td data-col="ship" style="text-align:center">${_movShipCell(tx)}</td>
     <td data-col="items" style="text-align:center">${_movItemsCell(tx)}</td>
     <td data-col="status" style="text-align:center;white-space:nowrap">${movementStatusCell(tx)}${vaultStatusBadge}${vaultHint}</td>
@@ -53321,7 +53467,8 @@ function renderMovementsLegacy() {
   _setCnt('mov-count-all',      _allTx.length);
   _setCnt('mov-count-sales',    _allTx.filter(t => t.type === 'مبيعات').length);
   _setCnt('mov-count-purchase', _allTx.filter(t => t.type === 'مشتريات').length);
-  _setCnt('mov-count-return',   _allTx.filter(t => t.type === 'مرتجع' || t.type === 'مرتجع مبيعات' || t.type === 'مرتجع مشتريات').length);
+  _setCnt('mov-count-return',   _allTx.filter(t => (t.type === 'مرتجع' || t.type === 'مرتجع مبيعات' || t.type === 'مرتجع مشتريات') && !isMovExchangeReturn(t)).length);
+  _setCnt('mov-count-exchange', _allTx.filter(t => matchesMovAfterSalesKind(t, 'exchange')).length);
   const _purTabBtn = qs('[data-mov-type="مشتريات"]');
   if (_purTabBtn) _purTabBtn.style.display = _canSeePurchases ? '' : 'none';
   _syncMovTypeDdTrigger();
@@ -53358,7 +53505,8 @@ function renderMovementsLegacy() {
     if (to && _txDateForFilter && _txDateForFilter > to) return false;
     // Tab type filter (مبيعات/مشتريات/مرتجع)
     if (movFilter === 'مرتجع') {
-      if (tx.type !== 'مرتجع' && tx.type !== 'مرتجع مبيعات' && tx.type !== 'مرتجع مشتريات') return false;
+      // «مرتجعات» = returns only; an exchange's return document is under «استبدال».
+      if (tx.type !== 'مرتجع' && tx.type !== 'مرتجع مبيعات' && tx.type !== 'مرتجع مشتريات' || isMovExchangeReturn(tx)) return false;
     } else if (movFilter === 'استرجاع') {
       if (!matchesMovAfterSalesKind(tx, 'return')) return false;
     } else if (movFilter === 'استبدال') {
@@ -54006,6 +54154,7 @@ function _paintMovementsServer(result) {
   _setCnt('mov-count-sales', result.tabCounts.sales);
   _setCnt('mov-count-purchase', result.tabCounts.purchase);
   _setCnt('mov-count-return', result.tabCounts.returns);
+  _setCnt('mov-count-exchange', result.tabCounts.exchanges || 0);
   const purchaseTab = qs('[data-mov-type="مشتريات"]');
   if (purchaseTab) purchaseTab.style.display = isAdmin() || hasPerm('purchase-view') ? '' : 'none';
   _syncMovTypeDdTrigger();
@@ -58342,6 +58491,13 @@ function _txSupplierLedgerDebt(tx) {
 
 function openCollectMovement(id) {
   const tx = transactions.find(t => t._id === id); if (!tx) return;
+  // Shipped inside an exchange waybill: Bosta collects its remaining with the exchange difference,
+  // and the exchange case's carrier settlement records it. The server refuses a separate collection.
+  if (tx.afterSalesBundle?.caseId) {
+    toast(t('asBundleCollectBlocked').replace('{ref}', tx.afterSalesBundle.caseRef || ''), true);
+    window.AfterSales?.open?.(tx.afterSalesBundle.caseId);
+    return;
+  }
   // A Bosta settlement queued or awaiting review owns this order's collection — collecting it here
   // as well would book the same cash twice. The server refuses too; this says why before the form.
   const _csSt = tx.carrierSettlement && tx.carrierSettlement.status;
@@ -58807,6 +58963,35 @@ async function _doCollectWithOtp(id, otpId, collectNote, collectDate) {
   }
 }
 
+function _showBulkPayResult(paid, failed, method) {
+  const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+  const sum = rows => r2(rows.reduce((s, e) => s + (Number(e.pay) || 0), 0));
+  const row = (e, ok) => `<tr><td><bdi>#${esc(e.ref || '')}</bdi></td><td style="text-align:end"><bdi>${fmtN(e.pay)}</bdi></td>`
+    + `<td style="color:${ok ? 'var(--green,#16a34a)' : 'var(--red,#dc2626)'}">${ok ? 'تم السداد' : esc(e.error || 'لم يتم')}</td></tr>`;
+  openModal(`
+    <div class="modal-head"><h3 style="margin:0">نتيجة السداد المجمّع</h3></div>
+    <p style="margin:8px 0 12px">تم سداد <b>${fmtN(paid.length)}</b> فاتورة بمجموع <b><bdi>${fmtN(sum(paid))}</bdi> EGP</b> من ${esc(_payMethodLabel ? _payMethodLabel(method) : method)}.
+    لم يتم سداد <b>${fmtN(failed.length)}</b> فاتورة بمجموع <b><bdi>${fmtN(sum(failed))}</bdi> EGP</b> — لم يخرج مبلغها من الخزنة.</p>
+    <div style="max-height:50vh;overflow:auto"><table class="ent-table" style="width:100%">
+      <thead><tr><th>الفاتورة</th><th style="text-align:end">المبلغ</th><th>النتيجة</th></tr></thead>
+      <tbody>${paid.map(e => row(e, true)).join('')}${failed.map(e => row(e, false)).join('')}</tbody>
+    </table></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn" onclick="window._bulkPayRetry=null;closeModal()">إغلاق</button>
+      <button class="btn btn-primary" onclick="_retryBulkPayFailed()">إعادة المحاولة للفواتير غير المسددة</button>
+    </div>`, 'max-width:560px');
+}
+
+async function _retryBulkPayFailed() {
+  const r = window._bulkPayRetry;
+  if (!r || !r.dist?.length) { closeModal(); return; }
+  window._bulkPayRetry = null;
+  window._bulkPayDist = r.dist;
+  window._bulkPayMeta = r.meta;
+  closeModal();
+  await _doBulkCollectWithOtp(r.otpId, r.collectNote, r.collectDate);
+}
+
 async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
   const dist = window._bulkPayDist || [];
   const meta = window._bulkPayMeta || {};
@@ -58821,10 +59006,13 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
   let successCount = 0;
   let totalPaid = 0;
   const errors = [];
+  const paidRows = [];
+  const failedRows = [];
 
   const otpTotalAmount = meta.totalAmount || dist.reduce((s, e) => s + e.pay, 0);
   // One id for the whole payment, so the payments log shows it as ONE payment with its split.
-  const batchId = 'pb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  // A retry of the failed parts reuses it: the server refuses a second part on the same invoice.
+  const batchId = meta.batchId || ('pb_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
   for (const entry of dist) {
     try {
       const body = {
@@ -58861,8 +59049,10 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
       }
       successCount++;
       totalPaid += entry.pay;
+      paidRows.push(entry);
     } catch (e) {
       errors.push(`#${entry.ref}: ${e?.message || 'خطأ'}`);
+      failedRows.push({ ...entry, error: e?.message || 'خطأ' });
     }
   }
 
@@ -58871,7 +59061,10 @@ async function _doBulkCollectWithOtp(otpId, collectNote, collectDate) {
   _pendingSupplierPayOtpId = '';
 
   if (errors.length) {
-    toast(`تم سداد ${successCount} فاتورة — فشل: ${errors.join(', ')}`, true);
+    // Not all-or-nothing: say exactly which invoices were paid and which were not, and offer to
+    // retry only the failed ones (same batch id → an invoice already paid is refused, not paid twice).
+    window._bulkPayRetry = { otpId, collectNote: note, collectDate: payDate, dist: failedRows.map(({ error, ...r }) => r), meta: { ...meta, method: collectMethod, batchId } };
+    setTimeout(() => _showBulkPayResult(paidRows, failedRows, collectMethod), 0);
   } else {
     toast(`تم سداد ${successCount} فاتورة بمجموع ${fmtN(totalPaid)} EGP`);
   }
@@ -59695,7 +59888,9 @@ function _bsfIsBostaOrder(o) {
 // Resolve either in-memory copy so a sparse pickup row still uses its linked workflow.
 function _bostaCaseId(o) {
   if (!o) return '';
-  return o.afterSales?.caseId || _awbOrderCopies(o._id).find(copy => copy.afterSales?.caseId)?.afterSales.caseId || '';
+  // A new sale bundled into an exchange waybill ships from that exchange case too.
+  return o.afterSales?.caseId || o.afterSalesBundle?.caseId
+    || _awbOrderCopies(o._id).map(copy => copy.afterSales?.caseId || copy.afterSalesBundle?.caseId).find(Boolean) || '';
 }
 function _bostaSendLabel(o) {
   if (_bostaCaseId(o)) return t('bsfCase');
@@ -59732,7 +59927,7 @@ function _pwShipStateHtml(o, colType) {
   }
   if (colType !== 'prep' || !o.prepChecked) return '';
   if (!_bsfIsBostaOrder(o) && !_bostaCaseId(o)) return '';
-  if (o.afterSales?.shipmentPending) return `<span class="pw-ship-sent is-pending">${esc(t('pwShipCreating'))}</span>`;
+  if (o.afterSales?.shipmentPending || o.afterSalesBundle?.shipmentPending) return `<span class="pw-ship-sent is-pending">${esc(t('pwShipCreating'))}</span>`;
   return `<button type="button" class="pw-abtn is-send" data-pu-edit onclick="pwSendToBosta('${esc(o._id)}')">
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
     ${esc(_bostaSendLabel(o))}</button>`;
@@ -62021,7 +62216,7 @@ async function hardDeleteMovement(id) {
 
       <div style="margin-bottom:16px">
         <label style="display:block;font-size:.85rem;font-weight:600;margin-bottom:8px">${t('hdVaultPassLabel')}</label>
-        <input type="password" id="hd-pass-input" placeholder="${esc(t('hdVaultPassPlaceholder'))}" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:monospace">
+        ${pinBoxesHtml('hd-pass-input', { start: true, label: t('hdVaultPassLabel') })}
       </div>
 
       <div style="display:flex;gap:10px">
@@ -62033,7 +62228,7 @@ async function hardDeleteMovement(id) {
     </div>
   `;
   openModal(html, 'max-width:480px');
-  setTimeout(() => qs('#hd-pass-input')?.focus(), 100);
+  setTimeout(() => { const i = qs('#hd-pass-input'); if (i) { _pinSync(i); i.focus(); } }, 100);
 }
 
 async function confirmHardDeleteMovement(id) {
@@ -62042,7 +62237,8 @@ async function confirmHardDeleteMovement(id) {
   const confirmBtn = qs('#hd-confirm-btn');
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '0.6'; }
   try {
-    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    try { await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) }); }
+    catch (pe) { if (!pe.message?.includes('🔒')) _pinState('hd-pass-input', 'err'); throw pe; }
     await api('/transactions/' + id + '/permanent', { method: 'DELETE' });
     archivedMovements = archivedMovements.filter(t => t._id !== id);
     renderArchivedMovements();
@@ -64020,6 +64216,10 @@ function _invPurchasePaymentsHtml(tx) {
   if (credit > 0) rows.push({ date: tx.date, kind: 'خصم من رصيد لك عند المورد', method: '', amount: credit, note: 'لم يخرج نقد من الخزنة' });
   const wo = Number(tx.writeOff?.amount) || 0;
   if (wo > 0) rows.push({ date: tx.writeOff.at, kind: 'إقفال المتبقي', method: '', amount: wo, note: tx.writeOff.reason || '' });
+  (tx.supplierReturnOffsets || []).filter(o => !o.reversedAt && Number(o.amount) > 0).forEach(o =>
+    rows.push(o.kind === 'ledger-adjustment'
+      ? { date: o.at, kind: 'خصم من المورد', method: '', amount: Number(o.amount), note: `${o.reason || 'قيد في سجل المديونية'} — لم يخرج نقد من الخزنة` }
+      : { date: o.at, kind: 'خصم مرتجع للمورد', method: '', amount: Number(o.amount), note: `مرتجع ${o.returnNumber || ''} — لم يخرج نقد من الخزنة` }));
   const listed = rows.reduce((s, r) => s + r.amount, 0);
   const gap = Math.round((settled - listed) * 100) / 100;
   if (gap > 0.5) rows.unshift({ date: tx.date, kind: 'مسدَّد سابقاً', method: tx.depMethod || '', amount: gap, note: 'بدون تفاصيل في السجل' });
@@ -65157,6 +65357,31 @@ function _fdBannerHtml(tx) {
     </div>`;
   }
 
+  // محاولة توصيل فاشلة: الشحنة لسه مع شركة الشحن وهتتعاد محاولتها. مفيش سؤال عن
+  // المخزن ولا «إعادة الشحن» — الخطوة الصح هي التواصل مع العميل قبل المحاولة الجاية.
+  // بتنتهي لوحدها: التسليم يقفلها، والإرجاع (RETURNED) يحوّلها لسؤال الاستلام.
+  if (_dashIsFailedAttempt(tx)) {
+    const tu = tx.bostaLastTrackingUpdate || {};
+    const ex = tx.bostaDeliveryException || {};
+    const reason = currentLang === 'en' ? (tu.reason || tu.reasonAr || ex.reason || '') : (tu.reasonAr || tu.reason || ex.reason || '');
+    const when = tu.scheduledAt || ex.scheduledAt || '';
+    let whenTxt = '';
+    if (when) {
+      const d = new Date(when);
+      if (Number.isFinite(d.getTime())) whenTxt = d.toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    const id = String(tx._id);
+    const phone = (tx.phone || '').trim();
+    return `<div class="fd-banner is-attempt">
+      <div class="fd-banner-main">
+        <div class="fd-banner-ttl">${esc(t('fdAttemptTitle'))}</div>
+        ${reason ? `<div class="fd-banner-sub" dir="auto">${esc(t('fdAttemptReason', { v: reason }))}</div>` : ''}
+        <div class="fd-banner-sub">${esc(whenTxt ? t('fdAttemptNext', { v: whenTxt }) : t('fdAttemptNextNoDate'))}</div>
+      </div>
+      ${phone ? `<div class="fd-banner-acts"><button class="btn btn-sm" onclick="openCustomerContact('${id}')">${esc(t('fdContact'))}</button></div>` : ''}
+    </div>`;
+  }
+
   if (!_dashNeedsReceiptAnswer(tx)) return '';
 
   const awaiting = tx.shipIssueState === 'awaiting';
@@ -65880,7 +66105,7 @@ function renderInvoiceViewPage() {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     </button>
     ${isExchangeSalePendingCollect(tx) ? `<button class="inv2-btn inv2-btn-primary" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg><span>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</span></button>` : ''}
-    ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
+    ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) && !tx.afterSalesBundle?.caseId ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
     ${_invMoreMenuHtml(tx, _editLocked, secondaryActionsHtml)}
   `;
 
@@ -66789,7 +67014,13 @@ function buildOrderTimelineSection(tx) {
       if (idx <= curIdx) bostaEvents.push({label: lm[s]||s, time: s === 'DELIVERED' ? (tx.deliveredAt || null) : null, dotClass: idx<curIdx?'done':'active'});
     });
   }
+  // ⚠ Same rule as `carrierEventIdentity` (bosta-tracking.util.ts): one shipment + status +
+  //   carrier exception time = one event. Older orders hold the same failed attempt twice
+  //   (once from Bosta's attempt list, once from the live update) — show it once.
+  const _seenCarrierEv = new Set();
   carrierHistory.forEach(event => {
+    const _evId = event.exceptionAt ? `${event.shipmentId}|${event.status}|${event.exceptionAt}` : event.key;
+    if (_evId) { if (_seenCarrierEv.has(_evId)) return; _seenCarrierEv.add(_evId); }
     const status = _bostaStatusLabel(event.status) || event.statusLabel;
     const reason = currentLang === 'en' ? event.reason || event.reasonAr : event.reasonAr || event.reason;
     const schedule = event.scheduledAt ? ` · ${t('bsdRescheduled', { t: _fmtTs(event.scheduledAt) || event.scheduledAt })}` : '';
@@ -71693,17 +71924,44 @@ async function importProductsExcel(event) {
 
 /* Suppliers */
 function getSupplierPurchases(supplierName) {
-  return transactions.filter(t =>
-    t.type === 'مشتريات' &&
-    !t.archived &&
-    (t.client || '').trim() === (supplierName || '').trim()
-  );
+  // By the supplier's id first, then by name for invoices that carry no id. Name-only matching
+  // emptied a renamed supplier's profile (purchases/paid read 0) while its ledger debt — keyed by
+  // id — stayed, and an invoice moved to another supplier showed under both.
+  const name = (supplierName || '').trim();
+  const rec = (typeof suppliers !== 'undefined' ? suppliers : []).find(x => (x.name || '').trim() === name);
+  const id = rec?._id ? String(rec._id) : '';
+  return transactions.filter(t => {
+    if (t.type !== 'مشتريات' || t.archived) return false;
+    if (id && t.supplierId) return String(t.supplierId) === id;
+    return (t.client || '').trim() === name;
+  });
+}
+// Cash that actually left the vault for one invoice: its deposit (opening deposit + every
+// payment). Supplier credit applied and a write-off settle the invoice but are not cash.
+// Legacy rows whose payments were kept outside `deposit` fall back to the explained difference.
+function _purchaseReturnOffset(t) {
+  return (t.supplierReturnOffsets || []).filter(o => !o.reversedAt)
+    .reduce((s, o) => s + Math.max(0, Number(o.amount) || 0), 0);
+}
+function _purchaseCashPaid(t) {
+  const credit = Math.max(0, Number(t.creditApplied) || 0);
+  const waived = Math.max(0, Number(t.writeOff?.amount) || 0);
+  const returned = _purchaseReturnOffset(t);
+  const explained = (Number(t.total) || 0) - (Number(t.remaining) || 0) - credit - waived - returned;
+  return Math.max(0, Number(t.deposit) || 0, explained);
 }
 function getSupplierTotalPaid(txs) {
-  return txs.reduce((sum, t) => {
-    if (t.cancelled) return sum;
-    return sum + ((t.total || 0) - (t.remaining || 0));
-  }, 0);
+  return txs.reduce((sum, t) => t.cancelled ? sum : sum + _purchaseCashPaid(t), 0);
+}
+// What settled invoices without cash — shown beside «المسدَّد» so the cards still add up.
+function getSupplierNonCashSettled(txs) {
+  return txs.reduce((acc, t) => {
+    if (t.cancelled) return acc;
+    acc.credit += Math.max(0, Number(t.creditApplied) || 0);
+    acc.waived += Math.max(0, Number(t.writeOff?.amount) || 0);
+    acc.returned += _purchaseReturnOffset(t);
+    return acc;
+  }, { credit: 0, waived: 0, returned: 0 });
 }
 /**
  * Purchases/paid/remaining stats above are computed purely from مشتريات transactions and never
@@ -71719,9 +71977,15 @@ function getSupplierReturnsAdjustment(supplierId, allReturns) {
   const completed = (allReturns || []).filter(r =>
     r.supplierId === supplierId && r.status === 'مكتمل' && !r.reversal && r.settlement
   );
+  // A debt-offset written onto the invoices (returns completed from Nov 15, 2026) already lowered
+  // their remaining — only the part no invoice absorbed is subtracted here, or it would count twice.
+  const _unallocated = st => {
+    const onInvoices = (st.invoiceOffsets || []).reduce((s, o) => s + (Number(o.amount) || 0), 0);
+    return Math.max(0, (Number(st.debtOffsetAmount) || 0) - onInvoices);
+  };
   return completed.reduce((acc, r) => ({
     purchased: acc.purchased + (Number(r.total) || 0),
-    debtOffset: acc.debtOffset + (Number(r.settlement.debtOffsetAmount) || 0),
+    debtOffset: acc.debtOffset + _unallocated(r.settlement),
     refund: acc.refund + (Number(r.settlement.refundAmount) || 0),
     credit: acc.credit + (Number(r.settlement.creditAmount) || 0),
   }), { purchased: 0, debtOffset: 0, refund: 0, credit: 0 });
@@ -73384,6 +73648,11 @@ function renderSupplierProfile() {
     <div title="${escHtml(t('supKpiPaidTip'))}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
       <div style="font-size:1.05rem;font-weight:700;color:#10b981">${fmtJ(totalPaid)}</div>
       <div style="font-size:.75rem;color:var(--muted);margin-top:3px">${t('supKpiPaidToSupplier')}</div>
+      ${(() => { const nc = getSupplierNonCashSettled(txs); const parts = [];
+        if (nc.waived > 0) parts.push(t('supKpiPaidWaived', { v: fmtN(nc.waived) }));
+        if (nc.credit > 0) parts.push(t('supKpiPaidCredit', { v: fmtN(nc.credit) }));
+        if (nc.returned > 0) parts.push(t('supKpiPaidReturned', { v: fmtN(nc.returned) }));
+        return parts.length ? `<div style="font-size:.68rem;color:var(--muted);margin-top:2px">${parts.join(' · ')}</div>` : ''; })()}
     </div>
     <div id="sp-kpi-remaining" title="${escHtml(supplierDebtIsDerived() ? _supDebtDerivedTip() : t('supKpiOwedTip'))}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
       <div style="font-size:1.05rem;font-weight:700;color:${totalRemaining > 0 ? 'var(--red)' : '#10b981'}">${supplierDebtIsDerived() ? '~' : ''}${fmtJ(totalRemaining)}</div>
@@ -73844,6 +74113,94 @@ async function renderSpLedgerPanel(supplierId) {
         </div>
       </div>
     </div>`;
+  _spReconcileNotice(supplierId);
+}
+
+/* ── «مطابقة الفواتير مع السجل» — one-time correction for data from before Nov 15, 2026 ──
+   Supplier returns settled «خصم من المديونية», and manual ledger reductions, used to lower the
+   ledger only, so the invoices kept showing more than is owed. The server writes those amounts
+   onto the invoices (vault and ledger untouched). Admin only; the notice shows only when the open
+   invoices exceed the ledger. Preview first, then apply. */
+let _spRec = null;
+async function _spReconcileNotice(supplierId) {
+  if (!isAdmin()) return;
+  let res;
+  try { res = await api('/supplier-returns/backfill/invoice-offsets', { method: 'POST', body: JSON.stringify({ supplierId }) }); }
+  catch (_) { return; }
+  const rec = res?.reconcile;
+  if (!rec || !(rec.gap > 0.5) || currentSupplierId !== supplierId) return;
+  const host = qs('#sp-panel-ledger');
+  if (!host || host.querySelector('.sp-rec-note')) return;
+  const div = document.createElement('div');
+  div.className = 'sp-rec-note';
+  div.innerHTML = `<div class="sp-rec-note-text">متبقي فواتير هذا المورد (<bdi>${fmtN(rec.invoicesOpen)}</bdi>) أعلى من رصيد سجل المديونية (<bdi>${fmtN(Math.max(0, rec.ledgerBalance))}</bdi>) بمبلغ <b><bdi>${fmtN(rec.gap)}</bdi></b> — خصومات مسجّلة في السجل ولم تُكتب على الفواتير.</div>
+    <button class="btn btn-sm" onclick="openSpReconcile('${esc(supplierId)}')">مطابقة الفواتير مع السجل</button>`;
+  host.prepend(div);
+}
+
+async function openSpReconcile(supplierId) {
+  let res;
+  try { res = await api('/supplier-returns/backfill/invoice-offsets', { method: 'POST', body: JSON.stringify({ supplierId }) }); }
+  catch (e) { toast(e?.message || 'تعذّر تحميل المطابقة', true); return; }
+  _spRec = { supplierId, base: res, preview: null };
+  const rec = res.reconcile || {};
+  const autoRows = (res.plan || []).map(p => `<li><bdi>${esc(p.source)}</bdi> — <bdi>${fmtN(p.amount)}</bdi></li>`).join('');
+  const cands = (rec.candidates || []).map(c => `<label class="sp-rec-cand">
+      <input type="checkbox" value="${esc(c.id)}" onchange="_spRecInvalidate()">
+      <span class="sp-rec-cand-body"><b><bdi>${fmtN(c.amount)}</bdi></b> · <span class="num">${esc(c.date)}</span> · <bdi>${esc(c.desc)}</bdi></span>
+    </label>`).join('');
+  openModal(`
+    <div class="modal-head"><h3 style="margin:0">مطابقة الفواتير مع سجل المديونية</h3><button class="modal-x" onclick="closeModal()" aria-label="إغلاق">×</button></div>
+    <p class="sp-rec-lead">الفرق الحالي: <b><bdi>${fmtN(rec.gap || 0)}</bdi></b>. هذا التصحيح يكتب على الفواتير خصومات موجودة فعلاً في السجل — لا يتحرك أي مبلغ في الخزنة ولا في رصيد المورد.</p>
+    ${autoRows ? `<div class="sp-rec-sec"><div class="sp-rec-h">مرتجعات سُوِّيت خصماً من المديونية (تُضاف تلقائياً)</div><ul class="sp-rec-list">${autoRows}</ul></div>` : ''}
+    ${cands ? `<div class="sp-rec-sec"><div class="sp-rec-h">قيود يدوية في السجل — اختر ما هو خصم من المورد على البضاعة</div>${cands}</div>` : ''}
+    <div id="sp-rec-preview"></div>
+    <div class="sp-rec-actions">
+      <button class="btn" onclick="closeModal()">إلغاء</button>
+      <button class="btn" onclick="_spRecPreview()">معاينة</button>
+      <button class="btn btn-primary" id="sp-rec-apply" disabled onclick="_spRecApply()">تنفيذ التصحيح</button>
+    </div>`, 'max-width:640px', { lockDismiss: true });
+}
+
+function _spRecSelected() {
+  return [...document.querySelectorAll('.sp-rec-cand input:checked')].map(i => i.value);
+}
+function _spRecInvalidate() {
+  if (_spRec) _spRec.preview = null;
+  const b = qs('#sp-rec-apply'); if (b) b.disabled = true;
+  const p = qs('#sp-rec-preview'); if (p) p.innerHTML = '';
+}
+async function _spRecPreview() {
+  if (!_spRec) return;
+  const ids = _spRecSelected();
+  let res;
+  try { res = await api('/supplier-returns/backfill/invoice-offsets', { method: 'POST', body: JSON.stringify({ supplierId: _spRec.supplierId, ledgerEntryIds: ids }) }); }
+  catch (e) { toast(e?.message || 'تعذّرت المعاينة', true); return; }
+  _spRec.preview = { ids, res };
+  const gapAfter = Math.round(((res.reconcile?.gap || 0) - (res.totalWritten || 0)) * 100) / 100;
+  const rows = (res.invoices || []).map(i => `<tr><td><bdi>#${esc(i.ref)}</bdi></td><td class="sl-num"><bdi>${fmtN(i.remainingBefore)}</bdi></td><td class="sl-num"><bdi>${fmtN(i.remainingAfter)}</bdi></td>
+      <td>${i.lines.map(l => `<bdi>${esc(l.from)}</bdi> <bdi>${fmtN(l.amount)}</bdi>`).join('، ')}</td></tr>`).join('');
+  qs('#sp-rec-preview').innerHTML = res.invoices?.length
+    ? `<div class="sp-rec-sec"><div class="sp-rec-h">ما سيتغير على الفواتير</div>
+        <table class="ent-table sp-rec-tbl"><thead><tr><th>الفاتورة</th><th>المتبقي الآن</th><th>بعد التصحيح</th><th>من</th></tr></thead><tbody>${rows}</tbody></table>
+        <p class="sp-rec-after">إجمالي ما يُكتب على الفواتير: <b><bdi>${fmtN(res.totalWritten)}</bdi></b> — الفرق بعد التصحيح: <b class="${Math.abs(gapAfter) < 0.5 ? 'is-ok' : 'is-warn'}"><bdi>${fmtN(gapAfter)}</bdi></b></p></div>`
+    : `<p class="sp-rec-after">لا يوجد ما يُكتب على الفواتير بهذا الاختيار.</p>`;
+  const b = qs('#sp-rec-apply'); if (b) b.disabled = !(res.invoices?.length);
+}
+async function _spRecApply() {
+  if (!_spRec?.preview) return;
+  const ok = await showConfirm(`سيُكتب ${fmtN(_spRec.preview.res.totalWritten)} على ${fmtN(_spRec.preview.res.invoices.length)} فاتورة. لا تتغير الخزنة ولا رصيد المورد. متابعة؟`);
+  if (!ok) return;
+  const b = qs('#sp-rec-apply'); if (b) b.disabled = true;
+  try {
+    await api('/supplier-returns/backfill/invoice-offsets', { method: 'POST', body: JSON.stringify({ supplierId: _spRec.supplierId, ledgerEntryIds: _spRec.preview.ids, dryRun: false }) });
+  } catch (e) { toast(e?.message || 'تعذّر التصحيح', true); if (b) b.disabled = false; return; }
+  const sid = _spRec.supplierId;
+  _spRec = null;
+  closeModal();
+  toast('تمت مطابقة الفواتير مع سجل المديونية');
+  transactions = await loadTransactionSummaries().catch(() => transactions);
+  if (currentSupplierId === sid) { renderSupplierProfile(); }
 }
 
 /**
@@ -76174,14 +76531,17 @@ async function confirmBulkSupplierPay(supplierName) {
     toast(t('supBulkPayVaultShort', { method: _payMethodLabel(method), avail: fmtN(currentBalance), need: fmtN(amount) }), true);
     return;
   }
-  // توزيع المبلغ على الفواتير
-  let left = amount;
+  // توزيع المبلغ على الفواتير — بالقرش: الطرح العشري كان يترك فتاتاً (1e-13) يتحول لـ«دفعة»
+  // على فاتورة ثالثة، أو يترك فاتورة «معلق» على كسر لا يُرى.
+  const _r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+  let left = _r2(amount);
   const dist = [];
   for (const t of pending) {
-    if (left <= 0) break;
-    const pay = Math.min(left, t.remaining || 0);
+    if (left < 0.005) break;
+    const pay = _r2(Math.min(left, _r2(t.remaining)));
+    if (!(pay > 0)) continue;
     dist.push({ id: t._id, ref: t.ref, remaining: t.remaining, pay });
-    left -= pay;
+    left = _r2(left - pay);
   }
   // استدعاء OTP flow — OTP واحد يغطي المبلغ الكلي ثم ننفذ بالتسلسل
   window._bulkPayDist = dist;
@@ -78207,21 +78567,22 @@ async function deleteExpenseWithPassword(id) {
     <p style="color:var(--muted);margin-bottom:16px">${t('expDelPassPrompt', { desc: esc(exp?.desc || t('expDefaultDesc')) })}</p>
     <div class="form-group">
       <label>${t('expDelPassLabel')}</label>
-      <input type="password" id="del-pass-input" placeholder="${esc(t('expDelPassPh'))}" style="width:100%">
+      ${pinBoxesHtml('del-pass-input', { start: true, label: t('expDelPassLabel') })}
     </div>
     <div class="flex gap-8 mt-16">
       <button class="btn btn-danger" onclick="confirmDeleteExpenseWithPassword('${esc(id)}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> ${t('expDelFinal')}</button>
       <button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button>
     </div>
   `);
-  setTimeout(() => qs('#del-pass-input')?.focus(), 100);
+  setTimeout(() => { const i = qs('#del-pass-input'); if (i) { _pinSync(i); i.focus(); } }, 100);
 }
 
 async function confirmDeleteExpenseWithPassword(id) {
   const password = qs('#del-pass-input')?.value;
   if (!password) { toast(t('expDelPassRequired'), true); return; }
   try {
-    await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    try { await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) }); }
+    catch (pe) { if (!pe.message?.includes('🔒')) _pinState('del-pass-input', 'err'); throw pe; }
     await api('/expenses/' + id, { method: 'DELETE' });
     toast(t('expDeletedOne'));
     closeModal();
@@ -80479,6 +80840,81 @@ let reportsUnlockPending = false;
 /* Purchase Type Security — hides buy prices from staff behind vault password */
 let purchaseUnlocked = false;
 
+/* ── PIN boxes (Nov 15, 2026) ──────────────────────────────────────────────
+   The system PIN («الرقم السري») is exactly 4 digits (DTO @Matches /^\d{4}$/). It guards the
+   vault, reports, buy prices, the settings card and permanent deletes. One real <input> keeps
+   the id every caller reads (.value); four cells are drawn from it. Arabic-Indic digits are
+   converted, anything else dropped. `done` = a global function name called when the 4th digit
+   lands (never set it on a destructive action — those keep their own button). */
+const PIN_LEN = 4;
+function pinBoxesHtml(id, opts = {}) {
+  const { done = '', enter = '', label = t('lockPassPlaceholder'), ok = t('pinOk'), start = false, autocomplete = 'current-password' } = opts;
+  return `<div class="pinbx${start ? ' is-start' : ''}"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div>`
+    + `<input type="password" id="${id}" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="${PIN_LEN}" autocomplete="${autocomplete}" aria-label="${escHtml(label)}"`
+    + `${done ? ` data-pin-done="${done}"` : ''}${enter ? ` data-pin-enter="${enter}"` : ''}`
+    + ` oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div>`
+    + `<div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>${esc(ok)}</span></div>`;
+}
+function _pinCaretEnd(inp) {
+  try { const n = inp.value.length; inp.setSelectionRange(n, n); } catch (_) {}
+}
+function _pinCall(name, inp) {
+  const fn = name && window[name];
+  if (typeof fn === 'function') fn(inp);
+}
+function _pinInput(inp) {
+  const clean = String(inp.value || '')
+    .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/\D/g, '').slice(0, PIN_LEN);
+  if (clean !== inp.value) inp.value = clean;
+  _pinSync(inp);
+  if (clean.length === PIN_LEN && inp.dataset.pinDone) setTimeout(() => _pinCall(inp.dataset.pinDone, inp), 60);
+}
+function _pinKey(e, inp) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  if (inp.form && !inp.dataset.pinEnter && !inp.dataset.pinDone) return;
+  _pinCall(inp.dataset.pinEnter || inp.dataset.pinDone, inp);
+}
+function _pinSync(inp) {
+  const box = inp && inp.closest('.pinbx'); if (!box) return;
+  const cells = box.querySelector('.pinbx-cells'); if (!cells) return;
+  const n = Math.min(inp.value.length, PIN_LEN);
+  const focused = document.activeElement === inp;
+  if (focused) _pinCaretEnd(inp);
+  if (box.classList.contains('is-err') && n) box.classList.remove('is-err');
+  if (box.classList.contains('is-ok') && n < PIN_LEN) box.classList.remove('is-ok');
+  box.classList.toggle('is-focus', focused);
+  let html = '';
+  for (let i = 0; i < PIN_LEN; i++) {
+    const filled = i < n;
+    html += `<span class="pinbx-cell${filled ? ' is-filled' : ''}${i === n ? ' is-next' : ''}">${filled ? '<span class="pinbx-dot"></span>' : ''}</span>`;
+  }
+  cells.innerHTML = html;
+}
+/* 'ok' → green + message (default «الرقم السري صحيح»), resolves after a short pause so it is seen;
+   'err' → red shake, field cleared and refocused; '' → back to normal. */
+function _pinState(id, state, msg) {
+  const inp = qs('#' + id); const box = inp && inp.closest('.pinbx');
+  if (!box) return Promise.resolve();
+  box.classList.remove('is-ok', 'is-err');
+  if (state === 'ok') {
+    const label = box.nextElementSibling?.classList.contains('pinbx-ok') ? box.nextElementSibling.querySelector('span') : null;
+    if (label) label.textContent = msg || t('pinOk');
+    inp.blur(); _pinSync(inp); box.classList.add('is-ok');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return new Promise(r => setTimeout(r, reduce ? 150 : 650));
+  }
+  if (state === 'err') {
+    inp.value = ''; void box.offsetWidth; box.classList.add('is-err'); inp.focus(); _pinSync(inp);
+  } else {
+    _pinSync(inp);
+  }
+  return Promise.resolve();
+}
+function _pinIsComplete(v) { return new RegExp('^\\d{' + PIN_LEN + '}$').test(String(v || '')); }
+
 function unlockPurchaseType() {
   openModal(`
     <div style="text-align:center">
@@ -80487,9 +80923,7 @@ function unlockPurchaseType() {
       <p style="color:var(--muted);font-size:.82rem;margin:0 0 16px 0;line-height:1.5">${esc(t('lockPurchaseDesc'))}</p>
 
       <div class="form-group" style="margin:0 0 14px">
-        <input type="password" id="purchase-pass-input" placeholder="${escHtml(t('lockPassPlaceholder'))}"
-          style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;text-align:center"
-          onkeydown="if(event.key==='Enter')verifyPurchasePassword()">
+        ${pinBoxesHtml('purchase-pass-input', { done: 'verifyPurchasePassword' })}
       </div>
 
       <div style="display:flex;gap:8px;justify-content:center">
@@ -80497,16 +80931,20 @@ function unlockPurchaseType() {
         <button class="btn btn-outline btn-sm" onclick="closeModal()">${esc(t('cancel'))}</button>
       </div>
     </div>
-  `, 'max-width:320px;text-align:center');
-  setTimeout(() => qs('#purchase-pass-input')?.focus(), 100);
+  `, 'max-width:340px;text-align:center');
+  setTimeout(() => { const i = qs('#purchase-pass-input'); if (i) { _pinSync(i); i.focus(); } }, 100);
 }
 
+let _purchaseUnlockPending = false;
 async function verifyPurchasePassword() {
+  if (_purchaseUnlockPending) return;
   const password = qs('#purchase-pass-input')?.value;
-  if (!password) { toast(t('lockPurchaseEmptyErr'), true); return; }
+  if (!_pinIsComplete(password)) { toast(t('lockPurchaseEmptyErr'), true); return; }
+  _purchaseUnlockPending = true;
 
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    await _pinState('purchase-pass-input', 'ok');
     purchaseUnlocked = true;
     closeModal();
     setTxType('مشتريات', { skipPurchaseLock: true });
@@ -80514,9 +80952,8 @@ async function verifyPurchasePassword() {
   } catch (e) {
     if (e.message?.includes('🔒')) return;
     toast(e.message || t('lockWrongPass'), true);
-    qs('#purchase-pass-input').value = '';
-    qs('#purchase-pass-input')?.focus();
-  }
+    _pinState('purchase-pass-input', 'err');
+  } finally { _purchaseUnlockPending = false; }
 }
 
 function unlockReports() {
@@ -80527,9 +80964,7 @@ function unlockReports() {
       <p style="color:var(--muted);font-size:.82rem;margin:0 0 16px 0;line-height:1.5">${esc(t('lockReportsDesc'))}</p>
 
       <div class="form-group" style="margin:0 0 14px">
-        <input type="password" id="reports-pass-input" placeholder="${escHtml(t('lockPassPlaceholder'))}"
-          style="width:100%;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;text-align:center"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();verifyReportsPassword()}">
+        ${pinBoxesHtml('reports-pass-input', { done: 'verifyReportsPassword' })}
       </div>
 
       <div style="display:flex;gap:8px;justify-content:center">
@@ -80537,20 +80972,22 @@ function unlockReports() {
         <button class="btn btn-outline btn-sm" onclick="closeModal();reportsUnlocked=false">${esc(t('cancel'))}</button>
       </div>
     </div>
-  `, 'max-width:320px;text-align:center');
-  setTimeout(() => qs('#reports-pass-input')?.focus(), 100);
+  `, 'max-width:340px;text-align:center');
+  setTimeout(() => { const i = qs('#reports-pass-input'); if (i) { _pinSync(i); i.focus(); } }, 100);
 }
 
 async function verifyReportsPassword() {
   if (reportsUnlockPending) return;
   const input = qs('#reports-pass-input');
   const password = input?.value;
-  if (!password) { toast(t('lockReportsEmptyErr'), true); return; }
+  if (!_pinIsComplete(password)) { toast(t('lockReportsEmptyErr'), true); return; }
   const button = qs('#reports-unlock-btn');
   reportsUnlockPending = true;
   if (button) button.disabled = true;
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password }) });
+    if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
+    await _pinState('reports-pass-input', 'ok');
     if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
     reportsUnlocked = true;
     closeModal();
@@ -80560,8 +80997,7 @@ async function verifyReportsPassword() {
     if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
     if (e.message?.includes('🔒')) return;
     toast(e.message || t('lockWrongPass'), true);
-    input.value = '';
-    input.focus();
+    _pinState('reports-pass-input', 'err');
   } finally {
     reportsUnlockPending = false;
     if (button) button.disabled = false;
@@ -84372,7 +84808,7 @@ function renderVaultPage() {
   if (!settings) settings = {};
   // If lock is disabled in settings, treat as unlocked automatically
   if (isLockDisabled('vault')) vaultUnlocked = true;
-  if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; }
+  if (!vaultUnlocked) { qs('#vault-locked').style.display = 'block'; qs('#vault-content').style.display = 'none'; const _vpi = qs('#vault-pass-input'); if (_vpi) { _pinSync(_vpi); setTimeout(() => { if (!vaultUnlocked && currentPage === 'vault' && !qs('#modal-overlay')?.classList.contains('active')) { try { _vpi.focus({ preventScroll: true }); } catch (_) { _vpi.focus(); } _pinSync(_vpi); } }, 60); } }
   else {
     qs('#vault-locked').style.display = 'none'; qs('#vault-content').style.display = 'block';
     const admin = isAdmin();
@@ -84585,6 +85021,8 @@ Object.assign(TRANSLATIONS, {
   csLed_groupDetails:{ar:'تفاصيل شحنات {d}',en:'Shipments for {d}'},
   csLed_groupGross:{ar:'المبلغ المحصل',en:'Collected amount'},
   csLed_returnFee:{ar:'تكلفة رجوع شحنة',en:'Return-leg fee'},
+  csLed_asFee:{ar:'تكلفة شحنة استبدال / مرتجع عميل',en:'Exchange / customer-return shipment fee'},
+  csLed_asCollection:{ar:'فرق استبدال حصّلته بوسطة',en:'Exchange difference collected by Bosta'},
   csLed_payout:{ar:'تحويل إلى {v}',en:'Transfer to {v}'},
   csLed_payoutNote:{ar:'لا يغيّر الخزنة · كل طلب سُجّل عند تسويته',en:'No vault change · each order was booked when settled'},
   csLed_transferFee:{ar:'رسوم تحويل',en:'Transfer fee'},
@@ -85176,6 +85614,8 @@ function _csLineLabel(l) {
     case 'collection': return `${esc(t('csLed_collection'))}${l.party ? ` · ${esc(l.party)}` : ''}`;
     case 'fees': return `${esc(t('csLed_fees'))}${l.note ? ` · ${esc(l.note)}` : ''}`;
     case 'return-fee': return `${esc(t('csLed_returnFee'))}${l.party ? ` · ${esc(l.party)}` : ''}`;
+    case 'after-sales-collection':
+    case 'after-sales-fee': return `${esc(t(l.kind === 'after-sales-fee' ? 'csLed_asFee' : 'csLed_asCollection'))}${l.party ? ` · ${esc(l.party)}` : ''}${l.note ? `<span class="cs-sub"><bdi>${esc(l.note)}</bdi></span>` : ''}`;
     case 'bank-transfer': return esc(t('csLed_payout', { v: _payMethodLabel(l.note) }));
     case 'payout': return `${esc(t('csLed_payout', { v: _payMethodLabel ? _payMethodLabel(l.note) : l.note }))}<span class="cs-sub">${esc(t(l.batch ? 'csBatchNote' : 'csLed_payoutNote'))}${l.bostaRef ? ` · ${esc(l.bostaRef)}` : ''}${l.correctedAt ? ` · ${esc(t('csCorrectedFrom', { v: _csMoney(l.correctedFromAmount) }))}` : ''}</span>`;
     case 'transfer-fee': return `${esc(t('csLed_transferFee'))}<span class="cs-sub">${esc(t('csLed_transferFeeNote'))}</span>`;
@@ -85855,12 +86295,17 @@ async function syncVaultState() {
     renderVaultSegs();
   }
 }
+let _vaultUnlockPending = false;
 async function unlockVault() {
+  if (_vaultUnlockPending) return;
   const pass = qs('#vault-pass-input').value;
-  if (!pass) { toast(currentLang==='en'?'Please enter the vault password':'يرجى إدخال كلمة مرور الخزنة', true); return; }
+  if (!_pinIsComplete(pass)) { toast(t('pinNeed4'), true); qs('#vault-pass-input')?.focus(); return; }
+  _vaultUnlockPending = true;
   try {
     await api('/settings/verify-vault-password', { method: 'POST', body: JSON.stringify({ password: pass }) });
+    await _pinState('vault-pass-input', 'ok');
     qs('#vault-pass-input').value = '';
+    _pinState('vault-pass-input', '');
     if (isAdmin()) {
       // Admin: direct access after password
       vaultUnlocked = true;
@@ -85886,9 +86331,9 @@ async function unlockVault() {
   catch (e) {
     if (e.message?.includes('🔒')) return;
     toast(e.message || (currentLang==='en'?'Incorrect password — please try again':'كلمة المرور غير صحيحة - تحقق من الرقم وحاول مرة أخرى'), true);
-    qs('#vault-pass-input').value = '';
-    qs('#vault-pass-input')?.focus();
+    _pinState('vault-pass-input', 'err');
   }
+  finally { _vaultUnlockPending = false; }
 }
 function lockVault() { _clearVaultExpireTimer(); _stopVaultCountdown(); vaultUnlocked = false; renderVaultPage(); }
 
@@ -89496,6 +89941,7 @@ function renderSettings() {
     const el = qs(sel); if (el) el.style.display = adminInnerPage ? '' : 'none';
   });
   try { if (typeof renderCsSettingsCard === 'function') renderCsSettingsCard(); } catch (_) {}
+  try { _stgPinSyncWarn(); } catch (_) {}
   const companies = settings.shipCos || [];
   qs('#set-cairo-price').value = settings.cairoPrice || 0;
   qs('#set-gov-price').value = settings.govPrice || 0;
@@ -92551,10 +92997,43 @@ function _txCarrierCode(tx) {
   if (stored) return stored;
   return carrierCodeFromName(tx?.shipCo || '');
 }
+/* Settings ← الأمان: the system PIN, typed twice. Save stays disabled until both match. */
+function _stgPinNext() { const n = qs('#set-vault-pass2'); if (n) { n.focus(); _pinSync(n); } _stgPinRefresh(); }
+function _stgPinRefresh() {
+  const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
+  const btn = qs('#stg-pin-save'); if (btn) btn.disabled = !(_pinIsComplete(a) && a === b);
+}
+function _stgPinCheck() {
+  const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
+  if (!_pinIsComplete(a)) { qs('#set-vault-pass')?.focus(); _stgPinRefresh(); return; }
+  if (a !== b) { toast(t('stgPinMismatch'), true); _pinState('set-vault-pass2', 'err'); _stgPinRefresh(); return; }
+  _pinState('set-vault-pass2', 'ok', t('stgPinMatch'));
+  _stgPinRefresh();
+  qs('#stg-pin-save')?.focus();
+}
+function _stgPinSyncWarn() {
+  const w = qs('#stg-pin-warn'); if (w) w.hidden = settings?.vaultPassIsPin !== false;
+  ['set-vault-pass', 'set-vault-pass2'].forEach(id => { const i = qs('#' + id); if (i) _pinSync(i); });
+  _stgPinRefresh();
+}
+let _stgPinSaving = false;
 async function saveVaultPass() {
-  const pass = qs('#set-vault-pass').value; if (!pass) { toast('أدخل كلمة المرور', true); return; }
-  try { await api('/settings', { method: 'PUT', body: JSON.stringify({ vaultPass: pass }) }); qs('#set-vault-pass').value = ''; toast('تم حفظ كلمة المرور'); }
-  catch (e) { toast('خطأ: ' + e.message, true); }
+  if (_stgPinSaving) return;
+  const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
+  if (!_pinIsComplete(a)) { toast(t('pinNeed4'), true); qs('#set-vault-pass')?.focus(); return; }
+  if (a !== b) { toast(t('stgPinMismatch'), true); _pinState('set-vault-pass2', 'err'); return; }
+  _stgPinSaving = true;
+  const btn = qs('#stg-pin-save'); if (btn) btn.disabled = true;
+  try {
+    await api('/settings', { method: 'PUT', body: JSON.stringify({ vaultPass: a }) });
+    if (settings) settings.vaultPassIsPin = true;
+    _pinState('set-vault-pass', 'ok', t('stgPinSaved'));
+    await _pinState('set-vault-pass2', 'ok', t('stgPinSaved'));
+    toast(t('stgPinSaved'));
+    ['set-vault-pass', 'set-vault-pass2'].forEach(id => { const i = qs('#' + id); if (i) i.value = ''; _pinState(id, ''); });
+    _stgPinSyncWarn();
+  } catch (e) { toast(t('errorPrefix', { v: e.message }), true); _stgPinRefresh(); }
+  finally { _stgPinSaving = false; }
 }
 // ── Bosta API Key management ─────────────────────────────────────────────
 async function saveBostaKey() {
@@ -92847,8 +93326,8 @@ async function runLiveSync() {
   if (!st?.enabled) return;
   const en = currentLang === 'en';
   const password = await showPrompt(
-    en ? `All data on this machine will be replaced with the live data from ${st.source}. Enter the vault password to confirm:`
-       : `ستُستبدل كل بيانات هذا الجهاز ببيانات النظام الحي (${st.source}). أدخل كلمة سر الخزنة للتأكيد:`,
+    en ? `All data on this machine will be replaced with the live data from ${st.source}. Enter the PIN to confirm:`
+       : `ستُستبدل كل بيانات هذا الجهاز ببيانات النظام الحي (${st.source}). أدخل الرقم السري للتأكيد:`,
     { title: en ? 'Sync from live' : 'مزامنة من النسخة الحية', icon: 'danger', required: true, placeholder: en ? 'Password' : 'كلمة السر' }
   );
   if (!password) return;
@@ -93589,7 +94068,7 @@ async function restoreBackupNow() {
   }
 
   const password = await showPrompt(
-    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
+    currentLang==='en'?'Enter the PIN to confirm:':'أدخل الرقم السري للتأكيد:',
     { title: currentLang==='en'?`Restore backup: ${filename}`:`استعادة النسخة: ${filename}`, icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
   );
 
@@ -93947,7 +94426,7 @@ async function uploadBackupFile() {
     return;
   }
 
-  const password = await showPrompt('أدخل كلمة السر الخزنة للتأكيد:', { title: 'رفع نسخة احتياطية', icon: 'danger', required: true, placeholder: 'كلمة السر' });
+  const password = await showPrompt('أدخل الرقم السري للتأكيد:', { title: 'رفع نسخة احتياطية', icon: 'danger', required: true, placeholder: 'كلمة السر' });
   if (!password) {
     toast('تم إلغاء العملية', false);
     return;
@@ -93997,7 +94476,7 @@ async function uploadBackupFile() {
 
 async function clearAllBackups() {
   const password = await showPrompt(
-    currentLang==='en'?'Enter vault password to confirm:':'أدخل كلمة السر الخزنة للتأكيد:',
+    currentLang==='en'?'Enter the PIN to confirm:':'أدخل الرقم السري للتأكيد:',
     { title: currentLang==='en'?'Delete all backups':'حذف جميع النسخ الاحتياطية', icon: 'danger', required: true, placeholder: currentLang==='en'?'Password':'كلمة السر' }
   );
   if (!password) {
@@ -103010,7 +103489,8 @@ function _puClearCardDropState(wrap) {
 
 /** Reset every trace of a board drag (dragend may not fire after a drop re-renders the board). */
 function _puEndBoardDrag() {
-  document.body.classList.remove('pu-dragging-active', 'pu-prep-merge-drag');
+  document.body.classList.remove('pu-dragging-active', 'pu-prep-merge-drag', 'pu-ready-merge-drag');
+  qsa('.pu-group-mergeblocked').forEach(el => el.classList.remove('pu-group-mergeblocked'));
   qsa('.pu-board-col-body').forEach(c => {
     c.classList.remove('pu-drag-over');
     c.querySelectorAll('[data-pe-saved]').forEach(el => {
@@ -103078,6 +103558,125 @@ async function puMergePrepGroups(sourceRef, targetRef) {
   _puMarkLanding(targetRef);
   toast(t('puMerged', { src: sourceRef, dst: targetRef, n: dst.orders.length }));
   renderPickupBoard();
+}
+
+// ── Merge ready groups (drag one «جاهز للشحن» card onto another) ──
+// Only the grouping moves (pickupRef + the target's pickup date); the Bosta shipment,
+// the pickup-request membership, money and stock stay as they are.
+/** Orders of a ready card that the server will move (the same rows it checks). */
+function _puReadyGroupOrders(key) {
+  if (!key || String(key).startsWith('noref-') || String(key).startsWith('SH-')) return [];
+  return _pickupOrders.filter(o => !o.cancelled && !o.archived && ['Ready', 'Picked-Up'].includes(o.pickupStatus || '') && o.pickupRef === key);
+}
+/** A card that can take part in a merge: it has a ref and at least one order still in the warehouse. */
+function _puReadyMergeable(key) {
+  return _puReadyGroupOrders(key).some(o => !_puReadyCollected(o));
+}
+/** ⚠ Mirror of readyOrderCollected / readyOrderCarrier / readyMergeBlock (backend shared/ready-merge.util.ts). */
+function _puReadyCollected(o) {
+  if ((o.pickupStatus || '') !== 'Ready' || o.shippedAt) return true;
+  return !['', 'CREATED', 'VALIDATION_ERROR', 'DELETED', 'CANCELLED'].includes(String(o.bostaStatus || '').trim().toUpperCase());
+}
+function _puReadyCarrier(o) {
+  if (o.bostaOrderId || o.bostaTrackingNumber) return 'bosta';
+  const code = String(o.carrierCode || '').trim().toLowerCase();
+  if (code) return code;
+  const name = String(o.shipCo || '').trim().toLowerCase();
+  return /^(bosta|بوسطة|بوسطه)$/.test(name) ? 'bosta' : name;
+}
+function _puReadyWarehouse(o) {
+  const code = String(o.warehouseCode || '').trim();
+  return !code || ['main', 'المخزن الرئيسي'].includes(code) ? 'MAIN' : code;
+}
+function _puReadyRequestsOf(orders) {
+  if (typeof _bostaPickupRequestsKnown === 'undefined' || !_bostaPickupRequestsKnown) return null;
+  const ids = new Set(orders.map(o => String(o._id)));
+  return (typeof _bostaPickupRequests !== 'undefined' ? _bostaPickupRequests : []).filter(r => ['created', 'pending'].includes(r.status) && (r.orderIds || []).some(id => ids.has(String(id))));
+}
+/** Why `source` cannot join `target` (a translated sentence), or '' when it can. */
+function _puReadyMergeBlock(source, target) {
+  const collected = source.filter(_puReadyCollected);
+  if (collected.length) return t('puReadyMergeCollected', { refs: collected.map(o => '#' + (o.ref || '')).join('، ') });
+  const set = (rows, fn) => [...new Set(rows.map(fn).filter(Boolean))];
+  const sc = set(source, _puReadyCarrier), tc = set(target, _puReadyCarrier);
+  if (sc.length && tc.length && (sc.length > 1 || tc.length > 1 || sc[0] !== tc[0])) return t('puReadyMergeCarrier');
+  const sw = set(source, _puReadyWarehouse), tw = set(target, _puReadyWarehouse);
+  if (sw.length > 1 || tw.length > 1 || sw[0] !== tw[0]) return t('puReadyMergeWarehouse');
+  const sr = _puReadyRequestsOf(source), tr = _puReadyRequestsOf(target);
+  if (sr && tr && sr.length && tr.length && sr.some(r => !tr.some(x => x.id === r.id))) return t('puReadyMergeRequests');
+  return '';
+}
+/** True while a ready card is dragged over a DIFFERENT ready card that can take it. */
+function _puIsReadyMergeDrag(targetKey) {
+  return !_puDragPendingId && _puDragColType === 'ready' && !!_puDragGroupKey
+    && String(_puDragGroupKey) !== String(targetKey) && _puCanEdit() && _puReadyMergeable(targetKey);
+}
+
+let _puReadyMerging = false;
+async function puMergeReadyGroups(sourceKey, targetKey) {
+  if (!_puRequireEdit() || _puReadyMerging) return;
+  if (!sourceKey || !targetKey) return;
+  if (String(sourceKey) === String(targetKey)) return toast(t('puMergeSame'), true);
+  const src = _puReadyGroupOrders(sourceKey), dst = _puReadyGroupOrders(targetKey).filter(o => !_puReadyCollected(o));
+  if (!src.length || !dst.length) return toast(t('puReadyMergeGone'), true);
+  const block = _puReadyMergeBlock(src, dst);
+  if (block) return toast(block, true);
+  const n = src.length, m = dst.length;
+  const srcReq = _puReadyRequestsOf(src), dstReq = _puReadyRequestsOf(dst);
+  const lines = [t('puReadyMergeConfirm', { src: sourceKey, dst: targetKey, n, m, total: n + m })];
+  const dstDate = dst.map(o => o.pickupDate).find(Boolean), srcDate = src.map(o => o.pickupDate).find(Boolean);
+  if (dstDate && srcDate && String(dstDate).slice(0, 10) !== String(srcDate).slice(0, 10)) lines.push(t('puReadyMergeDate', { date: _puGroupDayLabel(String(dstDate).slice(0, 10)) || String(dstDate).slice(0, 10) }));
+  const joinLater = srcReq && dstReq && !srcReq.length && dstReq.length;
+  if (joinLater) lines.push(t('puReadyMergeJoinNote'));
+  else if (srcReq && dstReq && srcReq.length && !dstReq.length) lines.push(t('puReadyMergeTargetNoRequest'));
+  lines.push(t('puReadyMergeUntouched'));
+  const ok = await _puConfirm(lines.join('\n'), t('puReadyMergeTitle'), t('puMergeOk'), '#2563eb');
+  if (!ok) return;
+
+  _puReadyMerging = true;
+  try {
+    const result = await api('/transactions/pickup-orders/merge-ready', {
+      method: 'POST',
+      body: JSON.stringify({ sourceRef: sourceKey, targetRef: targetKey, ids: src.map(o => String(o._id)) }),
+    });
+    if (result.moved !== n) throw new Error(t('puReadyMergeGone'));
+  } catch (e) {
+    toast(t('errorPrefix', { v: e.message }), true);
+    await loadPickupOrders();
+    return;
+  } finally { _puReadyMerging = false; }
+  _puMarkLanding(targetKey);
+  await loadPickupOrders();
+  toast(t('puMerged', { src: sourceKey, dst: targetKey, n: n + m }));
+  // The moved orders are not under the target's pickup request yet: offer the existing «ضمها له» path.
+  const joinable = (typeof _bostaPickupRequests !== 'undefined' ? _bostaPickupRequests : []).some(r => (r.canAttach || r.canExtend) && (dstReq || []).some(x => x.id === r.id));
+  if (joinLater && joinable && typeof openBostaPickup === 'function'
+    && await _puConfirm(t('puReadyMergeJoinAsk', { n }), t('puReadyMergeJoinTitle'), t('puReadyMergeJoinOk'), '#16a34a')) openBostaPickup();
+}
+
+/** Right-click on a ready card: open / merge into another ready group / back to preparation. */
+function _puReadyGroupCtx(e, key) {
+  const orders = _puReadyGroupOrders(key);
+  if (!orders.length) return;
+  e.preventDefault();
+  const edit = _puCanEdit();
+  const items = [{ icon: _PU_CTX_ICO.open, label: t('puViewOrders'), onClick: () => openPuCardOrdersModal(key, 'ready') }];
+  const keys = [...new Set(_pickupOrders.filter(o => ['Ready', 'Picked-Up'].includes(o.pickupStatus || '') && o.pickupRef && o.pickupRef !== key).map(o => o.pickupRef))]
+    .filter(_puReadyMergeable);
+  if (keys.length) {
+    items.push({ head: t('puCtxMergeInto') });
+    keys.slice(0, 8).forEach(k => {
+      const target = _puReadyGroupOrders(k).filter(o => !_puReadyCollected(o));
+      const why = _puReadyMergeBlock(orders, target);
+      items.push({ icon: _PU_CTX_ICO.merge, label: k, sub: why || t('puOrdersCount', { n: fmtN(target.length) }),
+        disabled: !edit || !!why, onClick: () => puMergeReadyGroups(key, k) });
+    });
+  }
+  if (orders.some(o => !_puReadyCollected(o))) {
+    items.push({ sep: true });
+    items.push({ icon: _PU_CTX_ICO.undo, label: t('puReturnGroup'), tone: 'warn', disabled: !edit, onClick: () => puGroupUndoReadyToPrep(key) });
+  }
+  _puShowCtxMenu(e, `<bdi>${esc(key)}</bdi> · ${esc(t('puOrdersCount', { n: fmtN(orders.length) }))}`, items);
 }
 
 // ── Right-click menu on prep cards (orders inside a group + the group card) ──
@@ -103566,6 +104165,36 @@ function _puBuildGroupCard(group, colType) {
   accent.className = 'pu-group-accent';
   wrap.appendChild(accent);
 
+  // A ready card is also a drop target: another ready card dropped here merges into it.
+  if (colType === 'ready') {
+    wrap.addEventListener('dragover', e => {
+      if (!_puIsReadyMergeDrag(group.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (wrap.classList.contains('pu-group-mergetarget')) return;
+      wrap.classList.add('pu-group-mergetarget');
+      const why = _puReadyMergeBlock(_puReadyGroupOrders(_puDragGroupKey), _puReadyGroupOrders(group.key).filter(o => !_puReadyCollected(o)));
+      wrap.classList.toggle('pu-group-mergeblocked', !!why);
+      if (!wrap.querySelector('.pu-merge-hint')) {
+        const hint = document.createElement('div');
+        hint.className = 'pu-merge-hint' + (why ? ' is-blocked' : '');
+        hint.textContent = why || t('puMergeDropHint');
+        wrap.appendChild(hint);
+      }
+    });
+    wrap.addEventListener('dragleave', e => {
+      if (!wrap.contains(e.relatedTarget)) { _puClearCardDropState(wrap); wrap.classList.remove('pu-group-mergeblocked'); }
+    });
+    wrap.addEventListener('drop', e => {
+      if (!_puIsReadyMergeDrag(group.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      const sourceKey = _puDragGroupKey;
+      _puEndBoardDrag();
+      puMergeReadyGroups(sourceKey, group.key);
+    });
+    wrap.addEventListener('contextmenu', e => _puReadyGroupCtx(e, group.key));
+  }
+
   // Group header — drag source + click opens modal
   const header = document.createElement('div');
   header.className = 'pu-group-header';
@@ -103578,7 +104207,14 @@ function _puBuildGroupCard(group, colType) {
   header.draggable = _puCanEdit();
   header.title = t('puCardClickHint');
   _puAttachGroupPreview(header, group, colType);
-  header.addEventListener('dragstart', e => { _puDragColType = colType; _puGroupDragStart(e, group.key); _puHideQuickTip(); });
+  header.addEventListener('dragstart', e => {
+    _puDragColType = colType; _puGroupDragStart(e, group.key); _puHideQuickTip();
+    if (colType === 'ready') setTimeout(() => {
+      if (_puDragGroupKey !== group.key) return;
+      const others = new Set(_pickupOrders.filter(o => o.pickupRef && o.pickupRef !== group.key && ['Ready', 'Picked-Up'].includes(o.pickupStatus || '')).map(o => o.pickupRef));
+      if ([...others].some(_puReadyMergeable)) document.body.classList.add('pu-ready-merge-drag');
+    }, 0);
+  });
   header.addEventListener('dragend',   e => { _puDragColType = null; _puGroupDragEnd(e); });
   // Click on header (not drag handle) opens orders modal
   header.addEventListener('click', e => {
@@ -106908,7 +107544,8 @@ function _puGroupDragStart(e, groupKey) {
 function _puGroupDragEnd(e) {
   const wrap = e.currentTarget.closest('.pu-group') || e.currentTarget;
   wrap.classList.remove('pu-group-dragging');
-  document.body.classList.remove('pu-dragging-active');
+  document.body.classList.remove('pu-dragging-active', 'pu-ready-merge-drag');
+  qsa('.pu-group-mergetarget,.pu-group-mergeblocked').forEach(el => { _puClearCardDropState(el); el.classList.remove('pu-group-mergeblocked'); });
   qsa('.pu-board-col-body').forEach(c => c.classList.remove('pu-drag-over'));
   qsa('.pu-drag-placeholder').forEach(p => p.remove());
   _puDragGroupKey = null;
@@ -106920,6 +107557,11 @@ function puBoardDragOver(e, colType) {
   // A prep card over its own column: the only meaningful drop is onto ANOTHER card
   // (merge, handled by that card). The column itself offers no drop.
   if (!_puDragPendingId && _puDragColType === 'prep' && colType === 'prep') {
+    e.currentTarget.classList.remove('pu-drag-over');
+    return;
+  }
+  // Same for a ready card over the ready column: only another ready card takes it (merge).
+  if (!_puDragPendingId && _puDragColType === 'ready' && colType === 'ready') {
     e.currentTarget.classList.remove('pu-drag-over');
     return;
   }
@@ -107319,7 +107961,7 @@ function _bostaPrimaryStatusBadge(tx, options = {}) {
 function _puDisplayStatus(tx) {
   const bosta = (tx.bostaStatus || '').trim().toUpperCase();
   if (bosta === 'DELIVERED') return 'Delivered';
-  const tracked = (tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId) && !['VALIDATION_ERROR', 'DELETED'].includes(bosta);
+  const tracked = (tx.bostaOrderId || tx.afterSales?.shipments?.[tx.afterSales?.caseId]?.deliveryId || tx.afterSalesBundle?.shipment?.deliveryId) && !['VALIDATION_ERROR', 'DELETED'].includes(bosta);
   if (tx.deliverySource === 'MANUAL') return 'Shipped';
   if (tracked) return !bosta || bosta === 'CREATED' ? 'Ready' : 'Shipped';
   return tx.pickupStatus || 'Pending';
@@ -107963,7 +108605,8 @@ function _puEditOrderRow(o, action, type) {
   const btnLabel  = type === 'remove'
     ? `${svgRemove} ${t('puRemoveFromRun')}`
     : `${svgAdd} ${t('puMoveToRun')}`;
-  const selectable = type === 'remove' && ['Ready','Picked-Up'].includes(o.pickupStatus);
+  // Same rule as the card merge: an order already with the courier stays where it is.
+  const selectable = type === 'remove' && !_puReadyCollected(o);
   const selector = type === 'remove'
     ? `<div style="display:flex;justify-content:center"><input type="checkbox" data-pu-select-id="${esc(o._id)}" ${_puEditSelectedIds.has(String(o._id))?'checked':''} ${selectable?'':'disabled'} data-pu-edit onchange="puEditToggleOrder(this)" title="${esc(t('puSelectForMove'))}" style="width:15px;height:15px;accent-color:var(--primary);cursor:${selectable?'pointer':'not-allowed'}"></div>`
     : '';
@@ -108002,8 +108645,10 @@ function _renderPuEditTargetList() {
     // Keep this summary plain text. fmtJ returns styled HTML, which becomes
     // visible markup when it is interpolated into an escaped translation.
     const totalText = `EGP ${fmtMoneyN(total)}`;
-    const disabled = !_puEditSelectedIds.size;
-    return `<div class="pu-edit-ticket">
+    const selected = _puEditCurrentRun ? _puEditCurrentRun.orders.filter(o => _puEditSelectedIds.has(String(o._id))) : [];
+    const why = selected.length ? _puReadyMergeBlock(selected, run.orders.filter(o => !_puReadyCollected(o))) : '';
+    const disabled = !_puEditSelectedIds.size || !!why;
+    return `<div class="pu-edit-ticket${why ? ' is-blocked' : ''}">
       <div style="min-width:0">
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
           <bdi class="pu-edit-order-ref">${esc(run.pickupRef||'—')}</bdi>
@@ -108011,8 +108656,9 @@ function _renderPuEditTargetList() {
           ${run.shipCo ? `<span style="font-size:.68rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;padding:2px 5px;color:var(--muted)">${esc(run.shipCo)}</span>` : ''}
         </div>
         <div style="font-size:.77rem;color:var(--muted);margin-top:3px">${esc(_puCanViewShipmentTotals() ? t('puTicketSummary',{n:fmtN(readyCount),total:totalText}) : t('puOrdersCount',{n:fmtN(readyCount)}))}</div>
+        ${why ? `<div class="pu-edit-ticket-why" role="note">${esc(why)}</div>` : ''}
       </div>
-      <button class="pu-edit-order-action" ${disabled?`disabled title="${esc(t('puSelectForMove'))}"`:''} data-pu-edit onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')">${esc(t('puMoveSelectedToTicket'))}</button>
+      <button class="pu-edit-order-action" ${disabled?`disabled title="${esc(why || t('puSelectForMove'))}"`:''} data-pu-edit onclick="puEditMoveSelectedToRun('${esc(run.pickupRef)}')">${esc(t('puMoveSelectedToTicket'))}</button>
     </div>`;
   }).join('');
 }
@@ -108063,8 +108709,11 @@ async function puEditRemoveOrder(id) {
 async function puEditMoveSelectedToRun(pickupRef) {
   if (!_puRequireEdit()) return;
   if (!_puEditCurrentRun || !pickupRef) return;
-  const ids = [..._puEditSelectedIds].filter(id => _puEditCurrentRun.orders.some(o => String(o._id) === id && ['Ready','Picked-Up'].includes(o.pickupStatus)));
+  const ids = [..._puEditSelectedIds].filter(id => _puEditCurrentRun.orders.some(o => String(o._id) === id && !_puReadyCollected(o)));
   if (!ids.length) return toast(t('puSelectForMove'), true);
+  const target = _pickupOrders.filter(o => o.pickupRef === pickupRef && !o.cancelled && !o.archived && !_puReadyCollected(o));
+  const why = _puReadyMergeBlock(_puEditCurrentRun.orders.filter(o => ids.includes(String(o._id))), target);
+  if (why) return toast(why, true);
   try {
     const result = await api('/transactions/pickup-orders/add-to-run', {
       method: 'POST',
@@ -108198,7 +108847,7 @@ function _puMergeLiveTransaction(fresh, removed = false) {
 
 function _puApplyRealtimeEvent(payload) {
   const ids = (payload?.ids || []).map(String);
-  const status = { preparing: 'Preparing', 'merge-prep': 'Preparing', 'split-prep': 'Preparing', ready: 'Ready', undo: 'Pending', delivered: 'Delivered', 'revert-delivered': 'Ready' }[payload?.action];
+  const status = { preparing: 'Preparing', 'merge-prep': 'Preparing', 'split-prep': 'Preparing', ready: 'Ready', 'merge-ready': 'Ready', undo: 'Pending', delivered: 'Delivered', 'revert-delivered': 'Ready' }[payload?.action];
   if (!status && payload?.action !== 'prepCheck') {
     if (currentPage === 'pickup-orders') loadPickupOrders({ background: true });
     return;
@@ -108240,7 +108889,7 @@ function _puApplyRealtimeEvent(payload) {
   _puSavePrepGroups();
   _puQueueLivePaint();
   _rtRefreshUI({ movements: true, sidebar: true });
-  const notice = { preparing: ['info', 'box', 'puRtPrepTitle'], 'merge-prep': ['info', 'box', 'puRtMergeTitle'], 'split-prep': ['info', 'box', 'puRtSplitTitle'], ready: ['info', 'truck', 'puRtReadyTitle'], undo: ['warn', 'undo', 'puRtUndoTitle'] }[payload.action];
+  const notice = { preparing: ['info', 'box', 'puRtPrepTitle'], 'merge-prep': ['info', 'box', 'puRtMergeTitle'], 'split-prep': ['info', 'box', 'puRtSplitTitle'], 'merge-ready': ['info', 'truck', 'puRtMergeReadyTitle'], ready: ['info', 'truck', 'puRtReadyTitle'], undo: ['warn', 'undo', 'puRtUndoTitle'] }[payload.action];
   if (notice) _rtToastEvent({ tone: notice[0], icon: notice[1], title: t(notice[2], { n: ids.length }), sub: payload.pickupRef ? `<bdi>${esc(payload.pickupRef)}</bdi>` : '' });
 }
 
@@ -118246,7 +118895,14 @@ let _saleDepOrder = null;
 function _saleDepBlock(tx) {
   if (!tx || tx.type !== 'مبيعات') return t('sdepOnlySales');
   if (tx.cancelled) return t('sdepCancelled');
-  if (tx.afterSales?.caseId) return t('sdepAfterSales');
+  // The replacement of an exchange takes a deposit on the difference until its waybill exists
+  // (mirror of DepositReceiptsService.saleDepositBlock).
+  if (tx.afterSales?.caseId) {
+    if (tx.afterSales.role !== 'replacement') return t('sdepAfterSales');
+    if (tx.afterSales.shipmentPending || tx.bostaTrackingNumber || tx.shippedAt) return t('sdepExchangeShipped');
+    if (tx.afterSales.collection) return t('sdepExchangeCollected');
+  }
+  if (tx.afterSalesBundle?.shipmentPending) return t('sdepBundleShipped');
   const cs = tx.carrierSettlement || {};
   if (cs.payoutId || ['processing', 'review', 'pending', 'settled'].includes(String(cs.status || ''))) return t('sdepCarrier');
   if (tx.bostaStatus === 'DELIVERED' || String(tx.pickupStatus || '') === 'Delivered' || ['تم التسليم', 'delivered', 'Delivered'].includes(String(tx.deliveryStatus || ''))) return t('sdepDelivered');
@@ -118272,7 +118928,7 @@ function _saleDepBuildOrder(tx) {
 }
 /** Opens the add-deposit dialog (mode 'image' | 'noimage'). From the edit window it closes it first (asking when
  *  there are unsaved changes) and reopens it on fresh data afterwards. */
-async function openSaleDeposit(txId, mode = 'image', fromEdit = false) {
+async function openSaleDeposit(txId, mode = 'image', fromEdit = false, fromCase = '') {
   let tx;
   try { tx = await api(`/transactions/${encodeURIComponent(txId)}`); } catch (e) { toast(e.message || t('loadFailedTitle'), true); return; }
   const blocked = _saleDepBlock(tx);
@@ -118288,6 +118944,7 @@ async function openSaleDeposit(txId, mode = 'image', fromEdit = false) {
   }
   _saleDepOrder = _saleDepBuildOrder(tx);
   _saleDepOrder._fromEdit = !!fromEdit;
+  _saleDepOrder._fromCase = fromCase || '';
   if (mode === 'noimage') openSpNoImageDeposit(_saleDepOrder._id);
   else openSpReceiptForm(_saleDepOrder._id);
 }
@@ -118305,6 +118962,8 @@ async function _saleDepAfter(o, message, isError) {
   if (typeof refreshInvoiceView === 'function') { try { refreshInvoiceView(txId); } catch (_) {} }
   if (currentPage === 'movements' && typeof renderMovements === 'function') renderMovements();
   if (o._fromEdit) setTimeout(() => openEditMovement(txId), 120);
+  // Opened from an exchange case («عربون على فرق الاستبدال»): back to that case, on fresh data.
+  if (o._fromCase && window.AfterSales?.open) setTimeout(() => window.AfterSales.open(o._fromCase), 120);
 }
 /** Image path: the receipt was confirmed through /transactions/deposit-receipts/:rid/submit — now join it to the sale. */
 async function _saleDepSubmitImage(o, r) {
@@ -119896,7 +120555,7 @@ function _spRenderHistoryTab() {
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/shopify-sync.css?v=20261114-compact">
 <script src="/shopify-sync.js?v=20261114-compact"></script>
-<link rel="stylesheet" href="/inventory-units.css?v=20261113-pack-tag">
+<link rel="stylesheet" href="/inventory-units.css?v=20261115-bulk-actions">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
@@ -119913,7 +120572,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/warehouse-workspace.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/preparation-location-flip.css?v=20261103-1">
 <script src="/warehouse-layout.js?v=20261103-warehouse-route"></script>
-<script src="/inventory-units.js?v=20261113-pack-tag"></script>
+<script src="/inventory-units.js?v=20261115-bulk-actions"></script>
 <link rel="stylesheet" href="/preprinted-labels.css?v=20261103-scan-progress">
 <script src="/preprinted-labels.js?v=20261111-packs"></script>
 <link rel="stylesheet" href="/supplier-labels.css?v=20261111-packs-2">

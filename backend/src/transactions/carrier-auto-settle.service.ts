@@ -534,7 +534,7 @@ export class CarrierAutoSettleService {
     const settings: any = await this.settingsService.getSettings();
     const since = settings.autoSettleSince || '';
 
-    const [settledTx, failedTx, payouts] = await Promise.all([
+    const [settledTx, failedTx, payouts, afterSalesCases] = await Promise.all([
       this.txModel.find({ type: 'مبيعات', $or: [
         { 'carrierSettlement.status': 'settled' },
         { 'carrierSettlement.status': { $in: ['pending', 'review', 'disputed'] }, 'carrierSettlement.phase': 'wallet', 'carrierSettlement.walletDepositedAt': { $exists: true, $nin: ['', null] } },
@@ -545,6 +545,10 @@ export class CarrierAutoSettleService {
           .select('ref client failedDelivery').lean().exec()
         : Promise.resolve([] as any[]),
       this.payoutModel.find({}).lean().exec(),
+      // Exchange / customer-return shipments are settled from their after-sales case (the vault entry is
+      // booked there), but Bosta still nets their COD and fee out of its transfer — so they belong here.
+      this.txModel.db.collection('returnrequests').find({ 'workflow.carrierSettlement.at': { $exists: true } },
+        { projection: { client: 1, originalRef: 1, workflow: 1 } }).toArray(),
     ]);
 
     type Line = { date: string; at: string; kind: string; ref: string; txId?: string; party?: string; in: number; out: number; payoutId?: string; note?: string; batch?: boolean; bostaRef?: string; fee?: number; state?: string; correctedAt?: string; correctedFromAmount?: number };
@@ -562,6 +566,14 @@ export class CarrierAutoSettleService {
     for (const t of failedTx as any[]) {
       const at = String(t.failedDelivery.closedAt || '');
       lines.push({ date: dateOnly(at), at, kind: 'return-fee', ref: t.ref, txId: String(t._id), party: t.client, in: 0, out: r2(t.failedDelivery.returnShipCost) });
+    }
+    for (const c of afterSalesCases as any[]) {
+      const w = c.workflow || {}, cs = w.carrierSettlement || {};
+      const at = String(cs.at || ''), date = dateOnly(at);
+      const ref = w.replacementRef || w.ref || c.originalRef || '';
+      const collected = w.collection?.viaCarrier ? r2(Number(w.collection.amount) || 0) : 0;
+      if (collected > 0) lines.push({ date, at, kind: 'after-sales-collection', ref, party: c.client, in: collected, out: 0, note: w.ref });
+      if (Number(cs.cost) > 0) lines.push({ date, at, kind: 'after-sales-fee', ref, party: c.client, in: 0, out: r2(cs.cost), note: w.ref });
     }
     for (const p of payouts as any[]) {
       if (p.mode === 'batch' && !['posted', 'completed'].includes(p.state)) continue;

@@ -177,4 +177,24 @@ describe('another deposit on a confirmed sale', () => {
     await receipts.submitSaleReceipt(String(tx._id), rid, STAFF);
     expect(await msg(receipts.approveSaleDeposit(String(tx._id), rid, STAFF))).toMatch(/للمدير فقط/);
   });
+
+  it('a deposit on the exchange difference: the replacement takes it until its waybill exists', async () => {
+    const { receipts, vault } = setup();
+    // The replacement sale: the return credit (500) is its `deposit`, the difference (150) its remaining.
+    const replacement = await newSale({ total: 650, itemsTotal: 600, shipCost: 50, deposit: 500, remaining: 150, deposits: [], depositReceipts: [],
+      shopifyOrderId: undefined, payment: 'تسوية استبدال', afterSales: { caseId: 'case-1', caseRef: 'AS-2026-000001', role: 'replacement', creditApplied: 500 } });
+    const rid = await uploadedReceipt(100);
+    await receipts.submitSaleReceipt(String(replacement._id), rid, STAFF);
+    expect(await receipts.approveSaleDeposit(String(replacement._id), rid, ADMIN)).toMatchObject({ success: true, remaining: 50 });
+    expect(await txModel.findById(replacement._id).lean()).toMatchObject({ deposit: 600, remaining: 50, payStatus: 'معلق' });
+    expect(vault.entries).toEqual([expect.objectContaining({ amount: 100, source: 'ديبوزت مبيعات' })]);
+    // Never more than what is left of the difference.
+    expect(await msg(receipts.submitSaleReceipt(String(replacement._id), await uploadedReceipt(60), STAFF))).toMatch(/أكبر من المتبقي/);
+    // Once the waybill exists its COD is fixed.
+    await txModel.updateOne({ _id: replacement._id }, { $set: { 'afterSales.shipmentPending': true } });
+    expect(await msg(receipts.submitSaleReceipt(String(replacement._id), await uploadedReceipt(10), STAFF))).toMatch(/بوليصة الاستبدال/);
+    // The return invoice of a case never takes a deposit.
+    const ret = await newSale({ deposits: [], depositReceipts: [], afterSales: { caseId: 'case-1', role: 'return' } });
+    expect(await msg(receipts.submitSaleNoImage(String(ret._id), { amount: 10, method: 'كاش' }, ADMIN, { role: 'admin' }))).toMatch(/ملف الاسترجاع/);
+  });
 });

@@ -478,6 +478,16 @@ export class TransactionsController {
     return this.transactionsService.mergePrepGroups(body.sourceRef, body.targetRef, body.ids, by);
   }
 
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/merge-ready')
+  async mergeReadyGroups(
+    @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.mergeReadyGroups(body.sourceRef, body.targetRef, body.ids, by);
+  }
+
   /** The picker read «the order changed during preparation» and resumes. Clears only that notice. */
   @RequirePerms('pickup-orders', 'pickup-orders-edit')
   @Post('pickup-orders/:id/prep-edit-ack')
@@ -839,7 +849,11 @@ export class TransactionsController {
     return this.transactionsService.collect(id, dto, by, callerRole, callerPerms);
   }
 
+  // Deletes a collection silently (vault row + ledger row). It had NO guard: any signed-in user —
+  // a viewer included — could undo the last payment on any invoice. The UI only ever offered it to
+  // the manager; supplier payments have their own audited undo (`payments/:paymentId/undo`).
   @Post(':id/reverse-collect')
+  @Roles('admin')
   async reverseCollect(
     @Param('id') id: string,
     @Req() req: { user: { name: string; username: string } },

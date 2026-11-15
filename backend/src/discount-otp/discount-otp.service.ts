@@ -720,6 +720,54 @@ export class DiscountOtpService {
   }
 
   /**
+   * Spends `amount` from a verified supplier-pay code and returns a function that gives it back
+   * (called when the payment then fails to save). One atomic update decides it, so two payments
+   * racing on the same code cannot both pass. Rules:
+   *  - the code is a verified 'supplier-pay' code for THIS supplier (by name, as requested);
+   *  - it is used within 30 minutes of the manager approving it;
+   *  - everything spent from it, this payment included, stays within the approved amount
+   *    (+0.5 for rounding). A bulk payment spends one code across several invoices.
+   */
+  async claimSupplierPayOtp(otpId: string, supplier: string | string[], amount: number): Promise<() => Promise<void>> {
+    if (!otpId || !/^[a-f0-9]{24}$/.test(otpId)) throw new BadRequestException('يلزم كود تحقق لسداد المبلغ للمورد');
+    const pay = Math.round((Number(amount) || 0) * 100) / 100;
+    if (!(pay > 0)) throw new BadRequestException('المبلغ غير صحيح');
+    const doc: any = await this.otpModel.findById(otpId).lean().exec();
+    if (!doc) throw new BadRequestException('كود التحقق غير موجود');
+    if (doc.kind !== 'supplier-pay') throw new BadRequestException('نوع كود التحقق غير صحيح');
+    if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه بعد');
+    const norm = (v: unknown) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const accepted = (Array.isArray(supplier) ? supplier : [supplier]).map(norm).filter(Boolean);
+    if (!accepted.includes(norm(doc.client))) throw new BadRequestException('كود التحقق صادر لمورد آخر — اطلب كوداً جديداً');
+    const approvedAt = new Date(doc.usedAt || doc.createdAt || 0).getTime();
+    if (!approvedAt || Date.now() - approvedAt > 30 * 60 * 1000) {
+      throw new BadRequestException('انتهت صلاحية كود التحقق — اطلب كوداً جديداً');
+    }
+    const limit = (Number(doc.itemsTotal) || 0) + 0.5;
+    const claimed = await this.otpModel.findOneAndUpdate(
+      {
+        _id: otpId, kind: 'supplier-pay', status: 'used',
+        $expr: { $lte: [{ $add: [{ $ifNull: ['$spentAmount', 0] }, pay] }, limit] },
+      },
+      { $inc: { spentAmount: pay } },
+      { new: true },
+    ).lean().exec();
+    if (!claimed) {
+      const spent = Math.round((Number(doc.spentAmount) || 0) * 100) / 100;
+      throw new BadRequestException(
+        spent > 0
+          ? `تم استخدام كود التحقق بالفعل (${spent} من ${doc.itemsTotal} ج) — اطلب كوداً جديداً`
+          : 'المبلغ أكبر من المبلغ المعتمد في كود التحقق — اطلب كوداً جديداً',
+      );
+    }
+    return async () => {
+      try {
+        await this.otpModel.updateOne({ _id: otpId }, { $inc: { spentAmount: -pay } }).exec();
+      } catch { /* the code stays spent; a new one can be requested */ }
+    };
+  }
+
+  /**
    * «إضافة عربون بدون صورة تحويل» by a staff member holding `shopify-deposit-no-image-otp`.
    * The code is bound to the order (editTxId), the amount (itemsTotal) and the vault (txType),
    * and is spent once by `consumeDepositNoImageOtp` — a verified code cannot record two deposits.

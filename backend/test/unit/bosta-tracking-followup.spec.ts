@@ -80,7 +80,8 @@ describe('carrier evidence and one follow-up thread', () => {
     expect(f.state.shipIssueState).toBe('closed');
     await f.run(failed(7, 2));
     expect(f.ticket().status).toBe('في انتظار المتابعة');
-    expect(f.state.shipIssueState).toBe('open');
+    // A failed attempt: the courier still holds the parcel — follow up, no warehouse question.
+    expect(f.state.shipIssueState).toBe('attempt');
     expect(f.follow.model.create).toHaveBeenCalledTimes(1);
   });
 
@@ -105,7 +106,7 @@ describe('carrier evidence and one follow-up thread', () => {
     await f.run(failed(8));
     expect(f.ticket()).toMatchObject({ autoSource: 'shipping-issue', autoTrigger: 'FAILED_ATTEMPT', reason: 'مشكلة في الاستلام', deferredUntil: null });
     expect(f.follow.model.create).toHaveBeenCalledTimes(1);
-    expect(f.state.shipIssueState).toBe('open');
+    expect(f.state.shipIssueState).toBe('attempt');
   });
 
   it('does not reopen an employee-settled postponement just because the same exception appears again after movement', async () => {

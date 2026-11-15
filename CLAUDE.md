@@ -12,6 +12,186 @@ All search inputs across the app (placeholder starting with "بحث") must keep 
 
 ---
 
+### System PIN — «الرقم السري», 4 Boxes (Nov 15, 2026)
+The vault password is now «الرقم السري للنظام»: exactly 4 digits (`@Matches(/^\d{4}$/)` on `vaultPass`). It guards
+the vault, reports, buy prices and permanent deletes. Every place it is typed uses `pinBoxesHtml(id, {done, start})`
+(4 cells over one real `<input>` that keeps the id callers read; Arabic digits converted; `done` fires on the 4th
+digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = green + message / red shake.
+Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
+`vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
+
+## Movements: «استبدال» Tab + Return/Exchange Money From the Case (Nov 15, 2026)
+
+- **Tabs**: «مرتجعات» now holds returns only; «استبدال» (`data-mov-type="استبدال"`, count `#mov-count-exchange`,
+  server `tabCounts.exchanges`) holds an exchange's return document and its replacement sale (`afterSalesKind(tx,
+  'exchange')`). The server filter for `مرتجع` excludes `exchangeReturn(tx)`; the in-memory fallback mirrors it.
+- **Money**: an RT document is written once at receipt (deposit 0, remaining 0, «مكتمل»), so its row lied about
+  refunds still owed. `shared/after-sales-money.util.ts` → `afterSalesMoneyOf(tx, case)`, attached as
+  `tx.afterSalesMoney` by `buildMovementsPage` (`attachAfterSalesMoney`, cases = the `returns` it already loads):
+  - exchange return: paid = credit applied to the replacement + refund paid; remaining = `refundDue − refunded`.
+  - plain return: paid = refund paid; remaining = refund still owed (the fee is not owed).
+  - replacement: its own `deposit` / `remaining`; state `with-carrier` once the waybill exists.
+  - states: settled «مكتمل» · refunded «تم الرد» · refund-due «بانتظار الرد» (remaining in red = we owe) ·
+    due «معلق» · with-carrier «تحصّله بوسطة». The status badge opens the case.
+- ⚠ **Display/filter only — the stored `payStatus` is not rewritten.** `effectivePayStatus(tx)` is what the
+  status filter, the status facet and the pending/completed KPI counts use, so «معلق» finds an exchange whose
+  refund is still owed. Frontend `_movAsMoney(tx)` feeds the table row, the phone/grid card (which no longer
+  offers «تحصيل» on these rows) and the row's pending tint.
+- `SUMMARY_FIELDS` gained `afterSalesBundle`.
+- Tests: `test/unit/after-sales-money.spec.ts` (6), `test/browser/movements-after-sales-money.cjs` (17, needs
+  `nest build`). `movements-refresh-dedupe.cjs` times out at its Bosta live-update step with or without this change.
+
+## A New Order Shipped Inside an Exchange Waybill — «طلبات تُشحن مع البديل» (Nov 15, 2026)
+
+Scenario: a customer exchanges A (wrong colour) and at the same time orders B, paying a deposit on B
+and getting a discount on B. Before this there was no path: the replacement sale is locked (no edit,
+deposit or collection) and B shipped as a second parcel with its own COD. Now **B stays an ordinary
+sale** (its own deposit, discount, offers, profit) and only its delivery rides the exchange waybill.
+Owner's decisions: the deposit belongs to B (normal deposit path); discounts stay on B.
+
+- Rules in `shared/after-sales-bundle.util.ts` (`saleBundleBlock`, `caseBundleBlock`, `sameCustomer`
+  — last 10 phone digits, else exact name — `bundledShipmentCod`, `bundledTransactionIds`).
+- Case: `workflow.bundledSales[{transactionId, ref, at, by}]`; sale: `afterSalesBundle {caseId, caseRef,
+  originalRef, at, by, shipmentPending?, shipment?, deliveredAt?, collection?}` (schema prop, `type: Object`).
+- Routes: `GET :id/bundle-candidates` (unshipped sales of the same customer, each with its block
+  reason), `POST :id/bundle` / `:id/unbundle` {transactionId} (perm `shopify-prepare-ship`). Only on an
+  exchange shipped by Bosta, before its waybill; ≤5; same customer and warehouse; never the original,
+  the replacement, an after-sales sale, or a sale already sent/shipped. Cancel (and undoing the request)
+  detaches every bundled sale.
+- **Ship**: each B must be prepared (pieces complete) with no deposit waiting for a manager; then
+  `w.shipment.bundled[{transactionId, ref, cod, total, shipCharged}]` and `w.shipment.cod` = exchange
+  difference + Σ B remaining are frozen, and B gets `shipmentPending`. Bosta gets that COD, B's items in
+  the drop-off spec and B's total in `goodsInfo`. A refused send gives `shipmentPending` back.
+- The waybill is projected onto B like the replacement (`bostaStatus`, tracking, pickupStatus) under
+  `afterSalesBundle.shipment` — ⚠ never `afterSales.shipments` (B's `afterSales` is null). B never gets a
+  `bostaOrderId`. Delivery confirms B's pieces shipped/delivered with the replacement.
+- **Carrier settlement** books ONE vault entry = (difference + Σ B cod) − Bosta's fee and closes each B
+  (`deposit += cod`, `remaining 0`, `afterSalesBundle.collection`). The fee is compared with ALL shipping
+  the customer paid (exchange fee + each B's `shipCost − shippingDiscount`) and booked once on the
+  replacement (`shipLoss`/`shipSaving`).
+- **Guards on B while bundled**: no cancel/remove (`performCancellation` + `assertNotExchangePendingCollect`),
+  no `collect()`, no `confirmCodCollection`, no auto-settle, no Bosta `createOrder`; editing allowed only
+  until the waybill exists (`assertNotExchangePendingCollect(tx, true)` in `update()`); deposits refused
+  once the waybill exists (`saleDepositBlock`, mirrored by `_saleDepBlock`).
+- Frontend: case window card «طلبات تُشحن مع البديل» + picker (`bundleSection`, `bundlePicker`,
+  `unbundle` in after-sales.js), a «تجهيز الطلبات المضمومة» step, the waybill COD in the ship dialog,
+  the settlement checkbox/net include B. B's invoice: `bundleNotice` banner; prep card says it ships with
+  the exchange. `_bostaCaseId` includes `afterSalesBundle`, so B's «إرسال Bosta» opens the case and B is
+  left out of bulk send; `openCollectMovement` sends to the case.
+- Tests: `test/unit/after-sales-bundle.spec.ts` (4); 3 cases in `test/integration/after-sales.spec.ts`
+  (full flow 950 − 300 deposit, 100 discount, difference 150 → COD 800 → vault 730 after a 70 fee,
+  refusals, unbundle/cancel; revert-checked: settlement ignoring B, ship not waiting for B's prep, cancel
+  keeping B bundled each fail 1); `test/browser/after-sales-bundle.cjs` (25, ar/en, dark, 390).
+  ⚠ `after-sales.spec.ts` does not type-check before this change (complaint DTO fixtures) and its two
+  complaint cases fail at runtime — run it with ts-jest `diagnostics:false`. `after-sales.cjs` fails
+  «case centered ar/1440» on the committed files too.
+- Not run against Bosta: a type-30 delivery whose COD includes another order. Try one before relying on it.
+### Deposit on the exchange difference — «عربون على فرق الاستبدال» (same day)
+The replacement sale already carries the difference as its `remaining` (its `deposit` is the return
+credit), so a deposit on the difference is **a deposit on the replacement through the usual flow**
+(receipt upload → OCR → manager approval, or «بدون صورة تحويل»; the vault moves on approval, «ديبوزت مبيعات»).
+- `saleDepositBlock` (+ mirror `_saleDepBlock`) now allows `afterSales.role === 'replacement'` until its
+  waybill exists (`shipmentPending` / tracking / shipped) and while the case has no `collection`; a return
+  invoice never takes one. `reconcile()` caps it at what is left of the difference.
+- `advanceRemaining(collectDue, replacement)` = difference − approved `deposits` with `source:'deposit-receipt'`.
+  Ship freezes `w.shipment.exchangeCod` (= that) and `cod = exchangeCod + Σ bundled`; a request still waiting
+  for a manager blocks the waybill. Carrier settlement collects `exchangeCod` (records `collection.advance`);
+  direct collection takes only what is left. A difference paid in full gets `collection {amount:0, prepaid:true}`
+  at delivery, so the case closes without collecting it again.
+- `cancelAfterSalesReplacement` (cancel / undo approval) refunds each advance from its own vault
+  (`cancellationDepositRefunds`, deposits marked `reversed`); refused while a request waits for a manager.
+- Case window: «عربون على فرق الاستبدال» in the financial card (`advanceSection`, `row.advance` from
+  `advanceView`): paid / left, deposits, waiting requests with «اعتماد» for an admin, «إضافة عربون» /
+  «بدون صورة تحويل». ⚠ The deposit dialogs live in `#modal-overlay`, under the case `<dialog>`'s top layer:
+  `addAdvance` awaits `closeDialog()` first and `openSaleDeposit(txId, mode, false, caseId)` reopens the case
+  from `_saleDepAfter` (`_fromCase`). Reject/withdraw stay on the replacement invoice page.
+- Tests: 3 more in `after-sales.spec.ts` (partial 100/150 → COD 50 → vault −20 net; full advance → COD 0 and
+  closes; cancel refunds 100 to cash, refused with a waiting request; revert-checked: COD ignoring the deposit
+  fails 2, cancel keeping it fails 1), 1 in `sale-deposit-requests.service.spec.ts` (approve on the
+  replacement, cap, refused after the waybill and on a return invoice), browser `after-sales-bundle.cjs` now 37.
+
+## Supplier Money — Payments, Undo, Cancel, Edit Audited and Fixed (Nov 15, 2026)
+
+A full audit of supplier payments, the debt ledger, write-off, cancel and edit. The rules below are
+now enforced; break one and an invoice, the vault and the supplier ledger disagree.
+
+**The fact everything rests on:** `collect()` ADDS every supplier payment to `tx.deposit`, so on a
+purchase `deposit` = opening deposit + live payments, and `depMethod` names only the opening
+deposit's vault. `creditApplied` and `writeOff.amount` settle the invoice but are NOT cash.
+Pure rules: `shared/purchase-settlement.util.ts` (`purchaseCancellationRefunds`,
+`purchaseCancellationLedgerDelta`, `purchaseRemainingAfterEdit`, `openingPurchaseDeposit`).
+
+- **Cancel** refunds the opening deposit to `depMethod` and each live payment to ITS vault; never
+  credit or write-off as cash (it used to refund `(total − remaining) − deposit` = credit + write-off).
+  Ledger moves by −(remaining + creditApplied): the consumed supplier credit comes back (it was lost).
+  Legacy rows whose payments were outside `deposit` keep the old refund (`legacy-payment`).
+- **Edit** of a written-off invoice keeps the waiver (any edit used to reopen it as debt and post it
+  to the ledger again). The waiver never pushes the invoice into credit.
+- **Write-off twice** (after an undo reopened the invoice) adds up, with `writeOff.history`.
+- **Undo of a purchase payment is arithmetic** (remaining + amount), never the `snapshotBefore`
+  restore — that wiped earlier undos and write-offs. Sales keep the snapshot path.
+- **Ledger payment rows carry `meta.paymentId`**; an undo reverses exactly that row (old rows: same
+  amount, newest; never a row of another payment). `reverseEntry` claims `reversed` atomically.
+- **Deposit undo on a purchase** posts +amount to the ledger.
+- **`POST :id/reverse-collect` is admin-only** (it had no guard) and refuses an already-undone payment.
+- **Supplier-pay approval code is a budget**: `claimSupplierPayOtp` — verified, same supplier (invoice
+  name or the supplier record's current name), ≤30 min after approval, `spentAmount` + payment ≤
+  approved (+0.5); given back if the payment fails to save. It used to be reusable for any amount.
+- **`collect()` on a purchase**: amounts rounded to the piastre (remaining < 0.005 = 0); saved with
+  `tx.increment()` (version in the filter → two simultaneous payments: one passes, the other 409);
+  a repeated `batchId` part on the same invoice → 409. Bulk pay distributes in piastres and, on a
+  partial failure, shows paid/failed and retries only the failed (`_showBulkPayResult`).
+- **Moving a purchase deposit to another vault** moves only the opening deposit and in the purchase
+  direction (new vault pays, old vault gets it back) — it used the sale direction.
+- **Changing a purchase's supplier** (`planPurchaseSupplierMove`): allowed only while no money moved
+  (no deposit, payment, credit, write-off or completed supplier return); the open debt moves from
+  the old supplier's ledger to the new one and `supplierId` follows. Otherwise 400.
+- **Restore of a frozen (cancelled) transaction only un-archives** — no vault re-record, no stock rows.
+- Ledger postings without a DB transaction are queued per supplier (`supplierQueues`);
+  `findBySupplier` uses `dateWindowQuery`.
+- Frontend: `getSupplierPurchases` matches by `supplierId` first (a rename no longer empties the
+  profile); «المسدَّد للمورد» = cash only (`_purchaseCashPaid`), with «+ مُقفل / + من الرصيد» beneath.
+- **A supplier return settled «خصم من المديونية» lowers the INVOICES too** (owner's decision, option
+  أ). `SupplierReturnsService.complete()` → `applyReturnOffsetToInvoices` (same DB transaction as the
+  ledger rows) spreads the offset with `allocateReturnOffset`: the invoices the goods came from first
+  (up to `linkedInvoices[].allocatedTotal`), then every open invoice oldest first; what no invoice can
+  absorb stays ledger-only (`settlement.unallocatedOffset`). Each share → invoice `remaining` (write
+  conditional on the remaining read) + `supplierReturnOffsets[]` on the invoice +
+  `settlement.invoiceOffsets[]` on the return. `reverseReturn` gives them back
+  (`restoreReturnOffsets`, idempotent, after the ledger reversal).
+  - The offset is real value in an edit (`purchaseOwedAfterEdit`: a total below it is owed back),
+    never refunded as cash on cancel, and **a purchase with an active offset cannot be cancelled or
+    moved to another supplier** — reverse the return first.
+  - ⚠ Frontend `getSupplierReturnsAdjustment().debtOffset` now subtracts only the UNALLOCATED part
+    (returns completed before Nov 15, 2026 have no `invoiceOffsets`, so all of it) — subtracting the
+    full offset again would count it twice. The printed invoice lists «خصم مرتجع للمورد»; the
+    «المسدَّد» card adds «+ خصم مرتجعات».
+  - `supplierReturnOffsets`, `creditApplied` and `writeOff` are hidden from non-admins with the
+    other purchase amounts (`purchase-mask.util.ts`).
+- Existing data is not rewritten automatically — every fix applies from now on. The one correction
+  for older data is a button (below).
+- **«مطابقة الفواتير مع السجل»** (admin; supplier profile ← سجل المديونية): shown only when the open
+  invoices exceed the ledger balance (`reconcile.gap`, measured against max(0, balance) so a
+  supplier holding credit never triggers it). `POST /supplier-returns/backfill/invoice-offsets`
+  (`backfillInvoiceOffsets`, admin, **dry run unless `{dryRun:false}`**): (a) spreads every old
+  return's debt-offset that was never written onto an invoice; (b) spreads the manual negative
+  ledger rows the admin ticks (`ledgerEntryIds`; candidates exclude rows posted by invoice
+  edit/cancel/undo/move). Written as `supplierReturnOffsets` rows (`kind:'ledger-adjustment'` +
+  `ledgerEntryId` for (b)); the printed invoice names them «خصم من المورد». Touches no vault entry
+  and no ledger row; a rerun refuses already-applied rows and finds no unprocessed return.
+  ⚠ Reversing a ledger row that was written onto an invoice does not restore the invoice.
+- **Phase 0 audit (Nov 15, local copy synced from live 00:12):** no unexplained money anywhere. Known
+  and already hand-corrected: the 2 Aug duplicate payments on #010/#011/#012 (+35,000 manual row),
+  #900001 (MAN-007), two invoices sharing ref 013 (one cancelled duplicate). Only open item:
+  **Talla Home invoices showed 127,009 open vs ledger 115,329** — 8,590 from SR-2026-0002…0005 and
+  3,090 from four manual rows (510, 1,470, 750, 360). Applying the button with those four rows
+  makes invoices = ledger (verified on a scratch copy: 900016 12,639 → 959; vault and ledger
+  byte-identical). **Run it on live after deploy** (preview first — live may have moved since).
+- Verified: `test/unit/purchase-settlement.spec.ts` (13); end-to-end over the compiled API on a
+  scratch copy (credentials blanked), 45 checks in 13 scenarios — the same script on the pre-fix
+  code fails 16 checks and stops at the unguarded reverse-collect. `transactions.service.spec`
+  unchanged (98 pass / 57 pre-existing failures).
+
 ## Sync the Local Copy From Live — «مزامنة من النسخة الحية» (Nov 14, 2026)
 
 A card at the top of Settings ← البيانات, **local copy only**: downloads a fresh full backup from
@@ -522,6 +702,27 @@ price, unitCost}` (`unitCost` after the line's share of the invoice discount), `
 
 ---
 
+## A Failed Delivery Attempt Is Not a Return — `shipIssueState: 'attempt'` (Nov 15, 2026)
+
+A FAILED_ATTEMPT (customer not at the address, rescheduled for tomorrow) opened the same state as
+RETURNED, so the invoice asked «هل وصلت الشحنة المرتجعة إلى المخزن؟» about a parcel the courier
+was about to re-deliver, and locked collection. Rules in `shared/ship-issue-state.util.ts`:
+- **'attempt'** = failed attempt, parcel still with the courier → follow up with the customer
+  (blue banner with reason + retry date + «تواصل مع العميل», no warehouse question). Ends by
+  itself: DELIVERED → `closed` with **no** `failedDelivery` (the order succeeded); RETURNED →
+  `open`. Close / «لم تصل بعد» / reship are refused while 'attempt' (`assertNotStillWithCourier`).
+- **'open'/'awaiting'** = RETURNED only (the old receipt question and its endings, unchanged). A
+  failed return-leg attempt does not turn it back into 'attempt'; 'awaiting' survives a new event.
+- Notification only on entering a state, not on every carrier update inside it.
+- Old orders: `BostaService.onModuleInit` moves 'open'/'awaiting' opened by FAILED_ATTEMPT (not
+  RETURNED, no failedDelivery) to 'attempt' once, 10 s after start (idempotent).
+- **One carrier event saved once**: the same attempt arrived from Bosta's attempt list AND as the
+  live update with different `key`s, so the history showed it twice. `carrierEventIdentity`
+  (shipment + status + exceptionAt) + `newCarrierEvents` decide what to append; the invoice
+  timeline (`index.html` carrierHistory loop, `invoice-timeline.js`) hides duplicates already saved.
+- Tests: `test/unit/ship-issue-attempt-vs-return.spec.ts` (8; revert-checked: 5 fail without the
+  rules); `bosta-tracking-followup.spec.ts` now expects 'attempt' for failed attempts.
+
 ## Editing an Order Before the Courier Collects It Updates Bosta (Nov 14, 2026)
 
 Editing a sale in سجل المعاملات whose Bosta shipment is still «Created» (not picked up) now also
@@ -596,6 +797,21 @@ the one it is dropped on (1 onto 2 → group 2 holds both).
   source check 1 fails); `test/browser/pickup-prep-merge.cjs` (30 checks, ar/en: self-drop refused,
   hint, confirm text, one request, 3 orders in one group, tick kept 1/3, cancel, 409 keeps both).
 - Not done: no touch path (HTML5 drag and right-click do not work on phones).
+
+### Merging «جاهز للشحن» groups — drag a ready card onto another (Nov 15, 2026)
+Same gesture as prep cards, plus right-click «دمجها في». `POST /transactions/pickup-orders/merge-ready
+{sourceRef, targetRef, ids}` → `mergeReadyGroups`: moves only `pickupRef` (+ the target's `pickupDate`),
+history `merge-ready`, live event `merge-ready`. ⚠ Nothing else changes — Bosta shipment, pickup-request
+membership (`bostapickups.orderIds` is by order id), vault, stock.
+- Refused (`shared/ready-merge.util.ts` `readyMergeBlock`, mirrored by `_puReadyMergeBlock`): a source order
+  already with the courier (not `Ready`, `shippedAt`, or a Bosta state other than CREATED/VALIDATION_ERROR/
+  DELETED/CANCELLED) · different carrier · different warehouse · each group under a DIFFERENT Bosta pickup
+  request. Source changed since the read → 409. The hovered card turns red with the reason.
+- Source with no pickup request onto a target that has one: allowed; after the merge it offers to open the
+  pickup window («ضمها له») — `attachToPickup` needs every unreserved ready order, so it is not automatic.
+- **One rule for both paths** (owner, Nov 15): `assertReadyMoveAllowed` in TransactionsService is used by the card merge AND `addToPickupRun` (edit-run window «تعديل العملية»). `addToPickupRun` used to accept `Picked-Up` orders and write them back to `Ready`, and answered every refusal with `{updated:0}`; now only `Ready` orders move and a refusal returns `READY_MERGE_BLOCKED` + reason. The window disables an order already with the courier, and a target group that cannot take the selection shows why (`.pu-edit-ticket-why`).
+- **Verified over the compiled API on a scratch copy** (`soulia_readymerge`, credentials removed, empty Bosta/Shopify keys, own JWT secret, dropped after): `scripts/verify-ready-merge.cjs`, 26 checks — allowed merges (no request → group with one, same request, legacy order), every refusal with nothing written, stale 409, self/gone target, 403/401, the edit-run path, and no vault/stock/ledger row written. Revert-checked: disabling the block fails 8. ⚠ `bostapickups` has a unique index on (scheduledDate, businessLocationId) — test fixtures need distinct locations.
+- Tests: `test/unit/ready-merge.spec.ts` (7), `test/unit/pickup-daily-shipping.spec.ts` (+1 edit-run refusal), `test/browser/pickup-ready-merge.cjs` (38, ar/en).
 
 ### Quick sort inside a prep group (same day)
 One compact «ترتيب» button beside the workspace search (`#pw-sort-btn` in `#pw-sortbar`,
@@ -5103,6 +5319,13 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 15, 2026 | Movements: «استبدال» is its own tab (out of «مرتجعات»); return/exchange rows show paid, remaining and status from their case (refund owed, credit applied, refunded) | See "Movements: «استبدال» Tab" above |
+| Nov 15, 2026 | A deposit can be paid on an exchange difference from the case window (same receipt/OCR/approval flow); the waybill COD drops by it and cancelling the exchange refunds it | See "Deposit on the exchange difference" above |
+| Nov 15, 2026 | A new order of the same customer can ship inside an exchange waybill: it keeps its own deposit and discount, Bosta collects its remaining with the exchange difference, one settlement closes both | See "A New Order Shipped Inside an Exchange Waybill" above |
+| Nov 15, 2026 | «جاهز للشحن»: drag a ready card onto another (or right-click «دمجها في») to merge the groups; refused for another carrier/warehouse, a collected order, or two different Bosta pickup requests | See "Merging «جاهز للشحن» groups" above |
+| Nov 15, 2026 | «إجراء على المحدد» in البحث عن قطعة: tick pieces (or «تحديد الصفحة», max 100 — the label-batch selection) → one dialog applies inspect / damage / lost / release / ship / deliver / return / receive-supplier-return to each eligible piece via the same `POST /inventory-units/:id/actions` (own version + operation key per piece). Eligibility comes from each piece's `action-options`; ineligible pieces are skipped and stated, failures listed by U-code. Reserve and supplier-return stay single-piece (need a per-piece choice). Lost needs the count confirmation. Frontend only (`openBulkActions`/`submitBulkAction` in inventory-units.js). `test/browser/barcode-bulk-actions.cjs` (35) | inventory-units.js/.css |
+| Nov 15, 2026 | Supplier money fixed: cancel refunds only real cash to its own vault and returns used credit; edits keep a write-off; undo reverses the right payment; approval code is a one-time budget; reverse-collect admin-only; no double payments; supplier change moves the debt | See "Supplier Money — Payments, Undo, Cancel, Edit" above |
+| Nov 15, 2026 | A failed delivery attempt (courier retries) no longer asks «did the return reach the warehouse?» — new 'attempt' state with its own endings; the same carrier event is no longer saved twice | See "A Failed Delivery Attempt Is Not a Return" above |
 | Nov 14, 2026 | Editing a sale whose Bosta shipment is not picked up yet now updates Bosta too (COD, name, phone, address, notes), confirmed by reading it back; shippingBostaCity no longer dropped on edit | See "Editing an Order Before the Courier Collects It Updates Bosta" above |
 | Nov 14, 2026 | «أداء الباقات»: Shopify bundle analytics (sales, saving, profit, margin vs separate sales, broken) in Reports and a «باقات Shopify» Promotions tab; smart bundles are now recorded on each new sale by the server and counted from this change | See "«أداء الباقات» — Bundle Analytics" above |
 | Nov 14, 2026 | Invoice edit window «بيانات الطلب»: per-field pencils removed — plain editable inputs (label above, white 42px field, 8px radius, green focus); «كلّمه واتساب» → «مراسلة عبر واتساب» | index.html, edit-window-deposit.cjs |

@@ -46,6 +46,10 @@ export class Transaction {
   afterSalesEvents?: Array<Record<string, any>>;
   @Prop({ type: Object, default: null })
   afterSales?: Record<string, any>;
+  /** A new sale shipped inside an exchange waybill: {caseId, caseRef, at, by, shipmentPending?, collection?}.
+   *  It stays an ordinary sale; only its delivery and COD go through the exchange case. */
+  @Prop({ type: Object, default: undefined })
+  afterSalesBundle?: Record<string, any>;
 
   @Prop({ default: 'MAIN' })
   warehouseCode: string;
@@ -331,6 +335,14 @@ export class Transaction {
    */
   @Prop({ type: Object, default: null })
   writeOff: Record<string, unknown> | null;
+
+  /**
+   * Purchase only: supplier returns settled «خصم من المديونية» against THIS invoice —
+   * `{returnId, returnNumber, amount, at, by, reversedAt?}`. Written by SupplierReturnsService
+   * (complete / reverseReturn); reduces `remaining` without any cash. In no DTO.
+   */
+  @Prop({ type: [Object], default: undefined })
+  supplierReturnOffsets?: Array<Record<string, unknown>>;
 
   @Prop({ type: [Object], default: [] })
   editHistory: Record<string, unknown>[];

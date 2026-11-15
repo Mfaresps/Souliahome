@@ -328,6 +328,8 @@ export class SettingsService {
   stripSensitive(doc: SettingsDocument): Record<string, unknown> {
     const obj = doc.toObject() as unknown as Record<string, unknown>;
     delete obj.vaultReceiptOperations;
+    // Only whether the stored PIN fits the 4-digit boxes — never the PIN itself.
+    obj['vaultPassIsPin'] = /^\d{4}$/.test(String(obj['vaultPass'] ?? ''));
     delete obj['vaultPass'];
     // Replace bostaApiKey with a masked flag — never expose raw key to frontend
     obj['bostaApiKeySet'] = !!(obj['bostaApiKey'] as string);

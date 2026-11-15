@@ -1,3 +1,4 @@
+import { dateWindowQuery } from '../shared/date-window.util';
 import { allocateCreditSources, CreditSource } from './credit-sources.util';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -124,12 +125,10 @@ export class SupplierLedgerService {
     opts?: { from?: string; to?: string },
   ): Promise<SupplierLedgerEntryDocument[]> {
     const query: Record<string, unknown> = { supplierId };
-    if (opts?.from || opts?.to) {
-      query.date = {
-        ...(opts.from ? { $gte: opts.from } : {}),
-        ...(opts.to ? { $lte: opts.to } : {}),
-      };
-    }
+    // Some rows carry a full timestamp in `date` (reversals, return settlements); a bare
+    // `$lte: to` dropped them on the last day of the window — the shared helper covers that day.
+    const window = dateWindowQuery(opts?.from, opts?.to);
+    if (window) query.date = window;
     return this.ledgerModel.find(query).sort({ createdAt: 1 }).exec();
   }
 
@@ -189,8 +188,32 @@ export class SupplierLedgerService {
     return { dryRun, candidates: candidates.length, filled, missingVaultEntry };
   }
 
+  /**
+   * Per-supplier queue for postings made without a database transaction. `runningBalance` is
+   * "read the latest, add, insert": two postings for one supplier at the same moment (a bulk
+   * payment and an edit, two tabs) both read B and every later row stayed off by one amount.
+   * Postings inside a DB transaction keep their own serialization and are not queued here.
+   */
+  private readonly supplierQueues = new Map<string, Promise<unknown>>();
+
   /** Core internal poster — all public post* methods funnel through this so runningBalance bookkeeping lives in ONE place. */
   private async postEntry(
+    input: PostEntryInput,
+    context?: DatabaseWriteContext,
+  ): Promise<SupplierLedgerEntryDocument> {
+    if (context) return this.postEntryNow(input, context);
+    const key = String(input.supplierId || '');
+    const prev = this.supplierQueues.get(key) || Promise.resolve();
+    const run = prev.catch(() => undefined).then(() => this.postEntryNow(input));
+    this.supplierQueues.set(key, run);
+    try {
+      return await run;
+    } finally {
+      if (this.supplierQueues.get(key) === run) this.supplierQueues.delete(key);
+    }
+  }
+
+  private async postEntryNow(
     input: PostEntryInput,
     context?: DatabaseWriteContext,
   ): Promise<SupplierLedgerEntryDocument> {
@@ -262,6 +285,8 @@ export class SupplierLedgerService {
     date: string;
     amount: number;
     employee: string;
+    /** The `payments[].id` this row books — lets an undo reverse exactly this row. */
+    paymentId?: string;
   }): Promise<SupplierLedgerEntryDocument | null> {
     if (!params.supplierId) {
       this.logger.warn(
@@ -282,6 +307,7 @@ export class SupplierLedgerService {
       sourceId: params.transactionId,
       sourceRef: params.transactionRef,
       employee: params.employee,
+      ...(params.paymentId ? { meta: { paymentId: String(params.paymentId) } } : {}),
     });
   }
 
@@ -631,21 +657,31 @@ export class SupplierLedgerService {
     if (original.reversed) {
       throw new BadRequestException('تم عكس هذا القيد بالفعل');
     }
-    const reversal = await this.postEntry({
-      supplierId: original.supplierId,
-      supplierName: original.supplierName,
-      date: new Date().toISOString(),
-      entryType: 'manual-adjustment',
-      amount: -original.amount,
-      desc: `عكس قيد: ${original.desc}${reason ? ' — ' + reason : ''}`,
-      sourceType: original.sourceType,
-      sourceId: original.sourceId,
-      sourceRef: original.sourceRef,
-      employee: by,
-      meta: { reversalOf: String(original._id) },
-    });
-    original.reversed = true;
-    await original.save();
+    // Claimed atomically before posting: two undos racing on one entry both passed the check
+    // above and each posted a compensating row (the balance moved twice).
+    const claimed = await this.ledgerModel
+      .findOneAndUpdate({ _id: original._id, reversed: { $ne: true } }, { $set: { reversed: true } }, { new: true })
+      .exec();
+    if (!claimed) throw new BadRequestException('تم عكس هذا القيد بالفعل');
+    let reversal: SupplierLedgerEntryDocument;
+    try {
+      reversal = await this.postEntry({
+        supplierId: original.supplierId,
+        supplierName: original.supplierName,
+        date: new Date().toISOString().split('T')[0],
+        entryType: 'manual-adjustment',
+        amount: -original.amount,
+        desc: `عكس قيد: ${original.desc}${reason ? ' — ' + reason : ''}`,
+        sourceType: original.sourceType,
+        sourceId: original.sourceId,
+        sourceRef: original.sourceRef,
+        employee: by,
+        meta: { reversalOf: String(original._id) },
+      });
+    } catch (err) {
+      await this.ledgerModel.updateOne({ _id: original._id }, { $set: { reversed: false } }).exec().catch(() => undefined);
+      throw err;
+    }
     reversal.reversalOfEntryId = String(original._id);
     await reversal.save();
     return reversal;

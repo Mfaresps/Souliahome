@@ -88,6 +88,10 @@ export class DiscountOtp {
   @Prop({ default: 0 })
   thresholdAtRequest: number;
 
+  /** supplier-pay: how much of the approved amount (`itemsTotal`) payments have already spent. */
+  @Prop({ type: Number, default: 0 })
+  spentAmount: number;
+
   /** deposit-no-image: the reason the employee typed (shown in the OTP log and to the manager). */
   @Prop({ default: '' })
   requestReason: string;

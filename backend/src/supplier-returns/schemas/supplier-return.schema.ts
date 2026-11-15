@@ -52,6 +52,10 @@ export class SrSettlement {
   debtBalanceAfter: number;
   decidedBy: string;
   decidedAt: string;
+  /** The debt-offset as written onto each invoice's remaining (empty on returns completed before Nov 15, 2026). */
+  invoiceOffsets?: Array<{ transactionId: string; ref: string; amount: number }>;
+  /** The part of the debt-offset no open invoice could absorb (ledger-only debt). */
+  unallocatedOffset?: number;
 }
 
 /** Populated by reverseReturn() — an additive fact, not a status transition. status stays

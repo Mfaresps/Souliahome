@@ -1,5 +1,7 @@
 import { projectAfterSalesShipment } from '../after-sales/after-sales-shipment';
-import { carrierTrackingUpdate, carrierExceptionHistory, postponementNotificationKey } from './bosta-tracking.util';
+import { bundledTransactionIds } from '../shared/after-sales-bundle.util';
+import { carrierTrackingUpdate, carrierExceptionHistory, newCarrierEvents, postponementNotificationKey } from './bosta-tracking.util';
+import { LEGACY_ATTEMPT_AS_RETURN_FILTER, SHIP_ISSUE_ACTIVE_STATES, SHIP_ISSUE_RETURN_STATES, nextShipIssueState } from '../shared/ship-issue-state.util';
 import { recordComplaintExecution } from '../complaints/complaint-workflow';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
@@ -360,6 +362,28 @@ export class BostaService {
     private readonly pickupModel?: Model<BostaPickupDocument>,
   ) {}
 
+  /**
+   * One-off correction, idempotent: orders a failed attempt opened as a return before the
+   * attempt/return split become 'attempt' — the invoice stops asking whether a parcel the
+   * courier is about to re-deliver reached the warehouse. Never awaited by startup.
+   */
+  onModuleInit() {
+    setTimeout(() => {
+      this.migrateLegacyAttemptIssues().catch((err) =>
+        this.logger.warn(`Failed-attempt state correction will retry next start: ${(err as Error).message}`));
+    }, 10_000).unref?.();
+  }
+
+  async migrateLegacyAttemptIssues(): Promise<number> {
+    const res = await this.txModel.updateMany(LEGACY_ATTEMPT_AS_RETURN_FILTER as any, { $set: { shipIssueState: 'attempt' } });
+    const n = Number((res as any)?.modifiedCount || 0);
+    if (n > 0) {
+      this.logger.log(`Failed attempts no longer treated as returns — ${n} order(s) moved to 'attempt'`);
+      this.emit('tx:updated', { _id: '' });
+    }
+    return n;
+  }
+
   private async resolveApiKey(): Promise<string> {
     try {
       const dbKey = await this.settingsService.getBostaApiKey();
@@ -409,6 +433,10 @@ export class BostaService {
       itemsCount: items.reduce((n, i) => n + Number(i.qty), 0), description: items.map(i => `${i.name || i.code} × ${i.qty}`).join(' | '),
     } });
     const replacement: any = exchange ? await this.txModel.findById(w.replacementTxId).lean() : null;
+    // New sales bundled into this exchange ride the same parcel: their items join the drop-off and
+    // their remaining joins the COD (`w.shipment.cod`, fixed by AfterSalesService.ship()).
+    const bundledIds = exchange ? (w.shipment?.bundled || []).map((b: any) => new Types.ObjectId(String(b.transactionId))) : [];
+    const bundledTx: any[] = bundledIds.length ? await this.txModel.find({ _id: { $in: bundledIds } }).select('items total').lean() : [];
     // V2 requires the customer's district. Reuse the original delivery destination,
     // never the business pickup address or a district guessed from the governorate.
     let originalDeliveryId = tx.bostaOrderId;
@@ -447,10 +475,10 @@ export class BostaService {
     for (const key of ['secondLine', 'buildingNumber', 'floor', 'apartment']) {
       if (originalAddress?.[key] != null) address[key] = String(originalAddress[key]);
     }
-    const payload: any = { type: exchange ? 30 : 25, cod: exchange ? w.quote.collectDue : 0,
+    const payload: any = { type: exchange ? 30 : 25, cod: exchange ? Number(w.shipment?.cod ?? w.quote.collectDue) : 0,
       businessReference: w.ref, receiver: { firstName: names[0], lastName: names.slice(1).join(' ') || '-', phone },
-      specs: spec(exchange ? replacement.items : w.selectedLines), returnSpecs: spec(w.selectedLines),
-      goodsInfo: { amount: exchange ? w.quote.replacement : w.quote.credit }, notes: w.ref, returnNotes: row.notes || '',
+      specs: spec(exchange ? [...replacement.items, ...bundledTx.flatMap(t => t.items || [])] : w.selectedLines), returnSpecs: spec(w.selectedLines),
+      goodsInfo: { amount: exchange ? w.quote.replacement + bundledTx.reduce((n, t) => n + Number(t.total || 0), 0) : w.quote.credit }, notes: w.ref, returnNotes: row.notes || '',
       escrowInfo: { isExcluded: true }, [exchange ? 'dropOffAddress' : 'pickupAddress']: address };
     if (w.policy?.businessLocationId) payload.businessLocationId = w.policy.businessLocationId;
     let response: any;
@@ -498,7 +526,7 @@ export class BostaService {
           await projectAfterSalesShipment(this.txModel.db, current, syncSession);
         });
       } finally { await syncSession.endSession(); }
-      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
+      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId, ...bundledTransactionIds(row)].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
       return true;
     }
     if (![d.updatedAt, d.timestamp].some(Boolean) && [45, 46, 48, 49].includes(previous.carrierCode) && code < previous.carrierCode) return true;
@@ -521,13 +549,13 @@ export class BostaService {
         const updated = await collection.findOne({ _id: row._id }, { session });
         await projectAfterSalesShipment(this.txModel.db, updated, session);
         await recordComplaintExecution(this.txModel.db, updated, event, session);
-        const ids = [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean).map(value => new Types.ObjectId(value));
+        const ids = [...new Set([row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId, ...bundledTransactionIds(row)].filter(Boolean).map(String))].map(value => new Types.ObjectId(value));
         await this.txModel.db.collection('transactions').updateMany({ _id: { $in: ids }, 'afterSalesEvents.eventId': { $ne: event.eventId } },
           { $push: { afterSalesEvents: event } } as any, { session });
       });
     } finally { await session.endSession(); }
     if (changed) {
-      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
+      for (const txId of [row.originalTransactionId, row.workflow.replacementTxId, row.returnTxId, ...bundledTransactionIds(row)].filter(Boolean)) this.presence?.emitEvent('tx:updated', { _id: String(txId) });
       this.presence?.emitEvent('after-sales:updated', { id: String(row._id), originalTransactionId: row.originalTransactionId });
       await this.notifications?.enqueue('order', event.eventId, row.workflow.ref, `after-sales:${row._id}`, undefined, undefined,
         { afterSalesAction: 'carrier-status', actorName: 'Bosta' });
@@ -952,7 +980,7 @@ export class BostaService {
 
   /** The `$set` fragment that queues an automatic settlement, or {} when none is due. */
   private async autoSettleScheduleFor(tx: any, from: string, to: string, now: string): Promise<Record<string, unknown>> {
-    if (tx.afterSales?.caseId) return {};
+    if (tx.afterSales?.caseId || tx.afterSalesBundle?.caseId) return {};
     if (from === 'DELIVERED' || to !== 'DELIVERED') return {};
     if (tx.type !== 'مبيعات' || tx.cancelled || tx.carrierSettlement) return {};
     try {
@@ -1043,6 +1071,7 @@ export class BostaService {
     if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
     if (tx.type !== 'مبيعات') return { success: false, error: 'الشحن متاح للمبيعات فقط' };
     if (tx.afterSales?.caseId) return { success: false, error: 'أنشئ بوليصة الاستبدال من ملف الاسترجاع والاستبدال المرتبط' };
+    if ((tx as any).afterSalesBundle?.caseId) return { success: false, error: `الطلب يُشحن مع استبدال ${(tx as any).afterSalesBundle.caseRef || ''}؛ أنشئ البوليصة من ملف الاستبدال أو افصله عنه أولًا` };
     const resendableStatuses = ['VALIDATION_ERROR', 'DELETED'];
     const isResendable = resendableStatuses.includes(tx.bostaStatus || '');
     if (tx.bostaOrderId && !isResendable) {
@@ -1285,8 +1314,9 @@ export class BostaService {
 
     const tx = await this.txModel.findById(txId).lean();
     if (!tx) return { success: false, error: 'المعاملة غير موجودة' };
-    if (tx.afterSales?.caseId) {
-      const row: any = await this.txModel.db.collection('returnrequests').findOne({ _id: new Types.ObjectId(tx.afterSales.caseId) });
+    const linkedCaseId = tx.afterSales?.caseId || (tx as any).afterSalesBundle?.caseId;
+    if (linkedCaseId) {
+      const row: any = await this.txModel.db.collection('returnrequests').findOne({ _id: new Types.ObjectId(linkedCaseId) });
       if (!row?.workflow?.shipment?.deliveryId) return { success: false, error: 'لم يتم إنشاء بوليصة لهذا الطلب بعد' };
       try {
         await this.applyAfterSalesUpdate(await this.fetchAfterSalesShipment(row.workflow.shipment.deliveryId));
@@ -1360,7 +1390,7 @@ export class BostaService {
     // single mis-click would strand the order with no exit at all — closable
     // neither as a failed delivery nor as a customer return.
     const shipIssueState = (tx as any).shipIssueState || '';
-    if (shipIssueState === 'open' || shipIssueState === 'awaiting') {
+    if (SHIP_ISSUE_RETURN_STATES.includes(shipIssueState)) {
       return {
         success: false,
         error: 'شركة الشحن رجّعت هذا الطلب — لا يمكن تأكيد تسليمه. أنهِ معالجة فشل التوصيل من الفاتورة أولاً',
@@ -1570,10 +1600,9 @@ export class BostaService {
     const trackingUpdate = carrierTrackingUpdate(d, statusCode, statusLabel, tx.bostaOrderId || String(d._id || ''),
       bostaExceptionDetails(d), source, now, tx.bostaLastTrackingUpdate);
     const trackingChanged = trackingUpdate.key !== tx.bostaLastTrackingUpdate?.key;
-    const savedTrackingKeys = new Set((tx.bostaTrackingEvents || []).map((event: any) => event.key));
     const historicalUpdates = carrierExceptionHistory(d, trackingUpdate.shipmentId);
-    const trackingEvents = historicalUpdates.filter(event => !savedTrackingKeys.has(event.key));
-    if (trackingChanged) trackingEvents.push(trackingUpdate);
+    // One attempt = one row, whichever source (history list or live update) reports it first.
+    const trackingEvents = newCarrierEvents(tx.bostaTrackingEvents || [], historicalUpdates, trackingUpdate, trackingChanged);
 
     // Compute the new codCollectionStatus — only advance, never regress
     const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
@@ -1643,7 +1672,7 @@ export class BostaService {
     // A genuine earlier failure remains open until delivery or human resolution.
     const previousRaw = tx.bostaRawResponse?.data || tx.bostaRawResponse;
     if (['CUSTOMER_POSTPONED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(statusCode)
-      && ['open', 'awaiting'].includes(tx.shipIssueState)
+      && SHIP_ISSUE_ACTIVE_STATES.includes(tx.shipIssueState)
       && tx.shipIssueTrigger === 'FAILED_ATTEMPT'
       && !tx.failedDelivery
       && ((currentStatus === 'FAILED_ATTEMPT'
@@ -1705,15 +1734,25 @@ export class BostaService {
       } else {
         // Reopens a previously closed issue too: a re-shipped order that fails
         // again is a live problem, and its old closing decision no longer holds.
-        if (trackingChanged || currentStatus !== statusCode || !tx.shipIssueState) await this.txModel.findByIdAndUpdate(txId, {
+        // ⚠ A failed attempt is NOT a return: the courier keeps the parcel and tries again,
+        //   so it opens 'attempt' (follow up with the customer), never the warehouse
+        //   question. Only RETURNED opens 'open'. See ship-issue-state.util.ts.
+        const prevState = tx.shipIssueState || '';
+        const nextState = nextShipIssueState(prevState, tx.shipIssueTrigger || '', statusCode);
+        if (trackingChanged || currentStatus !== statusCode || !prevState || nextState !== prevState) await this.txModel.findByIdAndUpdate(txId, {
           $set: {
-            shipIssueState: 'open',
+            shipIssueState: nextState,
             shipIssueTrigger: statusCode,
             shipIssueOpenedAt: tx.shipIssueOpenedAt || now,
-            ...(tx.shipIssueState === 'closed' ? { failedDelivery: null } : {}),
+            ...(prevState === 'closed' ? { failedDelivery: null } : {}),
           },
         });
-        if ((trackingChanged || !tx.shipIssueState) && tx.shipIssueState !== 'open' && tx.shipIssueState !== 'awaiting') await this.notifications?.enqueue('deliveryProblem', 'problem:' + txId + ':' + trackingUpdate.key, tx.ref, 'tx:' + txId, undefined, statusCode,
+        // Notify on entering a state, not on every carrier update inside it: the first failed
+        // attempt, and the moment the parcel starts coming back.
+        const entering = nextState === 'attempt'
+          ? !SHIP_ISSUE_ACTIVE_STATES.includes(prevState)
+          : !SHIP_ISSUE_RETURN_STATES.includes(prevState);
+        if ((trackingChanged || !prevState) && entering) await this.notifications?.enqueue('deliveryProblem', 'problem:' + txId + ':' + trackingUpdate.key, tx.ref, 'tx:' + txId, undefined, statusCode,
           { deliveryReason: trackingUpdate.reasonScope === 'last-exception' ? `آخر سبب مسجل: ${trackingUpdate.reasonAr}` : trackingUpdate.reasonAr,
             deliveryReasonOriginal: trackingUpdate.reasonScope === 'last-exception' ? `Last reported exception: ${trackingUpdate.reason}` : trackingUpdate.reason });
         this.emit('tx:updated', { _id: txId });
@@ -1765,7 +1804,14 @@ export class BostaService {
     // decisions and stay untouched; '' means there was never a problem.
     if (SHIP_ISSUE_RESOLVING_STATUSES.includes(statusCode)) {
       const openState = (tx as any).shipIssueState || '';
-      if (openState === 'open' || openState === 'awaiting') {
+      if (openState === 'attempt') {
+        // A failed attempt the courier then delivered: the order simply succeeded. No failed
+        // delivery is recorded (the customer did receive it); the trail stays in
+        // shipIssueTrigger / shipIssueOpenedAt and the carrier events.
+        await this.txModel.findByIdAndUpdate(txId, { $set: { shipIssueState: 'closed' } });
+        this.emit('tx:updated', { _id: txId });
+        this.logger.log(`Failed attempt resolved by delivery — tx=${txId} attempt → closed`);
+      } else if (openState === 'open' || openState === 'awaiting') {
         const delivered = statusCode === 'DELIVERED';
         await this.txModel.findByIdAndUpdate(txId, {
           $set: {
@@ -2229,6 +2275,8 @@ export class BostaService {
         bostaStatus: 'DELIVERED',
         codCollectionStatus: { $nin: ['Collected', 'CollectionProcessing', 'FailedCollection'] },
         'afterSales.caseId': { $exists: false },
+        // A sale bundled into an exchange waybill is collected by that case's carrier settlement.
+        'afterSalesBundle.caseId': { $exists: false },
         $or: [{ bostaOriginalCod: { $gt: 0 } }, { remaining: { $gt: 0 } }],
         // An automatic settlement queued, under review or done owns this order's cash — confirming
         // it here as well would book the same COD twice (and this path books the gross COD).

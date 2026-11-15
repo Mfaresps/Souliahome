@@ -184,6 +184,21 @@ it('keeps registered shipments and confirmed pickup requests Ready until the cou
   expect(c._puDailyShippingGroups(rows)[0].orders).toHaveLength(3);
 });
 
+const READY_RULE = ['_puReadyCollected', '_puReadyCarrier', '_puReadyWarehouse', '_puReadyRequestsOf', '_puReadyMergeBlock'].map(name => grab(name));
+
+it('the edit-run window refuses a move the card merge refuses (other carrier, collected order)', async () => {
+  const c = fixture();
+  const rows = [order('a', { pickupRef: 'REAL-A' }), order('b', { pickupRef: 'REAL-B', bostaOrderId: '', bostaTrackingNumber: '', shipCo: 'Mylerz' })];
+  c._pickupOrders = rows; c.t = key => key; c.toast = jest.fn(); c.api = jest.fn();
+  c._puEditCurrentRun = { pickupRef: 'REAL-A', orders: [rows[0]] }; c._puEditSelectedIds = new Set(['a']);
+  runInNewContext([grab('puEditMoveSelectedToRun'), ...READY_RULE].join('\n'), c);
+  await c.puEditMoveSelectedToRun('REAL-B');
+  expect(c.api).not.toHaveBeenCalled();
+  expect(c.toast).toHaveBeenCalledWith('puReadyMergeCarrier', true);
+  rows[0].bostaStatus = 'PICKED_UP';
+  expect(c._puReadyCollected(rows[0])).toBe(true);
+});
+
 it('loads and transfers between real Ready ticket references even when both share a dispatch day', async () => {
   const c = fixture();
   const rows = [order('a', { pickupRef: 'REAL-A' }), order('b', { pickupRef: 'REAL-B' }),
@@ -199,7 +214,8 @@ it('loads and transfers between real Ready ticket references even when both shar
     rows.find(o => o._id === body.ids[0])!.pickupRef = body.pickupRef;
     return { updated: body.ids.length };
   });
-  runInNewContext([grab('_puBuildGroups'), grab('loadPuEditRun'), grab('puEditMoveSelectedToRun')].join('\n'), c);
+  c._pickupOrders = rows;
+  runInNewContext([grab('_puBuildGroups'), grab('loadPuEditRun'), grab('puEditMoveSelectedToRun'), ...READY_RULE].join('\n'), c);
   await c.loadPuEditRun();
   expect(c._puEditCurrentRun.pickupRef).toBe('REAL-A');
   expect(c._puEditAvailableRuns.map(g => g.pickupRef)).toEqual(['REAL-B']);

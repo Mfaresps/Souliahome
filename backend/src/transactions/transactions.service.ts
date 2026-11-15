@@ -1,6 +1,7 @@
 import { setCommentReaction } from '../shared/comment-reactions';
 import { randomUUID } from 'node:crypto';
 import { cachedRead } from '../shared/read-cache.util';
+import { SHIP_ISSUE_ACTIVE_STATES, nextShipIssueState } from '../shared/ship-issue-state.util';
 import { reconcile, hasLiveShipment, RECON_TOLERANCE, round2 as reconRound } from '../shared/payment-reconciliation.util';
 import { buildMovementsPage, MovementsState } from './movements-page.util';
 import { maskTransactionsForRole } from './purchase-mask.util';
@@ -123,6 +124,16 @@ type TxShipTariff = {
 };
 
 import { MAIN_WAREHOUSE, requireWarehouse, warehouseCode, legacyReceiptLocations } from '../warehouses/warehouse-storage';
+import { readyMergeBlock, readyMergeBlockMessage } from '../shared/ready-merge.util';
+import {
+  PurchaseLike,
+  openingPurchaseDeposit,
+  purchaseCancellationLedgerDelta,
+  purchaseCancellationRefunds,
+  purchaseOwedAfterEdit,
+  returnOffsetAmountOf,
+  writeOffAmountOf,
+} from '../shared/purchase-settlement.util';
 
 export interface InventoryItem {
   warehouseBalances: Record<string, number>;
@@ -672,6 +683,88 @@ export class TransactionsService implements ClassificationInit {
   }
 
   /**
+   * A purchase edited onto another supplier. Allowed only while no money has moved on it (no
+   * deposit, no live payment, no credit applied, no write-off, no settled supplier return): then
+   * its open debt moves from the old supplier's ledger to the new one. Once money moved, the cash
+   * belongs to the old supplier's account — the invoice must be cancelled and re-entered instead.
+   * The new supplier must exist in the suppliers list (its id is what the ledger is keyed on).
+   */
+  private async planPurchaseSupplierMove(
+    existing: TransactionDocument,
+    dto: UpdateTransactionDto,
+  ): Promise<{ fromId: string; toId: string; toName: string } | null> {
+    if (existing.type !== 'مشتريات' || existing.cancelled || dto.client === undefined) return null;
+    const norm = (v: unknown) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    if (norm(dto.client) === norm(existing.client)) return null;
+    if (!this.transactionAddsSupplierPurchases(existing)) return null;
+    const live = ((existing.payments || []) as any[]).some((p) => !p?.reversed && (Number(p?.amount) || 0) > 0);
+    const moved = (Number(existing.deposit) || 0) > 0 || live
+      || (Number((existing as any).creditApplied) || 0) > 0
+      || writeOffAmountOf(existing as unknown as PurchaseLike) > 0
+      || returnOffsetAmountOf(existing as unknown as PurchaseLike) > 0;
+    const txIdStr = String(existing._id);
+    const returned = await this.supplierReturnModel
+      .exists({
+        $or: [{ originalTransactionId: txIdStr }, { 'linkedInvoices.transactionId': txIdStr }],
+        status: 'مكتمل',
+        reversal: null,
+      })
+      .exec()
+      .catch(() => null);
+    if (moved || returned) {
+      throw new BadRequestException(
+        'لا يمكن تغيير مورد فاتورة سُدِّد عليها مبلغ أو استُخدم فيها رصيد أو أُقفل متبقيها أو عليها مرتجع — ألغِ الفاتورة وأعد إدخالها باسم المورد الصحيح',
+      );
+    }
+    const fromId = await this.resolveSupplierIdForLedger(existing.supplierId, existing.client || '');
+    const all = await this.suppliersService.findAll();
+    const to = all.find((sp) => norm(sp.name) === norm(dto.client));
+    if (!to) throw new BadRequestException('المورد الجديد غير موجود في قائمة الموردين — اختره من القائمة');
+    if (fromId && String(to._id) === String(fromId)) return null;
+    return { fromId, toId: String(to._id), toName: to.name };
+  }
+
+  private async applyPurchaseSupplierMove(
+    tx: TransactionDocument,
+    move: { fromId: string; toId: string; toName: string },
+    by: string,
+  ): Promise<TransactionDocument> {
+    const txRef = tx.ref || String(tx._id);
+    const open = Math.round((Number(tx.remaining) || 0) * 100) / 100;
+    await this.transactionModel.updateOne({ _id: tx._id }, { $set: { supplierId: move.toId } }).exec();
+    if (open > 0 && this.transactionAddsSupplierPurchases(tx)) {
+      const day = new Date().toISOString().split('T')[0];
+      try {
+        if (move.fromId) {
+          await this.supplierLedgerService.postManualAdjustment({
+            supplierId: move.fromId,
+            supplierName: tx.client || '',
+            date: day,
+            amount: -open,
+            reason: `نقل فاتورة مشتريات #${txRef} إلى المورد ${move.toName}`,
+            employee: by,
+          });
+        }
+        await this.supplierLedgerService.postManualAdjustment({
+          supplierId: move.toId,
+          supplierName: move.toName,
+          date: day,
+          amount: open,
+          reason: `فاتورة مشتريات #${txRef} منقولة من مورد آخر`,
+          employee: by,
+        });
+      } catch (err) {
+        this.logger.error(
+          `CRITICAL: purchase #${txRef} moved to supplier ${move.toId} but the ledger move failed — both supplier balances need a manual adjustment.`,
+          err instanceof Error ? err.stack : String(err),
+        );
+      }
+    }
+    const fresh = await this.transactionModel.findById(tx._id).exec();
+    return fresh || tx;
+  }
+
+  /**
    * Posts a correcting supplier-ledger entry when a purchase invoice's PAYABLE changes outside the
    * payment flow — i.e. on edit and on cancellation.
    *
@@ -792,12 +885,24 @@ export class TransactionsService implements ClassificationInit {
 
     tx.remaining = 0;
     tx.payStatus = 'مكتمل';
+    // A second waiver (after an undone payment reopened the invoice) ADDS to the first: the
+    // invoice's waived total is what edit/cancel read, and overwriting it lost the first waiver.
+    const prevWriteOff = (tx as unknown as { writeOff?: any }).writeOff || null;
+    const prevAmount = writeOffAmountOf(tx as unknown as PurchaseLike);
+    const history = Array.isArray(prevWriteOff?.history)
+      ? prevWriteOff.history
+      : prevAmount > 0
+        ? [{ amount: prevAmount, reason: prevWriteOff?.reason || '', by: prevWriteOff?.by || '', at: prevWriteOff?.at || '' }]
+        : [];
+    const now = new Date().toISOString();
     (tx as unknown as { writeOff?: unknown }).writeOff = {
-      amount: remaining,
+      amount: Math.round((prevAmount + remaining) * 100) / 100,
       reason: reason.trim(),
       by,
-      at: new Date().toISOString(),
+      at: now,
+      history: [...history, { amount: remaining, reason: reason.trim(), by, at: now }],
     };
+    tx.markModified('writeOff');
     const saved = await tx.save();
     this.emit('tx:updated', { tx: saved, action: 'write-off-remaining' });
     return saved;
@@ -821,6 +926,7 @@ export class TransactionsService implements ClassificationInit {
     tx: TransactionDocument,
     by: string,
     reason: string,
+    which: { paymentId?: string; amount?: number } = {},
   ): Promise<void> {
     if (tx.type !== 'مشتريات') return;
     const txRef = tx.ref || String(tx._id);
@@ -836,15 +942,24 @@ export class TransactionsService implements ClassificationInit {
         return;
       }
       const entries = await this.supplierLedgerService.findBySupplier(supplierId);
-      const target = entries
-        .filter(
-          (e) =>
-            e.sourceType === 'transaction' &&
-            String(e.sourceId) === String(tx._id) &&
-            e.entryType === 'payment' &&
-            !e.reversed,
-        )
-        .pop();
+      const open = entries.filter(
+        (e) =>
+          e.sourceType === 'transaction' &&
+          String(e.sourceId) === String(tx._id) &&
+          e.entryType === 'payment' &&
+          !e.reversed,
+      );
+      // Exactly the undone payment's row when it carries the payment id. Older rows have no id:
+      // take the newest of those with the same amount, then the newest of those at all. A row that
+      // belongs to ANOTHER payment (it carries a different id) is never taken — undoing 300 used to
+      // reverse the newest row, the 200, leaving the balance 100 low.
+      const idOf = (e: any) => String((e?.meta as any)?.paymentId || '');
+      const legacy = open.filter((e) => !idOf(e));
+      const amt = Math.round((Number(which.amount) || 0) * 100) / 100;
+      const target =
+        (which.paymentId ? open.filter((e) => idOf(e) === String(which.paymentId)).pop() : undefined) ||
+        (amt > 0 ? legacy.filter((e) => Math.abs(Math.abs(Number(e.amount) || 0) - amt) < 0.01).pop() : undefined) ||
+        (which.paymentId || amt > 0 ? legacy.pop() : open.pop());
       if (!target) {
         this.logger.warn(
           `reverseSupplierPaymentLedgerEntry: no open payment entry for #${txRef} — nothing to reverse`,
@@ -943,9 +1058,9 @@ export class TransactionsService implements ClassificationInit {
     'bostaTrackingNumber', 'bostaStatus', 'bostaStatusLabel', 'bostaLastSync',
     'bostaAwbPrints', 'pickupStatus', 'pickupRef', 'pickupDate', 'shippingAddress',
     'shippingCity', 'shippingGov', 'shippingBostaCity', 'shipCo', 'shipZone',
-    'carrierCode', 'carrierSettlement', 'afterSales', 'shipmentAttempts',
+    'carrierCode', 'carrierSettlement', 'afterSales', 'afterSalesBundle', 'shipmentAttempts',
     'shippedAt', 'deliveredAt', 'deliverySource', 'bostaDeliveryException',
-    'shopifyOrderId', 'creditApplied', 'writeOff', 'deposits', 'payments',
+    'shopifyOrderId', 'creditApplied', 'writeOff', 'supplierReturnOffsets', 'deposits', 'payments',
     'depositReceipts', 'invoiceImageUrl', 'invoiceImages', 'failedDelivery',
     'externalFulfillment', 'codCollectionStatus', 'collectedAt', 'collectNote',
     'addressChangeConflict', 'shopifyCancelConflict', 'shipIssueState',
@@ -1179,7 +1294,25 @@ export class TransactionsService implements ClassificationInit {
         originalInvoiceRef: tx.afterSales.originalRef || '', lifecycle: 'replacement-cancelled', reason });
       if (item.warehouseBalances) item.warehouseBalances[warehouseCode(tx.warehouseCode)] = before + line.qty;
     }
-    tx.cancelled = true; tx.cancelReason = reason; tx.cancelledBy = by; tx.cancelledAt = new Date().toISOString();
+    // A deposit paid on the exchange difference («عربون على فرق الاستبدال») is real cash: it goes back from
+    // the vault it entered. A request still waiting for a manager must be decided first.
+    if (((tx as any).depositRequests || []).some((r: any) => ['معلق', 'قيد التسجيل'].includes(String(r?.status || '')))) {
+      throw new ConflictException('عربون على فرق الاستبدال بانتظار قرار المدير؛ اعتمده أو ارفضه قبل الإلغاء');
+    }
+    const now = new Date().toISOString(), refunds: any[] = [];
+    for (const d of ((tx as any).deposits || []) as any[]) {
+      if (d?.source !== 'deposit-receipt' || d.reversed || !(Number(d.amount) > 0)) continue;
+      const entry = await this.vaultService.addSystemEntry(-Number(d.amount), d.method,
+        `إلغاء بديل الاستبدال #${tx.ref} — رد عربون فرق الاستبدال ${d.method} — ${tx.client || ''} (بواسطة: ${by})`,
+        now.slice(0, 10), 'إلغاء', tx.ref || id, { customer: tx.client || '' }, by, { afterSalesId: caseId, transactionId: id }, context);
+      d.reversed = true; d.reversedAt = now; d.reversedBy = by;
+      refunds.push({ method: d.method, amount: Number(d.amount), vaultEntryId: String(entry?._id || ''), at: now });
+    }
+    if (refunds.length) {
+      (tx as any).cancellationDepositRefunds = [...((tx as any).cancellationDepositRefunds || []), ...refunds];
+      tx.markModified('deposits');
+    }
+    tx.cancelled = true; tx.cancelReason = reason; tx.cancelledBy = by; tx.cancelledAt = now;
     await tx.save({ session: context.session });
     await this.inventoryMovementsService.record(entries, context);
     context.afterCommit.push(() => { this.emit('tx:cancelled', { txId: id, tx, by }); this.emit('inventory:changed', { reason: 'after-sales-cancel', txId: id }); });
@@ -1774,7 +1907,16 @@ export class TransactionsService implements ClassificationInit {
   /**
    * Blocks edit/cancel/delete for exchange replacement sales that still owe the company.
    */
-  private assertNotExchangePendingCollect(tx: TransactionDocument): void {
+  private assertNotExchangePendingCollect(tx: TransactionDocument, editing = false): void {
+    // A sale bundled into an exchange waybill: its delivery and collection belong to that case.
+    // It may still be edited until the waybill exists (the COD is read at shipping); never cancelled
+    // or removed while bundled — detach it from the case first.
+    const bundle = (tx as any).afterSalesBundle;
+    if (bundle?.caseId && (bundle.shipmentPending || !editing)) {
+      throw new BadRequestException(bundle.shipmentPending
+        ? `الطلب يُشحن مع استبدال ${bundle.caseRef || ''}؛ بعد إنشاء البوليصة تُدار تسويته من ملف الاستبدال`
+        : `الطلب مضموم لشحنة الاستبدال ${bundle.caseRef || ''}؛ افصله من ملف الاستبدال أولًا`);
+    }
     if (tx.afterSales?.hasCases) throw new BadRequestException('الفاتورة لها طلب استرجاع أو استبدال مرتبط؛ لا يمكن تغيير مستندها الأصلي');
     if (tx.afterSales?.caseId) throw new BadRequestException('هذه المعاملة مرتبطة بخدمة ما بعد البيع؛ استخدم ملف الاسترجاع أو الاستبدال لتسويتها');
     const ref = String(tx.ref || '');
@@ -1997,8 +2139,11 @@ export class TransactionsService implements ClassificationInit {
     if ((existing as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بدفعة بوسطة؛ يلزم مراجعة تسوية الدفعة قبل تعديل قيم الطلب');
     }
-    this.assertNotExchangePendingCollect(existing);
+    this.assertNotExchangePendingCollect(existing, true);
     this.assertEditableByFulfillment(existing, existing.shopifyOrderId && callerPerms.includes('shopify-edit-direct') ? 'admin' : callerRole);
+    // Changing the supplier of a purchase used to rename the invoice only: its debt, payments and
+    // every later ledger correction stayed on the OLD supplier (resolved by supplierId).
+    const supplierMove = await this.planPurchaseSupplierMove(existing, dto);
     // A Bosta shipment the courier has not collected yet is edited at Bosta too (after the save).
     let bostaEditBefore: any = null;
     if (existing.type === 'مبيعات' && !existing.cancelled && this.bostaShipments && shipmentLocallyEditable(existing)) {
@@ -2358,7 +2503,9 @@ export class TransactionsService implements ClassificationInit {
           existing,
           oldDepMethod,
           newDepMethod,
-          oldDeposit,
+          // A purchase's `deposit` also holds every later payment, each paid from its own vault;
+          // only the opening deposit came from `depMethod`, so only that moves.
+          existing.type === 'مشتريات' ? openingPurchaseDeposit(existing as unknown as PurchaseLike) : oldDeposit,
           txDate,
           txRef,
           editedBy,
@@ -2460,8 +2607,16 @@ export class TransactionsService implements ClassificationInit {
         // تحته، يرجع الفائض لرصيد المورد عبر فرق السجل أدناه (المحسوب على المبلغ غير المقصوص).
         const creditBefore = Math.max(0, Number((existing as unknown as { creditApplied?: number }).creditApplied) || 0);
         const creditKept = Math.min(creditBefore, Math.max(0, newTotal - newDeposit));
-        const owedRaw = Math.round((newTotal - newDeposit - creditBefore) * 100) / 100;
-        const newRemaining = Math.max(0, newTotal - newDeposit - creditKept);
+        // ⚠ The supplier's waiver («إقفال المتبقي», `writeOff`) also settled part of the invoice.
+        // Ignoring it here turned the waived amount back into debt on ANY edit (even a note) and
+        // posted it to the ledger a second time (+W on top of the −W write-off row).
+        // Supplier returns settled against this invoice («خصم من المديونية») are real value, like
+        // credit; the waiver only covers what is still open and never pushes the invoice into credit.
+        const writeOffBefore = writeOffAmountOf(existing as unknown as PurchaseLike);
+        const returnOffsetBefore = returnOffsetAmountOf(existing as unknown as PurchaseLike);
+        const { owed: owedRaw, remaining: newRemaining } = purchaseOwedAfterEdit({
+          newTotal, newDeposit, credit: creditBefore, returnOffset: returnOffsetBefore, writeOff: writeOffBefore,
+        });
         if (tx) {
           tx.remaining = newRemaining;
           tx.payStatus = newRemaining <= 0 ? 'مكتمل' : 'معلق';
@@ -2476,7 +2631,7 @@ export class TransactionsService implements ClassificationInit {
         // owedRaw (not the clamped newRemaining): a total pushed below deposit + credit leaves the
         // supplier owing us the difference, i.e. that slice of credit returns to the balance.
         // Without credit this is exactly the old rule (newRemaining).
-        const remainingDelta = Math.round(((creditBefore > 0 ? owedRaw : newRemaining) - previousRemaining) * 100) / 100;
+        const remainingDelta = Math.round(((creditBefore > 0 || returnOffsetBefore > 0 ? owedRaw : newRemaining) - previousRemaining) * 100) / 100;
         if (remainingDelta !== 0) {
           await this.adjustSupplierLedgerForPayableChange(
             tx || existing,
@@ -2593,6 +2748,9 @@ export class TransactionsService implements ClassificationInit {
       // Other screens (the picker's) learn about the edit; they re-read the row with their own permissions.
       this.emit('tx:updated', { _id: String(tx._id), action: 'edit' });
     }
+    if (supplierMove && tx) {
+      tx = await this.applyPurchaseSupplierMove(tx, supplierMove, editedBy || notificationActor || '');
+    }
     if (bostaEditBefore && tx && this.bostaShipments) {
       const sync = await this.bostaShipments.updateShipmentAfterEdit(String(tx._id), bostaEditBefore, editedBy || notificationActor || '');
       if (sync.status !== 'none') {
@@ -2686,6 +2844,10 @@ export class TransactionsService implements ClassificationInit {
     if ((tx as any).carrierSettlement?.payoutId) {
       throw new BadRequestException('الطلب مرتبط بتحويل بوسطة مجمع — يلزم تسوية الدفعة قبل إلغاء الطلب');
     }
+    // Every path (direct, approved request, bulk) ends here: a bundled sale is detached first.
+    if ((tx as any).afterSalesBundle?.caseId) {
+      throw new BadRequestException(`الطلب مضموم لشحنة الاستبدال ${(tx as any).afterSalesBundle.caseRef || ''}؛ افصله من ملف الاستبدال قبل إلغائه`);
+    }
     // ⚠ Cancellation refunds the whole deposit from the vault. If part of the money already left
     // as an overpayment refund or moved to / came from another order, that refund would pay it
     // twice (or pay out credit that was never cash on this order). Those moves are resolved first.
@@ -2693,6 +2855,12 @@ export class TransactionsService implements ClassificationInit {
       throw new BadRequestException('على الطلب استرداد أو تحويل رصيد مسجّل — راجعه من «زيادة الدفع» قبل الإلغاء');
     }
     // خطوة 3: المخزون قبل الإلغاء (شامل كمية الفاتورة) — لتصحيح المتوسط بعد الإلغاء.
+    // A supplier return settled against this invoice reduced its remaining. Cancelling the invoice
+    // would net the ledger on that reduced remaining while the return's own offset row stays —
+    // reverse the return first, then cancel.
+    if (tx.type === 'مشتريات' && returnOffsetAmountOf(tx as unknown as PurchaseLike) > 0) {
+      throw new BadRequestException('على هذه الفاتورة مرتجع مورد مُسوّى خصماً من المديونية — اعكس المرتجع أولاً ثم ألغِ الفاتورة');
+    }
     const avgCancelStock = tx.type === 'مشتريات' && this.productCost && await this.productCost.purchaseIsInAverage(String(tx._id))
       ? await this.stockOfFn() : null;
     // عكس مرتجع مورد (إلغاء معاملته): القطع بترجع المخزن بنفس تكلفتها.
@@ -2710,6 +2878,23 @@ export class TransactionsService implements ClassificationInit {
     const previousRemaining = tx.remaining || 0;
     const previousPayStatus = tx.payStatus;
     const previousCollectMethod = tx.collectMethod;
+    // Taken BEFORE anything below rewrites the document: the refunds are computed from it.
+    const purchaseBeforeCancel: PurchaseLike | null = tx.type === 'مشتريات'
+      ? {
+        total: Number(tx.total) || 0,
+        deposit: Number(tx.deposit) || 0,
+        remaining: Number(tx.remaining) || 0,
+        depMethod: tx.depMethod || '',
+        payment: tx.payment || '',
+        collectMethod: tx.collectMethod || '',
+        creditApplied: Number((tx as any).creditApplied) || 0,
+        writeOff: (tx as any).writeOff ? { amount: Number((tx as any).writeOff.amount) || 0 } : null,
+        payments: ((tx.payments || []) as any[]).map((p) => ({
+          amount: Number(p?.amount) || 0, method: String(p?.method || ''), reversed: !!p?.reversed,
+        })),
+        supplierReturnOffsets: (tx as any).supplierReturnOffsets || [],
+      }
+      : null;
 
     tx.cancelled = true;
     tx.cancelReason = reason;
@@ -2808,41 +2993,32 @@ export class TransactionsService implements ClassificationInit {
     }
 
     const vaultMethod = tx.depMethod || tx.payment || 'كاش';
-    if (tx.type === 'مشتريات') {
-      // Calculate total actually paid = total - remaining at time of cancel
-      const totalPaidToSupplier = previousTotal - previousRemaining;
-      // Refund deposit portion (paid at creation) to deposit vault account
-      if (previousDeposit > 0) {
+    if (tx.type === 'مشتريات' && purchaseBeforeCancel) {
+      // Cash goes back to the vault it actually left from, and ONLY cash: `deposit` already holds
+      // every collected payment, while supplier credit applied and a write-off never left a vault.
+      // The old rule refunded `(total − remaining) − deposit` — i.e. exactly credit + write-off —
+      // as cash, and put every payment back into the deposit's vault.
+      const day = new Date().toISOString().split('T')[0];
+      for (const refund of purchaseCancellationRefunds(purchaseBeforeCancel)) {
         await this.vaultService.addSystemEntry(
-          previousDeposit,
-          vaultMethod,
-          `إلغاء مشتريات — رد العربون #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
-          new Date().toISOString().split('T')[0],
+          refund.amount,
+          refund.method,
+          refund.kind === 'opening-deposit'
+            ? `إلغاء مشتريات — رد العربون #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`
+            : `إلغاء مشتريات — رد المسدد #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
+          day,
           'إلغاء',
           tx.ref || String(tx._id),
         );
       }
-      // Refund any additional payments made via collect (partial or full)
-      const additionalPaid = totalPaidToSupplier - previousDeposit;
-      if (additionalPaid > 0 && previousCollectMethod) {
-        await this.vaultService.addSystemEntry(
-          additionalPaid,
-          previousCollectMethod,
-          `إلغاء مشتريات — رد المسدد #${tx.ref || tx._id} — ${tx.client || ''} (بواسطة: ${cancelledBy})`,
-          new Date().toISOString().split('T')[0],
-          'إلغاء',
-          tx.ref || String(tx._id),
-        );
-      }
-      // A cancelled invoice is not owed. The vault refunds above undo the CASH side; this undoes
-      // the DEBT side, which was previously left standing in the ledger forever — a cancelled
-      // 28,460 ج invoice kept inflating the supplier balance with no invoice to explain it.
-      // Netted on what was still outstanding (previousRemaining), since anything already paid is
-      // handled by the refunds above and was never part of the payable.
-      if (previousRemaining > 0) {
+      // A cancelled invoice is not owed. The refunds above undo the CASH side; this undoes the
+      // DEBT side: what was still outstanding AND the supplier credit the invoice consumed (its
+      // `credit-used` row), or that credit would be lost for good.
+      const ledgerDelta = purchaseCancellationLedgerDelta(purchaseBeforeCancel);
+      if (ledgerDelta !== 0) {
         await this.adjustSupplierLedgerForPayableChange(
           tx,
-          -previousRemaining,
+          ledgerDelta,
           cancelledBy,
           `إلغاء فاتورة مشتريات #${tx.ref || tx._id}${reason ? ` — ${reason}` : ''}`,
         );
@@ -3018,6 +3194,18 @@ export class TransactionsService implements ClassificationInit {
    * The UI disables both buttons, but both functions are global and reachable
    * from the console — hiding a control is never the guard.
    */
+  /**
+   * A failed delivery ATTEMPT ('attempt') is not a return: the courier still holds the parcel
+   * and will try again. Receiving it at the warehouse, «not arrived yet» and shipping it again on
+   * a new waybill all describe goods coming back, so they wait until the courier reports RETURNED.
+   */
+  private assertNotStillWithCourier(tx: TransactionDocument): void {
+    if ((tx as any).shipIssueState !== 'attempt') return;
+    throw new BadRequestException(
+      'الشحنة ما زالت لدى شركة الشحن وستُعاد محاولة توصيلها — لا يمكن معالجتها كمرتجع قبل أن تبلّغ شركة الشحن بإرجاعها',
+    );
+  }
+
   private assertNoOpenShipIssue(tx: TransactionDocument, action: string): void {
     const state = (tx as any).shipIssueState || '';
     if (state !== 'open' && state !== 'awaiting') return;
@@ -3133,6 +3321,7 @@ export class TransactionsService implements ClassificationInit {
     if (tx.type !== 'مبيعات') {
       throw new BadRequestException('معالجة فشل التوصيل تخص حركات المبيعات فقط');
     }
+    this.assertNotStillWithCourier(tx);
     // Same guard `cancel()` applies — this path reaches performCancellation
     // directly, so skipping it would let the one case cancellation forbids
     // through a side door.
@@ -3254,6 +3443,7 @@ export class TransactionsService implements ClassificationInit {
     const tx = await this.transactionModel.findById(id).exec();
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     if ((tx as any).failedDelivery) throw new BadRequestException('تم إنهاء معالجة هذا الطلب بالفعل');
+    this.assertNotStillWithCourier(tx);
 
     const updated = await this.transactionModel
       .findByIdAndUpdate(id, { $set: { shipIssueState: 'awaiting' } }, { new: true })
@@ -3289,6 +3479,7 @@ export class TransactionsService implements ClassificationInit {
     if (!tx) throw new NotFoundException('المعاملة غير موجودة');
     if (tx.cancelled) throw new BadRequestException('المعاملة ملغاة');
     if ((tx as any).failedDelivery) throw new BadRequestException('تم إنهاء معالجة هذا الطلب بالفعل');
+    this.assertNotStillWithCourier(tx);
 
     const addShipCost = Math.max(0, Number(dto.addShipCost) || 0);
     const chargeCustomer = dto.chargeCustomer !== false; // default: the customer pays for the retry
@@ -3413,7 +3604,7 @@ export class TransactionsService implements ClassificationInit {
           { _id: tx._id },
           {
             $set: {
-              shipIssueState: 'open',
+              shipIssueState: nextShipIssueState('', '', (tx as any).bostaStatus || 'RETURNED'),
               shipIssueTrigger: (tx as any).bostaStatus || 'RETURNED',
               shipIssueOpenedAt: (tx as any).bostaLastSync || tx.date || new Date().toISOString(),
             },
@@ -3453,7 +3644,7 @@ export class TransactionsService implements ClassificationInit {
     const query: Record<string, unknown> = {
       type: 'مبيعات',
       cancelled: { $ne: true },
-      shipIssueState: { $in: ['open', 'awaiting'] },
+      shipIssueState: { $in: SHIP_ISSUE_ACTIVE_STATES },
     };
     if (refs?.length) query.ref = { $in: refs.map((r) => String(r).replace(/^#+/, '').trim()) };
 
@@ -3481,9 +3672,11 @@ export class TransactionsService implements ClassificationInit {
       });
       if (!dryRun) {
         const trigger = (tx as any).shipIssueTrigger || 'RETURNED';
+        // A failed attempt that ended in delivery is a successful order, not a failed delivery.
+        const wasAttempt = (tx as any).shipIssueState === 'attempt';
         await this.transactionModel.updateOne(
           { _id: tx._id },
-          {
+          wasAttempt ? { $set: { shipIssueState: 'closed' } } : {
             $set: {
               shipIssueState: 'closed',
               // The trail is kept on purpose — see the same block in
@@ -3817,6 +4010,7 @@ export class TransactionsService implements ClassificationInit {
     }
     // A Bosta settlement in progress or awaiting review owns this order's collection. Collecting it
     if (tx.afterSales?.caseId) throw new BadRequestException('سجل التحصيل من ملف الاسترجاع والاستبدال المرتبط');
+    if ((tx as any).afterSalesBundle?.caseId) throw new BadRequestException(`يُحصَّل متبقي هذا الطلب مع شحنة الاستبدال ${(tx as any).afterSalesBundle.caseRef || ''} في تسوية بوسطة`);
     // here as well is how the same cash would be booked twice.
     if ((tx as any).carrierSettlement?.payoutId || (!opts.carrierActual && ['processing', 'review', 'pending'].includes((tx as any).carrierSettlement?.status || ''))) {
       throw new BadRequestException('هذا الطلب قيد تسوية بوسطة — راجع التسوية من الخزنة ← تسويات بوسطة');
@@ -3838,18 +4032,30 @@ export class TransactionsService implements ClassificationInit {
 
     // Partial payment support for purchases
     let payAmount: number;
+    // Amounts are money: rounded to the piastre. A bulk split left float dust (1234.5599999) that
+    // kept an invoice «معلق» over 1e-10 forever, or posted a 1e-13 "payment" to a third invoice.
+    const r2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
     if (isPurchase && dto.collectAmount !== undefined && dto.collectAmount > 0) {
-      if (dto.collectAmount > totalRemaining) {
+      const asked = r2(dto.collectAmount);
+      if (asked > r2(totalRemaining) + 0.005) {
         throw new BadRequestException(
-          `المبلغ المدخل (${dto.collectAmount} ج) أكبر من المتبقي (${totalRemaining} ج)`
+          `المبلغ المدخل (${asked} ج) أكبر من المتبقي (${r2(totalRemaining)} ج)`
         );
       }
-      payAmount = dto.collectAmount;
+      payAmount = Math.min(asked, r2(totalRemaining));
+      if (!(payAmount > 0)) throw new BadRequestException('المبلغ المدخل غير صحيح');
     } else {
-      payAmount = totalRemaining;
+      payAmount = isPurchase ? r2(totalRemaining) : totalRemaining;
     }
 
-    const newRemaining = Math.max(0, totalRemaining - payAmount);
+    // A retried part of the same bulk payment must not pay this invoice twice.
+    if (isPurchase && dto.batchId) {
+      const dup = ((tx.payments || []) as any[]).some((p) => !p?.reversed && p?.batchId && p.batchId === String(dto.batchId).slice(0, 64));
+      if (dup) throw new ConflictException('تم تسجيل هذه الدفعة على الفاتورة من قبل — لن تُسجَّل مرة ثانية');
+    }
+
+    const newRemainingRaw = Math.max(0, totalRemaining - payAmount);
+    const newRemaining = isPurchase ? (newRemainingRaw < 0.005 ? 0 : r2(newRemainingRaw)) : newRemainingRaw;
     const isFullyPaid = newRemaining === 0;
 
     // ===== التحقق الحاسم: الرصيد كافٍ؟ (للمشتريات فقط) =====
@@ -3858,10 +4064,21 @@ export class TransactionsService implements ClassificationInit {
     }
 
     // ===== التحقق من OTP لسداد المورد (للمشتريات فقط — يُتجاوز للمدير) =====
+    // The code is a BUDGET, not a pass: each payment spends from the amount the manager approved,
+    // for that supplier only, and a spent code cannot pay again. It used to be checked against an
+    // amount the browser sent, never consumed — one code approved for 100 paid any sum, forever.
+    let releaseOtp: (() => Promise<void>) | null = null;
     if (isPurchase && callerRole !== 'admin') {
-      // For bulk payments, otpTotalAmount is the OTP-registered total; fall back to per-invoice payAmount
-      const otpCheckAmount = dto.otpTotalAmount != null ? dto.otpTotalAmount : payAmount;
-      await this.discountOtpService.assertSupplierPayOtp(dto.otpId || '', otpCheckAmount);
+      // The code names the supplier as the profile shows it; an invoice may still carry the name
+      // it was entered under (before a rename) — both are this supplier.
+      const names = [tx.client || ''];
+      if (tx.supplierId) {
+        try {
+          const rec = (await this.suppliersService.findAll()).find((sp) => String(sp._id) === String(tx.supplierId));
+          if (rec?.name) names.push(rec.name);
+        } catch { /* name on the invoice still applies */ }
+      }
+      releaseOtp = await this.discountOtpService.claimSupplierPayOtp(dto.otpId || '', names, payAmount);
     }
 
     // لقطة الحالة قبل التحصيل — تُحفظ في سجل الدفعة لاستخدامها في التراجع (UNDO)
@@ -3937,8 +4154,9 @@ export class TransactionsService implements ClassificationInit {
     const paymentDate = (dto.collectDate && /^\d{4}-\d{2}-\d{2}/.test(dto.collectDate))
       ? new Date(dto.collectDate).toISOString()
       : new Date().toISOString();
+    const paymentId = this.genPaymentId();
     tx.payments.push({
-      id: this.genPaymentId(),
+      id: paymentId,
       amount: isPurchase ? payAmount : netVaultAmount,
       method: dto.collectMethod,
       note: dto.collectNote || (shipExtra > 0 ? `زيادة شحن: ${shipExtra} ج` : ''),
@@ -3953,7 +4171,20 @@ export class TransactionsService implements ClassificationInit {
       ...(isPurchase && dto.batchId ? { batchId: String(dto.batchId).slice(0, 64) } : {}),
     } as any);
 
-    const saved = await tx.save();
+    // Purchases save only if nobody changed the invoice since it was read (two tabs, or a retry
+    // after a timeout, both read remaining 1000 and both paid it). `increment()` puts the version
+    // in the update filter, so the second write fails instead of silently paying twice.
+    if (isPurchase && typeof (tx as any).increment === 'function') tx.increment();
+    let saved: TransactionDocument;
+    try {
+      saved = await tx.save();
+    } catch (err) {
+      if (releaseOtp) await releaseOtp();
+      if ((err as any)?.name === 'VersionError') {
+        throw new ConflictException('تم تعديل الفاتورة من جلسة أخرى — أعد التحميل وتحقق من المتبقي قبل السداد');
+      }
+      throw err;
+    }
     if (payAmount > 0) {
       const vaultAmount = isPurchase ? -payAmount : netVaultAmount;
       await this.vaultService.addSystemEntry(
@@ -3985,6 +4216,7 @@ export class TransactionsService implements ClassificationInit {
             date: paymentDate.split('T')[0],
             amount: payAmount,
             employee: by || saved.employee || '',
+            paymentId,
           });
         }
       }
@@ -4016,6 +4248,9 @@ export class TransactionsService implements ClassificationInit {
     // آخر عملية تحصيل
     const lastPayment: any = payments[payments.length - 1];
     if (lastPayment?.carrierPayoutId) throw new BadRequestException('هذا التحصيل ضمن دفعة بوسطة — التراجع يكون عن الدفعة كاملة');
+    // An already-undone payment stays in the list (marked reversed); undoing it again here
+    // restored its snapshot a second time and deleted another payment's vault + ledger rows.
+    if (lastPayment?.reversed) throw new BadRequestException('آخر دفعة سبق التراجع عنها — استخدم التراجع عن دفعة محددة من سجل المدفوعات');
     const isPurchase = tx.type === 'مشتريات';
     const txRef = tx.ref || String(tx._id);
 
@@ -4088,6 +4323,7 @@ export class TransactionsService implements ClassificationInit {
       saved,
       _reversedBy || saved.employee || '',
       `تراجع عن تحصيل #${txRef}`,
+      { paymentId: lastPayment?.id, amount: reversedAmount },
     );
 
     this.emit('tx:updated', { tx: saved, action: 'reverse-collect' });
@@ -4259,6 +4495,17 @@ export class TransactionsService implements ClassificationInit {
         );
       }
 
+      // A purchase deposit was booked net of the opening debt (debt = total − deposit). Undoing it
+      // makes that amount owed again — the ledger moves with the invoice, or the two disagree.
+      if (isPurchase && amount > 0) {
+        await this.adjustSupplierLedgerForPayableChange(
+          saved,
+          amount,
+          undoBy,
+          `تراجع عن عربون فاتورة مشتريات #${txRef}${reason ? ` — ${reason}` : ''}`,
+        );
+      }
+
       this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
       await this.queueDepositMetafields(saved, 'deposit-undo');
       return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: 'deposit' };
@@ -4280,7 +4527,10 @@ export class TransactionsService implements ClassificationInit {
       await this.vaultService.assertSufficientBalance(method, amount);
     }
 
-    if (isLastActive && pay.snapshotBefore) {
+    // Purchases always undo by arithmetic. Restoring the snapshot taken before this payment wiped
+    // every later change: an earlier undo (300 then 200 undone → remaining 700, truth 1000) and a
+    // later «إقفال المتبقي» (the waived amount came back as debt the ledger no longer had).
+    if (isLastActive && pay.snapshotBefore && !isPurchase) {
       // Full snapshot restore — most recent live payment
       const snap = pay.snapshotBefore;
       tx.deposit = snap.deposit;
@@ -4330,11 +4580,12 @@ export class TransactionsService implements ClassificationInit {
       saved,
       undoBy,
       `تراجع عن دفعة #${txRef}${reason ? ` — ${reason}` : ''}`,
+      { paymentId: pay.id, amount },
     );
 
     this.emit('tx:updated', { tx: saved, action: 'undo-payment' });
     this.emit('vault:changed', { reason: 'tx:undo-payment', txId: String(saved._id) });
-    return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: isLastActive ? 'full' : 'partial' };
+    return { tx: saved, reversedAmount: amount, vaultMethod: method, mode: isLastActive && !isPurchase ? 'full' : 'partial' };
   }
 
   /** Save with optimistic concurrency check on document version. */
@@ -4462,14 +4713,19 @@ export class TransactionsService implements ClassificationInit {
         { new: true },
       )
       .exec();
-    // Re-record vault entries — non-blocking so restore always completes
-    this.recordVaultForTransaction(restored!).catch((err) =>
-      console.error(`[restore] vault re-record failed for ${id}:`, err),
-    );
-    // Re-apply inventory movement log (inverse of cancellation) — same non-blocking posture as vault re-record above.
-    this.recordRestoreInventoryMovement(restored!, restoredBy).catch((err) =>
-      this.logger.error(`[restore] inventory movement logging failed for ${id}: ${(err as Error).message}`, (err as Error).stack),
-    );
+    // ⚠ Restore only UN-ARCHIVES: a frozen transaction is a cancelled one and stays cancelled. Its
+    // cancellation already put the money back; re-recording the vault here took it out again each
+    // freeze → restore cycle (a purchase's deposit left the vault a second time), and the
+    // "restore" stock rows described a movement that never happened (stock is derived from
+    // non-cancelled transactions). Only a non-cancelled archived row is re-recorded, as before.
+    if (!restored!.cancelled) {
+      this.recordVaultForTransaction(restored!).catch((err) =>
+        console.error(`[restore] vault re-record failed for ${id}:`, err),
+      );
+      this.recordRestoreInventoryMovement(restored!, restoredBy).catch((err) =>
+        this.logger.error(`[restore] inventory movement logging failed for ${id}: ${(err as Error).message}`, (err as Error).stack),
+      );
+    }
     await this.queueDepositMetafields(restored, 'tx-restored');
     return restored!;
   }
@@ -6148,10 +6404,16 @@ export class TransactionsService implements ClassificationInit {
     const kind = isPurchase ? 'عربون مشتريات' : 'ديبوزت مبيعات';
     const entityCtx = isPurchase ? { supplier: party } : { customer: party };
 
+    // A sale deposit came INTO the vault: the old vault gives it back, the new one receives it.
+    // A purchase deposit went OUT of the vault: the new vault pays it, the old one gets it back.
+    // Purchases used the sale direction — moving 2,000 from كاش to Instapay left كاش at −4,000 and
+    // Instapay at +2,000 instead of 0 and −2,000. The withdrawal is always written first (see above).
+    const outMethod = isPurchase ? toMethod : fromMethod;
+    const inMethod = isPurchase ? fromMethod : toMethod;
     await this.vaultService.addSystemEntry(
       -amount,
-      fromMethod,
-      `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل إلى: ${toMethod} | بواسطة: ${by}`,
+      outMethod,
+      `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل ${isPurchase ? 'من' : 'إلى'}: ${isPurchase ? fromMethod : toMethod} | بواسطة: ${by}`,
       txDate,
       'تصحيح خزنة',
       txRef,
@@ -6159,12 +6421,12 @@ export class TransactionsService implements ClassificationInit {
       by,
     );
     try {
-      await this.vaultService.addSystemEntry(amount,toMethod,
-        `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل من: ${fromMethod} | بواسطة: ${by}`,
+      await this.vaultService.addSystemEntry(amount,inMethod,
+        `تصحيح خزنة ${kind} #${txRef} — ${party} | نقل ${isPurchase ? 'إلى' : 'من'}: ${isPurchase ? toMethod : fromMethod} | بواسطة: ${by}`,
         txDate,'تصحيح خزنة',txRef,entityCtx,by);
     } catch(error) {
-      await this.vaultService.addSystemEntry(amount,fromMethod,
-        `تراجع عن تصحيح خزنة ${kind} #${txRef} — تعذّر الإيداع في: ${toMethod}`,
+      await this.vaultService.addSystemEntry(amount,outMethod,
+        `تراجع عن تصحيح خزنة ${kind} #${txRef} — تعذّر القيد في: ${inMethod}`,
         txDate,'تصحيح خزنة',txRef,entityCtx,by);
       throw error;
     }
@@ -6608,6 +6870,73 @@ export class TransactionsService implements ClassificationInit {
     return { moved: result.modifiedCount, pickupRef: dst };
   }
 
+  private static readonly READY_BASE = { type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true }, pickupStatus: { $in: ['Ready', 'Picked-Up'] } };
+  private static readonly READY_FIELDS = '_id ref pickupRef pickupStatus pickupDate bostaStatus bostaOrderId bostaTrackingNumber shippedAt shipCo carrierCode warehouseCode';
+
+  /**
+   * The one protection rule for moving ready orders into another ready group — used by the
+   * card merge (`mergeReadyGroups`) AND the edit-run window (`addToPickupRun`), so the two
+   * can never accept different moves. Throws when the target has no order still waiting,
+   * or `readyMergeBlock` refuses (collected / carrier / warehouse / two pickup requests).
+   */
+  private async assertReadyMoveAllowed(source: any[], targetRef: string): Promise<{ target: any[]; pickupDate: string | null }> {
+    const targetNow: any[] = await this.transactionModel.find({ ...TransactionsService.READY_BASE, pickupRef: targetRef })
+      .select(TransactionsService.READY_FIELDS).lean().exec();
+    const target = targetNow.filter(o => o.pickupStatus === 'Ready');
+    if (!target.length) throw new ConflictException('المجموعة المستهدفة لم تعد جاهزة للشحن؛ حدّث الصفحة');
+    const ids = [...source, ...target].map(o => String(o._id));
+    const requests = (await this.transactionModel.db.collection('bostapickups')
+      .find({ status: { $in: ['pending', 'created'] }, active: { $ne: false }, orderIds: { $in: ids } })
+      .project({ _id: 1, orderIds: 1 }).toArray())
+      .map((r: any) => ({ id: String(r._id), orderIds: (r.orderIds || []).map(String) }));
+    const block = readyMergeBlock(source, target, requests, (o: any) => String(o.ref || o._id));
+    if (block) throw new BadRequestException({ code: 'READY_MERGE_BLOCKED', reason: block.code, message: readyMergeBlockMessage(block) });
+    return { target, pickupDate: target.map(o => o.pickupDate).find(Boolean) || null };
+  }
+
+  /**
+   * Merge one «جاهز للشحن» group into another (drag a ready card onto another).
+   * Only the grouping moves (`pickupRef`, and the target's `pickupDate`); the Bosta
+   * shipment, the pickup-request membership, money and stock are untouched. Refused
+   * when the source changed since the screen read it, or when the two groups could
+   * not leave together (`readyMergeBlock`: collected, other carrier, other warehouse,
+   * two different Bosta pickup requests).
+   */
+  async mergeReadyGroups(
+    sourceRef: string,
+    targetRef: string,
+    ids: string[],
+    by: string,
+  ): Promise<{ moved: number; pickupRef: string; pickupDate: string | null }> {
+    const src = String(sourceRef || '').trim();
+    const dst = String(targetRef || '').trim();
+    if (!src || !dst) throw new BadRequestException('حدد مجموعتي الشحن');
+    if (src === dst) throw new BadRequestException('لا يمكن دمج المجموعة في نفسها');
+    const validIds = [...new Set((ids || []).map(String).filter(id => isValidObjectId(id)))];
+    if (!validIds.length) throw new BadRequestException('المجموعة المسحوبة فارغة');
+
+    const base = TransactionsService.READY_BASE;
+    const sourceNow: any[] = await this.transactionModel.find({ ...base, pickupRef: src }).select(TransactionsService.READY_FIELDS).lean().exec();
+    const sourceIds = new Set(sourceNow.map(o => String(o._id)));
+    if (sourceIds.size !== validIds.length || validIds.some(id => !sourceIds.has(id))) {
+      throw new ConflictException('تغيّرت المجموعة المسحوبة منذ فتح الصفحة؛ حدّث الصفحة وحاول مرة أخرى');
+    }
+    const { pickupDate } = await this.assertReadyMoveAllowed(sourceNow, dst);
+    const now = new Date().toISOString().slice(0, 10);
+    const result = await this.transactionModel.updateMany(
+      { ...base, pickupStatus: 'Ready', _id: { $in: validIds }, pickupRef: src },
+      {
+        $set: { pickupRef: dst, ...(pickupDate ? { pickupDate } : {}) },
+        $push: { pickupHistory: { action: 'merge-ready', date: now, by, pickupRef: dst, fromRef: src } },
+      },
+    );
+    this.emit('pickup:updated', { ids: validIds, action: 'merge-ready', pickupRef: dst, ...(pickupDate ? { pickupDate } : {}), by, mergedFrom: src });
+    if (result.modifiedCount !== validIds.length) {
+      throw new ConflictException('تم نقل بعض الطلبات فقط؛ حدّث الصفحة وراجع المجموعتين');
+    }
+    return { moved: result.modifiedCount, pickupRef: dst, pickupDate };
+  }
+
   /**
    * Take orders out of a preparation group into a NEW group of their own
    * (right-click → «نقله لمجموعة تحضير جديدة»). The server names the new group
@@ -6783,33 +7112,31 @@ export class TransactionsService implements ClassificationInit {
     return { updated: changed.length };
   }
 
-  /** Move one or more Ready orders into another active pickup run. */
+  /**
+   * Move selected Ready orders into another active pickup run (the edit-run window).
+   * Same protection as the card merge (`assertReadyMoveAllowed`). It used to accept
+   * `Picked-Up` orders and write them back to `Ready`, and to answer every refusal with
+   * `{updated: 0}`; now only orders still waiting move, and a refusal says why.
+   */
   async addToPickupRun(idsInput: string | string[], pickupRef: string, by: string, date?: string): Promise<{ updated: number }> {
-    const ids = [...new Set((Array.isArray(idsInput) ? idsInput : [idsInput]).filter(id => isValidObjectId(id)))];
-    if (!ids.length || !pickupRef) return { updated: 0 };
-    const targetRun = await this.transactionModel.findOne({
-      type: 'مبيعات',
-      pickupRef,
-      pickupStatus: { $in: ['Ready', 'Picked-Up'] },
-      cancelled: { $ne: true },
-    }).select('pickupDate').lean();
-    if (!targetRun) return { updated: 0 };
-
-    const now = targetRun.pickupDate || date || new Date().toISOString().slice(0, 10);
-    const movable = await this.transactionModel.find({
-      _id: { $in: ids }, type: 'مبيعات', cancelled: { $ne: true },
-      pickupStatus: { $in: ['Ready', 'Picked-Up'] }, pickupRef: { $ne: pickupRef },
-    }).select('_id').lean();
-    if (movable.length !== ids.length) return { updated: 0 };
-    const historyEntry = { action: 'ready_transfer', date: now, by, pickupRef };
+    const ids = [...new Set((Array.isArray(idsInput) ? idsInput : [idsInput]).map(String).filter(id => isValidObjectId(id)))];
+    const dst = String(pickupRef || '').trim();
+    if (!ids.length || !dst) return { updated: 0 };
+    const base = TransactionsService.READY_BASE;
+    const source: any[] = await this.transactionModel.find({ ...base, _id: { $in: ids } }).select(TransactionsService.READY_FIELDS).lean().exec();
+    if (source.length !== ids.length) throw new ConflictException('بعض الطلبات لم تعد جاهزة للشحن؛ حدّث الصفحة وحاول مرة أخرى');
+    if (source.some(o => o.pickupRef === dst)) throw new BadRequestException('بعض الطلبات موجودة بالفعل في هذه المجموعة');
+    const { pickupDate } = await this.assertReadyMoveAllowed(source, dst);
+    const now = pickupDate || date || new Date().toISOString().slice(0, 10);
     const result = await this.transactionModel.updateMany(
-      { _id: { $in: ids }, type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: { $in: ['Ready', 'Picked-Up'] }, pickupRef: { $ne: pickupRef } },
+      { ...base, pickupStatus: 'Ready', _id: { $in: ids }, pickupRef: { $ne: dst } },
       {
-        $set: { pickupStatus: 'Ready', pickupDate: now, pickupBy: by, pickupRef },
-        $push: { pickupHistory: historyEntry },
+        $set: { pickupDate: now, pickupBy: by, pickupRef: dst },
+        $push: { pickupHistory: { action: 'ready_transfer', date: now, by, pickupRef: dst } },
       },
     );
-    if (result.modifiedCount) this.emit('pickup:updated', { ids, action: 'ready', pickupRef, pickupDate: now });
+    if (result.modifiedCount) this.emit('pickup:updated', { ids, action: 'ready', pickupRef: dst, pickupDate: now });
+    if (result.modifiedCount !== ids.length) throw new ConflictException('تم نقل بعض الطلبات فقط؛ حدّث الصفحة وراجع المجموعتين');
     return { updated: result.modifiedCount };
   }
 

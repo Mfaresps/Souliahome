@@ -56,7 +56,11 @@
     if (!shipmentEvents.some(entry => ['sent', 'resent'].includes(entry?.type)))
       add('shipment-sent', labels.sent, tx.shippedAt, 'info', 'truck');
     const tracking = Array.isArray(tx.bostaTrackingEvents) ? tx.bostaTrackingEvents : [];
+    // One shipment + status + carrier exception time = one event (carrierEventIdentity on the server).
+    const seenTracking = new Set();
     for (const entry of tracking) {
+      const id = entry?.exceptionAt ? `${entry.shipmentId}|${entry.status}|${entry.exceptionAt}` : entry?.key;
+      if (id) { if (seenTracking.has(id)) continue; seenTracking.add(id); }
       const code = String(entry?.status || '').toUpperCase();
       if (labels[code]) add('carrier-' + code, labels[code], entry.at,
         negative.has(code) ? (fatal.has(code) ? 'destructive' : 'warning') : code === 'DELIVERED' ? 'success' : 'info',

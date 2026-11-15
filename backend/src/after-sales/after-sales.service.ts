@@ -17,6 +17,7 @@ import { projectAfterSalesShipment } from './after-sales-shipment';
 import { returnLineCost } from '../shared/line-cost.util';
 import { currentUnitCost } from '../shared/avg-cost.util';
 import { linkComplaintCase, recordComplaintExecution } from '../complaints/complaint-workflow';
+import { advanceRemaining, advanceView, bundledSaleCod, bundledSaleShipCharged, bundledShipmentCod, bundledTransactionIds, caseBundleBlock, pendingDepositRequests, phoneKey, saleBundleBlock } from '../shared/after-sales-bundle.util';
 
 @Injectable()
 export class AfterSalesService {
@@ -45,7 +46,7 @@ export class AfterSalesService {
       stage: w.stage, kind: row.requestKind, originalRef: row.originalRef, replacementRef: w.replacementRef || '', returnRef: row.returnTxRef || '',
       settlement: action.startsWith('settlement:') ? (action === 'settlement:refund' ? w.refund : action === 'settlement:collection' ? w.collection : w.carrierSettlement) : undefined };
     await recordComplaintExecution(this.connection, row, event, ctx.session);
-    const ids = [row.originalTransactionId, w.replacementTxId, row.returnTxId].filter(Boolean).map(id => this.id(String(id)));
+    const ids = [...new Set([row.originalTransactionId, w.replacementTxId, row.returnTxId, ...bundledTransactionIds(row)].filter(Boolean).map(String))].map(id => this.id(id));
     await this.connection.collection('transactions').updateMany({ _id: { $in: ids }, 'afterSalesEvents.eventId': { $ne: event.eventId } },
       { $push: { afterSalesEvents: event } } as any, { session: ctx.session });
     ctx.afterCommit.push(() => { for (const id of ids) this.transactions.notifyAfterSalesTransactionChanged(String(id)); });
@@ -110,13 +111,100 @@ export class AfterSalesService {
     if (row.workflow.replacementTxId) {
       row.workflow.replacementPickupStatus = replacement?.pickupStatus || 'Pending';
       row.workflow.replacementPrepared = replacement?.prepChecked === true;
+      row.advance = advanceView(row.workflow.quote?.collectDue, replacement);
     }
     row.rollback = await this.rollbackOption(row, undefined, replacement);
+    if ((row.workflow.bundledSales || []).length) {
+      row.bundleView = await this.bundledView(row);
+      row.bundleCod = row.workflow.shipment?.cod ?? bundledShipmentCod(row.advance ? row.advance.left : row.workflow.quote?.collectDue, row.bundleView);
+    }
+    row.bundleBlock = caseBundleBlock(row);
     return row;
   }
+  private readonly bundleProjection = { ref: 1, client: 1, phone: 1, date: 1, total: 1, itemsTotal: 1, discount: 1, deposit: 1, remaining: 1,
+    shipCost: 1, shippingDiscount: 1, payStatus: 1, prepChecked: 1, pickupStatus: 1, cancelled: 1, archived: 1, warehouseCode: 1, type: 1,
+    depositRequests: 1, afterSalesBundle: 1, afterSales: 1, bostaOrderId: 1, bostaTrackingNumber: 1, shippedAt: 1, deliveredAt: 1,
+    carrierSettlement: 1, shopifyOrderId: 1, createdAt: 1,
+    'items.code': 1, 'items.name': 1, 'items.qty': 1, 'items.price': 1, 'items.total': 1, 'items.imageUrl': 1 };
+  /** The live state of each bundled sale: the case stores only the link, the money stays on the sale. */
+  private async bundledView(row: any, session?: any) {
+    const ids = (row.workflow.bundledSales || []).map((b: any) => this.id(String(b.transactionId)));
+    const rows = await this.connection.collection('transactions').find({ _id: { $in: ids } }, { session, projection: this.bundleProjection }).toArray();
+    const byId = new Map(rows.map(tx => [String(tx._id), tx]));
+    return (row.workflow.bundledSales || []).map((b: any) => {
+      const tx: any = byId.get(String(b.transactionId));
+      const shipped = (row.workflow.shipment?.bundled || []).find((s: any) => String(s.transactionId) === String(b.transactionId));
+      return { transactionId: String(b.transactionId), ref: tx?.ref || b.ref, client: tx?.client || '', date: tx?.date || '',
+        total: Number(tx?.total || 0), discount: Number(tx?.discount || 0), deposit: Number(tx?.deposit || 0), remaining: Number(tx?.remaining || 0),
+        cod: shipped ? shipped.cod : bundledSaleCod(tx), prepared: tx?.prepChecked === true, pickupStatus: tx?.pickupStatus || 'Pending',
+        pendingDeposits: pendingDepositRequests(tx), cancelled: !tx || !!tx.cancelled, linked: tx?.afterSalesBundle?.caseId === String(row._id),
+        collected: !!tx?.afterSalesBundle?.collection, items: (tx?.items || []).map((i: any) => ({ code: i.code, name: i.name, qty: i.qty, total: i.total, imageUrl: i.imageUrl || '' })),
+        at: b.at, by: b.by };
+    });
+  }
+  /** Unshipped sales of the same customer that may ride the exchange waybill. */
+  async bundleCandidates(id: string) {
+    const row: any = await this.cases.findOne({ _id: this.id(id), 'workflow.version': 2 }).lean();
+    if (!row) throw new NotFoundException('طلب خدمة ما بعد البيع غير موجود');
+    const key = phoneKey(row.phone), or: any[] = [];
+    if (String(row.client || '').trim()) or.push({ client: String(row.client).trim() });
+    if (key) or.push({ phone: { $regex: key.slice(-9) + '$' } });
+    if (!or.length) return { blocked: caseBundleBlock(row), candidates: [] };
+    const exclude = [row.originalTransactionId, row.workflow.replacementTxId, ...(row.workflow.bundledSales || []).map((b: any) => b.transactionId)]
+      .filter(Boolean).map(value => this.id(String(value)));
+    const rows = await this.connection.collection('transactions').find({ type: 'مبيعات', cancelled: { $ne: true }, archived: { $ne: true },
+      _id: { $nin: exclude }, $or: or, bostaOrderId: { $in: [null, ''] }, deliveredAt: { $in: [null, ''] }, shippedAt: { $in: [null, ''] },
+      pickupStatus: { $nin: ['Shipped', 'Delivered', 'Picked-Up'] } }, { projection: this.bundleProjection }).sort({ createdAt: -1 }).limit(30).toArray();
+    return { blocked: caseBundleBlock(row), candidates: rows.map((tx: any) => ({ transactionId: String(tx._id), ref: tx.ref, client: tx.client, date: tx.date,
+      total: Number(tx.total || 0), discount: Number(tx.discount || 0), deposit: Number(tx.deposit || 0), remaining: Number(tx.remaining || 0),
+      prepared: tx.prepChecked === true, pickupStatus: tx.pickupStatus || 'Pending', pendingDeposits: pendingDepositRequests(tx),
+      items: (tx.items || []).map((i: any) => ({ code: i.code, name: i.name, qty: i.qty, imageUrl: i.imageUrl || '' })),
+      block: saleBundleBlock(tx, row) })) };
+  }
+  /** Ship a new sale of the same customer inside this exchange waybill. Its money stays on the sale. */
+  bundle(id: string, body: any, actor: any) {
+    this.permit(actor, 'shopify-prepare-ship');
+    return this.mutate(id, 'sale-bundled', body, actor, async (row, ctx, by) => {
+      const caseBlock = caseBundleBlock(row);
+      if (caseBlock) throw new ConflictException(caseBlock);
+      const txId = String(this.id(String(body.transactionId || '')));
+      const transactions = this.connection.collection('transactions');
+      const tx: any = await transactions.findOne({ _id: this.id(txId) }, { session: ctx.session });
+      const block = saleBundleBlock(tx, row);
+      if (block) throw new ConflictException(block);
+      const at = new Date().toISOString();
+      const result = await transactions.updateOne({ _id: this.id(txId), cancelled: { $ne: true }, 'afterSalesBundle.caseId': { $exists: false },
+        bostaOrderId: { $in: [null, ''] }, shippedAt: { $in: [null, ''] }, deliveredAt: { $in: [null, ''] } },
+        { $set: { afterSalesBundle: { caseId: String(row._id), caseRef: row.workflow.ref, originalRef: row.originalRef, at, by } }, $inc: { unitTrackingRevision: 1 } },
+        { session: ctx.session });
+      if (!result.modifiedCount) throw new ConflictException('تغيّر الطلب الآن؛ حدّث الصفحة وأعد المحاولة');
+      row.workflow.bundledSales = [...(row.workflow.bundledSales || []), { transactionId: txId, ref: tx.ref, at, by }];
+      body.note = String(body.note || '').trim() || `#${tx.ref}`;
+      ctx.afterCommit.push(() => this.transactions.notifyAfterSalesTransactionChanged(txId));
+    });
+  }
+  unbundle(id: string, body: any, actor: any) {
+    this.permit(actor, 'shopify-prepare-ship');
+    return this.mutate(id, 'sale-unbundled', body, actor, async (row, ctx) => {
+      if (row.workflow.shipment) throw new ConflictException('أُنشئت شحنة الاستبدال؛ لا يمكن فصل طلب منها');
+      const txId = String(this.id(String(body.transactionId || '')));
+      const entry = (row.workflow.bundledSales || []).find((b: any) => String(b.transactionId) === txId);
+      if (!entry) throw new NotFoundException('الطلب غير مضموم لهذه الشحنة');
+      await this.releaseBundled(row, [txId], ctx);
+      body.note = String(body.note || '').trim() || `#${entry.ref}`;
+    });
+  }
+  /** Detach bundled sales: each goes back to being an ordinary order that ships on its own. */
+  private async releaseBundled(row: any, ids: string[], ctx: DatabaseWriteContext) {
+    if (!ids.length) return;
+    await this.connection.collection('transactions').updateMany({ _id: { $in: ids.map(value => this.id(value)) }, 'afterSalesBundle.caseId': String(row._id) },
+      { $unset: { afterSalesBundle: 1 }, $inc: { unitTrackingRevision: 1 } }, { session: ctx.session });
+    row.workflow.bundledSales = (row.workflow.bundledSales || []).filter((b: any) => !ids.includes(String(b.transactionId)));
+    for (const value of ids) ctx.afterCommit.push(() => this.transactions.notifyAfterSalesTransactionChanged(value));
+  }
   private readonly rollbackReplacementProjection = {
-    pickupStatus: 1, prepChecked: 1, cancelled: 1, archived: 1,
-    'afterSales.caseId': 1, 'afterSales.role': 1, 'afterSales.shipmentPending': 1,
+    pickupStatus: 1, prepChecked: 1, cancelled: 1, archived: 1, ref: 1, total: 1, deposit: 1, remaining: 1, deposits: 1, depositRequests: 1,
+    'afterSales.caseId': 1, 'afterSales.role': 1, 'afterSales.shipmentPending': 1, 'afterSales.collection': 1,
     bostaOrderId: 1, shippedAt: 1, deliveredAt: 1, bostaStatus: 1, unitTrackingRevision: 1,
   };
   private async rollbackOption(row: any, session?: any, loadedReplacement?: any) {
@@ -153,6 +241,7 @@ export class AfterSalesService {
       if (option.token !== body.expectedToken || option.step !== body.step) throw new ConflictException('تغيرت خطوات الطلب؛ حدّث الملف قبل التراجع');
       const w = row.workflow, replacementId = w.replacementTxId;
       if (option.step === 'request') {
+        await this.releaseBundled(row, (w.bundledSales || []).map((b: any) => String(b.transactionId)), ctx);
         row.status = 'مرفوض'; w.stage = 'cancelled'; w.cancelledAt = new Date().toISOString(); w.cancelledBy = by;
       } else if (option.step === 'preparation') {
         await this.transactions.undoAfterSalesPreparation(replacementId, String(row._id), by, actor.userId, ctx);
@@ -369,6 +458,7 @@ export class AfterSalesService {
         if (units.length) throw new ConflictException('ألغ تحضير البديل وأعد القطع للمخزن أولًا');
         await this.transactions.cancelAfterSalesReplacement(txId, String(row._id), body.note, by, ctx);
       }
+      await this.releaseBundled(row, (row.workflow.bundledSales || []).map((b: any) => String(b.transactionId)), ctx);
       row.status = 'مرفوض'; row.rejectedReason = body.note; row.workflow.stage = 'cancelled';
       const other = await this.cases.exists({ _id: { $ne: row._id }, originalTransactionId: row.originalTransactionId,
         'workflow.version': 2, 'workflow.stage': { $ne: 'cancelled' } }).session(ctx.session);
@@ -378,6 +468,7 @@ export class AfterSalesService {
   async ship(id: string, body: any, actor: any) {
     this.permit(actor, 'shopify-prepare-ship');
     const reserved: any = await this.mutate(id, 'shipment-requested', body, actor, async (row, ctx) => {
+      let exchangeDue = Number(row.workflow.quote?.collectDue || 0);
       if (row.workflow.fulfillmentChannel === 'direct') throw new ConflictException('طلب استلام وتسليم مباشر؛ لا يحتاج إنشاء بوليصة');
       if (!row.workflow.approvedAt || row.workflow.shipment || row.workflow.receivedAt && row.requestKind !== 'exchange') throw new ConflictException('الشحنة موجودة أو الطلب غير معتمد أو المرتجع مستلم بالفعل');
       if (row.requestKind === 'exchange') {
@@ -386,8 +477,35 @@ export class AfterSalesService {
         const summary = await this.tracking.pickingSummary(row.workflow.replacementTxId);
         if (summary.lines.some((line: any) => line.units.length + line.skippedCount < line.qty || line.units.some((u: any) => u.status !== 'prepared'))) throw new ConflictException('هويات البديل غير مكتملة');
         if (summary.lines.some((line: any) => line.units.some((unit: any) => row.workflow.selectedUnits.includes(unit.unitId)))) throw new ConflictException('اختر قطعة بديلة بهوية مختلفة عن القطعة الراجعة');
+        // A deposit on the difference still waiting for a manager would change the COD after it is sent.
+        if (pendingDepositRequests(replacement)) throw new ConflictException('عربون على فرق الاستبدال بانتظار موافقة المدير؛ اعتمده أو ارفضه قبل الشحن');
+        exchangeDue = advanceRemaining(row.workflow.quote.collectDue, replacement);
+      }
+      // Sales bundled into this waybill: each must be prepared, and its remaining final (no deposit
+      // still waiting for a manager), because that remaining is what Bosta will collect for it.
+      const bundled: any[] = [], transactions = this.connection.collection('transactions');
+      // What Bosta collects for the exchange itself: the difference minus any deposit already paid on it.
+      for (const b of row.workflow.bundledSales || []) {
+        const tx: any = await transactions.findOne({ _id: this.id(String(b.transactionId)) }, { session: ctx.session });
+        const ref = tx?.ref || b.ref;
+        if (!tx || tx.cancelled || tx.archived || tx.afterSalesBundle?.caseId !== String(row._id)) throw new ConflictException(`الطلب المضموم #${ref} لم يعد صالحًا؛ افصله من الشحنة`);
+        if (tx.bostaOrderId || tx.shippedAt || tx.deliveredAt) throw new ConflictException(`الطلب المضموم #${ref} خرج للشحن بالفعل؛ افصله من الشحنة`);
+        if (pendingDepositRequests(tx)) throw new ConflictException(`عربون الطلب المضموم #${ref} بانتظار موافقة المدير؛ اعتمده أو ارفضه قبل الشحن`);
+        if (!tx.prepChecked) throw new ConflictException(`أكمل تجهيز الطلب المضموم #${ref} قبل الشحن`);
+        const bundledSummary = await this.tracking.pickingSummary(String(tx._id));
+        if (bundledSummary.lines.some((line: any) => line.units.length + line.skippedCount < line.qty || line.units.some((u: any) => u.status !== 'prepared'))) throw new ConflictException(`هويات الطلب المضموم #${ref} غير مكتملة`);
+        bundled.push({ transactionId: String(tx._id), ref: tx.ref, cod: bundledSaleCod(tx), total: Number(tx.total || 0), shipCharged: bundledSaleShipCharged(tx) });
       }
       row.workflow.shipment = { status: 'creating', businessReference: row.workflow.ref, requestedAt: new Date().toISOString() };
+      if (row.requestKind === 'exchange') {
+        row.workflow.shipment.exchangeCod = exchangeDue;
+        row.workflow.shipment.cod = bundledShipmentCod(exchangeDue, bundled);
+      }
+      if (bundled.length) {
+        row.workflow.shipment.bundled = bundled;
+        await transactions.updateMany({ _id: { $in: bundled.map(b => this.id(b.transactionId)) } },
+          { $set: { 'afterSalesBundle.shipmentPending': true }, $inc: { unitTrackingRevision: 1 } }, { session: ctx.session });
+      }
       row.workflow.customerDistrictName = String(body.customerDistrictName || '').trim().slice(0, 150);
       if (body.addressMode === 'original') delete row.workflow.customerAddress;
       if (body.addressMode === 'original') delete row.workflow.customerAddress;
@@ -417,6 +535,8 @@ export class AfterSalesService {
       if (error.beforeSend) {
         await this.cases.updateOne({ _id: this.id(id), 'workflow.shipment.status': 'creating' }, { $unset: { 'workflow.shipment': 1 } });
         if (claim.workflow.replacementTxId) await this.connection.collection('transactions').updateOne({ _id: this.id(claim.workflow.replacementTxId) }, { $unset: { 'afterSales.shipmentPending': 1 } });
+        const bundledIds = (claim.workflow.shipment?.bundled || []).map((b: any) => this.id(String(b.transactionId)));
+        if (bundledIds.length) await this.connection.collection('transactions').updateMany({ _id: { $in: bundledIds }, 'afterSalesBundle.caseId': String(claim._id) }, { $unset: { 'afterSalesBundle.shipmentPending': 1 } });
         throw new BadRequestException(error.message);
       }
       await this.cases.updateOne({ _id: this.id(id) }, { $set: { 'workflow.shipment.status': 'reconcile', 'workflow.shipment.error': error.message,
@@ -529,6 +649,29 @@ export class AfterSalesService {
       }
       await this.connection.collection('transactions').updateOne({ _id: this.id(txId) }, { $set: { deliveredAt: row.workflow.replacementDeliveredAt, pickupStatus: 'Delivered', deliverySource: 'MANUAL' } }, { session: ctx.session });
       await this.transactions.recordAfterSalesDelivery(txId, by, ctx);
+      // The whole difference was paid in advance: nothing is left to collect.
+      if (row.workflow.quote.collectDue && !row.workflow.collection) {
+        const paid: any = await this.connection.collection('transactions').findOne({ _id: this.id(txId) }, { session: ctx.session });
+        if (advanceRemaining(row.workflow.quote.collectDue, paid) <= 0) row.workflow.collection = { amount: 0, prepaid: true,
+          advance: money(row.workflow.quote.collectDue), at: new Date().toISOString(), by };
+      }
+      // The bundled sales were in the same parcel: delivered with it.
+      for (const b of row.workflow.shipment?.bundled || []) {
+        const bundledId = String(b.transactionId);
+        const bundledUnits = await this.connection.collection('inventoryunits').find({ 'assignment.transactionId': bundledId }, { session: ctx.session }).toArray();
+        for (const unit of bundledUnits) {
+          if (!['prepared', 'shipped', 'delivered'].includes(unit.status)) throw new ConflictException(`هوية في الطلب المضموم #${b.ref} غير جاهزة للتسليم`);
+          let version = unit.__v;
+          if (unit.status === 'prepared') {
+            await this.tracking.actionInSession(unit.barcode, { operationKey: body.operationKey + ':bundle-ship', reason: body.note, expectedVersion: version, action: 'ship', physicalPossessionConfirmed: true }, actor, ctx.session, by, undefined, ctx);
+            const fresh = await this.connection.collection('inventoryunits').findOne({ _id: unit._id }, { session: ctx.session }); version = fresh!.__v;
+          }
+          if (unit.status !== 'delivered') await this.tracking.actionInSession(unit.barcode, { operationKey: body.operationKey + ':bundle-deliver', reason: body.note, expectedVersion: version, action: 'deliver', physicalPossessionConfirmed: true }, actor, ctx.session, by, undefined, ctx);
+        }
+        await this.connection.collection('transactions').updateOne({ _id: this.id(bundledId), 'afterSalesBundle.caseId': String(row._id) },
+          { $set: { deliveredAt: row.workflow.replacementDeliveredAt, pickupStatus: 'Delivered', deliverySource: 'MANUAL', 'afterSalesBundle.deliveredAt': row.workflow.replacementDeliveredAt } }, { session: ctx.session });
+        ctx.afterCommit.push(() => this.transactions.notifyAfterSalesTransactionChanged(bundledId));
+      }
     });
   }
   settle(id: string, body: any, actor: any) {
@@ -543,31 +686,58 @@ export class AfterSalesService {
         if (!w.replacementDeliveredAt || w.collection || !q.collectDue) throw new ConflictException('التحصيل غير مستحق أو تم تنفيذه');
         // Through Bosta the difference is the shipment's COD — it arrives in Bosta's transfer («carrier»).
         if (w.fulfillmentChannel !== 'direct') throw new BadRequestException('فرق العميل تحصّله بوسطة مع الشحنة — سجّله في تسوية بوسطة عند وصول التحويل');
-        amount = q.collectDue;
+        const replacementTx: any = await this.connection.collection('transactions').findOne({ _id: this.id(w.replacementTxId) }, { session: ctx.session });
+        if (pendingDepositRequests(replacementTx)) throw new ConflictException('عربون على فرق الاستبدال بانتظار موافقة المدير؛ اعتمده أو ارفضه أولًا');
+        amount = advanceRemaining(q.collectDue, replacementTx);
+        if (amount <= 0) throw new ConflictException('فرق الاستبدال مدفوع بالكامل كعربون');
       } else if (body.kind === 'carrier') {
         if (w.fulfillmentChannel === 'direct') throw new BadRequestException('التنفيذ المباشر لا توجد له تسوية ناقل');
         if (!w.receivedAt || row.requestKind === 'exchange' && !w.replacementDeliveredAt || w.carrierSettlement) throw new ConflictException('تسوية الناقل بعد اكتمال الشحنة والاستلام ولمرة واحدة');
         const cost = Number(body.actualCost);
         if (!Number.isFinite(cost) || cost < 0) throw new BadRequestException('تكلفة بوسطة غير صالحة');
-        if (q.collectDue && !w.collection && body.includesCollection !== true) throw new BadRequestException('حدد أن تحويل بوسطة يشمل فرق العميل أو سجل التحصيل أولًا');
-        amount = money((body.includesCollection === true && !w.collection ? q.collectDue : 0) - cost);
+        // Bundled sales: Bosta collected their remaining in the same waybill, so the same transfer carries it.
+        const bundled: any[] = w.shipment?.bundled || [];
+        const bundledDue = money(bundled.reduce((n: number, b: any) => n + Number(b.cod || 0), 0));
+        const exchangeDue = money(Number(w.shipment?.exchangeCod ?? q.collectDue));
+        if ((exchangeDue > 0 && !w.collection || bundledDue > 0) && body.includesCollection !== true) throw new BadRequestException('حدد أن تحويل بوسطة يشمل ما حصّلته من العميل (فرق الاستبدال والطلبات المضمومة)');
+        amount = money((body.includesCollection === true && !w.collection ? exchangeDue : 0) + bundledDue - cost);
         row.actualShipCost = cost;
         w.carrierSettlement = { cost, method, reference: body.reference, at: new Date().toISOString(), by };
-        if (body.includesCollection === true && !w.collection && q.collectDue) w.collection = { amount: q.collectDue, method, reference: body.reference, viaCarrier: true, at: new Date().toISOString(), by };
+        if (!w.collection && q.collectDue && (body.includesCollection === true || exchangeDue <= 0)) w.collection = { amount: exchangeDue, method, reference: body.reference, viaCarrier: true,
+          ...(exchangeDue < q.collectDue ? { advance: money(q.collectDue - exchangeDue) } : {}), at: new Date().toISOString(), by };
         // A return has no sale leg of its own. Store its shipping delta on the original sale for existing profit reports.
         const financialId = w.replacementTxId || row.originalTransactionId;
-        await this.connection.collection('transactions').updateOne({ _id: this.id(financialId) }, { $inc: { shipLoss: Math.max(0, money(cost - q.customerFee)), shipSaving: Math.max(0, money(q.customerFee - cost)) } }, { session: ctx.session });
+        // One carrier fee covers the whole parcel, so it is compared with ALL shipping the customer paid
+        // (exchange fee + each bundled sale's shipping) and booked once, on the replacement.
+        const customerShip = money(q.customerFee + bundled.reduce((n: number, b: any) => n + Number(b.shipCharged || 0), 0));
+        await this.connection.collection('transactions').updateOne({ _id: this.id(financialId) }, { $inc: { shipLoss: Math.max(0, money(cost - customerShip)), shipSaving: Math.max(0, money(customerShip - cost)) } }, { session: ctx.session });
       } else throw new BadRequestException('نوع التسوية غير صالح');
       const entry = amount ? await this.vault.addSystemEntry(amount, method, `خدمة ما بعد البيع ${w.ref} — ${body.kind} — ${body.reference}`,
         new Date().toISOString().slice(0, 10), source, w.ref, { customer: row.client }, by, { afterSalesId: String(row._id), reference: body.reference,
           afterSales: { kind: body.kind, caseRef: w.ref, originalRef: row.originalRef, originalTransactionId: row.originalTransactionId,
             replacementRef: w.replacementRef || '', returnRef: row.returnTxRef || '', paymentReference: body.reference,
             creditApplied: q.creditApplied, net: amount, carrierCost: body.kind === 'carrier' ? w.carrierSettlement.cost : 0,
+            bundledSales: body.kind === 'carrier' ? (w.shipment?.bundled || []).map((b: any) => ({ ref: b.ref, cod: b.cod })) : [],
             grossCollection: body.kind === 'carrier' ? money(amount + w.carrierSettlement.cost) : body.kind === 'collection' ? amount : 0 } }, ctx) : null;
+      if (body.kind === 'collection') w.collection = { amount, method, reference: body.reference, at: new Date().toISOString(), by,
+        ...(amount < q.collectDue ? { advance: money(q.collectDue - amount) } : {}) };
       const snapshot = { amount: Math.abs(amount), method, reference: body.reference, vaultEntryId: entry ? String(entry._id) : null, at: new Date().toISOString(), by };
       if (body.kind === 'refund') w.refund = snapshot;
-      if (body.kind === 'collection') w.collection = snapshot;
-      if (body.kind === 'carrier') w.carrierSettlement = { ...w.carrierSettlement, vaultEntryId: snapshot.vaultEntryId, net: amount };
+      if (body.kind === 'collection') w.collection = { ...w.collection, ...snapshot };
+      if (body.kind === 'carrier') {
+        w.carrierSettlement = { ...w.carrierSettlement, vaultEntryId: snapshot.vaultEntryId, net: amount };
+        // Each bundled sale is now paid: what Bosta collected for it closes its remaining.
+        const transactions = this.connection.collection('transactions');
+        for (const b of w.shipment?.bundled || []) {
+          const tx: any = await transactions.findOne({ _id: this.id(String(b.transactionId)), 'afterSalesBundle.caseId': String(row._id) }, { session: ctx.session });
+          if (!tx || tx.afterSalesBundle?.collection) continue;
+          const collection = { amount: Number(b.cod || 0), method, reference: body.reference, viaCarrier: true, caseRef: w.ref, vaultEntryId: snapshot.vaultEntryId, at: snapshot.at, by };
+          await transactions.updateOne({ _id: tx._id, 'afterSalesBundle.collection': { $exists: false } }, { $set: {
+            deposit: money(Number(tx.deposit || 0) + Number(b.cod || 0)), remaining: 0, payStatus: 'مكتمل', collectMethod: method,
+            collectedAt: snapshot.at.slice(0, 10), 'afterSalesBundle.collection': collection } }, { session: ctx.session });
+          ctx.afterCommit.push(() => this.transactions.notifyAfterSalesTransactionChanged(String(tx._id)));
+        }
+      }
       if (w.replacementTxId && w.collection) await this.connection.collection('transactions').updateOne({ _id: this.id(w.replacementTxId) }, { $set: { deposit: money(q.creditApplied + q.collectDue), remaining: 0, payStatus: 'مكتمل', collectMethod: method,
         'afterSales.collection': w.collection } }, { session: ctx.session });
     });

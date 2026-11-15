@@ -79,6 +79,38 @@ export function carrierUpdateText(event: CarrierTrackingUpdate): string {
     `وقت التحديث: ${event.at}`, `البوليصة: ${event.shipmentId}`].filter(Boolean).join('\n');
 }
 
+/**
+ * What makes two carrier events the SAME event: one shipment, one status, one moment at the
+ * carrier (the exception time Bosta stamps on the attempt). The `key` cannot answer this — the
+ * live update chains the previous key into its own, while the history copy of the same attempt
+ * does not — so one failed attempt used to be saved twice, once from each source.
+ * An event without an exception time has nothing else to match on and keeps its key.
+ */
+export const carrierEventIdentity = (event: Pick<CarrierTrackingUpdate, 'key' | 'shipmentId' | 'status' | 'exceptionAt'>) =>
+  event.exceptionAt ? `${event.shipmentId}|${event.status}|${event.exceptionAt}` : event.key;
+
+/**
+ * The events to append to `bostaTrackingEvents`: history rows not saved yet, then the live
+ * update — each at most once by identity, and never one already saved.
+ */
+export function newCarrierEvents(saved: CarrierTrackingUpdate[], history: CarrierTrackingUpdate[],
+  live: CarrierTrackingUpdate, liveChanged: boolean): CarrierTrackingUpdate[] {
+  const seen = new Set<string>();
+  for (const event of saved || []) {
+    seen.add(event.key);
+    seen.add(carrierEventIdentity(event));
+  }
+  const out: CarrierTrackingUpdate[] = [];
+  for (const event of [...history, ...(liveChanged ? [live] : [])]) {
+    const id = carrierEventIdentity(event);
+    if (seen.has(event.key) || seen.has(id)) continue;
+    seen.add(event.key);
+    seen.add(id);
+    out.push(event);
+  }
+  return out;
+}
+
 /** Backfill reasons for attempts made between polling runs, not just the latest one. */
 export function carrierExceptionHistory(d: any, shipmentId: string): CarrierTrackingUpdate[] {
   const rows = [

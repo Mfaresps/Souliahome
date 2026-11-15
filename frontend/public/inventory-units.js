@@ -10,7 +10,7 @@
     page: 1, limit: 30, total: 0, q: '', status: '', rows: [], unitsReady: false, unitLoading: false, unitRequest: 0,
     unitScope: null, unitDialogRequest: 0, registration: null, registrationRequests: new Map(),
     receiptTimer: null, unitTimer: null,
-    pieceAction: null, pieceActionRequest: 0,
+    pieceAction: null, pieceActionRequest: 0, bulk: null, bulkRequest: 0,
     stockScope: null,
     labelAudit: null,
   };
@@ -145,6 +145,7 @@
     }
     if (id === 'iu-units-dialog') { state.unitScope = null; ++state.unitDialogRequest; }
     if (id === 'iu-action-dialog') { state.pieceAction = null; ++state.pieceActionRequest; }
+    if (id === 'iu-bulk-dialog') { state.bulk = null; ++state.bulkRequest; }
   }
   const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   function revealSurface(element) {
@@ -242,6 +243,7 @@
     if (get('iu-print')) get('iu-print').disabled = blocked || !state.preview || !has('inventory-units-print');
     for (const id of ['iu-size', 'iu-query', 'iu-status', 'iu-search']) if (get(id)) get(id).disabled = blocked;
     if (get('iu-clear')) get('iu-clear').disabled = state.busy || !state.selected.size;
+    if (get('iu-bulk-action')) { const bulkButton = get('iu-bulk-action'); bulkButton.hidden = !canBulkAct(); bulkButton.disabled = blocked || !state.selected.size; bulkButton.textContent = tr('Action on selected', 'إجراء على المحدد') + (state.selected.size ? ` (${state.selected.size})` : ''); }
     if (get('iu-select-page')) {
       const allSelected = state.rows.length > 0 && state.rows.every(unit => state.selected.has(String(unit._id)));
       get('iu-select-page').disabled = blocked || !state.unitsReady || state.unitLoading || !state.rows.length;
@@ -825,6 +827,104 @@
     invalidatePreview();
     if (state.view === 'units') await loadUnits();
   }
+  // Bulk piece actions: the same audited per-piece endpoint, run once for each selected piece.
+  // Actions that need a per-piece choice (reserve, supplier return) stay single-piece only.
+  const BULK_ACTIONS = ['inspect', 'damage', 'lost', 'release', 'ship', 'deliver', 'return', 'receive-supplier-return'];
+  const canBulkAct = () => has('inventory-units-condition') || has('inventory-units-allocate');
+  function bulkDialogMarkup() {
+    return `<dialog id="iu-bulk-dialog" class="iu-dialog iu-action-dialog iu-bulk-dialog" aria-labelledby="iu-bulk-title" hidden><form id="iu-bulk-form"><header class="iu-dialog-header"><h2 id="iu-bulk-title">${tr('Apply an action to selected pieces', 'تطبيق إجراء على القطع المحددة')}</h2><button type="button" class="btn iu-icon-button" data-iu-close="iu-bulk-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><div id="iu-bulk-summary" class="iu-action-piece iu-bulk-summary"></div><p data-dialog-message role="status" aria-live="polite"></p><div id="iu-bulk-fields" hidden><label class="iu-form-field">${tr('Action', 'الإجراء')}<select id="iu-bulk-kind"></select></label><p id="iu-bulk-help" class="iu-action-help"></p><p id="iu-bulk-scope" class="iu-bulk-scope"></p><label class="iu-form-field">${tr('Reason / note (optional)', 'السبب / ملاحظة (اختياري)')}<textarea id="iu-bulk-reason" maxlength="1000" rows="2"></textarea></label><label class="iu-form-field">${tr('Reference (optional)', 'المرجع (اختياري)')}<input id="iu-bulk-evidence" maxlength="200"></label><label id="iu-bulk-confirm-field" class="iu-check iu-confirm" hidden><input id="iu-bulk-confirm" type="checkbox"><span>${tr('I completed a physical count and confirmed each of these pieces is missing.', 'أؤكد أنني أجريت جردًا فعليًا وتأكدت من فقد كل قطعة من هذه القطع.')}</span></label><p class="iu-help">${tr('Each piece gets its own history entry with your name and the time. Pieces whose state does not allow the action are skipped.', 'يُسجَّل الإجراء في سجل كل قطعة باسمك والوقت. القطع التي لا تسمح حالتها بالإجراء تُتخطّى.')}</p></div><ul id="iu-bulk-results" class="iu-bulk-results" hidden></ul></div><footer class="iu-dialog-footer"><button type="button" class="btn btn-outline" data-iu-close="iu-bulk-dialog">${tr('Close', 'إغلاق')}</button><button type="submit" id="iu-bulk-submit" class="btn btn-primary" disabled>${tr('Apply', 'تطبيق')}</button></footer></form></dialog>`;
+  }
+  async function bulkPool(items, size, worker) {
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(size, items.length) }, async () => { while (next < items.length) { const i = next++; await worker(items[i], i); } }));
+  }
+  async function openBulkActions() {
+    if (!state.ready || state.busy || !state.selected.size || !canBulkAct()) return;
+    const ids = selectedIds(), request = ++state.bulkRequest, generation = state.generation;
+    state.bulk = { ids, rows: new Map(), failed: [] };
+    get('iu-bulk-summary').innerHTML = `<div><strong>${tr(`Loading ${ids.length} piece(s)…`, `جارٍ تحميل ${ids.length} قطعة…`)}</strong></div>`;
+    get('iu-bulk-fields').hidden = true; get('iu-bulk-results').hidden = true; get('iu-bulk-results').replaceChildren();
+    get('iu-bulk-submit').disabled = true; get('iu-bulk-submit').hidden = false;
+    get('iu-bulk-dialog').querySelector('[data-dialog-message]').textContent = '';
+    showDialog('iu-bulk-dialog');
+    const bulk = state.bulk;
+    await bulkPool(ids, 6, async id => {
+      try {
+        const [detail, options] = await Promise.all([api('/inventory-units/' + encodeURIComponent(id), { background: true }), api('/inventory-units/' + encodeURIComponent(id) + '/action-options', { background: true })]);
+        if (String(detail?.unit?._id) !== id || !Number.isSafeInteger(detail.unit.__v) || !Array.isArray(options?.actions)) throw new Error('invalid');
+        bulk.rows.set(id, { unit: { ...(state.selected.get(id) || {}), ...detail.unit }, actions: options.actions });
+      } catch { bulk.failed.push(id); }
+    });
+    if (generation !== state.generation || request !== state.bulkRequest || state.bulk !== bulk) return;
+    renderBulkSummary();
+    const counts = BULK_ACTIONS.map(action => [action, [...bulk.rows.values()].filter(row => row.actions.includes(action)).length]).filter(([, n]) => n > 0);
+    get('iu-bulk-kind').innerHTML = `<option value="">${tr('Choose an action', 'اختر الإجراء')}</option>` + counts.map(([action, n]) => `<option value="${html(action)}">${html(tr(...pieceActionLabels[action]))} (${n} ${tr('of', 'من')} ${bulk.rows.size})</option>`).join('');
+    get('iu-bulk-fields').hidden = false; get('iu-bulk-reason').value = ''; get('iu-bulk-evidence').value = ''; get('iu-bulk-confirm').checked = false;
+    renderBulkFields();
+    if (bulk.failed.length) message(tr(`${bulk.failed.length} piece(s) could not be loaded and are left out.`, `تعذر تحميل ${bulk.failed.length} قطعة وستُستبعد.`), true);
+    else if (!counts.length) message(tr('No shared action is allowed for these pieces with your permissions and their current state.', 'لا يوجد إجراء مسموح لهذه القطع بصلاحياتك وحالتها الحالية.'), true);
+  }
+  function renderBulkSummary() {
+    const rows = [...(state.bulk?.rows.values() || [])], byStatus = new Map();
+    rows.forEach(row => byStatus.set(row.unit.status, (byStatus.get(row.unit.status) || 0) + 1));
+    const products = new Set(rows.map(row => row.unit.product?.name || row.unit.productId)).size;
+    get('iu-bulk-summary').innerHTML = `<div><strong>${tr(`${rows.length} piece(s) · ${products} product(s)`, `${rows.length} قطعة · ${products} منتج`)}</strong></div><div class="iu-bulk-statuses">${[...byStatus].map(([status, n]) => `<span class="iu-status-pill" data-tone="${statusTone(status)}"><i aria-hidden="true"></i>${html(statusLabel(status))} <b dir="ltr">${n}</b></span>`).join('')}</div>`;
+  }
+  function renderBulkFields() {
+    const action = get('iu-bulk-kind').value, rows = [...(state.bulk?.rows.values() || [])];
+    const eligible = rows.filter(row => row.actions.includes(action)).length, skipped = rows.length - eligible;
+    get('iu-bulk-help').textContent = pieceActionHelp[action] ? tr(...pieceActionHelp[action]) : '';
+    get('iu-bulk-scope').textContent = action ? tr(`Applies to ${eligible} piece(s)${skipped ? ` · ${skipped} skipped (state does not allow it)` : ''}.`, `يُطبَّق على ${eligible} قطعة${skipped ? ` · تُتخطّى ${skipped} (حالتها لا تسمح)` : ''}.`) : '';
+    get('iu-bulk-confirm-field').hidden = action !== 'lost'; if (action !== 'lost') get('iu-bulk-confirm').checked = false;
+    get('iu-bulk-submit').textContent = action ? tr(...pieceActionLabels[action]) + ` (${eligible})` : tr('Apply', 'تطبيق');
+    get('iu-bulk-submit').disabled = !action || !eligible || state.busy || (action === 'lost' && !get('iu-bulk-confirm').checked);
+  }
+  async function submitBulkAction(event) {
+    event.preventDefault();
+    const bulk = state.bulk, action = get('iu-bulk-kind').value;
+    if (!bulk || state.busy || !BULK_ACTIONS.includes(action) || (action === 'lost' && !get('iu-bulk-confirm').checked)) return;
+    const targets = [...bulk.rows.entries()].filter(([, row]) => row.actions.includes(action));
+    if (!targets.length) return;
+    const reason = get('iu-bulk-reason').value.trim(), evidence = get('iu-bulk-evidence').value.trim();
+    const done = [], failed = [], generation = state.generation;
+    setBusy(true);
+    try {
+      for (const [id, row] of targets) {
+        message(tr(`Applying… ${done.length + failed.length + 1} / ${targets.length}`, `جارٍ التطبيق… ${done.length + failed.length + 1} / ${targets.length}`));
+        try {
+          const body = { action, expectedVersion: row.unit.__v, reason, physicalPossessionConfirmed: action !== 'lost', evidenceReference: evidence,
+            ...(action === 'inspect' ? { inspectionPassed: true } : {}), ...(action === 'lost' ? { physicalCountConfirmed: true } : {}), operationKey: requestKey() };
+          const saved = await post('/' + encodeURIComponent(id) + '/actions', body);
+          if (String(saved?.unit?._id) !== id) throw new Error(tr('Could not verify the result', 'تعذر التحقق من النتيجة'));
+          row.unit = { ...row.unit, ...saved.unit }; done.push(row);
+          if (state.selected.has(id)) state.selected.set(id, row.unit);
+        } catch (error) { failed.push({ row, error: error.message }); }
+      }
+    } finally { setBusy(false); }
+    if (generation !== state.generation) return;
+    const label = row => html(row.unit.manualCode || row.unit.barcode);
+    get('iu-bulk-results').innerHTML = failed.map(f => `<li><code dir="ltr">${label(f.row)}</code><span dir="auto">${html(f.row.unit.product?.name || '')}</span><small dir="auto">${html(f.error)}</small></li>`).join('');
+    get('iu-bulk-results').hidden = !failed.length;
+    const skipped = bulk.rows.size - targets.length;
+    const summary = tr(`${done.length} piece(s) updated`, `تم تحديث ${done.length} قطعة`) + (failed.length ? tr(` · ${failed.length} failed`, ` · تعذّر ${failed.length}`) : '') + (skipped ? tr(` · ${skipped} skipped`, ` · تُخطّيت ${skipped}`) : '');
+    if (done.length) {
+      window.InvoiceUnitIdentities?.changed();
+      const updated = new Map(done.map(row => [String(row.unit._id), row.unit]));
+      state.rows = state.rows.map(u => updated.get(String(u._id)) || u);
+      if (state.unitsReady) get('iu-units').innerHTML = unitRows(state.rows);
+      invalidatePreview(); renderBatch();
+    }
+    if (!failed.length) {
+      closeDialog('iu-bulk-dialog'); message(summary);
+      if (typeof toast === 'function') toast(summary);
+      if (state.view === 'units') await loadUnits();
+      return;
+    }
+    // Keep the dialog open on the failures; the list reloads so a retry starts from fresh versions.
+    message(summary, true);
+    get('iu-bulk-fields').hidden = true; get('iu-bulk-submit').hidden = true;
+    if (state.view === 'units') void loadUnits();
+  }
   async function loadUnits() {
     if (!state.ready) return;
     const request = ++state.unitRequest, generation = state.generation;
@@ -1269,6 +1369,8 @@
     get('iu-line-next').onclick = () => viewLine(state.unitScope.line.lineIndex, state.unitScope.page + 1);
     get('iu-register-form').onsubmit = registerUnits;
     get('iu-action-form').onsubmit = submitPieceAction;
+    get('iu-bulk-form').onsubmit = submitBulkAction; get('iu-bulk-action').onclick = openBulkActions;
+    get('iu-bulk-kind').onchange = renderBulkFields; get('iu-bulk-confirm').onchange = renderBulkFields;
     get('iu-action-events').onclick = event => {
       const filter = event.target.closest('[data-iu-history-filter]');
       if (!state.pieceAction || state.busy) return;
@@ -1286,9 +1388,9 @@
     });
   }
   function registryHtml() {
-    return `<section id="iu-registry" class="iu-panel iu-registry" role="tabpanel" aria-labelledby="iu-tab-units" hidden><div class="iu-panel-heading"><div><h2>${tr('Find a piece', 'البحث عن قطعة')}</h2><p>${tr('One row per piece. Search its identity, review its status, or select it for printing.', 'كل صف يمثل قطعة واحدة. ابحث عن هويتها، راجع حالتها أو حددها للطباعة.')}</p></div>${icon('scan')}</div><form id="iu-search-form" class="iu-search-panel"><label class="iu-field iu-unit-search">${icon('search')}<input id="iu-query" type="search" maxlength="160" value="${html(state.q)}" placeholder="${tr('Product, invoice number, SKU or barcode', 'المنتج، رقم الفاتورة، SKU أو الباركود')}" aria-label="${tr('Find units', 'البحث عن القطع')}" disabled></label><button id="iu-reset-search" type="button" class="iu-link" aria-label="${tr('Clear search and filters', 'مسح البحث والفلاتر')}">${icon('close')}${tr('Reset', 'مسح')}</button><select id="iu-status" aria-label="${tr('Unit status', 'حالة القطعة')}" disabled><option value="">${tr('All statuses', 'كل الحالات')}</option></select><button id="iu-search" class="btn btn-outline" type="submit" disabled>${tr('Search', 'بحث')}</button></form><div id="iu-unit-error" class="iu-inline-error" hidden><span id="iu-unit-error-text"></span><button id="iu-unit-retry" class="iu-link" type="button">${tr('Retry', 'إعادة المحاولة')}</button></div><div class="iu-quick-filters" role="group" aria-label="${tr('Quick status filters', 'تصفية سريعة بالحالة')}">${[['', tr('All pieces', 'كل القطع')], ['available', statusLabel('available')], ['prepared', statusLabel('prepared')], ['inspection-required', tr('To inspect', 'للفحص')]].map(([value, label]) => `<button type="button" data-quick-status="${value}" aria-pressed="${state.status === value}">${html(label)}</button>`).join('')}</div><div class="iu-registry-tools"><span role="status" aria-live="polite">${tr('Matching pieces', 'قطع مطابقة')} <b id="iu-stat-units">—</b></span><span>${tr('On this page', 'في الصفحة')} <b id="iu-stat-page">—</b></span><button id="iu-select-page" class="btn btn-outline" type="button" disabled>${tr('Select this page', 'تحديد الصفحة')}</button></div><div class="iu-log-caption"><details class="iu-column-picker"><summary>${tr('Columns', 'الأعمدة')}</summary><div>${[['invoice', tr('Invoice reference', 'مرجع الفاتورة')], ['warehouse', tr('Warehouse', 'المخزن')], ['registered', tr('Registered', 'تاريخ التسجيل')]].map(([key, label]) => `<label><input type="checkbox" data-iu-column="${key}" checked>${label}</label>`).join('')}</div></details><strong>${tr('Piece register', 'سجل القطع')}</strong><span>${tr('Newest registrations first', 'الأحدث تسجيلًا أولًا')}</span><span id="iu-log-loading" role="status" hidden>${tr('Searching…', 'جارٍ البحث…')}</span></div><div id="iu-units" class="iu-units" aria-busy="false"></div><div class="iu-pagination"><span id="iu-page"></span><div><button id="iu-prev" class="btn btn-outline" type="button" disabled>${tr('Previous', 'السابق')}</button><button id="iu-next" class="btn btn-outline" type="button" disabled>${tr('Next', 'التالي')}</button></div></div><details class="iu-catalog"><summary>${tr('Matching products · shared SKU', 'منتجات مطابقة · SKU مشترك')} <span id="iu-products-count">0</span></summary><p id="iu-product-limit"></p><div id="iu-products"></div></details></section>`;
+    return `<section id="iu-registry" class="iu-panel iu-registry" role="tabpanel" aria-labelledby="iu-tab-units" hidden><div class="iu-panel-heading"><div><h2>${tr('Find a piece', 'البحث عن قطعة')}</h2><p>${tr('One row per piece. Search its identity, review its status, or select it for printing.', 'كل صف يمثل قطعة واحدة. ابحث عن هويتها، راجع حالتها أو حددها للطباعة.')}</p></div>${icon('scan')}</div><form id="iu-search-form" class="iu-search-panel"><label class="iu-field iu-unit-search">${icon('search')}<input id="iu-query" type="search" maxlength="160" value="${html(state.q)}" placeholder="${tr('Product, invoice number, SKU or barcode', 'المنتج، رقم الفاتورة، SKU أو الباركود')}" aria-label="${tr('Find units', 'البحث عن القطع')}" disabled></label><button id="iu-reset-search" type="button" class="iu-link" aria-label="${tr('Clear search and filters', 'مسح البحث والفلاتر')}">${icon('close')}${tr('Reset', 'مسح')}</button><select id="iu-status" aria-label="${tr('Unit status', 'حالة القطعة')}" disabled><option value="">${tr('All statuses', 'كل الحالات')}</option></select><button id="iu-search" class="btn btn-outline" type="submit" disabled>${tr('Search', 'بحث')}</button></form><div id="iu-unit-error" class="iu-inline-error" hidden><span id="iu-unit-error-text"></span><button id="iu-unit-retry" class="iu-link" type="button">${tr('Retry', 'إعادة المحاولة')}</button></div><div class="iu-quick-filters" role="group" aria-label="${tr('Quick status filters', 'تصفية سريعة بالحالة')}">${[['', tr('All pieces', 'كل القطع')], ['available', statusLabel('available')], ['prepared', statusLabel('prepared')], ['inspection-required', tr('To inspect', 'للفحص')]].map(([value, label]) => `<button type="button" data-quick-status="${value}" aria-pressed="${state.status === value}">${html(label)}</button>`).join('')}</div><div class="iu-registry-tools"><span role="status" aria-live="polite">${tr('Matching pieces', 'قطع مطابقة')} <b id="iu-stat-units">—</b></span><span>${tr('On this page', 'في الصفحة')} <b id="iu-stat-page">—</b></span><button id="iu-select-page" class="btn btn-outline" type="button" disabled>${tr('Select this page', 'تحديد الصفحة')}</button><button id="iu-bulk-action" class="btn btn-primary" type="button" hidden disabled></button></div><div class="iu-log-caption"><details class="iu-column-picker"><summary>${tr('Columns', 'الأعمدة')}</summary><div>${[['invoice', tr('Invoice reference', 'مرجع الفاتورة')], ['warehouse', tr('Warehouse', 'المخزن')], ['registered', tr('Registered', 'تاريخ التسجيل')]].map(([key, label]) => `<label><input type="checkbox" data-iu-column="${key}" checked>${label}</label>`).join('')}</div></details><strong>${tr('Piece register', 'سجل القطع')}</strong><span>${tr('Newest registrations first', 'الأحدث تسجيلًا أولًا')}</span><span id="iu-log-loading" role="status" hidden>${tr('Searching…', 'جارٍ البحث…')}</span></div><div id="iu-units" class="iu-units" aria-busy="false"></div><div class="iu-pagination"><span id="iu-page"></span><div><button id="iu-prev" class="btn btn-outline" type="button" disabled>${tr('Previous', 'السابق')}</button><button id="iu-next" class="btn btn-outline" type="button" disabled>${tr('Next', 'التالي')}</button></div></div><details class="iu-catalog"><summary>${tr('Matching products · shared SKU', 'منتجات مطابقة · SKU مشترك')} <span id="iu-products-count">0</span></summary><p id="iu-product-limit"></p><div id="iu-products"></div></details></section>`;
   }
-  function dialogsHtml() { return actionDialogMarkup() + baseDialogsHtml(); }
+  function dialogsHtml() { return actionDialogMarkup() + bulkDialogMarkup() + baseDialogsHtml(); }
   function baseDialogsHtml() {
     return `<dialog id="iu-register-dialog" class="iu-dialog iu-register-dialog" aria-labelledby="iu-register-title" hidden><form id="iu-register-form"><header class="iu-dialog-header"><h2 id="iu-register-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-register-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-register-detail" class="iu-help"></p><label class="iu-form-field">${tr('Physical count now', 'العدد الموجود فعليًا الآن')}<input name="physicalQuantity" type="number" step="1" required></label><label class="iu-form-field">${tr('Warehouse / location', 'المخزن / الموقع')}<select name="warehouseCode" data-warehouse-select required>${window.SouliaWarehouses?.options() || '<option value="MAIN">المخزن الرئيسي</option>'}</select></label><label class="iu-form-field">${tr('Count reference / reason', 'مرجع الجرد / سبب التسجيل')}<input name="reason" maxlength="1000" required></label><label class="iu-check iu-confirm"><input name="physicalPossessionConfirmed" type="checkbox" required><span>${tr('I physically counted these pieces from this invoice.', 'أؤكد أنني عددت هذه القطع من هذه الفاتورة فعليًا.')}</span></label><p class="iu-help">${tr('This records missing identities only. It does not add stock or duplicate the purchase. New pieces await quality inspection.', 'يسجل الهويات الناقصة فقط. لا يضيف مخزونًا ولا يكرر الشراء. تنتظر القطع الجديدة فحص الجودة.')}</p><p data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-register-dialog">${tr('Cancel', 'إلغاء')}</button><button class="btn btn-primary" type="submit">${tr('Register unit codes', 'تسجيل أكواد القطع')}</button></footer></form></dialog>
       <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><section id="iu-label-audit" class="iu-label-audit"></section><p data-dialog-message role="status"></p><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>

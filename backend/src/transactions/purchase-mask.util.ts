@@ -23,6 +23,10 @@ const HIDDEN_PURCHASE_FIELDS = [
   'shipLoss',
   'deposits',
   'payments',
+  // Amounts too: credit used, a waiver and supplier-return offsets reveal the invoice's value.
+  'creditApplied',
+  'writeOff',
+  'supplierReturnOffsets',
 ] as const;
 
 const REDACTED = '••••';

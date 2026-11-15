@@ -1,4 +1,5 @@
 import { invoiceShipCharged, invoiceShippingDiscount } from '../shared/sale-discount.util';
+import { attachAfterSalesMoney, effectivePayStatus } from '../shared/after-sales-money.util';
 // The Movements page reads a bounded page. These predicates mirror its former
 // browser-side rules, including the intentionally permissive undated rows.
 export type MovementsState = {
@@ -124,16 +125,17 @@ function filterTransactions(rows: any[], state: MovementsState): any[] {
   return rows.filter(tx => {
     const d = day(state.dateField === 'createdAt' ? tx.createdAt || tx.date : tx.transactionDate || tx.date);
     if (from && d && d < from || to && d && d > to) return false;
-    if (state.type === RETURN) { if (![RETURN, SALES_RETURN, PURCHASE_RETURN].includes(tx.type)) return false; }
+    // «مرتجعات» = returns only; an exchange's return document lives under «استبدال».
+    if (state.type === RETURN) { if (![RETURN, SALES_RETURN, PURCHASE_RETURN].includes(tx.type) || exchangeReturn(tx)) return false; }
     else if (state.type === 'استرجاع') { if (!afterSalesKind(tx, 'return')) return false; }
     else if (state.type === 'استبدال') { if (!afterSalesKind(tx, 'exchange')) return false; }
     else if (state.type && state.type !== 'all' && !state.status && tx.type !== state.type) return false;
-    if (state.status && tx.payStatus !== state.status) return false;
+    if (state.status && effectivePayStatus(tx) !== state.status) return false;
     if (state.amountMin !== '' && state.amountMin != null && n(tx.total) < Number(state.amountMin)) return false;
     if (state.amountMax !== '' && state.amountMax != null && n(tx.total) > Number(state.amountMax)) return false;
     if (employees.size && !employees.has(String(tx.employee || '').trim())) return false;
     if (methods.size && ![tx.depMethod, tx.collectMethod, tx.payment].some(v => methods.has(String(v || '').trim()))) return false;
-    if (statuses.size && !statuses.has(tx.cancelled ? CANCELLED : tx.payStatus || '')) return false;
+    if (statuses.size && !statuses.has(tx.cancelled ? CANCELLED : effectivePayStatus(tx))) return false;
     if (operations.size && ![...operations].some(kind => afterSalesKind(tx, kind))) return false;
     if (pickups.size && (tx.type !== SALES || !pickups.has(orderStateKey(tx) === 'DELIVERED' ? 'Delivered' : orderStateKey(tx)))) return false;
     if (bostas.size && ![tx.bostaStatus || '', ...Object.values(tx.afterSales?.shipments || {}).map((sh: any) => sh.status)].some(v => bostas.has(String(v || '').trim()))) return false;
@@ -202,17 +204,20 @@ function series(lo: string, hi: string, rows: [string, number][]) {
 }
 
 export function buildMovementsPage(transactions: any[], returns: any[], supplierReturns: any[], state: MovementsState) {
+  // Return and replacement documents take their paid / remaining / status from their case today.
+  attachAfterSalesMoney(transactions, returns);
   const allCount = transactions.length;
-  const tabCounts = { all: allCount, sales: 0, purchase: 0, returns: 0 };
+  const tabCounts = { all: allCount, sales: 0, purchase: 0, returns: 0, exchanges: 0 };
   const facets: Record<string, Record<string, number>> = { employee: {}, method: {}, status: {}, operation: {}, bosta: {}, pickup: {}, tags: {} };
   const inc = (key: string, value: unknown) => { const v = String(value || '').trim(); if (v) facets[key][v] = (facets[key][v] || 0) + 1; };
   for (const tx of transactions) {
     if (tx.type === SALES) tabCounts.sales++;
     if (tx.type === PURCHASE) tabCounts.purchase++;
-    if ([RETURN, SALES_RETURN, PURCHASE_RETURN].includes(tx.type)) tabCounts.returns++;
+    if ([RETURN, SALES_RETURN, PURCHASE_RETURN].includes(tx.type) && !exchangeReturn(tx)) tabCounts.returns++;
+    if (afterSalesKind(tx, 'exchange')) tabCounts.exchanges++;
     inc('employee', tx.employee);
     for (const m of [tx.depMethod, tx.collectMethod, tx.payment]) inc('method', m);
-    inc('status', tx.cancelled ? CANCELLED : tx.payStatus);
+    inc('status', tx.cancelled ? CANCELLED : effectivePayStatus(tx));
     for (const kind of ['return', 'exchange']) if (afterSalesKind(tx, kind)) inc('operation', kind);
     inc('bosta', tx.bostaStatus);
     if (tx.type === SALES) inc('pickup', orderStateKey(tx) === 'DELIVERED' ? 'Delivered' : orderStateKey(tx));
@@ -246,8 +251,8 @@ export function buildMovementsPage(transactions: any[], returns: any[], supplier
     returns: salesReturns.reduce((sum, tx) => sum + n(tx.total), 0),
     remainingCollection: sales.reduce((sum, tx) => sum + n(tx.remaining), 0),
     remainingSupplier: purchases.reduce((sum, tx) => sum + n(tx.remaining), 0),
-    pending: active.filter(tx => pending(tx.payStatus)).length,
-    completed: active.filter(tx => tx.payStatus === COMPLETED).length,
+    pending: active.filter(tx => pending(effectivePayStatus(tx))).length,
+    completed: active.filter(tx => effectivePayStatus(tx) === COMPLETED).length,
     cancelled: data.filter(tx => tx.cancelled || tx.payStatus === CANCELLED).length,
     delivered: active.filter(tx => tx.bostaStatus === 'DELIVERED').length,
     mini: { sales: sales.length, purchases: purchases.length,
