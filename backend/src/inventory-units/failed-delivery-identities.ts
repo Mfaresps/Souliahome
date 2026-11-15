@@ -4,7 +4,10 @@ import { randomUUID, createHash } from 'crypto';
 
 export const identityOperationKey = (actorId: string, key: string) => createHash('sha256').update(JSON.stringify({ actor: actorId.toLowerCase(), key })).digest('hex');
 
-export type ReturnedIdentity = { unitId: string; labelState: string; labelAttached: boolean; printOperationKey?: string };
+export type ReturnedIdentity = { unitId: string; labelState: string; labelAttached: boolean; printOperationKey?: string; condition?: string };
+
+/** sound (default) · damaged · lost. A lost piece never reached the warehouse, so it has no label to check. */
+export const identityCondition = (l?: ReturnedIdentity) => l?.condition === 'damaged' || l?.condition === 'lost' ? l.condition : 'sound';
 
 /** Validate before financial cancellation; recheck under the same locks as the identity writes. */
 export async function checkReturnedIdentities(transactions: Model<any>, id: string, labels: ReturnedIdentity[] = [], session?: any, actorId?: string) {
@@ -13,10 +16,10 @@ export async function checkReturnedIdentities(transactions: Model<any>, id: stri
     throw new ConflictException('راجع حالة القطع المرتبطة قبل إرجاع الطلب للمخزن');
   }
   if (labels.length !== units.length || new Set(labels.map(l => l.unitId)).size !== units.length || units.some(u =>
-    !labels.some(l => l.unitId === String(u._id) && ['intact', 'reprinted'].includes(l.labelState) && l.labelAttached === true))) {
+    !labels.some(l => l.unitId === String(u._id) && (identityCondition(l) === 'lost' || ['intact', 'reprinted'].includes(l.labelState) && l.labelAttached === true)))) {
     throw new BadRequestException('أكد استلام كل قطعة وسلامة ملصق هويتها أو إعادة طباعته ولصقه');
   }
-  for (const label of labels.filter(l => l.labelState === 'reprinted')) {
+  for (const label of labels.filter(l => l.labelState === 'reprinted' && identityCondition(l) !== 'lost')) {
     if (!label.printOperationKey) throw new BadRequestException('اطبع نفس هوية القطعة أولًا ثم أكد لصق الملصق');
     const print = await transactions.db.collection('inventoryunitevents').findOne({ unitId: label.unitId,
       operationKey: actorId ? identityOperationKey(actorId, label.printOperationKey) : label.printOperationKey,
@@ -51,13 +54,20 @@ export async function finishFailedDeliveryIdentities<T>(transactions: Model<any>
         const unit: any = await Unit.findById(snapshot._id).session(session);
         const fromStatus = unit.status, assignment = unit.assignment;
         const last: any = await Event.findOne({ unitId: String(unit._id) }).sort({ sequence: -1 }).session(session).lean();
-        unit.status = mode === 'stock' ? 'available' : 'prepared';
+        // ⚠ A damaged / lost piece gets its own event, not «returned»: the write-off refuses any
+        //   damaged piece with a «returned» event (that rule is for customer returns, whose loss
+        //   is already booked). Here cancelling the sale put it back in stock, so it IS written off.
+        const condition = mode === 'stock' ? identityCondition(labels.find(l => l.unitId === String(unit._id))) : 'sound';
+        unit.status = mode === 'reship' ? 'prepared' : condition === 'sound' ? 'available' : condition;
         if (mode === 'stock') unit.assignment = null;
         unit.markModified('status'); await unit.save({ session });
         await new Event({ unitId: String(unit._id), sequence: (last?.sequence || 0) + 1, operationKey,
-          action: mode === 'stock' ? 'returned' : 'prepared', fromStatus, toStatus: unit.status,
+          action: mode === 'reship' ? 'prepared' : condition === 'sound' ? 'returned' : condition, fromStatus, toStatus: unit.status,
           transactionId: id, lineId: assignment.lineId, byUserId: actorId, by: actor.name || actor.username || by,
-          reason: mode === 'stock' ? 'Failed delivery physically received into warehouse' : 'Failed delivery received for reshipment to same customer',
+          reason: mode === 'reship' ? 'Failed delivery received for reshipment to same customer'
+            : condition === 'lost' ? 'Failed delivery: piece lost by the carrier, never came back'
+            : condition === 'damaged' ? 'Failed delivery received damaged — isolated from sale'
+            : 'Failed delivery physically received into warehouse',
           details: { failedDelivery: true, physicalPossessionConfirmed: true, previousAssignment: assignment,
             fromWarehouseCode: unit.warehouseCode, toWarehouseCode: unit.warehouseCode,
             label: labels.find(l => l.unitId === String(unit._id)) || null, stockChanged: false },

@@ -10,7 +10,7 @@ import { resetPickupPreparation } from '../inventory-units/pickup-preparation-re
 import { reconcilePickingAfterEdit } from '../inventory-units/picking-edit-reconcile';
 import { BostaService } from '../bosta/bosta.service';
 import { shipmentEditPayload, shipmentLocallyEditable } from '../shared/bosta-shipment-edit.util';
-import { checkReturnedIdentities, finishFailedDeliveryIdentities, ReturnedIdentity } from '../inventory-units/failed-delivery-identities';
+import { checkReturnedIdentities, finishFailedDeliveryIdentities, identityCondition, ReturnedIdentity } from '../inventory-units/failed-delivery-identities';
 import { normalizePurchaseEdit } from '../inventory-units/purchase-edit-integrity';
 import { normalizeInvoiceEdit } from '../shopify/order-edit.util';
 import { carryLineCosts, freezeLineCost, frozenUnitCost, lineUnitCost, stampMissingSaleLineCosts, stampSaleLineCosts, lineCostSourceKey, LINE_COST_SOURCE_KEYS } from '../shared/line-cost.util';
@@ -3073,6 +3073,41 @@ export class TransactionsService implements ClassificationInit {
     return { receiptIdentities: units.map(unit => ({ unitId: String(unit._id), barcode: unit.barcode, manualCode: unit.manualCode, status: unit.status })) };
   }
 
+  /**
+   * Cancelling the sale put the whole quantity back in stock. A piece that came back damaged, or
+   * that the carrier lost, must not stay there as sellable: one write-off per product and
+   * condition, naming the pieces (claimed once in `inventorywriteoffs`). The request key makes a
+   * retry return the same movement. Never throws — the order is already closed; a failure is
+   * logged with what to adjust by hand.
+   */
+  private async writeOffFailedDeliveryPieces(tx: any, labels: ReturnedIdentity[], by: string, actorId?: string): Promise<void> {
+    const out = labels.filter(l => identityCondition(l) !== 'sound');
+    if (!out.length) return;
+    const units = await this.transactionModel.db.collection('inventoryunits')
+      .find({ _id: { $in: out.map(l => new Types.ObjectId(l.unitId)) } }, { projection: { productId: 1, warehouseCode: 1 } }).toArray();
+    const groups = new Map<string, { productId: string; condition: string; warehouseCode: string; unitIds: string[] }>();
+    for (const u of units as any[]) {
+      const condition = identityCondition(out.find(l => l.unitId === String(u._id)));
+      const key = String(u.productId) + ':' + condition;
+      const g = groups.get(key) || { productId: String(u.productId), condition, warehouseCode: u.warehouseCode || tx.warehouseCode, unitIds: [] as string[] };
+      g.unitIds.push(String(u._id));
+      groups.set(key, g);
+    }
+    for (const g of groups.values()) {
+      try {
+        await this.inventoryMovementsService.adjustStock({
+          productId: g.productId, warehouseCode: g.warehouseCode, qtyDelta: -g.unitIds.length, unitIds: g.unitIds,
+          reason: g.condition === 'lost'
+            ? `فشل توصيل طلب #${tx.ref || tx._id} — قطع فقدتها شركة الشحن ولم ترجع`
+            : `فشل توصيل طلب #${tx.ref || tx._id} — قطع رجعت تالفة`,
+          by, byUserId: actorId, requestKey: `fdwo:${tx._id}:${g.productId}:${g.condition}`,
+        });
+      } catch (err) {
+        this.logger.error(`[closeFailedDelivery] WRITE_OFF_FAILED tx=${tx.ref || tx._id} product=${g.productId} ${g.condition} x${g.unitIds.length}: ${(err as Error).message}`);
+      }
+    }
+  }
+
   async closeFailedDelivery(
     id: string,
     dto: {
@@ -3196,6 +3231,7 @@ export class TransactionsService implements ClassificationInit {
       .exec();
 
     const finalTx = goodsBack ? await finishFailedDeliveryIdentities(this.transactionModel, id, 'stock', dto.identities || [], by, actorId, finalize) : await finalize();
+    if (goodsBack) await this.writeOffFailedDeliveryPieces(tx, dto.identities || [], by, actorId);
 
     await this.followUpsService.closeShippingIssueFollowUp(String(id), outcomeLabel, by);
 

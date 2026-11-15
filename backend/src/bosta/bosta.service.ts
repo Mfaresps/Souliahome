@@ -1694,7 +1694,11 @@ export class BostaService {
     if (FollowUpsService.isShippingIssueStatus(statusCode)
       && (issueChanged || !['closed', 'reshipped'].includes(tx.shipIssueState))) {
       const wasDelivered = !!tx.deliveredAt || currentStatus === 'DELIVERED';
-      if (wasDelivered) {
+      if ((tx as any).afterSales?.caseId) {
+        // ⚠ An exchange / after-sales shipment: Bosta closes an exchange as RETURNED because the
+        //   courier brings the old item back. Its after-sales case handles receipt and problems.
+        this.logger.log(`Bosta ${statusCode} on after-sales shipment ${(tx as any).afterSales.caseRef || ''} — tx=${txId} is not a failed delivery`);
+      } else if (wasDelivered) {
         this.logger.log(
           `Bosta ${statusCode} on an already-delivered order — tx=${txId} treated as a customer return, not a failed delivery`,
         );

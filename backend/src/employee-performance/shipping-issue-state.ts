@@ -1,6 +1,8 @@
 /** Keep aligned with _dashShipStatus / _dashIsOpenIssue in the shipping dashboard. */
 export function isOpenShippingIssue(tx: any): boolean {
   if (!tx || tx.cancelled || tx.type !== 'مبيعات' || tx.deliveredAt || tx.bostaStatus === 'DELIVERED') return false;
+  // An exchange shipment ends RETURNED by design; its after-sales case owns any problem.
+  if (tx.afterSales?.caseId) return false;
   if (['closed', 'reshipped'].includes(tx.shipIssueState)) return false;
   const stages = ['CREATED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'DELIVERED', 'RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
   const hasShippingStage = stages.includes(tx.bostaStatus) || tx.deliverySource === 'MANUAL' || ['Ready', 'Picked-Up', 'Shipped', 'Delivered'].includes(tx.pickupStatus);

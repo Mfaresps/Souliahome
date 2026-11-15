@@ -14,7 +14,10 @@
     CUSTOMER_POSTPONED: ['العميل أجّل الاستلام', 'Postponed by Customer', 'waiting'],
     FAILED_ATTEMPT: ['محاولة تسليم فاشلة', 'Failed Attempt', 'issue'],
     DELIVERY_FAILED: ['فشل التسليم', 'Delivery Failed', 'issue'],
-    RETURNED: ['مرتجع', 'Returned', 'issue'],
+    // ⚠ «مرتجع» alone read like a customer return. This is the courier bringing an undelivered parcel back.
+    RETURNED: ['رجعت من شركة الشحن', 'Returned by courier', 'issue'],
+    after_sales_exchange_done: ['اكتمل الاستبدال', 'Exchange completed', 'delivered'],
+    after_sales_return_done: ['وصل مرتجع العميل', 'Customer return collected', 'delivered'],
     CANCELLED: ['ملغي', 'Cancelled', 'cancelled'],
     customer_cancelled: ['العميل ألغى الطلب', 'Cancelled by customer', 'cancelled'],
     rejected: ['مرفوض', 'Rejected', 'issue'],
@@ -34,7 +37,7 @@
     CUSTOMER_POSTPONED: ['postponed', 'طلب العميل تأجيل الاستلام إلى وقت لاحق.', 'The customer requested delivery at a later time.'],
     FAILED_ATTEMPT: ['attempt', 'تعذّر تسليم الشحنة في المحاولة الأخيرة.', 'The latest delivery attempt was unsuccessful.'],
     DELIVERY_FAILED: ['failed', 'تم تسجيل فشل التسليم لدى شركة الشحن.', 'The shipping company reported delivery failure.'],
-    RETURNED: ['returned', 'تم تسجيل الشحنة كمرتجع لدى شركة الشحن.', 'The shipping company has marked the parcel as returned.'],
+    RETURNED: ['returned', 'أعادت شركة الشحن الطرد لأنه لم يُسلَّم للعميل.', 'The shipping company brought the parcel back undelivered.'],
     CANCELLED: ['cancelled', 'تم إلغاء الطلب أو الشحنة.', 'The order or shipment has been cancelled.'],
     customer_cancelled: ['cancelled', 'ألغى العميل الطلب.', 'The customer cancelled the order.'],
     rejected: ['cancelled', 'تم رفض الطلب.', 'The order was rejected.'],
@@ -66,6 +69,11 @@
       key = o.pickupStatus || 'Pending';
       if (key === 'Picked-Up') key = 'Ready';
       if (key === 'Delivered') key = 'DELIVERED';
+    }
+    // An exchange / customer-return shipment: Bosta closes an exchange as RETURNED because the courier
+    // brings the old item back — that is the exchange finishing, not a failed delivery.
+    if (o.afterSales?.caseId && key === 'RETURNED') {
+      key = o.afterSales.kind === 'exchange' ? 'after_sales_exchange_done' : 'after_sales_return_done';
     }
     let label = text(key, lang), tone = states[key]?.[2] || 'shipping', previewKey = key;
     const attempts = Array.isArray(o.shipmentAttempts) ? o.shipmentAttempts.length : Number(o.shipmentAttempts) || 0;

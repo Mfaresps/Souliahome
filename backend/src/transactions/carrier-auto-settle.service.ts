@@ -94,7 +94,7 @@ export class CarrierAutoSettleService {
 
   private static hasOpenConflict(tx: any): boolean {
     const open = (c: any) => !!c && !c.resolved;
-    return ['open', 'awaiting'].includes(tx.shipIssueState || '')
+    return (!tx.afterSales?.caseId && ['open', 'awaiting'].includes(tx.shipIssueState || ''))
       || open(tx.addressChangeConflict)
       || open(tx.shopifyCancelConflict)
       || open(tx.externalFulfillment);

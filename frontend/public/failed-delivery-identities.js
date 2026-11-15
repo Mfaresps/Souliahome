@@ -19,18 +19,27 @@
         return;
       }
       if (!host) throw new Error(tr('Reopen this window to review the identities linked to this order.', 'أعد فتح النافذة لمراجعة الهويات المرتبطة بهذا الطلب.'));
-      host.innerHTML = active.pieces.length ? `<p>${tr('Confirm physical receipt. Is each identity label still readable?', 'أكد استلام القطع فعليًا. هل ملصق هوية كل قطعة ما زال واضحًا؟')}</p>
+      host.innerHTML = active.pieces.length ? `<p>${tr('Set each piece: sound returns to sale, damaged is isolated, lost by the carrier never comes back. Then check its identity label.', 'حدد حالة كل قطعة: السليمة تعود للبيع، والتالفة تُعزل، والمفقودة مع شركة الشحن لا تدخل المخزن. ثم راجع ملصق هويتها.')}</p>
         <label>${tr('Label size', 'مقاس الملصق')} <select data-fdi-size>${['50x30','60x40','80x50','100x70'].map(size => `<option value="${size}">${size} mm</option>`).join('')}</select></label>` + active.pieces.map((piece, i) => `
         <div class="fd-block" data-fdi-piece="${i}"><code dir="ltr">${esc(piece.manualCode || piece.barcode)}</code>
+        <select class="fd-note" aria-label="${tr('Piece condition', 'حالة القطعة')}" data-fdi-condition>
+          <option value="">${tr('Choose piece condition', 'اختر حالة القطعة')}</option>
+          <option value="sound">${tr('Sound — back to sale', 'سليمة — تعود للبيع')}</option>
+          <option value="damaged">${tr('Damaged — isolated from sale', 'تالفة — تُعزل عن البيع')}</option>
+          <option value="lost">${tr('Lost by the carrier — not back in stock', 'فُقدت مع شركة الشحن — لا ترجع للمخزن')}</option></select>
+        <div data-fdi-label>
         <select class="fd-note" aria-label="${tr('Identity label condition', 'حالة ملصق الهوية')}" data-fdi-state>
           <option value="">${tr('Choose label condition', 'اختر حالة الهوية')}</option>
           <option value="intact">${tr('Present and readable', 'موجودة وواضحة')}</option>
           <option value="reprinted">${tr('Obscured / missing — reprint same identity', 'مطموسة أو مفقودة — طباعة نفس الهوية')}</option></select>
         <button type="button" class="btn" data-fdi-print hidden>${tr('Print same identity', 'طباعة نفس الهوية')}</button>
-        <label style="display:block;margin-top:8px"><input type="checkbox" data-fdi-attached> ${tr('I received this exact piece and verified / attached its readable identity label.', 'استلمت هذه القطعة وتأكدت من هويتها ولصقت الملصق الواضح عليها.')}</label></div>`).join('') : '';
+        <label style="display:block;margin-top:8px"><input type="checkbox" data-fdi-attached> ${tr('I received this exact piece and verified / attached its readable identity label.', 'استلمت هذه القطعة وتأكدت من هويتها ولصقت الملصق الواضح عليها.')}</label></div></div>`).join('') : '';
       host.querySelectorAll('[data-fdi-piece]').forEach(row => {
-        const piece = active.pieces[Number(row.dataset.fdiPiece)], select = row.querySelector('select'), button = row.querySelector('button');
+        const piece = active.pieces[Number(row.dataset.fdiPiece)], select = row.querySelector('[data-fdi-state]'), button = row.querySelector('button');
         select.onchange = () => { button.hidden = select.value !== 'reprinted'; row.querySelector('input').checked = false; };
+        // A lost piece is not in hand: no label to check, print or attach.
+        const condition = row.querySelector('[data-fdi-condition]');
+        condition.onchange = () => { row.querySelector('[data-fdi-label]').hidden = condition.value === 'lost'; };
         button.onclick = () => print(active, piece, button);
       });
       active.ready = true;
@@ -47,9 +56,12 @@
     if (context?.id === String(id) && context.error) throw new Error(context.error);
     if (!context || context.id !== String(id) || !context.ready || context.busy) throw new Error(tr('Wait for identity review to finish.', 'انتظر اكتمال مراجعة الهويات.'));
     return context.pieces.map((piece, i) => {
-      const row = context.host.querySelector(`[data-fdi-piece="${i}"]`), state = row.querySelector('select').value;
+      const row = context.host.querySelector(`[data-fdi-piece="${i}"]`), state = row.querySelector('[data-fdi-state]').value;
+      const condition = row.querySelector('[data-fdi-condition]').value;
+      if (!condition) throw new Error(tr('Set every piece as sound, damaged or lost.', 'حدد حالة كل قطعة: سليمة أو تالفة أو مفقودة.'));
+      if (condition === 'lost') return { unitId: piece.unitId, condition, labelState: '', labelAttached: false };
       if (!state || !row.querySelector('input').checked || state === 'reprinted' && !piece.printRequested) throw new Error(tr('Review every label, print obscured identities and confirm attachment.', 'راجع كل هوية، واطبع الهوية المطموسة وأكد لصقها على القطعة.'));
-      return { unitId: piece.unitId, labelState: state, labelAttached: true,
+      return { unitId: piece.unitId, condition, labelState: state, labelAttached: true,
         ...(state === 'reprinted' ? { printOperationKey: piece.printRequest.operationKey } : {}) };
     });
   }

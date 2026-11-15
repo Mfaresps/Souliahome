@@ -40,7 +40,7 @@
 </script>
 <script src="/config.js"></script>
 <script defer src="/be-button-motion.js?v=20261109-subtle"></script>
-<script src="/order-status.js?v=20261108-bosta-delay"></script>
+<script src="/order-status.js?v=20261114-courier-return"></script>
 <script defer src="/order-status-preview.js?v=20261109-stable-preview"></script>
 <link rel="stylesheet" href="/order-status-preview.css?v=20261029-group-previews">
 <link rel="stylesheet" href="/order-status.css?v=20261108-bosta-delay">
@@ -24501,13 +24501,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
 <script src="/customer-piece-return.js?v=20261113-supplier"></script>
-<script src="/failed-delivery-identities.js?v=20261024-1"></script>
+<script src="/failed-delivery-identities.js?v=20261114-condition"></script>
 <script src="/invoice-image.js?v=20261113-ship-discount"></script>
 <script src="/animated-number.js?v=20261108"></script>
 <script src="/comment-inline-edit.js?v=20261109-1"></script>
 <script src="/copy-button.js?v=20261109-1"></script>
 <script src="/shopify-deposit-fab.js?v=20261109-follow-redraw"></script>
-<script src="/shipping-command-center.js?v=20261109-cascade"></script>
+<script src="/shipping-command-center.js?v=20261115-aftersales2"></script>
 <script src="/navigation-history.js?v=20261110-2"></script>
 <script src="/clients-profile.js?v=20261110-instant-history"></script>
 <script>
@@ -24923,13 +24923,13 @@ let movStatusFilter = '';
 const _BOSTA_STATUS_LABELS = {
   CUSTOMER_POSTPONED: 'العميل أجّل الاستلام',
   CREATED: 'تم الإنشاء', PICKED_UP: 'تم الاستلام بواسطة شركة الشحن', IN_TRANSIT: 'في الطريق', OUT_FOR_DELIVERY: 'خارج للتسليم',
-  DELIVERED: 'تم التسليم', RETURNED: 'مرتجع', FAILED_ATTEMPT: 'محاولة تسليم فاشلة', DELIVERY_FAILED: 'فشل التسليم',
+  DELIVERED: 'تم التسليم', RETURNED: 'رجعت من شركة الشحن', FAILED_ATTEMPT: 'محاولة تسليم فاشلة', DELIVERY_FAILED: 'فشل التسليم',
   CANCELLED: 'ملغي', DELETED: 'محذوف من Bosta', VALIDATION_ERROR: 'خطأ في البيانات',
 };
 const _BOSTA_STATUS_LABELS_EN = {
   CUSTOMER_POSTPONED: 'Postponed by customer',
   CREATED: 'Created', PICKED_UP: 'Picked up', IN_TRANSIT: 'In transit', OUT_FOR_DELIVERY: 'Out for delivery',
-  DELIVERED: 'Delivered', RETURNED: 'Returned', FAILED_ATTEMPT: 'Failed attempt', DELIVERY_FAILED: 'Delivery failed',
+  DELIVERED: 'Delivered', RETURNED: 'Returned by courier', FAILED_ATTEMPT: 'Failed attempt', DELIVERY_FAILED: 'Delivery failed',
   CANCELLED: 'Cancelled', DELETED: 'Deleted from Bosta', VALIDATION_ERROR: 'Validation error',
 };
 /* Bosta status codes are API values; only the human-facing label is localized. Falls back to the
@@ -26523,13 +26523,13 @@ const TRANSLATIONS = {
   lowStock:{ar:'أصناف قاربت النفاد',en:'Low Stock Items'},recentTx:{ar:'آخر المعاملات',en:'Recent Transactions'},
   dashShippingTitle:{ar:'قيد الشحن',en:'In Shipping'},
   dashDeliveredTitle:{ar:'تم التسليم',en:'Delivered'},
-  dashShipIssuesTitle:{ar:'مشاكل الشحن',en:'Shipping Issues'},
+  dashShipIssuesTitle:{ar:'مشكلات التوصيل',en:'Delivery issues'},
   dashShipViewShopify:{ar:'عرض الطلب في Shopify',en:'View order in Shopify'},
   dashShipTrackBosta:{ar:'تتبع الشحنة في Bosta',en:'Track shipment in Bosta'},
   dashShipViewBosta:{ar:'عرض الطلب في Bosta',en:'View order in Bosta'},
   dashShipEmptyShipping:{ar:'لا توجد طلبات قيد الشحن',en:'No orders currently in shipping'},
   dashShipEmptyDelivered:{ar:'لا توجد طلبات تم تسليمها',en:'No delivered orders'},
-  dashShipEmptyIssues:{ar:'لا توجد مشاكل شحن حالياً 🎉',en:'No shipping issues right now 🎉'},
+  dashShipEmptyIssues:{ar:'لا توجد مشكلات توصيل حاليًا',en:'No delivery issues right now'},
   dashShipColOrder:{ar:'الطلب',en:'Order'},
   dashShipColSince:{ar:'منذ',en:'Since'},
   dashShipColTrack:{ar:'حالة الشحن',en:'Shipping status'},
@@ -26544,7 +26544,7 @@ const TRANSLATIONS = {
   /* مؤشرات الشحن فوق الجدول */
   dsShipKpiDelivered:{ar:'وصل بنجاح',en:'Delivered'},
   dsShipKpiTransit:{ar:'في الطريق',en:'In transit'},
-  dsShipKpiIssues:{ar:'مشاكل',en:'Issues'},
+  dsShipKpiIssues:{ar:'مشكلات توصيل',en:'Delivery issues'},
   dsShipKpiRate:{ar:'نسبة النجاح',en:'Success rate'},
   dsShipKpiRateTip:{ar:'الطلبات التي وصلت ÷ (التي وصلت + كل ما رجع أو فشل تسليمه، سواء عولج أم لا). الطلبات التي ما زالت في الطريق غير محسوبة — مصيرها لم يتحدد بعد.',en:'Delivered ÷ (delivered + every order returned or failed, handled or not). Orders still in transit are excluded — their outcome is not yet decided.'},
   /* إشعارات تحديث حالة الشحنة — كل حالة برسالتها ونبرتها */
@@ -26979,7 +26979,7 @@ const TRANSLATIONS = {
   dsAttnTitle:{ar:'يحتاج انتباهك',en:'Needs your attention'},
   dsDutyTitle:{ar:'مَن يستلم الطلبات الآن',en:'Who receives orders now'},
   dsAttnEmpty:{ar:'لا شيء يحتاج تدخّلاً الآن',en:'Nothing needs action right now'},
-  dsAttnShipIssues:{ar:'مشاكل شحن',en:'Shipping issues'},
+  dsAttnShipIssues:{ar:'مشكلات توصيل',en:'Delivery issues'},
   dsAttnLowStock:{ar:'أصناف قاربت النفاد',en:'Items near stock-out'},
   dsAttnDebts:{ar:'فواتير عليها متبقٍّ',en:'Invoices with a balance'},
   dsSrcSales:{ar:'المبيعات',en:'Sales'},
@@ -28256,7 +28256,7 @@ const TRANSLATIONS = {
   bostaStatusOutForDelivery:{ar:'خارج للتسليم',en:'Out for Delivery'},
   bostaStatusPostponed:{ar:'العميل أجّل الاستلام',en:'Postponed by Customer'},
   bostaStatusDelivered:{ar:'تم التسليم',en:'Delivered'},
-  bostaStatusReturned:{ar:'مرتجع',en:'Returned'},
+  bostaStatusReturned:{ar:'رجعت من شركة الشحن',en:'Returned by courier'},
   bostaStatusFailedAttempt:{ar:'محاولة تسليم فاشلة',en:'Failed Attempt'},
   bostaStatusDeliveryFailed:{ar:'فشل التسليم',en:'Delivery Failed'},
   bostaStatusCancelled:{ar:'ملغي',en:'Cancelled'},
@@ -28791,11 +28791,11 @@ const TRANSLATIONS = {
   fdReshipRowTip:{ar:'شُحن هذا الطلب {v} مرة سابقاً وعاد',en:'This order shipped {v} time(s) before and came back'},
   fdTrackOnBosta:{ar:'تتبّع الشحنة على موقع شركة الشحن',en:'Track this shipment on the courier site'},
   gsReshipPending:{ar:'في انتظار الشحنة {v}',en:'Awaiting ship {v}'},
-  fdOpenTitle:{ar:'أعادت شركة الشحن هذا الطلب — هل استلمت الشحنة؟',en:'The courier returned this order — have you received the shipment?'},
-  fdOpenSub:{ar:'يبقى الطلب ضمن مشاكل التوصيل حتى تتم الإجابة، والبضاعة لا تزال محسوبة مباعة',en:'It stays in shipping issues until you answer, and the goods are still counted as sold'},
+  fdOpenTitle:{ar:'أعادت شركة الشحن هذا الطلب — هل وصلت الشحنة المرتجعة إلى المخزن؟',en:'The courier returned this order — has the returned shipment reached the warehouse?'},
+  fdOpenSub:{ar:'سيبقى الطلب ضمن مشكلات التوصيل حتى تؤكد الاستلام، وتظل البضاعة محسوبة مبيعةً إلى ذلك الحين.',en:'The order stays in delivery issues until you confirm receipt; until then the goods still count as sold.'},
   fdAwaitTitle:{ar:'في انتظار وصول المرتجع إلى المخزن',en:'Waiting for the return to reach the warehouse'},
   fdAwaitSub:{ar:'أكّد الاستلام فور وصول الشحنة لإعادة البضاعة إلى المخزون',en:'Confirm receipt when it arrives so the stock comes back'},
-  fdHeldMoney:{ar:'مبلغ محتجز للعميل: {v}',en:'Customer money held: {v}'},
+  fdHeldMoney:{ar:'المبلغ المدفوع مقدمًا من العميل: {v}',en:'Paid in advance by the customer: {v}'},
   fdBtnReceived:{ar:'استلمت الشحنة',en:'I received it'},
   fdBtnNotYet:{ar:'لم تصل بعد',en:'Not yet'},
   fdBtnReship:{ar:'إعادة الشحن',en:'Ship again'},
@@ -43393,6 +43393,9 @@ const ISSUE_SHIP_KEYS = ['RETURNED', 'FAILED_ATTEMPT', 'DELIVERY_FAILED'];
    ده كان بيثق في `shipIssueState` من غير ما يراجع التسليم، والـ fallback القديم
    كان أذكى منه. بيتطبّق على الاتنين دلوقتي. */
 function _dashShipIssueSettled(tx) {
+  // ⚠ An exchange / after-sales shipment ends at Bosta as RETURNED by design (it brings the old
+  //   item back) — that is its own case's workflow, never a failed delivery to ask about.
+  if (tx?.afterSales?.caseId) return true;
   return !!(tx.deliveredAt || tx.bostaStatus === 'DELIVERED');
 }
 
@@ -119936,7 +119939,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/metrics-strip.css?v=20261029-green-kpis">
 <link rel="stylesheet" href="/shopify-workspace.css?v=20261109-live-order">
 <link rel="stylesheet" href="/dashboard-clarity.css?v=20261103-neutral-surfaces">
-<link rel="stylesheet" href="/shipping-command-center.css?v=20261109-6">
+<link rel="stylesheet" href="/shipping-command-center.css?v=20261115-aftersales2">
 <link rel="stylesheet" href="/window-system.css?v=20261109-center">
 <link rel="stylesheet" href="/designme/date-range-picker/soulia-range.css?v=4">
 <script src="/designme/date-range-picker/soulia-range.js?v=4"></script>

@@ -15,14 +15,15 @@
     Ready: SouliaOrderStatus.text('Ready', currentLang), Shipped: SouliaOrderStatus.text('Shipped', currentLang),
     IN_TRANSIT: SouliaOrderStatus.text('IN_TRANSIT', currentLang),
     OUT_FOR_DELIVERY: SouliaOrderStatus.text('OUT_FOR_DELIVERY', currentLang),
-    DELIVERED: SouliaOrderStatus.text('DELIVERED', currentLang), issues: tr('مشاكل الشحن', 'Shipping issues'),
+    DELIVERED: SouliaOrderStatus.text('DELIVERED', currentLang), issues: tr('مشكلات التوصيل', 'Delivery issues'),
+    afterSales: tr('استبدالات ومرتجعات العملاء', 'Exchanges & customer returns'),
     waiting: tr('بانتظار التجهيز', 'Awaiting prep'), other: tr('حالات أخرى', 'Other statuses'),
     delayed: tr('شحنات متأخرة', 'Delayed shipments'), failed: tr('تعذّر التسليم', 'Failed deliveries'),
     pickup: tr('بانتظار استلام المندوب', 'Pending pickup'),
   });
   const stages = () => ['Preparing', 'Ready', 'Shipped', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', ...(isAdmin() ? ['DELIVERED'] : []), 'issues'];
-  const tone = key => key === 'issues' || key === 'failed' ? 'issue' : key === 'DELIVERED' ? 'delivered' : key === 'Ready' || key === 'delayed' || key === 'pickup' ? 'ready' : 'shipping';
-  const icon = key => _trkIcon(key === 'DELIVERED' ? 'delivered' : key === 'issues' ? 'stopped' : key === 'Ready' ? 'created' : 'transit');
+  const tone = key => key === 'afterSales' ? 'aftersales' : key === 'issues' || key === 'failed' ? 'issue' : key === 'DELIVERED' ? 'delivered' : key === 'Ready' || key === 'delayed' || key === 'pickup' ? 'ready' : 'shipping';
+  const icon = key => _trkIcon(key === 'DELIVERED' ? 'delivered' : key === 'issues' ? 'stopped' : key === 'afterSales' ? 'picked' : key === 'Ready' ? 'created' : 'transit');
   const timestamp = value => value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : null;
   const dateLabel = value => {
     const at = timestamp(value);
@@ -43,13 +44,18 @@
       if (!tx || tx.type !== 'مبيعات' || tx.cancelled || tx.archived || seen.has(String(tx._id))) return [];
       seen.add(String(tx._id));
       const meta = _orderStateMeta(tx);
-      if (['CANCELLED', 'customer_cancelled'].includes(meta.key) || (!isAdmin() && meta.key === 'DELIVERED')) return [];
+      // An exchange / customer return is a separate flow from a delivery. Once it is
+      // finished it is "done" exactly like a delivered order: staff no longer see it.
+      const asKind = tx.afterSales?.caseId ? (tx.afterSales.kind === 'exchange' ? 'exchange' : 'return') : '';
+      const asDone = !!asKind && String(meta.key).startsWith('after_sales_');
+      if (['CANCELLED', 'customer_cancelled'].includes(meta.key) || (!isAdmin() && (meta.key === 'DELIVERED' || asDone))) return [];
       const issue = meta.key !== 'DELIVERED' && _dashIsOpenIssue(tx, meta);
-      const stage = issue ? 'issues' : ['PICKED_UP', 'Shipped'].includes(meta.key) ? 'Shipped'
+      // Exchange / customer-return shipments are their own group: they are not delivery problems.
+      const stage = asKind ? 'afterSales' : issue ? 'issues' : ['PICKED_UP', 'Shipped'].includes(meta.key) ? 'Shipped'
         : meta.key === 'CUSTOMER_POSTPONED' ? 'IN_TRANSIT' : meta.key === 'Pending' ? 'waiting'
         : stageKeys.has(meta.key) ? meta.key : 'other';
       const carrier = String(tx.shipCo || meta.carrier || '').trim();
-      return [{ tx, meta, stage, carrier, issue, age: shipmentAge(tx, meta),
+      return [{ tx, meta, stage, carrier, issue, asKind, asDone, age: shipmentAge(tx, meta),
         search: [tx.ref, tx.client, tx.phone, tx.bostaTrackingNumber].filter(Boolean).join(' ').toLocaleLowerCase() }];
     });
   }
@@ -196,14 +202,15 @@
     $('scc-orders-link').hidden = !hasPerm('pickup-orders');
     text('scc-pipeline-title', tr('مسار الشحن', 'Shipping pipeline'));
     text('scc-pipeline-total', unavailable ? tr('بيانات الشحن غير متاحة', 'Shipping data unavailable') : tr('إجمالي الطلبات المتاحة', 'Available orders') + ' · ' + fmtN(rows.length));
-    html('dash-ship-kpis', [...(isAdmin() ? ['DELIVERED'] : []), 'IN_TRANSIT', 'Ready', 'issues'].map(key =>
+    const asOpen = rows.filter(row => row.asKind && !row.asDone).length;
+    html('dash-ship-kpis', [...(isAdmin() ? ['DELIVERED'] : []), 'IN_TRANSIT', 'Ready', 'issues', ...(asOpen ? ['afterSales'] : [])].map(key =>
       `<button type="button" class="scc-kpi" data-tone="${tone(key)}" data-ship-stage="${key}" aria-pressed="${state.stage === key}">
-        <span class="scc-kpi-label">${esc(names[key])}${icon(key)}</span><strong>${esc(count(key))}</strong>
-        <span class="scc-kpi-note">${esc(key === 'issues' ? tr('تحتاج معالجة', 'Need resolution') : key === 'Ready' ? tr('بانتظار المندوب', 'Awaiting courier') : key === 'DELIVERED' ? tr('تم التسليم للعميل', 'Received by customer') : tr('عبر شبكة الشحن', 'Moving through carrier network'))}</span>
+        <span class="scc-kpi-label">${esc(names[key])}${icon(key)}</span><strong>${esc(key === 'afterSales' ? (unavailable ? '—' : fmtN(asOpen)) : count(key))}</strong>
+        <span class="scc-kpi-note">${esc(key === 'afterSales' ? tr('شحنات استبدال ومرتجع جارية', 'Exchange & return shipments under way') : key === 'issues' ? tr('تحتاج معالجة', 'Need resolution') : key === 'Ready' ? tr('بانتظار المندوب', 'Awaiting courier') : key === 'DELIVERED' ? tr('تم التسليم للعميل', 'Received by customer') : tr('عبر شبكة الشحن', 'Moving through carrier network'))}</span>
       </button>`).join(''));
     // Additional real states remain visible, so the distribution always sums to
     // its denominator, including unprepared orders and resolved exceptions.
-    const distribution = [...(counts.waiting ? ['waiting'] : []), ...list, ...(counts.other ? ['other'] : [])];
+    const distribution = [...(counts.waiting ? ['waiting'] : []), ...list, ...(counts.afterSales ? ['afterSales'] : []), ...(counts.other ? ['other'] : [])];
     html('scc-distribution', distribution.filter(key => counts[key]).map(key => `<button type="button" data-ship-stage="${key}" data-tone="${tone(key)}" style="flex-grow:${counts[key]}" title="${esc(names[key])}: ${esc(fmtN(counts[key]))}" aria-label="${esc(names[key])}: ${esc(fmtN(counts[key]))}"></button>`).join(''));
     html('scc-stages', ['all', ...distribution].map(key => `<button type="button" data-ship-stage="${key}" aria-pressed="${state.stage === key}" data-tone="${tone(key)}"><span>${esc(names[key])}</span><strong>${esc(count(key))}</strong></button>`).join(''));
     text('scc-table-title', tr('طلبات الشحن', 'Shipping orders'));
@@ -228,10 +235,10 @@
   function paintTable() {
     const names = labels(), query = state.q.trim().toLocaleLowerCase().replace(/^#/, '');
     const filtered = rows.filter(row => matches(row, state.stage) && (!state.carrier || row.carrier === state.carrier) && (!query || row.search.includes(query)));
-    const rank = ['waiting', 'Preparing', 'Ready', 'Shipped', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'issues', 'other'];
+    const rank = ['waiting', 'Preparing', 'Ready', 'Shipped', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'issues', 'afterSales', 'other'];
     filtered.sort((a, b) => {
       const direction = state.sort.endsWith('asc') ? 1 : -1;
-      if (state.sort.startsWith('status')) return direction * (rank.indexOf(a.stage) - rank.indexOf(b.stage)) || String(a.tx._id).localeCompare(String(b.tx._id));
+      if (state.sort.startsWith('status')) return direction * (rank.indexOf(a.stage) - rank.indexOf(b.stage)) || (a.asDone - b.asDone) || String(a.tx._id).localeCompare(String(b.tx._id));
       const at = timestamp(a.tx.date || a.tx.createdAt), bt = timestamp(b.tx.date || b.tx.createdAt);
       if (at === null || bt === null) return at === bt ? 0 : at === null ? 1 : -1;
       return direction * (at - bt) || String(a.tx._id).localeCompare(String(b.tx._id));
@@ -253,6 +260,8 @@
       const id = String(row.tx._id), markup = rowHTML(row);
       let el = existing.get(id);
       if (!el) { el = document.createElement('tr'); el.dataset.orderId = id; }
+      if (row.asKind) el.dataset.flow = 'aftersales'; else delete el.dataset.flow;
+      el.classList.toggle('is-as-done', row.asDone);
       if (el._shippingHTML !== markup) {
         // Keep an actively used action menu intact until it closes.
         if (!el.contains(document.activeElement)) { el.innerHTML = markup; el._shippingHTML = markup; el._shippingDeferred = false; }
@@ -281,7 +290,7 @@
       <td><span>${esc(row.carrier || '—')}</span>${tracking ? `<a class="scc-tracking" href="https://bosta.co/ar-eg/tracking-shipments?shipment-number=${encodeURIComponent(tracking)}" target="_blank" rel="noopener" aria-label="${esc(tr('تتبع الشحنة', 'Track shipment') + ' ' + tracking)}"><bdi>${esc(tracking)}</bdi> ↗</a>` : ''}</td>
       <td class="scc-date"><time datetime="${esc(tx.date || tx.createdAt || '')}">${esc(dateLabel(tx.date || tx.createdAt))}</time>${age === null ? '' : `<span class="scc-age-inline"> · <bdi>${esc(fmtN(age))}</bdi> ${esc(tr('يوم منذ الشحن', 'd since shipped'))}</span>`}</td>
       <td class="scc-number" title="${esc(age === null ? tr('تاريخ الشحن الفعلي غير مسجل', 'Actual shipment date not recorded') : dateLabel(tx.shippedAt))}">${age === null ? '—' : esc(fmtN(age))}</td>
-      <td><div class="scc-status-cell">${SouliaOrderStatus.badge(meta, { compact: true, hideCarrier: true })}${actions.extras ? `<span class="scc-extras">${actions.extras}</span>` : ''}</div></td>
+      <td><div class="scc-status-cell">${row.asKind ? `<span class="scc-as-kind" title="${esc(row.asKind === 'exchange' ? tr('شحنة استبدال: يسلّم المندوب البديل ويستلم القطعة القديمة، وهي ليست مشكلة توصيل', 'Exchange shipment: the courier delivers the replacement and collects the old piece; not a delivery problem') : tr('شحنة مرتجع عميل: يستلم المندوب القطعة من العميل، وهي ليست مشكلة توصيل', 'Customer return: the courier collects the piece from the customer; not a delivery problem'))}">${esc(row.asKind === 'exchange' ? tr('استبدال', 'Exchange') : tr('مرتجع عميل', 'Customer return'))}</span>` : ''}${SouliaOrderStatus.badge(meta, { compact: true, hideCarrier: true })}${actions.extras ? `<span class="scc-extras">${actions.extras}</span>` : ''}</div></td>
       <td><div class="scc-actions">${actions.bostaBizBtn}${actions.menu}</div></td>`;
   }
   function attention() {

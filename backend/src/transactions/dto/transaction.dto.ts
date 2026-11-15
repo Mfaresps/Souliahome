@@ -467,11 +467,16 @@ export class ReturnedIdentityDto {
   @IsString() @IsNotEmpty()
   readonly unitId: string;
 
-  @IsIn(['intact', 'reprinted'])
+  /** Empty only for a piece lost by the carrier — there is no label to check. */
+  @IsIn(['intact', 'reprinted', '']) @IsOptional()
   readonly labelState: string;
 
-  @IsBoolean()
+  @IsBoolean() @IsOptional()
   readonly labelAttached: boolean;
+
+  /** sound → back on sale · damaged → isolated and written off · lost → never came back, written off. */
+  @IsIn(['sound', 'damaged', 'lost']) @IsOptional()
+  readonly condition?: string;
 }
 
 export class CloseFailedDeliveryDto {

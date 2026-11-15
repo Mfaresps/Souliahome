@@ -22,11 +22,14 @@
 .scc-zone .scc-heading > button { flex-shrink: 0; }
 .scc-zone .scc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .scc-zone .scc-kpis:not(:has(> :nth-child(4))) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scc-zone .scc-kpis:has(> :nth-child(5)) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .scc-zone button, .scc-zone input, .scc-zone select { font-family: inherit; }
 .scc-zone [data-tone="shipping"] { --scc-tone: var(--scc-blue); }
 .scc-zone [data-tone="delivered"] { --scc-tone: var(--scc-green); }
 .scc-zone [data-tone="ready"] { --scc-tone: var(--scc-amber); }
 .scc-zone [data-tone="issue"] { --scc-tone: var(--scc-red); }
+/* Exchanges & customer returns: their own flow, violet like bundles, never the red of a delivery problem. */
+.scc-zone [data-tone="aftersales"] { --scc-tone: var(--bdl-ink, #6d4bd1); }
 .scc-zone .scc-kpi { border: 1px solid var(--ds-border); border-radius: 9px; background: var(--ds-surface); padding: 13px 16px; text-align: start; cursor: pointer; color: var(--ds-text); display: grid; gap: 5px; min-width: 0; transition: border-color .15s, background .15s; }
 .scc-zone .scc-kpi-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 550; }
 .scc-zone .scc-kpi-label svg { width: 17px; height: 17px; color: var(--scc-tone); stroke-width: 1.8; }
@@ -90,6 +93,8 @@
 .scc-zone .scc-tracking { display: block; font-size: 11px; color: var(--ds-muted); margin-top: 2px; text-decoration: none; }
 .scc-zone .scc-status-cell { display: flex; gap: 4px 5px; flex-wrap: wrap; align-items: center; min-width: 108px; }
 .scc-zone .scc-status-cell .order-state { font-size: 11px; }
+/* Exchange / customer-return shipment: its own small tag, never the red issue tone. */
+.scc-zone .scc-as-kind { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--bdl-bg, #f1edfb); color: var(--bdl-ink, #5b3fb3); white-space: nowrap; }
 .scc-zone :is(.order-delay-badge,.ds-period-btn) { font-size: 11px; }
 /* Status badge colors come from order-status.css, shared with Transactions. */
 .scc-zone .scc-extras, .scc-zone .scc-actions { display: flex; align-items: center; gap: 5px; }
@@ -197,3 +202,13 @@ body.dark-mode .scc-zone { --scc-green: #7cc6a2; --scc-blue: #9bbbd6; --scc-ambe
 .scc-zone #dash-duty-admin .dy-p.is-me { padding-inline: 8px; border-radius: 6px; }
 .scc-zone #dash-duty-admin .dy-more { min-width: 0; }
 .scc-zone #dash-duty-admin .dy-chip { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+
+/* A row of the exchange / customer-return flow: violet start rail; a finished one is quiet. */
+.scc-zone .scc-table tbody tr[data-flow="aftersales"] { background: var(--bdl-bg-soft, rgba(124, 92, 214, .04)); }
+.scc-zone .scc-table tbody tr[data-flow="aftersales"] > td:first-child { border-inline-start: 3px solid var(--bdl-line, #8b6fe0); }
+.scc-zone .scc-table tbody tr.is-as-done { opacity: .72; }
+@media (max-width: 760px) { .scc-zone .scc-kpis:has(> :nth-child(5)) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 620px) {
+  .scc-zone .scc-table tbody tr[data-flow="aftersales"] { border-inline-start: 3px solid var(--bdl-line, #8b6fe0); }
+  .scc-zone .scc-table tbody tr[data-flow="aftersales"] > td:first-child { border-inline-start: 0; }
+}

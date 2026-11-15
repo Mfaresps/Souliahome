@@ -3,13 +3,14 @@ import { resolve } from 'path';
 import { runInNewContext, Script } from 'vm';
 const source = readFileSync(resolve(__dirname, '../../../frontend/public/failed-delivery-identities.js'), 'utf8');
 function fixture() {
-  const select = { value: '' }, input = { checked: false }, button = { hidden: true };
-  const row = { dataset: { fdiPiece: '0' }, querySelector: (tag: string) => ({ select, input, button }[tag]) };
+  const select = { value: '' }, input = { checked: false }, button = { hidden: true }, condition = { value: 'sound' }, label = { hidden: false };
+  const parts: any = { '[data-fdi-state]': select, '[data-fdi-condition]': condition, '[data-fdi-label]': label, input, button };
+  const row = { dataset: { fdiPiece: '0' }, querySelector: (tag: string) => parts[tag] };
   const host = { isConnected: true, textContent: '', innerHTML: '', querySelectorAll: () => [row], querySelector: () => row };
   const c: any = { currentLang: 'en', document: { getElementById: () => host }, window: {},
     api: jest.fn(async () => ({ receiptIdentities: [{ unitId: 'unit-one', barcode: 'SU-ONE' }] })) };
   runInNewContext(source, c);
-  return { c, select, input, host, ui: c.window.FailedDeliveryIdentities };
+  return { c, select, input, host, condition, ui: c.window.FailedDeliveryIdentities };
 }
 it('blocks closing while identities are loading or any piece lacks physical confirmation', async () => {
   const { ui, input, select } = fixture();
@@ -19,8 +20,17 @@ it('blocks closing while identities are loading or any piece lacks physical conf
   select.value = 'intact';
   expect(() => ui.collect('sale')).toThrow();
   input.checked = true;
-  expect(ui.collect('sale')).toEqual([{ unitId: 'unit-one', labelState: 'intact', labelAttached: true }]);
+  expect(ui.collect('sale')).toEqual([{ unitId: 'unit-one', condition: 'sound', labelState: 'intact', labelAttached: true }]);
   expect(() => ui.collect('another-sale')).toThrow();
+});
+it('needs a condition for every piece, and a lost piece needs no label', async () => {
+  const { ui, condition } = fixture(); await ui.load('sale');
+  condition.value = '';
+  expect(() => ui.collect('sale')).toThrow('sound, damaged or lost');
+  condition.value = 'lost';
+  expect(ui.collect('sale')).toEqual([{ unitId: 'unit-one', condition: 'lost', labelState: '', labelAttached: false }]);
+  condition.value = 'damaged';
+  expect(() => ui.collect('sale')).toThrow();
 });
 it('requires a print request before accepting attachment of an obscured label', async () => {
   const { ui, input, select } = fixture(); await ui.load('sale');

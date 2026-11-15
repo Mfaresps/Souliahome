@@ -2,7 +2,7 @@
   "performance": {
     "rows": 5000,
     "mounted": 20,
-    "renderMs": 79
+    "renderMs": 86
   },
   "inspections": [
     {
@@ -28,7 +28,7 @@
           "level": "WARN",
           "id": "tiny-text",
           "width": 1440,
-          "message": "93% of the text is under 13px.",
+          "message": "94% of the text is under 13px.",
           "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks."
         }
       ]
