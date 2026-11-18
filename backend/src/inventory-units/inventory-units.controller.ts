@@ -3,11 +3,11 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { InventoryUnitsService, TrackingActor } from './inventory-units.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto, StalePreparedCorrectionDto } from './inventory-unit.dto';
 import { InventoryScanningService } from './inventory-scanning.service';
 import { EligibleScanQueryDto, ScanRequestDto } from './inventory-scan.dto';
 import { ManualPurchaseReceivingService } from './manual-purchase-receiving.service';
-import { ManualPurchaseReceiptDto } from './manual-purchase.dto';
+import { ManualPurchaseReceiptDto, PrelabelScanCheckDto, ScannedPurchaseReceiptDto } from './manual-purchase.dto';
 import { InventoryPacksService } from './inventory-packs.service';
 import { ScannedSaleService } from './scanned-sale.service';
 import { ScannedSaleDto } from './scanned-sale.dto';
@@ -32,6 +32,10 @@ export class InventoryUnitsController {
   legacyIdentify(@Body() dto: LegacyStockIdentifyDto, @Req() req: { user: TrackingActor }) { return this.service.identifyLegacyStock(dto, req.user); }
   @Post('purchases/receive') @RequirePerms('purchase-create', 'inventory-units-receive')
   receiveManual(@Body() dto: ManualPurchaseReceiptDto, @Req() req: { user: TrackingActor }) { return this.manualReceiving.receive(dto, req.user); }
+  @Post('purchases/receive-scanned') @RequirePerms('purchase-create', 'inventory-units-receive')
+  receiveScanned(@Body() dto: ScannedPurchaseReceiptDto, @Req() req: { user: TrackingActor }) { return this.manualReceiving.receiveScanned(dto, req.user); }
+  @Post('prelabels/scan-check') @RequirePerms('purchase-view', 'inventory-units-receive')
+  prelabelScanCheck(@Body() dto: PrelabelScanCheckDto) { return this.service.prelabelScanCheck(dto.unitIds, dto.packIds); }
   @Get('purchases/readiness') @RequirePerms('purchase-create', 'inventory-units-receive')
   receivingReadiness() { return this.service.readiness(); }
   @Get('purchases/receipts') @RequirePerms('purchase-view', 'inventory-units-view')
@@ -88,6 +92,11 @@ export class InventoryUnitsController {
   scanOperation(@Param('key') key: string, @Req() req: { user: TrackingActor }) { return this.scanning.operation(key, req.user); }
   @Get('config') @RequirePerms('inventory-units-view') config() { return this.service.config(); }
   @Get('readiness') @RequirePerms('inventory-units-reconcile') readiness() { return this.service.readiness(); }
+  // Pieces stuck on «prepared» after their order left — admin review, then one approved correction per piece.
+  @Get('stale-prepared') @RequirePerms('inventory-units-view')
+  stalePrepared(@Req() req: { user: TrackingActor }) { return this.service.stalePrepared(req.user); }
+  @Post('stale-prepared/correct') @RequirePerms('inventory-units-view')
+  correctStalePrepared(@Body() dto: StalePreparedCorrectionDto, @Req() req: { user: TrackingActor }) { return this.service.correctStalePrepared(dto, req.user); }
   @Get('reconciliation') @RequirePerms('inventory-units-reconcile') reconciliation() { return this.service.reconciliation(); }
   @Get('reconciliation/counts') @RequirePerms('inventory-units-reconcile')
   countHistory(@Query('productId') id?: string) { return this.service.countHistory(id); }

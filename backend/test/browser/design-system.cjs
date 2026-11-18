@@ -49,7 +49,8 @@ const check = (value, message) => {assert.ok(value, message); checks++;};
         currentLang=lang;document.documentElement.lang=lang;document.documentElement.dir=lang==='ar'?'rtl':'ltr';
         applyLang();buildSidebar();closeSidebar();renderProducts();renderInventory();renderApprovals();renderFollowUps();
       },lang);
-      for (const id of ['products','inventory','complaints','approvals','clients','suppliers','expenses','reports','settings','shopify-orders','pickup-orders','movements','transaction','vault','users']) {
+      // DS_PAGES=inventory,vault runs only those pages (one page's failure no longer hides another's checks).
+      for (const id of ['products','inventory','complaints','approvals','clients','suppliers','expenses','reports','settings','shopify-orders','pickup-orders','movements','transaction','vault','users'].filter(id => !process.env.DS_PAGES || process.env.DS_PAGES.split(',').includes(id))) {
         await page.evaluate(id => {
           currentPage=id;qsa('.page').forEach(el=>el.classList.toggle('active',el.id==='page-'+id));
           window.scrollTo(0,0);
@@ -65,18 +66,18 @@ const check = (value, message) => {assert.ok(value, message); checks++;};
             titleBounds:title&&title.getBoundingClientRect().toJSON()};
         });
         const label=`${id} ${lang} ${width}`;
-        check(metrics.header===64,`${label}: header ${metrics.header}`);
+        check(metrics.header===Number(process.env.DS_HEADER_HEIGHT||64),`${label}: header ${metrics.header}`);
         if(metrics.title) check(metrics.title===(width<=768?'20px':'24px'),`${label}: title ${metrics.title}`);
-        if(metrics.overflow) console.log(label,await page.evaluate(()=>[...qs('.page.active').querySelectorAll('*')].filter(el=>el.getClientRects().length&&el.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(el=>({tag:el.tagName,id:el.id,cls:el.className,right:el.getBoundingClientRect().right}))));
+        if(metrics.overflow) console.log(label,await page.evaluate(()=>[...qs('.page.active').querySelectorAll('*')].filter(el=>el.getClientRects().length&&(el.getBoundingClientRect().right>innerWidth+1||el.getBoundingClientRect().left< -1)).slice(0,12).map(el=>({tag:el.tagName,id:el.id,cls:el.className,right:el.getBoundingClientRect().right,left:el.getBoundingClientRect().left}))));
         check(!metrics.overflow,`${label}: document overflow`);
         if(id==='inventory') {
           check(await page.$$eval('#page-inventory .page-title svg',els=>els.length===0),`${label}: plain page title`);
           check(await page.evaluate(()=>{
             const row=qs('#inv-tbody tr[data-key="INACTIVE-01"]');
-            return !!row.querySelector('.inv-activation-badge.is-inactive') && row.lastElementChild.textContent===t('invAvailable')
-              && !!qs('#inv-tbody .inv-activation-badge.is-active')
+            // One state per product (Nov 15, 2026): a discontinued product with stock says so.
+            return row.classList.contains('is-inactive-stock') && !!row.querySelector('.invo-state.is-quiet-warn')
               && row.children.length===qs('#inv-table thead tr').children.length;
-          }),`${label}: activation and stock are independent and columns match`);
+          }),`${label}: discontinued state and columns match`);
         }
         if(id==='pickup-orders') {
           check(await page.evaluate(()=>{

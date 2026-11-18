@@ -2,6 +2,14 @@
 (function () {
   'use strict';
   const tr = (en, ar) => currentLang === 'en' ? en : ar;
+  // Purchase form only: each receiving option carries its own icon and a check mark when chosen.
+  const ICONS = {
+    barcode: '<path d="M4 6v12M7.5 6v12M11 6v12M14 6v8M17 6v12M20 6v12"/>',
+    scan: '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="4" height="4" rx=".5"/><rect x="13" y="13" width="4" height="4" rx=".5"/><path d="M13 7h4v2M7 15v2h2"/>',
+    check: '<path d="m5 12 4.5 4.5L19 7"/>',
+  };
+  const icon = (name, cls) => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+  const optionBody = (name, text) => `${icon(name, 'prc-ic')}<span>${text}</span>${icon('check', 'prc-ok')}`;
   window.purchaseReceiptFields = function (prefix = 'conv') {
     const warehouseField = prefix === 'conv' ? (window.SouliaWarehouses?.field(prefix) || '') : '';
     if (!hasPerm('inventory-units-receive')) return warehouseField;
@@ -9,8 +17,11 @@
     let pending = false;
     if (prefix === 'tx') { try { pending = !!pendingManualReceipt(); } catch { /* Sending remains blocked if storage is unavailable. */ } }
     return `${warehouseField}<div class="purchase-receipt purchase-receipt-compact" id="${prefix}-receipt" role="group" aria-label="${tr('Unit barcodes', 'باركود القطع')}">
-      <label class="purchase-receipt-check"><input id="${prefix}-track-units" type="checkbox" aria-controls="${prefix}-receipt-details" aria-expanded="false" onchange="togglePurchaseReceiptFields('${prefix}')"><span>${tr('Received in good condition · create barcodes', 'استلمت القطع سليمة — إنشاء باركود')}</span></label>
-      <label class="purchase-receipt-check"><input id="${prefix}-prelabels" type="checkbox" onchange="togglePurchaseReceiptFields('${prefix}', true)"><span>${tr('Link preprinted QR labels after saving', 'ربط QR مطبوع مسبقًا بعد الحفظ')}</span></label>
+      ${prefix === 'tx' ? `<span class="prc-title">${tr('Piece barcodes', 'باركود القطع')}</span>` : ''}
+      <label class="purchase-receipt-check"><input id="${prefix}-track-units" type="checkbox" aria-controls="${prefix}-receipt-details" aria-expanded="false" onchange="togglePurchaseReceiptFields('${prefix}')">${prefix === 'tx' ? optionBody('barcode', tr('Received sound · create new barcodes', 'مستلمة سليمة — إنشاء باركود جديد')) : `<span>${tr('Received in good condition · create barcodes', 'استلمت القطع سليمة — إنشاء باركود')}</span>`}</label>
+      ${prefix === 'tx'
+        ? `<label class="purchase-receipt-check"><input id="tx-scan-receive" type="checkbox" ${window.PurchaseScanReceive?.active() ? 'checked' : ''} onchange="window.PurchaseScanReceive?.toggle(this)">${optionBody('scan', tr('Scan printed QR · count and sort', 'مسح QR المطبوع — جرد وفرز'))}</label>`
+        : `<label class="purchase-receipt-check"><input id="${prefix}-prelabels" type="checkbox" onchange="togglePurchaseReceiptFields('${prefix}', true)"><span>${tr('Link preprinted QR labels after saving', 'ربط QR مطبوع مسبقًا بعد الحفظ')}</span></label>`}
       <div id="${prefix}-receipt-details" class="purchase-receipt-details" hidden>
       <input id="${prefix}-unit-reason" maxlength="1000" aria-label="${tr('Reference (optional)', 'مرجع (اختياري)')}" placeholder="${tr('Reference (optional)', 'مرجع (اختياري)')}" disabled></div>
       ${prefix === 'tx' ? `<div class="purchase-receipt-recovery" ${pending ? '' : 'hidden'}><button type="button" class="btn btn-outline" onclick="resumeManualPurchaseReceipt()">${tr('Review / retry a pending receipt', 'مراجعة / إعادة استلام معلق')}</button></div>` : ''}</div>`;
@@ -18,6 +29,11 @@
   window.togglePurchaseReceiptFields = function (prefix, prelabels = false) {
     const checkbox = document.getElementById(prefix + '-track-units'), details = document.getElementById(prefix + '-receipt-details');
     if (!checkbox || !details) return;
+    // Receiving by scan and «create barcodes for every piece» are two answers to the same question.
+    if (prefix === 'tx' && checkbox.checked && window.PurchaseScanReceive?.active()) {
+      checkbox.checked = false;
+      toast(tr('Turn off «Receive by scanning» first.', 'أوقف «استلام بمسح QR المطبوع» أولًا.'), true);
+    }
     const prior = document.getElementById(prefix + '-prelabels');
     if (prelabels && prior?.checked) checkbox.checked = false;
     if (!prelabels && checkbox.checked && prior) prior.checked = false;

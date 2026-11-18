@@ -38,6 +38,7 @@ import { CustomerServicePlaybookModule } from './customer-service-playbook/custo
 import { EmployeePerformanceModule } from './employee-performance/employee-performance.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { SupplierReturnStatementsModule } from './supplier-return-statements/supplier-return-statements.module';
+import { InvoiceImagesModule } from './invoice-images/invoice-images.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { SeedService } from './seed/seed.service';
 import { WarehousesModule } from './warehouses/warehouses.module';
@@ -88,6 +89,7 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     EmployeePerformanceModule,
     AnnouncementsModule,
     SupplierReturnStatementsModule,
+    InvoiceImagesModule,
     PromotionsModule,
   ],
   providers: [SeedService],

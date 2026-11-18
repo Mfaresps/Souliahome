@@ -20,6 +20,198 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Supplier Invoice Photos Uploaded to Cloudflare R2 — «رفع صورة الفاتورة» (Nov 16, 2026)
+
+«فواتير المورد» on a purchase took pasted links only. Now a photo can be uploaded from the new purchase
+form («رفع صورة الفاتورة» + a link icon beside it), the invoice edit window and the PO conversion form.
+- Backend `backend/src/invoice-images/` (own module, writes only `purchaseinvoiceimages` + R2):
+  `POST /api/invoice-images` (JWT; admin or `purchase-create` / `purchase-edit` / `purchase-edit-price`,
+  checked in the service), `GET /api/invoice-images/:id.jpg`.
+- Same rule as deposit receipts: `compressReceipt` (≤1600 px, metadata stripped, **≤180 KB** JPEG, text
+  legible); 12 MB upload limit; the browser first shrinks to ≤1600 px. R2 key
+  `purchase-invoices/<YYYY-MM>/<id>.jpg` when R2 is configured (Settings), else base64 in Mongo.
+- ⚠ **The GET has no session on purpose**: `<img>` tags and the printed invoice cannot send a token. The id
+  is 32 random bytes (64 hex), so the URL is a capability — never switch it to a guessable id.
+- The purchase stores the photo as an **absolute URL** in `invoiceImages`, exactly like a pasted link, so
+  every screen that already shows invoice links shows it unchanged. The row's link field is hidden by CSS
+  (`input[type=url][value*="/api/invoice-images/"]`) and a thumbnail card stands for it.
+- Frontend `invoice-image-upload.js` (`window.InvoiceImageUpload.pick(addRow)`); `_addInvoiceImgRow`,
+  `_addConvInvoiceImgRow`, `_addEditInvoiceImgRow` now return the row. ⚠ All three saves refuse while a
+  photo is uploading (`InvoiceImageUpload.busy(list)`), or the photo would be dropped silently.
+- Backup/section/clear lists include `purchaseinvoiceimages`.
+- **Expenses too** (Nov 16): «رفع صورة» beside the expense attachment link (`_expUploadAttachment`). Same
+  endpoint with `purpose=expense` → perm `expenses` (the /expenses write boundary), R2 key `expenses/<YYYY-MM>/`,
+  stored in the expense's single `attachment` field. One photo per expense (`pick(addRow, {purpose, single})`):
+  a failed upload restores the field, the card has «إزالة»; a saved uploaded photo can be removed in edit
+  (`_expClearAttachment`). ⚠ `busy(sel)` matches the container itself too — the expense section is its own
+  row (the first version let an expense save mid-upload). The old disk route `POST /expenses/upload-attachment`
+  is untouched and unused. Test: `test/browser/expense-image-upload.cjs` (14) + 1 case in the spec.
+- Tests: `test/integration/invoice-images.service.spec.ts` (3; revert-checked: without compression 2 fail),
+  `test/browser/invoice-image-upload.cjs` (18, ar/en dark/390). Not tried against a real R2 bucket.
+
+## Barcode Page — Printed vs Not Printed (Nov 16, 2026)
+
+`inventory-units.js` (إدارة المخازن ← الطباعة حسب الفاتورة). Frontend only; a piece's `printCount` (already on every unit row) decides.
+- **Invoice KPIs** (`summaryHtml`/`labelCounts`): products · pieces · with codes N/M · «تحتاج تسجيل كود» only when > 0 · «ملصقات مطبوعة» N/M
+  (pack lines count pack labels) with a thin bar · «متبقٍ للطباعة». One bordered strip.
+- **Product card**: a partly printed product (not a pack line) shows «تحديد: غير المطبوعة N | كل القطع M». The checkbox defaults to
+  the unprinted pieces (`selectUnprinted`: loads the whole line, keeps `printCount 0`, up to the batch room); the choice is kept in
+  `state.ranges` `.mode`. The range inputs apply to «كل القطع» only.
+- Selected-labels panel: each product states «N لم تُطبع · M سبقت طباعتها» (`printSplitHtml`). Preview: new labels first, then
+  reprints, each under a heading (not in the batch-cover mode), and each label says «ملصق جديد» / «إعادة طباعة · طُبع N مرة».
+- **Pieces window** (`viewLine` → `renderLineUnits`): loads the whole product (≤500 pieces, pages of 100; larger pages by 100),
+  splits «لم تُطبع بعد» / «سبقت طباعتها» with heading rows, filter chips الكل / لم تُطبع / سبقت طباعتها, «تحديد غير المطبوعة».
+  ⚠ One scroll area: `#iu-line-units` scrolls (table header pinned); the dialog and its body no longer scroll.
+- Checked over a standalone harness with mocked API (KPIs, default unprinted selection, all, split, scroll, 390px, no page errors).
+  ⚠ `inventory-packs.cjs` stops at a badge-colour assertion (`.iu-badge.is-available`), unrelated to these changes.
+
+## Inventory Page — Ready to Sell / Reserved / Needs Attention / Incoming (Nov 15, 2026)
+
+The single «الرصيد الحالي» number mixed facts: a sale deducts the balance when the invoice is created, so
+it already excludes pieces sold but still on the shelf, and damaged/lost pieces stay inside it. Discontinued
+products with a negative balance read «نفد». Now (owner-approved terms, ar/en):
+- **صالح للبيع / Ready to sell** = max(0, balance − needs attention) — the lead figure and the default sort
+  («الصالح للبيع أولًا»: active first, then most ready).
+- **محجوز لطلبات / Reserved for orders** = confirmed sales not yet handed to the carrier (no `shippedAt`/
+  `deliveredAt`, pickupStatus not Shipped/Delivered, no dispatched Bosta state, no after-sales shipment).
+- **يحتاج مراجعة / Needs attention** = damaged + lost + awaiting inspection pieces still inside the balance
+  (not in `inventorywriteoffs`; a damaged customer return is excluded — it never re-entered stock).
+- **في المخزن / In stock** = balance + reserved (= ready + reserved + needs attention).
+- **وارد / Incoming** = purchase orders not «مستلم» and not linked to an invoice (POs carry no warehouse).
+- ⚠ **Unconfirmed Shopify orders are not counted anywhere** (owner: future, unconfirmed — not our concern).
+- One state per product (`facts().state`): negative («رصيد سالب — يحتاج جرد») → discontinued (with/without
+  stock) → out → low → in stock, all from **ready to sell**. «حالة التفعيل» column removed.
+- Tabs: الكل · صالح للبيع · يحتاج طلب شراء (active, ready ≤ min and ready + incoming ≤ min) · يحتاج مراجعة ·
+  رصيد سالب · متوقف (empty problem tabs hide). ⚠ `setInvFilter('low')` (dashboard link) maps to `reorder`.
+  Summary cards (ready / reserved / needs attention / incoming) filter the list; counts open a popover
+  (orders → `openOrderView`, POs → `openPoDetailModal`, pieces → `InventoryUnitLabels.openStockUnits`).
+- Opening / purchases / returns / sales columns left the table (they remain in the product detail window).
+- Backend: `transactions/inventory-breakdown.ts` (pure `buildInventoryBreakdown` + `loadInventoryBreakdown`),
+  `GET /transactions/inventory/breakdown` (`cachedRead`, 5s, display only — the balance is unchanged, never
+  decide a write on it). ~50ms on the local copy. Frontend: `inventory-overview.js/.css` (`window.InvOverview`);
+  refreshed on page entry, `inventory:changed` and `tx:updated` (coalesced 1.2s).
+- ⚠ Reserved is read from the ORDER's state, not the piece status: 598 local pieces still say «prepared»
+  although their orders shipped long ago (piece status never advanced).
+- **«القطع العالقة على «مُجهزة»» review** (admin only): notice above the inventory table → dialog
+  (`inventory-stale-pieces.js/.css`) listing each piece, its date, order + order state, last history entry and
+  the proposed status (`stale-prepared.util.ts` `classifyStalePrepared`: delivered / shipped from the ORDER;
+  returned, cancelled, missing order or changed line → «تحتاج قرارًا», no checkbox). Nothing changes until the
+  admin ticks pieces, writes a reason and confirms inside the dialog (⚠ a `<dialog>` is above `showConfirm`).
+  `GET /inventory-units/stale-prepared`, `POST /inventory-units/stale-prepared/correct {unitId, expectedVersion,
+  target, reason, operationKey}` → `correctStalePrepared`: admin only, re-checks the piece version and the
+  order inside the write, writes `shipped` (+ `delivered`, key `:delivered`) events with
+  `notes:'stale-prepared-correction'` and `details.order` (the order facts it relied on). Piece only — no
+  product, order, stock or vault write (the integration test compares them byte for byte). Local: 555 →
+  delivered, 39 → shipped, 4 returned orders for a person. Not run yet.
+- Fallback: without `inventory-overview.js` the page still shows one state per product from the balance alone.
+- **Ready-to-sell cell** (stock-system style): the figure, «من N في المخزن», and a thin 4px allocation bar
+  (available / reserved / needs attention; parts named in the tooltip). Zero is red only for an active product.
+- **Global search** product line uses the same figures (`InvOverview.productFacts(id)`, all warehouses):
+  «صالح للبيع: N» + «محجوز · يحتاج مراجعة · وارد» when present, «لا يوجد صالح للبيع», «رصيد سالب»; the tooltip
+  gives the full split. Before the breakdown has loaded it says «في المخزن: N» (the balance — `gsStockIn` no
+  longer says «متوفر»), and an open search list redraws when the figures arrive.
+- Summary strip is minimal: one bordered strip with hairline dividers, small figures, a coloured dot per figure
+  (no icons/stripes); the admin money figures sit in it and open their explanation.
+- **Row actions = one «⋮» menu** (`InvOverview.actionsHtml/openMenu`): «أكواد القطع» (LegacyStockLabels) and
+  «جرد المنتج» (ProductStocktake), only those the user may run; ↑/↓, Enter, Escape returns focus. ⚠ A popover
+  closes on scroll only when its anchor moved — a click that scrolls its row into view delivers that scroll
+  event after the menu opened.
+- **Read-only check on the local copy synced from live (Nov 15 00:12)**: real `getInventory()` +
+  `loadInventoryBreakdown()` (compiled, `autoIndex:false`) vs an independent recount: reserved 10 pieces / 4
+  orders, needs attention 28 (8 lost + 20 inspection; the 6 damaged pieces are customer damaged returns, already
+  outside stock), incoming 820 from 3 open POs — 0 differences; all 120 products on the rendered page equal the
+  data. ⚠ The movement log does not reconcile with balances for 32 products (pre-existing): 8 CUS-45 cushions
+  (opening zeroed, not logged), 22 with May–Aug transactions that never got a movement row, 3 with a wrong
+  `qtyAfter` on a logged row. The balance comes from transactions and is not affected by this page.
+- Tests: `test/unit/inventory-breakdown.spec.ts` (4), `test/browser/inventory-overview.cjs` (23, ar/en, dark,
+  390, fits at 1024/1280), `test/browser/inventory-stale-pieces.cjs` (19), 1 case in
+  `inventory-unit-backend.spec.ts` (revert-checked: without the version check it fails); `inventory-loading.cjs`
+  passes. `design-system.cjs` now takes `DS_PAGES=inventory` and `DS_HEADER_HEIGHT=56`: the app header is 56px
+  (suite expects 64) and at 1024 the closed `#drafts-drawer` (fixed, off-screen) widens the document on every
+  page — both pre-existing, not inventory.
+
+## Purchase Receiving by Scan — «استلام بمسح QR المطبوع — جرد وفرز» (Nov 15, 2026)
+
+On the new-purchase form the old «ربط QR مطبوع مسبقًا بعد الحفظ» checkbox became **«استلام بمسح QR المطبوع»**
+(`#tx-scan-receive`, exclusive with «استلمت القطع سليمة — إنشاء باركود»). Scanning builds the lines: each piece
+label adds 1, a pack label adds the whole pack, to its product's line. **One line per product** (owner, Nov 15 — two
+lines of one product printed it twice): its quantity = scanned pieces + pieces **«بدون ملصق»**, which get new barcodes
+on save and are printed afterwards like any receipt. «+» / «إضافة صنف» / the picker add an unlabelled piece.
+The PO-conversion form (`conv`) keeps the old link-after-save checkbox — PO comparison is phase 3, deferred.
+
+- **Server — one transaction or nothing**: `POST /inventory-units/purchases/receive-scanned`
+  (`ManualPurchaseReceivingService.receiveScanned`, perms `purchase-create` + `inventory-units-receive`) runs inside
+  `manualPurchaseOperation` → `write()`: invoice (vault, supplier ledger, stock movement via `TransactionsService.create`
+  with the session) → `createReceiptUnits` for each line's unscanned remainder (same `lineId`; pack sizes read in the
+  session) → `InventoryUnitsService.linkScannedPrelabels` for the scanned pieces → per line, linked + new must equal
+  its qty exactly (`SCAN_QTY_MISMATCH`; revert-checked: ignoring pack sizes is refused). Any refusal rolls all of it back (revert-checked: creating the invoice outside the session
+  fails the rollback test). Body: `invoice` + `tracking` (`inspectionPassed` must be true) + `scans[{lineIndex,
+  unitIds, packIds}]` (a line without scans is entirely unlabelled). The scans are in the idempotency fingerprint:
+  same key + same body replays the committed result, same key + other scans → 409.
+- `linkScannedPrelabels` re-checks everything (a browser scan list is a claim): every code registered, `unused`,
+  printed, same product as its line, product code still = batch SKU; a piece of a pack batch only through its pack;
+  a piece scanned alone AND inside a scanned pack, or any id twice → `SCAN_DUPLICATE`; a line may hold more
+  pieces than scans, never fewer (`SCAN_QTY_MISMATCH`). Unit `_id` = label `_id`; the label claim is a conditional `bulkWrite`
+  (`state:'unused'` in the filter), so of two simultaneous receipts with one code exactly one commits. Packs are
+  sealed with `sealLinkedPrelabelPacks`. Error codes `SCAN_*` reach the browser.
+- `POST /inventory-units/prelabels/scan-check {unitIds, packIds}` — read-only state per code
+  (`ok | linked | unprinted | in-pack | not-found | mismatch`), used to re-check a saved session.
+- **Frontend** `purchase-scan-receive.js/.css` (`window.PurchaseScanReceive`): panel `#tx-purchase-scanner` above
+  `#tx-items`, keyboard-wedge scanning anywhere on the form plus a code field; a line carries
+  `_prelabelScans`; its unlabelled count is `qty − scanned`, shown as «N ممسوحة · M بدون ملصق». Unknown/invalid/linked/
+  unprinted/in-pack/already-scanned codes are refused with a message and change nothing; removing a chip lowers the
+  qty by that piece (the unlabelled ones stay). ⚠ The qty never goes below the scanned pieces —
+  `PurchaseScanReceive.minimum(item)` is checked by `adjustTxItemQty`, `txItemChanged`, `pickerChangeQty`,
+  `pickerSetQty` (and «−» is disabled at the floor); a duplicate line merges into one (`mergeDuplicateTxItems`
+  carries `_prelabelScans`).
+  ⚠ **Enter in `#psr-code` is claimed by the field** (preventDefault): the global `handleEnterToSubmit` clicks
+  `#tx-save-btn` on the transaction page, so every scanner Enter used to press «Save» before the code was added
+  («أضف صنف واحد على الأقل»). Any new input on the transaction form that must not save on Enter needs the same.
+- **Session on the device**: `localStorage soulia-scan-receive:v1:<user>:session` (7 days), written on user
+  actions only — ⚠ an empty form never erases it (that bug wiped the session the moment scan mode was switched on).
+  A fresh form offers «استكمال / تجاهل». ⚠ **Every restored scan is re-checked with `scan-check` before it can be
+  used** — resume, a page-refresh snapshot (`_txPageSnap`), or after a 404/409 save refusal (`verified` is per page
+  load). Any changed code → «لا يمكن استكمال الجلسة المحفوظة» with the codes, scanning and saving blocked, only «بدء
+  المسح من جديد». Cancelling the form writes nothing on the server.
+- **Unknown outcome**: the request is stored as `:pending` before sending; a lost connection keeps it and the panel
+  offers «إعادة محاولة الاستلام المعلق» (identical body, same key → the server never saves twice); a definite
+  4xx clears it. While pending, a different invoice cannot be sent.
+- After saving: summary window (per line: N scanned · M new barcodes) with «طباعة الباركود الجديد» →
+  `openPurchaseReceiptLabels` (the normal receipt label path).
+- Tests: 5 cases in `test/integration/purchase-receiving.spec.ts` (mixed receipt + retry, 7 refusals leaving vault/
+  stock/units/labels untouched, concurrent claim, scan-check, HTTP perms/DTO); `test/browser/purchase-scan-receive.cjs`
+  (38, ar + en 390; revert-checked: dropping the duplicate guard fails); full-form case in
+  `test/integration/manual-purchase-ui.spec.ts` through the real `saveTx`/`confirmTxSave`. That spec's harness had
+  rotted (missing `suggestPurchaseWarehouse` / `_txSelectedSupplierId` stubs, 6 of 8 failing before) — repaired.
+- Not run against the live API on a real copy yet; `crypto.randomUUID` falls back to `getRandomValues` (plain-http LAN).
+
+### New purchase form layout (same day)
+`purchase-form.css`. Supplier details are one compact grid on `#tx-fields.is-purchase` (class toggled by
+`renderTxFields`): supplier · invoice no. · receiving warehouse / payment account · deposit · invoice links
+(`.pf-*` grid areas; 2 columns ≤760px, 1 ≤420px). The supplier phone is a quiet line under the supplier
+(`#tx-phone` kept, borderless). Static hints were removed; the deposit warning and errors stay. ⚠ Rows that can be
+empty (`#tx-invoice-imgs-list`, `#tx-credit-row`) are `grid-column:1/-1`, not areas — an empty area still costs a gap.
+The items section is the hero (`.tx-items-hero`: larger title, `#tx-items-count` «lines · pieces», primary «إضافة صنف»
+with its own key `txAddItemBtn` — `addProduct` carries a «+» in its text and is used elsewhere; «خصم» uses a tag icon,
+not a dollar sign). ⚠ The receiving method moved into the items section: `renderTxFields` writes
+`purchaseReceiptFields('tx')` into `#tx-receive-mode` (falls back to the fields when the slot is absent, as in the
+`manual-purchase-ui` harness) and empties it for sales/returns. It reads «باركود القطع» + two pill options with icons;
+the real checkbox covers each pill (`opacity:0`), so ids, focus and `togglePurchaseReceiptFields` are unchanged.
+Test: `test/browser/purchase-form-layout.cjs` (real app over a mocked API; ar 1440, en dark 1440, ar 390, sales form).
+
+## Exchange Replacement Invoice — the Return Credit Is Shown, Never Charged Again (Nov 15, 2026)
+
+A replacement sale's `deposit` holds the returned piece's value (`afterSales.creditApplied`), already paid on the
+original invoice. Every renderer read «المدفوع» from the `deposits` log and fell back to `deposit` only when the log
+was empty — so once a deposit on the difference existed (500), the 590 credit vanished and the invoice read
+«2,462 total · 500 paid · 1,372 due», as if the exchanged product were billed again. The stored figures were right.
+- `_exchCreditOf(tx)` (index.html, beside `isMovExchangeSale`) → `{credit, cash, collected, originalRef}`. The invoice
+  page summary + payment card, the invoice window and the printed invoice show «رصيد المنتج المرتجع · #3095» on its
+  own line; «المدفوع» is cash only (deposits on the difference + what the case collected). ⚠ The printed invoice used
+  to print the REMAINING as «المدفوع» for any exchange sale with a balance (`isMovExchangeSale && remaining > 0`).
+- «تحصيل من العميل» is not drawn on a replacement; `openCollectMovement` sends it to the case (the server refuses anyway).
+- Test: `test/browser/exchange-invoice-credit.cjs` (10, the #3095 case).
+
 ## Movements: «استبدال» Tab + Return/Exchange Money From the Case (Nov 15, 2026)
 
 - **Tabs**: «مرتجعات» now holds returns only; «استبدال» (`data-mov-type="استبدال"`, count `#mov-count-exchange`,
@@ -5319,6 +5511,12 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 16, 2026 | Expense receipt photos can be uploaded the same way (≤180 KB, Cloudflare R2, `expenses/`) | See "Supplier Invoice Photos Uploaded to Cloudflare R2" above |
+| Nov 16, 2026 | Supplier invoice photos can be uploaded (purchase form, edit window, PO conversion): compressed to ≤180 KB like deposit receipts and kept on Cloudflare R2 | See "Supplier Invoice Photos Uploaded to Cloudflare R2" above |
+| Nov 15, 2026 | Purchase receiving by scan: scanning pre-printed QR labels builds the purchase lines (pieces/packs), «بدون ملصق» lines get new barcodes, and invoice + vault + stock + barcodes are saved in one transaction; saved session resumes only if the server still agrees | See "Purchase Receiving by Scan" above |
+| Nov 15, 2026 | Inventory page rebuilt around «صالح للبيع»: reserved for orders, needs attention, incoming from purchase orders, one state per product, new tabs and ready-first sort | See "Inventory Page — Ready to Sell / Reserved" above |
+| Nov 15, 2026 | A piece recorded «مفقودة» can be returned with «تم العثور عليها — إعادتها للمخزون» in its actions window (lost → available, physical possession confirmed, event `found`, loss kept in history). Refused when its loss was already written off the stock (`inventorywriteoffs`, names the adjustment). Same for «تالفة»: «القطعة سليمة — إعادتها للمخزون» (damaged → available, event `repaired`), also refused when its last `returned` event is newer than its last inspection/repair — a damaged customer return never re-entered derived stock. Tests in `inventory-unit-backend.spec.ts` | inventory-units.service.ts, inventory-units.js |
+| Nov 15, 2026 | Exchange replacement invoices show the returned piece's value as «رصيد المنتج المرتجع» (already paid on the original invoice) instead of hiding it; the printed invoice no longer prints the remaining as paid | See "Exchange Replacement Invoice" above |
 | Nov 15, 2026 | Movements: «استبدال» is its own tab (out of «مرتجعات»); return/exchange rows show paid, remaining and status from their case (refund owed, credit applied, refunded) | See "Movements: «استبدال» Tab" above |
 | Nov 15, 2026 | A deposit can be paid on an exchange difference from the case window (same receipt/OCR/approval flow); the waybill COD drops by it and cancelling the exchange refunds it | See "Deposit on the exchange difference" above |
 | Nov 15, 2026 | A new order of the same customer can ship inside an exchange waybill: it keeps its own deposit and discount, Bosta collects its remaining with the exchange difference, one settlement closes both | See "A New Order Shipped Inside an Exchange Waybill" above |

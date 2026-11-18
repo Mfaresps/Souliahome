@@ -35,7 +35,16 @@ function selectAllAuditMonths() {
   const today = auditCairoToday(), max = auditMonthYear === Number(today.slice(0,4)) ? Number(today.slice(5,7)) : 12;
   auditSelectedMonths = new Set(Array.from({length:max},(_,i) => i+1)); auditUseMonths = true; renderAuditMonths();
 }
-function auditPeriodDateChanged() { auditUseMonths = false; auditPeriodDefault = false; syncAuditMonthSummary(); }
+// The range picker («تطبيق») only writes the two fields and fires `change`; the
+// analysis must run from here, or the screen keeps the previous period's figures.
+let auditDateRunTimer = 0;
+function auditPeriodDateChanged() {
+  auditUseMonths = false; auditPeriodDefault = false; syncAuditMonthSummary();
+  const fromDate = document.getElementById('oa-date-from')?.value || '', toDate = document.getElementById('oa-date-to')?.value || '';
+  if (!fromDate || !toDate || toDate < fromDate) return;
+  clearTimeout(auditDateRunTimer);
+  auditDateRunTimer = setTimeout(() => { setAuditRangeMode('date'); runAuditDateSelection(); }, 0);
+}
 async function runAuditDateSelection(options = {}) {
   let fromDate = document.getElementById('oa-date-from')?.value || '', toDate = document.getElementById('oa-date-to')?.value || '';
   const params = new URLSearchParams();

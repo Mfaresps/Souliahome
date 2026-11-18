@@ -1,0 +1,129 @@
+/* New purchase form (Nov 15, 2026): compact supplier details, items section as the hero,
+   receiving method as an icon option group in the items header. Layout only — every field id is unchanged. */
+
+/* ── Supplier details: one compact grid ─────────────────────────────────────────────────── */
+#tx-fields.is-purchase{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.15fr);gap:12px 14px!important;
+  grid-template-areas:"sup ref wh" "acc dep imgs";align-items:start}
+#tx-fields.is-purchase .pf-supplier{grid-area:sup}
+#tx-fields.is-purchase .pf-ref{grid-area:ref}
+#tx-fields.is-purchase .wh-transaction-field{grid-area:wh}
+#tx-fields.is-purchase .pf-account{grid-area:acc}
+#tx-fields.is-purchase .pf-deposit{grid-area:dep}
+#tx-fields.is-purchase .pf-imgs{grid-area:imgs}
+#tx-fields.is-purchase .pf-imgs-list{grid-column:1/-1;display:flex;flex-direction:column;gap:8px}
+#tx-fields.is-purchase .pf-imgs-list:empty{display:none}
+#tx-fields.is-purchase .pf-credit{grid-column:1/-1}
+#tx-fields.is-purchase .form-group{margin:0!important;min-width:0}
+
+/* One label style for every field in the grid (the warehouse field included). */
+#tx-fields.is-purchase .form-group>label,#tx-fields.is-purchase .wh-transaction-field>span{display:flex;align-items:baseline;gap:4px;margin:0 0 6px;
+  font-size:.76rem;font-weight:600;line-height:1.4;color:var(--text);letter-spacing:0}
+#tx-fields.is-purchase .wh-transaction-field{gap:0;font-size:inherit}
+#tx-fields.is-purchase .wh-transaction-field small{display:none}
+#tx-fields.is-purchase .pf-optional{font-weight:400;color:var(--muted);font-size:.72rem;white-space:nowrap}
+#tx-fields.is-purchase .pf-imgs>label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* One control height: 42px. */
+#tx-fields.is-purchase .pm-sel-btn,#tx-fields.is-purchase .form-group>input,#tx-fields.is-purchase .input-with-prefix input,
+#tx-fields.is-purchase .wh-transaction-field select,#tx-fields.is-purchase .wh-transaction-field .pm-sel-btn{min-height:42px!important;height:42px;box-sizing:border-box}
+#tx-fields.is-purchase .pur-ref-gen{width:42px;height:42px}
+
+/* The supplier phone is a fact about the chosen supplier, not a field: a quiet line under the name. */
+#tx-fields.is-purchase .pf-phone{display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--muted);font-size:.74rem}
+#tx-fields.is-purchase .pf-phone svg{width:13px;height:13px;flex:none}
+#tx-fields.is-purchase .pf-phone input{all:unset;font:inherit;color:inherit;direction:ltr;unicode-bidi:isolate;width:12ch;cursor:default}
+#tx-fields.is-purchase .pf-phone:has(input:placeholder-shown){display:none}
+
+/* Supplier invoice links: a button at field height; the links list opens under the grid. */
+#tx-fields.is-purchase .pf-imgs-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;height:42px;padding:0 12px;box-sizing:border-box;
+  border:1px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:.8rem;cursor:pointer;transition:border-color .15s,color .15s}
+#tx-fields.is-purchase .pf-imgs-btn:hover{border-color:var(--primary);color:var(--primary)}
+#tx-fields.is-purchase .pf-imgs-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+#tx-fields.is-purchase .pf-imgs-btn svg{width:15px;height:15px;flex:none}
+#tx-fields.is-purchase .pf-imgs-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Upload (main) + add a link (icon) share the field row. */
+#tx-fields.is-purchase .pf-imgs-actions{display:flex;gap:6px}
+#tx-fields.is-purchase .pf-imgs-actions .pf-imgs-btn{flex:1 1 auto;min-width:0}
+#tx-fields.is-purchase .pf-imgs-link{flex:none;display:flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;box-sizing:border-box;
+  border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;transition:border-color .15s,color .15s}
+#tx-fields.is-purchase .pf-imgs-link:hover{border-color:var(--primary);color:var(--primary)}
+#tx-fields.is-purchase .pf-imgs-link:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+@media (max-width:760px){
+  #tx-fields.is-purchase{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"sup sup" "ref wh" "acc dep" "imgs imgs"}
+}
+@media (max-width:420px){
+  #tx-fields.is-purchase{grid-template-columns:minmax(0,1fr);grid-template-areas:"sup" "ref" "wh" "acc" "dep" "imgs"}
+}
+
+/* ── Items: the hero of the form ───────────────────────────────────────────────────────── */
+#tx-items-section.tx-items-hero{padding:18px 20px!important}
+.tx-items-hero .tx-section-head{margin-bottom:14px;padding-bottom:12px}
+.tx-items-hero .tx-section-title{font-size:1rem;font-weight:700;gap:8px}
+.tx-items-hero .tx-section-title>svg{width:18px;height:18px;color:var(--primary)}
+.tx-items-count{display:inline-flex;align-items:center;padding:1px 9px;border-radius:999px;background:var(--primary-pale);color:var(--primary);
+  font-size:.72rem;font-weight:600;line-height:1.7;font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+.tx-items-count[hidden]{display:none}
+.tx-items-hero .tx-items-actions{align-items:center;gap:8px}
+.tx-items-hero .tx-action-btn{min-height:36px;padding:0 14px;font-size:.8rem;border-width:1px}
+.tx-items-hero .tx-action-btn svg{flex:none}
+.tx-items-hero .tx-action-btn.is-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.tx-items-hero .tx-action-btn.is-primary:hover{filter:brightness(1.08);background:var(--primary);color:#fff}
+.tx-items-hero .tx-action-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* ── Receiving method: «باركود القطع» + two icon options (exclusive, both optional) ─────────── */
+#tx-receive-mode:empty{display:none}
+#tx-receive-mode .purchase-receipt.purchase-receipt-compact{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 14px;padding:0;border:0;background:none;border-radius:0}
+#tx-receive-mode .prc-title{font-size:.76rem;font-weight:600;color:var(--muted);margin-inline-end:4px}
+#tx-receive-mode .purchase-receipt .purchase-receipt-check{position:relative;display:inline-flex!important;grid-template-columns:none!important;align-items:center!important;gap:7px!important;
+  width:auto!important;min-height:36px;padding:0 13px!important;margin:0!important;border:1px solid var(--border);border-radius:999px;background:var(--surface);
+  color:var(--text)!important;font-size:.8rem!important;font-weight:500;line-height:1.3!important;cursor:pointer;transition:border-color .15s,background .15s,color .15s;user-select:none}
+#tx-receive-mode .purchase-receipt .purchase-receipt-check:hover{border-color:var(--primary)}
+/* The real checkbox covers the option: still the control screen readers and keyboards use. */
+#tx-receive-mode .purchase-receipt input[type=checkbox]{position:absolute!important;inset:0;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+  max-width:none!important;max-height:none!important;margin:0!important;opacity:0!important;cursor:pointer;border-radius:999px!important}
+#tx-receive-mode .purchase-receipt-check:has(input:focus-visible){outline:2px solid var(--primary);outline-offset:2px}
+#tx-receive-mode .prc-ic{width:16px;height:16px;flex:none;color:var(--muted)}
+#tx-receive-mode .prc-ok{display:none;width:14px;height:14px;flex:none}
+#tx-receive-mode .purchase-receipt-check:has(input:checked){border-color:var(--primary);background:var(--primary-pale);color:var(--primary)!important;font-weight:600}
+#tx-receive-mode .purchase-receipt-check:has(input:checked) .prc-ic{color:var(--primary)}
+#tx-receive-mode .purchase-receipt-check:has(input:checked) .prc-ok{display:block}
+#tx-receive-mode .purchase-receipt-details:not([hidden]){flex:1 1 180px;max-width:260px}
+#tx-receive-mode .purchase-receipt-details input{height:36px!important;min-height:36px!important}
+#tx-receive-mode .purchase-receipt-recovery{flex-basis:100%}
+@media (max-width:600px){
+  #tx-receive-mode .prc-title{flex-basis:100%}
+  #tx-receive-mode .purchase-receipt .purchase-receipt-check{flex:1 1 100%;justify-content:flex-start}
+  #tx-receive-mode .purchase-receipt-details:not([hidden]){max-width:none;flex-basis:100%}
+}
+@media (max-width:600px){
+  .tx-items-hero .tx-section-head{flex-wrap:wrap;gap:10px}
+  .tx-items-hero .tx-items-actions{flex:1 1 100%;flex-wrap:nowrap}
+  .tx-items-hero .tx-items-actions .tx-action-btn{flex:1 1 0;justify-content:center}
+}
+/* ── Supplier invoice photos (invoice-image-upload.js) — all three forms ───────────────────── */
+.inv-up-actions{display:flex;flex-wrap:wrap;gap:8px}
+.inv-up-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid var(--primary);border-radius:8px;background:var(--primary-pale);
+  color:var(--primary);cursor:pointer;font:inherit;font-size:.83rem;font-weight:600}
+.inv-up-btn:hover{filter:brightness(.97)}
+.inv-up-btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+/* An uploaded photo is not a link to edit: its URL field is hidden, the photo card stands for it. */
+input[type=url][value*="/api/invoice-images/"]{display:none!important}
+.inv-up-card{display:flex;align-items:center;gap:10px;min-width:0}
+.inv-up-card img{width:56px;height:56px;flex:none;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block}
+.inv-up-meta{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;font-size:.78rem;color:var(--muted)}
+.inv-up-meta b{font-weight:600;color:var(--text);font-size:.8rem}
+.inv-up-bar{display:block;height:4px;border-radius:2px;background:var(--border);overflow:hidden;max-width:220px}
+.inv-up-bar i{display:block;height:100%;background:var(--primary);transition:width .2s}
+.inv-up-busy .inv-up-card img{opacity:.6}
+/* The row's own preview of an uploaded photo is a thumbnail, not a 140px image. */
+[class*="invoice-img-row"]:has(input[value*="/api/invoice-images/"]) [class$="img-preview"] img{max-height:96px!important}
+
+@media (prefers-reduced-motion:reduce){#tx-receive-mode .purchase-receipt-check,#tx-fields.is-purchase .pf-imgs-btn{transition:none}}
+/* Expense attachment: the photo card can be cleared (single attachment). */
+.inv-up-clear{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);border-radius:6px;
+  background:var(--surface);color:var(--red);cursor:pointer}
+.inv-up-clear.is-text{width:auto;height:auto;margin-top:6px;padding:4px 10px;font:inherit;font-size:.78rem}
+.inv-up-clear:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+#em-attach-section .inv-up-btn{flex:none;white-space:nowrap}

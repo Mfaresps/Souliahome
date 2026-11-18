@@ -1,0 +1,137 @@
+/* Inventory overview (Nov 15, 2026) — see inventory-overview.js.
+   One meaning per colour: green = ready to sell, blue = reserved, amber = needs attention,
+   red = a real problem (out of stock, negative balance), grey = discontinued / nothing. */
+:root{
+  --invo-ok:#15803d;--invo-ok-bg:#e8f6ee;
+  --invo-info:#1d5fae;--invo-info-bg:#e9f1fb;
+  --invo-warn:#a85a07;--invo-warn-bg:#fdf3e4;
+  --invo-bad:#b42318;--invo-bad-bg:#fdecea;
+  --invo-quiet:#5f6d66;--invo-quiet-bg:#eef1ef;
+  --invo-track:#e6ebe8;
+}
+body.dark-mode{
+  --invo-ok:#5ad08a;--invo-ok-bg:#12301f;
+  --invo-info:#79aef0;--invo-info-bg:#14263b;
+  --invo-warn:#f0b061;--invo-warn-bg:#36260f;
+  --invo-bad:#f58a80;--invo-bad-bg:#3a1714;
+  --invo-quiet:#9aa8a1;--invo-quiet-bg:#232b27;
+  --invo-track:#2b3530;
+}
+
+/* ── Summary: one quiet strip, figures separated by hairlines ── */
+#page-inventory #inv-summary-cards.inv-kpi-grid{display:flex;flex-wrap:wrap;gap:0;width:100%;min-width:0;margin:0;
+  border:1px solid var(--border);border-radius:10px;background:var(--surface,#fff);overflow:hidden}
+#page-inventory #inv-summary-cards .invo-card{flex:1 1 140px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;
+  margin:0;padding:10px 14px;border:0;border-radius:0;box-shadow:none;background:transparent;color:var(--text);font:inherit;text-align:start;cursor:pointer;transform:none}
+#page-inventory #inv-summary-cards .invo-card+.invo-card{border-inline-start:1px solid var(--border)}
+#page-inventory #inv-summary-cards .invo-card:hover{background:var(--bg-alt,#f6f8f7);transform:none;box-shadow:none}
+#page-inventory #inv-summary-cards .invo-card:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.invo-card-label{display:flex;align-items:center;gap:6px;max-width:100%;font-size:.7rem;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.invo-card-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--invo-quiet)}
+.invo-card.is-ok .invo-card-dot{background:var(--invo-ok)}.invo-card.is-info .invo-card-dot{background:var(--invo-info)}.invo-card.is-warn .invo-card-dot{background:var(--invo-warn)}
+.invo-card-val{display:flex;align-items:center;min-height:1.4rem;font-size:1.05rem;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;color:var(--text)}
+.invo-card.is-money .invo-card-val{font-size:.95rem;color:var(--muted);font-weight:500}
+.invo-card-sub{display:block;max-width:100%;min-height:1.3em;font-size:.66rem;color:var(--muted);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.invo-skel{display:inline-block;width:36px;height:10px;border-radius:5px;vertical-align:middle}
+@media (max-width:768px){
+  #page-inventory #inv-summary-cards.inv-kpi-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #page-inventory #inv-summary-cards .invo-card{padding:9px 12px;border-inline-start:0!important;border-top:1px solid var(--border)}
+  #page-inventory #inv-summary-cards .invo-card:nth-child(-n+2){border-top:0}
+  #page-inventory #inv-summary-cards .invo-card:nth-child(even){border-inline-start:1px solid var(--border)!important}
+  #page-inventory #inv-summary-cards .invo-card:last-child:nth-child(odd){grid-column:auto}
+}
+
+/* ── Tabs ── */
+.invo-tab .invo-tab-dot{display:none;width:7px;height:7px;border-radius:50%}
+.invo-tab-ready .invo-tab-dot{display:inline-block;background:var(--invo-ok)}
+.invo-tab-reorder .invo-tab-dot{display:inline-block;background:var(--invo-bad)}
+.invo-tab-issue .invo-tab-dot{display:inline-block;background:var(--invo-warn)}
+.invo-tab-negative .invo-tab-dot{display:inline-block;background:var(--invo-bad)}
+.invo-tab-inactive .invo-tab-dot{display:inline-block;background:var(--invo-quiet)}
+#inv-toolbar .fx-btn[hidden]{display:none!important}
+
+/* ── Table cells ── */
+/* Ready to sell, stock-system style: the figure, «of N in stock», a thin allocation bar. */
+.invo-col-ready{min-width:150px}
+.invo-ready{display:flex;flex-direction:column;gap:5px;max-width:190px}
+.invo-ready-line{display:flex;align-items:baseline;gap:6px}
+.invo-ready strong{font-size:1rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;line-height:1.2}
+.invo-ready.is-zero strong{color:var(--invo-bad)}
+.invo-ready-of{font-size:.7rem;color:var(--muted);white-space:nowrap}
+.invo-ready.is-negative strong{color:var(--invo-bad)}
+.invo-bar{display:flex;gap:1px;height:4px;width:100%;border-radius:2px;background:var(--invo-track);overflow:hidden}
+.invo-bar i{display:block;height:100%}
+.invo-bar i.is-ready{background:var(--invo-ok)}
+.invo-bar i.is-reserved{background:var(--invo-info)}
+.invo-bar i.is-issue{background:var(--invo-warn)}
+
+.invo-col-num{white-space:nowrap}
+.invo-none{color:var(--muted);opacity:.6;font-variant-numeric:tabular-nums}
+.invo-count{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:4px 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.invo-count strong{font-size:.98rem;font-weight:700;font-variant-numeric:tabular-nums}
+.invo-count small{font-size:.68rem;color:var(--muted);white-space:nowrap}
+.invo-count.is-reserved strong{color:var(--invo-info)}
+.invo-count.is-issue strong{color:var(--invo-warn)}
+.invo-count.is-incoming strong{color:var(--text)}
+.invo-count:hover{border-color:var(--border);background:var(--surface,#fff)}
+.invo-count:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+
+.invo-state{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.invo-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.invo-state.is-ok{background:var(--invo-ok-bg);color:var(--invo-ok)}
+.invo-state.is-warn{background:var(--invo-warn-bg);color:var(--invo-warn)}
+.invo-state.is-bad{background:var(--invo-bad-bg);color:var(--invo-bad)}
+.invo-state.is-quiet,.invo-state.is-quiet-warn{background:var(--invo-quiet-bg);color:var(--invo-quiet)}
+.invo-state.is-quiet-warn .invo-dot{background:var(--invo-warn)}
+.invo-state-sub{display:block;margin-top:3px;font-size:.68rem;color:var(--muted)}
+
+.invo-col-actions{width:44px;text-align:center}
+.invo-actions{display:flex;justify-content:center}
+.invo-more{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.invo-more svg{fill:currentColor}
+.invo-more:hover,.invo-more[aria-expanded]{border-color:var(--border);background:var(--surface,#fff);color:var(--text)}
+.invo-more:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.invo-menu{width:min(280px,calc(100vw - 16px));padding:6px}
+.invo-menu header{padding:6px 8px 4px;margin:0}
+.invo-menu-item{display:flex;align-items:flex-start;gap:10px;width:100%;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--text);font:inherit;text-align:start;cursor:pointer}
+.invo-menu-item svg{flex-shrink:0;margin-top:2px;color:var(--muted)}
+.invo-menu-item b{display:block;font-size:.82rem;font-weight:600}
+.invo-menu-item small{display:block;font-size:.7rem;color:var(--muted);margin-top:1px}
+.invo-menu-item:hover,.invo-menu-item:focus-visible{background:var(--primary-pale);outline:none}
+.invo-menu-item:hover svg,.invo-menu-item:focus-visible svg{color:var(--primary)}
+#inv-table tr.invo-row.is-inactive td{opacity:.72}
+#inv-table tr.invo-row.is-negative td:first-child{box-shadow:inset -3px 0 0 var(--invo-bad)}
+[dir="ltr"] #inv-table tr.invo-row.is-negative td:first-child{box-shadow:inset 3px 0 0 var(--invo-bad)}
+
+/* ── Phone cards ── */
+.invo-card-ready{margin-inline-start:auto;min-width:96px}
+.invo-card-ready .invo-ready{align-items:flex-end;text-align:end}
+.invo-card-ready .invo-ready-line{flex-direction:column;align-items:flex-end;gap:0}
+.invo-card-ready .invo-bar{width:84px}
+.invo-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.invo-chip{padding:4px 9px;border:1px solid var(--border);border-radius:999px;background:var(--surface,#fff);font:inherit;font-size:.72rem;font-weight:600;cursor:pointer}
+.invo-chip.is-reserved{color:var(--invo-info)}.invo-chip.is-issue{color:var(--invo-warn)}.invo-chip.is-incoming{color:var(--text)}
+.invo-card-row .invo-actions{position:absolute;top:6px;inset-inline-end:6px}
+.invo-card-row{position:relative}
+.invo-card-row .inv-card-header{padding-inline-end:30px}
+
+/* ── Details popover ── */
+.invo-pop{position:fixed;z-index:1350;width:min(340px,calc(100vw - 16px));max-height:min(420px,calc(100vh - 16px));overflow:auto;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface,#fff);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.14);font-size:.8rem}
+.invo-pop header{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.invo-pop header strong{font-size:.86rem}
+.invo-pop header span{color:var(--muted);font-size:.74rem}
+.invo-pop-help{margin:0 0 8px;color:var(--muted);font-size:.74rem;line-height:1.5}
+.invo-pop-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.invo-pop-list button{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.invo-pop-list button:hover,.invo-pop-list button:focus-visible{background:var(--primary-pale)}
+.invo-pop-list button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.invo-pop-list em{font-style:normal;color:var(--muted);font-size:.72rem}
+.invo-pop-list bdi{font-weight:600}
+.invo-pop-fact{display:grid;grid-template-columns:auto 1fr;column-gap:8px;padding:6px 8px}
+.invo-pop-fact b{color:var(--invo-warn);font-size:.95rem}
+.invo-pop-fact small{grid-column:2;color:var(--muted);font-size:.72rem}
+.invo-pop-action{margin-top:8px;width:100%}
+
+/* The table scrolls inside its card when the window is narrow; it must never widen the page. */
+#page-inventory,#inv-panel-list,#inv-panel-list .table-card{min-width:0;max-width:100%}
+#inv-panel-list .table-card>.overflow-x{max-width:100%;overflow-x:auto}

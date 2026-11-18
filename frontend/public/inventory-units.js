@@ -382,17 +382,22 @@
     const groups = new Map();
     for (const unit of state.selected.values()) {
       const groupKey = unit.sourceKey || (unit.origin?.purchaseTransactionId || '') + ':' + unit.productId;
-      if (!groups.has(groupKey)) groups.set(groupKey, { key: groupKey, name: unit.product?.name || unit.sku || unit.barcode, ref: unit.invoiceRef || '', count: 0 });
+      if (!groups.has(groupKey)) groups.set(groupKey, { key: groupKey, name: unit.product?.name || unit.sku || unit.barcode, ref: unit.invoiceRef || '', count: 0, printed: 0 });
       groups.get(groupKey).count++;
+      if (Number(unit.printCount) > 0) groups.get(groupKey).printed++;
     }
     return [...groups.values()];
+  }
+  // Printed vs not printed, stated wherever selected labels are listed (Nov 16, 2026).
+  function printSplitHtml(fresh, printed) {
+    return `<span class="iu-print-split">${fresh ? `<em class="is-new">${tr(`${fresh} new`, `${fresh} لم تُطبع`)}</em>` : ''}${printed ? `<em class="is-re">${icon('printer')}${tr(`${printed} reprint`, `${printed} سبقت طباعتها`)}</em>` : ''}</span>`;
   }
   function renderBatch() {
     const count = state.selected.size, groups = queueGroups();
     get('iu-stat-selected').textContent = String(count);
     get('iu-capacity').style.width = count + '%';
     get('iu-batch-source').textContent = count ? tr(`${groups.length} product(s) · ${new Set([...state.selected.values()].map(u => u.origin?.purchaseTransactionId || 'other')).size} source(s)`, `${groups.length} منتجات · ${new Set([...state.selected.values()].map(u => u.origin?.purchaseTransactionId || 'other')).size} مصادر`) : tr('No units selected yet', 'لم تحدد قطعًا بعد');
-    const queueMarkup = groups.length ? groups.map(group => `<div class="iu-queue-row" data-queue-key="${html(group.key)}"><span><strong dir="auto">${html(group.name)}</strong><small>${group.ref ? tr('Invoice #', 'فاتورة #') + html(group.ref) : tr('Selected from unit registry', 'من سجل القطع')}</small></span><b class="iu-queue-quantity" dir="ltr" title="${html(tr('Selected labels', 'الملصقات المحددة'))}">${group.count}</b><button class="iu-link iu-queue-remove" type="button" data-remove-group="${html(group.key)}" aria-label="${html(tr('Remove ', 'إزالة ') + group.name)}" title="${tr('Remove from selection', 'إزالة من التحديد')}">${icon('close')}</button></div>`).join('') : `<p class="iu-queue-empty">${tr('Select pieces to add their labels here.', 'حدد القطع لإضافة ملصقاتها هنا.')}</p>`;
+    const queueMarkup = groups.length ? groups.map(group => `<div class="iu-queue-row" data-queue-key="${html(group.key)}"><span><strong dir="auto">${html(group.name)}</strong><small>${group.ref ? tr('Invoice #', 'فاتورة #') + html(group.ref) : tr('Selected from unit registry', 'من سجل القطع')}</small>${printSplitHtml(group.count - group.printed, group.printed)}</span><b class="iu-queue-quantity" dir="ltr" title="${html(tr('Selected labels', 'الملصقات المحددة'))}">${group.count}</b><button class="iu-link iu-queue-remove" type="button" data-remove-group="${html(group.key)}" aria-label="${html(tr('Remove ', 'إزالة ') + group.name)}" title="${tr('Remove from selection', 'إزالة من التحديد')}">${icon('close')}</button></div>`).join('') : `<p class="iu-queue-empty">${tr('Select pieces to add their labels here.', 'حدد القطع لإضافة ملصقاتها هنا.')}</p>`;
     patchCards(get('iu-queue'), queueMarkup, 'data-queue-key');
     get('iu-selection').textContent = tr(`${count} selected · maximum 100`, `${count} محدد · الحد الأقصى 100`);
     get('iu-mobile-total').textContent = String(count); get('iu-mobile-bar').hidden = !count;
@@ -472,7 +477,7 @@
     const invoice = state.activeInvoice, host = get('iu-invoice-detail');
     if (!invoice) { host.innerHTML = emptyState(tr('Choose a purchase invoice', 'اختر فاتورة شراء'), tr('Its products and registered unit counts appear here.', 'ستظهر هنا منتجاتها وكميات القطع ذات الأكواد.')); return; }
     const s = totals(invoice), missing = invoice.lines.reduce((sum, line) => sum + Math.max(0, line.quantity - line.createdUnits), 0);
-    host.innerHTML = `<header class="iu-detail-head"><div class="iu-detail-title"><h2>${tr('Invoice', 'فاتورة')} <bdi>#${html(invoice.ref || invoice.transactionId.slice(-6))}</bdi></h2><span class="iu-badge ${missing ? 'amber' : ''}">${readonly(invoice) ? tr('Read only invoice', 'فاتورة للعرض فقط') : missing ? tr('Incomplete unit codes', 'أكواد غير مكتملة') : tr('Codes complete', 'مكتملة الأكواد')}</span></div><p class="iu-invoice-meta"><span dir="auto">${html(invoice.supplier || tr('Unspecified supplier', 'مورد غير محدد'))}</span><span>·</span><time>${html(invoiceDate(invoice))}</time></p><div class="iu-invoice-summary"><div><span>${tr('Products', 'منتجات الفاتورة')}</span><b>${invoice.lines.length}</b></div><div><span>${tr('Total pieces', 'إجمالي القطع')}</span><b>${s.qty}</b></div><div><span>${tr('Pieces with codes', 'قطع لها أكواد')}</span><b class="ready">${s.coded}</b></div><div><span>${tr('Codes needed', 'تحتاج تسجيل كود')}</span><b class="${missing ? 'amber' : ''}">${missing}</b></div></div></header>
+    host.innerHTML = `<header class="iu-detail-head"><div class="iu-detail-title"><h2>${tr('Invoice', 'فاتورة')} <bdi>#${html(invoice.ref || invoice.transactionId.slice(-6))}</bdi></h2><span class="iu-badge ${missing ? 'amber' : ''}">${readonly(invoice) ? tr('Read only invoice', 'فاتورة للعرض فقط') : missing ? tr('Incomplete unit codes', 'أكواد غير مكتملة') : tr('Codes complete', 'مكتملة الأكواد')}</span></div><p class="iu-invoice-meta"><span dir="auto">${html(invoice.supplier || tr('Unspecified supplier', 'مورد غير محدد'))}</span><span>·</span><time>${html(invoiceDate(invoice))}</time></p>${summaryHtml(invoice, s, missing)}</header>
       ${missing && !readonly(invoice) && !invoice.quantityEditedAt ? `<div class="iu-receipt-notice">${icon('info')}<span>${tr(`${missing} pieces need unit identities before printing. Choose Link preprinted QR labels for attached labels, or Register new codes after counting the pieces.`, `${missing} قطعة تحتاج تسجيل هويتها قبل الطباعة. اختر ربط ملصقات QR المطبوعة للملصقات المثبتة، أو سجّل أكوادًا جديدة بعد عد القطع.`)}</span></div>` : ''}
       <div class="iu-product-toolbar"><label class="iu-check"><input id="iu-select-invoice" type="checkbox" ${readonly(invoice) || !invoice.lines.some(line => line.createdUnits) ? 'disabled' : ''}>${tr('Select coded pieces', 'تحديد القطع ذات الأكواد')}</label><div class="iu-product-tools"><label class="iu-field">${icon('search')}<input id="iu-product-query" type="search" maxlength="160" placeholder="${tr('Search products', 'بحث في المنتجات')}" aria-label="${tr('Search invoice products', 'بحث منتجات الفاتورة')}" value="${html(state.productQuery)}"></label><select id="iu-product-filter" aria-label="${tr('Product code status', 'حالة أكواد المنتج')}"><option value="all">${tr('All products', 'كل المنتجات')}</option><option value="ready">${tr('Has codes', 'لها أكواد')}</option><option value="missing">${tr('Needs codes', 'تحتاج أكواد')}</option></select></div></div><div id="iu-receipt-products" class="iu-receipt-products"></div><footer class="iu-detail-footer">${tr('Each label identifies one registered physical piece.', 'كل ملصق يخص قطعة فعلية مسجلة بهوية مستقلة.')}</footer>`;
     const notice = purchaseChangeNotice(invoice);
@@ -480,6 +485,21 @@
     host.querySelector('[data-review-purchase-units]')?.addEventListener('click', () => openStockUnits({ purchaseTransactionId: invoice.transactionId }));
     get('iu-product-filter').value = state.productFilter;
     renderProducts(); updateActions();
+  }
+  // Invoice KPIs (Nov 16, 2026): what is left to do on this invoice — codes, then labels.
+  // Labels are counted as printed labels: a line sealed into packs prints one label per pack.
+  function labelCounts(invoice) {
+    return invoice.lines.reduce((acc, line) => {
+      const pk = line.packs && Number(line.packs.count) > 0 ? line.packs : null;
+      acc.labels += pk ? Number(pk.count) + Number(pk.loose || 0) : Number(line.quantity) || 0;
+      acc.printed += pk ? Number(pk.printed || 0) + Number(pk.loosePrinted || 0) : Math.min(Number(line.printedUnits) || 0, Number(line.quantity) || 0);
+      return acc;
+    }, { labels: 0, printed: 0 });
+  }
+  function summaryHtml(invoice, s, missing) {
+    const l = labelCounts(invoice), left = Math.max(0, l.labels - l.printed), pct = l.labels ? Math.round(l.printed / l.labels * 100) : 0;
+    const tile = (label, value, cls = '', sub = '') => `<div class="${cls}"><span>${label}</span><b><bdi>${value}</bdi></b>${sub}</div>`;
+    return `<div class="iu-invoice-summary">${tile(tr('Products', 'منتجات الفاتورة'), invoice.lines.length)}${tile(tr('Total pieces', 'إجمالي القطع'), s.qty)}${tile(tr('With codes', 'لها أكواد'), `${s.coded} / ${s.qty}`, missing ? 'is-amber' : 'is-ok')}${missing ? tile(tr('Codes needed', 'تحتاج تسجيل كود'), missing, 'is-amber') : ''}${tile(tr('Labels printed', 'ملصقات مطبوعة'), `${l.printed} / ${l.labels}`, left ? 'is-amber' : 'is-ok', `<i class="iu-sum-bar" aria-hidden="true"><em style="width:${pct}%"></em></i>`)}${tile(tr('Left to print', 'متبقٍ للطباعة'), left ? left : tr('Done', 'تمت'), left ? 'is-amber' : 'is-ok')}</div>`;
   }
   function purchaseChangeNotice(invoice) {
     const excess = invoice.lines.reduce((sum, line) => sum + Math.max(0, line.createdUnits - line.quantity), 0);
@@ -527,7 +547,7 @@
           : tr(`${pk.pieces} pieces in ${pk.count} ${packWord(pk.count)}`, `${pk.pieces} قطعة في ${pk.count} ${packWord(pk.count)}`)}${pk.loose
           ? tr(` · ${pk.loose} loose piece(s) (${pk.loosePrinted} printed)`, ` · ${pk.loose} قطعة منفردة (طُبع ${pk.loosePrinted})`) : ''}</span>${done ? '' : `<small>${tr('Print them from «Ready-made packs» → «View previous packs».', 'اطبعها من «الباكات الجاهزة» ← «عرض الباكات السابقة».')}</small>`}</div>` : '';
       const canRegister = !readonly(invoice) && !Number(invoice.orphanedUnits) && !invoice.lines.some(row => row.createdUnits > row.quantity) && has('inventory-units-receive') && Number.isSafeInteger(line.quantity) && line.quantity > line.createdUnits;
-      return `<article class="iu-card iu-receipt-product ${line.change ? 'is-quantity-edited' : ''} ${count ? 'selected' : ''}" data-line-index="${line.lineIndex}"><div class="iu-product-heading"><div class="iu-product-identity">${productImage(line)}<div><h3 dir="auto">${html(line.name || line.sku || tr('Purchase item', 'صنف مشتريات'))}</h3><span class="iu-unit-sku">SKU <bdi>${html(line.sku)}</bdi></span></div></div><input type="checkbox" data-select-line="${line.lineIndex}" aria-label="${html(tr('Select ', 'تحديد ') + (line.name || line.sku))}" ${count ? 'checked' : ''} ${!line.createdUnits || readonly(invoice) ? 'disabled' : ''}></div>${purchaseLineChange(line)}<div class="iu-product-numbers"><span>${tr('Invoice qty', 'كمية الفاتورة')} <b>${line.quantity}</b></span><span>${tr('With codes', 'لها أكواد')} <bdi>${line.createdUnits} / ${line.quantity}</bdi></span></div>${packNote}<div class="iu-product-status"><span class="iu-badge iu-print-tag ${printTone}"${printTitle ? ` title="${html(printTitle)}"` : ''}>${printIcon}<span>${html(printStatus)}</span>${printCount ? `<bdi class="iu-print-tag-n">${printCount}</bdi>` : ''}</span><div>${line.createdUnits ? `<button class="iu-link" type="button" data-view-line="${line.lineIndex}">${tr('View pieces', 'عرض القطع')}</button>` : ''}</div></div>${canRegister ? `<div class="iu-identity-actions" role="group" aria-label="${html(tr('Add identities for ', 'إضافة هويات للمنتج ') + (line.name || line.sku))}"><button class="iu-identity-action" type="button" data-link-line="${line.lineIndex}">${icon('link')}<span>${tr('Link preprinted QR labels', 'ربط ملصقات QR المطبوعة')}</span></button><button class="iu-identity-action" type="button" data-register-line="${line.lineIndex}">${icon('plus')}<span>${tr('Register new codes', 'تسجيل أكواد جديدة')}</span></button></div>` : ''}<div class="iu-product-selection-slot ${line.createdUnits > 100 ? 'iu-wide-range' : ''}" ${!line.createdUnits ? 'hidden' : ''}>${count ? range.custom ? `<div class="iu-product-range"><small>${tr(`${count} pieces selected individually. Edit them in View pieces.`, `تم تحديد ${count} قطعة بعينها. عدّلها من عرض القطع.`)}</small></div>` : `<div class="iu-product-range"><label>${tr('Labels in batch', 'ملصقات هذه الدفعة')}<input type="number" min="1" max="${Math.min(100, line.createdUnits - range.start)}" step="1" value="${count}" data-line-count="${line.lineIndex}" aria-label="${html(tr('Label quantity for ', 'كمية ملصقات ') + line.name)}"></label>${line.createdUnits > 100 ? `<label>${tr('From piece', 'بدءًا من القطعة')}<input type="number" min="1" max="${line.createdUnits}" step="1" value="${range.start + 1}" data-line-start="${line.lineIndex}" aria-label="${html(tr('Start piece for ', 'القطعة الأولى لـ ') + line.name)}"></label><small>${tr('Range', 'النطاق')} <bdi>${range.start + 1}–${range.start + count}</bdi> ${tr('of', 'من')} ${line.createdUnits}</small>` : `<small>${tr('of', 'من')} ${line.createdUnits} ${tr('coded pieces', 'قطعة مسجلة')}</small>`}</div>` : line.createdUnits > 100 ? `<small class="iu-range-hint">${tr('Over 100 pieces. Select the product to set the quantity and starting piece.', 'أكثر من 100 قطعة. حدد المنتج لضبط العدد والقطعة التي تبدأ منها.')}</small>` : ''}</div></article>`;
+      return `<article class="iu-card iu-receipt-product ${line.change ? 'is-quantity-edited' : ''} ${count ? 'selected' : ''}" data-line-index="${line.lineIndex}"><div class="iu-product-heading"><div class="iu-product-identity">${productImage(line)}<div><h3 dir="auto">${html(line.name || line.sku || tr('Purchase item', 'صنف مشتريات'))}</h3><span class="iu-unit-sku">SKU <bdi>${html(line.sku)}</bdi></span></div></div><input type="checkbox" data-select-line="${line.lineIndex}" aria-label="${html(tr('Select ', 'تحديد ') + (line.name || line.sku))}" ${count ? 'checked' : ''} ${!line.createdUnits || readonly(invoice) ? 'disabled' : ''}></div>${purchaseLineChange(line)}<div class="iu-product-numbers"><span>${tr('Invoice qty', 'كمية الفاتورة')} <b>${line.quantity}</b></span><span>${tr('With codes', 'لها أكواد')} <bdi>${line.createdUnits} / ${line.quantity}</bdi></span></div>${packNote}<div class="iu-product-status"><span class="iu-badge iu-print-tag ${printTone}"${printTitle ? ` title="${html(printTitle)}"` : ''}>${printIcon}<span>${html(printStatus)}</span>${printCount ? `<bdi class="iu-print-tag-n">${printCount}</bdi>` : ''}</span><div>${line.createdUnits ? `<button class="iu-link" type="button" data-view-line="${line.lineIndex}">${tr('View pieces', 'عرض القطع')}</button>` : ''}</div></div>${canRegister ? `<div class="iu-identity-actions" role="group" aria-label="${html(tr('Add identities for ', 'إضافة هويات للمنتج ') + (line.name || line.sku))}"><button class="iu-identity-action" type="button" data-link-line="${line.lineIndex}">${icon('link')}<span>${tr('Link preprinted QR labels', 'ربط ملصقات QR المطبوعة')}</span></button><button class="iu-identity-action" type="button" data-register-line="${line.lineIndex}">${icon('plus')}<span>${tr('Register new codes', 'تسجيل أكواد جديدة')}</span></button></div>` : ''}${readonly(invoice) ? '' : selectModeHtml(line, key, count)}<div class="iu-product-selection-slot ${line.createdUnits > 100 ? 'iu-wide-range' : ''}" ${!line.createdUnits ? 'hidden' : ''}>${count ? range.mode === 'unprinted' ? `<div class="iu-product-range"><small>${tr(`${count} unprinted piece(s) selected · the ${Number(line.printedUnits) || 0} printed before are left out.`, `تم تحديد ${count} قطعة لم تُطبع · استُبعدت ${Number(line.printedUnits) || 0} قطعة سبقت طباعتها.`)}</small></div>` : range.custom ? `<div class="iu-product-range"><small>${tr(`${count} pieces selected individually. Edit them in View pieces.`, `تم تحديد ${count} قطعة بعينها. عدّلها من عرض القطع.`)}</small></div>` : `<div class="iu-product-range"><label>${tr('Labels in batch', 'ملصقات هذه الدفعة')}<input type="number" min="1" max="${Math.min(100, line.createdUnits - range.start)}" step="1" value="${count}" data-line-count="${line.lineIndex}" aria-label="${html(tr('Label quantity for ', 'كمية ملصقات ') + line.name)}"></label>${line.createdUnits > 100 ? `<label>${tr('From piece', 'بدءًا من القطعة')}<input type="number" min="1" max="${line.createdUnits}" step="1" value="${range.start + 1}" data-line-start="${line.lineIndex}" aria-label="${html(tr('Start piece for ', 'القطعة الأولى لـ ') + line.name)}"></label><small>${tr('Range', 'النطاق')} <bdi>${range.start + 1}–${range.start + count}</bdi> ${tr('of', 'من')} ${line.createdUnits}</small>` : `<small>${tr('of', 'من')} ${line.createdUnits} ${tr('coded pieces', 'قطعة مسجلة')}</small>`}</div>` : line.createdUnits > 100 ? `<small class="iu-range-hint">${tr('Over 100 pieces. Select the product to set the quantity and starting piece.', 'أكثر من 100 قطعة. حدد المنتج لضبط العدد والقطعة التي تبدأ منها.')}</small>` : ''}</div></article>`;
     }).join('') || emptyState(tr('No matching products', 'لا توجد منتجات مطابقة'), tr('Change the search or filter.', 'غيّر البحث أو الفلتر.'));
     const eligible = invoice.lines.filter(line => line.createdUnits > 0), chosen = eligible.filter(line => lineSelected(sourceKey(invoice, line)).length > 0);
     patchCards(host, markup, 'data-line-index');
@@ -552,6 +572,10 @@
     if (!line || readonly(invoice) || !line.createdUnits) return;
     const key = sourceKey(invoice, line), previous = lineSelected(key);
     if (!chosen) { previous.forEach(u => state.selected.delete(String(u._id))); selectionChanged(); return; }
+    // Partly printed product (Nov 16, 2026): the checkbox selects the pieces never printed;
+    // «كل القطع» on the card switches to the whole range.
+    const mode = rangeOverride?.mode || (rangeOverride ? 'all' : lineSelectMode(line, key));
+    if (mode === 'unprinted') return selectUnprinted(invoice, line, key, previous);
     const storedRange = rangeFor(invoice, line);
     const range = rangeOverride || (storedRange.custom ? { start: 0, count: Math.min(100, line.createdUnits) } : storedRange), available = 100 - (state.selected.size - previous.length);
     if (!Number.isSafeInteger(range.start) || range.start < 0 || !Number.isSafeInteger(range.count) || range.count < 1 || range.start + range.count > line.createdUnits || range.count > available) {
@@ -563,10 +587,42 @@
       if (generation !== state.generation) return;
       previous.forEach(u => state.selected.delete(String(u._id)));
       units.forEach(u => state.selected.set(String(u._id), u));
-      state.ranges.set(key, { ...range }); selectionChanged();
+      state.ranges.set(key, { ...range, mode: 'all' }); selectionChanged();
       message(tr(`${units.length} registered pieces selected from this product.`, `تم تحديد ${units.length} قطعة مسجلة من هذا المنتج.`));
     } catch (error) { message(error.message, true); renderProducts(); }
     finally { if (generation === state.generation) setBusy(false); }
+  }
+  function linePartlyPrinted(line) {
+    const printed = Number(line.printedUnits) || 0;
+    return !(line.packs && Number(line.packs.count) > 0) && printed > 0 && printed < line.createdUnits;
+  }
+  function lineSelectMode(line, key) {
+    const stored = state.ranges.get(key)?.mode;
+    return linePartlyPrinted(line) ? (stored || 'unprinted') : 'all';
+  }
+  async function selectUnprinted(invoice, line, key, previous) {
+    const available = 100 - (state.selected.size - previous.length), generation = state.generation; setBusy(true, true);
+    try {
+      const all = await lineRange(invoice, line, 0, line.createdUnits);
+      if (generation !== state.generation) return;
+      const fresh = all.filter(unit => !(Number(unit.printCount) > 0));
+      if (!fresh.length) { message(tr('Every piece of this product was printed before. Choose «All pieces» to reprint.', 'كل قطع هذا المنتج سبقت طباعتها. اختر «كل القطع» لإعادة الطباعة.'), true); renderProducts(); return; }
+      const take = fresh.slice(0, Math.max(0, available));
+      if (!take.length) { message(tr('The batch is full (100 labels).', 'الدفعة ممتلئة (100 ملصق).'), true); renderProducts(); return; }
+      previous.forEach(u => state.selected.delete(String(u._id)));
+      take.forEach(u => state.selected.set(String(u._id), u));
+      state.ranges.set(key, { start: 0, count: take.length, mode: 'unprinted', unprinted: fresh.length }); selectionChanged();
+      message(take.length < fresh.length
+        ? tr(`${take.length} of ${fresh.length} unprinted pieces selected (batch limit 100).`, `تم تحديد ${take.length} من ${fresh.length} قطعة لم تُطبع (حد الدفعة 100).`)
+        : tr(`${take.length} unprinted pieces selected.`, `تم تحديد ${take.length} قطعة لم تُطبع بعد.`));
+    } catch (error) { message(error.message, true); renderProducts(); }
+    finally { if (generation === state.generation) setBusy(false); }
+  }
+  function selectModeHtml(line, key, count) {
+    if (!linePartlyPrinted(line)) return '';
+    const mode = lineSelectMode(line, key), unprinted = line.createdUnits - (Number(line.printedUnits) || 0);
+    const opt = (m, label, n) => `<button type="button" class="iu-mode-opt ${count && mode === m ? 'is-on' : ''}" data-select-mode="${m}" data-mode-line="${line.lineIndex}" aria-pressed="${!!count && mode === m}">${label} <bdi>${n}</bdi></button>`;
+    return `<div class="iu-select-mode" role="group" aria-label="${html(tr('Which pieces to select', 'أي القطع تُحدد'))}"><span>${tr('Select', 'تحديد')}</span>${opt('unprinted', tr('Not printed', 'غير المطبوعة'), unprinted)}${opt('all', tr('All pieces', 'كل القطع'), line.createdUnits)}</div>`;
   }
   async function selectInvoice(checked) {
     const invoice = state.activeInvoice;
@@ -582,7 +638,7 @@
       if (generation !== state.generation) return;
       for (const [id, unit] of state.selected) if (unit.origin?.purchaseTransactionId === invoice.transactionId) state.selected.delete(id);
       units.forEach(unit => state.selected.set(String(unit._id), unit));
-      eligible.forEach(line => state.ranges.set(sourceKey(invoice, line), { start: 0, count: line.createdUnits }));
+      eligible.forEach(line => state.ranges.set(sourceKey(invoice, line), { start: 0, count: line.createdUnits, mode: 'all' }));
       selectionChanged(); message(tr(`${units.length} invoice pieces selected.`, `تم تحديد ${units.length} قطعة من الفاتورة.`));
     } catch (error) { message(error.message, true); renderProducts(); }
     finally { if (generation === state.generation) setBusy(false); }
@@ -638,9 +694,13 @@
     } catch (error) { message(error.message, true); }
     finally { if (generation === state.generation) setBusy(false); }
   }
-  function unitRows(rows) {
+  function unitRows(rows, opts = {}) {
     if (!rows.length) return emptyState(tr('No matching pieces', 'لا توجد قطع مطابقة'), tr('Search by product, SKU or a piece barcode, or change the status filter.', 'ابحث بالمنتج أو SKU أو باركود القطعة، أو غيّر فلتر الحالة.'));
-    const body = rows.map(unit => {
+    // Split (pieces window, Nov 16, 2026): not printed first, then printed, each under a heading row.
+    const printedOf = unit => Number(unit.printCount) > 0;
+    const fresh = opts.split ? rows.filter(u => !printedOf(u)) : rows, again = opts.split ? rows.filter(printedOf) : [];
+    const groupRow = (cls, text) => `<tr class="iu-print-group ${cls}"><th colspan="7" scope="rowgroup">${text}</th></tr>`;
+    const rowsHtml = list => list.map(unit => {
       const created = unit.createdAt ? new Date(unit.createdAt) : null;
       const validDate = created && Number.isFinite(created.getTime());
       const origin = unit.origin || {};
@@ -659,12 +719,15 @@
         <td class="iu-log-date" data-label="${tr('Registered', 'التسجيل')}">${validDate ? `<time datetime="${html(created.toISOString())}" title="${html(created.toLocaleString(tr('en-GB', 'ar-EG')))}">${html(created.toLocaleDateString(tr('en-GB', 'ar-EG'), { day: 'numeric', month: 'short', year: 'numeric' }))}</time><small>${html(created.toLocaleTimeString(tr('en-GB', 'ar-EG'), { hour: '2-digit', minute: '2-digit' }))}</small>` : '<span>—</span>'}</td>
       </tr>`;
     }).join('');
+    const body = !opts.split ? rowsHtml(rows)
+      : (fresh.length ? groupRow('is-new', tr(`Not printed yet · ${fresh.length}`, `لم تُطبع بعد · ${fresh.length}`)) + rowsHtml(fresh) : '')
+      + (again.length ? groupRow('is-re', tr(`Printed before · ${again.length}`, `سبقت طباعتها · ${again.length}`)) + rowsHtml(again) : '');
     return `<div class="iu-unit-log"><table><caption class="iu-visually-hidden">${tr('Registered pieces, newest first. Each row represents one physical piece.', 'سجل القطع المسجلة، الأحدث أولًا. كل صف يمثل قطعة فعلية واحدة.')}</caption><thead><tr><th scope="col"><span class="iu-visually-hidden">${tr('Select', 'تحديد')}</span>${icon('check')}</th><th scope="col">${tr('Product / SKU', 'المنتج / SKU')}</th><th scope="col" class="iu-col-invoice">${tr('Invoice reference', 'مرجع الفاتورة')}</th><th scope="col">${tr('Piece code', 'كود القطعة')}</th><th scope="col">${tr('Status', 'الحالة')}</th><th scope="col" class="iu-col-warehouse">${tr('Warehouse', 'المخزن')}</th><th scope="col" class="iu-col-registered">${tr('Registered', 'تاريخ التسجيل')}</th></tr></thead><tbody>${body}</tbody></table></div>`;
   }
   const pieceActionLabels = {
     reserve: ['Reserve for customer order', 'حجز لطلب عميل'], release: ['Release from order', 'فك الحجز من الطلب'],
     inspect: ['Confirm sound condition', 'اعتماد الفحص — القطعة سليمة'], damage: ['Record damaged piece', 'تسجيل قطعة تالفة'],
-    lost: ['Record loss after physical count', 'تسجيل فقد بعد الجرد'], ship: ['Confirm carrier handover', 'تأكيد التسليم لشركة الشحن'],
+    lost: ['Record loss after physical count', 'تسجيل فقد بعد الجرد'], found: ['Piece found — return to stock', 'تم العثور عليها — إعادتها للمخزون'], repaired: ['Piece is sound — return to stock', 'القطعة سليمة — إعادتها للمخزون'], ship: ['Confirm carrier handover', 'تأكيد التسليم لشركة الشحن'],
     deliver: ['Confirm customer delivery', 'تأكيد التسليم للعميل'], return: ['Receive customer return', 'استلام مرتجع العميل'],
     'supplier-return': ['Link to completed supplier return', 'ربط بمرتجع مورد مكتمل'],
     'receive-supplier-return': ['Receive piece after supplier return reversal', 'استلام القطعة بعد عكس مرتجع المورد'],
@@ -675,6 +738,8 @@
     inspect: ['Confirms you inspected this piece and found it sound. It becomes available.', 'يؤكد أنك فحصت القطعة وهي سليمة، ويجعلها متاحة للحجز والتحضير.'],
     damage: ['Blocks barcode reservation and preparation. The piece remains physically in the warehouse; aggregate stock is unchanged.', 'يمنع حجز القطعة وتحضيرها بالباركود. تظل بالمخزن فعليًا ولا يغير هذا الإجراء إجمالي الرصيد.'],
     lost: ['Requires a completed physical count. Records the identity as lost; any balance correction is a separate reviewed inventory adjustment.', 'يتطلب جردًا فعليًا. يسجل هوية القطعة كمفقودة؛ تصحيح الرصيد، عند الحاجة، يتم من تسوية المخزون.'],
+    repaired: ['Use when a piece recorded as damaged was checked again (or repaired) and is fit to sell. It becomes available again; the damage stays in its history. Not possible for a piece that came back damaged from a customer.', 'استخدمه عندما تُفحص القطعة المسجلة تالفة مرة أخرى (أو تُصلح) وتصبح صالحة للبيع. تعود متاحة، ويبقى تسجيل التلف في سجلها. غير متاح لقطعة رجعت تالفة من عميل.'],
+    found: ['Use when a piece recorded as lost is physically back in your hands. It becomes available for sale again; the loss stays in its history.', 'استخدمه عندما تعود القطعة المسجلة مفقودة إلى يدك فعليًا. تصبح متاحة للبيع مرة أخرى، ويبقى تسجيل الفقد في سجلها.'],
     ship: ['Use only after physically handing the prepared piece to the carrier. Does not update the carrier order.', 'أكد فقط بعد تسليم القطعة المجهزة فعليًا لشركة الشحن. لا يرسل هذا الإجراء طلبًا لشركة الشحن.'],
     deliver: ['Records confirmed customer delivery for this piece. Does not change the invoice payment.', 'يسجل تأكيد تسليم هذه القطعة للعميل، دون تغيير سداد الفاتورة.'],
     return: ['Records physical custody of the returned piece. Complete the customer return financial process separately; inspect before reuse.', 'يسجل استلام القطعة المرتجعة فعليًا. أكمل المعالجة المالية من مرتجع العميل، وافحص القطعة قبل إتاحتها.'],
@@ -686,7 +751,7 @@
   }
   function actionEventLabel(event) {
     const labels = { registered: ['Registered', 'تسجيل القطعة'], reserved: ['Reserved', 'حجز للعميل'], released: ['Released', 'فك الحجز'],
-      'inspection-passed': ['Inspection approved', 'اعتماد الفحص'], damaged: ['Damaged', 'تسجيل تالف'], lost: ['Lost', 'تسجيل فقد'],
+      'inspection-passed': ['Inspection approved', 'اعتماد الفحص'], damaged: ['Damaged', 'تسجيل تالف'], lost: ['Lost', 'تسجيل فقد'], found: ['Found', 'العثور على القطعة'], repaired: ['Back to sound', 'إعادة القطعة سليمة'],
       'picking-started': ['Picking started', 'بدء التحضير'], 'picking-undone': ['Picking undone', 'تراجع عن التحضير'],
       'supplier-returned': ['Returned to supplier', 'تسليم للمورد'], 'supplier-return-reserved': ['Reserved for supplier return', 'حجز لمرتجع مورد'], 'supplier-return-released': ['Supplier return reservation released', 'فك حجز مرتجع المورد'], 'warehouse-changed': ['Warehouse transfer', 'نقل بين المخازن'] };
     Object.assign(labels, { 'inspection-required': ['Awaiting inspection', 'إعادة للفحص'],
@@ -761,7 +826,7 @@
       get('iu-action-submit').disabled = true;
       message(action === 'reserve' ? tr('No matching open sale lines. Search by reference/name. Missing line IDs must be identified from order preparation.', 'لا توجد سطور بيع متاحة مطابقة. ابحث برقم الفاتورة أو الاسم. السطور بدون هوية تُعالج من تحضير الطلب.') : tr('No matching completed supplier return. Complete it from Supplier returns first.', 'لا يوجد مرتجع مورد مكتمل ومطابق. أكمله من صفحة مرتجعات الموردين أولًا.'));
     } else get('iu-action-dialog').querySelector('[data-dialog-message]').textContent = '';
-    get('iu-action-confirm-text').textContent = action === 'lost' ? tr('I completed a physical count and confirmed this exact piece is missing.', 'أؤكد أنني أجريت جردًا فعليًا وتأكدت من فقد هذه القطعة بعينها.') : action === 'supplier-return' ? tr('I confirm this exact piece was physically handed to the supplier for the selected completed return.', 'أؤكد تسليم هذه القطعة بعينها فعليًا للمورد ضمن المرتجع المكتمل المحدد.') : action === 'inspect' ? tr('I physically inspected this exact piece and confirm it is sound and ready.', 'أؤكد أنني فحصت هذه القطعة فعليًا وهي سليمة وجاهزة.') : action === 'deliver' ? tr('I have evidence confirming this exact piece was delivered to the customer.', 'لدي إثبات يؤكد تسليم هذه القطعة بعينها للعميل.') : action === 'ship' ? tr('I confirm physical handover of this exact piece to the carrier.', 'أؤكد تسليم هذه القطعة بعينها فعليًا لشركة الشحن.') : tr('I confirm physical possession and the selected action for this exact piece.', 'أؤكد الحيازة الفعلية والإجراء المحدد لهذه القطعة بعينها.');
+    get('iu-action-confirm-text').textContent = action === 'repaired' ? tr('I physically checked this exact piece and confirm it is sound and fit to sell.', 'أؤكد أنني فحصت هذه القطعة بعينها فعليًا وأنها سليمة وصالحة للبيع.') : action === 'found' ? tr('I have this exact piece in my hands and confirm it is back on the shelf.', 'أؤكد أن هذه القطعة بعينها في يدي وأنها عادت إلى الرف.') : action === 'lost' ? tr('I completed a physical count and confirmed this exact piece is missing.', 'أؤكد أنني أجريت جردًا فعليًا وتأكدت من فقد هذه القطعة بعينها.') : action === 'supplier-return' ? tr('I confirm this exact piece was physically handed to the supplier for the selected completed return.', 'أؤكد تسليم هذه القطعة بعينها فعليًا للمورد ضمن المرتجع المكتمل المحدد.') : action === 'inspect' ? tr('I physically inspected this exact piece and confirm it is sound and ready.', 'أؤكد أنني فحصت هذه القطعة فعليًا وهي سليمة وجاهزة.') : action === 'deliver' ? tr('I have evidence confirming this exact piece was delivered to the customer.', 'لدي إثبات يؤكد تسليم هذه القطعة بعينها للعميل.') : action === 'ship' ? tr('I confirm physical handover of this exact piece to the carrier.', 'أؤكد تسليم هذه القطعة بعينها فعليًا لشركة الشحن.') : tr('I confirm physical possession and the selected action for this exact piece.', 'أؤكد الحيازة الفعلية والإجراء المحدد لهذه القطعة بعينها.');
     const explanation = get('iu-action-confirm-fields').querySelector('p.iu-help');
     explanation.textContent = action ? tr('The action button confirms this statement: ', 'الضغط على زر الإجراء يؤكد الآتي: ') + get('iu-action-confirm-text').textContent + ' ' + tr('Your name and time are recorded automatically.', 'يُحفظ اسمك والوقت تلقائيًا.') : '';
   }
@@ -821,7 +886,7 @@
     state.rows = state.rows.map(u => String(u._id) === current.id ? updated : u);
     if (state.unitScope) {
       state.unitScope.rows = state.unitScope.rows.map(u => String(u._id) === current.id ? updated : u);
-      get('iu-line-units').innerHTML = unitRows(state.unitScope.rows);
+      renderLineUnits();
     }
     if (state.unitsReady) get('iu-units').innerHTML = unitRows(state.rows);
     invalidatePreview();
@@ -957,6 +1022,17 @@
       get('iu-stat-units').textContent = '—'; get('iu-stat-page').textContent = '—'; get('iu-page').textContent = '—';
     } finally { if (generation === state.generation && request === state.unitRequest) { state.unitLoading = false; get('iu-units').setAttribute('aria-busy', 'false'); get('iu-log-loading').hidden = true; updateActions(); } }
   }
+  function renderLineUnits() {
+    const scope = state.unitScope; if (!scope) return;
+    const printed = scope.rows.filter(u => Number(u.printCount) > 0).length, fresh = scope.rows.length - printed;
+    const filter = scope.printFilter || 'all', bar = get('iu-line-print-filter');
+    const chip = (key, label, n) => `<button type="button" class="iu-chip ${filter === key ? 'active' : ''}" data-print-filter="${key}" aria-pressed="${filter === key}">${label} <bdi>${n}</bdi></button>`;
+    bar.hidden = !scope.rows.length;
+    bar.innerHTML = chip('all', tr('All', 'الكل'), scope.rows.length) + chip('new', tr('Not printed', 'لم تُطبع'), fresh) + chip('re', tr('Printed before', 'سبقت طباعتها'), printed)
+      + (fresh && filter !== 're' ? `<button type="button" class="iu-link iu-select-fresh" data-select-fresh="1">${tr('Select the unprinted', 'تحديد غير المطبوعة')}</button>` : '');
+    const rows = filter === 'new' ? scope.rows.filter(u => !(Number(u.printCount) > 0)) : filter === 're' ? scope.rows.filter(u => Number(u.printCount) > 0) : scope.rows;
+    get('iu-line-units').innerHTML = unitRows(rows, { split: filter === 'all' });
+  }
   async function viewLine(lineIndex, page = 1) {
     if (!state.ready || state.busy) return;
     const invoice = state.activeInvoice, line = invoice?.lines.find(l => l.lineIndex === lineIndex);
@@ -970,16 +1046,23 @@
     get('iu-line-units-meta').textContent = tr('Loading registered pieces…', 'جارٍ تحميل القطع المسجلة…');
     get('iu-line-prev').disabled = true; get('iu-line-next').disabled = true; showDialog('iu-units-dialog');
     try {
-      const response = await api(`/inventory-units/purchases/${encodeURIComponent(invoice.transactionId)}/lines/${line.lineIndex}/units?` + new URLSearchParams({ page: String(page), limit: '30' }));
-      if (request !== state.unitDialogRequest || generation !== state.generation) return;
+      // One list for the whole product (up to 500 pieces, pages of 100), so printed and not printed
+      // can be split; a larger product still pages by 100.
+      const fetchPage = n => api(`/inventory-units/purchases/${encodeURIComponent(invoice.transactionId)}/lines/${line.lineIndex}/units?` + new URLSearchParams({ page: String(n), limit: '100' }));
+      const response = await fetchPage(page);
       if (!Array.isArray(response.units) || !Number.isSafeInteger(response.total)) throw new Error(tr('Could not read this product’s pieces. Refresh the invoice.', 'تعذر قراءة قطع الصنف. حدّث الفاتورة.'));
-      const rows = response.units.map(validateUnit).map(u => ({ ...u, sourceKey: sourceKey(invoice, line), invoiceRef: invoice.ref }));
-      state.unitScope = { invoice, line, page, rows, total: response.total };
+      const whole = page === 1 && response.total <= 500, units = [...response.units];
+      if (whole) for (let n = 2; units.length < response.total && n <= 5; n++) { const more = await fetchPage(n); if (!Array.isArray(more.units) || !more.units.length) break; units.push(...more.units); }
+      if (request !== state.unitDialogRequest || generation !== state.generation) return;
+      const rows = units.map(validateUnit).map(u => ({ ...u, sourceKey: sourceKey(invoice, line), invoiceRef: invoice.ref }));
+      state.unitScope = { invoice, line, page, rows, total: response.total, whole, printFilter: state.unitScope?.printFilter || 'all' };
       if (state.labelAudit && state.labelAudit.units.length !== response.total) state.labelAudit = null;
-      get('iu-line-units').innerHTML = unitRows(rows);
+      renderLineUnits();
       renderLabelAudit();
-      get('iu-line-units-meta').textContent = tr(`Invoice #${invoice.ref} · page ${page} · ${response.total} pieces`, `فاتورة #${invoice.ref} · صفحة ${page} · ${response.total} قطعة`);
-      get('iu-line-prev').disabled = page <= 1; get('iu-line-next').disabled = page * 30 >= response.total;
+      get('iu-line-units-meta').textContent = whole ? tr(`Invoice #${invoice.ref} · ${response.total} pieces`, `فاتورة #${invoice.ref} · ${response.total} قطعة`)
+        : tr(`Invoice #${invoice.ref} · page ${page} · ${response.total} pieces`, `فاتورة #${invoice.ref} · صفحة ${page} · ${response.total} قطعة`);
+      get('iu-line-prev').hidden = get('iu-line-next').hidden = whole;
+      get('iu-line-prev').disabled = page <= 1; get('iu-line-next').disabled = page * 100 >= response.total;
     } catch (error) {
       if (request !== state.unitDialogRequest || generation !== state.generation) return;
       get('iu-line-units-meta').textContent = tr(`Invoice #${invoice.ref} · ${line.name || line.sku}`, `فاتورة #${invoice.ref} · ${line.name || line.sku}`);
@@ -1084,17 +1167,25 @@
     return `<article class="iu-label iu-label-batch-cover${size.widthMm <= 50 ? ' iu-label-batch-cover-compact' : ''}" style="--label-width:${Number(size.widthMm)}mm;--label-height:${Number(size.heightMm)}mm;--label-margin:${Number(size.marginMm || 2)}mm" aria-label="${html(tr(`Batch cover: ${cover.productName}`, `ورقة تعريف دفعة: ${cover.productName}`))}"><div class="iu-cover-top"><code dir="ltr">${html(cover.code)}</code></div><strong class="iu-cover-name" dir="auto">${html(cover.productName)}</strong><div class="iu-cover-bottom"><div class="iu-cover-count"><b dir="ltr">${Number(cover.count)}</b><span>${tr('labels', 'ملصق')}</span></div><div class="iu-cover-brand-row"><span class="iu-cover-brand"><svg class="iu-code-fill" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect width="10" height="10" fill="#000"/></svg><img src="${logo}" alt="Soulia"></span><code class="iu-cover-batch-number" dir="ltr" aria-label="${html(tr('Batch number', 'رقم الدفعة'))}">${html(cover.batchNumber)}</code></div></div></article>`;
   }
   function previewSheets(batch, separateProducts = false) {
-    const sheets = separateProducts ? groupedLabelSheets(batch) : batch.labels.map(label => ({ label }));
+    // Not printed first, then reprints, each under its own heading (covers keep product order).
+    const isRe = label => Number(label.printCount) > 0;
+    const plain = separateProducts ? null : [...batch.labels.filter(l => !isRe(l)), ...batch.labels.filter(isRe)];
+    const sheets = separateProducts ? groupedLabelSheets(batch) : plain.map(label => ({ label }));
+    const fresh = batch.labels.filter(l => !isRe(l)).length, re = batch.labels.length - fresh;
+    const heading = (cls, text) => `<h3 class="iu-preview-group ${cls}">${text}</h3>`;
     let index = 0;
-    return sheets.map(({ label, cover }) => cover
+    return sheets.map(({ label, cover }) => (!separateProducts && fresh && re && label && index === 0 ? heading('is-new', tr(`Not printed before · ${fresh}`, `لم تُطبع من قبل · ${fresh}`)) : '')
+      + (!separateProducts && re && label && index === fresh ? heading('is-re', tr(`Printed before — reprint · ${re}`, `سبقت طباعتها — إعادة طباعة · ${re}`)) : '') + (cover
       ? `<figure class="iu-preview-sheet"><figcaption><span>${tr('Batch cover', 'ورقة تعريف الدفعة')}</span><bdi>${html(cover.code)}</bdi></figcaption>${batchCoverHtml(cover, batch.size)}<small class="iu-print-count">${tr(`${cover.count} labels · printed before this product`, `${cover.count} ملصق · تُطبع قبل هذا المنتج`)}</small></figure>`
-      : `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${++index}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count">${tr('Recorded print requests: ', 'طلبات الطباعة المسجلة: ')}<b>${Number(label.printCount) || 0}</b></small></figure>`).join('');
+      : `<figure class="iu-preview-sheet"><figcaption><span>${tr('Label', 'ملصق')} ${++index}</span><bdi>${html(label.sku)}</bdi></figcaption>${labelHtml(label, batch.size)}<small class="iu-print-count ${isRe(label) ? 'is-re' : 'is-new'}">${isRe(label) ? tr(`Reprint · printed ${Number(label.printCount)}×`, `إعادة طباعة · طُبع ${Number(label.printCount)} مرة`) : tr('New label — never printed', 'ملصق جديد — لم يُطبع')}</small></figure>`)).join('');
   }
   function renderPreviewSheets(batch, includeCovers) {
     get('iu-previews').innerHTML = previewSheets(batch, includeCovers);
     const coverCount = includeCovers ? groupedLabelSheets(batch).length - batch.labels.length : 0;
+    const re = batch.labels.filter(l => Number(l.printCount) > 0).length;
     get('iu-preview-total').textContent = tr(`${batch.labels.length} piece label(s)`, `${batch.labels.length} ملصق قطعة`) +
-      (coverCount ? tr(` + ${coverCount} batch cover${coverCount === 1 ? '' : 's'}`, ` + ${coverCount} ورقة تعريف`) : '');
+      (coverCount ? tr(` + ${coverCount} batch cover${coverCount === 1 ? '' : 's'}`, ` + ${coverCount} ورقة تعريف`) : '') +
+      (re ? tr(` · ${batch.labels.length - re} new, ${re} reprint`, ` · ${batch.labels.length - re} جديد، ${re} إعادة طباعة`) : '');
   }
   async function preview() {
     if (!state.ready || state.busy || !state.sizeId || !state.selected.size) return;
@@ -1302,6 +1393,17 @@
         else message(tr('Preprinted label linking is unavailable. Refresh this page and try again.', 'ربط الملصقات المطبوعة مسبقًا غير متاح الآن. حدّث الصفحة وحاول مجددًا.'), true);
       }
       if (button.dataset.registerLine !== undefined) openRegistration(Number(button.dataset.registerLine));
+      if (button.dataset.printFilter && state.unitScope) { state.unitScope.printFilter = button.dataset.printFilter; renderLineUnits(); get('iu-line-units').scrollTop = 0; }
+      if (button.dataset.selectFresh && state.unitScope && !state.busy) {
+        const fresh = state.unitScope.rows.filter(u => !(Number(u.printCount) > 0)), room = 100 - state.selected.size;
+        fresh.filter(u => !state.selected.has(String(u._id))).slice(0, Math.max(0, room)).forEach(u => state.selected.set(String(u._id), u));
+        selectionChanged();
+      }
+      if (button.dataset.selectMode && !state.busy) {
+        const index = Number(button.dataset.modeLine), line = state.activeInvoice?.lines.find(l => l.lineIndex === index);
+        if (line) { const key = sourceKey(state.activeInvoice, line); state.ranges.set(key, { ...rangeFor(state.activeInvoice, line), mode: button.dataset.selectMode, custom: false });
+          selectLine(index, true, button.dataset.selectMode === 'all' ? { start: 0, count: Math.min(100, line.createdUnits), mode: 'all' } : { mode: 'unprinted' }); }
+      }
       if (button.dataset.iuClose) closeDialog(button.dataset.iuClose);
       if (button.dataset.removeGroup && !state.busy) { for (const [id, u] of state.selected) if ((u.sourceKey || (u.origin?.purchaseTransactionId || '') + ':' + u.productId) === button.dataset.removeGroup) state.selected.delete(id); selectionChanged(); }
     };
@@ -1393,7 +1495,7 @@
   function dialogsHtml() { return actionDialogMarkup() + bulkDialogMarkup() + baseDialogsHtml(); }
   function baseDialogsHtml() {
     return `<dialog id="iu-register-dialog" class="iu-dialog iu-register-dialog" aria-labelledby="iu-register-title" hidden><form id="iu-register-form"><header class="iu-dialog-header"><h2 id="iu-register-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-register-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-register-detail" class="iu-help"></p><label class="iu-form-field">${tr('Physical count now', 'العدد الموجود فعليًا الآن')}<input name="physicalQuantity" type="number" step="1" required></label><label class="iu-form-field">${tr('Warehouse / location', 'المخزن / الموقع')}<select name="warehouseCode" data-warehouse-select required>${window.SouliaWarehouses?.options() || '<option value="MAIN">المخزن الرئيسي</option>'}</select></label><label class="iu-form-field">${tr('Count reference / reason', 'مرجع الجرد / سبب التسجيل')}<input name="reason" maxlength="1000" required></label><label class="iu-check iu-confirm"><input name="physicalPossessionConfirmed" type="checkbox" required><span>${tr('I physically counted these pieces from this invoice.', 'أؤكد أنني عددت هذه القطع من هذه الفاتورة فعليًا.')}</span></label><p class="iu-help">${tr('This records missing identities only. It does not add stock or duplicate the purchase. New pieces await quality inspection.', 'يسجل الهويات الناقصة فقط. لا يضيف مخزونًا ولا يكرر الشراء. تنتظر القطع الجديدة فحص الجودة.')}</p><p data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-register-dialog">${tr('Cancel', 'إلغاء')}</button><button class="btn btn-primary" type="submit">${tr('Register unit codes', 'تسجيل أكواد القطع')}</button></footer></form></dialog>
-      <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><section id="iu-label-audit" class="iu-label-audit"></section><p data-dialog-message role="status"></p><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>
+      <dialog id="iu-units-dialog" class="iu-dialog iu-wide-dialog" aria-labelledby="iu-units-title" hidden><header class="iu-dialog-header"><h2 id="iu-units-title"></h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-units-dialog" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-dialog-body"><p id="iu-line-units-meta" class="iu-help"></p><section id="iu-label-audit" class="iu-label-audit"></section><p data-dialog-message role="status"></p><div id="iu-line-print-filter" class="iu-print-filter" role="group" hidden></div><div id="iu-line-units"></div></div><footer class="iu-dialog-footer"><button id="iu-line-prev" class="btn btn-outline" type="button">${tr('Previous', 'السابق')}</button><button id="iu-line-next" class="btn btn-outline" type="button">${tr('Next', 'التالي')}</button><button id="iu-line-preview" class="btn btn-primary" type="button">${tr('Back to label batch', 'الرجوع لدفعة الملصقات')}</button></footer></dialog>
       <dialog id="iu-preview-section" class="iu-dialog iu-preview-dialog" aria-labelledby="iu-preview-title" hidden><header class="iu-dialog-header"><h2 id="iu-preview-title">${tr('Label preview', 'معاينة الملصقات')}</h2><button class="btn iu-icon-button" type="button" data-iu-close="iu-preview-section" aria-label="${tr('Close', 'إغلاق')}">${icon('close')}</button></header><div class="iu-preview-layout"><div class="iu-preview-summary"><strong id="iu-preview-total"></strong><p id="iu-preview-size" dir="ltr"></p></div><div class="iu-preview-stage"><div class="iu-preview-toolbar"><span>${tr('Check your labels before printing', 'راجع الملصقات قبل الطباعة')}</span><label>${tr('Zoom', 'نسبة التكبير')}<select dir="ltr" id="iu-preview-zoom" aria-label="${tr('Preview zoom', 'تكبير المعاينة')}"><option value="100">${tr('100%', '100٪')}</option><option value="125">${tr('125%', '125٪')}</option><option value="150">${tr('150%', '150٪')}</option><option value="200">${tr('200%', '200٪')}</option></select></label></div><div id="iu-previews" class="iu-previews"></div><p class="iu-preview-stage-note">${tr('Print at 100% scale with matching paper and no margins.', 'اطبع بمقياس 100٪ وبمقاس الورق المطابق دون هوامش.')}</p></div><p class="iu-preview-message" data-dialog-message role="status"></p></div><footer class="iu-dialog-footer"><button class="btn btn-outline" type="button" data-iu-close="iu-preview-section">${tr('Back to selection', 'الرجوع للتحديد')}</button><button id="iu-print" class="btn btn-primary" type="button" disabled>${icon('printer')}${tr('Print / reprint', 'طباعة / إعادة طباعة')}</button></footer></dialog>`;
   }
   function barcodeNavigationHtml(canPurchase) {

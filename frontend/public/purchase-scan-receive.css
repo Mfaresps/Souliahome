@@ -1,0 +1,27 @@
+#tx-purchase-scanner{padding:11px 12px;margin-bottom:12px;background:color-mix(in srgb,var(--primary) 4%,var(--surface));border:1px solid var(--border);border-radius:10px}
+#tx-purchase-scanner[hidden]{display:none}
+#tx-purchase-scanner small{display:block;line-height:1.7;color:var(--muted);font-size:.72rem;margin-top:6px}
+#tx-purchase-scanner form{margin-top:10px}#tx-purchase-scanner form label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:5px}
+#tx-purchase-scanner form>div{display:flex;gap:8px}#tx-purchase-scanner form input{flex:1;min-width:0;width:100%;font-family:ui-monospace,Consolas,monospace}
+/* The hint is page text, not a code: page font and direction, small and muted. The typed code stays LTR monospace. */
+#tx-purchase-scanner #psr-code::placeholder{font-family:var(--font-app,system-ui,sans-serif);font-size:.78rem;font-weight:400;color:var(--muted);opacity:1;letter-spacing:0}
+html[dir=rtl] #tx-purchase-scanner #psr-code:placeholder-shown{direction:rtl;text-align:right}
+#tx-purchase-scanner button{font:inherit;font-size:.75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--primary);padding:7px 10px;cursor:pointer;min-height:36px}
+#tx-purchase-scanner form button{background:var(--primary);color:#fff;border-color:var(--primary)}
+#tx-purchase-scanner button:disabled,#tx-purchase-scanner input:disabled{opacity:.55;cursor:not-allowed}
+.psr-counts{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:.76rem;color:var(--muted)}
+.psr-counts b{font-size:1rem;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;margin-inline-end:3px}
+.psr-resume{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;padding:9px 10px;border:1px dashed var(--border);border-radius:8px;font-size:.78rem;color:var(--text)}
+.psr-resume span{flex:1;min-width:180px}.psr-resume button.is-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.psr-outdated{display:flex;flex-direction:column;align-items:flex-start;gap:4px}.psr-outdated ul{margin:2px 0 6px;padding-inline-start:18px}
+.psr-outdated code{unicode-bidi:isolate;font-size:.74rem}
+.psr-checking{display:flex;align-items:center;gap:8px}
+.psr-pending{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.psr-pending span{flex:1;min-width:200px}
+.psr-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:600;line-height:1.6;white-space:nowrap}
+.psr-tag.is-new{background:#fdf1e3;color:#93511b;border:1px solid #efcfa8}.psr-tag.is-done{background:#edf7f0;color:#19683f;border:1px solid #b4d5bf}
+.psr-split{flex-wrap:wrap;gap:6px}.psr-hint{font-weight:400;font-size:.7rem;color:var(--muted)}
+.psr-sum-tags{display:flex;flex-wrap:wrap;gap:4px}
+.psr-codes summary{cursor:pointer;font-size:.72rem;color:var(--primary)}
+.psr-summary .prs-table td:last-child{width:auto;text-align:start}
+body.dark-mode .psr-tag.is-new{background:#3d2c19;color:#f4c38f;border-color:#6d4a26}body.dark-mode .psr-tag.is-done{background:#19392b;color:#a2dfb8;border-color:#3e7958}
+@media(max-width:600px){#tx-purchase-scanner input{font-size:16px!important}}

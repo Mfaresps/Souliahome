@@ -3,6 +3,8 @@ import { mkdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import * as ts from 'typescript';
 import puppeteer, { Browser, Page } from 'puppeteer';
+// Page globals read inside page.evaluate callbacks.
+declare const txItems: any[];
 
 describe('Real new-transaction purchase functions and shared receipt controls in Chromium', () => {
   let browser: Browser, page: Page, server: Server, origin: string, requests: any[], mode: string;
@@ -15,7 +17,7 @@ describe('Real new-transaction purchase functions and shared receipt controls in
     functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && ['renderTxFields', 'saveTx', 'confirmTxSave'].includes(node.name?.text || '')).map(node => node.getText(ast)).join('\n');
   }
   const html = `<!doctype html><html dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--border:#d8e4dd;--surface:#f8fafb;--bg:white;--text:#163e2a;--primary:#00311e;--muted:#738a7b}body{font:14px Arial;padding:16px;margin:0}.modal{max-width:800px;margin:auto}.modal input{width:100%;height:46px}.modal label{display:flex;justify-content:space-between}.form-group{min-width:0}#tx-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-group input,.form-group select{box-sizing:border-box;max-width:100%}.btn{padding:10px;border-radius:8px;border:1px solid var(--border);background:white;color:var(--primary)}@media(max-width:600px){#tx-fields{grid-template-columns:1fr}}</style><link rel="stylesheet" href="/purchase-receiving.css"></head><body><main class="modal"><div id="tx-fields"></div><input id="tx-transaction-date" value="2026-10-17"><button id="tx-save-btn">Save</button><div id="toast" role="status"></div><div id="confirmation"></div></main><script>
-    let currentLang='en', currentUser={_id:'507f1f77bcf86cd799439099',name:'Operator'}, receiver=true, txType='مشتريات', txDirty=false, _txSaving=false;
+    let currentPage='transaction', currentLang='en', currentUser={_id:'507f1f77bcf86cd799439099',name:'Operator'}, receiver=true, txType='مشتريات', txDirty=false, _txSaving=false;
     let suppliers=[{_id:'507f1f77bcf86cd799439077',name:'Supplier One'}], products=[{_id:'507f1f77bcf86cd799439011',name:'Basket',code:'BASKET-1'}];
     let txItems=[{productId:products[0]._id,qty:2,price:20}], settings={}, txComments=[], txAppliedCodes=[],txManualDiscount=0,txManualDiscountType='fixed',txDiscountType='fixed',txAppliedCodeId='',txAppliedCode='';
     let _pendingHighValueOtpId='',_pendingHighValueOtpAmount=0,_pendingPurchaseOtpId='',_pmSelOpen=null, pendingTxData=null,transactions=[],inventoryCache=[], activeDraftId=null;
@@ -25,12 +27,12 @@ describe('Real new-transaction purchase functions and shared receipt controls in
     function toast(message){qs('#toast').textContent=message;}
     function applyLangIn(){}function _pmEnhanceSelects(){}function _pmSelClose(){}function todayLocalISO(){return '2026-10-17';}
     const ICON=()=>'',_PAY_METHOD_ICONS={};
-    function mergeDuplicateTxItems(){return false;}function validateTx(){return true;}function _isPurchaseOtpRequired(){return false;}function _isOtpRequired(){return false;}function getEffectiveDiscount(){return 0;}function _txCodesTotal(){return 0;}function _needsTxDateConfirm(){return false;}
+    async function suggestPurchaseWarehouse(){}function _txSelectedSupplierId(){return '507f1f77bcf86cd799439077';}function renderTxItems(){qs('#tx-items').innerHTML=txItems.map(()=>'<div class="tx-item-card"><div class="tx-item-info"></div><div class="tx-item-qty"><button>-</button><input><button>+</button></div></div>').join('');window.PurchaseScanReceive?.render();}function calcTxSummary(){}function markTxDirty(){}async function showConfirm(){return true;}function openModal(h){window.modalHtml=h;}function closeModal(){}function _txPurchasePrice(p){return 20;}function loadTransactionSummaries(){return Promise.resolve([]);}function mergeDuplicateTxItems(){return false;}function validateTx(){return true;}function _isPurchaseOtpRequired(){return false;}function _isOtpRequired(){return false;}function getEffectiveDiscount(){return 0;}function _txCodesTotal(){return 0;}function _needsTxDateConfirm(){return false;}
     function showTxConfirmation(body){window.confirmedBody=body;qs('#confirmation').textContent=JSON.stringify(body);}function closeTxConfirmModal(){}
     function _assertNotDuplicateTxSubmit(){window.guardCalls++;}function cashPulseAll(){}function addSupplierLog(){return Promise.resolve();}function fmtN(v){return String(v);}function fmtJ(v){return String(v);}function buildNotifications(){}function buildSidebar(){}function resetTx(){window.savedCalls++;}
     function trySendOrQueue(type,fn){window.queuedCalls++;return fn();}
     async function api(path,options={}){const r=await fetch('/api'+path,{...options,headers:{'Content-Type':'application/json'}});const data=await r.json();if(!r.ok){const error=new Error(data.message);error.status=r.status;throw error;}return data;}
-    </script><script src="/purchase-receiving.js"></script><script>${functions}</script><script>renderTxFields();qs('#tx-supplier').value='Supplier One';qs('#tx-ref').value='100';</script></body></html>`;
+    </script><div id="tx-items"></div><script src="/purchase-receiving.js"></script><script src="/purchase-scan-receive.js"></script><script>${functions}</script><script>renderTxFields();qs('#tx-supplier').value='Supplier One';qs('#tx-ref').value='100';</script></body></html>`;
   beforeAll(async () => {
     expect(functions).toContain('submitManualPurchaseWithUnits');
     browser = await puppeteer.launch({ headless: true, timeout: 20000 });
@@ -41,13 +43,18 @@ describe('Real new-transaction purchase functions and shared receipt controls in
         const data = body ? JSON.parse(body) : null; requests.push({ path: url.pathname, method: req.method, data });
         res.setHeader('Content-Type', 'application/json');
         if (url.pathname.endsWith('/purchases/readiness')) { res.end(JSON.stringify({ writesReady: mode !== 'not-ready' })); return; }
+        if (url.pathname.endsWith('/prelabels/lookup')) { const id = url.searchParams.get('identifier'); if (id !== 'U-000001-1') { res.statusCode = 404; res.end(JSON.stringify({ message: 'not found' })); return; }
+          res.end(JSON.stringify({ unitId: 'a'.repeat(24), productId: '507f1f77bcf86cd799439011', sku: 'BASKET-1', state: 'unused', printCount: 1, manualCode: 'U-000001-1', batchId: 'b'.repeat(24) })); return; }
+        if (url.pathname.endsWith('/purchases/receive-scanned')) {
+          if (mode === 'failure') { res.statusCode = 503; res.end(JSON.stringify({ message: 'Unknown receipt outcome' })); return; }
+          res.end(JSON.stringify({ transaction: { ...data.invoice, _id: '507f1f77bcf86cd799439055' }, receipt: { transactionId: '507f1f77bcf86cd799439055', linkedUnits: 1, createdUnits: 2, lines: [] } })); return; }
         if (url.pathname.endsWith('/purchases/receive')) {
           if (mode === 'denied') { res.statusCode = 403; res.end(JSON.stringify({ message: 'Permission denied' })); return; }
           if (mode === 'failure') { res.statusCode = 503; res.end(JSON.stringify({ message: 'Unknown receipt outcome' })); return; }
           res.end(JSON.stringify({ operationId: 'f'.repeat(64), transaction: { ...data.invoice, _id: '507f1f77bcf86cd799439055' }, receipt: { createdUnits: 2, unitIds: ['one','two'], lines: [{ sku: 'BASKET-1', receivedQty: 2, createdUnits: 2 }] } }));
         } else res.end(JSON.stringify(req.method === 'POST' ? { _id: '507f1f77bcf86cd799439055', ...data } : []));
       } else if (url.pathname === '/') { res.setHeader('Content-Type','text/html; charset=utf-8'); res.end(html); }
-      else if (['/purchase-receiving.js','/purchase-receiving.css'].includes(url.pathname)) { res.setHeader('Content-Type',url.pathname.endsWith('.js')?'application/javascript':'text/css');res.end(readFileSync(publicDir+url.pathname)); }
+      else if (['/purchase-receiving.js','/purchase-receiving.css','/purchase-scan-receive.js'].includes(url.pathname)) { res.setHeader('Content-Type',url.pathname.endsWith('.js')?'application/javascript':'text/css');res.end(readFileSync(publicDir+url.pathname)); }
       else {res.statusCode=404;res.end();}
     });
     await new Promise<void>(done=>server.listen(0,'127.0.0.1',done)); origin='http://127.0.0.1:'+(server.address() as any).port;
@@ -79,6 +86,28 @@ describe('Real new-transaction purchase functions and shared receipt controls in
     expect(posts()).toHaveLength(1);expect(posts()[0].path).toBe('/api/inventory-units/purchases/receive');expect(posts()[0].data.invoice.total).toBe(40);
     expect(await page.evaluate(()=>({queue:(window as any).queuedCalls,guard:(window as any).guardCalls,units:(window as any).receivedSummary.receipt.createdUnits}))).toEqual({queue:0,guard:0,units:2});
   });
+  it('receives by scanning through the real save/confirm functions: one atomic request, one line of scanned + unlabelled pieces, retried identically',async()=>{
+    await page.click('#tx-scan-receive');
+    await page.type('#psr-code','U-000001-1');await page.keyboard.press('Enter');
+    await page.waitForFunction(()=>txItems.length===1&&txItems[0]._prelabelScans?.length===1);
+    await page.type('#psr-code','U-000001-1');await page.keyboard.press('Enter');
+    await page.waitForFunction(()=>/مُسح بالفعل|Already scanned/.test(document.getElementById('tx-purchase-scanner').textContent));
+    expect(await page.evaluate(()=>txItems[0].qty)).toBe(3);
+    expect(posts()).toHaveLength(0);
+    mode='failure';
+    await page.evaluate(async()=>{await (window as any).saveTx();await (window as any).confirmTxSave();});
+    const first=posts().find(r=>r.path.endsWith('/receive-scanned'))!.data;
+    expect(first.invoice.items.map((i:any)=>i.qty)).toEqual([3]);expect(first.scans).toEqual([{lineIndex:0,unitIds:['a'.repeat(24)],packIds:[]}]);
+    expect(first.invoice.total).toBe(60);expect(first.tracking).toMatchObject({physicalPossessionConfirmed:true,inspectionPassed:true});
+    expect(await page.$eval('#toast',el=>el.textContent)).toMatch(/unknown|غير مؤكدة/);
+    mode='';
+    await page.evaluate(async()=>{await (window as any).saveTx();await (window as any).confirmTxSave();});
+    const sent=posts().filter(r=>r.path.endsWith('/receive-scanned'));
+    expect(sent).toHaveLength(2);expect(sent[1].data.operationKey).toBe(first.operationKey);expect(sent[1].data.scans).toEqual(first.scans);
+    expect(posts().filter(r=>r.path==='/api/transactions')).toHaveLength(0);
+    expect(await page.evaluate(()=>({queue:(window as any).queuedCalls,guard:(window as any).guardCalls,summary:/Receipt by scan saved|تم حفظ الاستلام بالمسح/.test((window as any).modalHtml||'')}))).toEqual({queue:0,guard:0,summary:true});
+ 
+  },20000);
   it('keeps ordinary manual purchasing on its existing path when tracking is not selected',async()=>{
     await page.evaluate(async()=>{await (window as any).saveTx();await (window as any).confirmTxSave();});
     expect(posts()).toHaveLength(1);expect(posts()[0].path).toBe('/api/transactions');
@@ -96,7 +125,7 @@ describe('Real new-transaction purchase functions and shared receipt controls in
     await optIn();await page.evaluate(()=>{const po=document.createElement('div');po.innerHTML=(window as any).purchaseReceiptFields();document.body.append(po);});
     expect(await page.evaluate(()=>(window as any).readPurchaseReceiptTracking())).toBeNull();
     await page.click('#tx-track-units');expect(await page.evaluate(()=>(window as any).readPurchaseReceiptTracking('tx'))).toBeNull();
-    await page.click('#tx-track-units');expect(await page.$$eval('#tx-receipt input[type=checkbox]',inputs=>inputs.length)).toBe(1);
+    await page.click('#tx-track-units');expect(await page.$$eval('#tx-receipt #tx-track-units',inputs=>inputs.length)).toBe(1);
     await page.evaluate(()=>{receiver=false;});expect(await page.evaluate(()=>(window as any).purchaseReceiptFields('tx'))).toBe('');
   });
   it('retains an uncertain financial request if a later retry is denied',async()=>{

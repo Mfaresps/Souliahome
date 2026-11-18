@@ -3505,6 +3505,7 @@ body.dark-mode .search-item mark.search-hl{background:rgba(250,204,21,.22);color
 .search-product-meta .search-stock-in{color:#10b981}
 .search-product-meta .search-stock-out{color:#ef4444;font-weight:700;animation:pulse-warning 1.5s ease-in-out infinite}
 .search-product-meta .search-stock-unknown{color:var(--muted)}
+.search-product-meta .search-stock-extra{font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .search-exclude-btn{flex-shrink:0;border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:.72rem;cursor:pointer;line-height:1;transition:all .15s;margin-right:2px}
 .search-exclude-btn:hover{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
 .search-exclude-btn.excluded{background:#f0fdf4;border-color:#86efac;color:#16a34a}
@@ -18288,19 +18289,19 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <div class="card" style="padding:16px;margin-bottom:12px"><div class="grid grid-2" id="tx-fields" style="gap:12px"></div></div>
 
     <!-- Items section -->
-    <div id="tx-items-section" class="card" style="padding:16px;margin-bottom:12px">
+    <div id="tx-items-section" class="card tx-items-hero" style="padding:16px;margin-bottom:12px">
       <div class="tx-section-head">
         <span class="tx-section-title">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-          <span data-i18n="txItemsTitle">الأصناف</span><span id="tx-stock-warehouse" class="wh-stock-context" hidden></span>
+          <span data-i18n="txItemsTitle">الأصناف</span><span id="tx-items-count" class="tx-items-count" hidden></span><span id="tx-stock-warehouse" class="wh-stock-context" hidden></span>
         </span>
         <div class="tx-items-actions">
-          <button class="tx-action-btn" onclick="openProductPicker()">
+          <button class="tx-action-btn is-primary" onclick="openProductPicker()">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span data-i18n="addProduct">إضافة صنف</span>
+            <span data-i18n="txAddItemBtn">إضافة صنف</span>
           </button>
           <button id="tx-disc-btn" class="tx-action-btn" onclick="openDiscountModal()" title="">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="m9 15 6-6"/><circle cx="9.5" cy="9.5" r=".6" fill="currentColor"/><circle cx="14.5" cy="14.5" r=".6" fill="currentColor"/></svg>
             <span data-i18n="txDiscountBtn">خصم</span>
             <svg id="tx-disc-lock-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:none;opacity:.7;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
           </button>
@@ -18310,6 +18311,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           </button>
         </div>
       </div>
+
+      <!-- How the purchase pieces get their barcodes (purchases only; filled by renderTxFields) -->
+      <div id="tx-receive-mode"></div>
 
       <!-- Smart discount suggestion banner (above items, injected by JS) -->
       <div id="tx-discount-suggestion-banner" style="display:none"></div>
@@ -18988,22 +18992,12 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <!-- ── Unified Filter & Sort Toolbar (list tab) ── -->
   <div class="fx-toolbar" id="inv-toolbar">
       <div class="fx-toolbar-row">
-        <button class="fx-btn active" data-status="all" onclick="setInvFilter('all',this)">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          <span data-i18n="filterAll">الكل</span> <span class="fx-btn-count" id="inv-count-all">0</span>
-        </button>
-        <button class="fx-btn" data-status="ok" onclick="setInvFilter('ok',this)">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-          <span data-i18n="invAvailable">متوفر</span> <span class="fx-btn-count" id="inv-count-ok">0</span>
-        </button>
-        <button class="fx-btn" data-status="low" onclick="setInvFilter('low',this)">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span data-i18n="invLow">منخفض</span> <span class="fx-btn-count" id="inv-count-low">0</span>
-        </button>
-        <button class="fx-btn" data-status="zero" onclick="setInvFilter('zero',this)">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-          <span data-i18n="invOut">نفد</span> <span class="fx-btn-count" id="inv-count-zero">0</span>
-        </button>
+        <button class="fx-btn active invo-tab invo-tab-all" data-status="all" onclick="setInvFilter('all',this)"><span class="invo-tab-dot"></span><span data-i18n="filterAll">الكل</span> <span class="fx-btn-count" id="inv-count-all">0</span></button>
+        <button class="fx-btn invo-tab invo-tab-ready" data-status="ready" onclick="setInvFilter('ready',this)"><span class="invo-tab-dot"></span><span data-i18n="invTabReady">صالح للبيع</span> <span class="fx-btn-count" id="inv-count-ready">0</span></button>
+        <button class="fx-btn invo-tab invo-tab-reorder" data-status="reorder" onclick="setInvFilter('reorder',this)"><span class="invo-tab-dot"></span><span data-i18n="invTabReorder">يحتاج طلب شراء</span> <span class="fx-btn-count" id="inv-count-reorder">0</span></button>
+        <button class="fx-btn invo-tab invo-tab-issue" data-status="issue" onclick="setInvFilter('issue',this)"><span class="invo-tab-dot"></span><span data-i18n="invTabIssue">يحتاج مراجعة</span> <span class="fx-btn-count" id="inv-count-issue">0</span></button>
+        <button class="fx-btn invo-tab invo-tab-negative" data-status="negative" onclick="setInvFilter('negative',this)"><span class="invo-tab-dot"></span><span data-i18n="invTabNegative">رصيد سالب</span> <span class="fx-btn-count" id="inv-count-negative">0</span></button>
+        <button class="fx-btn invo-tab invo-tab-inactive" data-status="inactive" onclick="setInvFilter('inactive',this)"><span class="invo-tab-dot"></span><span data-i18n="invTabInactive">متوقف</span> <span class="fx-btn-count" id="inv-count-inactive">0</span></button>
       </div>
       <div class="fx-toolbar-row">
         <div class="fx-search">
@@ -19018,7 +19012,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <div class="fx-sort-wrap">
           <button class="fx-btn" onclick="toggleFxSortMenu('inv',event)" id="inv-sort-btn">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-            <span id="inv-sort-label">ترتيب أبجدي ↑</span>
+            <span id="inv-sort-label">الصالح للبيع أولًا</span>
           </button>
           <div class="fx-sort-menu" id="inv-sort-menu"></div>
         </div>
@@ -19066,9 +19060,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <!-- /.inv-sticky-head -->
 
   <div id="inv-panel-list">
+    <div id="inv-stale-notice" role="status" hidden></div>
     <!-- ── Desktop Table ── -->
     <div class="table-card">
-      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">SKU</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="colOpeningBal">الرصيد الافتتاحي</th><th data-i18n="colPurchases" data-i18n-title="colPurchasesTip" title="من المورد فقط">المشتريات</th><th data-i18n="colReturnToStock" data-i18n-title="colReturnToStockTip" title="استرجاع أو استبدال — إدخال للمخزن وليس شراء">إرجاع للمخزن</th><th data-i18n="colSales">المبيعات</th><th data-i18n="colCurrentBal">الرصيد الحالي</th><th data-i18n="invActivationStatus">Product status</th><th data-i18n="invStockStatus">Stock status</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+      <div class="overflow-x"><table id="inv-table"><thead><tr><th style="width:60px" data-i18n="colImage">صورة</th><th data-i18n="colCode">SKU</th><th data-i18n="product">الصنف</th><th data-i18n="colSellPrice">سعر البيع</th><th data-i18n="colBuyPrice" class="inv-buyprice-col">سعر الشراء</th><th data-i18n="invColReady" data-i18n-title="invColReadyTip" title="القطع التي يمكن بيعها الآن">صالح للبيع</th><th data-i18n="invColReserved" data-i18n-title="invColReservedTip" title="مباعة في فواتير مؤكدة وتنتظر شركة الشحن">محجوز لطلبات</th><th data-i18n="invColIssue" data-i18n-title="invColIssueTip" title="تالفة أو مفقودة أو بانتظار الفحص">يحتاج مراجعة</th><th data-i18n="invColIncoming" data-i18n-title="invColIncomingTip" title="أوامر شراء لم تُستلم بعد">وارد</th><th data-i18n="invStockStatus">Stock status</th><th class="invo-col-actions"><span class="iu-visually-hidden" data-i18n="invColActions">الإجراءات</span></th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
     </div>
 
     <!-- ── Mobile Card List ── -->
@@ -25096,7 +25091,7 @@ let invFilter = 'all';
 let prodFilter = 'all';
 // Unified filter/sort state for inventory + products pages
 const fxState = {
-  inv: { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '', color: new Set(), material: new Set(), size: new Set(), feature: new Set() },
+  inv: { sort: 'ready-desc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '', color: new Set(), material: new Set(), size: new Set(), feature: new Set() },
   // Products open newest first (owner's default, Nov 12, 2026) — «إعادة ضبط الكل» returns to it.
   prod: { sort: 'date-desc', supplier: new Set(), sellMin: '', sellMax: '', buyMin: '', buyMax: '', category: new Set(), collection: new Set(), color: new Set(), material: new Set(), size: new Set(), feature: new Set() },
   mov: { sort: 'date-desc', operation: new Set(), employee: new Set(), method: new Set(), status: new Set(), bosta: new Set(), pickup: new Set(), dateFrom: '', dateTo: '', dateField: 'transactionDate', amountMin: '', amountMax: '', discountOnly: false, discountCode: '' },
@@ -27487,7 +27482,7 @@ const TRANSLATIONS = {
   dashboardCreateBtn:{ar:'＋ إنشاء ▾',en:'＋ Create'},userOnlineStatus:{ar:'حالة المستخدمين',en:'User Status'},
   updating:{ar:'جاري التحديث',en:'Updating'},loadingUsers:{ar:'جاري تحميل المستخدمين...',en:'Loading users...'},
   treasuryPosition:{ar:'الوضع النقدي',en:'Treasury Position'},txSales:{ar:'مبيعات',en:'Sales'},
-  txPurchases:{ar:'مشتريات',en:'Purchases'},txReturns:{ar:'مرتجعات',en:'Returns'},addProduct:{ar:'+ إضافة صنف',en:'+ Add product'},
+  txPurchases:{ar:'مشتريات',en:'Purchases'},txReturns:{ar:'مرتجعات',en:'Returns'},addProduct:{ar:'+ إضافة صنف',en:'+ Add product'},txAddItemBtn:{ar:'إضافة صنف',en:'Add item'},txUploadInvoicePhoto:{ar:'رفع صورة الفاتورة',en:'Upload invoice photo'},
   searchProducts:{ar:'بحث أصناف',en:'Search products'},invoiceDiscount:{ar:'خصم على الفاتورة',en:'Invoice discount'},
   comments:{ar:'التعليقات',en:'Comments'},addComment:{ar:'أضف تعليق...',en:'Add comment...'},addCommentBtn:{ar:'إضافة',en:'Add'},
   noComments:{ar:'لا توجد تعليقات',en:'No comments'},saveTransaction:{ar:'حفظ المعاملة',en:'Save Transaction'},
@@ -28725,6 +28720,7 @@ const TRANSLATIONS = {
   sdepExchangeShipped:{ar:'أُنشئت بوليصة الاستبدال؛ تحصّل بوسطة باقي الفرق مع الشحنة',en:'The exchange waybill exists; Bosta collects the rest of the difference with the shipment'},
   sdepExchangeCollected:{ar:'تم تحصيل فرق الاستبدال',en:'The exchange difference has been collected'},
   sdepBundleShipped:{ar:'الطلب يُشحن مع شحنة استبدال أُنشئت بوليصتها؛ لا يُضاف عربون الآن',en:'This order ships inside an exchange waybill that already exists; no deposit can be added now'},
+  asReplacementCollectBlocked:{ar:'يُحصَّل باقي فرق الاستبدال من ملف الاستبدال: مع شحنة بوسطة أو استلام مباشر',en:'The rest of the exchange difference is collected from the exchange case: with the Bosta shipment or a direct collection'},
   asOpenCaseTitle:{ar:'فتح ملف الاسترجاع / الاستبدال',en:'Open the return / exchange case'},
   asBundleCollectBlocked:{ar:'يُحصَّل متبقي هذا الطلب مع شحنة الاستبدال {ref} في تسوية بوسطة',en:'This order\'s remaining is collected with exchange shipment {ref} in its Bosta settlement'},
   sdepCarrier:{ar:'الطلب في تسوية شركة الشحن — لا يُضاف عربون الآن',en:'This order is in a carrier settlement — no deposit now'},
@@ -28771,6 +28767,9 @@ const TRANSLATIONS = {
   ivCashRefund:{ar:'رد نقدي',en:'Cash refund'},
   ivSupplierCredit:{ar:'رصيد لك عند المورد',en:'Credit with supplier'},
   ivCreditSettled:{ar:'مسدد من رصيدك عند المورد',en:'Settled from your supplier credit'},
+  ivExchCredit:{ar:'رصيد المنتج المرتجع',en:'Returned item credit'},
+  ivExchCreditNote:{ar:'قيمة القطعة الراجعة، مدفوعة في الفاتورة الأصلية #{ref} — تُخصم من البديل ولا تُحصَّل مرة أخرى',en:'The returned piece\'s value, already paid on original invoice #{ref} — deducted from the replacement, never collected again'},
+  ivExchCollected:{ar:'حُصِّل مع شحنة الاستبدال',en:'Collected with the exchange shipment'},
   ivCreditNoCashNote:{ar:'لم يخرج أي مبلغ من الخزنة — خُصمت قيمة الفاتورة من رصيدك المتاح لدى المورد.',en:'No money left the vault — the invoice was deducted from your available credit with this supplier.'},
   ivCreditPartialNote:{ar:'جزء من قيمة الفاتورة سُدّد من رصيدك عند المورد ولم يخرج من الخزنة.',en:'Part of this invoice was settled from your supplier credit and did not leave the vault.'},
   ivPaidFromCredit:{ar:'سداد من الرصيد',en:'Paid from credit'},
@@ -29446,6 +29445,14 @@ const TRANSLATIONS = {
 
   // Sort options
   sortNameAsc:{ar:'الاسم: أ ← ي',en:'Name: A → Z'},
+  sortReadyDesc:{ar:'الصالح للبيع أولًا',en:'Ready to sell first'},
+  invTabReady:{ar:'صالح للبيع',en:'Ready to sell'},invTabReorder:{ar:'يحتاج طلب شراء',en:'Needs a purchase order'},
+  invTabIssue:{ar:'يحتاج مراجعة',en:'Needs attention'},invTabNegative:{ar:'رصيد سالب',en:'Negative balance'},invTabInactive:{ar:'متوقف',en:'Discontinued'},
+  invColReady:{ar:'صالح للبيع',en:'Ready to sell'},invColReadyTip:{ar:'القطع التي يمكن بيعها الآن',en:'Pieces you can sell now'},
+  invColReserved:{ar:'محجوز لطلبات',en:'Reserved for orders'},invColReservedTip:{ar:'مباعة في فواتير مؤكدة وتنتظر شركة الشحن',en:'Sold on confirmed invoices, waiting for the carrier'},
+  invColIssue:{ar:'يحتاج مراجعة',en:'Needs attention'},invColIssueTip:{ar:'تالفة أو مفقودة أو بانتظار الفحص',en:'Damaged, lost or awaiting inspection'},
+  invColIncoming:{ar:'وارد',en:'Incoming'},invColIncomingTip:{ar:'أوامر شراء لم تُستلم بعد',en:'Purchase orders not received yet'},
+  invColActions:{ar:'الإجراءات',en:'Actions'},
   sortNameDesc:{ar:'الاسم: ي ← أ',en:'Name: Z → A'},
   sortSellPriceAsc:{ar:'سعر البيع: من الأقل',en:'Sale price: lowest first'},
   sortSellPriceDesc:{ar:'سعر البيع: من الأعلى',en:'Sale price: highest first'},
@@ -30234,7 +30241,11 @@ const TRANSLATIONS = {
   gsItemsCount:{ar:'{n} صنف',en:'{n} item(s)'},
   gsStockUnknown:{ar:'مخزون: —',en:'Stock: —'},
   gsStockOut:{ar:'نفد',en:'Out of stock'},
-  gsStockIn:{ar:'متوفر: {n}',en:'In stock: {n}'},
+  gsStockIn:{ar:'في المخزن: {n}',en:'In stock: {n}'},
+  gsReadyN:{ar:'صالح للبيع: {n}',en:'Ready to sell: {n}'},gsNoReady:{ar:'لا يوجد صالح للبيع',en:'Nothing ready to sell'},
+  gsReservedN:{ar:'محجوز {n}',en:'reserved {n}'},gsIssueN:{ar:'يحتاج مراجعة {n}',en:'needs attention {n}'},gsIncomingN:{ar:'وارد {n}',en:'incoming {n}'},
+  gsNegative:{ar:'رصيد سالب {n}',en:'Negative balance {n}'},
+  gsStockTip:{ar:'في المخزن {onHand}: صالح للبيع {ready}، محجوز لطلبات {reserved}، يحتاج مراجعة {issue}',en:'In stock {onHand}: ready to sell {ready}, reserved for orders {reserved}, needs attention {issue}'},
   gsBuyPrice:{ar:'شراء:',en:'Cost:'},
   gsAvgCost:{ar:'متوسط:',en:'Avg cost:'},
   gsInactive:{ar:'غير مفعّل',en:'Inactive'},
@@ -31940,10 +31951,12 @@ const TRANSLATIONS = {
   expFormPayMethod:{ar:'طريقة الدفع',en:'Payment method'},
   expFormNotesPh:{ar:'أي ملاحظات إضافية...',en:'Any additional notes...'},
   expFormAttachSection:{ar:'صورة الفاتورة (اختياري)',en:'Invoice image (optional)'},
-  expFormAttachLabel:{ar:'رابط الصورة المباشر',en:'Direct image link'},
+  expFormAttachLabel:{ar:'صورة الفاتورة أو رابطها',en:'Receipt photo or link'},
   expFormAttachPh:{ar:'https://... رابط مباشر للصورة أو الفاتورة',en:'https://... direct link to the image or invoice'},
-  expFormAttachHint:{ar:'أدخل رابطاً مباشراً للصورة (jpg/png) أو المستند — ستظهر في تفاصيل الفاتورة',en:'Enter a direct link to the image (jpg/png) or document — it will show in the invoice details'},
+  expFormAttachHint:{ar:'ارفع صورة الفاتورة (تُضغط وتُحفظ على السحابة) أو أدخل رابطًا مباشرًا — تظهر في تفاصيل المصروف',en:'Upload the receipt photo (compressed and stored in the cloud) or enter a direct link — it shows in the expense details'},
   expFormAttachAlt:{ar:'مرفق الفاتورة',en:'Invoice attachment'},
+  expUploadPhoto:{ar:'رفع صورة',en:'Upload photo'},
+  expRemovePhoto:{ar:'إزالة الصورة',en:'Remove photo'},
   expFormView:{ar:'عرض',en:'View'},
   expFormReminderLabel:{ar:'تذكير بالموافقة',en:'Approval reminder'},
   expFormReminderSub:{ar:'إرسال تذكير في حال عدم الموافقة',en:'Send a reminder if it is not approved'},
@@ -36202,6 +36215,7 @@ function connectSocket() {
   });
   socket.on('tx:updated', async (payload) => {
     _transactionLiveRevision++;
+    window.InvOverview?.refreshSoon();
     if (!payload?.tx || payload.tx.type === 'مبيعات' || payload.tx.shopifyOrderId)
       _spScheduleLiveOrderRefresh();
     refreshTransactionOverviewSoon();
@@ -36311,6 +36325,7 @@ function connectSocket() {
     // than recalculating all stock again for every successful order in that batch.
     if (window._souliaShopifyBatch) return;
     try { inventoryCache = await api('/transactions/inventory'); } catch(_) {}
+    window.InvOverview?.refreshSoon();
     if (currentPage === 'inventory') renderInventory?.();
     if (currentPage === 'products') renderProducts?.();
     if (currentPage === 'dashboard' && isAdmin()) loadDashboard().catch(() => {});
@@ -40635,7 +40650,8 @@ let _pendingTransactionRoute = null;
 let _pendingShopifyRoute = null;
 const _transactionDependentPages = new Set(['transaction',
   'approvals', 'reports', 'promotions',
-  'supplier-profile', 'expenses', 'vault', 'complaints']);
+  // suppliers: each card counts its purchase invoices, and the startup overview carries none.
+  'suppliers', 'supplier-profile', 'expenses', 'vault', 'complaints']);
 const _startupPageDependencies = {
   transaction: [0, 2, 12],
   barcodes: [0, 12],
@@ -40927,7 +40943,7 @@ function _routeCurrentHash() {
   const _hashPage = _pageIdFromSlug(_rawHash.split('/')[0]);
   if (_hashPage === 'supplier-profile') {
     const _spId = _rawHash.split('/')[1];
-    if (_spId) { currentSupplierId = _spId; _doNavigateTo('supplier-profile', false); return; }
+    if (_spId) { currentSupplierId = _spId; navigateTo('supplier-profile', false); return; }
   }
   if (_hashPage === 'product') {
     const _pid = decodeURIComponent(_rawHash.split('/')[1] || '');
@@ -44236,6 +44252,16 @@ function isMovExchangeReturn(tx) {
 function isMovExchangeSale(tx) {
   return tx.type === 'مبيعات' && (tx.afterSales?.role === 'replacement' || (tx.ref || '').endsWith('-EXC') || (tx.notes || '').includes('بيع استبدال'));
 }
+/** An exchange replacement's settlement: the returned piece's value already paid on the original invoice
+ *  (`credit`, applied to this sale — never cash), the cash paid on it as deposits on the difference, and
+ *  what the exchange case collected with its shipment. `deposit` = credit + cash + collected. */
+function _exchCreditOf(tx) {
+  if (!tx || tx.type !== 'مبيعات' || tx.afterSales?.role !== 'replacement') return null;
+  const credit = Math.max(0, Number(tx.afterSales.creditApplied) || 0);
+  const cash = (tx.deposits || []).filter(d => !d.reversed && d.source === 'deposit-receipt').reduce((s, d) => s + (Number(d.amount) || 0), 0);
+  const collected = Math.max(0, Number(tx.afterSales.collection?.amount) || 0);
+  return { credit, cash, collected, originalRef: tx.afterSales.originalRef || '', caseRef: tx.afterSales.caseRef || '' };
+}
 function isMovPlainReturn(tx) {
   return (tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات') && !isMovExchangeReturn(tx);
 }
@@ -44650,6 +44676,7 @@ function setTxType(type, opts) {
     : `<svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span data-i18n="saveTransaction">${t('saveTransaction')}</span>`;
   renderTxFields(); calcTxSummary();
   window.SalesScanner?.render();
+  window.PurchaseScanReceive?.render();
   if (txType === 'مبيعات') {
     const _pw3 = qs('#pay-method-btns'); if (_pw3) _pw3._userPicked = false;
     const _pw3Sel = qs('#tx-payment'); if (_pw3Sel) _pw3Sel.value = '';
@@ -44803,28 +44830,28 @@ function renderTxFields() {
     </div>`;
   } else if (txType === 'مشتريات') {
     html = `
-      <div class="form-group"><label>${t('txSupplier')} *</label><select id="tx-supplier" onchange="_onNewSupplierChange(this)"><option value="">${t('txSelectSupplier')}</option>${suppliers.map(s => `<option value="${esc(s.name)}" data-id="${esc(s._id||'')}" data-phone="${esc(s.phone||'')}">${esc(s.name)}</option>`).join('')}</select><div class="field-hint">${t('txSupplierHint')}</div><div class="field-error" id="err-supplier"></div></div>
-      <div class="form-group"><label>${t('txSupplierPhone')}</label><input type="tel" id="tx-phone" placeholder="${t('txSupplierPhoneFill')}" maxlength="11" readonly tabindex="-1" style="background:var(--surface2);color:var(--muted);cursor:default;pointer-events:none"><div class="field-hint">${t('txSupplierPhoneHint')}</div></div>
-      <div class="form-group"><label>${t('txInvoiceNo')} *</label>
+      <div class="form-group pf-supplier"><label>${t('txSupplier')} *</label><select id="tx-supplier" onchange="_onNewSupplierChange(this)"><option value="">${t('txSelectSupplier')}</option>${suppliers.map(s => `<option value="${esc(s.name)}" data-id="${esc(s._id||'')}" data-phone="${esc(s.phone||'')}">${esc(s.name)}</option>`).join('')}</select><div class="pf-phone" title="${esc(t('txSupplierPhone'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><input type="tel" id="tx-phone" placeholder="" maxlength="11" readonly tabindex="-1" aria-label="${esc(t('txSupplierPhone'))}" dir="ltr"></div><div class="field-error" id="err-supplier"></div></div>
+      <div class="form-group pf-ref"><label>${t('txInvoiceNo')} *</label>
         <div class="pur-ref-row">
           <div class="input-with-prefix"><span class="prefix">#</span><input type="text" id="tx-ref" placeholder="${t('txDigitsOnly')}" inputmode="numeric" autocomplete="off" oninput="restrictTxRefDigits(this)"></div>
           <button type="button" class="pur-ref-gen" onclick="suggestPurchaseRef()" title="${t('txSuggestPurRefTitle')}" aria-label="${t('txSuggestPurRef')}">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8L19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2L19 5"/><path d="M3 21l9-9"/><path d="M12.2 6.2L11 5"/></svg>
           </button>
         </div>
-        <div class="field-hint">${t('txInvoiceNoHint')}</div><div class="field-error" id="err-ref"></div></div>
-      <div class="form-group" style="grid-column:1/-1">
-        <label>${t('txSupplierInvoices')} <span style="font-weight:400;color:var(--muted)">${t('txOptionalMulti')}</span></label>
-        <div id="tx-invoice-imgs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
-        <button type="button" onclick="_addInvoiceImgRow()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:.83rem;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          ${t('txAddInvoiceLink')}
-        </button>
-        <div class="field-hint">${t('txInvoiceLinkHint')}</div>
+        <div class="field-error" id="err-ref"></div></div>
+      <div class="form-group pf-imgs"><label title="${esc(t('txOptionalMulti'))}">${t('txSupplierInvoices')} <span class="pf-optional">${currentLang === 'en' ? '(optional)' : '(اختياري)'}</span></label>
+        <div class="pf-imgs-actions">
+          <button type="button" class="pf-imgs-btn" onclick="InvoiceImageUpload.pick(_addInvoiceImgRow)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            <span>${t('txUploadInvoicePhoto')}</span>
+          </button>
+          <button type="button" class="pf-imgs-link" onclick="_addInvoiceImgRow('', true)" title="${esc(t('txAddInvoiceLink'))}" aria-label="${esc(t('txAddInvoiceLink'))}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button>
+        </div>
       </div>
-      <div class="form-group"><label>${t('txPaymentAccount')} *</label><select id="tx-account"><option value="كاش">${t('paymentMethodCash')}</option><option value="فودافون كاش">${t('paymentMethodVodafoneCash')}</option><option value="Instapay">${t('paymentMethodInstapay')}</option><option value="تحويل بنكي">${t('paymentMethodBankTransfer')}</option></select><div class="field-hint">${t('txPaymentAccountHint')}</div></div>
-      <div class="form-group"><label>${t('txDepositAdvance')}</label><input type="text" inputmode="numeric" id="tx-deposit" value="0" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,'');calcTxSummary()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()" placeholder="0"><div class="field-hint" id="tx-deposit-hint">${t('txDepositAdvanceHint')}</div><div id="tx-debt-ack-row" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(168,107,31,.08);border:1px dashed var(--orange);border-radius:8px;align-items:flex-start;gap:8px"><input type="checkbox" id="tx-debt-ack" style="margin-top:3px;accent-color:var(--orange);width:16px;height:16px;flex-shrink:0"><label for="tx-debt-ack" style="font-size:.8rem;color:var(--text);line-height:1.5;cursor:pointer">${t('txDebtAckLabel')}</label></div></div>
-      <div class="form-group" id="tx-credit-row" style="display:none;grid-column:1/-1;background:rgba(16,185,129,.08);border:1px dashed var(--green);border-radius:8px;padding:10px 12px">
+      <div id="tx-invoice-imgs-list" class="pf-imgs-list"></div>
+      <div class="form-group pf-account"><label>${t('txPaymentAccount')} *</label><select id="tx-account"><option value="كاش">${t('paymentMethodCash')}</option><option value="فودافون كاش">${t('paymentMethodVodafoneCash')}</option><option value="Instapay">${t('paymentMethodInstapay')}</option><option value="تحويل بنكي">${t('paymentMethodBankTransfer')}</option></select></div>
+      <div class="form-group pf-deposit"><label>${t('txDepositAdvance')}</label><input type="text" inputmode="numeric" id="tx-deposit" value="0" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,'');calcTxSummary()" onkeydown="if(event.key==='.'||event.key===',')event.preventDefault()" placeholder="0"><div class="field-hint" id="tx-deposit-hint">${t('txDepositAdvanceHint')}</div><div id="tx-debt-ack-row" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(168,107,31,.08);border:1px dashed var(--orange);border-radius:8px;align-items:flex-start;gap:8px"><input type="checkbox" id="tx-debt-ack" style="margin-top:3px;accent-color:var(--orange);width:16px;height:16px;flex-shrink:0"><label for="tx-debt-ack" style="font-size:.8rem;color:var(--text);line-height:1.5;cursor:pointer">${t('txDebtAckLabel')}</label></div></div>
+      <div class="form-group pf-credit" id="tx-credit-row" style="display:none;grid-column:1/-1;background:rgba(16,185,129,.08);border:1px dashed var(--green);border-radius:8px;padding:10px 12px">
         <label style="margin-bottom:6px">${t('txSupplierCreditLabel')}</label>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span id="tx-credit-available" style="font-weight:700;color:var(--green);font-size:.95rem"></span>
@@ -44836,7 +44863,9 @@ function renderTxFields() {
         </div>
         <div class="field-hint">أدخل المبلغ المطلوب خصمه من رصيدك المتاح عند هذا المورد قبل حساب المتبقي</div>
       </div>`;
-    html += window.purchaseReceiptFields?.('tx') || '';
+    const receiveSlot = qs('#tx-receive-mode');
+    if (receiveSlot) receiveSlot.innerHTML = window.purchaseReceiptFields?.('tx') || '';
+    else html += window.purchaseReceiptFields?.('tx') || '';
   } else {
     html = `
       <div class="card" style="grid-column:1/-1;padding:12px 14px;font-size:.82rem;background:var(--surface2);border-right:3px solid var(--accent);margin-bottom:4px">
@@ -44888,6 +44917,8 @@ function renderTxFields() {
       </div>`;
   }
   if (_pmSelOpen?.sel.closest('#tx-fields')) _pmSelClose();
+  if (txType !== 'مشتريات' && qs('#tx-receive-mode')) qs('#tx-receive-mode').innerHTML = '';
+  qs('#tx-fields').classList.toggle('is-purchase', txType === 'مشتريات');
   qs('#tx-fields').innerHTML = html;
   // The markup above carries data-i18n labels, but applyLang()'s document sweep already
   // ran before this render — re-apply them scoped to the subtree we just injected.
@@ -45047,6 +45078,7 @@ function mergeDuplicateTxItems(silent) {
       const firstIdx = seen.get(item.productId);
       txItems[firstIdx].qty += item.qty || 1;
       if (item._saleScans?.length) (txItems[firstIdx]._saleScans ||= []).push(...item._saleScans);
+      if (item._prelabelScans?.length) (txItems[firstIdx]._prelabelScans ||= []).push(...item._prelabelScans);
       if (item._saleSkip) txItems[firstIdx]._saleSkip = (txItems[firstIdx]._saleSkip || 0) + item._saleSkip;
       toRemove.push(i);
       merged = true;
@@ -45080,6 +45112,7 @@ function suggestPurchaseWarehouse(product) {
 }
 function addTxItem(productId) {
   if (!productId) { openProductPicker(); return; }
+  if (txType === 'مشتريات' && window.PurchaseScanReceive?.active()) { window.PurchaseScanReceive.addManual(productId); return; }
   _dsbDismissed = false; // re-show banner when items change
   const p = products.find(x => x._id === productId);
   if (!p) { toast(currentLang==='en'?'Item not found — select again from the list':'الصنف غير موجود — أعد الاختيار من القائمة', true); return; }
@@ -45103,15 +45136,17 @@ function addTxItem(productId) {
   }
   renderTxItems(); calcTxSummary();
 }
-function removeTxItem(i) { _dsbDismissed = false; txItems.splice(i, 1); renderTxItems(); calcTxSummary(); }
+function removeTxItem(i) { _dsbDismissed = false; txItems.splice(i, 1); renderTxItems(); calcTxSummary(); window.PurchaseScanReceive?.changed(); }
 
 function adjustTxItemQty(i, delta) {
   if (!txItems[i]) return;
   const newQty = Math.max(1, (txItems[i].qty || 1) + delta);
+  if (newQty < (window.PurchaseScanReceive?.minimum(txItems[i]) || 0)) { toast(currentLang === 'en' ? 'Remove a scanned code before lowering below the scanned pieces.' : 'أزل كود القطعة الممسوحة أولاً لتقليل الكمية عن عدد القطع الممسوحة.', true); return; }
   if (!validateItemStock(txItems[i].productId, newQty, i)) return;
   txItems[i].qty = newQty;
   renderTxItems();
   calcTxSummary();
+  window.PurchaseScanReceive?.changed();
 }
 
 /**
@@ -45161,6 +45196,13 @@ function productThumbHtml(url, alt, sizeClass) {
 
 function renderTxItems() {
   window.SalesScanner?.render();
+  const _countEl = qs('#tx-items-count');
+  if (_countEl) {
+    const lines = txItems.filter(it => it.productId), pieces = lines.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
+    _countEl.hidden = !lines.length;
+    _countEl.textContent = currentLang === 'en' ? `${lines.length} · ${pieces} pcs` : `${lines.length} · ${pieces} قطعة`;
+  }
+  window.PurchaseScanReceive?.render();
   updateSaleWarehouseCaption();
   const host = qs('#tx-items');
   if (!host) return;
@@ -45299,6 +45341,7 @@ function renderTxItems() {
 
   host.innerHTML = dupBanner + counterHtml + `<div class="tx-items-table">${headerHtml}${rowsHtml}</div>`;
   window.SalesScanner?.render();
+  window.PurchaseScanReceive?.render();
   _renderDiscountSuggestionBanner();
   // Show/hide "Show Offers" button depending on whether suggestions exist
   const offersBtn = qs('#tx-show-offers-btn');
@@ -45571,6 +45614,8 @@ function validateAllItemsStock() {
 }
 
 function txItemChanged(i, field, val) { markTxDirty();
+  if (field === 'qty' && Number(val) > 0 && Number(val) < (window.PurchaseScanReceive?.minimum(txItems[i]) || 0)) { toast(currentLang === 'en' ? 'Remove a scanned code before lowering below the scanned pieces.' : 'أزل كود القطعة الممسوحة أولاً لتقليل الكمية عن عدد القطع الممسوحة.', true); renderTxItems(); return; }
+  if (window.PurchaseScanReceive?.active()) setTimeout(() => window.PurchaseScanReceive.changed(), 0);
   if (field === 'productId') {
     txItems[i].productId = val;
     const p = products.find(x => x._id === val);
@@ -45743,7 +45788,8 @@ function filterTxPicker(q) {
   listEl.innerHTML = list.map(p => {
     const stock = getTxAvailableStock(p._id);
     const price = txType === 'مشتريات' ? _txPurchasePrice(p) : _salePriceOf(p);
-    const existing = txItems.find(it => it.productId === p._id);
+    // Same line the picker's +/− edit — in «receive by scanning» the «without label» line, not the scanned one.
+    const existing = txItems[_txPickerLineIndex(p._id)];
     const qty = existing ? existing.qty : 0;
     const isOut = stock === 0;
     const stockBadge = pickerStockBadge(p._id);
@@ -45773,10 +45819,16 @@ function _txPickerMaxFor(productId) {
 }
 
 /** Re-renders the transaction form + this row only (no full picker rebuild → no flash). */
+/** The line the product picker edits — one line per product (in «receive by scanning» its extra pieces are «without label»). */
+function _txPickerLineIndex(productId) {
+  return txItems.findIndex(it => it.productId === productId);
+}
+
 function _txPickerSync(productId) {
   renderTxItems();
   calcTxSummary();
-  const qty = txItems.find(it => it.productId === productId)?.qty || 0;
+  window.PurchaseScanReceive?.changed();
+  const qty = txItems[_txPickerLineIndex(productId)]?.qty || 0;
   const opts = { fnPrefix: 'picker', max: _txPickerMaxFor(productId) };
   if (!updatePickerRowInPlace(productId, qty, opts)) filterTxPicker(qs('#tx-picker-q')?.value || '');
 }
@@ -45786,7 +45838,7 @@ function pickerAddItem(productId) { markTxDirty();
   if (!p) return;
   const price = txType === 'مشتريات' ? _txPurchasePrice(p) : _salePriceOf(p);
   _dsbDismissed = false;
-  const existing = txItems.find(it => it.productId === productId);
+  const existing = txItems[_txPickerLineIndex(productId)];
   if (existing) {
     if (txType === 'مبيعات') {
       const stock = getTxAvailableStock(productId);
@@ -45803,9 +45855,10 @@ function pickerAddItem(productId) { markTxDirty();
 }
 
 function pickerChangeQty(productId, delta) { markTxDirty();
-  const idx = txItems.findIndex(it => it.productId === productId);
-  if (idx === -1) return;
+  const idx = _txPickerLineIndex(productId);
+  if (idx === -1) { if (delta > 0) pickerAddItem(productId); return; }
   const newQty = txItems[idx].qty + delta;
+  if (newQty < (window.PurchaseScanReceive?.minimum(txItems[idx]) || 0)) { toast(currentLang === 'en' ? 'Remove a scanned code before lowering below the scanned pieces.' : 'أزل كود القطعة الممسوحة أولاً لتقليل الكمية عن عدد القطع الممسوحة.', true); _txPickerSync(productId); return; }
   if (txType === 'مبيعات' && newQty > 0 && newQty < (window.SalesScanner?.minimum(txItems[idx]) || 0)) {
     toast(currentLang === 'en' ? 'Remove a scanned piece code before reducing its quantity.' : 'أزل كود القطعة الممسوحة أولاً لتقليل كميتها.', true); return;
   }
@@ -45829,10 +45882,14 @@ function pickerChangeQty(productId, delta) { markTxDirty();
 
 /** Manual quantity entry — clamps to available stock on sales, 0 removes the line. */
 function pickerSetQty(productId, raw) { markTxDirty();
-  const idx = txItems.findIndex(it => it.productId === productId);
-  if (idx === -1) return;
+  let idx = _txPickerLineIndex(productId);
+  if (idx === -1) {
+    if (!((parsePickerQty(raw) || 0) > 0)) return;
+    pickerAddItem(productId); idx = _txPickerLineIndex(productId); if (idx === -1) return;
+  }
   let qty = parsePickerQty(raw);
   if (qty === null) { _txPickerSync(productId); return; }
+  if (qty < (window.PurchaseScanReceive?.minimum(txItems[idx]) || 0)) { toast(currentLang === 'en' ? 'Remove a scanned code before lowering below the scanned pieces.' : 'أزل كود القطعة الممسوحة أولاً لتقليل الكمية عن عدد القطع الممسوحة.', true); _txPickerSync(productId); return; }
   if (txType === 'مبيعات' && qty > 0 && qty < (window.SalesScanner?.minimum(txItems[idx]) || 0)) {
     toast(currentLang === 'en' ? 'Remove a scanned piece code before reducing its quantity.' : 'أزل كود القطعة الممسوحة أولاً لتقليل كميتها.', true); _txPickerSync(productId); return;
   }
@@ -48963,7 +49020,7 @@ function suggestConvRef() {
   el.focus();
   toast(`${t('txPurRefGenerated')}: #${el.value}`);
 }
-function _addInvoiceImgRow(url) {
+function _addInvoiceImgRow(url, focus) {
   const list = qs('#tx-invoice-imgs-list');
   if (!list) return;
   const idx = list.children.length;
@@ -48980,6 +49037,8 @@ function _addInvoiceImgRow(url) {
     <div class="invoice-img-preview" style="min-height:0"></div>`;
   list.appendChild(row);
   if (url) _updateInvoiceImgPreview(row.querySelector('.invoice-img-url'));
+  if (focus) row.querySelector('.invoice-img-url')?.focus();
+  return row;
 }
 function _removeInvoiceImgRow(btn) {
   btn.closest('.invoice-img-row')?.remove();
@@ -49439,11 +49498,13 @@ async function saveTx() {
       body._unitTracking = window.readPurchaseReceiptTracking?.('tx') || null;
       body._prelabelLink = window.readPrelabelChoice?.('tx') || false;
       body.payStatus = purRemaining <= 0 ? 'مكتمل' : 'معلق';
+      if (window.InvoiceImageUpload?.busy('#tx-invoice-imgs-list')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
       const _invImgs = Array.from(qsa('#tx-invoice-imgs-list .invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
       body.invoiceImages = _invImgs;
       // Local-only flag (not persisted to the transaction record) used to log the debt
       // acknowledgment to the supplier's activity log after save — see confirmTxSave().
       body._debtAcked = (paidNow + creditApplied) <= 0 && purRemaining > 0 && !!qs('#tx-debt-ack')?.checked;
+      try { window.PurchaseScanReceive?.attach(body); } catch (scanErr) { toast(scanErr.message, true); return; }
     }
 
     // Store data for confirmation
@@ -49578,6 +49639,7 @@ function showTxConfirmation(body) {
 
   summary += window.SouliaWarehouses?.invoiceChip(body) || '';
   if (body._saleBinding) summary += `<div class="sale-reader-feedback"><strong>${currentLang === 'en' ? `Link ${body._saleBinding.pieceCount} scanned piece(s) to this order on save` : `ربط ${body._saleBinding.pieceCount} قطعة ممسوحة بهذا الطلب عند الحفظ`}</strong></div>`;
+  summary += window.PurchaseScanReceive?.confirmHtml(body) || '';
   if (body._unitTracking) summary += `<div class="purchase-receipt"><strong>${currentLang === 'en' ? 'Individual unit barcodes' : 'باركود منفصل لكل قطعة'}</strong><p>${body.items.reduce((sum, line) => sum + Number(line.qty), 0)} · ${esc(body._unitTracking.warehouseCode)}</p><small>${body._unitTracking.inspectionPassed === true ? (currentLang === 'en' ? 'Physical receipt and sound condition confirmed. Pieces become available immediately; this remains one purchase invoice.' : 'تم تأكيد الاستلام الفعلي وفحص سلامة القطع. تصبح القطع متاحة مباشرة، وتظل فاتورة شراء واحدة.') : (currentLang === 'en' ? 'Physical receipt confirmed. Units await inspection; this remains one purchase invoice.' : 'تم تأكيد الاستلام الفعلي. القطع بانتظار الفحص، وتظل فاتورة شراء واحدة.')}</small></div>`;
   summaryEl.innerHTML = summary;
   qs('#tx-confirm-modal').classList.add('active');
@@ -49592,7 +49654,7 @@ async function confirmTxSave() {
   if (_txSaving) return;
 
   // Client-side duplicate guard
-  try { if (!pendingTxData._unitTracking && !pendingTxData._saleBinding) _assertNotDuplicateTxSubmit(pendingTxData); } catch (dupErr) {
+  try { if (!pendingTxData._unitTracking && !pendingTxData._saleBinding && !pendingTxData._scanReceive) _assertNotDuplicateTxSubmit(pendingTxData); } catch (dupErr) {
     toast(dupErr.message, true); return;
   }
 
@@ -49612,6 +49674,8 @@ async function confirmTxSave() {
     const prelabelInvoice = prelabelChoice ? Object.fromEntries(Object.entries(pendingTxData).filter(([name]) => !name.startsWith('_'))) : null;
     const result = pendingTxData._saleBinding
       ? await window.SalesScanner.save(pendingTxData)
+      : pendingTxData._scanReceive
+      ? await window.PurchaseScanReceive.save(pendingTxData)
       : pendingTxData._unitTracking
       ? await window.submitManualPurchaseWithUnits(pendingTxData)
       : prelabelChoice
@@ -49691,13 +49755,14 @@ async function confirmTxSave() {
     buildNotifications(); buildSidebar();
     resetTx();
     if (result?._unitReceipt) await window.showPurchaseReceiptSummary(null, result._unitReceipt);
+    if (result?._scanReceipt) window.PurchaseScanReceive?.showSummary(result._scanReceipt);
     if (prelabelChoice && result?._id) await window.PreprintedLabels?.openLink(result._id);
   } catch (e) {
     toast('خطأ: ' + e.message, true);
   } finally {
     _txSaving = false;
     if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; saveBtn.innerHTML = _saveBtnPrevHTML; }
-    if (savedSuccessfully || (!pendingTxData?.manualDepositReceiptId && !pendingTxData?._unitTracking && !pendingTxData?._saleBinding)) pendingTxData = null;
+    if (savedSuccessfully || (!pendingTxData?.manualDepositReceiptId && !pendingTxData?._unitTracking && !pendingTxData?._saleBinding && !pendingTxData?._scanReceive)) pendingTxData = null;
   }
 }
 let _pendingReturnBody = null;
@@ -49869,6 +49934,7 @@ function _refreshDiscBtnLock() {
 
 function resetTx() {
   window.SalesScanner?.reset(true);
+  window.PurchaseScanReceive?.reset();
   if (qs('#tx-warehouse')) { qs('#tx-warehouse').value = 'MAIN'; delete qs('#tx-warehouse').dataset.userSelected; }
   ++_purchaseWarehouseSuggestion;
   _txClearDepositReceipt();
@@ -50423,6 +50489,8 @@ function loadInventory() {
   return _inventoryLoadRequest;
 }
 async function _loadInventory() {
+  window.InvOverview?.load();
+  window.InventoryStalePieces?.refreshNotice();
   const startupRequest = window._startupResourceReady?.[12];
   const useStartupRequest = !!startupRequest && !_inventoryStartupConsumed;
   if (useStartupRequest) _inventoryStartupConsumed = true;
@@ -50447,7 +50515,7 @@ async function _loadInventory() {
   if (loadFailed('inventory') && !hasInventory) {
     const tbody = qs('#inv-table tbody');
     const error = loadErrorState('inventory', 'loadInventory()');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="12">${error}</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="11">${error}</td></tr>`;
     const mobile = qs('#inv-mobile-list'); if (mobile) mobile.innerHTML = error;
     qs('#page-inventory')?.classList.remove('inv-loading');
     qs('#page-inventory')?.classList.add('inv-load-error');
@@ -50944,6 +51012,8 @@ async function submitInventoryAdjustment() {
 }
 
 function setInvFilter(f, btn) {
+  if (f === 'low') { f = 'reorder'; btn = qs('#inv-toolbar .fx-btn[data-status="reorder"]'); }
+  if (!btn) btn = qs(`#inv-toolbar .fx-btn[data-status="${f}"]`);
   invFilter = f;
   invPage = 1;
   qsa('#inv-toolbar .fx-btn[data-status]').forEach(b => b.classList.remove('active'));
@@ -51088,6 +51158,7 @@ function syncProdQuickFilters() {
  */
 const FX_SORT_OPTIONS = {
   inv: [
+    { id: 'ready-desc', labelKey: 'sortReadyDesc',     icon: ICON('success') },
     { id: 'name-asc',   labelKey: 'sortNameAsc',       icon: ICON('note') },
     { id: 'name-desc',  labelKey: 'sortNameDesc',      icon: ICON('note') },
     { id: 'price-asc',  labelKey: 'filterPriceAsc',    icon: ICON('money') },
@@ -51222,6 +51293,7 @@ function _fxApplySort(ctx, arr) {
       if (dc !== 0) return dc;
       return (Number((b.ref||'').replace(/\D/g,''))||0) - (Number((a.ref||'').replace(/\D/g,''))||0);
     }); break;
+    case 'ready-desc': if (window.InvOverview) copy.sort(window.InvOverview.compareReady); break;
     case 'name-asc':  copy.sort((a,b) => (a.name||'').localeCompare(b.name||'','ar')); break;
     case 'name-desc': copy.sort((a,b) => (b.name||'').localeCompare(a.name||'','ar')); break;
     case 'price-asc':  copy.sort((a,b) => cmp(a,b,'sellPrice')); break;
@@ -51822,7 +51894,7 @@ function _fxSyncSortLabel(ctx) {
 function fxResetAll(ctx) {
   if (ctx === 'inv') {
     invFilter = 'all';
-    fxState.inv = { sort: 'name-asc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '', color: new Set(), material: new Set(), size: new Set(), feature: new Set() };
+    fxState.inv = { sort: 'ready-desc', supplier: new Set(), priceMin: '', priceMax: '', stockMin: '', stockMax: '', color: new Set(), material: new Set(), size: new Set(), feature: new Set() };
     const sInp = qs('#inv-search-input'); if (sInp) sInp.value = '';
     invPage = 1; renderInventory();
     _fxSyncSortLabel('inv');
@@ -51875,7 +51947,8 @@ function _fxBuildChips(ctx) {
     const status = ctx === 'inv' ? invFilter : prodFilter;
     /* Display labels only — `status`/`value` stay as the raw 'ok'/'low'/'zero' filter keys. */
     const statusLabels = { ok: t('invAvailable'), low: t('invLow'), zero: t('invOut') };
-    if (status && status !== 'all') chips.push({ kind: 'status', value: status, label: t('chipStatus', { v: statusLabels[status] }) });
+    const statusLabel = ctx === 'inv' && window.InvOverview ? window.InvOverview.filterLabel(status) : statusLabels[status];
+    if (status && status !== 'all') chips.push({ kind: 'status', value: status, label: t('chipStatus', { v: statusLabel }) });
   } else if (ctx === 'mov') {
     if (movFilter && movFilter !== 'all') chips.push({ kind: 'movtype', value: movFilter, label: 'النوع: ' + movFilter });
   }
@@ -51984,64 +52057,62 @@ function renderInventory() {
   qs('#page-inventory')?.classList.remove('inv-load-error');
   qs('#page-inventory')?.classList.toggle('inv-loading', loading);
   qs('#page-inventory')?.setAttribute('aria-busy', String(loading));
+  /* The breakdown (ready / reserved / needs attention / incoming) lives in inventory-overview.js.
+     Without it (script missing) every row reads as fully ready, which is the old behaviour. */
+  const IO = window.InvOverview;
+  // Fallback (inventory-overview.js not loaded): same state rules from the balance alone.
+  const factsOf = r => {
+    if (IO) return IO.facts(r);
+    const balance = Number(r.current) || 0, active = r.isActive !== false, min = Number(r.minStock) || 0;
+    const state = balance < 0 ? 'negative' : !active ? (balance > 0 ? 'inactive-stock' : 'inactive') : balance <= 0 ? 'out' : balance <= min ? 'low' : 'ok';
+    return { balance, ready: Math.max(0, balance), reserved: 0, issue: 0, incoming: 0, active, state, orders: [], pos: [] };
+  };
+  const _INV_STATE_FALLBACK = { negative: ['bad', 'Negative balance', 'رصيد سالب'], 'inactive-stock': ['quiet-warn', 'Discontinued', 'متوقف'],
+    inactive: ['quiet', 'Discontinued', 'متوقف'], out: ['bad', 'Out of stock', 'نفد'], low: ['warn', 'Low stock', 'منخفض'], ok: ['ok', 'In stock', 'متوفر'] };
+  const stateOf = f => { if (IO) return IO.stateHtml(f); const [tone, en, ar] = _INV_STATE_FALLBACK[f.state]; return `<span class="invo-state is-${tone}"><span class="invo-dot"></span>${esc(currentLang === 'en' ? en : ar)}</span>`; };
   const totalItems = inv.length;
-  const totalStock = inv.reduce((s, r) => s + (r.current || 0), 0);
   const totalValue = inv.reduce((s, r) => s + ((r.current || 0) * (r.sellPrice || 0)), 0);
   // Step 3: stock is valued at the average cost (falls back to the card price until one exists).
   const totalCost = inv.reduce((s, r) => s + ((r.current || 0) * _unitCostOf(r)), 0);
-  const okCount = inv.filter(r => r.current > (r.minStock || 0)).length;
-  const lowCount = inv.filter(r => r.isActive !== false && r.current > 0 && r.current <= (r.minStock || 0)).length;
-  const zeroCount = inv.filter(r => r.isActive !== false && (r.current || 0) <= 0).length;
 
-  /* Render KPI cards */
+  /* Summary cards: four facts that each filter the list, then the money figures for admins. */
   const kpiEl = qs('#inv-summary-cards');
   const invKpiScroll = qs('#inv-summary-cards')?.closest('.inv-kpi-scroll');
   const invKpiVisible = isAdmin() || (settings?.showMovKpiForStaff === true);
   if (invKpiScroll) invKpiScroll.style.display = invKpiVisible ? '' : 'none';
   if (kpiEl && invKpiVisible) {
-    const kpiData = [
-      { id:'inv_items',    val: fmtN(totalItems),  label: t('invTotalItems'),                                          color: '#3b82f6', icon: ICON('box') },
-      { id:'inv_stock',    val: fmtN(totalStock),  label: t('invTotalStock'),                                          color: '#06b6d4', icon: ICON('barChart') },
-    ];
-    if (isAdmin()) {
-      kpiData.push({ id:'inv_sellval',  val: fmtJ(totalValue), label: t('invSaleValue'), color: '#10b981', icon: ICON('money') });
-      kpiData.push({ id:'inv_costval',  val: fmtJ(totalCost),  label: t('invCostValue'), color: '#8b5cf6', icon: ICON('chart') });
-    }
-    kpiData.push({ id:'inv_ok',   val: fmtN(okCount),    label: t('invAvailable'), color: '#10b981', icon: ICON('success') });
-    kpiData.push({ id:'inv_low',  val: fmtN(lowCount),   label: t('invLow'),       color: '#f59e0b', icon: ICON('warning') });
-    kpiData.push({ id:'inv_zero', val: fmtN(zeroCount),  label: t('invOut'),       color: '#ef4444', icon: ICON('error') });
-    _setInventoryMarkup(kpiEl, kpiData.map(k => `
-      <div class="kpi" style="position:relative">
-        <button class="ds-kpi-info-btn" title="${escHtml(t('kpiFieldDetails'))}" onclick="event.stopPropagation();openInvKpiExplain('${k.id}')" style="position:absolute;top:6px;inset-inline-end:6px">i</button>
-        <div class="kpi-icon">${k.icon}</div>
-        <div class="kpi-val">${k.val}</div>
-        <div class="kpi-label">${k.label}</div>
-      </div>`).join(''));
+    const money = isAdmin() ? [
+      { id:'inv_sellval', val: fmtJ(totalValue), label: t('invSaleValue'), icon: ICON('money') },
+      { id:'inv_costval', val: fmtJ(totalCost),  label: t('invCostValue'), icon: ICON('chart') },
+    ] : [];
+    _setInventoryMarkup(kpiEl, (IO ? IO.summaryHtml(inv, loading) : '') + money.map(k => `
+      <button type="button" class="kpi invo-card is-money" title="${escHtml(t('kpiFieldDetails'))}" onclick="openInvKpiExplain('${k.id}')">
+        <span class="invo-card-label">${k.label}</span><strong class="kpi-val invo-card-val">${k.val}</strong><span class="invo-card-sub"></span>
+      </button>`).join(''));
   }
 
   if (loading) {
     const bar = '<span class="ss-skeleton inv-loading-bar" aria-hidden="true"></span>';
-    _setInventoryMarkup(qs('#inv-tbody'), `<tr class="inv-loading-row">${`<td>${bar}</td>`.repeat(12)}</tr>`.repeat(6));
+    _setInventoryMarkup(qs('#inv-tbody'), `<tr class="inv-loading-row">${`<td>${bar}</td>`.repeat(11)}</tr>`.repeat(6));
     _setInventoryMarkup(qs('#inv-mobile-list'), `<div class="inv-product-card inv-loading-card" aria-hidden="true">${bar.repeat(3)}</div>`.repeat(3));
     return;
   }
 
-  // Update tab counts
-  const _setCount = (id, v) => { const el = qs('#' + id); if (el) el.textContent = fmtN(v); };
-  _setCount('inv-count-all', totalItems);
-  _setCount('inv-count-ok', okCount);
-  _setCount('inv-count-low', lowCount);
-  _setCount('inv-count-zero', zeroCount);
+  // Tab counts
+  const counts = IO ? IO.counts(inv) : { all: totalItems };
+  for (const key of ['all', 'ready', 'reorder', 'issue', 'negative', 'inactive']) {
+    const el = qs('#inv-count-' + key); if (el) el.textContent = fmtN(counts[key] || 0);
+    const tab = qs(`#inv-toolbar .fx-btn[data-status="${key}"]`);
+    // An empty problem tab is hidden: there is nothing to look at there.
+    if (tab && ['negative', 'issue', 'inactive'].includes(key)) tab.hidden = !counts[key] && invFilter !== key;
+  }
 
   const tokens = normalizeUiSearch(qs('#inv-search-input')?.value || '').split(/\s+/).filter(Boolean);
   const fs = fxState.inv;
   let data = inv.filter(r => {
     const blob = normalizeUiSearch([r.name, r.code, r.returnRefs || ''].join(' '));
     if (tokens.length && !tokens.every(t => blob.includes(t))) return false;
-    if ((invFilter === 'low' || invFilter === 'zero') && r.isActive === false) return false;
-    if (invFilter === 'low' && !(r.status === 'low' || r.status === 'منخفض' || (r.current > 0 && r.current <= (r.minStock || 0)))) return false;
-    if (invFilter === 'ok'  && !(r.status === 'ok'  || r.status === 'متوفر' || (r.current > (r.minStock || 0)))) return false;
-    if (invFilter === 'zero' && !((r.current || 0) <= 0)) return false;
+    if (IO && invFilter !== 'all' && !IO.matches(invFilter, IO.facts(r))) return false;
     if (!_fxInRange(r.sellPrice, fs.priceMin, fs.priceMax)) return false;
     if (!_fxInRange(r.current,   fs.stockMin, fs.stockMax)) return false;
     if (!_fxMatchSupplier('inv', r)) return false;
@@ -52053,13 +52124,6 @@ function renderInventory() {
   const _rcEl = qs('#inv-results-count');
   if (_rcEl) _rcEl.innerHTML = t('resultsCountOf', { n: fmtN(data.length), total: fmtN(totalItems) });
 
-  const statusBadgeHtml = (r) => {
-    if (r.isActive === false) return `<span class="inactive-badge">${esc(t('inactiveBadge'))}</span>`;
-    if (r.current <= 0) return `<span class="inv-status-badge out-of-stock"><span class="inv-status-dot"></span>${esc(t('invOut'))}</span>`;
-    if (r.current <= (r.minStock || 0)) return `<span class="inv-status-badge low-stock"><span class="inv-status-dot"></span>${esc(t('invLow'))}</span>`;
-    return `<span class="inv-status-badge in-stock"><span class="inv-status-dot"></span>${esc(t('invAvailable'))}</span>`;
-  };
-
   const INV_PAGE_SIZE = 30;
   const total = data.length;
   if (invPage > Math.ceil(total / INV_PAGE_SIZE) || total === 0) invPage = 1;
@@ -52068,42 +52132,25 @@ function renderInventory() {
     ? renderEmptyState({ type: 'no-data', title: t('noItems') })
     : renderEmptyState({ type: 'no-results', title: t('emptyProducts'), desc: t('emptyNoResultsDesc'), actionLabel: t('emptyClearFilters'), onAction: "fxResetAll('inv')" });
 
-  /* Desktop Table - Original Format */
-  const stockBar = (r) => {
-    const max = Math.max(r.openingBalance || 1, r.current || 1, r.minStock || 1) * 1.2;
-    const pct = Math.min(100, Math.max(0, ((r.current || 0) / max) * 100));
-    const color = r.isActive === false ? 'var(--muted)' : r.current <= 0 ? 'var(--red)' : r.current <= (r.minStock || 0) ? 'var(--orange)' : 'var(--green)';
-    return `<div style="display:flex;align-items:center;gap:8px"><strong>${fmtN(r.current)}</strong><div style="flex:1;height:6px;background:var(--border);border-radius:3px;min-width:50px"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .3s"></div></div></div>`;
-  };
-  const invReturnCell = (r) => {
-    const q = Number(r.returnsToStock) || 0;
-    const refs = String(r.returnRefs || '').trim();
-    const dates = String(r.returnDates || '').trim();
-    const refParts = refs ? refs.split('،').map(s => s.trim()).filter(Boolean) : [];
-    const dateParts = dates ? dates.split('،').map(s => s.trim()).filter(Boolean) : [];
-    const hasData = refParts.length > 0 || dateParts.length > 0;
-    if (q === 0) {
-      return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9">0</div></td>`;
-    }
-    return `<td style="vertical-align:top"><div style="font-weight:700;color:#6d28d9;cursor:pointer;user-select:none" onclick="showReturnDetails('${esc(r.code || r.name)}', '${esc(refs)}', '${esc(dates)}')" title="${escHtml(t('clickForDetails'))}">${fmtN(q)}</div></td>`;
-  };
-  const activationBadge = r => `<span class="inv-activation-badge ${r.isActive === false ? 'is-inactive' : 'is-active'}">${esc(t(r.isActive === false ? 'inactiveBadge' : 'invActive'))}</span>`;
-  const statusBadgeOld = (r) => r.current <= 0 ? `<span class="badge badge-red">${esc(t('invOut'))}</span>` : (r.current <= (r.minStock || 0) ? `<span class="badge badge-orange">${esc(t('invLow'))}</span>` : `<span class="badge badge-green">${esc(t('invAvailable'))}</span>`);
-
+  const actionsHtml = r => IO ? IO.actionsHtml(r) : `${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}`;
   const tbody = qs('#inv-tbody');
   if (tbody) {
     _setInventoryMarkup(tbody, pageData.length ? pageData.map((r, i) => {
       const key = r.code || r.name;
-      const inactiveCls = r.isActive === false ? ' is-inactive-row' : '';
-      return `<tr class="inv-row${inactiveCls}" data-key="${esc(key)}" style="animation-delay:${Math.min(i,20)*18}ms">
-        <td onclick="openInventoryDetail('${esc(key)}')">${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')"><bdi class="product-sku" dir="ltr">${esc(r.code || '-')}</bdi></td><td onclick="openInventoryDetail('${esc(key)}')" style="font-weight:600">${esc(r.name)}</td><td onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" onclick="openInventoryDetail('${esc(key)}')">${fmtJ(r.buyPrice)}${_avgCostSubHtml(r)}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.openingBalance)}</td><td class="text-green" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.purchases)}</td><td onclick="openInventoryDetail('${esc(key)}')">${invReturnCell(r).replace(/<td[^>]*>|<\/td>/g, '')}</td><td class="text-blue" onclick="openInventoryDetail('${esc(key)}')">${fmtN(r.sales)}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')">${stockBar(r)}${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}</td>
-        <td class="inv-activation-cell" onclick="openInventoryDetail('${esc(key)}')">${activationBadge(r)}</td>
-        <td onclick="openInventoryDetail('${esc(key)}')">${statusBadgeOld(r)}</td>
+      const f = factsOf(r);
+      const inactiveCls = f.active ? '' : ' is-inactive-row';
+      const open = `onclick="openInventoryDetail('${esc(key)}')"`;
+      return `<tr class="inv-row invo-row is-${f.state}${inactiveCls}" data-key="${esc(key)}" style="animation-delay:${Math.min(i,20)*18}ms">
+        <td ${open}>${productThumbHtml(r.imageUrl, r.name, 'inv-thumb')}</td>
+        <td ${open}><bdi class="product-sku" dir="ltr">${esc(r.code || '-')}</bdi></td><td ${open} style="font-weight:600">${esc(r.name)}</td><td ${open}>${fmtJ(r.sellPrice)}</td><td class="inv-buyprice-col" ${open}>${fmtJ(r.buyPrice)}${_avgCostSubHtml(r)}</td>
+        <td class="invo-col-ready" ${open}>${IO ? IO.readyHtml(f, key) : fmtN(r.current)}</td>
+        <td class="invo-col-num">${IO ? IO.countHtml('reserved', f, key) : ''}</td>
+        <td class="invo-col-num">${IO ? IO.countHtml('issue', f, key) : ''}</td>
+        <td class="invo-col-num">${IO ? IO.countHtml('incoming', f, key) : ''}</td>
+        <td class="invo-col-state" ${open}>${stateOf(f)}</td>
+        <td class="invo-col-actions"><div class="invo-actions">${actionsHtml(r)}</div></td>
       </tr>`;
-    }).join('') : `<tr><td colspan="12" style="padding:0">${_invEmptyHtml}</td></tr>`);
+    }).join('') : `<tr><td colspan="11" style="padding:0">${_invEmptyHtml}</td></tr>`);
   }
 
   /* Mobile Card List */
@@ -52112,26 +52159,21 @@ function renderInventory() {
     const isAdminUser = isAdmin();
     _setInventoryMarkup(mobileList, pageData.length ? pageData.map((r, i) => {
       const key = r.code || r.name;
-      /* `status` stays raw Arabic — it is used as a CSS class name
-         (`#page-inventory .inv-status-badge.متوفر{...}`). `statusLabel` is the visible text. */
-      const status = r.current <= 0 ? 'نفد' : (r.current <= (r.minStock || 0) ? 'منخفض' : 'متوفر');
-      const statusLabel = r.current <= 0 ? t('invOut') : (r.current <= (r.minStock || 0) ? t('invLow') : t('invAvailable'));
-      const statusEmoji = r.current <= 0 ? ICON('error') : (r.current <= (r.minStock || 0) ? ICON('warning') : ICON('success'));
-      const inactiveCls = r.isActive === false ? ' is-inactive-row' : '';
-      return `<div class="inv-product-card${inactiveCls}" style="animation-delay:${Math.min(i,20)*18}ms" onclick="openInventoryDetail('${esc(key)}')">
+      const f = factsOf(r);
+      const inactiveCls = f.active ? '' : ' is-inactive-row';
+      return `<div class="inv-product-card invo-card-row is-${f.state}${inactiveCls}" style="animation-delay:${Math.min(i,20)*18}ms" onclick="openInventoryDetail('${esc(key)}')">
         <div class="inv-card-header">
           ${productThumbHtml(r.imageUrl, r.name, 'inv-card-thumb')}
           <div class="inv-card-info">
             <div class="inv-card-code">${esc(r.code || '-')}</div>
-            <div class="inv-card-name">${esc(r.name)}</div><div class="inv-card-activation" aria-label="${esc(t('invActivationStatus'))}">${activationBadge(r)}</div>
+            <div class="inv-card-name">${esc(r.name)}</div>
+            <div class="inv-card-activation">${stateOf(f)}</div>
             ${isAdminUser ? `<div class="inv-card-price">${fmtJ(r.sellPrice)}<span class="inv-card-price-sep">•</span>${t('invCardValue', { v: fmtJ((r.current || 0) * (r.sellPrice || 0)) })}</div>` : ''}
           </div>
-          <span class="inv-status-badge ${status}" style="flex-shrink:0">
-            <span class="inv-status-badge-top">${statusEmoji}${esc(statusLabel)}</span>
-            <span class="inv-status-badge-qty">${fmtN(r.current)}</span>
-          </span>
+          <div class="invo-card-ready">${IO ? IO.readyHtml(f, key) : fmtN(r.current)}</div>
         </div>
-        ${window.LegacyStockLabels?.button(r._id) || ''}${window.ProductStocktake?.button(r._id) || ''}
+        ${IO ? IO.compactHtml(f, key) : ''}
+        <div class="invo-actions" onclick="event.stopPropagation()">${actionsHtml(r)}</div>
       </div>`;
     }).join('') : _invEmptyHtml);
   }
@@ -56324,10 +56366,11 @@ function _buildEditInvoiceImages(tx) {
       <div id="edit-tx-invoice-imgs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
         ${imgs.map(u => _buildEditInvoiceImgRowHtml(u)).join('')}
       </div>
+      <div class="inv-up-actions"><button type="button" class="inv-up-btn" onclick="InvoiceImageUpload.pick(u => _addEditInvoiceImgRow(u, true))"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>${currentLang === 'en' ? 'Upload invoice photo' : 'رفع صورة الفاتورة'}</span></button>
       <button type="button" onclick="_addEditInvoiceImgRow()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:.83rem;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         إضافة رابط فاتورة
-      </button>
+      </button></div>
     </div>`;
 }
 function _buildEditInvoiceImgRowHtml(url) {
@@ -56342,12 +56385,14 @@ function _buildEditInvoiceImgRowHtml(url) {
     <div class="edit-invoice-img-preview" style="min-height:0">${url ? _editInvoiceImgPreviewHtml(url) : ''}</div>
   </div>`;
 }
-function _addEditInvoiceImgRow() {
-  const list = qs('#edit-tx-invoice-imgs-list'); if (!list) return;
+function _addEditInvoiceImgRow(url, quiet) {
+  const list = qs('#edit-tx-invoice-imgs-list'); if (!list) return null;
   const div = document.createElement('div');
-  div.innerHTML = _buildEditInvoiceImgRowHtml('');
-  list.appendChild(div.firstElementChild);
-  list.lastElementChild?.querySelector('.edit-invoice-img-url')?.focus();
+  div.innerHTML = _buildEditInvoiceImgRowHtml(url || '');
+  const row = div.firstElementChild;
+  list.appendChild(row);
+  if (!quiet) row.querySelector('.edit-invoice-img-url')?.focus();
+  return row;
 }
 function _updateEditInvoiceImgPreview(input) {
   _refreshEditSaveBtnVisibility();
@@ -58019,6 +58064,7 @@ async function _saveEditMovementImpl(id) {
     body.payment = qs('#edit-tx-payment')?.value || tx.payment || '';
   }
   if (tx.type === 'مشتريات') {
+    if (window.InvoiceImageUpload?.busy('#edit-tx-invoice-imgs-list')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
     const editedImgs = Array.from(qsa('#edit-tx-invoice-imgs-list .edit-invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
     body.invoiceImages = editedImgs;
     if (editedImgs.length) body.invoiceImageUrl = editedImgs[0];
@@ -58496,6 +58542,12 @@ function openCollectMovement(id) {
   if (tx.afterSalesBundle?.caseId) {
     toast(t('asBundleCollectBlocked').replace('{ref}', tx.afterSalesBundle.caseRef || ''), true);
     window.AfterSales?.open?.(tx.afterSalesBundle.caseId);
+    return;
+  }
+  // An exchange replacement is collected through its case (Bosta settlement or direct collection).
+  if (tx.afterSales?.caseId) {
+    toast(t('asReplacementCollectBlocked'), true);
+    window.AfterSales?.open?.(tx.afterSales.caseId);
     return;
   }
   // A Bosta settlement queued or awaiting review owns this order's collection — collecting it here
@@ -64360,15 +64412,18 @@ function buildInvoiceHtml(tx) {
      rule below is that helper's own rule, kept numeric. */
   const total = Number(tx.total) || 0;
   const remaining = Math.max(0, Number(tx.remaining) || 0);
+  // An exchange replacement: the return credit is printed on its own line; «المدفوع» is the cash only.
+  const exchPrint = _exchCreditOf(tx);
   const paid = isPur
     ? Math.max(0, total - remaining)
+    : exchPrint ? exchPrint.cash + exchPrint.collected
     : (isMovExchangeSale(tx) && remaining > 0 ? remaining : Math.max(0, Number(tx.deposit) || 0));
   /* A purchase settled from supplier credit moved no cash: name the credit,
      never default to a vault (same rule as the invoice page). */
   const creditOnly = isPur && (Number(tx.creditApplied) || 0) > 0 && !((Number(tx.deposit) || 0) > 0);
   const paidVia = creditOnly ? 'الرصيد لدى المورد' : (tx.depMethod || '');
   const payState = isCancelled ? 'cancel'
-    : paid <= 0 && remaining > 0 ? 'unpaid'
+    : paid <= 0 && remaining > 0 && !(exchPrint && exchPrint.credit > 0) ? 'unpaid'
     : remaining <= 0 ? 'full'
     : 'partial';
   const payChip = {
@@ -64451,6 +64506,8 @@ function buildInvoiceHtml(tx) {
        <div class="iv-cell"><span class="k">المبلغ المردود للعميل</span><span class="v">${money(total)} ${cur}</span>
          ${tx.depMethod ? `<span class="sub">عن طريق <b dir="auto">${esc(tx.depMethod)}</b></span>` : ''}</div>`
     : `<div class="iv-cell"><span class="k">إجمالي الفاتورة</span><span class="v">${money(total)} ${cur}</span></div>
+       ${exchPrint && exchPrint.credit > 0 ? `<div class="iv-cell"><span class="k">رصيد المنتج المرتجع</span><span class="v">${money(exchPrint.credit)} ${cur}</span>
+         <span class="sub">مدفوع في الفاتورة <b dir="ltr">#${esc(exchPrint.originalRef)}</b></span></div>` : ''}
        <div class="iv-cell"><span class="k">${isPur ? 'المسدَّد للمورد' : 'المدفوع'}</span><span class="v">${money(paid)} ${cur}</span>
          ${paid > 0 && isPur && !isCancelled ? `<span class="sub">تفاصيل الدفعات أدناه</span>` : paid > 0 && paidVia ? `<span class="sub">عن طريق <b dir="auto">${esc(paidVia)}</b></span>` : ''}</div>
        ${isCancelled ? ''
@@ -64907,7 +64964,8 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
   const _depositsArrSum = _depositsArr.reduce((s, d) => s + (d.amount || 0), 0);
   // tx.deposit accumulates both initial deposit + collection payments, so only fall back to it
   // when no payments have been collected yet (otherwise _paymentsTotal already covers collections)
-  const _depositsTotal = _depositsArrSum || (_paymentsArr.length === 0 ? (tx.deposit || 0) : 0);
+  const _exchM = _exchCreditOf(tx);   // mirror of renderInvoiceViewPage's _exch (two renderers)
+  const _depositsTotal = _depositsArrSum || (_paymentsArr.length === 0 && !_exchM ? (tx.deposit || 0) : 0);
   const _paymentsTotal = _paymentsArr.reduce((s, p) => s + (p.amount || p.collectAmount || 0), 0);
   // Purchase settled (wholly or partly) from supplier credit — no vault movement. Mirrors
   // renderInvoiceViewPage's _creditUsed/_noCashMoved; keep the two in sync (two renderers).
@@ -65100,8 +65158,10 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
           <div class="inv-breakdown">
             ${_cancelledSettlementRows(tx).map(r => `<div class="inv-breakdown-row ${r.kind ? 'discount' : 'deposit'}"><span class="label">${esc(r.label)}</span><span class="amount">${fmtJ(r.amount)}</span></div>`).join('')}
             <div class="inv-breakdown-row"><span class="label" style="color:var(--muted)">${t('ivCxNothingDue')}</span><span class="amount"></span></div>
-          </div>` : (tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 ? `
+          </div>` : (tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 || _exchM ? `
           <div class="inv-breakdown">
+            ${_exchM && _exchM.credit > 0 ? `<div class="inv-breakdown-row deposit" title="${escHtml(t('ivExchCreditNote').replace('{ref}', _exchM.originalRef))}"><span class="label">${t('ivExchCredit')}${_exchM.originalRef ? ` · <bdi>#${esc(_exchM.originalRef)}</bdi>` : ''}</span><span class="amount">${fmtJ(_exchM.credit)}</span></div>` : ''}
+            ${_exchM && _exchM.collected > 0 ? `<div class="inv-breakdown-row collection"><span class="label">${t('ivExchCollected')}</span><span class="amount">${fmtJ(_exchM.collected)}</span></div>` : ''}
             ${_previewDepositTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? t('ivDepositPaid') : t('ivPrepaidDeposit')}${_spInvoiceVaultLabel(tx) ? `<span style="font-size:.78rem;opacity:.7">· ${esc(_spInvoiceVaultLabel(tx))}</span>` : ''}</span><span class="amount">${fmtJ(_previewDepositTotal)}</span></div>` : ''}
             ${_creditUsedM > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>${t('ivCreditSettled')}</span><span class="amount">${fmtJ(_creditUsedM)}</span></div>${_creditSrcSlot(tx._id)}` : ''}
             ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? t('ivExtraPayments') : t('ivmCollectedFrom', { v: tx.shipCo || t('ivmShippingGeneric') })}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${esc(_payMethodLabel(tx.collectMethod))}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
@@ -65987,7 +66047,9 @@ function renderInvoiceViewPage() {
   // Payments
   const _depArr  = tx.deposits||[];
   const _payArr  = tx.payments||[];
-  const _depTotal= _depArr.reduce((s,d)=>s+(d.amount||0),0)||(_payArr.length===0?(tx.deposit||0):0);
+  // An exchange replacement's `deposit` holds the return credit: never fall back to it as cash.
+  const _exch    = _exchCreditOf(tx);
+  const _depTotal= _depArr.reduce((s,d)=>s+(d.amount||0),0)||(_payArr.length===0&&!_exch?(tx.deposit||0):0);
   // ⚠ Gross first, not net. The backend writes TWO different figures onto a sale's payment
   // record: `amount` is what actually entered the vault (netVaultAmount — after the courier's
   // fee is deducted on a carrier-settled collection), while `collectedAmount` is what the
@@ -66012,7 +66074,7 @@ function renderInvoiceViewPage() {
 
   // Settlement block — what was paid against the invoice total. Rendered AFTER the
   // grand total so the card reads: charges → الإجمالي الكلي → المدفوع → المتبقي.
-  const _hasSettlement = ((tx.remaining||0)>0||_depTotal>0||_payTotal>0||_creditUsed>0);
+  const _hasSettlement = ((tx.remaining||0)>0||_depTotal>0||_payTotal>0||_creditUsed>0||!!_exch);
   // Supplier returns never populate deposits/payments/remaining the normal way — tx.total only
   // ever holds the cash-refund slice (see SupplierReturnsService.complete()). The real breakdown
   // (debt-offset/refund/credit) lives on the linked SupplierReturnOrder's settlement instead.
@@ -66038,7 +66100,9 @@ function renderInvoiceViewPage() {
     ${_cancelledSettlementRows(tx).map(r => _sumRow(esc(r.label), fmt(r.amount))).join('')}
     <div class="inv2-sum-status is-cancelled"><span>${t('ivCxNothingDue')}</span></div>`
     : (_hasSettlement ? `
-    ${_depTotal>0 ? _sumRow(`${t('ivPaidAmount')}${tx.depMethod ? ` · ${esc(_payMethodLabel(tx.depMethod))}` : ''}`, fmt(_depTotal)) : ''}
+    ${_exch && _exch.credit>0 ? _sumRow(`<span style="display:inline-flex;align-items:center;gap:5px" title="${escHtml(t('ivExchCreditNote').replace('{ref}', _exch.originalRef))}">${_CREDIT_ICON}${t('ivExchCredit')}${_exch.originalRef ? ` · <bdi>#${esc(_exch.originalRef)}</bdi>` : ''}</span>`, fmt(_exch.credit)) : ''}
+    ${_depTotal>0 ? _sumRow(`${_exch ? t('ivPrepaidDeposit') : t('ivPaidAmount')}${!_exch && tx.depMethod ? ` · ${esc(_payMethodLabel(tx.depMethod))}` : ''}`, fmt(_depTotal)) : ''}
+    ${_exch && _exch.collected>0 ? _sumRow(t('ivExchCollected'), fmt(_exch.collected)) : ''}
     ${_creditUsed>0 ? _sumRow(`${_CREDIT_ICON}${t('ivCreditSettled')}`, fmt(_creditUsed)) : ''}
     ${(tx.remaining||0)>0
       ? _sumRow(isPurchase?t('ivRemainingSupplier'):t('ivDueOnDelivery'), fmt(tx.remaining||0), { cls:'is-danger-text', strong:true })
@@ -66105,7 +66169,7 @@ function renderInvoiceViewPage() {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     </button>
     ${isExchangeSalePendingCollect(tx) ? `<button class="inv2-btn inv2-btn-primary" onclick="openCollectMovement('${esc(tx._id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/></svg><span>${t('ivCollectExchangeDiff')} (${fmtJ(tx.remaining)})</span></button>` : ''}
-    ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) && !tx.afterSalesBundle?.caseId ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
+    ${(tx.remaining || 0) > 0 && !tx.cancelled && tx.payStatus !== 'ملغي' && !isExchangeSalePendingCollect(tx) && !_csCollectViaCard(tx) && !tx.afterSalesBundle?.caseId && !tx.afterSales?.caseId ? `<button class="inv2-btn ${isPurchase ? 'inv2-btn-danger' : 'inv2-btn-primary'}" onclick="openCollectMovement('${esc(tx._id)}')"${_fdLockAttr(tx, 'fdLockCollect')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">${isPurchase ? '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>' : '<circle cx="12" cy="12" r="10"/><path d="M14.5 9a2.5 2.5 0 00-5 0c0 1.5 5 2 5 4a2.5 2.5 0 01-5 0"/><path d="M12 7v1M12 16v1"/>'}</svg><span>${isPurchase ? t('ivPaySupplier') : t('ivCollectFromCustomer')}</span></button>` : ''}
     ${_invMoreMenuHtml(tx, _editLocked, secondaryActionsHtml)}
   `;
 
@@ -66411,6 +66475,13 @@ function renderInvoiceViewPage() {
       </div>
       <div class="inv2-card-body" style="display:flex;flex-direction:column;gap:8px">
         <div>${paymentStatusRowsHtml}</div>
+        ${_exch && _exch.credit > 0 ? `<div class="inv2-credit-note">
+          <span class="inv2-credit-note-ico">${_CREDIT_ICON}</span>
+          <div>
+            <div class="inv2-credit-note-head">${t('ivExchCredit')} · <bdi>${fmt(_exch.credit)}</bdi></div>
+            <div class="inv2-credit-note-sub">${esc(t('ivExchCreditNote').replace('{ref}', _exch.originalRef))}</div>
+          </div>
+        </div>` : ''}
         ${_creditUsed > 0 ? `<div class="inv2-credit-note">
           <span class="inv2-credit-note-ico">${_CREDIT_ICON}</span>
           <div>
@@ -73586,8 +73657,9 @@ function openSupplierProfile(supplierId) {
   // A cap raised on one supplier's panel must not carry into the next supplier's profile.
   if (changed) _spResetPanelLimits();
   history.pushState(null, '', '#supplier-profile/' + supplierId);
-  _doNavigateTo('supplier-profile', false);
-  renderSupplierProfile();
+  // Through navigateTo, never _doNavigateTo: the boot overview holds sales only, so the
+  // profile must wait for the full invoice list (navigateTo loads it, then renders on entry).
+  navigateTo('supplier-profile', false);
 }
 
 function renderSupplierProfile() {
@@ -77276,11 +77348,12 @@ function openConvertPoModal(poId) {
       <div class="form-group" style="grid-column:1/-1">
         <label style="font-size:.8rem;color:var(--muted)">فواتير المورد <span style="font-weight:400;color:var(--muted)">(اختياري — يمكن إضافة أكثر من فاتورة)</span></label>
         <div id="conv-invoice-imgs-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+        <div class="inv-up-actions"><button type="button" class="inv-up-btn" onclick="InvoiceImageUpload.pick(_addConvInvoiceImgRow)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>رفع صورة الفاتورة</span></button>
         <button type="button" onclick="_addConvInvoiceImgRow()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--muted);cursor:pointer;font-size:.83rem;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           إضافة رابط فاتورة
-        </button>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">أدخل رابطاً مباشراً لكل صورة فاتورة — ستظهر جميعها في تفاصيل عملية الشراء</div>
+        </button></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">ارفع صورة الفاتورة أو أضف رابطًا مباشرًا — تظهر جميعها في تفاصيل عملية الشراء</div>
       </div>
 
       <div class="form-group">
@@ -77352,6 +77425,7 @@ function _addConvInvoiceImgRow(url) {
     <div class="invoice-img-preview" style="min-height:0"></div>`;
   list.appendChild(row);
   if (url) _updateInvoiceImgPreview(row.querySelector('.conv-invoice-img-url'));
+  return row;
 }
 
 const _CONV_ACCOUNTS = ['كاش', 'فودافون كاش', 'Instapay', 'تحويل بنكي'];
@@ -77675,6 +77749,7 @@ async function doConvertPo(poId, itemCount) {
   const account = qs('#conv-account')?.value || 'كاش';
   const userNotes = (qs('#conv-notes')?.value || '').trim();
   const notes = [userNotes, autoNote].filter(Boolean).join(' | ');
+  if (window.InvoiceImageUpload?.busy('#conv-invoice-imgs-list')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
   const invoiceImages = Array.from(qsa('#conv-invoice-imgs-list .conv-invoice-img-url')).map(i => i.value.trim()).filter(Boolean);
 
   // ── Purchase OTP gate — mirrors saveTx but calls doConvertPo on success ──
@@ -78413,18 +78488,20 @@ function openExpenseModal(id) {
       </div>
     </div>
 
-    <div class="exp-form-section">
+    <div class="exp-form-section" id="em-attach-section">
       <div class="exp-form-section-title">${t('expFormAttachSection')}</div>
       <div class="form-group">
         <label>${t('expFormAttachLabel')}</label>
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="url" id="em-attachment-path" value="${esc(e?.attachment || '')}" placeholder="${esc(t('expFormAttachPh'))}" style="flex:1" oninput="previewExpAttachment(this.value)">
+          <button type="button" class="inv-up-btn" onclick="_expUploadAttachment()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>${t('expUploadPhoto')}</span></button>
+          <input type="url" id="em-attachment-path" value="${esc(e?.attachment || '')}" placeholder="${esc(t('expFormAttachPh'))}" style="flex:1;min-width:0" oninput="previewExpAttachment(this.value)">
           ${e?.attachment ? `<a href="${esc(e.attachment)}" target="_blank" class="btn btn-outline btn-sm" style="white-space:nowrap;flex-shrink:0">${t('expFormView')}</a>` : ''}
         </div>
         <div class="field-hint">${t('expFormAttachHint')}</div>
       </div>
-      <div id="em-attach-preview" style="margin-top:8px">
+      <div id="em-attach-preview" class="em-attach-img-preview" style="margin-top:8px">
         ${e?.attachment ? `<img src="${esc(e.attachment)}" alt="${esc(t('expFormAttachAlt'))}" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--border);object-fit:contain;background:var(--surface2)" onerror="this.style.display='none'">` : ''}
+        ${e?.attachment && window.InvoiceImageUpload?.isOurs(e.attachment) ? `<button type="button" class="inv-up-clear is-text" onclick="_expClearAttachment()">${t('expRemovePhoto')}</button>` : ''}
       </div>
     </div>
 
@@ -78474,6 +78551,16 @@ function removeExpDescItem(btn) {
     if (badge) badge.textContent = i + 1;
   });
 }
+/** Expense receipt photo → server (≤180 KB, Cloudflare R2), same path as supplier invoice photos. */
+function _expUploadAttachment() {
+  window.InvoiceImageUpload?.pick(() => qs('#em-attach-section'), { purpose: 'expense', single: true });
+}
+function _expClearAttachment() {
+  const input = qs('#em-attachment-path');
+  if (input) { input.value = ''; input.removeAttribute('value'); }
+  const preview = qs('#em-attach-preview'); if (preview) preview.innerHTML = '';
+  qs('#em-attach-section a.btn-outline')?.remove();
+}
 function previewExpAttachment(url) {
   const preview = qs('#em-attach-preview');
   if (!preview) return;
@@ -78492,6 +78579,7 @@ async function saveExpense(id) {
   const cat = (qs('#em-cat')?.value || '').trim();
   const expenseNo = (qs('#em-expno')?.value || '').trim() || ('EXP-' + Date.now().toString().slice(-5));
   const descItems = Array.from(document.querySelectorAll('.exp-desc-item-input')).map(i => i.value.trim()).filter(Boolean);
+  if (window.InvoiceImageUpload?.busy('#em-attach-section')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
   const attachment = qs('#em-attachment-path')?.value || '';
   const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: cat, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '', descItems, attachment };
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
@@ -96191,7 +96279,19 @@ function renderSearchDropdown() {
       } else if (item.type === 'product') {
         const stock = getProductAvailableStock(item.id);
         let stockBadge = '';
-        if (stock === -1) {
+        // Same figures as the inventory page: ready to sell first, then what holds the rest back.
+        const _gsF = window.InvOverview?.productFacts(item.id);
+        if (_gsF && _gsF.known) {
+          const extra = [_gsF.reserved ? t('gsReservedN', { n: fmtN(_gsF.reserved) }) : '', _gsF.issue ? t('gsIssueN', { n: fmtN(_gsF.issue) }) : '',
+            _gsF.incoming ? t('gsIncomingN', { n: fmtN(_gsF.incoming) }) : ''].filter(Boolean);
+          const tip = t('gsStockTip', { onHand: fmtN(_gsF.onHand), ready: fmtN(_gsF.ready), reserved: fmtN(_gsF.reserved), issue: fmtN(_gsF.issue) });
+          stockBadge = (_gsF.balance < 0
+            ? '<span class="search-stock search-stock-out" title="' + escHtml(tip) + '">' + esc(t('gsNegative', { n: fmtN(_gsF.balance) })) + '</span>'
+            : _gsF.ready > 0
+              ? '<span class="search-stock search-stock-in" title="' + escHtml(tip) + '"><span class="stock-live-dot"></span>' + esc(t('gsReadyN', { n: fmtN(_gsF.ready) })) + '</span>'
+              : '<span class="search-stock search-stock-out" title="' + escHtml(tip) + '">' + esc(t('gsNoReady')) + '</span>')
+            + (extra.length ? '<span class="search-stock-extra">' + esc(extra.join(' · ')) + '</span>' : '');
+        } else if (stock === -1) {
           stockBadge = '<span class="search-stock search-stock-unknown">' + esc(t('gsStockUnknown')) + '</span>';
         } else if (stock === 0) {
           stockBadge = '<span class="search-stock search-stock-out">' + esc(t('gsStockOut')) + '</span>';
@@ -120550,12 +120650,12 @@ function _spRenderHistoryTab() {
 <script src="/order-audit-financials.js?v=20261020-2"></script>
 <script src="/order-audit-insights.js?v=20261021-6"></script>
 <script src="/order-audit-marketing.js?v=20261021-7"></script>
-<script src="/order-audit-periods.js?v=20261021-2"></script>
+<script src="/order-audit-periods.js?v=20261118-apply-range"></script>
 <script src="/notification-history.js?v=20261110-prep-groups"></script>
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/shopify-sync.css?v=20261114-compact">
 <script src="/shopify-sync.js?v=20261114-compact"></script>
-<link rel="stylesheet" href="/inventory-units.css?v=20261115-bulk-actions">
+<link rel="stylesheet" href="/inventory-units.css?v=20261116-printsplit">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
@@ -120568,11 +120668,15 @@ function _spRenderHistoryTab() {
 <script src="/global-search-scanner.js?v=20261113-supplier"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261103-neutral-surfaces">
 <script src="/warehouses.js?v=20261103-purchase-location"></script>
+<link rel="stylesheet" href="/inventory-overview.css?v=20261115-1">
+<script src="/inventory-overview.js?v=20261115-1"></script>
+<link rel="stylesheet" href="/inventory-stale-pieces.css?v=20261115-1">
+<script src="/inventory-stale-pieces.js?v=20261115-1"></script>
 <link rel="stylesheet" href="/warehouse-layout.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/warehouse-workspace.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/preparation-location-flip.css?v=20261103-1">
 <script src="/warehouse-layout.js?v=20261103-warehouse-route"></script>
-<script src="/inventory-units.js?v=20261115-bulk-actions"></script>
+<script src="/inventory-units.js?v=20261116-printsplit"></script>
 <link rel="stylesheet" href="/preprinted-labels.css?v=20261103-scan-progress">
 <script src="/preprinted-labels.js?v=20261111-packs"></script>
 <link rel="stylesheet" href="/supplier-labels.css?v=20261111-packs-2">
@@ -120585,6 +120689,10 @@ function _spRenderHistoryTab() {
 <script src="/purchase-receiving.js?v=20261103-warehouse-route"></script>
 <link rel="stylesheet" href="/sales-scanner.css?v=20261112-scan-gate">
 <script src="/sales-scanner.js?v=20261113-supplier"></script>
+<link rel="stylesheet" href="/purchase-scan-receive.css?v=20261115-3">
+<script src="/purchase-scan-receive.js?v=20261115-2"></script>
+<link rel="stylesheet" href="/purchase-form.css?v=20261116-2">
+<script src="/invoice-image-upload.js?v=20261116-3"></script>
 <link rel="stylesheet" href="/shopify-compact-header.css?v=20261110-inline-tabs">
 <script src="/shopify-compact-header.js?v=20261110-inline-tabs"></script>
 <link rel="stylesheet" href="/otp-audit.css?v=20261026-mobile-filters-time-labels">

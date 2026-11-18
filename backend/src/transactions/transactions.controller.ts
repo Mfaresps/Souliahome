@@ -250,6 +250,12 @@ export class TransactionsController {
     return cachedRead('inventory', 5000, () => this.transactionsService.getInventory());
   }
 
+  @Get('inventory/breakdown')
+  async getInventoryBreakdown() {
+    // Display only: reserved / issue / incoming per product and warehouse (inventory-breakdown.ts).
+    return cachedRead('inventory-breakdown', 5000, () => this.transactionsService.getInventoryBreakdown());
+  }
+
   @Get('reports')
   async getReports(
     @Query('from') from?: string,

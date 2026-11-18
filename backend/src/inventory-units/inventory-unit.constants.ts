@@ -7,7 +7,7 @@ export type InventoryUnitStatus = typeof INVENTORY_UNIT_STATUSES[number];
 export const INVENTORY_UNIT_ACTIONS = [
   'registered', 'reserved', 'picking-started', 'prepared', 'shipped', 'delivered',
   'returned', 'inspection-required', 'inspection-passed', 'damaged', 'released',
-  'supplier-returned', 'supplier-return-reserved', 'supplier-return-released', 'lost', 'retired', 'warehouse-changed', 'label-printed', 'label-reprinted',
+  'supplier-returned', 'supplier-return-reserved', 'supplier-return-released', 'lost', 'found', 'repaired', 'retired', 'warehouse-changed', 'label-printed', 'label-reprinted',
   'label-print-requested', 'label-reprint-requested',
   'scan-validated', 'manual-selection-confirmed', 'picking-undone',
 ] as const;

@@ -532,3 +532,48 @@ body.dark-mode #page-barcodes .iu-print-tag.is-conflict{background:#3d1d1b;borde
 .iu-bulk-results li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;padding:8px 10px;border:1px solid var(--iu-border);border-inline-start:3px solid #dc2626;border-radius:8px}
 .iu-bulk-results li code{font-size:12px;unicode-bidi:isolate}.iu-bulk-results li small{grid-column:1/-1;color:#b91c1c}
 body.dark-mode .iu-bulk-results li small{color:#fca5a5}
+/* Invoice KPIs (Nov 16, 2026): one quiet strip — codes, then labels printed / left to print. */
+#page-barcodes .iu-invoice-summary{display:flex;flex-wrap:wrap;gap:0;margin-top:18px;padding:0;border:1px solid var(--iu-border);border-radius:9px;overflow:hidden}
+#page-barcodes .iu-invoice-summary>div{flex:1 1 0;min-width:96px;padding:9px 12px}
+#page-barcodes .iu-invoice-summary>div+div{border-inline-start:1px solid var(--iu-border)}
+#page-barcodes .iu-invoice-summary span{font-size:10px;margin-bottom:2px;white-space:nowrap}
+#page-barcodes .iu-invoice-summary b{font-size:16px;font-weight:600;line-height:1.4}
+#page-barcodes .iu-invoice-summary b bdi{unicode-bidi:isolate;direction:ltr}
+#page-barcodes .iu-invoice-summary .is-ok b{color:var(--iu-accent)}
+#page-barcodes .iu-invoice-summary .is-amber b{color:#986323}
+#page-barcodes .iu-sum-bar{display:block;height:3px;margin-top:5px;border-radius:3px;background:var(--iu-bg);overflow:hidden}
+#page-barcodes .iu-sum-bar em{display:block;height:100%;background:currentColor;color:#c58a3a}
+#page-barcodes .is-ok .iu-sum-bar em{color:var(--iu-accent)}
+body.dark-mode #page-barcodes .iu-invoice-summary .is-amber b{color:#e0a85c}
+@container barcode (max-width:440px){#page-barcodes .iu-invoice-summary>div{flex-basis:33%}#page-barcodes .iu-invoice-summary b{font-size:15px}}
+/* Pieces window (Nov 16, 2026): ONE scroll area (the piece list) under a fixed head, with the
+   table header pinned; the dialog and its body no longer scroll on their own. */
+#iu-units-dialog[open]{display:flex;flex-direction:column;overflow:hidden;height:min(900px,calc(100dvh - 40px))}
+#iu-units-dialog>.iu-dialog-header,#iu-units-dialog>.iu-dialog-footer{flex:none}
+#iu-units-dialog .iu-dialog-body{flex:1;min-height:0;max-height:none;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+#iu-units-dialog .iu-dialog-body>*{flex:none}
+#iu-units-dialog #iu-line-units{flex:1 1 auto;min-height:160px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--iu-border);border-radius:10px}
+#iu-units-dialog #iu-line-units .iu-unit-log{max-height:none;overflow:visible}
+#iu-units-dialog .iu-dialog-body>.iu-help{margin-bottom:0!important}
+#iu-units-dialog [data-dialog-message]:empty{display:none}
+.iu-print-filter{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.iu-print-filter[hidden]{display:none}
+.iu-print-filter .iu-chip{font-size:11px;padding:5px 10px}
+.iu-print-filter .iu-select-fresh{margin-inline-start:auto}
+.iu-unit-log tr.iu-print-group th{position:static;padding:8px 12px;font-size:11px;font-weight:650;text-align:start;background:var(--iu-surface);border-bottom:1px solid var(--iu-border)}
+.iu-unit-log tr.iu-print-group.is-new th{color:#986323;background:color-mix(in srgb,#c58a3a 9%,var(--iu-surface))}
+.iu-unit-log tr.iu-print-group.is-re th{color:var(--iu-accent);background:var(--iu-soft)}
+/* Product card: which pieces the checkbox takes when part of the product was printed. */
+.iu-select-mode{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:11px;color:var(--iu-muted)}
+.iu-mode-opt{padding:4px 10px;border:1px solid var(--iu-border);border-radius:999px;background:var(--iu-surface);color:var(--iu-text);font-size:11px;line-height:1.5}
+.iu-mode-opt bdi{font-weight:650;margin-inline-start:2px}
+.iu-mode-opt.is-on{border-color:var(--iu-accent);background:var(--iu-soft);color:var(--iu-accent);font-weight:600}
+/* Selected labels panel + previews: new vs reprint. */
+.iu-print-split{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+.iu-print-split em{display:inline-flex;align-items:center;gap:3px;font-style:normal;font-size:10px;line-height:1.5}
+.iu-print-split em.is-new{color:#986323}
+.iu-print-split em.is-re{color:var(--iu-muted)}
+#page-barcodes .iu-print-split svg,.iu-print-split svg{width:11px!important;height:11px!important}
+.iu-preview-group{flex:0 0 100%;width:100%;margin:6px 0 2px!important;font-size:12px!important;font-weight:650}
+.iu-preview-group.is-new{color:#986323}.iu-preview-group.is-re{color:var(--iu-accent)}
+.iu-print-count.is-new{color:#986323;font-weight:600}

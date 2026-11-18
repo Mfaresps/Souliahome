@@ -1,0 +1,41 @@
+/* Review pieces stuck on «مُجهزة» (Nov 15, 2026) — see inventory-stale-pieces.js. */
+#inv-stale-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:9px 14px;border:1px solid var(--border);border-inline-start:3px solid var(--invo-warn,#a85a07);border-radius:10px;background:var(--surface,#fff);font-size:.8rem}
+#inv-stale-notice[hidden]{display:none}
+.isp-dialog{position:fixed;inset:0;margin:auto!important;height:fit-content;width:min(1180px,calc(100vw - 24px));max-height:calc(100dvh - 28px);padding:0;border:1px solid var(--border);border-radius:14px;background:var(--surface,#fff);color:var(--text);font-family:inherit}
+.isp-dialog[open]{display:flex;flex-direction:column}
+.isp-dialog::backdrop{background:rgba(15,30,22,.45)}
+.isp-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.isp-dialog>header h2{margin:0;font-size:1rem}
+.isp-body{flex:1;min-height:0;overflow:auto;padding:14px 18px}
+.isp-lead{margin:0 0 12px;color:var(--muted);font-size:.8rem;line-height:1.6}
+.isp-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.isp-tab{padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:.78rem;cursor:pointer}
+.isp-tab b{margin-inline-start:4px;font-variant-numeric:tabular-nums}
+.isp-tab.is-on{border-color:var(--primary);background:var(--primary-pale);color:var(--primary);font-weight:600}
+.isp-search{margin-inline-start:auto;width:240px!important;max-width:100%;padding:6px 10px!important;font-size:.8rem}
+.isp-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+.isp-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.isp-table th{position:sticky;top:0;background:var(--bg-alt,#f6f8f7);text-align:start;font-weight:600;color:var(--muted);padding:8px 10px;white-space:nowrap}
+.isp-table td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:top}
+.isp-table td small{display:block;color:var(--muted);font-size:.7rem;margin-top:2px}
+.isp-table input[type=checkbox]{width:auto!important;margin:0}
+.isp-table tr.is-review td{background:var(--invo-warn-bg,#fdf3e4)}
+.isp-code{font-family:ui-monospace,monospace;font-size:.76rem}
+.isp-link{padding:0;border:0;background:none;color:var(--primary);font:inherit;font-weight:600;cursor:pointer}
+.isp-prop{white-space:nowrap;color:var(--muted)}
+.isp-prop b{color:var(--invo-ok,#15803d)}
+.isp-review{color:var(--invo-warn,#a85a07);font-weight:600}
+.isp-empty{padding:18px;text-align:center;color:var(--muted)}
+.isp-pager{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:.78rem}
+.isp-result{margin-bottom:10px;padding:8px 12px;border-radius:8px;background:var(--invo-ok-bg,#e8f6ee);color:var(--invo-ok,#15803d);font-size:.8rem;font-weight:600}
+.isp-result.has-fail{background:var(--invo-warn-bg,#fdf3e4);color:var(--invo-warn,#a85a07)}
+.isp-result ul{margin:6px 0 0;padding-inline-start:18px;font-weight:400}
+.isp-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 18px;padding:10px 12px;border:1px solid var(--invo-warn,#a85a07);border-radius:10px;background:var(--invo-warn-bg,#fdf3e4)}
+.isp-confirm[hidden]{display:none}
+.isp-confirm p{flex:1 1 300px;margin:0;font-size:.8rem;line-height:1.6}
+.isp-dialog>footer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
+.isp-reason-field{flex:1 1 320px;display:flex;flex-direction:column;gap:4px;font-size:.74rem;color:var(--muted)}
+.isp-reason-field input{width:100%!important;font-size:.8rem}
+.isp-err{color:var(--invo-bad,#b42318)}
+.isp-err[hidden]{display:none}
+@media (max-width:640px){.isp-search{margin-inline-start:0;width:100%!important}}

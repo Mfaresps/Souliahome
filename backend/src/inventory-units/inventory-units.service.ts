@@ -15,7 +15,8 @@ import { InventoryUnitOperation } from './schemas/inventory-unit-operation.schem
 import { INVENTORY_UNIT_STATUSES, OBJECT_ID_PATTERN, LABEL_SIZES, inventoryUnitBarcode } from './inventory-unit.constants';
 import { migrateInventoryUnitIndexes } from './inventory-unit-index.migration';
 import { TransactionsService } from '../transactions/transactions.service';
-import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto } from './inventory-unit.dto';
+import { CountAttestationDto, CountReviewDto, IdentifyPurchaseLineDto, LabelRequestDto, LegacyStockIdentifyDto, OrderPickExceptionDto, OrderPickScanDto, PrepareOrderPickingDto, ReceiveCustomerPieceDto, RegisterUnitDto, TrackingRequestDto, UnitActionDto, PrelabelIssueDto, PrelabelPrintDto, PrelabelLinkDto, PrelabelBulkSelectionDto, PrelabelBulkPrintDto, PrelabelRangePreviewDto, PrelabelBulkPreviewDto, StalePreparedCorrectionDto } from './inventory-unit.dto';
+import { classifyStalePrepared, staleOrderSnapshot } from './stale-prepared.util';
 
 export type TrackingActor = { userId?: string; name?: string; username?: string; role?: string; perms?: string[] };
 type PurchaseReceiptLine = { lineIndex: number; lineId: string; sku: string; name: string; imageUrl: string; quantity: number; createdUnits: number; onHandUnits: number; unassignedUnits: number; printedUnits: number; printRequests: number; change?: any; packs?: { count: number; pieces: number; printed: number; piecesPerPack: number | null; loose: number; loosePrinted: number } };
@@ -1183,6 +1184,8 @@ export class InventoryUnitsService implements OnModuleInit {
     if (allowed('inventory-units-condition')) {
       if (!unit.assignment && ['inspection-required', 'returned'].includes(unit.status)) actions.push('inspect');
       if (!unit.assignment && ['available', 'inspection-required', 'returned'].includes(unit.status)) actions.push('damage', 'lost');
+      if (!unit.assignment && unit.status === 'lost') actions.push('found');
+      if (!unit.assignment && unit.status === 'damaged') actions.push('repaired');
       if (unit.status === 'prepared') actions.push('ship');
       if (unit.status === 'shipped') actions.push('deliver');
       if (['shipped', 'delivered'].includes(unit.status)) actions.push('return');
@@ -1353,6 +1356,26 @@ export class InventoryUnitsService implements OnModuleInit {
         if (dto.action === 'damage') possession();
         if (dto.action === 'lost' && dto.physicalCountConfirmed !== true) throw new BadRequestException('A confirmed physical count documenting the loss is required');
         unit.status = dto.action === 'damage' ? 'damaged' : 'lost'; action = dto.action === 'damage' ? 'damaged' : 'lost';
+      } else if (dto.action === 'found') {
+        // A lost piece found again: it goes back on the shelf. If its loss was already written off the
+        // stock balance (inventorywriteoffs), making it available would leave more pieces than stock.
+        possession();
+        if (from !== 'lost' || unit.assignment) throw new ConflictException('هذا الإجراء متاح لقطعة مفقودة فقط');
+        const claim: any = await this.connection.collection('inventorywriteoffs').findOne({ unitId: String(unit._id) }, { session });
+        if (claim) throw new ConflictException(`خُصمت خسارة هذه القطعة من الرصيد في التسوية ${claim.adjustmentRef || ''}، فلا يمكن إعادتها من هنا. راجع مدير النظام لعكس التسوية`);
+        unit.status = 'available'; action = 'found';
+      } else if (dto.action === 'repaired') {
+        // A damaged piece checked again and found sound (or repaired). Refused when its loss is already
+        // out of the stock balance: written off by an adjustment, or received damaged from a customer
+        // (a تالف return never re-enters derived stock) since its last approved inspection.
+        possession();
+        if (from !== 'damaged' || unit.assignment) throw new ConflictException('هذا الإجراء متاح لقطعة تالفة فقط');
+        const claim: any = await this.connection.collection('inventorywriteoffs').findOne({ unitId: String(unit._id) }, { session });
+        if (claim) throw new ConflictException(`خُصمت خسارة هذه القطعة من الرصيد في التسوية ${claim.adjustmentRef || ''}، فلا يمكن إعادتها من هنا. راجع مدير النظام لعكس التسوية`);
+        const last: any = await this.events.findOne({ unitId: String(unit._id), action: { $in: ['returned', 'inspection-passed', 'repaired', 'found'] } })
+          .sort({ sequence: -1 }).session(session).lean();
+        if (last?.action === 'returned') throw new ConflictException('رجعت هذه القطعة تالفة من عميل وخسارتها مسجلة في المرتجع، فهي خارج رصيد المخزون ولا يمكن إتاحتها من هنا');
+        unit.status = 'available'; action = 'repaired';
       } else if (dto.action === 'return') {
         possession();
         if (from === 'prepared' && unit.assignment) {
@@ -1848,6 +1871,115 @@ export class InventoryUnitsService implements OnModuleInit {
     return codes;
   }
 
+  /**
+   * Checks scanned pre-printed codes without writing anything. Used when a saved scan session is reopened:
+   * a session whose codes changed on the server since they were scanned must not be resumed.
+   */
+  async prelabelScanCheck(unitIds: string[], packIds: string[]) {
+    const pieceIds = [...new Set((unitIds || []).map(id => String(this.id(id))))];
+    const packKeys = [...new Set((packIds || []).map(id => String(this.id(id))))];
+    if (pieceIds.length + packKeys.length < 1 || pieceIds.length + packKeys.length > 2000) throw new BadRequestException('أرسل من 1 إلى 2000 كود');
+    const packs = packKeys.length ? await this.prelabelPacks().find({ _id: { $in: packKeys.map(id => this.id(id)) } }).toArray() : [];
+    const memberIds = packs.flatMap(pack => (pack.unitIds || []).map(String));
+    const labels = await this.connection.collection('inventoryunitprelabels').find({ _id: { $in: [...pieceIds, ...memberIds].map(id => this.id(id)) } }).toArray();
+    const byId = new Map(labels.map(label => [String(label._id), label]));
+    const pieceState = (label: any, packId: string | null) => !label ? 'not-found' : label.state !== 'unused' ? 'linked'
+      : !(Number(label.printCount) > 0) ? 'unprinted' : (packId ? label.packId !== packId : !!label.packId) ? 'in-pack' : 'ok';
+    return {
+      pieces: pieceIds.map(id => { const label = byId.get(id); return { id, productId: label?.productId || null, state: pieceState(label, null) }; }),
+      packs: packKeys.map(id => {
+        const pack = packs.find(row => String(row._id) === id);
+        if (!pack) return { id, productId: null, quantity: 0, state: 'not-found' };
+        const members = (pack.unitIds || []).map((unitId: any) => byId.get(String(unitId)));
+        const states = members.map((label: any) => pieceState(label, id));
+        const state = pack.state !== 'unused' ? 'linked' : members.length !== pack.quantity ? 'mismatch'
+          : states.find((row: string) => row !== 'ok') || (members.some((label: any) => label.productId !== pack.productId) ? 'mismatch' : 'ok');
+        return { id, productId: pack.productId, quantity: Number(pack.quantity), state };
+      }),
+    };
+  }
+
+  /**
+   * Turns scanned pre-printed codes into real units of a purchase being created in the SAME session.
+   * The caller's transaction also holds the invoice, vault and stock rows, so either everything commits or nothing does.
+   * Every rule is re-checked here: a scan list from the browser is a claim, not a fact.
+   */
+  async linkScannedPrelabels(purchase: any, scanLines: { lineId: string; unitIds: string[]; packIds: string[] }[], warehouseCode: string,
+    dto: TrackingRequestDto, actor: TrackingActor, name: string, session: ClientSession, inspectionPassed: boolean) {
+    this.require(actor, 'inventory-units-receive');
+    const transactionId = String(purchase._id).toLowerCase();
+    warehouseCode = await requireWarehouse(this.connection, warehouseCode, session);
+    if (normalizeWarehouseCode(purchase.warehouseCode) !== warehouseCode) throw new ConflictException('مخزن القطع يجب أن يطابق مخزن فاتورة الشراء');
+    const lines = new Map<string, any>((purchase.items || []).map((line: any) => [String(line.lineId), line]));
+    const packKeys = scanLines.flatMap(row => row.packIds.map(id => String(this.id(id))));
+    const pieceKeys = scanLines.flatMap(row => row.unitIds.map(id => String(this.id(id))));
+    if (new Set(packKeys).size !== packKeys.length || new Set(pieceKeys).size !== pieceKeys.length)
+      throw new ConflictException({ code: 'SCAN_DUPLICATE', message: 'كود ممسوح أكثر من مرة في نفس الاستلام' });
+    const packs = packKeys.length ? await this.prelabelPacks().find({ _id: { $in: packKeys.map(id => this.id(id)) } }, { session }).toArray() : [];
+    if (packs.length !== packKeys.length) throw new NotFoundException({ code: 'SCAN_UNKNOWN', message: 'ملصق باك غير مسجل كملصق مورد' });
+    if (packs.some(pack => pack.state !== 'unused')) throw new ConflictException({ code: 'SCAN_LINKED', message: 'باك مستلم على فاتورة سابقة' });
+    const memberOf = new Map<string, string>();
+    for (const pack of packs) for (const id of pack.unitIds || []) memberOf.set(String(id), String(pack._id));
+    // A piece scanned alone and again inside its pack is the same physical piece counted twice.
+    if (pieceKeys.some(id => memberOf.has(id))) throw new ConflictException({ code: 'SCAN_DUPLICATE', message: 'قطعة ممسوحة منفردة وهي داخل باك ممسوح' });
+    const allIds = [...pieceKeys, ...memberOf.keys()];
+    if (!allIds.length || allIds.length > 10000) throw new BadRequestException('امسح من 1 إلى 10000 قطعة');
+    const labels = await this.connection.collection('inventoryunitprelabels').find({ _id: { $in: allIds.map(id => this.id(id)) } }, { session }).toArray();
+    if (labels.length !== allIds.length) throw new NotFoundException({ code: 'SCAN_UNKNOWN', message: 'كود غير مسجل كملصق مورد' });
+    const labelById = new Map(labels.map(label => [String(label._id), label]));
+    const batchIds = [...new Set(labels.map(label => String(label.batchId)))];
+    const batches = await this.connection.collection('inventoryunitprelabelbatches').find({ _id: { $in: batchIds.map(id => this.id(id)) } }, { session }).toArray();
+    if (batches.length !== batchIds.length) throw new ConflictException('دفعة ملصقات غير موجودة');
+    const batchById = new Map(batches.map(batch => [String(batch._id), batch]));
+    const products = new Map<string, any>();
+    for (const id of [...new Set(batches.map(batch => String(batch.productId)))].sort()) products.set(id, await this.lockProduct(id, session));
+    const now = new Date(), pieces: any[] = [], events: any[] = [], packLabels: any[] = [], claims: any[] = [];
+    const operationKey = digest({ actor: actor.userId!.toLowerCase(), key: dto.operationKey });
+    const lineResults: any[] = [];
+    for (const scan of scanLines) {
+      const line = lines.get(String(scan.lineId));
+      if (!line) throw new ConflictException('سطر الفاتورة الممسوح غير موجود');
+      const ids = [...scan.unitIds.map(id => String(this.id(id))), ...scan.packIds.flatMap(id => (packs.find(pack => String(pack._id) === String(this.id(id)))?.unitIds || []).map(String))];
+      // A line may mix scanned pieces and pieces without a label; it can never hold more scans than pieces.
+      if (!ids.length || ids.length > Number(line.qty)) throw new ConflictException({ code: 'SCAN_QTY_MISMATCH', message: `كمية السطر ${line.qty} أقل من ${ids.length} قطعة ممسوحة` });
+      for (const id of ids) {
+        const label = labelById.get(id)!, batch = batchById.get(String(label.batchId)), packId = memberOf.get(id) || null;
+        if (label.state !== 'unused') throw new ConflictException({ code: 'SCAN_LINKED', message: 'كود مستلم على فاتورة سابقة' });
+        if (!(Number(label.printCount) > 0)) throw new ConflictException({ code: 'SCAN_UNPRINTED', message: 'كود لم تُطلب طباعته' });
+        if (packId ? String(label.packId) !== packId : !!label.packId) throw new ConflictException({ code: 'SCAN_IN_PACK', message: 'هذه القطعة داخل باك؛ امسح ملصق الباك' });
+        if (!batch || batch.productId !== label.productId || label.productId !== String(line.productId) || label.barcode !== inventoryUnitBarcode(label._id))
+          throw new ConflictException({ code: 'SCAN_PRODUCT_MISMATCH', message: 'كود ممسوح لا يطابق منتج سطر الفاتورة' });
+        const product = products.get(String(batch.productId));
+        if (String(product?.code || '').trim() !== String(batch.sku || '').trim() || String(line.code || '').trim() !== String(batch.sku || '').trim())
+          throw new ConflictException('تغير كود المنتج منذ إصدار الملصقات؛ راجع الدفعة');
+        const unit = new this.units({ _id: label._id, productId: label.productId, packId: label.packId || null,
+          status: inspectionPassed ? 'available' : 'inspection-required', warehouseCode,
+          origin: { kind: 'purchase', purchaseTransactionId: transactionId, purchaseLineId: line.lineId,
+            reconciliationRef: `prelabel:${String(label.batchId).toLowerCase()}` }, registeredByUserId: actor.userId, registeredBy: name });
+        await unit.validate();
+        const event = new this.events({ unitId: String(unit._id), sequence: 1, operationKey, action: 'registered',
+          fromStatus: null, toStatus: unit.status, transactionId, lineId: line.lineId, byUserId: actor.userId, by: name, reason: dto.reason,
+          details: { physicalPossessionConfirmed: true, physicalLabelsConfirmed: true, inspectionPassed,
+            batchId: String(label.batchId).toLowerCase(), ordinal: label.ordinal, registrationKind: 'preprinted-scan' } });
+        await event.validate();
+        pieces.push({ ...unit.toObject(), __v: 0, createdAt: now, updatedAt: now });
+        events.push({ ...event.toObject(), createdAt: now, updatedAt: now });
+        if (packId) packLabels.push(label);
+        claims.push({ updateOne: { filter: { _id: label._id, state: 'unused' }, update: { $set: { state: 'linked', linkedPurchaseId: transactionId, linkedLineId: line.lineId, linkedAt: now } } } });
+      }
+      lineResults.push({ lineId: line.lineId, linkedUnits: ids.length, packs: scan.packIds.length });
+    }
+    if (await this.units.exists({ _id: { $in: labels.map(label => label._id) } }).session(session)) throw new ConflictException({ code: 'SCAN_LINKED', message: 'هوية ملصق مستخدمة بالفعل' });
+    await this.units.collection.insertMany(pieces, { session, ordered: true });
+    await this.events.collection.insertMany(events, { session, ordered: true });
+    // The state change is conditional: a code claimed by a concurrent receipt makes this whole receipt roll back.
+    const changed = await this.connection.collection('inventoryunitprelabels').bulkWrite(claims, { session, ordered: true });
+    if (changed.modifiedCount !== labels.length) throw new ConflictException({ code: 'SCAN_LINKED', message: 'تغيرت حالة بعض الأكواد أثناء الاستلام' });
+    const packCodes = packLabels.length ? await this.sealLinkedPrelabelPacks(packLabels, transactionId, warehouseCode, actor, name, dto.reason, session) : [];
+    return { linkedUnits: pieces.length, unitIds: pieces.map(piece => String(piece._id)), packCodes, lines: lineResults,
+      status: inspectionPassed ? 'available' : 'inspection-required' };
+  }
+
   async labels(dto: LabelRequestDto, actor: TrackingActor) {
     const size = LABEL_SIZES.find(row => row.id === dto.sizeId);
     if (!size || !Array.isArray(dto.unitIds) || !dto.unitIds.length || dto.unitIds.length > 100 || new Set(dto.unitIds.map(id => String(id).toLowerCase())).size !== dto.unitIds.length) throw new BadRequestException('Select a supported size and 1–100 distinct units');
@@ -1918,6 +2050,80 @@ export class InventoryUnitsService implements OnModuleInit {
       generatedAt: new Date().toISOString(), snapshotAtomic: false, enforcementEnabled: false, activationAllowed: false,
       blockers: ['Physical count/custody evidence must be reviewed', 'Live legacy writers are not coordinated with tracking; quiescent cutover required',
         'Deployment transaction/index capabilities and recovery require verification', 'No automatic stock adjustment or barcode enforcement is authorized'] };
+  }
+
+  /**
+   * Pieces stuck on «prepared» whose order already left (stale-prepared.util.ts). Read only.
+   * Each row: the piece, its order, its last history entry and the proposed correction.
+   */
+  async stalePrepared(actor: TrackingActor) {
+    if (actor.role !== 'admin') throw new ForbiddenException('Admins only');
+    const units: any[] = await this.units.find({ status: 'prepared' }).lean();
+    const orderIds = [...new Set(units.map(u => u.assignment?.transactionId).filter((id: any) => OBJECT_ID_PATTERN.test(id || '')))];
+    const productIds = [...new Set(units.map(u => u.productId))];
+    const unitIds = units.map(u => String(u._id));
+    const [orders, products, codes, lastEvents] = await Promise.all([
+      this.connection.collection('transactions').find({ _id: { $in: orderIds.map(id => this.id(id)) } }, { projection: {
+        ref: 1, client: 1, date: 1, cancelled: 1, pickupStatus: 1, bostaStatus: 1, shippedAt: 1, deliveredAt: 1,
+        shipIssueState: 1, 'items.lineId': 1 } }).toArray(),
+      this.connection.collection('products').find({ _id: { $in: productIds.map(id => this.id(id)) } }, { projection: { name: 1, code: 1 } }).toArray(),
+      this.manualCodes.codesFor(unitIds),
+      this.events.aggregate([{ $match: { unitId: { $in: unitIds } } }, { $sort: { sequence: -1 } },
+        { $group: { _id: '$unitId', action: { $first: '$action' }, at: { $first: '$createdAt' }, by: { $first: '$by' }, reason: { $first: '$reason' } } }]),
+    ]);
+    const orderOf = new Map(orders.map((o: any) => [String(o._id), o]));
+    const productOf = new Map(products.map((p: any) => [String(p._id), p]));
+    const lastOf = new Map(lastEvents.map((e: any) => [String(e._id), e]));
+    const rows: any[] = [];
+    for (const unit of units) {
+      const order = orderOf.get(String(unit.assignment?.transactionId || ''));
+      const verdict = classifyStalePrepared(unit, order);
+      if (verdict.kind === 'active') continue;
+      const product: any = productOf.get(unit.productId);
+      const last: any = lastOf.get(String(unit._id));
+      rows.push({
+        unitId: String(unit._id), version: unit.__v, manualCode: codes.get(String(unit._id)) || '', barcode: unit.barcode,
+        product: { id: unit.productId, name: product?.name || '', code: product?.code || '' },
+        warehouseCode: unit.warehouseCode || 'MAIN', registeredAt: unit.createdAt,
+        order: order ? { id: String(order._id), ref: order.ref || '', client: order.client || '', date: order.date || '',
+          pickupStatus: order.pickupStatus || '', bostaStatus: order.bostaStatus || '', shippedAt: order.shippedAt || null,
+          deliveredAt: order.deliveredAt || null, cancelled: !!order.cancelled } : null,
+        lastEvent: last ? { action: last.action, at: last.at, by: last.by || '', reason: last.reason || '' } : null,
+        proposal: verdict.proposal, review: verdict.review,
+      });
+    }
+    const count = (fn: (r: any) => boolean) => rows.filter(fn).length;
+    return { rows, generatedAt: new Date().toISOString(), summary: { total: rows.length,
+      delivered: count(r => r.proposal === 'delivered'), shipped: count(r => r.proposal === 'shipped'), review: count(r => !r.proposal) } };
+  }
+
+  /**
+   * One approved correction: prepared → shipped (→ delivered). Re-checks the piece version and the
+   * order's state inside the write, refuses if either changed since the review, and writes the usual
+   * `shipped` / `delivered` history events marked as a correction with the order facts it relied on.
+   * Unit status only — stock, money and the order are not touched.
+   */
+  async correctStalePrepared(dto: StalePreparedCorrectionDto, actor: TrackingActor) {
+    if (actor.role !== 'admin') throw new ForbiddenException('Admins only');
+    return this.write(`stale-prepared:${dto.unitId}`, dto, actor, 'inventory-units-view', async (session, name) => {
+      const unit: any = await this.units.findById(this.id(dto.unitId)).session(session);
+      if (!unit) throw new NotFoundException('Unit not found');
+      if (unit.status !== 'prepared' || unit.__v !== dto.expectedVersion) throw new ConflictException('تغيّرت القطعة منذ المراجعة؛ حدّث القائمة');
+      const order: any = OBJECT_ID_PATTERN.test(unit.assignment?.transactionId || '')
+        ? await this.connection.collection('transactions').findOne({ _id: this.id(unit.assignment.transactionId) }, { session }) : null;
+      const verdict = classifyStalePrepared(unit, order);
+      if (!verdict.proposal || verdict.proposal !== dto.target) throw new ConflictException('تغيّرت حالة الطلب منذ المراجعة؛ حدّث القائمة');
+      const details = { correction: 'stale-prepared', order: staleOrderSnapshot(order), approvedBy: name };
+      const link = { transactionId: unit.assignment.transactionId, lineId: unit.assignment.lineId };
+      unit.status = 'shipped'; unit.markModified('status'); await unit.save({ session });
+      await this.event(unit, 'shipped', 'prepared', dto, actor, name, session, { notes: 'stale-prepared-correction', details, ...link });
+      if (dto.target === 'delivered') {
+        unit.status = 'delivered'; unit.markModified('status'); await unit.save({ session });
+        await this.event(unit, 'delivered', 'shipped', { ...dto, operationKey: dto.operationKey + ':delivered' }, actor, name, session,
+          { notes: 'stale-prepared-correction', details, ...link });
+      }
+      return { unit: unit.toObject(), stockChanged: false, transactionId: link.transactionId };
+    });
   }
 
   async attestCount(dto: CountAttestationDto, actor: TrackingActor) {

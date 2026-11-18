@@ -1032,6 +1032,7 @@ export class SettingsService {
     // «بيانات المرتجعات» — documentation-only supplier return statements and their photos.
     'supplierreturnstatements',
     'supplierreturnstatementimages',
+    'purchaseinvoiceimages',
     // Per-product supplier prices (step 4 of the profit fix) — reference prices, not costs.
     'productsuppliers',
     'productcostevents',
@@ -1393,6 +1394,7 @@ export class SettingsService {
     'supplierledgerentries',
     'supplierreturnstatements',
     'supplierreturnstatementimages',
+    'purchaseinvoiceimages',
     'productsuppliers',
     'productcostevents',
     'inventorywriteoffs',
@@ -2160,7 +2162,7 @@ export class SettingsService {
     transactions:   ['transactions', 'returnrequests', 'inventorymovements', 'inventorywriteoffs', 'carrierimports', 'carrierpayouts', 'classificationchanges', 'financialcorrections'],
     inventoryUnits: ['warehouses', 'warehousetransfers', 'warehouselayoutnodes', 'inventorypacks', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabelbatches', 'inventoryunitprelabels', 'inventoryunitprelabelpacks', 'inventoryunitcodes', 'inventoryunitcodecounters'],
     products:       ['products', 'categories', 'collections', 'collectionproducts', 'productsuppliers', 'productcostevents'],
-    customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries', 'supplierreturnstatements', 'supplierreturnstatementimages'],
+    customers:      ['clients', 'suppliers', 'purchaseorders', 'supplierreturnorders', 'supplierledgerentries', 'supplierreturnstatements', 'supplierreturnstatementimages', 'purchaseinvoiceimages'],
     expenses:       ['expenses'],
     vault:          ['vaultentries', 'vaultbalances'],
     other:          ['brandlogos', 'complaints', 'complaintevidence', 'followups', 'tags', 'shopifyorders', 'depositreceiptidentities', 'orderaudits', 'mentions',

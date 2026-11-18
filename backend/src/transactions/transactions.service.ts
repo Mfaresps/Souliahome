@@ -124,6 +124,7 @@ type TxShipTariff = {
 };
 
 import { MAIN_WAREHOUSE, requireWarehouse, warehouseCode, legacyReceiptLocations } from '../warehouses/warehouse-storage';
+import { loadInventoryBreakdown } from './inventory-breakdown';
 import { readyMergeBlock, readyMergeBlockMessage } from '../shared/ready-merge.util';
 import {
   PurchaseLike,
@@ -4792,6 +4793,11 @@ export class TransactionsService implements ClassificationInit {
       const product = inventory.find(row => String(row.code).trim() === change.code);
       if (Number(product?.warehouseBalances?.[change.location] || 0) + change.quantity < -0.000001) throw new BadRequestException(`رصيد المخزن لا يكفي للصنف ${product?.name || change.code}؛ راجع المخزن المختار أو حركة النقل`);
     }
+  }
+
+  /** Display-only breakdown of the stock balance — see inventory-breakdown.ts. */
+  getInventoryBreakdown() {
+    return loadInventoryBreakdown(this.transactionModel.db);
   }
 
   async getInventory(session?: ClientSession): Promise<InventoryItem[]> {

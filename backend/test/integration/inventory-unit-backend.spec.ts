@@ -537,6 +537,61 @@ describe('Tracking backend on isolated transaction-capable MongoDB', () => {
     await expect(action(unit, 'lost')).rejects.toThrow('custody recovery');
     await expect(action(unit, 'damage')).rejects.toThrow('custody recovery');
   });
+  it('returns a lost piece to available when it is found, unless its loss was written off the stock', async () => {
+    let unit = (await action(await available(), 'lost')).unit;
+    expect((await service.actionOptions(String(unit._id), actor)).actions).toContain('found');
+    await expect(action(unit, 'found', { physicalPossessionConfirmed: false })).rejects.toThrow('custody');
+    unit = (await action(unit, 'found')).unit;
+    expect(unit.status).toBe('available');
+    expect(await Event.findOne({ unitId: String(unit._id), action: 'found' })).toMatchObject({ fromStatus: 'lost', toStatus: 'available' });
+    await expect(action(unit, 'found')).rejects.toThrow('مفقودة');
+    const other = (await action(await available(), 'lost')).unit;
+    await raw('inventorywriteoffs').insertOne({ unitId: String(other._id), adjustmentRef: 'ADJ-9' });
+    await expect(action(other, 'found')).rejects.toThrow('ADJ-9');
+  });
+  it('returns a damaged piece to available, except after a write-off or a damaged customer return', async () => {
+    let unit = (await action(await available(), 'damage')).unit;
+    expect((await service.actionOptions(String(unit._id), actor)).actions).toContain('repaired');
+    unit = (await action(unit, 'repaired')).unit;
+    expect(unit.status).toBe('available');
+    await expect(action(unit, 'repaired')).rejects.toThrow('تالفة');
+    const written = (await action(await available(), 'damage')).unit;
+    await raw('inventorywriteoffs').insertOne({ unitId: String(written._id), adjustmentRef: 'ADJ-10' });
+    await expect(action(written, 'repaired')).rejects.toThrow('ADJ-10');
+    const fromCustomer = (await action(await available(), 'damage')).unit;
+    await Event.collection.insertOne({ unitId: String(fromCustomer._id), action: 'returned', sequence: 1e9 });
+    await expect(action(fromCustomer, 'repaired')).rejects.toThrow('عميل');
+  });
+  it('lists pieces stuck on prepared and corrects one only after admin approval, with history and nothing else touched', async () => {
+    let unit = await available();
+    unit = (await action(unit, 'reserve', { transactionId: saleId, lineId: 'line-1' })).unit;
+    for (const step of ['picking', 'prepare']) unit = (await action(unit, step)).unit;
+    // Still waiting for the carrier: correctly prepared, not listed.
+    expect((await service.stalePrepared(actor)).rows).toHaveLength(0);
+    await raw('transactions').updateOne({ _id: new Types.ObjectId(saleId) }, { $set: { pickupStatus: 'Delivered', bostaStatus: 'DELIVERED' } });
+    const before = JSON.stringify(await Promise.all(['transactions', 'products', 'vaultentries'].map(n => raw(n).find({}).sort({ _id: 1 }).toArray())));
+    const list = await service.stalePrepared(actor);
+    expect(list.summary).toMatchObject({ total: 1, delivered: 1, review: 0 });
+    const row = list.rows[0];
+    expect(row).toMatchObject({ unitId: String(unit._id), proposal: 'delivered', order: { ref: 'S1' } });
+    expect(row.lastEvent.action).toBe('prepared');
+    expect((await Unit.findById(unit._id))!.status).toBe('prepared'); // listing changes nothing
+    const correct = (extra: any = {}) => service.correctStalePrepared({ operationKey: key(), reason: 'Approved after review', unitId: row.unitId,
+      expectedVersion: row.version, target: 'delivered', ...extra }, actor);
+    await expect(service.correctStalePrepared({ operationKey: key(), reason: 'x', unitId: row.unitId, expectedVersion: row.version, target: 'delivered' },
+      { ...actor, role: 'staff', perms: ['inventory-units-view'] })).rejects.toThrow('Admins only');
+    await expect(correct({ target: 'shipped' })).rejects.toThrow('حالة الطلب');
+    await expect(correct({ expectedVersion: row.version - 1 })).rejects.toThrow('تغيّرت القطعة');
+    const done = await correct();
+    expect(done.unit.status).toBe('delivered');
+    const history = await Event.find({ unitId: row.unitId, notes: 'stale-prepared-correction' }).sort({ sequence: 1 }).lean();
+    expect(history.map((e: any) => [e.fromStatus, e.toStatus])).toEqual([['prepared', 'shipped'], ['shipped', 'delivered']]);
+    expect(history[0]).toMatchObject({ by: 'Verified Operator', reason: 'Approved after review',
+      details: { correction: 'stale-prepared', order: { ref: 'S1', pickupStatus: 'Delivered' } } });
+    await expect(correct()).rejects.toThrow('تغيّرت القطعة');
+    expect(JSON.stringify(await Promise.all(['transactions', 'products', 'vaultentries'].map(n => raw(n).find({}).sort({ _id: 1 }).toArray())))).toBe(before);
+    expect((await service.stalePrepared(actor)).rows).toHaveLength(0);
+  });
   it('tracks preparation, physical shipment and return without reopening original dispatch entitlement', async () => {
     let unit = await available();
     unit = (await action(unit, 'reserve', { transactionId: saleId, lineId: 'line-1' })).unit;

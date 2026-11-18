@@ -5,6 +5,11 @@ export class TrackingRequestDto {
   @IsString() @Matches(/^[A-Za-z0-9:_-]{8,120}$/) operationKey: string;
   @IsString() @MaxLength(1000) reason: string;
 }
+export class StalePreparedCorrectionDto extends TrackingRequestDto {
+  @IsString() @Matches(OBJECT_ID_PATTERN) unitId: string;
+  @IsInt() @Min(0) expectedVersion: number;
+  @IsString() @IsIn(['shipped', 'delivered']) target: 'shipped' | 'delivered';
+}
 export class RegisterUnitDto extends TrackingRequestDto {
   @IsString() @Matches(OBJECT_ID_PATTERN) productId: string;
   @IsString() @IsIn(['purchase', 'opening-stock', 'legacy-unknown']) originKind: string;
@@ -25,7 +30,7 @@ export class LegacyStockIdentifyDto extends TrackingRequestDto {
 }
 export class UnitActionDto extends TrackingRequestDto {
   @IsOptional() @IsString() @MaxLength(1000) reason: string = '';
-  @IsString() @IsIn(['reserve', 'release', 'picking', 'prepare', 'undo-picking', 'inspect', 'damage', 'lost', 'return', 'ship', 'deliver', 'supplier-return', 'receive-supplier-return', 'warehouse']) action: string;
+  @IsString() @IsIn(['reserve', 'release', 'picking', 'prepare', 'undo-picking', 'inspect', 'damage', 'lost', 'found', 'repaired', 'return', 'ship', 'deliver', 'supplier-return', 'receive-supplier-return', 'warehouse']) action: string;
   @IsOptional() @IsString() @Matches(OBJECT_ID_PATTERN) supplierReturnId?: string;
   @IsInt() @Min(0) expectedVersion: number;
   @IsOptional() @IsString() @Matches(OBJECT_ID_PATTERN) transactionId?: string;

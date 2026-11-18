@@ -104,7 +104,7 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
   }, 40000);
   beforeEach(async () => {
     await raw('warehouses').updateOne({ code: 'ACTUAL-SHELF-A' }, { $setOnInsert: { code: 'ACTUAL-SHELF-A', active: true } }, { upsert: true });
-    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabels', 'inventoryunitprelabelbatches', 'manualdepositreceipts', 'users', 'suppliers', 'inventorypacks']) await raw(name).deleteMany({});
+    for (const name of ['products', 'transactions', 'purchaseorders', 'settings', 'vaultentries', 'supplierledgerentries', 'inventorymovements', 'inventoryunits', 'inventoryunitevents', 'inventoryunitoperations', 'inventoryunitprelabels', 'inventoryunitprelabelbatches', 'manualdepositreceipts', 'users', 'suppliers', 'inventorypacks', 'inventoryunitprelabelpacks']) await raw(name).deleteMany({});
     productId = id(); supplierId = id(); actorId = id(); actor = { userId: actorId, role: 'admin', name: 'Forged Request Name' };
     await raw('users').insertOne({ _id: new Types.ObjectId(actorId), name: 'Authenticated Receiver', role: 'admin', isActive: true });
     await raw('suppliers').insertOne({ _id: new Types.ObjectId(supplierId), name: 'Supplier One' });
@@ -387,6 +387,119 @@ describe('Atomic purchase receiving with actual financial writers on disposable 
     expect((await post({ ...manualPayload(), tracking: undefined })).status).toBe(400);
     const response = await post(manualPayload()); expect(response.status).toBe(201);
     expect((await response.json() as any).receipt.createdUnits).toBe(3);
+  });
+
+  // ── Receive by scanning pre-printed QR labels ─────────────────────────────────────────────
+  async function scanFixture() {
+    const product2 = id();
+    await raw('products').insertOne({ _id: new Types.ObjectId(product2), code: 'SKU-2', name: 'Tray', openingBalance: 0, buyPrice: 10, sellPrice: 25 });
+    const pieces = await units.issuePrelabels({ operationKey: id(), reason: 'Supplier labels', productId, quantity: 4 }, actor);
+    const printedPieces = await units.printPrelabels(pieces.batchId, { operationKey: id(), reason: 'Print', start: 1, quantity: 3, sizeId: '50x30' }, actor);
+    const packs = await units.issuePrelabels({ operationKey: id(), reason: 'Supplier pack labels', productId: product2, quantity: 4, piecesPerPack: 2 }, actor);
+    const printedPacks = await units.printPrelabels(packs.batchId, { operationKey: id(), reason: 'Print', start: 1, quantity: 4, sizeId: '50x30' }, actor);
+    const unprinted: any = await raw('inventoryunitprelabels').findOne({ batchId: pieces.batchId, ordinal: 4 });
+    const packMember: any = await raw('inventoryunitprelabels').findOne({ batchId: packs.batchId, ordinal: 1 });
+    const packMember2: any = await raw('inventoryunitprelabels').findOne({ batchId: packs.batchId, ordinal: 2 });
+    return { product2, pieceIds: printedPieces.labels.map((l: any) => l.unitId), packIds: printedPacks.labels.map((l: any) => l.unitId),
+      unprintedId: String(unprinted._id), packMemberId: String(packMember._id), packMember2Id: String(packMember2._id) };
+  }
+  /** Line 0: 5 × SKU-1 = 3 scanned pieces + 2 without a label (one line) · line 1: one scanned pack (2 × SKU-2). */
+  function scanPayload(f: any, extra: any = {}, scans?: any[]) {
+    return { operationKey: id(), tracking: { ...payload().tracking, inspectionPassed: true },
+      invoice: { type: 'مشتريات', date: '2026-10-17', transactionDate: '2026-10-17', ref: '300', client: 'Supplier One', supplierId, employee: 'Forged Name',
+        items: [{ productId, code: 'SKU-1', name: 'Basket', qty: 5, price: 20, total: 100 }, { productId: f.product2, code: 'SKU-2', name: 'Tray', qty: 2, price: 10, total: 20 }],
+        itemsTotal: 120, discount: 0, total: 120, deposit: 20, remaining: 100, creditApplied: 0, depMethod: 'كاش', payment: 'كاش', payStatus: 'معلق', ...extra },
+      scans: scans || [{ lineIndex: 0, unitIds: f.pieceIds, packIds: [] }, { lineIndex: 1, unitIds: [], packIds: [f.packIds[0]] }] };
+  }
+  async function scanState() {
+    const stock = Object.fromEntries((await transactions.getInventory()).map((row: any) => [row.code, row.current]));
+    return { stock, cash: (await models.Settings.findOne())!.vaultCash, debt: await ledger.getCurrentBalance(supplierId),
+      transactions: await models.Transaction.countDocuments(), movements: await models.InventoryMovement.countDocuments(),
+      vault: await models.VaultEntry.countDocuments(), units: await models.InventoryUnit.countDocuments(), events: await raw('inventoryunitevents').countDocuments(),
+      linkedLabels: await raw('inventoryunitprelabels').countDocuments({ state: 'linked' }), sealedPacks: await raw('inventorypacks').countDocuments(),
+      linkedPacks: await raw('inventoryunitprelabelpacks').countDocuments({ state: 'linked' }) };
+  }
+  it('receives scanned pieces, a scanned pack and an unlabelled line as one invoice in one transaction, and replays a retry', async () => {
+    const f = await scanFixture();
+    const request = scanPayload(f);
+    const result = await manual.receiveScanned(request, actor);
+    const txId = String(result.transaction._id);
+    expect(await scanState()).toEqual({ stock: { 'SKU-1': 12, 'SKU-2': 2 }, cash: 980, debt: 200, transactions: 1, movements: 2, vault: 1,
+      units: 7, events: 7, linkedLabels: 5, sealedPacks: 1, linkedPacks: 1 });
+    expect(result.receipt).toMatchObject({ createdUnits: 2, linkedUnits: 5 });
+    expect(result.receipt.lines.map((l: any) => [l.labelled, l.linkedUnits, l.createdUnits])).toEqual([[true, 3, 2], [true, 2, 0]]);
+    const lineIds = result.transaction.items.map((l: any) => l.lineId);
+    // The scanned identities ARE the printed labels; the unlabelled line got new ones.
+    for (const pieceId of f.pieceIds) expect(await models.InventoryUnit.findById(pieceId).lean()).toMatchObject({ productId, status: 'available',
+      origin: { purchaseTransactionId: txId, purchaseLineId: lineIds[0] } });
+    const fresh = (await models.InventoryUnit.find({ 'origin.purchaseLineId': lineIds[0] }).lean()).filter((u: any) => !f.pieceIds.includes(String(u._id)));
+    expect(fresh).toHaveLength(2); expect(fresh.every((u: any) => u.status === 'available' && !f.pieceIds.includes(String(u._id)))).toBe(true);
+    expect(await raw('inventoryunitprelabels').countDocuments({ linkedPurchaseId: txId, linkedLineId: lineIds[1] })).toBe(2);
+    expect(await raw('inventorypacks').findOne({ _id: new Types.ObjectId(f.packIds[0]) })).toMatchObject({ state: 'sealed', quantity: 2 });
+    // Same key, same scans → the committed result; same key, other scans → refused; nothing posted twice.
+    expect(String((await manual.receiveScanned(request, actor)).transaction._id)).toBe(txId);
+    await expect(manual.receiveScanned({ ...request, scans: [request.scans[0]] }, actor)).rejects.toThrow('different payload');
+    expect((await scanState()).transactions).toBe(1); expect((await scanState()).vault).toBe(1);
+  });
+  it('rolls back the invoice, vault, stock and new barcodes when any scanned code is refused', async () => {
+    const f = await scanFixture();
+    const before = await scanState();
+    const refused: [any, RegExp][] = [
+      [scanPayload(f, {}, [{ lineIndex: 0, unitIds: [f.pieceIds[0], f.pieceIds[1], f.unprintedId], packIds: [] }]), /لم تُطلب طباعته/],
+      [scanPayload(f, {}, [{ lineIndex: 0, unitIds: [f.pieceIds[0], f.pieceIds[1], id()], packIds: [] }]), /غير مسجل/],
+      [scanPayload(f, { items: [{ productId, code: 'SKU-1', name: 'Basket', qty: 2, price: 20, total: 40 }], itemsTotal: 40, total: 40, remaining: 20 }, [{ lineIndex: 0, unitIds: f.pieceIds, packIds: [] }]), /أكبر من|أقل من/],
+      [scanPayload(f, {}, [{ lineIndex: 1, unitIds: [f.packMemberId, f.packMember2Id], packIds: [] }]), /داخل باك/],
+      [scanPayload(f, {}, [{ lineIndex: 0, unitIds: [f.pieceIds[0], f.pieceIds[1]], packIds: [] }, { lineIndex: 1, unitIds: [f.packMemberId], packIds: [f.packIds[0]] }]), /داخل باك ممسوح/],
+      [scanPayload(f, {}, [{ lineIndex: 1, unitIds: f.pieceIds.slice(0, 2), packIds: [] }]), /لا يطابق منتج/],
+      [scanPayload(f, {}, [{ lineIndex: 0, unitIds: [f.pieceIds[0], f.pieceIds[0], f.pieceIds[1]], packIds: [] }]), /أكثر من مرة/],
+    ];
+    for (const [request, message] of refused) await expect(manual.receiveScanned(request, actor)).rejects.toThrow(message);
+    expect(await scanState()).toEqual(before);
+    // A code received on an earlier invoice cannot be received again; the second receipt leaves nothing behind.
+    await manual.receiveScanned(scanPayload(f), actor);
+    const after = await scanState();
+    await expect(manual.receiveScanned(scanPayload(f, { ref: '301' }), actor)).rejects.toThrow(/مستلم/);
+    expect(await scanState()).toEqual(after);
+  });
+  it('gives new barcodes to a line with no scan at all, next to a mixed line', async () => {
+    const f = await scanFixture();
+    const request = scanPayload(f, { items: [{ productId, code: 'SKU-1', name: 'Basket', qty: 4, price: 20, total: 80 }, { productId: f.product2, code: 'SKU-2', name: 'Tray', qty: 2, price: 10, total: 20 }],
+      itemsTotal: 100, total: 100, remaining: 80 }, [{ lineIndex: 0, unitIds: [f.pieceIds[0]], packIds: [] }]);
+    const result = await manual.receiveScanned(request, actor);
+    expect(result.receipt.lines.map((l: any) => [l.labelled, l.linkedUnits, l.createdUnits])).toEqual([[true, 1, 3], [false, 0, 2]]);
+    expect(await scanState()).toMatchObject({ units: 6, linkedLabels: 1, transactions: 1, vault: 1 });
+  });
+  it('lets only one of two simultaneous receipts claim the same scanned codes', async () => {
+    const f = await scanFixture();
+    const results = await Promise.allSettled([manual.receiveScanned(scanPayload(f), actor), manual.receiveScanned(scanPayload(f, { ref: '301' }), actor)]);
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect(await scanState()).toMatchObject({ transactions: 1, vault: 1, units: 7, linkedLabels: 5, cash: 980 });
+  });
+  it('reports the current state of saved scans so an outdated scan session cannot be resumed', async () => {
+    const f = await scanFixture();
+    const check = () => units.prelabelScanCheck([...f.pieceIds, f.unprintedId, f.packMemberId], [f.packIds[0], f.packIds[1]]);
+    const first = await check();
+    expect(first.pieces.map((p: any) => p.state)).toEqual(['ok', 'ok', 'ok', 'unprinted', 'in-pack']);
+    expect(first.packs.map((p: any) => [p.state, p.quantity, p.productId])).toEqual([['ok', 2, f.product2], ['ok', 2, f.product2]]);
+    await manual.receiveScanned(scanPayload(f), actor);
+    const second = await check();
+    expect(second.pieces.slice(0, 3).every((p: any) => p.state === 'linked')).toBe(true);
+    expect(second.packs.map((p: any) => p.state)).toEqual(['linked', 'ok']);
+    expect((await scanState()).transactions).toBe(1);
+  });
+  it('protects the scanned-receipt and scan-check HTTP routes with permissions and nested DTO validation', async () => {
+    const f = await scanFixture();
+    const post = (path: string, body: any, role = 'receiver') => fetch(base + '/inventory-units/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-test-role': role }, body: JSON.stringify(body) });
+    expect((await post('purchases/receive-scanned', scanPayload(f), 'buyer')).status).toBe(403);
+    expect((await post('purchases/receive-scanned', { ...scanPayload(f), scans: [{ lineIndex: 0, unitIds: ['not-an-id'], packIds: [] }] })).status).toBe(400);
+    expect((await post('purchases/receive-scanned', { ...scanPayload(f), scans: [] })).status).toBe(400);
+    expect((await post('purchases/receive-scanned', { ...scanPayload(f), tracking: { ...payload().tracking, inspectionPassed: false } })).status).toBe(400);
+    expect((await scanState()).transactions).toBe(0);
+    const response = await post('purchases/receive-scanned', scanPayload(f)); expect(response.status).toBe(201);
+    expect((await response.json() as any).receipt).toMatchObject({ linkedUnits: 5, createdUnits: 2 });
+    expect((await post('prelabels/scan-check', { unitIds: f.pieceIds, packIds: [] }, 'buyer')).status).toBe(403);
+    const check = await post('prelabels/scan-check', { unitIds: f.pieceIds, packIds: [] });
+    expect(((await check.json()) as any).pieces.every((p: any) => p.state === 'linked')).toBe(true);
   });
 
   it('does not create units, stock or finance for a draft or the status-only received step', async () => {
