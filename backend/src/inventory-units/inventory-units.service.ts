@@ -100,6 +100,30 @@ export class InventoryUnitsService implements OnModuleInit {
   }
   identifierFilter(identifier: string, session?: ClientSession) { return this.manualCodes.filter(identifier, session); }
   /**
+   * A pre-printed supplier label that has no piece yet (never received): found by its QR (SU-…), its id or its
+   * reserved U-code, so a search for it says «not registered» instead of «not found». Read-only; null when the
+   * identifier is not such a label (or its piece already exists).
+   */
+  async unregisteredLabel(identifier: string, session?: ClientSession) {
+    const raw = String(identifier || '').trim().replace(/^\][A-Za-z]\d/, '');
+    if (!raw || raw.length > 160) return null;
+    const qr = /^SU-([A-Fa-f0-9]{24})$/.exec(raw);
+    let id: Types.ObjectId | null = qr ? new Types.ObjectId(qr[1].toLowerCase()) : OBJECT_ID_PATTERN.test(raw) ? new Types.ObjectId(raw) : null;
+    if (!id) { try { id = await this.manualCodes.findUnitId(raw, session); } catch { id = null; } }
+    if (!id) return null;
+    const label: any = await this.connection.collection('inventoryunitprelabels').findOne({ _id: id }, { session });
+    if (!label || await this.units.exists({ _id: id }).session(session || null)) return null;
+    const batch: any = OBJECT_ID_PATTERN.test(String(label.batchId || ''))
+      ? await this.connection.collection('inventoryunitprelabelbatches').findOne({ _id: this.id(label.batchId) }, { session }) : null;
+    const pack: any = label.packId && OBJECT_ID_PATTERN.test(String(label.packId))
+      ? await this.prelabelPacks().findOne({ _id: this.id(label.packId) }, { session, projection: { manualCode: 1 } }) : null;
+    return { unitId: String(label._id), barcode: label.barcode, manualCode: await this.manualCodes.codeFor(String(label._id)),
+      registered: false, state: label.state, printCount: Number(label.printCount) || 0, ordinal: label.ordinal || null,
+      batchId: label.batchId || '', batchQuantity: batch?.quantity || null, productId: label.productId || batch?.productId || '',
+      sku: batch?.sku || '', productName: batch?.productName || '', packManualCode: pack?.manualCode || '',
+      linkedPurchaseId: label.linkedPurchaseId || null, createdAt: label.createdAt || null, createdBy: label.createdBy || '' };
+  }
+  /**
    * Who each piece was bought from, for every scan and lookup. Read from the piece's own purchase
    * invoice (`origin.purchaseTransactionId`); the supplier's CURRENT name wins over the name typed
    * on the invoice, so a renamed supplier reads correctly. A piece with no purchase (opening stock,
@@ -401,7 +425,10 @@ export class InventoryUnitsService implements OnModuleInit {
     const invoiceProducts = invoiceSkus.length ? await this.connection.collection('products').find({ code: { $in: invoiceSkus }, ...(query.productId ? { _id: this.id(query.productId) } : {}) },
       { projection: { name: 1, code: 1, colors: 1, size: 1 }, maxTimeMS: 5000 }).toArray() : [];
     const catalogue = [...new Map([...products,...invoiceProducts].map(product => [String(product._id),product])).values()];
+    // A label code that matches no piece may be a supplier label not received yet: list it as «not registered».
+    const unregistered = needle && !total && !query.unitIds ? await this.unregisteredLabel(needle) : null;
     return { products: catalogue.slice(0, 100), productsTruncated: catalogue.length > 100, invoiceMatch: matchingInvoices.length > 0,
+      unregisteredLabels: unregistered ? [unregistered] : [],
       units: await this.withManualCodes(rows.map((row: any) => ({ ...row, invoiceRef: invoiceRefs.get(String(row.origin?.purchaseTransactionId)) || '', product: associated.find(product => String(product._id) === row.productId) || null }))), total, page, limit };
   }
 

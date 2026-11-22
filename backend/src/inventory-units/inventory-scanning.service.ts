@@ -91,13 +91,12 @@ export class InventoryScanningService {
         return { outcome: 'accepted', code: 'VALIDATED', unit: result.unit, supplier: (result as any).supplier || null, suppliers: (result as any).suppliers || [], eligibilityOnly: true, stockChanged: false, lifecycleChanged: false };
       }
       const unit: any = await this.units.findOne(await this.tracking.identifierFilter(dto.identifier, session)).session(session).lean();
-      const prelabel = !unit ? await this.connection.collection('inventoryunitprelabels').findOne(
-        OBJECT_ID_PATTERN.test(dto.identifier.trim()) ? { _id: this.id(dto.identifier.trim()) } : { barcode: dto.identifier.trim().toUpperCase() },
-        { session, projection: { state: 1 } }) : null;
+      // A supplier label with no piece yet (by QR, id or its reserved U-code) is named, not «unknown».
+      const prelabel = !unit ? await this.tracking.unregisteredLabel(dto.identifier, session) : null;
       // Same lock order as lifecycle writes: product first; concurrent audit sequences retry safely.
       if (unit) await this.connection.collection('products').updateOne({ _id: this.id(unit.productId) }, { $inc: { unitTrackingRevision: 1 } }, { session });
       const code = prelabel ? prelabel.state === 'unused' ? 'PREPRINTED_NOT_LINKED' : 'UNAVAILABLE_UNIT' : await this.check(unit, dto, actor, session);
-      if (code) return { outcome: 'rejected', code, stockChanged: false, lifecycleChanged: false };
+      if (code) return { outcome: 'rejected', code, ...(prelabel ? { prelabel } : {}), stockChanged: false, lifecycleChanged: false };
       const last: any = await this.events.findOne({ unitId: String(unit._id) }).sort({ sequence: -1 }).session(session).lean();
       await new this.events({ unitId: String(unit._id), sequence: (last?.sequence || 0) + 1,
         operationKey: createHash('sha256').update(JSON.stringify({ actor: actor.userId!.toLowerCase(), key: dto.operationKey })).digest('hex'),

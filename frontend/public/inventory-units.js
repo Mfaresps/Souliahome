@@ -694,6 +694,18 @@
     } catch (error) { message(error.message, true); }
     finally { if (generation === state.generation) setBusy(false); }
   }
+  // A searched code that is a supplier label not received yet: there is no piece, so say so and show the label.
+  function unregisteredHtml(labels) {
+    return labels.map(label => `<div class="iu-unregistered" role="status"><span class="iu-unreg-badge">${tr('Not registered', 'غير مسجلة')}</span>
+      <div class="iu-unreg-body"><strong dir="auto">${html(label.productName || label.sku || tr('Supplier label', 'ملصق مورد'))}</strong>
+      <span><bdi dir="ltr">${html(label.manualCode || label.barcode || '')}</bdi>${label.sku ? ` · SKU <bdi dir="ltr">${html(label.sku)}</bdi>` : ''}</span>
+      <p>${label.state === 'unused' ? tr('This supplier label was printed but no piece was received with it on a purchase invoice yet, so it is not in stock. It becomes a piece when scanned on a purchase receipt.', 'طُبع ملصق المورد هذا لكن لم تُستلم به قطعة على فاتورة شراء بعد، فهي ليست في المخزون. تصبح قطعة عند مسحه أثناء استلام فاتورة شراء.') : tr('This label is not linked to a registered piece. Review its label batch.', 'هذا الملصق غير مرتبط بقطعة مسجلة. راجع دفعة الملصقات.')}</p>
+      <small>${[label.ordinal ? tr(`Label ${label.ordinal}${label.batchQuantity ? ' of ' + label.batchQuantity : ''} in its batch`, `الملصق ${label.ordinal}${label.batchQuantity ? ' من ' + label.batchQuantity : ''} في دفعته`) : '',
+        label.packManualCode ? tr('Pack ', 'باك ') + label.packManualCode : '', tr('printed ', 'طُبع ') + (Number(label.printCount) || 0) + tr(' times', ' مرة')].filter(Boolean).map(html).join(' · ')}</small></div></div>`).join('');
+  }
+  function unitListHtml() {
+    return !state.rows.length && state.unregistered?.length ? unregisteredHtml(state.unregistered) : unitRows(state.rows);
+  }
   function unitRows(rows, opts = {}) {
     if (!rows.length) return emptyState(tr('No matching pieces', 'لا توجد قطع مطابقة'), tr('Search by product, SKU or a piece barcode, or change the status filter.', 'ابحث بالمنتج أو SKU أو باركود القطعة، أو غيّر فلتر الحالة.'));
     // Split (pieces window, Nov 16, 2026): not printed first, then printed, each under a heading row.
@@ -888,7 +900,7 @@
       state.unitScope.rows = state.unitScope.rows.map(u => String(u._id) === current.id ? updated : u);
       renderLineUnits();
     }
-    if (state.unitsReady) get('iu-units').innerHTML = unitRows(state.rows);
+    if (state.unitsReady) get('iu-units').innerHTML = unitListHtml();
     invalidatePreview();
     if (state.view === 'units') await loadUnits();
   }
@@ -976,7 +988,7 @@
       window.InvoiceUnitIdentities?.changed();
       const updated = new Map(done.map(row => [String(row.unit._id), row.unit]));
       state.rows = state.rows.map(u => updated.get(String(u._id)) || u);
-      if (state.unitsReady) get('iu-units').innerHTML = unitRows(state.rows);
+      if (state.unitsReady) get('iu-units').innerHTML = unitListHtml();
       invalidatePreview(); renderBatch();
     }
     if (!failed.length) {
@@ -1007,8 +1019,9 @@
         ...(scope?.reconciliationRef ? { reconciliationRef: scope.reconciliationRef } : {}) }), { background: true });
       if (generation !== state.generation || request !== state.unitRequest) return;
       if (!Array.isArray(response.units) || !Number.isSafeInteger(response.total) || !Number.isSafeInteger(response.limit)) throw new Error(tr('Could not read the piece list. Refresh and retry.', 'تعذر قراءة قائمة القطع. حدّث القائمة وحاول مجددًا.'));
+      state.unregistered = Array.isArray(response.unregisteredLabels) ? response.unregisteredLabels : [];
       state.rows = response.units.map(validateUnit).map(decorateUnit); state.total = response.total; state.limit = response.limit; state.unitsReady = true;
-      get('iu-units').innerHTML = unitRows(state.rows);
+      get('iu-units').innerHTML = unitListHtml();
       get('iu-stat-units').textContent = String(state.total); get('iu-stat-page').textContent = String(state.rows.length);
       get('iu-page').textContent = tr(`Page ${state.page} · ${state.total} pieces`, `صفحة ${state.page} · ${state.total} قطعة`);
       get('iu-products').innerHTML = (response.products || []).map(p => `<article class="iu-catalog-product"><strong dir="auto">${html(p.name)}</strong><small>SKU <bdi>${html(p.code)}</bdi></small></article>`).join('');
@@ -1241,7 +1254,7 @@
       for (const label of batch.labels) {
         const unit = state.rows.find(row => String(row._id) === label.unitId); if (unit) unit.printCount = label.printCount;
       }
-      if (state.unitsReady) get('iu-units').innerHTML = unitRows(state.rows);
+      if (state.unitsReady) get('iu-units').innerHTML = unitListHtml();
       popup.document.open();
       popup.document.write(`<!doctype html><html dir="ltr"><head><meta charset="utf-8"><title>SOULIA · ${size.widthMm}x${size.heightMm} mm labels</title><link rel="stylesheet" href="${location.origin}/inventory-units.css?v=${VERSION}"><style>
         @page{size:${size.widthMm}mm ${size.heightMm}mm;margin:0;page-orientation:upright}

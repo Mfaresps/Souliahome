@@ -20,6 +20,97 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Purchasing Engine — `purchasing-engine/` (Nov 23, 2026)
+
+A separate, read-only service behind the assistant's «خطة الشراء الذكية», «تقرير محرك الشراء» and «ليه
+مقترح/مش مقترح شراء X». **It has NOT replaced the 44-day reorder suggestion** — the owner's rule: only after a
+backtest shows it is better, and the first validation says the current rule still earns slightly more.
+- `engine.util.ts` (pure, tested): daily demand ledger per product → stock balance rebuilt day by day (out-of-stock
+  days are censored, not zero demand; «الصنف غير متوفر» cancellations count as lost demand) → 8 forecasts (MA 7/30/
+  60/90, weighted 30, SES, Holt, Croston-SBA) → rolling-origin backtest at horizon lead + 7 days picks the lowest
+  WAPE → (R, s, S) policy: safety = max(z·σ of backtest errors, their 95th percentile, Poisson 95% − μ);
+  s = μ(L+R) + safety, S = s + one week, ≥ minimum → priority = margin protected per EGP net of holding.
+  ⚠ The first version reordered on lead time only and used a normal σ: it served 84% of demand. Protection must
+  cover lead time + the review week, and slow sellers need the Poisson/empirical floor.
+- Owner's parameters: service 95%, no budget (rank only), holding 2%/month, lead time per supplier = median of
+  PO created → receiving invoice (linked conversion or the oldest-PO match of an unlinked invoice). Local: Talla
+  Home 5 d (9), Dream Bazaar 3 d (2), others the overall median.
+- `purchasing-engine.service.ts`: flows classified exactly like `getInventory` — ⚠ keep in step; the validation
+  checks the rebuilt balance equals the system balance (local: 123/123) and ledger units = sales-report units for
+  30 days (541 = 541). `incoming()` (moved here from the assistant) holds the incoming rules. Routes
+  `GET /purchasing-engine/plan|validation` (admin, `purchase-create`, `purchase-view`, `inventory`). Cached 10 min.
+- Validation (local, last 91 days, 79 products): current rule 93.5% served / avg stock 274k / net 1,032k; engine 95%
+  91.6% / 150k / 1,003k; margin-optimal service per product (newsvendor) 92.6% / 180k / 1,017k. Forecast error
+  56% vs 70% for the 30-day average. Limits stated in the report: 206 days of history (no seasonality), method
+  picked on the same test period, demand imputed on real stockout days.
+- Tests: `test/unit/purchasing-engine.spec.ts` (9; revert-checked: counting out-of-stock days as zero fails 1).
+
+## «مساعد SOULIA» — Ask About Any Figure (Nov 22, 2026)
+
+A side panel (header button with a spark icon, or Ctrl+/) where anyone types a question («مبيعات النهارده»,
+«أفضل شهر بعنا فيه», «المنتجات التي قاربت على النفاد», «أوردر 3312», «المستحق للموردين»…). **No AI and no
+external API**: the server recognises the topic and the period, then reads the SAME functions the pages use.
+- Backend `backend/src/assistant/`: `assistant-intent.util.ts` (pure: normalise Arabic/digits, topic, Cairo
+  period, previous period), `assistant.service.ts` (answers), routes `POST /assistant/ask`, `GET /assistant/popular`,
+  `GET /assistant/review` (admin), `POST /assistant/:id/wrong`. Every account may ask (no managed-role boundary);
+  **each answer checks the asker's perms** like the page it cites: reports perms for sales/top/returns/cancel,
+  admin only for profit and the vault, `suppliers` for supplier balances, `shopify-orders` for Shopify. A refused
+  topic says so — never 0.
+- ⚠ **Never re-derive a figure here.** Sales/profit/top/returns/cancellations = `getReports` (with approved
+  expenses, like the controller); stock = `getInventory` + inventory breakdown (ready = balance − needs attention);
+  suppliers = `SupplierLedgerService.getAllBalances`; vault = settings balances. «أفضل شهر» reads each month's
+  own report (last 6 months) so a month equals that month on the reports page; reports are cached in the service
+  (closed periods 10 min, open 30 s — `read-cache.util` is cleared by every POST, including the question).
+- **«مبيعات النهارده / امبارح» = that day's incoming Shopify orders** (owner, Nov 22): received / confirmed
+  (with or without a deposit) / pending (follow-up + no action) / cancelled, bucketed exactly like
+  `shopify-kpis.js` `_spkBucket` (⚠ keep in step), plus the pending orders. Longer periods = net sales.
+- A question with more than one meaning («الأفضل») asks back; an unknown one says so. Every question is logged
+  in raw collection `assistantquestions` {question, normalized, intent, topic, status, wrong, user}; «ليس هذا ما
+  أقصده» flags it. Admin tab «أسئلة تحتاج مراجعة» groups the missed wordings, most asked first — add those to
+  `understand()`. The empty state's suggestions are ordered by `GET /assistant/popular` (count by topic, 60 days).
+- Frontend `assistant.js/.css` (`window.SouliaAssistant`): panel at the inline-end edge under the header (full
+  screen ≤760px), «الخطوات · 0.3 ث» fold (opens while reading, folds itself), numbered source marks beside figures
+  in the sentence (hover preview) + «استُخدم مصدران» list. ⚠ Source links reopen the state the answer used:
+  reports with the same from/to and tab, Shopify on the same KPI period (`_spkSetPeriod`), inventory on
+  «يحتاج طلب شراء», a Shopify order's quick view (`openSpOrderPeek`). Conversation kept per user in
+  sessionStorage. ⚠ Use `100%`, not `100vw`, for the panel width (the scrollbar made it 15px too wide on phones).
+- **Analysis (Nov 22, same day)** — all in `assistant.service.ts`, read only:
+  - **Why sales moved** (`explainChange`): orders vs average order, returns, discounts, and the 3 products whose
+    sales moved most (`productProfits` by name). A running week compares with the same days last week.
+  - **Sales speed** (`velocityRows`): units sold in the last 30 days ÷ 30 per product (sales lines, not cancelled/
+    archived, matched by productId then code), days the ready stock lasts, expected run-out date.
+  - **Reorder suggestions** (`reorderRows`): target = daily rate × (14 lead + 30 cover), never below the minimum;
+    suggested = target − ready − incoming. ⚠ A suggestion only — creates no purchase order. Cost needs a purchase perm.
+  - **Alerts** (`alertPoints`): last 7 complete days vs the 4 weeks before — sales drop ≥20%, cancellations ≥1.3×
+    (+3), returns ≥1.5× (+2); Shopify orders pending >48h; products out within 7 days at their speed; out of stock
+    but selling; negative balances. Each runs only if the asker may see it.
+  - **Daily report** (`daily`): yesterday's net sales vs the 28-day daily average, today's Shopify orders, alerts,
+    «يحتاج شراء الآن». Built at 08:30 Cairo by `@Cron` into raw `assistantdailyreports` (ar + en), or on first
+    request; `GET /assistant/daily-status` (admin) feeds a counter on the header button and a «تقرير اليوم» card in
+    the empty panel, cleared per user per day once read. No push notification (notification types are a fixed list).
+- **From the review log (Nov 22):** «تحليل …» is a sales question; an order number may come anywhere in a sentence
+  about an order; «قارن أكتوبر بنوفمبر» (two named months) → `compare` (both reports side by side + why it moved);
+  «آخر فاتورة شراء» → `purchases` (amounts only with `purchase-edit-price`); a product name shared by several
+  products («oriva») lists them all (`findProducts`) instead of guessing one; «اتباع كام / موجود» are understood.
+- **Reorder → purchase order (Nov 22):** the answer carries an `actions: [{kind:'createPo', lines}]` button for
+  `purchase-create`; the dialog (`openPoDialog`) pre-selects the supplier most lines come from — ⚠ matched by id OR
+  NAME (most products store the primary supplier by name only; by id alone every line looked supplier-less and was
+  ticked) — and posts to the existing `POST /demand-planning/create-purchase-order`. Incoming (open POs) is deducted
+  (`reorderPlan`): the table has its own «وارد» column, the answer states the pieces deducted and how many products
+  are left out because incoming covers them, so a new PO immediately shrinks the next suggestion. Source marks are a
+  link icon, not a number.
+- **Incoming for the reorder analysis (Nov 22)** — `incomingDetail` (its own rules; the inventory page «وارد»
+  still uses `inventory-breakdown.ts` and is unchanged): only open POs (converted = received; a cancelled PO is
+  deleted — no cancelled/rejected status exists). ⚠ Orders are often received through a SEPARATE, unlinked purchase
+  invoice: each such invoice line is deducted from the OLDEST open PO of the same supplier created before it, once
+  (partial receipts; no double count across orders). Local data: PO-2026-013 matched #900024 (159/239), PO-2026-010
+  matched #900019 (190/495) — so the inventory page's «وارد» is inflated by goods already received. «مستلم» but not
+  converted = arrived, not recorded: counted neither as stock nor as incoming. Overdue = expected date < today.
+  The suggestion formula is unchanged; the answer is drawn as cards by urgency (`plan.groups`) with «يكفي الآن»,
+  «يكفي بعد الوارد», «العجز المتوقع», then the open POs (`link.kind:'po'` → `openPoDetailModal`).
+- Tests: `test/unit/assistant-intent.spec.ts`; verified over the compiled API on a scratch copy (dropped after)
+  and 33 browser checks (ar/en, dark, 390px, perms, every link destination). Not yet tried on live.
+
 ## Supplier Invoice Photos Uploaded to Cloudflare R2 — «رفع صورة الفاتورة» (Nov 16, 2026)
 
 «فواتير المورد» on a purchase took pasted links only. Now a photo can be uploaded from the new purchase
@@ -4794,6 +4885,76 @@ server analysis, `_dpBuildOrderPivot`, the PO dialogs, Excel and print are untou
 Verified in Chrome against the real `index.html`: light, dark and 390px mobile — the
 headline, block split and tab counts agree with the pivot, no page errors, no overflow.
 
+**Unlinked orders out of «جاهز للشحن» (Nov 22, 2026).** An order with a line that has no
+`productId` showed as «ready» (the server skipped only that line) and was then refused by the
+bulk confirm; an order whose every line was unlinked appeared in no tab.
+- `analyzeShopify` returns `unlinkedOrders [{transactionId, ref, client, date, orderTotal,
+  items[{name, code, qty}]}]` — same rule as `_spValidateBulkSelection` (`!productId`).
+- `_dpBuildOrderPivot` skips those orders **before** allocating, so they claim no stock another
+  order could ship with; `_dpOrdersPivot.unlinked` feeds a 4th tab «غير مربوط» (hidden when 0),
+  amber blocks + a line in the headline, and a link from the unmapped notice.
+- Tab: oldest first, one chip per unlinked product with its order count (filters the table;
+  passes an index, never the name), «ربط الأصناف» → `editShopifyOrder` (its picker links each
+  line). When the edit window closes, `_dpRefreshAnalysis` re-reads the same orders
+  (`persistLog:false`) without resetting the window; a linked order moves to ready/short.
+  ⚠ For a staff edit that needs approval the order stays unlinked until a manager approves.
+- Test: `test/browser/demand-unlinked.cjs` (26).
+
+**Oldest first, all or nothing, three kinds of stock (Nov 22, 2026 — owner's rules).**
+- `demand-planning/order-allocation.util.ts` (pure, `allocateOrders`): queue by the order's
+  CREATION date (`shopifyCreatedAt`, else `createdAt` — never the last edit), ties by id. An order
+  is ready only if every product is covered; otherwise it takes NOTHING (the old per-product
+  pivot let a blocked order starve a newer one). Unlinked orders claim nothing. Recomputed from
+  live data on every call, so a cancel or a quantity change redistributes by itself.
+- Shopify analysis shares stock over **every pending Shopify order** (selected + not), MAIN
+  warehouse only (orders are confirmed into MAIN; the bulk confirm reads MAIN). An older unselected
+  order claims first → `reservedOlder`. ⚠ This replaces the earlier «selection only» scope.
+- Line terms (`stockFigures`): `onHand` = balance before these + held · `reservedConfirmed` =
+  confirmed sales still in the warehouse (`saleAwaitingDispatch`) — **display only, already out of
+  the balance** · `notSellable` = damaged + lost + inspection (`loadInventoryBreakdown`) ·
+  `sellable` = max(0, balance − notSellable) · `freeToUse` = sellable − reservedOlder.
+  ⚠ Fixed a double reservation in the سجل المعاملات analysis: other open orders were subtracted
+  again although the balance already excluded them (3 + 2 − 4 = «short 1» on a shelf holding 5).
+- Response gains `orderPlan [{…, state: ready|short|unlinked, position, items[{qty, missing,
+  freeAtTurn}]}]` + `queueSize`; `_dpBuildOrderPivot` reads it (per-line loop kept as fallback).
+  Order tabs open oldest first with «الدور N»; the calculation chain names each kind of stock once.
+- Live: while the window is open, tx/inventory/shopify events → `_dpScheduleLiveRefresh` (1.5 s
+  debounce, one in flight) → `_dpRefreshAnalysis` (`persistLog:false`), «تغيّر توزيع المخزون» when
+  the ready set changes; a ↻ button in the header. ⚠ Marking a piece damaged/lost emits no live
+  event — the ↻ button covers it.
+- `_dpBulkSendReadyOrders` now awaits the dialog (its old listener never attached — the dialog is
+  built after an await); sent orders leave via the live refresh. `bulkSendShopifyOrders` sorts the
+  batch by creation date before its stock check (`_spCreatedMs`).
+- Tests: `test/unit/order-allocation.spec.ts` (9; revert-checked: no all-or-nothing → 6 fail, no
+  date sort → 3 fail), `test/unit/demand-planning-fifo.spec.ts` (3, real service over fakes;
+  revert-checked: subtracting held again → 3 fail, all warehouses → 1 fail),
+  `test/browser/demand-fifo.cjs` (16).
+
+**«يحتاج إجراء» tab (same day).** `confirmBlocks(order, dupRef)` in demand-planning.service.ts
+mirrors `ShopifyService.approveOrder`'s refusals, read-only: `cancel-request` · `edit-pending` ·
+`item-conflict` · `deposit-review` · `deposit-booking` · `deposit-over` · `divergence` (single confirm
+with acknowledgement, never bulk) · `dup-ref` (a transaction already carries the number — the page's
+own check). ⚠ Keep it in step with approveOrder, or an order looks «ready» and fails at confirm.
+- `orderPlan[].blocks`; a blocked order **keeps its turn and its stock** in the allocation (the reason
+  is administrative), but leaves «ready»/«short» for the action tab (unlinked still wins).
+- Tab grouped by the most urgent reason (`DP_ACT_ORDER`), each group says what to do; a row shows
+  whether its stock is held, other reasons as chips, and one button (`_dpAct`): divergence →
+  `approveShopifyOrder`, edit → `openShopifyEditReview` when the order is in memory, else the order
+  panel (`openSpOrderPeek`; closing it re-reads the plan). Blue stripes in the headline.
+- Live list also listens to `shopify:deposit-changed` and `shopify:order-cancel-conflict`.
+- Tests: +1 case in `demand-planning-fifo.spec.ts` (each reason), `demand-fifo.cjs` now 30.
+- **Where the difference is**: `orderPlan[].divergence {shopifyTotal, erpTotal, diff, by, at, changes}`
+  (`divergenceOf`, from `shopifyDivergence`). The row states both totals and the gap in words
+  («النظام أقل/أعلى بـ X» — a bare signed figure reads either way in RTL); «ما الذي تغيّر؟»
+  (`_dpDivToggle`) shows who/when + the stored change lines at once, then reads
+  `/shopify/orders/detail/:id` once and swaps in `_spDivergenceExplainHtml` (photos) when it has
+  something; open rows survive live re-renders (`_dpDivOpen`).
+
+**Assistant suggestions in MSA (same day).** The six chips in `assistant.js` were colloquial
+(«مبيعات النهارده», «علينا كام للموردين»…). Now «مبيعات اليوم», «أفضل شهر في المبيعات», «أرباح هذا
+الشهر», «المنتجات التي قاربت على النفاد», «المستحق للموردين». `assistant-intent.util.ts` learned
+«قارب / وشك / منخفض» (low) and «نفاد» (out); 1 case in `assistant-intent.spec.ts` pins every chip.
+
 **Round 2–3 (same day).** ⚠ The panel carried `direction:rtl`, which reversed every English
 sentence; it now inherits the document direction. ⚠ Headers were `text-align:right` while
 cells followed the document — alignment is now declared on `th` AND `td` together (measured
@@ -5511,6 +5672,10 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 23, 2026 | Purchasing engine (separate service): demand ledger with stockout censoring, 8 backtested forecasts, safety stock / reorder levels, priority by protected margin, simulation vs the 44-day rule; in the assistant as «خطة الشراء الذكية» / «تقرير محرك الشراء» / «ليه مقترح شراء X» | See "Purchasing Engine" above |
+| Nov 22, 2026 | Assistant analysis: why sales changed, alerts against the previous 4 weeks, sales speed + run-out dates, reorder suggestions, and a morning report with a header counter for admins | See "«مساعد SOULIA»" → Analysis |
+| Nov 22, 2026 | «مساعد SOULIA»: a question panel (header / Ctrl+/) answering sales, today's Shopify orders, profit, best month, stock, orders, suppliers, cancellations and the vault from the same report functions, with sources, permissions and a review log of missed questions | See "«مساعد SOULIA» — Ask About Any Figure" above |
+| Nov 19, 2026 | A supplier label that was printed but never received (no piece yet) is now found by its QR, id or reserved «U-» code — in «البحث عن قطعة» (a dashed «غير مسجلة» card with product, label number, print count) and in the header scanner (card + «قطعة غير مسجلة» warning). `InventoryUnitsService.unregisteredLabel()` (read-only); `search()` returns `unregisteredLabels`, a refused `scans/validate` carries `prelabel`. Before, a typed U-code of such a label read «unknown» | inventory-units.service.ts, inventory-scanning.service.ts, inventory-units.js, global-search-scanner.js, inventory-scanner.js |
 | Nov 16, 2026 | Expense receipt photos can be uploaded the same way (≤180 KB, Cloudflare R2, `expenses/`) | See "Supplier Invoice Photos Uploaded to Cloudflare R2" above |
 | Nov 16, 2026 | Supplier invoice photos can be uploaded (purchase form, edit window, PO conversion): compressed to ≤180 KB like deposit receipts and kept on Cloudflare R2 | See "Supplier Invoice Photos Uploaded to Cloudflare R2" above |
 | Nov 15, 2026 | Purchase receiving by scan: scanning pre-printed QR labels builds the purchase lines (pieces/packs), «بدون ملصق» lines get new barcodes, and invoice + vault + stock + barcodes are saved in one transaction; saved session resumes only if the server still agrees | See "Purchase Receiving by Scan" above |

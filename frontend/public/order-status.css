@@ -22,6 +22,9 @@
 .order-delay-badge{display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-start:5px;padding:1px 6px;border:1px solid #f5d48a;border-radius:8px;background:#fff8e8;color:#9a5700;font-family:inherit;font-size:10px;font-weight:500;line-height:18px;white-space:nowrap;vertical-align:middle}
 body.dark-mode .order-delay-badge{border-color:#7c5117;background:#3b2b15;color:#ffd58a}
 body.dark-mode .order-state{background:var(--state-fill);color:var(--state-ink);border-color:transparent}
+/* Keep routine fulfillment states quiet in dark mode; exception and success
+   states retain their semantic warning/success colours. */
+body.dark-mode .order-state:is([data-tone=shipping],[data-tone=delivered],[data-tone=preparing]){--state-ink:#e5e5e5;--state-fill:#383838}
 .inv-order-state{display:flex;justify-content:center;padding:12px;border-bottom:1px solid var(--border,#e2e8f0)}
 .sp-card-order-state{padding:0 12px 9px}.sp-ref-line>.order-state{margin-block:3px}.sp-ref-line{flex-wrap:wrap}
 .inv-order-state-heading{margin-block-start:7px}

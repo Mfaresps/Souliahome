@@ -4,7 +4,7 @@
   const messages = {
     VALIDATED: ['Piece identified', 'تم التعرف على القطعة'],
     UNKNOWN_BARCODE: ['Unknown barcode or Unit ID.', 'الباركود أو معرف الوحدة غير معروف.'],
-    PREPRINTED_NOT_LINKED: ['Stored supplier label. Link it to a purchase invoice before using it.', 'ملصق مورد محفوظ. اربطه بفاتورة شراء قبل استخدامه.'],
+    PREPRINTED_NOT_LINKED: ['Piece not registered: a supplier label not yet received on a purchase invoice.', 'قطعة غير مسجلة: ملصق مورد لم يُستلم بعد على فاتورة شراء.'],
     WRONG_PRODUCT: ['This unit belongs to another product.', 'هذه الوحدة تخص صنفًا آخر.'],
     INVALID_UNIT_STATE: ['The unit state is not eligible for this operation.', 'حالة الوحدة لا تسمح بهذه العملية.'],
     DUPLICATE_SCAN: ['This unit was already scanned in this session.', 'تم مسح الوحدة بالفعل في جلسة المسح الحالية.'],
@@ -190,7 +190,14 @@
         const supplier = supplierText(result, lang);
         if (supplier) { const line = document.createElement('span'); line.className = 'scan-supplier-line'; line.dir = 'auto'; line.style.cssText = 'display:block;flex-basis:100%;margin-top:3px;font-size:.88em;font-weight:600'; line.textContent = supplier; get('message').append(line); }
       }
-      get('message').dataset.level = code === 'VALIDATED' ? 'success' : ['DUPLICATE_SCAN', 'UNRESOLVED', 'RESTORED_PENDING', 'REQUEST_PENDING', 'BUSY'].includes(code) ? 'warning' : 'error';
+      if (result?.prelabel) {
+        // A supplier label with no piece yet: name it and its product so the search still answers.
+        const label = result.prelabel, identity = document.createElement('bdi'); identity.dir = 'ltr'; identity.textContent = ' ' + (label.manualCode || label.barcode || '');
+        const line = document.createElement('span'); line.dir = 'auto'; line.style.cssText = 'display:block;flex-basis:100%;margin-top:3px;font-size:.88em;font-weight:600';
+        line.textContent = [label.productName, label.sku].filter(Boolean).join(' · ');
+        get('message').replaceChildren(document.createTextNode(text(code, lang)), identity, ...(line.textContent ? [line] : []));
+      }
+      get('message').dataset.level = code === 'VALIDATED' ? 'success' : ['DUPLICATE_SCAN', 'UNRESOLVED', 'RESTORED_PENDING', 'REQUEST_PENDING', 'BUSY', 'PREPRINTED_NOT_LINKED'].includes(code) ? 'warning' : 'error';
       if (code === 'VALIDATED' && ['returned-to-supplier', 'supplier-return-pending'].includes(result?.unit?.status)) {
         get('message').textContent = (window.SupplierReturnPieces?.returnMessage(result.supplierReturn, result.unit.status === 'supplier-return-pending') || tr('Piece linked to a supplier return', 'القطعة مرتبطة بمرتجع مورد')) + ' · ' + (result.unit.manualCode || result.unit.barcode);
         { const supplier = supplierText(result, lang); if (supplier) get('message').textContent += ' · ' + supplier; }

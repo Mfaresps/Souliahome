@@ -49,6 +49,51 @@
   #header #profile-menu :is(button,a):hover{background:var(--primary-pale)}
   #header #profile-menu :is(button,a):focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
   #header #profile-menu #pm-logout:hover{background:color-mix(in srgb,var(--red) 8%,transparent)}
+
+  /* Quiet, premium account popover: reserve colour for the brand and state. */
+  #header #profile-menu{
+    width:344px;max-width:calc(100vw - 24px);padding:8px;border-radius:16px;
+    background:var(--surface);border-color:var(--border);
+    box-shadow:0 20px 56px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06);
+  }
+  body.dark-mode #header #profile-menu{background:#292929;box-shadow:0 20px 56px rgba(0,0,0,.48),0 2px 8px rgba(0,0,0,.24)}
+  #header #profile-menu .pm-identity{
+    padding:10px 10px 13px!important;margin:0 2px 4px;
+    background:transparent;color:var(--text);border-bottom:1px solid var(--border);
+  }
+  #profile-menu .pm-avatar{border-color:var(--border);background:var(--surface2);color:var(--accent)}
+  #profile-menu .pm-avatar-presence{border-color:var(--surface)}
+  #profile-menu #pm-user-name{color:var(--text)}
+  #profile-menu #pm-user-email{color:var(--muted)}
+  #profile-menu .pm-identity-badges>span{border-color:var(--border);background:var(--surface2);color:var(--muted)}
+  #profile-menu .pm-quick-actions{gap:8px;padding:8px 4px 2px}
+  #header #profile-menu .pm-quick-action{
+    flex-direction:row;justify-content:flex-start;min-height:48px;padding:10px 12px;
+    border-color:transparent;border-radius:10px;background:var(--bg-alt,var(--bg));
+    color:var(--text);text-align:start;
+  }
+  #profile-menu .pm-quick-action .pm-icon{color:var(--muted)}
+  #profile-menu .pm-preferences{gap:2px;padding:6px 4px}
+  #header #profile-menu .pm-setting{min-height:46px;border-color:transparent;border-radius:9px;background:transparent}
+  #profile-menu .pm-setting .pm-icon{color:var(--muted)}
+  #profile-menu .pm-store-row{gap:8px}
+  #header #profile-menu .pm-store-row .pm-store{background:var(--bg-alt,var(--bg))}
+  #profile-menu .pm-social-links{gap:4px}
+  #header #profile-menu .pm-social-link{width:38px;height:38px;padding:8px;border-color:var(--border);border-radius:9px;background:transparent;color:var(--muted)}
+  #header #profile-menu .pm-social-link[data-social="Facebook"]{color:#1877f2}
+  #header #profile-menu .pm-social-link[data-social="Instagram"]{color:#c13584}
+  #header #profile-menu .pm-social-link[data-social="TikTok"]{color:#171717}
+  body.dark-mode #header #profile-menu .pm-social-link[data-social="TikTok"]{color:#f1f1f1}
+  #profile-menu .pm-social-icon{width:19px;height:19px}
+  #profile-menu .pm-footer{margin:2px 2px 0;padding:6px 4px 0;border-top:1px solid var(--border);background:transparent}
+  #header #profile-menu :is(.pm-quick-action,.pm-setting,.pm-social-link):hover{background:var(--surface2)}
+  body.dark-mode #header #profile-menu :is(.pm-quick-action,.pm-setting,.pm-social-link):hover{background:#383838}
+  @media(max-width:640px){
+    #header #profile-menu{width:min(360px,calc(100vw - 24px));padding:7px;border-radius:15px}
+    #header #profile-menu .pm-quick-actions{padding-top:7px}
+    #header #profile-menu .pm-quick-action{min-height:46px;padding-inline:10px}
+    #header #profile-menu .pm-preferences{padding-block:5px}
+  }
   @media(max-width:768px),(pointer:coarse){
     #header .profile-trigger{width:44px;height:44px;min-height:44px;padding:0;border-color:transparent;justify-content:center}
     #header .profile-trigger .header-name-wrap,#header .profile-trigger .pt-caret{display:none}

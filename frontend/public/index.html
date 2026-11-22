@@ -122,10 +122,10 @@
 --ls-latin:0.01em;
 }
 body.dark-mode{
---bg:#0f1410;--surface:#161d18;--surface2:#1e2820;--border:#2a3d2e;
---primary:#2d7a4f;--primary-light:#3d9a6a;--primary-pale:#0d2318;
---accent:#4ade80;--text:#e8f5ee;--muted:#7faa8e;
---bg-alt:#1e2820;
+--bg:#212121;--surface:#2f2f2f;--surface2:#383838;--border:#424242;
+--primary:#a3a3a3;--primary-light:#c4c4c4;--primary-pale:#383838;
+--accent:#4ade80;--text:#ececec;--muted:#a3a3a3;
+--bg-alt:#212121;
 /* نسخة داكنة من ألوان الورديات: الشاحب يصبح خلفية معتمة مشبعة قليلاً، و«الحبر»
    يصبح فاتحاً ليقرأ فوقها. ليست الألوان الفاتحة مقلوبة — أُعيد ضبطها للسطح الداكن. */
 --sh-morning:#f59e0b;--sh-morning-pale:#422006;--sh-morning-ink:#fcd34d;
@@ -192,7 +192,7 @@ table{font-variant-numeric:tabular-nums}
 th{letter-spacing:.02em;text-transform:uppercase;font-size:.72rem}
 tr{transition:background var(--motion-fast)}
 tr:hover{background:var(--primary-pale)}
-body.dark-mode tr:hover{background:rgba(45,122,79,.08)}
+body.dark-mode tr:hover{background:rgba(255,255,255,.04)}
 
 /* —— Headings: better line-height for Arabic —— */
 h1,h2,h3,h4,h5,h6{line-height:1.35;letter-spacing:-0.015em}
@@ -11474,6 +11474,50 @@ body.dark-mode .disc-badge:hover .db-code,body.dark-mode .disc-badge:hover .db-m
 .dpx-cta:hover{background:var(--primary-light)}
 .dpx-link{width:auto;background:none;border:0;padding:0;color:var(--accent);font:600 .8rem var(--font-app);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .dpx-cta:disabled,.dpx-link:disabled{opacity:.45;cursor:not-allowed}
+.dpx-blocks i.is-link,.dpx-bar i.is-link{background:repeating-linear-gradient(135deg,#d97706 0 4px,#f8d39c 4px 7px)}
+.dpx-unl-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dpx-unl-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;background:repeating-linear-gradient(135deg,#d97706 0 3px,#f8d39c 3px 5px)}
+.dp-tab-badge.is-warn{background:#fef3c7;color:#92400e}
+body.dark-mode .dp-tab-badge.is-warn{background:#422006;color:#fcd34d}
+.dpx-unl-intro{padding:12px clamp(14px,3vw,24px) 4px;display:flex;flex-direction:column;gap:10px}
+.dpx-unl-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dpx-unl-chip{width:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--bg-alt);color:var(--text);font:600 .76rem var(--font-app);cursor:pointer;max-width:100%}
+.dpx-unl-chip bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.dpx-unl-chip span{color:var(--muted);font-weight:500}
+.dpx-unl-chip.is-on{border-color:#d97706;background:#fffbeb;color:#92400e}
+body.dark-mode .dpx-unl-chip.is-on{background:#2a1d08;color:#fcd34d}
+.dpx-unl-chip:focus-visible,.dpx-unl-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dpx-unl-btn{width:auto;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--primary);background:transparent;color:var(--primary);font:600 .78rem var(--font-app);cursor:pointer;white-space:nowrap}
+.dpx-unl-btn:hover{background:var(--primary);color:#fff}
+.dpx-unl-btn:disabled{opacity:.5;cursor:progress}
+.dpx-blocks i.is-act,.dpx-bar i.is-act{background:repeating-linear-gradient(135deg,#2563eb 0 4px,#bcd0fb 4px 7px)}
+.dpx-act-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;background:repeating-linear-gradient(135deg,#2563eb 0 3px,#bcd0fb 3px 5px)}
+.dp-tab-badge.is-act{background:#dbeafe;color:#1e40af}
+body.dark-mode .dp-tab-badge.is-act{background:#172554;color:#93c5fd}
+#dp-act-groups{display:flex;flex-direction:column;gap:14px;padding:6px 0 14px}
+.dpx-act-head{padding:0 clamp(14px,3vw,24px)}
+.dpx-act-head h4{margin:0;font-size:.86rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.dpx-act-head p{margin:3px 0 0;font-size:.76rem;color:var(--muted)}
+.dpx-act-more{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.dpx-act-more span{font-size:.68rem;padding:1px 7px;border-radius:999px;background:var(--bg-alt);border:1px solid var(--border);color:var(--muted)}
+.dpx-div{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:6px;font-size:.74rem}
+.dpx-div-tot{display:inline-flex;align-items:baseline;gap:5px;color:var(--text)}
+.dpx-div-tot small{color:var(--muted);font-size:.68rem}
+.dpx-div-gap{font-weight:700;padding:1px 8px;border-radius:999px}
+.dpx-div-gap.is-lower{background:#fef2f2;color:#b91c1c}
+.dpx-div-gap.is-higher{background:#eff6ff;color:#1d4ed8}
+body.dark-mode .dpx-div-gap.is-lower{background:#3b1418;color:#fca5a5}
+body.dark-mode .dpx-div-gap.is-higher{background:#172554;color:#93c5fd}
+.dpx-div-row td{padding-top:0!important;border-bottom:1px solid var(--border)}
+.dpx-div-detail{padding:4px 0 6px;max-width:640px}
+.dpx-div-detail .sp-dx{margin:6px 0 0}
+.dpx-div-who{margin:0 0 6px;font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dpx-div-lines{margin:0;padding-inline-start:18px;font-size:.76rem;color:var(--text);display:grid;gap:3px}
+.dpx-pos{display:block;font-size:.68rem;color:var(--muted);font-weight:500;margin-top:2px}
+.dpx-head-actions{display:flex;align-items:center;gap:8px}
+.dpx-refresh{display:inline-flex;align-items:center;justify-content:center}
+.dpx-refresh.is-busy svg{animation:dpxSpin .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.dpx-refresh.is-busy svg{animation:none}}
 .dpx-cta:focus-visible,.dpx-link:focus-visible,.dp-chip:focus-visible,.dp-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dpx-ok{display:flex;align-items:center;gap:8px;color:var(--accent);font-weight:600;font-size:.95rem}
 #dp-notice-wrap{display:flex;flex-direction:column;gap:6px;padding:12px clamp(14px,3vw,28px) 0}
@@ -17607,6 +17651,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/notification-settings.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/roles-permissions.css?v=20261113-roles1">
 <link rel="stylesheet" href="/announcements.css?v=4">
+<link rel="stylesheet" href="/assistant.css?v=18">
 <link rel="stylesheet" href="/bundle-analytics.css?v=1">
 <link rel="stylesheet" href="/supplier-return-statements.css?v=3">
 <link rel="stylesheet" href="/promotions.css?v=1">
@@ -24209,7 +24254,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         </h3>
         <div class="dp-sub" id="dp-subtitle">—</div>
       </div>
-      <button class="dp-close" onclick="closeDemandPlanning()" data-i18n-aria-label="dpClose" aria-label="إغلاق">✕</button>
+      <div class="dpx-head-actions">
+        <button type="button" class="dp-close dpx-refresh" id="dp-refresh-btn" onclick="_dpRefreshAnalysis({manual:true})" data-i18n-aria-label="dpRefresh" aria-label="إعادة الحساب" data-i18n-title="dpRefresh" title="إعادة الحساب"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button>
+        <button class="dp-close" onclick="closeDemandPlanning()" data-i18n-aria-label="dpClose" aria-label="إغلاق">✕</button>
+      </div>
     </div>
 
     <div class="dp-summary" id="dp-summary"></div>
@@ -24226,9 +24274,17 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
           <span data-i18n="dpTabReady">جاهز للشحن</span> <span class="dp-tab-badge" id="dp-tab-cnt-ready">0</span>
         </button>
+        <button class="dp-tab" data-dp-tab="action" onclick="setDpTab('action',this)" style="display:none">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/></svg>
+          <span data-i18n="dpTabAction">يحتاج إجراء</span> <span class="dp-tab-badge is-act" id="dp-tab-cnt-action">0</span>
+        </button>
         <button class="dp-tab" data-dp-tab="missing" onclick="setDpTab('missing',this)">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span data-i18n="dpTabMissing">نواقص الطلبات</span> <span class="dp-tab-badge" id="dp-tab-cnt-missing">0</span>
+        </button>
+        <button class="dp-tab" data-dp-tab="unlinked" onclick="setDpTab('unlinked',this)" style="display:none">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+          <span data-i18n="dpTabUnlinked">غير مربوط</span> <span class="dp-tab-badge is-warn" id="dp-tab-cnt-unlinked">0</span>
         </button>
       </div>
     </div>
@@ -24268,7 +24324,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <div class="dp-ord-toolbar">
         <select id="dp-ord-sort-ready" onchange="renderDpOrdersTab('ready')">
           <option value="date-desc" data-i18n="dpSortNewest">الأحدث أولاً</option>
-          <option value="date-asc" data-i18n="dpSortOldest">الأقدم أولاً</option>
+          <option value="date-asc" data-i18n="dpSortOldest" selected>الأقدم أولاً</option>
           <option value="value-desc" data-i18n="dpSortValueDesc">الأعلى قيمة أولاً</option>
           <option value="value-asc" data-i18n="dpSortValueAsc">الأقل قيمة أولاً</option>
         </select>
@@ -24303,7 +24359,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <div class="dp-ord-toolbar">
         <select id="dp-ord-sort-missing" onchange="renderDpOrdersTab('missing')">
           <option value="date-desc" data-i18n="dpSortNewest">الأحدث أولاً</option>
-          <option value="date-asc" data-i18n="dpSortOldest">الأقدم أولاً</option>
+          <option value="date-asc" data-i18n="dpSortOldest" selected>الأقدم أولاً</option>
           <option value="value-desc" data-i18n="dpSortValueDesc">الأعلى قيمة أولاً</option>
           <option value="value-asc" data-i18n="dpSortValueAsc">الأقل قيمة أولاً</option>
         </select>
@@ -24327,6 +24383,33 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         </table>
       </div>
       <div class="dp-foot-info" id="dp-ord-foot-missing" style="padding:0 clamp(14px,3vw,24px) 14px;font-size:.74rem;color:var(--muted);font-weight:600"></div>
+    </div>
+
+    <!-- Tab: orders the server would refuse to confirm yet -->
+    <div class="dp-tabpane" id="dp-tabpane-action">
+      <div class="dpx-unl-intro"><div class="dpx-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg><span data-i18n="dpActIntro">هذه الأوردرات لا يمكن تأكيدها الآن لسبب غير المخزون. تحتفظ بدورها ومخزونها حتى يُحل السبب، ثم تنتقل تلقائيًا إلى «جاهز للشحن».</span></div></div>
+      <div id="dp-act-groups"></div>
+    </div>
+
+    <!-- Tab 4: orders blocked by an unlinked item -->
+    <div class="dp-tabpane" id="dp-tabpane-unlinked">
+      <div class="dpx-unl-intro" id="dp-unl-intro"></div>
+      <div class="dp-ord-wrap">
+        <table class="dp-ord-table" id="dp-ord-table-unlinked">
+          <thead>
+            <tr>
+              <th class="dp-ord-priority-1" data-i18n="dpOrdColRef">رقم الأوردر</th>
+              <th class="dp-ord-priority-1" data-i18n="dpOrdColClient">العميل</th>
+              <th class="dp-ord-priority-2" data-i18n="dpUnlColItems">الأصناف غير المربوطة</th>
+              <th class="dp-ord-priority-3" data-i18n="dpOrdColDate">التاريخ</th>
+              <th class="dp-ord-priority-1" style="text-align:center" data-i18n="dpOrdColValue">القيمة</th>
+              <th class="dp-ord-priority-1" style="text-align:center" data-i18n="dpUnlColAction">الإجراء</th>
+            </tr>
+          </thead>
+          <tbody id="dp-ord-tbody-unlinked"></tbody>
+        </table>
+      </div>
+      <div class="dp-foot-info" id="dp-ord-foot-unlinked" style="padding:0 clamp(14px,3vw,24px) 14px;font-size:.74rem;color:var(--muted);font-weight:600"></div>
     </div>
 
     <div class="dp-footer">
@@ -24565,8 +24648,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/invoice-unit-identities.js?v=20261114-return-when-shipped"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
 <script src="/cancellations-analytics.js?v=20261030-details"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261115-advance">
-<script src="/after-sales.js?v=20261115-advance"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261119-prior">
+<script src="/after-sales.js?v=20261119-prior"></script>
 <link rel="stylesheet" href="/complaint-flow.css?v=20261110-inline-solution">
 <script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
@@ -30738,6 +30821,38 @@ const TRANSLATIONS = {
   spSendToTransactionsLong:{ar:'تحضير وشحن',en:'Prepare & Ship'},
   spBulkConfirm:{ar:'تحضير وشحن الطلبات',en:'Prepare & Ship orders'},
   spSendToTransactionsTitle:{ar:'إرسال الطلب للتحضير والشحن وإضافته إلى سجل المعاملات',en:'Prepare & Ship: add the order to the transactions log for preparation and shipping'},
+  spPostpone:{ar:'تأجيل الشحن',en:'Postpone shipping'},
+  spPostponeTitle:{ar:'تحديد موعد الشحن',en:'Schedule shipping'},
+  spPostponeWhen:{ar:'تاريخ الشحن',en:'Shipping date'},
+  spPostponeTime:{ar:'الوقت',en:'Time'},
+  spPostponeReason:{ar:'سبب التأجيل',en:'Reason for postponement'},
+  spPostponeReasonSelect:{ar:'اختر سبب التأجيل',en:'Choose a reason'},
+  spPostponeReasonCustomer:{ar:'بناءً على طلب العميل',en:'At the customer’s request'},
+  spPostponeReasonStock:{ar:'نقص مخزون أحد الأصناف',en:'An item is out of stock'},
+  spPostponeReasonUnavailable:{ar:'العميل غير متاح للاستلام',en:'The customer is unavailable to receive the order'},
+  spPostponeReasonAddress:{ar:'بانتظار تأكيد أو تعديل العنوان',en:'Waiting for address confirmation or correction'},
+  spPostponeReasonPayment:{ar:'بانتظار تأكيد الدفع أو العربون',en:'Waiting for payment or deposit confirmation'},
+  spPostponeReasonCapacity:{ar:'تعذر تجهيز الشحنة في الموعد الحالي',en:'Unable to prepare the shipment at the scheduled time'},
+  spPostponeReasonOther:{ar:'سبب آخر',en:'Other reason'},
+  spPostponeRequestedBy:{ar:'طلب التأجيل بواسطة',en:'Postponed by'},
+  spPostponeReasonDetail:{ar:'تفاصيل إضافية (اختياري)',en:'Additional details (optional)'},
+  spPostponeScheduleAction:{ar:'تحديد موعد شحن',en:'Schedule shipping'},
+  spPostponeEditAction:{ar:'تعديل موعد الشحن',en:'Change shipping schedule'},
+  spPostponeNotSpecified:{ar:'غير محدد',en:'Not specified'},
+  spPostponePrompt:{ar:'هل تحتاج لتأجيل الشحن؟',en:'Need to ship later?'},
+  spPostponePromptHint:{ar:'حدد موعدًا وسجل سبب التأجيل.',en:'Set a date and record the reason.'},
+  spPostponeSave:{ar:'حفظ الموعد',en:'Save schedule'},
+  spPostponeSaved:{ar:'تم حفظ موعد الشحن',en:'Shipping schedule saved'},
+  spPostponeCancelled:{ar:'تم إلغاء التأجيل',en:'Postponement cancelled'},
+  spPostponeDue:{ar:'حان موعد تجهيز وشحن هذا الأوردر',en:'This order is due for preparation and shipping'},
+  spPostponeBlock:{ar:'الأوردر مؤجل حتى {date}',en:'This order is postponed until {date}'},
+  spPostponeBadge:{ar:'مؤجل',en:'Postponed'},
+  spPostponeDueBadge:{ar:'حان موعده',en:'Due now'},
+  spPostponeCancel:{ar:'إلغاء التأجيل',en:'Cancel postponement'},
+  spPostponeZone:{ar:'التوقيت المحلي: القاهرة',en:'Local time: Cairo'},
+  spPostponeNotifyAt:{ar:'يصل التنبيه بمجرد حلول الساعة 12 منتصف الليل بتوقيت القاهرة في التاريخ المحدد.',en:'The reminder arrives as soon as the selected date begins at midnight Cairo time.'},
+  spPostponeFilter:{ar:'مؤجل للشحن',en:'Shipping postponed'},
+  spPostponeInvalid:{ar:'اختر تاريخًا مستقبليًا صالحًا',en:'Choose a valid future date'},
   spSendToTransactionsShort:{ar:'جهّز واشحن',en:'Prep & Ship'},
   spStockDemandAnalysis:{ar:'تحليل احتياج المخزون',en:'Stock demand analysis'},
   spStockDemandTitle:{ar:'احسب الكميات المطلوبة لهذه الطلبات وقارنها بالمخزون قبل إرسالها',en:'Calculate the quantities these orders need and compare them with stock before sending'},
@@ -31028,6 +31143,57 @@ const TRANSLATIONS = {
   dpTabAnalysis:{ar:'تحليل المخزون',en:'Stock analysis'},
   dpTabReady:{ar:'جاهز للشحن',en:'Ready to Ship'},
   dpTabMissing:{ar:'نواقص الطلبات',en:'Order shortages'},
+  dpTabUnlinked:{ar:'غير مربوط',en:'Not linked'},
+  dpTabAction:{ar:'يحتاج إجراء',en:'Needs action'},
+  dpDivErp:{ar:'في النظام',en:'In SOULIA'},
+  dpDivLower:{ar:'النظام أقل بـ {n}',en:'SOULIA is {n} lower'},
+  dpDivHigher:{ar:'النظام أعلى بـ {n}',en:'SOULIA is {n} higher'},
+  dpDivWhat:{ar:'ما الذي تغيّر؟',en:'What changed?'},
+  dpDivHide:{ar:'إخفاء التفاصيل',en:'Hide details'},
+  dpDivBy:{ar:'عدّله {by} · {at}',en:'Edited by {by} · {at}'},
+  dpDivNoLines:{ar:'لا توجد تفاصيل مسجلة لهذا التعديل.',en:'No details were recorded for this edit.'},
+  dpDivLoading:{ar:'جارٍ تحميل تفاصيل الأصناف…',en:'Loading item details…'},
+  dpHeroAction:{ar:'{n} أوردر يحتاج إجراء قبل التأكيد — يحتفظ بدوره ومخزونه.',en:'{n} {ordersW} need an action before confirming — they keep their turn and stock.'},
+  dpActShow:{ar:'عرضها',en:'Show them'},
+  dpActIntro:{ar:'هذه الأوردرات لا يمكن تأكيدها الآن لسبب غير المخزون. تحتفظ بدورها ومخزونها حتى يُحل السبب، ثم تنتقل تلقائيًا إلى «جاهز للشحن».',en:'These orders cannot be confirmed yet for a reason other than stock. They keep their turn and stock until it is resolved, then move to «Ready to ship» by themselves.'},
+  dpActEmpty:{ar:'لا توجد أوردرات تحتاج إجراء',en:'No orders need an action'},
+  dpActStockHeld:{ar:'المخزون محجوز له',en:'Stock held'},
+  dpActStockShort:{ar:'المخزون ناقص',en:'Stock short'},
+  'dpAct_cancel-request':{ar:'طلب إلغاء بانتظار القرار',en:'Cancellation request pending'},
+  'dpAct_edit-pending':{ar:'تعديل بانتظار الموافقة',en:'Edit awaiting approval'},
+  'dpAct_item-conflict':{ar:'تعارض أصناف مع Shopify',en:'Item conflict with Shopify'},
+  'dpAct_deposit-review':{ar:'عربون قيد المراجعة',en:'Deposit under review'},
+  'dpAct_deposit-booking':{ar:'تسجيل العربون في الخزنة لم يكتمل',en:'Deposit not yet booked in the vault'},
+  'dpAct_deposit-over':{ar:'العربون أكبر من إجمالي الطلب',en:'Deposit exceeds the order total'},
+  'dpAct_divergence':{ar:'الإجمالي مختلف عن Shopify',en:'Total differs from Shopify'},
+  'dpAct_dup-ref':{ar:'رقم الأوردر مسجّل من قبل',en:'Order number already recorded'},
+  'dpActHint_cancel-request':{ar:'يُقبل طلب الإلغاء أو يُرفض أولًا.',en:'Approve or reject the cancellation request first.'},
+  'dpActHint_edit-pending':{ar:'يعتمد المدير التعديل أو يرفضه قبل التأكيد.',en:'A manager approves or rejects the edit before confirming.'},
+  'dpActHint_item-conflict':{ar:'اختر نسخة الأصناف المعتمدة: نسخة النظام أم نسخة Shopify.',en:'Choose which items stand: the system\'s or Shopify\'s.'},
+  'dpActHint_deposit-review':{ar:'يُعتمد العربون أو يُرفض قبل التأكيد.',en:'Approve or reject the deposit before confirming.'},
+  'dpActHint_deposit-booking':{ar:'يكتمل التسجيل غالبًا خلال لحظات؛ أعد الحساب بعد قليل.',en:'Booking usually completes in moments; recalculate shortly.'},
+  'dpActHint_deposit-over':{ar:'تُرد الزيادة للعميل قبل التأكيد.',en:'Refund the excess before confirming.'},
+  'dpActHint_divergence':{ar:'يُؤكَّد كل أوردر منفردًا بعد مراجعة الفرق؛ لا يُرسل ضمن التأكيد الجماعي.',en:'Confirm each order on its own after reviewing the difference; bulk confirm skips it.'},
+  'dpActHint_dup-ref':{ar:'توجد معاملة بنفس الرقم في سجل المعاملات؛ راجعها قبل التأكيد حتى لا يُسجَّل الطلب مرتين.',en:'A transaction with this number already exists; review it so the order is not recorded twice.'},
+  'dpActBtn_cancel-request':{ar:'فتح الأوردر',en:'Open order'},
+  'dpActBtn_edit-pending':{ar:'مراجعة التعديل',en:'Review edit'},
+  'dpActBtn_item-conflict':{ar:'حل التعارض',en:'Resolve'},
+  'dpActBtn_deposit-review':{ar:'مراجعة العربون',en:'Review deposit'},
+  'dpActBtn_deposit-booking':{ar:'فتح الأوردر',en:'Open order'},
+  'dpActBtn_deposit-over':{ar:'فتح الأوردر',en:'Open order'},
+  'dpActBtn_divergence':{ar:'مراجعة وتأكيد',en:'Review & confirm'},
+  'dpActBtn_dup-ref':{ar:'فتح الأوردر',en:'Open order'},
+  dpHeroUnlinked:{ar:'{n} أوردر فيه صنف غير مربوط بالمخزن — لا يمكن تأكيده قبل الربط.',en:'{n} {ordersW} include an item not linked to inventory — cannot be confirmed until linked.'},
+  dpUnlLinkNow:{ar:'ربط الأصناف',en:'Link items'},
+  dpUnlShowOrders:{ar:'عرض الأوردرات',en:'Show orders'},
+  dpUnlIntro:{ar:'هذه الأوردرات فيها أصناف غير مربوطة بمنتج في قاعدة الأصناف، فلا يُحسب مخزونها ولا يمكن تأكيدها. اضغط «ربط الأصناف» واختر المنتج الصحيح لكل صنف ثم احفظ؛ ينتقل الأوردر بعدها إلى «جاهز للشحن» أو «نواقص الطلبات» تلقائيًا.',en:'These orders include items not linked to a product, so their stock cannot be counted and they cannot be confirmed. Click «Link items», pick the right product for each item and save; the order then moves to «Ready to ship» or «Order shortages» by itself.'},
+  dpUnlChipsLabel:{ar:'الأصناف غير المربوطة',en:'Unlinked items'},
+  dpUnlInOrders:{ar:'في {n} أوردر',en:'in {n} {ordersW}'},
+  dpUnlColItems:{ar:'الأصناف غير المربوطة',en:'Unlinked items'},
+  dpUnlColAction:{ar:'الإجراء',en:'Action'},
+  dpUnlLinkBtn:{ar:'ربط الأصناف',en:'Link items'},
+  dpUnlEmpty:{ar:'لا توجد أوردرات بأصناف غير مربوطة',en:'No orders with unlinked items'},
+  dpUnlLinkedToast:{ar:'تم ربط {n} أوردر وأُعيد حساب التحليل',en:'{n} order(s) linked — analysis updated'},
   dpFilterAll:{ar:'الكل',en:'All'},
   dpFilterShortage:{ar:'نقص',en:'Shortage'},
   dpFilterLow:{ar:'منخفض',en:'Low'},
@@ -31076,8 +31242,8 @@ const TRANSLATIONS = {
   dpKpiSuggested:{ar:'الشراء المقترح',en:'Suggested purchase'},
   dpKpiEstCost:{ar:'تكلفة الشراء التقديرية',en:'Estimated purchase cost'},
   dpUnits:{ar:'قطعة',en:'units'},
-  dpNoticeShopify:{ar:'ℹ️ هذه الطلبات <strong>لم تُخصم من المخزون بعد</strong>. الحساب هنا مقتصر على <strong>الطلبات المحددة فقط</strong> مقابل «المتاح» (الرصيد الحالي فعلياً) — لا يتم خصم أي التزامات أخرى من سجل المعاملات. تنبيه: لو كان نفس الصنف مطلوباً في طلبات أخرى لم تُشحن بعد، فقد يقل المتاح الفعلي عند إرسال هذه الطلبات.',en:'ℹ️ These orders have <strong>not been deducted from stock yet</strong>. This calculation covers <strong>the selected orders only</strong> against "Available" (the actual current balance) — no other commitments from the transactions log are deducted. Note: if the same item is required by other unshipped orders, the real available quantity may drop once these orders are sent.'},
-  dpNoticeTransactions:{ar:'ℹ️ هذه المعاملات <strong>مخصومة من المخزون بالفعل</strong>، لذلك تمت إعادة كمياتها إلى «المتاح» لحساب الرصيد قبل تنفيذها.',en:'ℹ️ These transactions have <strong>already been deducted from stock</strong>, so their quantities were added back to "Available" to compute the balance before they were executed.'},
+  dpNoticeShopify:{ar:'هذه الأوردرات <strong>لم تُخصم من المخزون بعد</strong>. يُوزَّع المخزون الصالح للبيع في المخزن الرئيسي <strong>بالأقدم أولًا حسب تاريخ إنشاء الأوردر</strong>، ولا يحجز الأوردر شيئًا إلا إذا اكتملت كل أصنافه. لا تُحسب القطع التالفة والمفقودة وقيد الفحص، ولا تُحسب القطع المحجوزة لأوردرات مؤكدة مرتين.',en:'These orders have <strong>not been deducted from stock yet</strong>. Sellable stock in the main warehouse is shared <strong>oldest first, by the date each order was created</strong>, and an order holds nothing unless all its items are covered. Damaged, lost and awaiting-inspection pieces are not counted, and pieces held for confirmed orders are never counted twice.'},
+  dpNoticeTransactions:{ar:'هذه المعاملات <strong>مخصومة من المخزون بالفعل</strong>، لذلك أُعيدت كمياتها لحساب الرصيد قبل تنفيذها. يُوزَّع المخزون عليها بالأقدم أولًا، ولا تُحسب القطع التالفة والمفقودة وقيد الفحص.',en:'These transactions have <strong>already been deducted from stock</strong>, so their quantities were added back to compute the balance before them. Stock is shared oldest first, and damaged, lost and awaiting-inspection pieces are not counted.'},
   dpNoticeSkipped:{ar:'⚠️ <strong>تم استثناء {n} حالة من التحليل:</strong> {list}',en:'⚠️ <strong>{n} cases were excluded from the analysis:</strong> {list}'},
   dpNoticeMore:{ar:' — و{n} أخرى',en:' — and {n} more'},
   dpNoticeUnmapped:{ar:'🔗 <strong>{n} صنف غير مرتبط بالمخزن</strong> — لم يُحسب في التحليل، اربطه بصنف في قاعدة الأصناف أولاً: {list}',en:'🔗 <strong>{n} items are not linked to inventory</strong> — excluded from the analysis; link them to a product first: {list}'},
@@ -31104,7 +31270,18 @@ const TRANSLATIONS = {
   dpCalcBuyFromSupplier:{ar:'يُشترى من المورد',en:'To buy from supplier'},
   dpCalcUsualSupplier:{ar:'المورد المعتاد: <strong>{name}</strong>',en:'Usual supplier: <strong>{name}</strong>'},
   dpAffectedTitle:{ar:'الطلبات المتأثرة — {orders} طلب • إجمالي {qty} قطعة',en:'Affected orders — {orders} orders • {qty} units total'},
-  dpAffectedSorted:{ar:'(مرتبة من الأعلى قيمة)',en:'(sorted by highest value)'},
+  dpAffectedSorted:{ar:'(مرتبة من الأقدم)',en:'(oldest first)'},
+  dpCalcPhysical:{ar:'في المخزن فعليًا',en:'In the warehouse'},
+  dpCalcHeldConfirmed:{ar:'محجوز لأوردرات مؤكدة',en:'Held for confirmed orders'},
+  dpCalcNotSellable:{ar:'غير صالح للبيع',en:'Not sellable'},
+  dpCalcSellable:{ar:'صالح للبيع',en:'Sellable'},
+  dpCalcReservedOlder:{ar:'محجوز لأوردرات أقدم',en:'Held for older orders'},
+  dpQueuePos:{ar:'الدور {n}',en:'Turn {n}'},
+  dpQueuePosTitle:{ar:'ترتيب الأوردر في توزيع المخزون: الأقدم إنشاءً يُخدم أولًا',en:'Place in the stock queue: the order created first is served first'},
+  dpNoticeQueue:{ar:'يُوزَّع المخزون على <strong>{n} أوردر معلّق</strong> بالأقدم أولًا، والأوردرات الأقدم غير المحددة تأخذ نصيبها قبل الأوردرات المحددة.',en:'Stock is shared over <strong>{n} pending orders</strong>, oldest first; older orders outside the selection take their share before the selected ones.'},
+  dpRedistributed:{ar:'تغيّر توزيع المخزون — {n} أوردر جاهز الآن',en:'Stock redistributed — {n} order(s) ready now'},
+  dpRefreshedSame:{ar:'أُعيد الحساب — لا تغيير في التوزيع',en:'Recalculated — no change'},
+  dpRefresh:{ar:'إعادة الحساب',en:'Recalculate'},
   dpPaidFull:{ar:'مدفوع بالكامل',en:'Paid in full'},
   dpDepositPaid:{ar:'عربون مدفوع',en:'Deposit paid'},
   dpTagFull:{ar:'كامل',en:'Full'},
@@ -36167,6 +36344,11 @@ function connectSocket() {
     if (currentPage === 'invoice-view') renderInvoiceViewPage();
   });
   socket.on('shopify:items-changed', refreshShopifyFromEvent);
+  // Stock demand window: any of these can change who gets the stock.
+  ['tx:created', 'tx:updated', 'tx:cancelled', 'tx:deleted', 'inventory:changed', 'shopify:items-changed',
+   'shopify:edit-changed', 'shopify:order-created', 'shopify:order-cancelled', 'shopify:value-conflict',
+   'shopify:deposit-changed', 'shopify:order-cancel-conflict']
+    .forEach(ev => socket.on(ev, () => { if (typeof _dpScheduleLiveRefresh === 'function') _dpScheduleLiveRefresh(); }));
   socket.on('shopify:order-created', (payload) => {
     if (payload?.id) _spScheduleLiveOrderRefresh(String(payload.id));
   });
@@ -61303,12 +61485,14 @@ function renderDemandPlanning() {
   const sum = qs('#dp-summary');
   if (sum) {
     const ready = _dpOrdersPivot.ready.length, waiting = _dpOrdersPivot.missing.length;
-    const totalOrders = (ready + waiting) || a.ordersCount || 0;
+    const unlinked = _dpOrdersPivot.unlinked.length;
+    const acting = (_dpOrdersPivot.action || []).length;
+    const totalOrders = (ready + waiting + unlinked + acting) || a.ordersCount || 0;
     // One block per order reads at a glance; past 40 the blocks become slivers,
     // so the same split is drawn as one proportional bar instead.
     const split = totalOrders <= 40
-      ? `<div class="dpx-blocks" aria-hidden="true">${'<i></i>'.repeat(ready)}${'<i class="is-wait"></i>'.repeat(waiting)}</div>`
-      : `<div class="dpx-bar" aria-hidden="true"><i style="width:${(ready / totalOrders) * 100}%;background:var(--accent)"></i><i class="is-wait" style="flex:1"></i></div>`;
+      ? `<div class="dpx-blocks" aria-hidden="true">${'<i></i>'.repeat(ready)}${'<i class="is-act"></i>'.repeat(acting)}${'<i class="is-link"></i>'.repeat(unlinked)}${'<i class="is-wait"></i>'.repeat(waiting)}</div>`
+      : `<div class="dpx-bar" aria-hidden="true"><i style="width:${(ready / totalOrders) * 100}%;background:var(--accent)"></i>${acting ? `<i class="is-act" style="width:${(acting / totalOrders) * 100}%"></i>` : ''}${unlinked ? `<i class="is-link" style="width:${(unlinked / totalOrders) * 100}%"></i>` : ''}<i class="is-wait" style="flex:1"></i></div>`;
     const buyQty = Number(a.totalSuggestedPurchaseQty) || 0;
     const buySkus = (a.lines || []).filter(l => (l.suggestedPurchase || 0) > 0).length;
     const PLUS = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
@@ -61321,7 +61505,9 @@ function renderDemandPlanning() {
         <div class="dpx-line">${waiting
           ? tf('dpHeroBlocked', { n: fmtN(waiting), skus: fmtN(a.shortageSkus || 0), qty: fmtN(a.totalShortageQty || 0),
               ordersW: W(waiting, 'order', 'orders'), itemsW: W(a.shortageSkus, 'item', 'items'), unitsW: W(a.totalShortageQty, 'unit', 'units') })
-          : t('dpHeroAllReady')}</div>
+          : (unlinked || acting ? '' : t('dpHeroAllReady'))}</div>
+        ${acting ? `<div class="dpx-line dpx-unl-line"><span class="dpx-act-dot" aria-hidden="true"></span><span>${tf('dpHeroAction', { n: fmtN(acting), ordersW: W(acting, 'order', 'orders') })}</span><button type="button" class="dpx-link" onclick="_dpGoTab('action')">${t('dpActShow')}</button></div>` : ''}
+        ${unlinked ? `<div class="dpx-line dpx-unl-line"><span class="dpx-unl-dot" aria-hidden="true"></span><span>${tf('dpHeroUnlinked', { n: fmtN(unlinked), ordersW: W(unlinked, 'order', 'orders') })}</span><button type="button" class="dpx-link" onclick="_dpGoUnlinked()">${t('dpUnlLinkNow')}</button></div>` : ''}
       </div>
       <div class="dpx-side">
         ${buyQty > 0 ? `
@@ -61359,13 +61545,14 @@ function renderDemandPlanning() {
       parts.push(tf('dpNoticeUnmapped', {
         n: fmtN(a.unmappedItems.length),
         list: a.unmappedItems.slice(0, 6).map(esc).join(_sep) + (a.unmappedItems.length > 6 ? ' …' : ''),
-      }));
+      }) + ((a.unlinkedOrders || []).length ? ` <button type="button" class="dpx-link" onclick="_dpGoUnlinked()">${t('dpUnlShowOrders')}</button>` : ''));
     }
     if (a.unknownSkus?.length) {
       parts.push(tf('dpNoticeUnknownSkus', { list: a.unknownSkus.slice(0, 8).map(esc).join(_sep) }));
     }
     // Spell out what the numbers mean — it differs between the two sources
-    const explain = _dpSource === 'shopify' ? t('dpNoticeShopify') : t('dpNoticeTransactions');
+    let explain = _dpSource === 'shopify' ? t('dpNoticeShopify') : t('dpNoticeTransactions');
+    if (_dpSource === 'shopify' && (a.queueSize || 0) > (a.ordersCount || 0)) explain += ' ' + tf('dpNoticeQueue', { n: fmtN(a.queueSize) });
     const _deEmoji = (h) => String(h).replace(/^\s*(?:\u2139\uFE0F?|\u26A0\uFE0F?|\uD83D\uDD17)\s*/, '');
     const _iInfo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></svg>';
     const _iWarn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.01"/></svg>';
@@ -61392,8 +61579,259 @@ function renderDemandPlanning() {
   setTabCnt('#dp-tab-cnt-analysis', (a.lines || []).length);
   setTabCnt('#dp-tab-cnt-ready', _dpOrdersPivot.ready.length);
   setTabCnt('#dp-tab-cnt-missing', _dpOrdersPivot.missing.length);
+  setTabCnt('#dp-tab-cnt-unlinked', _dpOrdersPivot.unlinked.length);
+  setTabCnt('#dp-tab-cnt-action', (_dpOrdersPivot.action || []).length);
+  const actTab = qs('#demand-planning-modal .dp-tab[data-dp-tab="action"]');
+  if (actTab) actTab.style.display = (_dpOrdersPivot.action || []).length ? '' : 'none';
+  if (!(_dpOrdersPivot.action || []).length && _dpActiveTab === 'action') {
+    setDpTab('ready', qs('#demand-planning-modal .dp-tab[data-dp-tab="ready"]'));
+  }
+  const unlTab = qs('#demand-planning-modal .dp-tab[data-dp-tab="unlinked"]');
+  if (unlTab) unlTab.style.display = _dpOrdersPivot.unlinked.length ? '' : 'none';
+  if (!_dpOrdersPivot.unlinked.length && _dpActiveTab === 'unlinked') {
+    setDpTab('ready', qs('#demand-planning-modal .dp-tab[data-dp-tab="ready"]'));
+  }
   renderDpOrdersTab('ready');
   renderDpOrdersTab('missing');
+  renderDpUnlinkedTab();
+  renderDpActionTab();
+}
+
+function _dpGoTab(tab) {
+  setDpTab(tab, qs(`#demand-planning-modal .dp-tab[data-dp-tab="${tab}"]`));
+}
+
+/* ── «يحتاج إجراء» tab: orders whose stock is decided but which the server
+   would refuse to confirm (ConfirmBlock in demand-planning.service.ts). Grouped
+   by the most urgent reason; each group says what to do and opens the right
+   window. The order keeps its turn and its stock while it waits. */
+const DP_ACT_ORDER = ['cancel-request', 'edit-pending', 'item-conflict', 'deposit-review', 'deposit-booking', 'deposit-over', 'divergence', 'dup-ref'];
+function renderDpActionTab() {
+  const host = qs('#dp-act-groups');
+  if (!host) return;
+  const rows = (_dpOrdersPivot.action || []).slice().sort((x, y) => (x.position || 0) - (y.position || 0));
+  if (!rows.length) { host.innerHTML = `<div class="dp-empty">${t('dpActEmpty')}</div>`; return; }
+  const groups = new Map();
+  rows.forEach(o => {
+    const first = DP_ACT_ORDER.find(c => (o.blocks || []).includes(c)) || (o.blocks || [])[0];
+    if (!groups.has(first)) groups.set(first, []);
+    groups.get(first).push(o);
+  });
+  host.innerHTML = DP_ACT_ORDER.filter(c => groups.has(c)).map(code => {
+    const list = groups.get(code);
+    return `<section class="dpx-act-grp" aria-labelledby="dp-act-h-${code}">
+      <div class="dpx-act-head">
+        <h4 id="dp-act-h-${code}">${t('dpAct_' + code)} <span class="dp-tab-badge">${fmtN(list.length)}</span></h4>
+        <p>${t('dpActHint_' + code)}</p>
+      </div>
+      <div class="dp-ord-wrap"><table class="dp-ord-table"><tbody>${list.map(o => `
+        <tr>
+          <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span>${_dpPosHtml(o)}</td>
+          <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span>${(o.blocks || []).length > 1 ? `<div class="dpx-act-more">${o.blocks.filter(b => b !== code).map(b => `<span>${t('dpAct_' + b)}</span>`).join('')}</div>` : ''}${_dpDivSummaryHtml(o)}</td>
+          <td class="dp-ord-priority-3"><span class="dp-ord-date">${esc(fmtDate(o.date))}</span></td>
+          <td class="dp-ord-priority-2">${o.stockState === 'ready'
+            ? `<span class="dp-badge ok"><span class="dp-dot"></span>${t('dpActStockHeld')}</span>`
+            : `<span class="dp-badge bad"><span class="dp-dot"></span>${t('dpActStockShort')}</span>`}</td>
+          <td class="dp-ord-priority-1" style="text-align:center">${fmtJ(o.orderTotal)}</td>
+          <td class="dp-ord-priority-1" style="text-align:end"><button type="button" class="dpx-unl-btn" onclick="_dpAct('${code}','${esc(o.transactionId)}')">${t('dpActBtn_' + code)}</button></td>
+        </tr>${o.divergence && _dpDivOpen.has(o.transactionId) ? `<tr class="dpx-div-row"><td colspan="6">${_dpDivDetailHtml(o)}</td></tr>` : ''}`).join('')}</tbody></table></div>
+    </section>`;
+  }).join('');
+}
+
+/* ── «الإجمالي مختلف عن Shopify»: where the difference is.
+   The row states both totals and the gap in words (a bare «−100» reads either
+   way in RTL); «ما الذي تغيّر؟» opens the edit's change lines from the plan at
+   once, then the photo explanation the confirm dialog uses
+   (_spDivergenceExplainHtml), read from the order's detail once. */
+const _dpDivOpen = new Set();
+const _dpDivDetail = new Map();   // id -> html | 'loading' | ''
+function _dpDivSummaryHtml(o) {
+  const d = o && o.divergence;
+  if (!d) return '';
+  const gap = Math.abs(Number(d.diff) || 0);
+  const words = Number(d.diff) < 0 ? tf('dpDivLower', { n: fmtJ(gap) }) : tf('dpDivHigher', { n: fmtJ(gap) });
+  const open = _dpDivOpen.has(o.transactionId);
+  return `<div class="dpx-div">
+    <span class="dpx-div-tot"><small>Shopify</small><bdi>${fmtJ(d.shopifyTotal)}</bdi></span>
+    <span class="dpx-div-tot"><small>${t('dpDivErp')}</small><bdi>${fmtJ(d.erpTotal)}</bdi></span>
+    <span class="dpx-div-gap ${Number(d.diff) < 0 ? 'is-lower' : 'is-higher'}">${words}</span>
+    <button type="button" class="dpx-link" aria-expanded="${open}" onclick="_dpDivToggle('${esc(o.transactionId)}')">${t(open ? 'dpDivHide' : 'dpDivWhat')}</button>
+  </div>`;
+}
+function _dpDivDetailHtml(o) {
+  const d = o.divergence;
+  const who = d.by ? `<p class="dpx-div-who">${tf('dpDivBy', { by: esc(d.by), at: esc(d.at ? fmtDateTime(d.at) : '—') })}</p>` : '';
+  const cached = _dpDivDetail.get(o.transactionId);
+  const lines = (d.changes || []).length
+    ? `<ul class="dpx-div-lines">${d.changes.slice(0, 8).map(c => `<li dir="auto">${esc(c)}</li>`).join('')}</ul>`
+    : `<p class="dpx-div-who">${t('dpDivNoLines')}</p>`;
+  const body = cached && cached !== 'loading' ? cached
+    : lines + (cached === 'loading' ? `<p class="dpx-div-who"><span class="dpx-spin" style="width:11px;height:11px"></span> ${t('dpDivLoading')}</p>` : '');
+  return `<div class="dpx-div-detail">${who}${body}</div>`;
+}
+async function _dpDivToggle(id) {
+  if (_dpDivOpen.has(id)) { _dpDivOpen.delete(id); renderDpActionTab(); return; }
+  _dpDivOpen.add(id);
+  if (!_dpDivDetail.has(id) && typeof _spDivergenceExplainHtml === 'function') {
+    _dpDivDetail.set(id, 'loading');
+    renderDpActionTab();
+    try {
+      const full = await api('/shopify/orders/detail/' + encodeURIComponent(id));
+      _dpDivDetail.set(id, (full && _spDivergenceExplainHtml(full)) || '');
+    } catch (_) {
+      _dpDivDetail.set(id, '');   // the plan's own change lines stay on screen
+    }
+    if (_dpDivDetail.get(id) === '') _dpDivDetail.delete(id);
+  }
+  renderDpActionTab();
+}
+
+/* Opens the window that resolves the reason. Each one is above this window
+   (order panel z 1150, edit history #modal-overlay 1300, confirm 9999). The
+   decision emits a live event, so the plan re-reads itself; closing the order
+   panel also re-reads it. */
+function _dpAct(code, id) {
+  if (code === 'divergence' && hasPerm('shopify-prepare-ship')) { approveShopifyOrder(id); return; }
+  if (code === 'edit-pending' && typeof openShopifyEditReview === 'function' && (_shopifyOrders || []).some(o => o._id === id)) {
+    openShopifyEditReview(id); return;
+  }
+  openSpOrderPeek(id);
+  _dpRefreshWhenGone('sp-peek');
+}
+
+/* Re-reads the plan once a window this one opened is closed. */
+const _dpGoneWatch = {};
+function _dpRefreshWhenGone(elId) {
+  if (_dpGoneWatch[elId]) return;
+  setTimeout(() => {
+    if (!document.getElementById(elId)) return;
+    _dpGoneWatch[elId] = new MutationObserver(() => {
+      if (document.getElementById(elId)) return;
+      _dpGoneWatch[elId].disconnect();
+      delete _dpGoneWatch[elId];
+      _dpScheduleLiveRefresh();
+    });
+    _dpGoneWatch[elId].observe(document.body, { childList: true });
+  }, 400);
+}
+
+/* ── «غير مربوط» tab: orders that cannot be confirmed until each line is
+   linked to a product. Linking happens in the Shopify edit window (its own
+   product picker on every unlinked line); when that window closes the
+   analysis is re-run, so a linked order moves to «ready» or «short» by itself. */
+let _dpUnlItem = '';   // item-name filter from the chips
+
+function _dpGoUnlinked() {
+  setDpTab('unlinked', qs('#demand-planning-modal .dp-tab[data-dp-tab="unlinked"]'));
+}
+
+function _dpUnlPickItem(i) {
+  const name = (_dpUnlNames || [])[i] || '';
+  _dpUnlItem = _dpUnlItem === name ? '' : name;
+  renderDpUnlinkedTab();
+}
+
+let _dpUnlNames = [];
+function renderDpUnlinkedTab() {
+  const tbody = qs('#dp-ord-tbody-unlinked');
+  const intro = qs('#dp-unl-intro');
+  if (!tbody) return;
+  const all = (_dpOrdersPivot.unlinked || []).slice()
+    .sort((x, y) => String(x.date || '').localeCompare(String(y.date || '')));   // oldest first
+  // One chip per unlinked product name, with how many orders carry it — the
+  // same product usually blocks several orders, and that is where to start.
+  const byName = new Map();
+  all.forEach(o => (o.items || []).forEach(i => {
+    const k = i.name || '—';
+    if (!byName.has(k)) byName.set(k, new Set());
+    byName.get(k).add(o.transactionId);
+  }));
+  if (_dpUnlItem && !byName.has(_dpUnlItem)) _dpUnlItem = '';
+  const chips = [...byName.entries()].sort((x, y) => y[1].size - x[1].size);
+  // ⚠ Names are typed in Shopify and may hold quotes — the chip passes an
+  //   index, never the name, through the inline handler.
+  _dpUnlNames = chips.map(c => c[0]);
+  if (intro) {
+    intro.innerHTML = `<div class="dpx-note is-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>${t('dpUnlIntro')}</span></div>
+      ${chips.length ? `<div class="dpx-unl-chips" role="group" aria-label="${escHtml(t('dpUnlChipsLabel'))}">${chips.map(([name, ids], i) =>
+        `<button type="button" class="dpx-unl-chip${_dpUnlItem === name ? ' is-on' : ''}" aria-pressed="${_dpUnlItem === name}" onclick="_dpUnlPickItem(${i})"><bdi>${esc(name)}</bdi><span>${tf('dpUnlInOrders', { n: fmtN(ids.size), ordersW: _dpPluralW(ids.size, 'order', 'orders') })}</span></button>`).join('')}</div>` : ''}`;
+  }
+  const rows = _dpUnlItem ? all.filter(o => (o.items || []).some(i => (i.name || '—') === _dpUnlItem)) : all;
+  tbody.innerHTML = rows.length ? rows.map(o => `
+    <tr>
+      <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span></td>
+      <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span></td>
+      <td class="dp-ord-priority-2"><div class="dp-ord-items">${(o.items || []).map(i => `<span class="dpx-unl-item"><bdi>${esc(i.name)}</bdi> ×${fmtN(i.qty)}${i.code && !/^shopify$/i.test(i.code) ? ` <small class="dp-prod-sku">${esc(i.code)}</small>` : ''}</span>`).join('<br>')}</div></td>
+      <td class="dp-ord-priority-3"><span class="dp-ord-date">${esc(fmtDate(o.date))}</span></td>
+      <td class="dp-ord-priority-1" style="text-align:center">${fmtJ(o.orderTotal)}</td>
+      <td class="dp-ord-priority-1" style="text-align:center"><button type="button" class="dpx-unl-btn" onclick="_dpLinkOrder('${esc(o.transactionId)}',this)">${t('dpUnlLinkBtn')}</button></td>
+    </tr>`).join('') : `<tr><td colspan="6"><div class="dp-empty">${t('dpUnlEmpty')}</div></td></tr>`;
+  const foot = qs('#dp-ord-foot-unlinked');
+  if (foot) foot.textContent = tf('dpFootShowingOrders', { shown: fmtN(rows.length), total: fmtN(all.length) });
+}
+
+/* Opens the order's edit window (z 9999, above this window) on its unlinked
+   lines. When it closes — saved or not — the analysis is re-read from the
+   server, keeping this tab, so the result of the linking shows at once. */
+let _dpLinkWatch = null;
+async function _dpLinkOrder(id, btn) {
+  if (_dpSource !== 'shopify' || _dpLinkWatch) return;
+  if (btn) btn.disabled = true;
+  try { await editShopifyOrder(id); } finally { if (btn) btn.disabled = false; }
+  if (!document.getElementById('shopify-edit-modal')) return;   // could not open (toast shown)
+  _dpLinkWatch = new MutationObserver(() => {
+    if (document.getElementById('shopify-edit-modal')) return;
+    _dpLinkWatch.disconnect();
+    _dpLinkWatch = null;
+    _dpRefreshAnalysis();
+  });
+  _dpLinkWatch.observe(document.body, { childList: true });
+}
+
+/* Re-reads the same orders without resetting the window (tab, filters and
+   selection stay). Not logged — it is the same analysis, refreshed. */
+let _dpRefreshing = false, _dpRefreshAgain = false;
+async function _dpRefreshAnalysis(opts = {}) {
+  if (_dpLoading || !_dpSourceIds.length || !_dpAnalysis) return;
+  if (_dpRefreshing) { _dpRefreshAgain = true; return; }   // one follow-up, never two in flight
+  const modal = qs('#demand-planning-modal');
+  if (!modal || modal.style.display === 'none') return;
+  _dpRefreshing = true;
+  const btn = qs('#dp-refresh-btn');
+  if (btn) btn.classList.add('is-busy');
+  const before = (_dpOrdersPivot.unlinked || []).length;
+  const readyBefore = (_dpOrdersPivot.ready || []).map(o => o.transactionId).sort().join();
+  try {
+    const shop = _dpSource === 'shopify';
+    _dpAnalysis = await api(shop ? '/demand-planning/analyze-shopify' : '/demand-planning/analyze', {
+      method: 'POST',
+      body: JSON.stringify(shop ? { orderIds: _dpSourceIds, persistLog: false } : { transactionIds: _dpSourceIds, persistLog: false }),
+    });
+    renderDemandPlanning();
+    const after = (_dpOrdersPivot.unlinked || []).length;
+    const readyAfter = (_dpOrdersPivot.ready || []).map(o => o.transactionId).sort().join();
+    if (after < before) toast(tf('dpUnlLinkedToast', { n: fmtN(before - after) }));
+    else if (readyAfter !== readyBefore) toast(tf('dpRedistributed', { n: fmtN(_dpOrdersPivot.ready.length) }));
+    else if (opts.manual) toast(t('dpRefreshedSame'));
+  } catch (e) {
+    toast(t('dpAnalysisFailed') + (e.message || ''), true);
+  } finally {
+    _dpRefreshing = false;
+    if (btn) btn.classList.remove('is-busy');
+    if (_dpRefreshAgain) { _dpRefreshAgain = false; _dpScheduleLiveRefresh(); }
+  }
+}
+
+/* A cancelled order, a changed quantity or a stock movement anywhere changes
+   who gets the stock. While the window is open it re-reads the plan once the
+   burst of live events settles (a bulk confirm sends one event per order). */
+let _dpLiveTimer = null;
+function _dpScheduleLiveRefresh() {
+  const modal = qs('#demand-planning-modal');
+  if (!modal || modal.style.display === 'none' || !_dpAnalysis) return;
+  clearTimeout(_dpLiveTimer);
+  _dpLiveTimer = setTimeout(() => _dpRefreshAnalysis({ live: true }), 1500);
 }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
@@ -61424,14 +61862,42 @@ function _dpMoveInk() {
  * server), so within each line the highest-value orders are served first out
  * of freeToUse when apportioning what's actually covered.
  */
-let _dpOrdersPivot = { ready: [], missing: [] };
+let _dpOrdersPivot = { ready: [], missing: [], unlinked: [], action: [] };
 let _dpReadySelectedIds = new Set();
 function _dpBuildOrderPivot() {
   const a = _dpAnalysis;
+  // An order holding a line with no product link can never be confirmed, so it
+  // is neither «ready» nor «short» — and it must not claim stock another order
+  // could ship with. It gets its own tab (see renderDpUnlinkedTab).
+  const unlinked = (a?.unlinkedOrders || []).slice();
+  const unlinkedIds = new Set(unlinked.map(o => o.transactionId));
+  // The server shares the stock out oldest first, all or nothing (orderPlan);
+  // the browser only reads that verdict. The per-line loop below is the
+  // fallback for an older server.
+  if (Array.isArray(a?.orderPlan)) {
+    const toEntry = p => ({
+      transactionId: p.transactionId, ref: p.ref, client: p.client, date: p.date,
+      orderTotal: p.orderTotal || 0, deposit: p.deposit || 0, payment: p.payment || '',
+      notes: '', tags: '', position: p.position, blocks: p.blocks || [], stockState: p.state, divergence: p.divergence || null,
+      items: (p.items || []).map(i => ({ sku: i.sku, name: i.name, qty: i.qty, covered: i.qty - (i.missing || 0), missing: i.missing || 0 })),
+      missingItems: (p.items || []).filter(i => (i.missing || 0) > 0)
+        .map(i => ({ sku: i.sku, name: i.name, required: i.qty, missing: i.missing, available: i.freeAtTurn || 0 })),
+    });
+    const free = p => !(p.blocks || []).length;
+    const ready = a.orderPlan.filter(p => p.state === 'ready' && free(p)).map(toEntry);
+    const missing = a.orderPlan.filter(p => p.state === 'short' && free(p)).map(toEntry);
+    // Unlinked wins: linking is the first thing such an order needs.
+    const action = a.orderPlan.filter(p => p.state !== 'unlinked' && !free(p)).map(toEntry);
+    _dpOrdersPivot = { ready, missing, unlinked, action };
+    const readyIds = new Set(ready.map(o => o.transactionId));
+    [..._dpReadySelectedIds].forEach(id => { if (!readyIds.has(id)) _dpReadySelectedIds.delete(id); });
+    return;
+  }
   const byOrder = new Map(); // transactionId -> { ref, client, date, orderTotal, items:[], missingItems:[] }
   (a?.lines || []).forEach(l => {
     let freeLeft = Math.max(0, l.freeToUse);
     (l.affectedOrders || []).forEach(o => {
+      if (unlinkedIds.has(o.transactionId)) return;
       let entry = byOrder.get(o.transactionId);
       if (!entry) {
         entry = {
@@ -61462,16 +61928,21 @@ function _dpBuildOrderPivot() {
     if (entry.missingItems.length) missing.push(entry);
     else ready.push(entry);
   });
-  _dpOrdersPivot = { ready, missing };
+  _dpOrdersPivot = { ready, missing, unlinked, action: [] };
   // Drop selections for orders no longer in the ready set
   const readyIds = new Set(ready.map(o => o.transactionId));
   [..._dpReadySelectedIds].forEach(id => { if (!readyIds.has(id)) _dpReadySelectedIds.delete(id); });
 }
 
+/** «Turn N» — the order's place in the oldest-first queue (1 = served first). */
+function _dpPosHtml(o) {
+  return o && o.position ? `<small class="dpx-pos" title="${escHtml(t('dpQueuePosTitle'))}">${tf('dpQueuePos', { n: fmtN(o.position) })}</small>` : '';
+}
+
 function _dpOrdSortRows(rows, sortKey) {
   const sorted = rows.slice();
   switch (sortKey) {
-    case 'date-asc': sorted.sort((x, y) => new Date(x.date) - new Date(y.date)); break;
+    case 'date-asc': sorted.sort((x, y) => (x.position || 0) - (y.position || 0) || (Date.parse(x.date) || 0) - (Date.parse(y.date) || 0)); break;
     case 'value-desc': sorted.sort((x, y) => y.orderTotal - x.orderTotal); break;
     case 'value-asc': sorted.sort((x, y) => x.orderTotal - y.orderTotal); break;
     case 'date-desc':
@@ -61509,7 +61980,7 @@ function renderDpOrdersTab(tab) {
     tbody.innerHTML = rows.length ? rows.map(o => `
       <tr>
         <td class="dp-ord-priority-1"><input type="checkbox" class="dp-ready-check" data-id="${esc(o.transactionId)}" onclick="_dpToggleSelectReady('${esc(o.transactionId)}',this)" ${_dpReadySelectedIds.has(o.transactionId) ? 'checked' : ''}></td>
-        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span></td>
+        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span>${_dpPosHtml(o)}</td>
         <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span></td>
         <td class="dp-ord-priority-2"><div class="dp-ord-items">${o.items.map(i => `${esc(i.name)} ×${fmtN(i.qty)}`).join('<br>')}</div></td>
         <td class="dp-ord-priority-2" style="text-align:center">${fmtN(o.items.reduce((s, i) => s + i.qty, 0))}</td>
@@ -61521,7 +61992,7 @@ function renderDpOrdersTab(tab) {
   } else {
     tbody.innerHTML = rows.length ? rows.map(o => `
       <tr>
-        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span></td>
+        <td class="dp-ord-priority-1"><span class="dp-ord-ref">#${esc(o.ref)}</span>${_dpPosHtml(o)}</td>
         <td class="dp-ord-priority-1"><span class="dp-ord-client">${esc(o.client)}</span></td>
         <td class="dp-ord-priority-2"><div class="dp-ord-items">${o.missingItems.map(i => `<span class="missing-item">${esc(i.name)}</span> — ${tf('dpRequiredQtyShort', { n: fmtN(i.required) })}`).join('<br>')}</div></td>
         <td class="dp-ord-priority-1" style="text-align:center"><div class="dp-ord-items">${o.missingItems.map(i => `${fmtN(i.available)} / <span class="missing-item">${fmtN(i.missing)}</span>`).join('<br>')}</div></td>
@@ -61562,20 +62033,16 @@ function renderDpOrdersTab(tab) {
    confirmation modal, /shopify/orders/:id/approve) for orders selected in the demand
    planning "ready to ship" tab — only meaningful when the analysis source is Shopify,
    since transactions-sourced orders are already logged. */
-function _dpBulkSendReadyOrders() {
+async function _dpBulkSendReadyOrders() {
   if (!_spRequirePrepareShip()) return;
   if (_dpSource !== 'shopify' || !_dpReadySelectedIds.size) return;
-  const sentIds = new Set(_dpReadySelectedIds);
+  // ⚠ bulkSendShopifyOrders is async and builds its dialog after loading, so
+  //   nothing can be hooked onto its button here (the old listener never
+  //   attached). Sent orders leave the list through the live refresh: each
+  //   confirmation emits tx:created, and the window re-reads the plan.
   const prevSelection = _shopifySelectedIds;
-  _shopifySelectedIds = new Set(sentIds);
-  bulkSendShopifyOrders();
-  _shopifySelectedIds = prevSelection;
-
-  const confirmBtn = qs('#sp-bulk-confirm-btn');
-  if (confirmBtn) confirmBtn.addEventListener('click', () => {
-    sentIds.forEach(id => _dpReadySelectedIds.delete(id));
-    renderDpOrdersTab('ready');
-  }, { once: true });
+  _shopifySelectedIds = new Set(_dpReadySelectedIds);
+  try { await bulkSendShopifyOrders(); } finally { _shopifySelectedIds = prevSelection; }
 }
 
 function _dpToggleSelectReady(id, cb) {
@@ -61683,11 +62150,26 @@ function _dpCalcBreakdown(l) {
   const c = (label, val, cls) => `<span class="c${cls ? ' ' + cls : ''}">${label}${val != null ? `<b>${val}</b>` : ''}</span>`;
   const op = (x) => `<span class="o">${x}</span>`;
   const arrow = currentLang === 'en' ? '→' : '←';
-  const parts = [c(t('dpCalcOnHand'), fmtN(l.available))];
-  if ((l.reserved || 0) > 0) parts.push(op('−'), c(t('dpCalcReserved'), fmtN(l.reserved)));
-  parts.push(op('='), l.freeToUse < 0
-    ? c(t('dpCalcExistingDeficit'), fmtN(Math.abs(l.freeToUse)), 'is-short')
-    : c(t('dpCalcFreeForThese'), fmtN(l.freeToUse)));
+  let parts;
+  if (l.sellable != null) {
+    // in the warehouse − held for confirmed orders − not sellable = sellable
+    //   − claimed by older orders = free for these. Each one counted once.
+    parts = [c(t('dpCalcPhysical'), fmtN(l.onHand))];
+    const held = l.reservedConfirmed || 0, bad = l.notSellable || 0, older = l.reservedOlder || 0;
+    if (held > 0) parts.push(op('−'), c(t('dpCalcHeldConfirmed'), fmtN(held)));
+    if (bad > 0) parts.push(op('−'), c(t('dpCalcNotSellable'), fmtN(bad), 'is-short'));
+    if (older > 0) {
+      if (held > 0 || bad > 0) parts.push(op('='), c(t('dpCalcSellable'), fmtN(l.sellable)));
+      parts.push(op('−'), c(t('dpCalcReservedOlder'), fmtN(older)));
+    }
+    parts.push(op('='), c(t('dpCalcFreeForThese'), fmtN(Math.max(0, l.freeToUse))));
+  } else {
+    parts = [c(t('dpCalcOnHand'), fmtN(l.available))];
+    if ((l.reserved || 0) > 0) parts.push(op('−'), c(t('dpCalcReserved'), fmtN(l.reserved)));
+    parts.push(op('='), l.freeToUse < 0
+      ? c(t('dpCalcExistingDeficit'), fmtN(Math.abs(l.freeToUse)), 'is-short')
+      : c(t('dpCalcFreeForThese'), fmtN(l.freeToUse)));
+  }
   parts.push('<span class="sep"></span>', c(t('dpCalcRequiredQty'), fmtN(l.required)), op(arrow));
   parts.push(l.shortage > 0 ? c(t('dpCalcMissing'), fmtN(l.shortage), 'is-short') : c(t('dpCalcFullyCovered'), null, 'is-ok'));
   if ((l.suggestedPurchase || 0) > 0) {
@@ -76615,6 +77097,29 @@ async function confirmBulkSupplierPay(supplierName) {
     dist.push({ id: t._id, ref: t.ref, remaining: t.remaining, pay });
     left = _r2(left - pay);
   }
+  // تأكيد صريح بالمبلغ قبل أي خطوة: الدفعة تُخرج نقداً من الخزنة ولا يمكن التراجع عنها إلا بإجراء منفصل.
+  if (window._bulkPayAsking) return;
+  window._bulkPayAsking = true;
+  let _payOk = false;
+  try {
+    const _en = currentLang === 'en';
+    const _left = _r2(totalRemaining - amount);
+    const _rows = [
+      [_en ? 'Supplier' : 'المورد', supplierName],
+      [_en ? 'Amount paid' : 'المبلغ المسدَّد', fmtJT(amount)],
+      [_en ? 'Paid from' : 'من خزنة', _payMethodLabel(method)],
+      [_en ? 'Payment date' : 'تاريخ السداد', date],
+      ...dist.map(d => [(_en ? 'Invoice #' : 'فاتورة #') + d.ref, fmtJT(d.pay)]),
+      [_en ? 'Still owed after this payment' : 'المتبقي للمورد بعد السداد', fmtJT(Math.max(0, _left))],
+    ];
+    _payOk = await showConfirm(
+      _en
+        ? `<b>${esc(fmtJT(amount))}</b> will leave the <b>${esc(_payMethodLabel(method))}</b> vault and be paid to <b><bdi>${esc(supplierName)}</bdi></b>. Confirm the amount before continuing.`
+        : `سيُخصم <b><bdi>${esc(fmtJT(amount))}</bdi></b> من خزنة <b>${esc(_payMethodLabel(method))}</b> ويُسدَّد للمورد <b><bdi>${esc(supplierName)}</bdi></b>. راجع المبلغ قبل المتابعة.`,
+      { title: _en ? 'Confirm supplier payment' : 'تأكيد سداد المورد', icon: 'warn', rows: _rows,
+        confirmLabel: (_en ? 'Pay ' : 'سداد ') + fmtJT(amount), cancelLabel: _en ? 'Back' : 'رجوع', danger: true });
+  } finally { window._bulkPayAsking = false; }
+  if (!_payOk) return;   // يبقى نموذج السداد مفتوحاً بقيمه لتعديل المبلغ
   // استدعاء OTP flow — OTP واحد يغطي المبلغ الكلي ثم ننفذ بالتسلسل
   window._bulkPayDist = dist;
   window._bulkPayMeta = { method, date, note, supplierName, totalAmount: amount };
@@ -111478,6 +111983,17 @@ const SP_FILTERS = [
       ];
     },
   },
+  {
+    key: 'shipping-postponed',
+    ar: 'مؤجل للشحن', en: 'Shipping postponed',
+    tone: '#b58a49',
+    icon: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg>',
+    test: (o) => !o.cancelled && o.status === 'pending' && _spPostponementActive(o),
+    kpis: (rows) => [
+      { label: currentLang === 'en' ? 'Postponed orders' : 'الطلبات المؤجلة', value: fmtN(rows.length), strong: true },
+      { label: currentLang === 'en' ? 'Order value' : 'قيمة الطلبات', value: fmtJ(rows.reduce((sum, o) => sum + (Number(o.total) || 0), 0)) },
+    ],
+  },
 ];
 
 function _spFilterDef(key) { return SP_FILTERS.find(f => f.key === key) || null; }
@@ -112939,6 +113455,20 @@ function _spPeekHtml(o) {
   }).join('');
 
   const depositDecisionSummary = typeof depositDecisionSummaryHtml === 'function' ? depositDecisionSummaryHtml(o,true) : '';
+  const postpone = o.shippingPostponement;
+  const postponeActive = _spPostponementActive(o);
+  const postponeReasonLabel = (code) => ({
+    customer_request: t('spPostponeReasonCustomer'),
+    stock_shortage: t('spPostponeReasonStock'),
+    customer_unavailable: t('spPostponeReasonUnavailable'),
+    address_confirmation: t('spPostponeReasonAddress'),
+    payment_pending: t('spPostponeReasonPayment'),
+    operations_capacity: t('spPostponeReasonCapacity'),
+    other: t('spPostponeReasonOther'),
+  })[code] || postpone?.reason || t('spPostponeNotSpecified');
+  const postponePanel = postponeActive
+    ? `<section class="sp-pk-sec sp-pk-postpone-card"><div class="sp-pk-sec-h"><span class="sp-pk-postpone-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg></span><b>${t('spPostponeTitle')}</b><span class="sp-pk-postpone-state${Date.parse(postpone.dueAt||'')<=Date.now()?' is-due':''}">${Date.parse(postpone.dueAt||'')<=Date.now()?esc(t('spPostponeDueBadge')):esc(t('spPostponeBadge'))}</span></div><div class="sp-pk-postpone-facts"><div><small>${esc(t('spPostponeWhen'))}</small><strong><bdi dir="ltr">${esc(_spFormatShippingDue(postpone.dueAt))}</bdi></strong></div><div><small>${esc(t('spPostponeRequestedBy'))}</small><strong>${esc(postpone.createdBy||t('spPostponeNotSpecified'))}</strong></div><div class="sp-pk-postpone-reason"><small>${esc(t('spPostponeReason'))}</small><strong>${esc(postponeReasonLabel(postpone.reasonCode))}</strong>${postpone.reason?`<span>${esc(postpone.reason)}</span>`:''}</div></div>${hasPerm('shopify-prepare-ship')&&canConfirm?`<div class="sp-pk-postpone-actions"><button type="button" onclick="openSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeEditAction'))}</button><button type="button" class="is-remove" onclick="cancelSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeCancel'))}</button></div>`:''}</section>`
+    : canConfirm&&hasPerm('shopify-prepare-ship') ? `<section class="sp-pk-sec sp-pk-postpone-cta"><span class="sp-pk-postpone-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg></span><span><b>${esc(t('spPostpone'))}</b></span><button type="button" onclick="openSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeScheduleAction'))}</button></section>` : '';
   const orderEditMark = _spOrderEditMark(o, 'items');
   return `<div class="sp-pk-grip" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5M7 13l5 5 5-5"/></svg></div><header class="sp-pk-head">
       <div class="sp-pk-head-row">
@@ -112967,6 +113497,7 @@ function _spPeekHtml(o) {
     </header>
     <div class="sp-pk-body">
       ${_spCancelConflictBannerHtml(o)}
+      ${postponePanel}
       <div class="sp-pk-column">
       ${items.length || orderEditMark ? `<details class="sp-pk-sec sp-pk-disclosure sp-pk-items-section" data-pk-section="items" open><summary>${_SP_PK_ICO.bag}<b>${isEn ? 'Items' : 'الأصناف'}</b>${orderEditMark}<span class="sp-pk-count">${fmtN(_spItemsCount(o))}</span><svg class="sp-pk-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary><ul class="sp-pk-items">${itemsHtml}</ul></details>` : ''}
       ${payHtml}
@@ -114719,7 +115250,7 @@ function renderShopifyOrders() {
             <td class="sp-c-check">${_spSelectable ? `<input type="checkbox" class="sp-row-check" data-id="${o._id}" onclick="_toggleSelectShopifyRow('${o._id}',this,event)" ${_shopifySelectedIds.has(o._id) ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)">` : ''}</td>
             <td style="white-space:nowrap" data-col="ref"><div class="sp-ref-line">${_spStarHtml(o)}${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')"><b>${fmtRef(String(o.ref).replace(/^#+/, ''))}</b></a>`
-              : '<b>-</b>'}${_spRefTimeHtml(o)}${_spOrderEditMark(o, true)}${_oNewBadge}${(!o.editRequest && o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div></td>
+              : '<b>-</b>'}${_spRefTimeHtml(o)}${_spPostponementBadgeHTML(o)}${_spOrderEditMark(o, true)}${_oNewBadge}${(!o.editRequest && o.editHistory && o.editHistory.length) ? `<span class="mov-edited-mini" title="${escHtml(t('editedTitle'))}" onclick="event.stopPropagation();_spOpenOrderHistory('${esc(String(o._id))}')"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` : ''}</div></td>
             <td style="font-size:.85rem" data-col="client"><div class="sp-client-cq"><div class="sp-client-txt"><div class="sp-client-nameline"><div class="sp-client-name" dir="auto" title="${escHtml(o.client || '')}">${o.client ? esc(o.client) : '<span style="color:var(--text-muted)">—</span>'}</div>${_spCustOrdersChipHtml(o, _spCtx.cust, _spCtx.unshipped)}</div>${_spPhone(o) ? `<div class="sp-client-phone" data-col="phone"><a class="sp-client-tel" href="tel:${escHtml(_spPhone(o).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()" title="${escHtml(t('spCallClient') + ' ' + _spPhone(o))}">${esc(_spPhoneDisplay(_spPhone(o)))}</a></div>` : ''}</div>${_spPhone(o) ? `<span class="sp-ct-stack">${_spContactLinksHtml(o, 'icons')}</span>` : ''}</div></td>
             <td data-col="status">${_spConfirmationStatusHtml(o)}</td>
             <td style="text-align:center" data-col="items"><div class="sp-items-cq">${_spItemsCell(o, _spCtx.inv)}</div></td>
@@ -114747,7 +115278,7 @@ function renderShopifyOrders() {
               : o.status === 'pending' && !o.cancelled ? `
                 <div class="sp-act-row">
                   ${_spCommentsBtnHtml(o, 'sm')}
-                  ${hasPerm('shopify-prepare-ship') ? `<button class="sp-confirm-btn" title="${t('spSendToTransactionsTitle')}" onclick="approveShopifyOrder('${o._id}')">
+                  ${hasPerm('shopify-prepare-ship') ? `<button type="button" class="sp-postpone-btn${_spPostponementActive(o)?' is-scheduled':''}" title="${escHtml(t(_spPostponementActive(o)?'spPostponeEditAction':'spPostpone'))}" onclick="event.stopPropagation();openSpShippingPostponement('${o._id}')">${_spPostponementActive(o)?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg>'}</button><button class="sp-confirm-btn" title="${t('spSendToTransactionsTitle')}" onclick="approveShopifyOrder('${o._id}')">
                     ${SP_CONFIRM_ICON}
                     <span>${t('spSendToTransactionsShort')}</span>
                   </button>` : ''}
@@ -114876,7 +115407,7 @@ function renderShopifyOrders() {
           <div class="actions-dd sp-card-menu">
             <button type="button" class="dd-toggle" aria-label="${escHtml(t('spCardActions'))}" aria-haspopup="true" onclick="toggleActionMenu(event)">⋮</button>
             <div class="dd-menu">
-              ${hasPerm('shopify-prepare-ship') ? `<button type="button" class="dd-item sp-mobile-confirm" onclick="approveShopifyOrder('${o._id}')">${SP_CONFIRM_ICON}<span>${esc(t('spSendToTransactions'))}</span></button>` : ''}
+              ${hasPerm('shopify-prepare-ship') ? `<button type="button" class="dd-item" onclick="openSpShippingPostponement('${o._id}')">◷<span>${esc(t('spPostpone'))}</span></button><button type="button" class="dd-item sp-mobile-confirm" onclick="approveShopifyOrder('${o._id}')">${SP_CONFIRM_ICON}<span>${esc(t('spSendToTransactions'))}</span></button>` : ''}
               ${_spMobileDepositMenuItemHtml(o)}
               ${invoiceImageActions('shopify', o._id)}
               <div class="dd-item" onclick="editShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>
@@ -114944,7 +115475,7 @@ function renderShopifyOrders() {
             <div class="sp-card-ref">${_spStarHtml(o)}${_cardConfirmationHtml}${o.ref
               ? `<a href="javascript:void(0)" class="sp-ref-link" title="${escHtml(t('spOpenOrderPeek'))}" onclick="event.stopPropagation();openSpOrderPeek('${esc(String(o._id))}')">#${esc(String(o.ref).replace(/^#+/, ''))}</a>`
               : `#${esc(String(o.shopifyOrderId || '—'))}`}${o.editRequest?.status === 'معتمد' ? _spOrderEditMark(o) : ''}</div>${_cardConfirmed ? `<span class="sp-card-order-state sp-card-order-state-inline">${_orderStateBadge(o, 'shopify')}</span>` : ''}
-            </div><div class="sp-card-meta"><span class="sp-card-client" dir="auto">${esc(o.client || o.phone || '—')}</span><div class="sp-card-heading-time"><span class="sp-card-date">${Number.isFinite(_oCreatedMs) ? escHtml(new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'ar-EG', {day:'numeric',month:'short'}).format(new Date(_oCreatedMs))) : ''}</span> <span class="sp-card-time-lbl" dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" data-sp-time-only title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span></div></div></div>
+            </div><div class="sp-card-meta"><span class="sp-card-client" dir="auto">${esc(o.client || o.phone || '—')}</span>${_spPostponementBadgeHTML(o)}<div class="sp-card-heading-time"><span class="sp-card-date">${Number.isFinite(_oCreatedMs) ? escHtml(new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'ar-EG', {day:'numeric',month:'short'}).format(new Date(_oCreatedMs))) : ''}</span> <span class="sp-card-time-lbl" dir="auto" ${Number.isFinite(_oCreatedMs) ? `data-sp-created-at="${new Date(_oCreatedMs).toISOString()}" data-sp-time-only title="${escHtml(_pwWhenFull(new Date(_oCreatedMs).toISOString()))}"` : ''}>${escHtml(_oTimeStr)}</span></div></div></div>
           <div class="sp-card-money-tools">
             <div class="sp-card-money"><div class="sp-card-amount-val sp-total-neutral">${fmtJ(o.total)}</div>${depositBadgeHtml ? `<div class="sp-card-deposit-inline">${depositBadgeHtml}</div>` : ''}</div>
             ${_cardMenuHtml}
@@ -116952,6 +117483,7 @@ function _spValidateBulkSelection(ids) {
     const order = _spOrderById(id);
     if (!order) { blocked.push({ order: { ref: id }, kind: 'other', reason: t('spBlockNotFound') }); continue; }
 
+    if (_spIsShippingPostponed(order)) { blocked.push({order,kind:'postponed',reason:tf('spPostponeBlock',{date:_spFormatShippingDue(order.shippingPostponement.dueAt)})}); continue; }
     const receiptBlock = _spDepositBlockReason(order);
     if (receiptBlock) { blocked.push({order,kind:'other',reason:receiptBlock}); continue; }
     const _orderRefClean = String(order.ref || '').replace(/^#+/, '');
@@ -117129,6 +117661,12 @@ function _spdHide(modal) {
   modal.classList.remove('is-open');
 }
 
+function _spCreatedMs(id) {
+  const o = _spOrderById(id);
+  const ms = Date.parse(o?.shopifyCreatedAt || o?.createdAt || '');
+  return Number.isFinite(ms) ? ms : Number.MAX_SAFE_INTEGER;
+}
+
 async function bulkSendShopifyOrders() {
   if (!_spRequirePrepareShip()) return;
   const existing = qs('#sp-bulk-confirm-modal');
@@ -117144,6 +117682,9 @@ async function bulkSendShopifyOrders() {
     } catch (error) { toast(error.message || t('spLoadFailed'), true); return; }
   }
 
+  // Oldest order first (by when it was created), so when two orders compete for
+  // the last unit the older one gets it — the stock window's rule.
+  ids.sort((x, y) => _spCreatedMs(x) - _spCreatedMs(y));
   const { sendable, blocked } = _spValidateBulkSelection(ids);
 
   const modal = document.createElement('div');
@@ -117735,12 +118276,50 @@ function _spRequirePrepareShip() {
   return false;
 }
 
+function _spPostponementActive(order) { return !!order?.shippingPostponement && ['scheduled','due'].includes(order.shippingPostponement.status); }
+function _spIsShippingPostponed(order) { return _spPostponementActive(order) && Date.parse(order.shippingPostponement.dueAt || '') > Date.now(); }
+function _spFormatShippingDue(value) { const date = new Date(value); if(!Number.isFinite(date.getTime()))return '';const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).reduce((a,x)=>(a[x.type]=x.value,a),{});return currentLang==='en'?`${p.month}/${p.day}/${p.year}`:`${p.day}/${p.month}/${p.year}`; }
+function _spCairoInputValue(value) { const date=value?new Date(value):new Date(Date.now()+3600000); if(!Number.isFinite(date.getTime()))return ''; const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).reduce((a,x)=>(a[x.type]=x.value,a),{}); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
+function _spCairoLocalToISO(value) { const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); if(!m)return ''; const desired=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]); let guess=desired; for(let i=0;i<3;i++){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(guess)).reduce((a,x)=>(a[x.type]=x.value,a),{});guess+=desired-Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);}return new Date(guess).toISOString(); }
+function _spPostponementBadgeHTML(order) { if(!_spPostponementActive(order))return '';const due=Date.parse(order.shippingPostponement.dueAt||'')<=Date.now();const compact=new Intl.DateTimeFormat(currentLang==='en'?'en-GB':'ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',day:'2-digit',month:'2-digit'}).format(new Date(order.shippingPostponement.dueAt));return `<span class="sp-postponed-tag${due?' is-due':''}" title="${escHtml((order.shippingPostponement.reason?order.shippingPostponement.reason+' - ':'')+_spFormatShippingDue(order.shippingPostponement.dueAt))}"><span class="sp-postponed-dot"></span><b>${due?escHtml(t('spPostponeDueBadge')):escHtml(t('spPostponeBadge'))}</b>${due?'':`<time dir="ltr">${escHtml(compact)}</time>`}</span>`; }
+let _spPostponeDate = '', _spPostponeMonth = '';
+function _spTodayCairo() { const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});return `${p.year}-${p.month}-${p.day}`; }
+function _spShippingEarliestDate() { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});const next=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+1));return `${next.getUTCFullYear()}-${String(next.getUTCMonth()+1).padStart(2,'0')}-${String(next.getUTCDate()).padStart(2,'0')}`; }
+function _spPostponeReminderLabel() { return currentLang==='en'?'The reminder arrives as soon as the selected date begins at midnight Cairo time.':'يصل التنبيه بمجرد حلول الساعة 12 منتصف الليل بتوقيت القاهرة في التاريخ المحدد.'; }
+function _spPostponeCalendarHTML() {
+  const [year,month]=_spPostponeMonth.split('-').map(Number), first=new Date(Date.UTC(year,month-1,1)), offset=first.getUTCDay(), count=new Date(Date.UTC(year,month,0)).getUTCDate();
+  const locale=currentLang==='en'?'en-GB':'ar-EG-u-nu-latn', monthLabel=new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(first);
+  const weekdays=Array.from({length:7},(_,i)=>new Intl.DateTimeFormat(locale,{weekday:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,4+i))));
+  let cells=''; for(let i=0;i<offset;i++)cells+='<span class="sp-calendar-empty"></span>';
+  const today=_spTodayCairo(), earliest=_spShippingEarliestDate(); for(let day=1;day<=count;day++){const date=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;cells+=`<button type="button" class="sp-calendar-day${date===_spPostponeDate?' is-selected':''}${date===today?' is-today':''}" ${date<earliest?'disabled':''} onclick="_spChoosePostponeDate('${date}')">${day}</button>`;}
+  return `<div class="sp-calendar-head"><button type="button" aria-label="Previous month" onclick="_spShiftPostponeMonth(-1)">&#x2039;</button><strong>${monthLabel}</strong><button type="button" aria-label="Next month" onclick="_spShiftPostponeMonth(1)">&#x203A;</button></div><div class="sp-calendar-grid sp-calendar-weekdays">${weekdays.map(x=>`<span>${x}</span>`).join('')}</div><div class="sp-calendar-grid">${cells}</div>`;
+}
+function _spShiftPostponeMonth(delta) { const [year,month]=_spPostponeMonth.split('-').map(Number),next=new Date(Date.UTC(year,month-1+delta,1));_spPostponeMonth=`${next.getUTCFullYear()}-${String(next.getUTCMonth()+1).padStart(2,'0')}`;document.getElementById('sp-postpone-calendar').innerHTML=_spPostponeCalendarHTML(); }
+function _spChoosePostponeDate(date) { _spPostponeDate=date;document.getElementById('sp-postpone-calendar').innerHTML=_spPostponeCalendarHTML(); }
+async function openSpShippingPostponement(id) {
+  if(!_spRequirePrepareShip())return;
+  const order=_spOrderById(id)||await _spEnsureFullOrder(id).catch(()=>null);
+  if(!order||order.status!=='pending'||order.cancelled)return;
+  document.getElementById('sp-shipping-postpone-modal')?.remove();
+  const old=_spPostponementActive(order)?order.shippingPostponement:null, local=_spCairoInputValue(old?.dueAt);
+  _spPostponeDate=old?(local||'').slice(0,10):_spShippingEarliestDate();if(_spPostponeDate<_spShippingEarliestDate())_spPostponeDate=_spShippingEarliestDate();
+  _spPostponeMonth=_spPostponeDate.slice(0,7);
+  const modal=document.createElement('div');modal.id='sp-shipping-postpone-modal';modal.className='sp-postpone-overlay';
+  modal.innerHTML=`<form class="sp-postpone-dialog" onsubmit="saveSpShippingPostponement(event,'${esc(String(id))}')"><header><div><span class="sp-postpone-eyebrow">Shopify &#183; #${esc(String(order.ref||'').replace(/^#+/,''))}</span><h3>${esc(t('spPostponeTitle'))}</h3></div><button type="button" class="sp-postpone-close" onclick="document.getElementById('sp-shipping-postpone-modal').remove()" aria-label="Close">&times;</button></header><label class="sp-postpone-field-label">${esc(t('spPostponeWhen'))}</label><div class="sp-postpone-calendar" id="sp-postpone-calendar">${_spPostponeCalendarHTML()}</div><div class="sp-postpone-zone sp-postpone-notice">${esc(_spPostponeReminderLabel())}</div><label>${esc(t('spPostponeReason'))}<select id="sp-postpone-reason-code" required onchange="_spToggleReasonDetail(this.value)"><option value="">${esc(t('spPostponeReasonSelect'))}</option><option value="customer_request" ${old?.reasonCode==='customer_request'?'selected':''}>${esc(t('spPostponeReasonCustomer'))}</option><option value="stock_shortage" ${old?.reasonCode==='stock_shortage'?'selected':''}>${esc(t('spPostponeReasonStock'))}</option><option value="customer_unavailable" ${old?.reasonCode==='customer_unavailable'?'selected':''}>${esc(t('spPostponeReasonUnavailable'))}</option><option value="address_confirmation" ${old?.reasonCode==='address_confirmation'?'selected':''}>${esc(t('spPostponeReasonAddress'))}</option><option value="payment_pending" ${old?.reasonCode==='payment_pending'?'selected':''}>${esc(t('spPostponeReasonPayment'))}</option><option value="operations_capacity" ${old?.reasonCode==='operations_capacity'?'selected':''}>${esc(t('spPostponeReasonCapacity'))}</option><option value="other" ${old?.reasonCode==='other'||(!old?.reasonCode&&!!old?.reason)?'selected':''}>${esc(t('spPostponeReasonOther'))}</option></select></label><label id="sp-postpone-reason-detail-wrap" class="sp-postpone-reason-detail" style="display:${old?.reasonCode==='other'||(!old?.reasonCode&&!!old?.reason)?'grid':'none'}">${esc(t('spPostponeReasonDetail'))}<textarea id="sp-postpone-reason" maxlength="240" rows="2">${esc(old?.reason||'')}</textarea></label><footer>${old?`<button type="button" class="sp-postpone-remove" onclick="cancelSpShippingPostponement('${esc(String(id))}')">${esc(t('spPostponeCancel'))}</button>`:''}<button type="button" class="sp-postpone-secondary" onclick="document.getElementById('sp-shipping-postpone-modal').remove()">${esc(t('cancel'))}</button><button type="submit" class="sp-postpone-primary">${esc(t('spPostponeSave'))}</button></footer></form>`;
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});document.body.append(modal);
+  if(!old?.reasonCode&&!old?.reason)modal.querySelector('#sp-postpone-reason-code').value='';
+}
+function _spToggleReasonDetail(code) { const wrap=document.getElementById('sp-postpone-reason-detail-wrap');if(wrap)wrap.style.display=code==='other'?'grid':'none'; }
+async function saveSpShippingPostponement(event,id) { event.preventDefault();const reasonCode=document.getElementById('sp-postpone-reason-code')?.value,dueAt=_spCairoLocalToISO(`${_spPostponeDate}T00:00`);if(!dueAt||Date.parse(dueAt)<=Date.now()){toast(t('spPostponeInvalid'),true);return;}const reason=reasonCode==='other'?(document.getElementById('sp-postpone-reason')?.value||''):'';try{await api(`/shopify/orders/${encodeURIComponent(id)}/shipping-postponement`,{method:'PATCH',body:JSON.stringify({dueAt,reason,reasonCode})});document.getElementById('sp-shipping-postpone-modal')?.remove();toast(t('spPostponeSaved'));await loadShopifyOrders();}catch(error){toast(error.message||t('spLoadFailed'),true);} }
+async function cancelSpShippingPostponement(id) { if(!confirm(t('spPostponeCancel')+'?'))return;try{await api(`/shopify/orders/${encodeURIComponent(id)}/shipping-postponement`,{method:'DELETE'});document.getElementById('sp-shipping-postpone-modal')?.remove();toast(t('spPostponeCancelled'));await loadShopifyOrders();}catch(error){toast(error.message||t('spLoadFailed'),true);} }
+
 async function approveShopifyOrder(id) {
   if (!_spRequirePrepareShip()) return;
   const order = _spServerEnabled && currentPage === 'shopify-orders'
     ? await _spEnsureFullOrder(id).catch(error => { toast(error.message || t('spLoadFailed'), true); return null; })
     : _shopifyOrders.find(o => o._id === id);
   if (!order) return;
+  if (_spIsShippingPostponed(order)) { toast(tf('spPostponeBlock',{date:_spFormatShippingDue(order.shippingPostponement.dueAt)}),true); return; }
 
   // نافذة تأكيد مع حقل الديبوزت
   const modal = document.createElement('div');
@@ -120637,14 +121216,15 @@ function _spRenderHistoryTab() {
 <script src="/pickup-daily-shipping.js?v=20261114-collected-day"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
-<script src="/notification-settings.js?v=20261029-reactions"></script>
+<script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
 <script src="/roles-permissions.js?v=20261113-bundle"></script>
 <script src="/announcements.js?v=4"></script>
+<script src="/assistant.js?v=19"></script>
 <script src="/supplier-return-statements.js?v=5"></script>
 <script src="/bundle-analytics.js?v=2"></script>
 <script src="/promotions.js?v=6"></script>
 <script src="/push-navigation.js"></script>
-<script src="/notification-feed.js?v=20261109-phase10"></script>
+<script src="/notification-feed.js?v=20261122-shopify-postpone"></script>
 <link rel="stylesheet" href="/followup-reminders.css?v=20261027-1">
 <script src="/followup-reminders.js?v=20261109-phase8"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>
@@ -120655,7 +121235,7 @@ function _spRenderHistoryTab() {
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
 <link rel="stylesheet" href="/shopify-sync.css?v=20261114-compact">
 <script src="/shopify-sync.js?v=20261114-compact"></script>
-<link rel="stylesheet" href="/inventory-units.css?v=20261116-printsplit">
+<link rel="stylesheet" href="/inventory-units.css?v=20261119-unregistered">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
 <script src="/supplier-return-pieces.js?v=20261020-1"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
@@ -120663,9 +121243,9 @@ function _spRenderHistoryTab() {
 <script src="/barcode-input.js?v=20261020-short-packs"></script>
 <script src="/inventory-errors.js?v=20261020-pack-origin"></script>
 <link rel="stylesheet" href="/inventory-scanner.css?v=20261020-sreturn">
-<script src="/inventory-scanner.js?v=20261113-supplier"></script>
-<link rel="stylesheet" href="/global-search-scanner.css?v=20261022-fast-lookup">
-<script src="/global-search-scanner.js?v=20261113-supplier"></script>
+<script src="/inventory-scanner.js?v=20261119-unregistered"></script>
+<link rel="stylesheet" href="/global-search-scanner.css?v=20261119-unregistered">
+<script src="/global-search-scanner.js?v=20261119-unregistered"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261103-neutral-surfaces">
 <script src="/warehouses.js?v=20261103-purchase-location"></script>
 <link rel="stylesheet" href="/inventory-overview.css?v=20261115-1">
@@ -120676,7 +121256,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/warehouse-workspace.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/preparation-location-flip.css?v=20261103-1">
 <script src="/warehouse-layout.js?v=20261103-warehouse-route"></script>
-<script src="/inventory-units.js?v=20261116-printsplit"></script>
+<script src="/inventory-units.js?v=20261119-unregistered"></script>
 <link rel="stylesheet" href="/preprinted-labels.css?v=20261103-scan-progress">
 <script src="/preprinted-labels.js?v=20261111-packs"></script>
 <link rel="stylesheet" href="/supplier-labels.css?v=20261111-packs-2">
@@ -120704,7 +121284,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/design-system.css?v=20261110-smaller-new">
 <link rel="stylesheet" href="/pickup-kanban-refine.css?v=20261110-board-scroll-lock">
 <link rel="stylesheet" href="/metrics-strip.css?v=20261029-green-kpis">
-<link rel="stylesheet" href="/shopify-workspace.css?v=20261109-live-order">
+<link rel="stylesheet" href="/shopify-workspace.css?v=20261123-postponement-minimal2">
 <link rel="stylesheet" href="/dashboard-clarity.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/shipping-command-center.css?v=20261115-aftersales2">
 <link rel="stylesheet" href="/window-system.css?v=20261109-center">
@@ -120781,7 +121361,7 @@ function _spRenderHistoryTab() {
 <script src="/workspace-tabs.js?v=20261110-service-navigation"></script>
 <link rel="stylesheet" href="/export-menu.css?v=20261110-compact-exports">
 <script src="/export-menu.js?v=20261110-compact-exports"></script>
-<link rel="stylesheet" href="/account-menu.css?v=20261110-official-socials">
+<link rel="stylesheet" href="/account-menu.css?v=20261122-premium-menu">
 <script src="/account-menu.js?v=20261110-official-socials"></script>
 <script src="/table-viewport.js?v=20261110-inventory-loading"></script>
 <link rel="stylesheet" href="/clients-profile.css?v=20261110-4">

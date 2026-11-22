@@ -3,6 +3,7 @@ import { cachedRead } from '../shared/read-cache.util';
 import { shopifyConfirmationBucket } from './shopify-confirmation.util';
 import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Cron } from '@nestjs/schedule';
 import { FollowUpsService } from '../followups/followups.service';
 import { Optional as PushOptional, Inject as PushInject } from '@nestjs/common';
 import {
@@ -1033,6 +1034,83 @@ export class ShopifyService {
     return this.shopifyOrderModel.find({ status: 'pending' }).sort({ createdAt: -1 }).lean() as any;
   }
 
+  async postponeShipping(orderId: string, dueAtInput: unknown, reasonInput: unknown, actor: { id: string; name: string }, reasonCodeInput?: unknown) {
+    if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
+    const dueAtMs = typeof dueAtInput === 'string' ? Date.parse(dueAtInput) : NaN;
+    const now = Date.now();
+    if (!Number.isFinite(dueAtMs) || dueAtMs <= now + 30000) throw new BadRequestException('موعد الشحن لازم يكون في المستقبل');
+    const allowedReasons = new Set(['customer_request', 'stock_shortage', 'customer_unavailable', 'address_confirmation', 'payment_pending', 'operations_capacity', 'other']);
+    const reasonCode = typeof reasonCodeInput === 'string' ? reasonCodeInput : '';
+    if (reasonCode && !allowedReasons.has(reasonCode)) throw new BadRequestException('سبب التأجيل غير صالح');
+    const reason = typeof reasonInput === 'string' ? reasonInput.trim().slice(0, 240) : '';
+    const order = await this.shopifyOrderModel.findOne({ _id: orderId, status: 'pending', cancelled: { $ne: true }, 'cancelRequest.status': { $ne: 'معلق' } });
+    if (!order) throw new BadRequestException('الأوردر غير متاح للتأجيل');
+    const dueAt = new Date(dueAtMs).toISOString();
+    const at = new Date(now).toISOString();
+    const previous = (order as any).shippingPostponement;
+    const state = {
+      dueAt, status: 'scheduled', reasonCode, reason,
+      createdAt: previous?.createdAt || at,
+      createdBy: previous?.createdBy || actor.name,
+      createdById: previous?.createdById || actor.id,
+      updatedAt: at, updatedBy: actor.name, notifiedAt: '',
+    };
+    const history = (order as any).shippingPostponementHistory || [];
+    (order as any).shippingPostponementHistory = [...history, {
+      action: previous && ['scheduled', 'due'].includes(previous.status) ? 'rescheduled' : 'scheduled',
+      dueAt, reasonCode, reason, by: actor.name, byId: actor.id, at,
+    }].slice(-30);
+    (order as any).shippingPostponement = state;
+    await order.save();
+    this.emit('shopify:shipping-postponed', { orderId: String(order._id), dueAt });
+    return { success: true, shippingPostponement: state };
+  }
+
+  async cancelShippingPostponement(orderId: string, actor: { id: string; name: string }) {
+    if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
+    const order = await this.shopifyOrderModel.findOne({ _id: orderId, status: 'pending', cancelled: { $ne: true } });
+    const current = (order as any)?.shippingPostponement;
+    if (!order || !current || !['scheduled', 'due'].includes(current.status)) throw new BadRequestException('لا يوجد تأجيل نشط لهذا الأوردر');
+    const at = new Date().toISOString();
+    current.status = 'cancelled'; current.updatedAt = at; current.updatedBy = actor.name;
+    (order as any).shippingPostponement = current;
+    (order as any).shippingPostponementHistory = [...((order as any).shippingPostponementHistory || []), {
+      action: 'cancelled', dueAt: current.dueAt, by: actor.name, byId: actor.id, at,
+    }].slice(-30);
+    order.markModified('shippingPostponement');
+    order.markModified('shippingPostponementHistory');
+    await order.save();
+    this.emit('shopify:shipping-postponement-cancelled', { orderId: String(order._id) });
+    return { success: true };
+  }
+
+  /** Release due orders once; notification inbox/push writes are idempotent by event id. */
+  @Cron('*/30 * * * * *')
+  async notifyDueShippingPostponements() {
+    const now = new Date();
+    const due = await this.shopifyOrderModel.find({
+      status: 'pending', cancelled: { $ne: true },
+      'shippingPostponement.status': { $in: ['scheduled', 'due'] },
+      'shippingPostponement.dueAt': { $lte: now.toISOString() },
+      $or: [{ 'shippingPostponement.notifiedAt': { $exists: false } }, { 'shippingPostponement.notifiedAt': '' }, { 'shippingPostponement.notifiedAt': null }],
+    }).select('_id ref shippingPostponement').limit(100).lean();
+    for (const order of due as any[]) {
+      const at = now.toISOString();
+      const released = await this.shopifyOrderModel.updateOne({ _id: order._id, status: 'pending', cancelled: { $ne: true },
+        'shippingPostponement.dueAt': order.shippingPostponement.dueAt,
+        $or: [{ 'shippingPostponement.notifiedAt': { $exists: false } }, { 'shippingPostponement.notifiedAt': '' }, { 'shippingPostponement.notifiedAt': null }], },
+        { $set: { 'shippingPostponement.status': 'due' } });
+      if (!released.matchedCount) continue;
+      if (this.notifications) {
+        await this.notifications.enqueue('shopifyShipDue', `shopify-ship-due:${order._id}:${order.shippingPostponement.dueAt}`,
+          order.ref || '', `shopify:${order._id}`, undefined, undefined, { postponedUntil: order.shippingPostponement.dueAt });
+        await this.shopifyOrderModel.updateOne({ _id: order._id, 'shippingPostponement.dueAt': order.shippingPostponement.dueAt },
+          { $set: { 'shippingPostponement.notifiedAt': at } });
+      }
+      this.emit('shopify:shipping-postponement-due', { orderId: String(order._id), ref: order.ref });
+    }
+  }
+
   /** Full single-order read for the workspace. The caller applies receipt visibility. */
   async getOrderDetail(orderId: string): Promise<ShopifyOrderDocument> {
     if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
@@ -1150,7 +1228,7 @@ export class ShopifyService {
       if (tags.includes('confirmed') || o.confirmationApproved || o.status === 'approved') return 'easy';
       return 'attention';
     };
-    const filterKeys = ['ship-without-deposit', 'deposit-paid', 'no-deposit', 'deposit-paid-in-stock', 'stock-blocked'];
+    const filterKeys = ['ship-without-deposit', 'deposit-paid', 'no-deposit', 'deposit-paid-in-stock', 'stock-blocked', 'shipping-postponed'];
     const matchesCard = (o: any, key: string) => {
       const block = stockBlock(o);
       if (key === 'ship-without-deposit') return !o.cancelled && !!o.shipWithoutDeposit && !recorded(o);
@@ -1158,6 +1236,8 @@ export class ShopifyService {
       if (key === 'no-deposit') return !o.cancelled && !recorded(o);
       if (key === 'deposit-paid-in-stock') return !o.cancelled && o.status === 'pending' && recorded(o) && !block.missing && !block.short;
       if (key === 'stock-blocked') return !o.cancelled && o.status === 'pending' && !!(block.missing || block.short);
+      if (key === 'shipping-postponed') return !o.cancelled && o.status === 'pending'
+        && ['scheduled', 'due'].includes(o.shippingPostponement?.status);
       return true;
     };
     const matchesPanel = (o: any) => {
@@ -1382,6 +1462,11 @@ export class ShopifyService {
     if (order.status !== 'pending' || order.cancelled || order.receiptCancelLock) {
       return { success: false };
     }
+    const shippingPostponement: any = (order as any).shippingPostponement;
+    if (shippingPostponement && ['scheduled', 'due'].includes(shippingPostponement.status)
+        && Date.parse(shippingPostponement.dueAt || '') > Date.now()) {
+      throw new BadRequestException({ code: 'SHOPIFY_SHIPPING_POSTPONED', dueAt: shippingPostponement.dueAt, message: 'هذا الأوردر مؤجل للشحن حتى الموعد المحدد' });
+    }
     if (order.itemSyncConflict) throw new BadRequestException('راجع تعارض أصناف Shopify قبل التحضير والشحن');
     if (order.editRequest?.status === 'معلق') throw new BadRequestException('راجع طلب تعديل الأوردر قبل التحضير والشحن');
     // An edit left Soulia's total different from what Shopify charged: confirming needs an explicit acknowledgement.
@@ -1536,12 +1621,18 @@ export class ShopifyService {
     const receiptMatch = receiptSnapshot.length
       ? { depositReceipts: receiptSnapshot }
       : { $or: [{ depositReceipts: { $size: 0 } }, { depositReceipts: { $exists: false } }] };
+    const postponementFence = { $or: [
+      { 'shippingPostponement.status': { $nin: ['scheduled', 'due'] } },
+      { 'shippingPostponement.dueAt': { $lte: confirmedAt } },
+    ] };
+    const completesPostponement = !!shippingPostponement && ['scheduled', 'due'].includes(shippingPostponement.status);
     const claimed = await this.shopifyOrderModel.findOneAndUpdate(
-      { _id: order._id, status: 'pending', cancelled: { $ne: true }, 'editRequest.status': { $ne: 'معلق' }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...(noteDeposit ? { notes: order.notes, shipWithoutDeposit: { $in: [false, null] } } : {}), ...receiptMatch },
+      { _id: order._id, status: 'pending', cancelled: { $ne: true }, 'editRequest.status': { $ne: 'معلق' }, receiptCancelLock: { $in: ['', null] }, total: order.total, ...(noteDeposit ? { notes: order.notes, shipWithoutDeposit: { $in: [false, null] } } : {}), $and: [receiptMatch, postponementFence] },
       { $set: {
         status: 'approved', reviewedBy: approvedBy, reviewedAt: confirmedAt,
         ...depositSummary, depositDetectedAt: order.depositDetectedAt,
-      } },
+        ...(completesPostponement ? { 'shippingPostponement.status': 'completed', 'shippingPostponement.completedAt': confirmedAt, 'shippingPostponement.completedBy': approvedBy } : {}),
+      }, ...(completesPostponement ? { $push: { shippingPostponementHistory: { action: 'completed', dueAt: shippingPostponement.dueAt, by: approvedBy, byId: actorUserId || '', at: confirmedAt } } } : {}) },
       { new: true },
     ).exec();
     if (!claimed) throw new BadRequestException('تغيّر الأوردر أو العربون — حدّث البيانات وأعد المحاولة');

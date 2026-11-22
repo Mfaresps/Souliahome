@@ -10,12 +10,12 @@
   --spw-selected:color-mix(in srgb,var(--accent) 5%,var(--bg));
 }
 body.dark-mode :is(#page-shopify-orders,#sp-peek,#shopify-edit-modal){
-  --spw-edge:#314139;
-  --spw-rule:#27372f;
-  --spw-frame:#1b2821;
-  --spw-ink:#eaf2ec;
-  --spw-muted:#adbdaf;
-  --spw-selected:color-mix(in srgb,var(--accent) 12%,var(--bg));
+  --spw-edge:#424242;
+  --spw-rule:#383838;
+  --spw-frame:#303030;
+  --spw-ink:#ececec;
+  --spw-muted:#a3a3a3;
+  --spw-selected:rgba(255,255,255,.08);
 }
 
 /* The page is the working sheet. Data rows, not the surrounding chrome, carry colour. */
@@ -400,7 +400,7 @@ body.dark-mode #page-shopify-orders #sp-mobile-list .sp-card{
 
 /* Follow-up creation and conversation share the order sheet's field rhythm. */
 #fu-modal-overlay,#fu-comment-popup{--spw-edge:#e5e7eb;--spw-frame:#f5f6f7;--spw-ink:#17231d}
-body.dark-mode :is(#fu-modal-overlay,#fu-comment-popup){--spw-edge:#314139;--spw-frame:#1b2821;--spw-ink:#eaf2ec}
+body.dark-mode :is(#fu-modal-overlay,#fu-comment-popup){--spw-edge:#424242;--spw-frame:#303030;--spw-ink:#ececec}
 #fu-modal-overlay{background:#10201870!important;padding:12px;box-sizing:border-box}
 #fu-modal-overlay>div{
   display:flex;flex-direction:column;width:min(520px,100%)!important;max-width:100%!important;
@@ -475,3 +475,132 @@ body.dark-mode :is(#fu-modal-overlay,#fu-comment-popup){--spw-edge:#314139;--spw
   #fu-comment-popup.fu-thread-overlay{padding:0;align-items:flex-end}
   #fu-comment-popup .fu-thread-modal{width:100%;max-height:92dvh;border:0;border-radius:16px 16px 0 0}
 }
+
+
+/* Shopify shipping postponement */
+.sp-postpone-btn{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid var(--spw-edge,#d8dfdc);border-radius:8px;background:var(--spw-frame,#f3f5f4);color:var(--spw-ink,var(--text));font-size:17px;cursor:pointer;transition:background .16s,border-color .16s,color .16s}
+.sp-postpone-btn:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+.sp-postponed-tag{display:inline-flex;align-items:center;max-width:180px;padding:3px 7px;border:1px solid #b58a3a40;border-radius:999px;background:#b58a3a12;color:#9b7130;font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.sp-postponed-tag.is-due{border-color:#3a9b6b55;background:#3a9b6b12;color:#288354;font-weight:700}
+body.dark-mode .sp-postponed-tag{color:#d8b66e;background:#d8b66e12;border-color:#d8b66e35}
+body.dark-mode .sp-postponed-tag.is-due{color:#71c99b;background:#3a9b6b18;border-color:#3a9b6b55}
+.sp-postpone-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:18px;background:#11171370;backdrop-filter:blur(3px)}
+.sp-postpone-dialog{width:min(440px,100%);display:grid;gap:14px;padding:22px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:16px;background:var(--bg,#fff);color:var(--text);box-shadow:0 24px 70px #0003}
+.sp-postpone-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--spw-edge,#d8dfdc)}
+.sp-postpone-dialog h3{margin:4px 0 0;font-size:19px;font-weight:700}
+.sp-postpone-eyebrow,.sp-postpone-zone{color:var(--text-muted);font-size:12px}
+.sp-postpone-close{width:32px;height:32px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:9px;background:var(--spw-frame,#f4f5f5);color:inherit;font-size:20px;cursor:pointer}
+.sp-postpone-dialog label{display:grid;gap:7px;font-size:13px;font-weight:650}
+.sp-postpone-dialog input,.sp-postpone-dialog textarea{width:100%;min-height:42px;padding:10px 11px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:9px;background:var(--spw-frame,#f7f8f7);color:var(--text);font:inherit;font-size:14px;box-sizing:border-box}
+.sp-postpone-dialog textarea{resize:vertical;min-height:68px}
+.sp-postpone-dialog :is(input,textarea):focus{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:1px}
+.sp-postpone-zone{margin-top:-9px}
+.sp-postpone-dialog footer{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding-top:14px;border-top:1px solid var(--spw-edge,#d8dfdc)}
+.sp-postpone-dialog footer button{min-height:38px;padding:0 13px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:9px;background:var(--spw-frame,#f4f5f5);color:inherit;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.sp-postpone-dialog footer .sp-postpone-primary{border-color:var(--accent);background:var(--accent);color:#fff}
+.sp-postpone-dialog footer .sp-postpone-remove{margin-inline-end:auto;color:#b04444}
+@media(max-width:600px){.sp-postpone-overlay{align-items:end;padding:0}.sp-postpone-dialog{width:100%;padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0;border-bottom:0}.sp-postpone-dialog footer{flex-wrap:wrap}.sp-postponed-tag{max-width:140px}}
+
+
+/* Refined Shopify postponement calendar and compact schedule marker */
+.sp-postpone-overlay{background:rgba(14,19,16,.48);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.sp-postpone-dialog{width:min(424px,100%);gap:12px;padding:22px 24px;border-color:var(--spw-edge,#dce2df);border-radius:18px;background:var(--spw-surface,var(--bg,#fff));box-shadow:0 28px 90px rgba(10,20,14,.2)}
+.sp-postpone-dialog header{align-items:center;padding-bottom:16px}
+.sp-postpone-dialog h3{font-size:20px;letter-spacing:-.025em}
+.sp-postpone-eyebrow{font-size:11px;letter-spacing:.02em}
+.sp-postpone-close{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:19px}
+.sp-postpone-field-label{font-size:13px;font-weight:700}
+.sp-postpone-calendar{padding:11px 12px 12px;border:1px solid var(--spw-edge,#e0e5e2);border-radius:13px;background:var(--spw-frame,#f7f8f7)}
+.sp-calendar-head{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:6px;margin-bottom:10px}
+.sp-calendar-head strong{text-align:center;font-size:13px;font-weight:700}
+.sp-calendar-head button{width:32px;height:32px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--spw-ink,var(--text));font-size:21px;line-height:1;cursor:pointer}
+.sp-calendar-head button:hover{border-color:var(--spw-edge);background:var(--bg)}
+.sp-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+.sp-calendar-weekdays{margin-bottom:4px;color:var(--text-muted);font-size:10px;font-weight:650}
+.sp-calendar-weekdays span{display:grid;place-items:center;height:25px}
+.sp-calendar-empty,.sp-calendar-day{width:100%;height:34px}
+.sp-calendar-day{display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--spw-ink,var(--text));font:inherit;font-size:12px;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.sp-calendar-day:hover:not(:disabled){border-color:var(--spw-edge);background:var(--bg)}
+.sp-calendar-day.is-today{box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent);font-weight:700}
+.sp-calendar-day.is-selected,.sp-calendar-day.is-selected.is-today{border-color:var(--accent);background:var(--accent);color:#fff;box-shadow:none;font-weight:700}
+.sp-calendar-day:disabled{color:var(--text-muted);opacity:.38;cursor:not-allowed}
+.sp-postpone-time-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;padding:12px 13px;border:1px solid var(--spw-edge,#e0e5e2);border-radius:12px;background:var(--bg,#fff);font-size:13px;font-weight:650}
+.sp-postpone-time-row>small{grid-column:1/-1;color:var(--text-muted);font-size:11px;font-weight:400}
+.sp-postpone-time-fields{display:flex;align-items:center;gap:6px;direction:ltr}
+.sp-postpone-time-fields select{min-width:58px;height:36px;padding:0 9px;border:1px solid var(--spw-edge,#dce2df);border-radius:8px;background:var(--spw-frame,#f7f8f7);color:var(--text);font:inherit;font-size:13px;font-weight:650}
+.sp-postpone-time-fields b{color:var(--text-muted)}
+.sp-postpone-dialog textarea{min-height:58px}
+.sp-postpone-notice{display:flex;align-items:center;padding:9px 11px;border:1px solid var(--spw-edge,#e0e5e2);border-radius:9px;background:var(--spw-frame,#f7f8f7);line-height:1.45}
+.sp-postpone-dialog footer{padding-top:12px}
+.sp-postponed-tag{gap:5px;max-width:124px;padding:3px 6px;border-color:var(--spw-edge,#dce2df);background:var(--spw-frame,#f3f5f4);color:var(--spw-ink,var(--text-muted));font-size:9px;letter-spacing:0;}
+.sp-postponed-tag b{font-weight:650}
+.sp-postponed-tag time{font-variant-numeric:tabular-nums;font-size:9px}
+.sp-postponed-dot{width:5px;height:5px;flex:0 0 5px;border-radius:50%;background:#b38a49}
+#shopify-orders-table-wrap .data-table .sp-ref-line .sp-postponed-tag{font-size:9px!important;line-height:1.15}
+#shopify-orders-table-wrap .data-table .sp-ref-line .sp-postponed-tag b,
+#shopify-orders-table-wrap .data-table .sp-ref-line .sp-postponed-tag time{font-size:9px!important;line-height:1.15}
+.sp-postponed-tag.is-due{border-color:#368b6045;background:#368b600d;color:#28794f}
+.sp-postponed-tag.is-due .sp-postponed-dot{background:#329064;box-shadow:0 0 0 2px #32906420}
+body.dark-mode .sp-postponed-tag{border-color:#ffffff1c;background:#ffffff08;color:#c4c9c6}
+body.dark-mode .sp-postponed-tag.is-due{border-color:#50a8795c;background:#50a87916;color:#8cd0a8}
+body.dark-mode .sp-postpone-calendar{background:#171d19}
+body.dark-mode .sp-postpone-time-row{background:#141a16}
+body.dark-mode .sp-postpone-time-fields select{background:#1c241f;border-color:#344139}
+@media(max-width:600px){
+  .sp-postpone-dialog{max-height:min(92dvh,760px);overflow:auto;padding:19px 18px calc(16px + env(safe-area-inset-bottom));gap:11px}
+  .sp-calendar-day{height:36px}
+  .sp-postpone-dialog footer{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom));padding:12px 0 calc(4px + env(safe-area-inset-bottom));background:var(--spw-surface,var(--bg,#fff))}
+  .sp-postponed-tag{max-width:118px}
+}
+
+
+/* A scheduled order gets a distinct calendar-clock action state. */
+.sp-postpone-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.sp-postpone-btn.is-scheduled{border-color:color-mix(in srgb,var(--accent) 42%,var(--spw-edge,#d8dfdc));background:color-mix(in srgb,var(--accent) 10%,var(--spw-frame,#f3f5f4));color:var(--accent)}
+.sp-postpone-btn.is-scheduled:hover{background:color-mix(in srgb,var(--accent) 17%,var(--bg));border-color:var(--accent)}
+.sp-postpone-dialog select{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:9px;background:var(--spw-frame,#f7f8f7);color:var(--text);font:inherit;font-size:14px;box-sizing:border-box}
+.sp-pk-postpone-card{border-color:color-mix(in srgb,var(--accent) 20%,var(--spw-edge,#d8dfdc));background:color-mix(in srgb,var(--accent) 3%,var(--bg))}
+#sp-peek .sp-pk-postpone-card{background:color-mix(in srgb,var(--accent) 3%,var(--bg));border-color:color-mix(in srgb,var(--accent) 20%,var(--spw-edge,#d8dfdc))}
+.sp-pk-postpone-card .sp-pk-sec-h{margin-bottom:11px}
+.sp-pk-postpone-card{width:100%;box-sizing:border-box}
+.sp-pk-postpone-icon{display:inline-grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);border-radius:9px;background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
+.sp-pk-postpone-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.sp-pk-postpone-state{margin-inline-start:auto;padding:4px 8px;border-radius:999px;background:var(--spw-frame,#f2f4f3);color:var(--text-muted);font-size:10px;font-weight:700}
+.sp-pk-postpone-state.is-due{background:color-mix(in srgb,#32875c 12%,transparent);color:#28794f}
+.sp-pk-postpone-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 18px;width:100%;box-sizing:border-box;padding:0}
+.sp-pk-postpone-facts>div{display:grid;gap:3px;min-width:0}
+.sp-pk-postpone-facts small,.sp-pk-postpone-cta small{color:var(--text-muted);font-size:10px}
+.sp-pk-postpone-facts strong{font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.sp-pk-postpone-reason{grid-column:auto}
+.sp-pk-postpone-reason>span{color:var(--text-muted);font-size:11px;overflow-wrap:anywhere}
+.sp-pk-postpone-actions{display:flex;justify-content:flex-start;gap:7px;margin-top:12px;padding:0}
+.sp-pk-postpone-actions button,.sp-pk-postpone-cta button{min-height:32px;padding:0 10px;border:1px solid var(--spw-edge,#d8dfdc);border-radius:8px;background:var(--bg);color:var(--spw-ink,var(--text));font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.sp-pk-postpone-actions button:hover,.sp-pk-postpone-cta button:hover{border-color:var(--accent);color:var(--accent)}
+.sp-pk-postpone-actions .is-remove{color:#a54949}
+.sp-pk-postpone-cta{display:flex;align-items:center;gap:10px}
+.sp-pk-postpone-cta>span:nth-child(2){display:grid;gap:2px;min-width:0;flex:1}
+.sp-pk-postpone-cta>span:nth-child(2)>b{font-size:12px}
+.sp-pk-postpone-cta button{flex-shrink:0;color:var(--accent)}
+body.dark-mode .sp-pk-postpone-card{background:color-mix(in srgb,var(--accent) 5%,var(--bg))}
+body.dark-mode .sp-pk-postpone-state.is-due{color:#8cd0a8}
+@media(max-width:700px){.sp-pk-postpone-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}.sp-pk-postpone-reason{grid-column:1/-1}}
+@media(max-width:600px){.sp-pk-postpone-facts{grid-template-columns:1fr}.sp-pk-postpone-reason{grid-column:auto}.sp-pk-postpone-actions{flex-wrap:wrap}.sp-pk-postpone-cta{align-items:flex-start;flex-wrap:wrap}.sp-pk-postpone-cta button{margin-inline-start:39px}}
+
+/* Minimal, compact postponement summary inside the order preview. */
+#sp-peek .sp-pk-postpone-card{padding:10px 12px;border-color:var(--spw-edge,#dce2df);border-radius:10px;background:var(--bg)}
+#sp-peek .sp-pk-postpone-card .sp-pk-sec-h{gap:7px;margin:0 0 8px;font-size:12px}
+#sp-peek .sp-pk-postpone-icon{width:25px;height:25px;flex-basis:25px;border:0;border-radius:7px;background:var(--spw-frame,#f2f4f3)}
+#sp-peek .sp-pk-postpone-icon svg{width:14px;height:14px}
+#sp-peek .sp-pk-postpone-state{padding:3px 7px;font-size:9px}
+#sp-peek .sp-pk-postpone-facts{gap:7px 14px}
+#sp-peek .sp-pk-postpone-facts>div{gap:2px}
+#sp-peek .sp-pk-postpone-facts small{font-size:9px}
+#sp-peek .sp-pk-postpone-facts strong{font-size:11px;line-height:1.35}
+#sp-peek .sp-pk-postpone-reason>span{font-size:10px}
+#sp-peek .sp-pk-postpone-actions{gap:6px;margin-top:8px}
+#sp-peek .sp-pk-postpone-actions button{min-height:28px;padding-inline:9px;font-size:10px}
+body.dark-mode #sp-peek .sp-pk-postpone-card{background:var(--bg);border-color:var(--spw-edge,#344139)}
+#sp-peek .sp-pk-postpone-cta{min-height:44px;padding:7px 10px;gap:8px}
+#sp-peek .sp-pk-postpone-cta>span:nth-child(2){display:block}
+#sp-peek .sp-pk-postpone-cta>span:nth-child(2) small{display:none}
+#sp-peek .sp-pk-postpone-cta button{min-height:30px;margin:0;padding-inline:10px;font-size:10px}

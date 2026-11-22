@@ -164,6 +164,43 @@
     }
   }
 
+  // A supplier label that was printed but never received: no piece exists yet, so show what the label is
+  // (product, code, batch) and say plainly that it is not registered.
+  async function showUnregistered(label) {
+    const request = ++generation;
+    resultHost.hidden = false; resultHost.replaceChildren();
+    const card = document.createElement('div'); card.className = 'gs-product-card gs-unit-unregistered';
+    const image = document.createElement('img'); image.className = 'gs-product-image'; image.alt = label.productName || ''; image.hidden = true;
+    image.onerror = () => { image.hidden = true; card.classList.add('gs-no-image'); };
+    card.classList.add('gs-no-image'); card.append(image);
+    const details = document.createElement('div'); details.className = 'gs-product-details';
+    const name = document.createElement('h3'); name.dir = 'auto'; name.textContent = label.productName || label.sku || tr('Supplier label', 'ملصق مورد'); details.append(name);
+    const state = document.createElement('div'); state.className = 'gs-unit-state'; state.dataset.status = 'unregistered';
+    const badge = document.createElement('span'); badge.className = 'gs-unit-status'; badge.setAttribute('role', 'status');
+    badge.textContent = tr('Not registered', 'غير مسجلة'); state.append(badge); details.append(state);
+    const note = document.createElement('p'); note.className = 'gs-unit-order-warning';
+    note.textContent = label.state === 'unused'
+      ? tr('This label was printed but no piece was received with it on a purchase invoice yet. It is not in stock.', 'طُبع هذا الملصق لكن لم تُستلم به قطعة على فاتورة شراء بعد، فهي ليست في المخزون.')
+      : tr('This label is not linked to a registered piece. Review the label batch.', 'هذا الملصق غير مرتبط بقطعة مسجلة. راجع دفعة الملصقات.');
+    details.append(note);
+    const lines = [tr('Piece code: ', 'كود القطعة: ') + (label.manualCode || label.barcode),
+      ...(label.sku ? ['SKU: ' + label.sku] : []),
+      ...(label.ordinal ? [tr('Label ', 'الملصق ') + label.ordinal + (label.batchQuantity ? tr(' of ', ' من ') + label.batchQuantity : '') + tr(' in its batch', ' في دفعته')] : []),
+      ...(label.packManualCode ? [tr('Pack label: ', 'ملصق الباك: ') + label.packManualCode] : []),
+      tr('Times printed: ', 'مرات الطباعة: ') + (Number(label.printCount) || 0),
+      ...(label.createdAt ? [tr('Label issued: ', 'إصدار الملصق: ') + when(label.createdAt, true) + (label.createdBy ? ' · ' + label.createdBy : '')] : [])];
+    for (const text of lines) { const line = document.createElement('p'); line.dir = 'auto'; line.textContent = text; details.append(line); }
+    card.append(details); resultHost.append(card);
+    if (!label.productId) return;
+    try {
+      const product = await api('/products/' + encodeURIComponent(label.productId), { signal: AbortSignal.timeout(10000), background: true });
+      if (request !== generation || !dialog.open) return;
+      const url = product?.imageUrl || product?.image;
+      if (url) { image.src = url; image.hidden = false; card.classList.remove('gs-no-image'); }
+      if (product?.name) name.textContent = product.name;
+    } catch { /* the label facts above stand on their own */ }
+  }
+
   function openScanner(identifier) {
     if (!allowed() || !window.SouliaScanner) return;
     closeSearchDropdown();
@@ -178,6 +215,7 @@
       lang: typeof currentLang === 'undefined' ? 'ar' : currentLang, canManualSelect: false,
       onResult(code, result) {
         if (code === 'VALIDATED' && result?.unit) void showUnit(result.unit);
+        else if (result?.prelabel) void showUnregistered(result.prelabel);
         else { generation++; resultHost.hidden = true; }
       }
     });

@@ -410,6 +410,26 @@ export class ShopifyOrder {
   @Prop({ default: '' })
   shipWithoutDepositAt: string;
 
+  /** Local shipping hold. Expiry makes the order eligible again; it never confirms it automatically. */
+  @Prop({ type: Object, default: null })
+  shippingPostponement: {
+    dueAt: string;
+    status: 'scheduled' | 'due' | 'completed' | 'cancelled';
+    reasonCode?: string;
+    reason?: string;
+    createdAt: string;
+    createdBy: string;
+    createdById: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    notifiedAt?: string;
+    completedAt?: string;
+    completedBy?: string;
+  } | null;
+
+  @Prop({ type: [Object], default: [] })
+  shippingPostponementHistory: Array<Record<string, any>>;
+
   /** Local structured customer reason and shipping exception; never derived from Shopify notes. */
   @Prop({ type: Object, default: null })
   depositDecision: Record<string, any> | null;

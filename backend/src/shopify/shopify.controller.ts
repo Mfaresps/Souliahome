@@ -216,6 +216,22 @@ export class ShopifyController {
   // Approve / reject / refund: `@Roles('admin')` ONLY — never a perm a staff member could hold,
   // so an uploader can never approve their own receipt (the approve-cancel rule).
 
+  @Patch('orders/:id/shipping-postponement')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-prepare-ship')
+  async postponeShipping(@Param('id') id: string, @Body('dueAt') dueAt: unknown, @Body('reason') reason: unknown, @Body('reasonCode') reasonCode: unknown, @Request() req: any) {
+    const actor = actorOf(req);
+    return this.shopifyService.postponeShipping(id, dueAt, reason, { id: actor.id, name: actor.name || actor.username || 'staff' }, reasonCode);
+  }
+
+  @Delete('orders/:id/shipping-postponement')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-prepare-ship')
+  async cancelShippingPostponement(@Param('id') id: string, @Request() req: any) {
+    const actor = actorOf(req);
+    return this.shopifyService.cancelShippingPostponement(id, { id: actor.id, name: actor.name || actor.username || 'staff' });
+  }
+
   @Post('orders/:id/deposit-receipts/upload')
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
   @RequirePerms('shopify-deposit-upload')

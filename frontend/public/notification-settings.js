@@ -18,6 +18,7 @@
     deliveryProblem: ['Delivery issues', 'Failed attempts or returns before delivery.'],
     deliveryPostponed: ['Customer postponements', 'Customer-requested postponements and the new delivery date.'],
     delivered: ['Successful delivery', 'Confirmed delivery updates from your carrier.'],
+    shopifyShipDue: ['Shopify shipment due', 'A postponed order is ready for preparation and shipping.'],
     mention: ['Mentions', 'When a colleague mentions you in a comment.'],
   };
   const translations = {
@@ -50,6 +51,7 @@
     deliveryProblem: ['مشكلة في التسليم', 'محاولة فاشلة أو مرتجع قبل التسليم وفق حالات Bosta.'],
     deliveryPostponed: ['تأجيل الاستلام بطلب العميل', 'إشعار مستقل بطلب التأجيل وموعد الاستلام الجديد.'],
     delivered: ['تم التسليم بنجاح', 'عند تأكيد التسليم من شركة الشحن.'],
+    shopifyShipDue: ['موعد شحن أوردر Shopify', 'تنبيه عند حلول موعد تجهيز وشحن أوردر مؤجل.'],
     mention: ['إشارة إليك (منشن)', 'عندما يشير أحد الزملاء إليك في تعليق.'],
   };
   const supported = () => window.isSecureContext && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -110,6 +112,7 @@
       order: '<path d="M4 7h16v14H4zM8 7V5a4 4 0 0 1 8 0v2M8 11v1M16 11v1"/>',
       deliveryProblem: '<path d="m12 3 10 18H2zM12 9v5M12 17h.01"/>',
       deliveryPostponed: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M12 14v4m0-4 3 2"/>',
+      shopifyShipDue: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M8 2v2M16 2v2"/>',
       delivered: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
       mention: '<circle cx="12" cy="12" r="4"/><path d="M16 8v7a2 2 0 0 0 4 0v-3a8 8 0 1 0-3 6"/>',
     };
@@ -118,7 +121,7 @@
     header.innerHTML = `<span class="push-heading-icon">${icon('enabled')}</span><div><h3>${text('إعدادات الإشعارات', 'Notification settings')}</h3><p>${text('اختاري التنبيهات التي تهمك وأديري أجهزتك.', 'Choose what you hear about and manage your devices.')}</p></div>`; panel.append(header);
     const grid = document.createElement('div'); grid.className = 'push-category-grid';
     for (const [key, [title, explanation]] of Object.entries(english() ? englishLabels : labels)) {
-      if (key !== 'enabled' && !(settings.allowedTypes || ['deposit', 'comment', 'followup', 'order', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention']).includes(key)) continue;
+      if (key !== 'enabled' && !(settings.allowedTypes || ['deposit', 'comment', 'followup', 'order', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'shopifyShipDue', 'mention']).includes(key)) continue;
       const row = document.createElement('label'); row.className = 'push-setting-row' + (key === 'enabled' ? ' push-master' : ''); row.dataset.category = key;
       const symbol = document.createElement('span'); symbol.className = 'push-category-icon'; symbol.innerHTML = icon(key);
       const copy = document.createElement('span'); copy.className = 'push-setting-copy'; const heading = document.createElement('strong'); heading.textContent = title;

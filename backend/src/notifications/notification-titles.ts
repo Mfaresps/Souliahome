@@ -17,6 +17,7 @@ const TITLES = {
   otp: ['🔐', 'مطلوب التحقق بكود OTP', 'OTP Verification Required'],
   approval: ['⏳', 'مطلوب موافقة', 'Approval Required'],
   shopifyChange: ['🛒', 'تم تحديث طلب شوبيفاي', 'Shopify Order Updated'],
+  shopifyShipDue: ['⏰', 'حان موعد شحن الأوردر', 'Shopify shipment is due'],
   security: ['🛡️', 'تنبيه أمان', 'Security Alert'],
 } satisfies Record<NotificationType, readonly string[]>;
 
@@ -43,6 +44,7 @@ export function notificationTitle(type: NotificationType, details: NotificationD
     const label = actions[details.afterSalesAction] || ['تحديث الاسترجاع / الاستبدال', 'Return / exchange updated'];
     title = ['📦', ...label];
   }
+  else if (type === 'shopifyShipDue') title = ['⏰', 'حان موعد شحن الأوردر', 'Shopify shipment is due'];
   else if (type === 'announcement' && details.releaseVersion) title = ['🚀', 'تم رفع نسخة جديدة', 'New Version Is Live'];
   else if (type === 'performance') title = details.weekly ? ['📊', 'ملخص الأداء الأسبوعي', 'Weekly Performance Summary'] : (details.pointDelta || 0) < 0 ? ['⚠️', 'نقاط مخصومة', 'Points Deducted'] : ['⭐', 'نقاط مكتسبة', 'Points Earned'];
   else if (type === 'order' && details.assignedToYou) title = ['🛍️', 'طلب جديد مُسند إليك', 'New Order Assigned'];

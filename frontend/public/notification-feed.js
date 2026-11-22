@@ -93,8 +93,8 @@
     return '<time data-notification-time="' + escHtml(date.toISOString()) + '" datetime="' + escHtml(date.toISOString()) + '" title="' +
       escHtml(date.toLocaleString(currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn')) + '">' + window.souliaNotificationRelativeTime(iso) + '</time>';
   };
-  window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'deliveryPostponed' ? 'notification-delivery-postponed' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
-  window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem', 'deliveryPostponed'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
+  window.souliaNotificationTone = n => n.eventId?.startsWith('followup-due:') ? 'notification-followup-due' : n.eventType === 'shopifyShipDue' ? 'notification-shopify-ship-due' : n.eventType === 'deliveryPostponed' ? 'notification-delivery-postponed' : n.eventType === 'delivered' ? 'notification-delivered' : n.eventType === 'deliveryProblem' ? 'notification-delivery-issue' : '';
+  window.souliaNotificationTitle = n => escHtml(['delivered', 'deliveryProblem', 'deliveryPostponed', 'shopifyShipDue'].includes(n.eventType) ? String(n.title || '').replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '') : n.title || '');
   window.souliaNotificationOtpHtml = function (n) {
     if (typeof _isNoImageDepositMention !== 'function' || !_isNoImageDepositMention(n.mention)) return '';
     const code = String(n.mention.commentText || '').match(/كود التحقق\s*[:\-]\s*(\d{4,8})\b/)?.[1];

@@ -27,6 +27,8 @@
 .gs-unit-state[data-status="picking"] .gs-unit-status,.gs-unit-state[data-status="reserved"] .gs-unit-status{background:#fff2d8;color:#986716}
 .gs-unit-state[data-status="prepared"] .gs-unit-status,.gs-unit-state[data-status="shipped"] .gs-unit-status{background:#eaf0fc;color:#416bb0}
 .gs-unit-state[data-status="damaged"] .gs-unit-status,.gs-unit-state[data-status="lost"] .gs-unit-status{background:#fbe9e5;color:#a84e40}
+.gs-unit-state[data-status="unregistered"] .gs-unit-status{background:#f0f1f3;color:#4b5563;border:1px dashed #9aa3ad}
+body.dark-mode .gs-unit-state[data-status="unregistered"] .gs-unit-status{background:#262c29;color:#c9cfcb;border-color:#5b6560}
 .gs-unit-order{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px;font-size:12px;line-height:1.6}
 .gs-unit-order strong{color:var(--text,#17352b);font-weight:650;unicode-bidi:isolate}
 .gs-unit-order>span{color:var(--muted,#63766c);overflow-wrap:anywhere}

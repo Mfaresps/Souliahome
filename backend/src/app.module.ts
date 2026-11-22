@@ -40,6 +40,8 @@ import { AnnouncementsModule } from './announcements/announcements.module';
 import { SupplierReturnStatementsModule } from './supplier-return-statements/supplier-return-statements.module';
 import { InvoiceImagesModule } from './invoice-images/invoice-images.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { AssistantModule } from './assistant/assistant.module';
+import { PurchasingEngineModule } from './purchasing-engine/purchasing-engine.module';
 import { SeedService } from './seed/seed.service';
 import { WarehousesModule } from './warehouses/warehouses.module';
 import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
@@ -91,6 +93,8 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     SupplierReturnStatementsModule,
     InvoiceImagesModule,
     PromotionsModule,
+    AssistantModule,
+    PurchasingEngineModule,
   ],
   providers: [SeedService],
 })

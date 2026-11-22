@@ -278,7 +278,7 @@ export class AfterSalesService {
     if (original.afterSales?.caseId && !await this.cases.exists({ _id: this.id(original.afterSales.caseId), 'workflow.stage': 'closed' }).session(session || null)) throw new ConflictException('أكمل تسوية الاستبدال السابق قبل فتح طلب جديد على البديل');
     if (!Array.isArray(body.items) || !body.items.length || body.items.length > 100) throw new BadRequestException('اختر القطع المطلوبة');
     const prior: any[] = await this.cases.find({ originalTransactionId: String(original._id), status: { $in: ['معلق', 'معتمد'] }, reversedAt: null })
-      .select('items total workflow.selectedUnits').session(session || null).lean();
+      .select('items total requestKind workflow.selectedUnits workflow.ref').session(session || null).lean();
     const policy = await this.policy(session), seen = new Set<number>();
     if (body.kind === 'exchange' && (!Array.isArray(body.exchangeItems) || !body.exchangeItems.length || body.exchangeItems.length > 100)) throw new BadRequestException('اختر المنتج البديل');
     // A quote used to issue two reads per returned line and another per replacement.
@@ -301,7 +301,11 @@ export class AfterSalesService {
       if (!Number.isInteger(index) || seen.has(index) || !line || !Number.isSafeInteger(qty) || qty < 1 || qty > line.qty) throw new BadRequestException('القطعة أو الكمية غير صالحة');
       seen.add(index);
       const used = prior.flatMap(r => r.items || []).filter(i => i.lineIndex === index || i.lineIndex == null && i.code === line.code).reduce((n, i) => n + Number(i.qty), 0);
-      if (qty + used > Number(line.qty)) throw new ConflictException('الكمية المطلوبة تتجاوز المتبقي في بند الفاتورة');
+      if (qty + used > Number(line.qty)) {
+        const open = prior.find(r => (r.items || []).some((i: any) => i.lineIndex === index || i.lineIndex == null && i.code === line.code));
+        if (open) throw new ConflictException(`يوجد بالفعل طلب ${open.requestKind === 'exchange' ? 'استبدال' : 'استرجاع'} مفتوح على هذه القطعة${open.workflow?.ref ? ' (' + open.workflow.ref + ')' : ''}. افتح الطلب الحالي وأكمله، أو ألغِه أولًا ثم أنشئ طلبًا جديدًا.`);
+        throw new ConflictException('الكمية المطلوبة تتجاوز المتبقي في بند الفاتورة');
+      }
       const unitIds: string[] = Array.isArray(selected.unitIds) ? selected.unitIds.map((id: string) => String(this.id(id))) : [];
       if (new Set(unitIds).size !== unitIds.length || unitIds.length > qty) throw new BadRequestException('هويات القطع مكررة أو تتجاوز الكمية');
       const product = byCode.get(line.code);

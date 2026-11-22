@@ -9,11 +9,11 @@ import { Connection, Types } from 'mongoose';
 import { createHash, randomUUID } from 'crypto';
 import { COMMENT_REACTION_LABELS, CommentReactionAdded } from '../shared/comment-reactions';
 
-export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement'] as const;
+export const TYPES = ['deposit', 'comment', 'followup', 'order', 'orderEdit', 'deliveryProblem', 'deliveryPostponed', 'delivered', 'mention', 'otp', 'approval', 'shopifyChange', 'security', 'performance', 'announcement', 'shopifyShipDue'] as const;
 export type NotificationType = typeof TYPES[number];
-export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: false, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, deliveryPostponed: true, delivered: true, mention: true };
-const TITLES = { deliveryPostponed: 'تأجيل الاستلام بطلب العميل', orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
-const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', deliveryPostponed: 'Delivery Postponed by Customer', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
+export const DEFAULTS = { performance: true, otp: true, approval: true, shopifyChange: false, security: true, enabled: false, deposit: true, comment: true, followup: true, order: true, orderEdit: true, deliveryProblem: true, deliveryPostponed: true, delivered: true, mention: true, shopifyShipDue: true };
+const TITLES = { deliveryPostponed: 'تأجيل الاستلام بطلب العميل', shopifyShipDue: 'حان موعد شحن أوردر Shopify', orderEdit: 'قرار تعديل الطلب', announcement: 'إعلان', performance: 'نقاط الأداء', otp: 'طلب OTP', approval: 'التعديلات والموافقات', shopifyChange: 'تعديل طلب شوبيفاي', security: 'تنبيه أمان', deposit: 'عربون جديد', comment: 'تعليق جديد', followup: 'متابعة جديدة', order: 'طلب جديد', deliveryProblem: 'مشكلة في التسليم', delivered: 'تم تسليم الطلب', mention: 'إشارة جديدة إليك' };
+const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcement', performance: 'Performance points', otp: 'OTP Request', approval: 'Modifications & Approvals', shopifyChange: 'Shopify Order Changed', security: 'Security Alert', deposit: 'New Deposit', comment: 'New Comment', followup: 'New Follow-up', order: 'New Order', deliveryProblem: 'Delivery Issue', deliveryPostponed: 'Delivery Postponed by Customer', shopifyShipDue: 'Shopify shipment is due', delivered: 'Order Delivered', mention: 'You Were Mentioned' };
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
 export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
 export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; reaction?: string; }
@@ -122,6 +122,14 @@ export function notificationBody(type: NotificationType, ref: string, details: N
     return language === 'en'
       ? `${orderLabel} · The customer requested delivery postponement${scheduled ? ` · New delivery time: ${scheduled}` : ' · Awaiting the new delivery date'} · Follow-up scheduled`
       : `${orderLabel} · طلب العميل تأجيل الاستلام${scheduled ? ` · الموعد الجديد: ${scheduled}` : ' · بانتظار تحديد الموعد الجديد'} · متابعة تأجيل الاستلام`;
+  }
+  if (type === 'shopifyShipDue') {
+    const raw = cleanText(details.postponedUntil, 80);
+    const date = raw ? new Date(raw) : null;
+    const scheduled = date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', dateStyle: 'medium' }).format(date) : '';
+    return language === 'en'
+      ? `${orderLabel} is ready to prepare and ship${scheduled ? ` · Scheduled ${scheduled}` : ''}`
+      : `${orderLabel} حان موعد تحضيره وشحنه${scheduled ? ` · الموعد ${scheduled}` : ''}`;
   }
   if (type === 'deliveryProblem') {
     const reason = cleanText(language === 'en' ? details.deliveryReasonOriginal || details.deliveryReason : details.deliveryReason, 180);
@@ -381,6 +389,7 @@ export class NotificationsService implements OnModuleInit {
       const queued = await Promise.allSettled(users.map(async user => {
         const userId = String(user._id);
         if (details.afterSalesAction && user.role !== 'admin' && !['transaction', 'movements', 'reports', 'inventory-units-condition', 'shopify-prepare-ship'].some(p => (user.perms || []).includes(p))) return;
+        if (type === 'shopifyShipDue' && user.role !== 'admin' && (user.role !== 'staff' || !(user.perms || []).includes('shopify-prepare-ship'))) return;
         if (type === 'performance' && user.role !== 'staff') return;
         // Exclude the account that performed the action, across all its devices.
         if ((type === 'comment' || type === 'followup') && !['followup-scheduled', 'followup-due'].includes(details.actionKey || '') && details.actorUserId && userId === String(details.actorUserId)) return;

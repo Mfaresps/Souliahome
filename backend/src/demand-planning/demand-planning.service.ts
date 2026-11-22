@@ -29,6 +29,12 @@ import {
   CreatePoFromDemandDto,
   DemandLineDto,
 } from './dto/demand-planning.dto';
+import { allocateOrders, AllocationResult, QueueOrder, AllocationState } from './order-allocation.util';
+import {
+  loadInventoryBreakdown,
+  saleAwaitingDispatch,
+  ProductBreakdown,
+} from '../transactions/inventory-breakdown';
 
 /** One SKU's accumulated demand while grouping */
 interface DemandBucket {
@@ -48,10 +54,97 @@ interface InventoryRow {
   buyPrice?: number;
   minStock?: number;
   current: number;
+  warehouseBalances?: Record<string, number>;
+}
+
+/** The stock terms of one SKU — see analyze() */
+interface StockFigures {
+  onHand: number;
+  reservedConfirmed: number;
+  notSellable: number;
+  sellable: number;
+  /** balance before these orders (may be negative) */
+  balance: number;
+}
+
+/** ShopifyOrder.shopifyDivergence, as written by prepareOrderEdit */
+export interface DivergenceInfo {
+  shopifyTotal: number;
+  erpTotal: number;
+  /** erpTotal − shopifyTotal */
+  diff: number;
+  by: string;
+  at: string;
+  changes: string[];
+}
+
+/** Reasons a pending Shopify order cannot be confirmed yet — most urgent first */
+export type ConfirmBlock =
+  | 'cancel-request' | 'edit-pending' | 'item-conflict' | 'deposit-review'
+  | 'deposit-booking' | 'deposit-over' | 'divergence' | 'dup-ref';
+
+/**
+ * Mirrors ShopifyService.approveOrder's refusals (and the Shopify page's
+ * duplicate-ref check), read-only. ⚠ Keep in step with approveOrder: a reason
+ * missing here lets an order look «ready» and fail at confirmation.
+ * `divergence` is confirmable one by one with an acknowledgement, never in bulk.
+ */
+export function confirmBlocks(order: any, dupRef = false): ConfirmBlock[] {
+  const out: ConfirmBlock[] = [];
+  const receipts: any[] = Array.isArray(order?.depositReceipts) ? order.depositReceipts : [];
+  if (order?.cancelRequest?.status === 'معلق') out.push('cancel-request');
+  if (order?.editRequest?.status === 'معلق') out.push('edit-pending');
+  if (order?.itemSyncConflict) out.push('item-conflict');
+  if (receipts.some((r) => r?.status === 'معلق')) out.push('deposit-review');
+  if (receipts.some((r) => (r?.status === 'معتمد' && !r.vaultEntryId) || (r?.status === 'مُسترد' && !r.refundVaultEntryId))) {
+    out.push('deposit-booking');
+  }
+  if (computeDepositFieldsFromReceipts(order).depositAmount > (Number(order?.total) || 0) + 0.5) out.push('deposit-over');
+  if (order?.shopifyDivergence) out.push('divergence');
+  if (dupRef) out.push('dup-ref');
+  return out;
+}
+
+/** What the order plan needs to describe a queued order */
+interface PlanMeta {
+  ref: string;
+  client: string;
+  date: string;
+  orderTotal: number;
+  deposit: number;
+  payment: string;
+  names: Map<string, { sku: string; name: string }>;
+  blocks?: ConfirmBlock[];
+  divergence?: DivergenceInfo | null;
+}
+
+/** One selected order in the oldest-first plan */
+export interface OrderPlanEntry {
+  transactionId: string;
+  ref: string;
+  client: string;
+  /** creation date — the priority key */
+  date: string;
+  orderTotal: number;
+  deposit: number;
+  payment: string;
+  state: AllocationState;
+  /**
+   * Why the order cannot be confirmed right now although its stock is decided
+   * (same refusals as approveOrder + the page's duplicate-ref check). Empty =
+   * nothing to do. The order keeps its place in the queue and its stock.
+   */
+  blocks: ConfirmBlock[];
+  /** The edit that moved the total away from what Shopify charged (null = none) */
+  divergence: DivergenceInfo | null;
+  /** 1-based place among every order competing for the stock */
+  position: number;
+  items: Array<{ sku: string; name: string; qty: number; missing: number; freeAtTurn: number }>;
 }
 
 /** Subset of the product master this service reads */
 interface ProductRow {
+  _id?: unknown;
   code: string;
   name: string;
   imageUrl?: string;
@@ -96,15 +189,21 @@ export interface DemandLine {
   supplier: string;
   /** Total quantity the selected orders need */
   required: number;
-  /**
-   * Stock physically on hand right now, before the selected orders are served.
-   * Derived from the canonical inventory ledger, with the selected orders'
-   * own deductions added back so their demand is not counted twice.
-   */
+  /** Physically in the warehouse (= onHand; kept for old readers) */
   available: number;
-  /** Committed to other open sales orders that have not shipped yet */
+  /** Physically in the warehouse, before the selected orders are served */
+  onHand: number;
+  /** Confirmed sales not handed to the carrier — already out of the balance (display only) */
+  reservedConfirmed: number;
+  /** Damaged + lost + awaiting inspection, still inside the balance */
+  notSellable: number;
+  /** Balance before these orders minus notSellable */
+  sellable: number;
+  /** Claimed first by older orders outside the selection (oldest-first queue) */
+  reservedOlder: number;
+  /** = reservedOlder (kept for old readers) */
   reserved: number;
-  /** available - reserved — what the selected orders can actually draw on */
+  /** sellable − reservedOlder — what the selected orders can actually draw on */
   freeToUse: number;
   /** max(0, required - freeToUse) */
   shortage: number;
@@ -139,8 +238,27 @@ export interface DemandAnalysis {
    * are excluded from planning and must be mapped to a product first.
    */
   unmappedItems: string[];
+  /**
+   * Shopify orders holding at least one line with no product link. They can
+   * never be confirmed (approve refuses a line without productId), so the
+   * window lists them apart from «ready» / «short» with a way to link them.
+   */
+  unlinkedOrders?: UnlinkedOrder[];
+  /** Selected orders, oldest first, each ready / short / unlinked (all-or-nothing) */
+  orderPlan?: OrderPlanEntry[];
+  /** How many orders competed for the stock (selected + older/newer pending) */
+  queueSize?: number;
   lines: DemandLine[];
   generatedAt: string;
+}
+
+export interface UnlinkedOrder {
+  transactionId: string;
+  ref: string;
+  client: string;
+  date: string;
+  orderTotal: number;
+  items: Array<{ name: string; code: string; qty: number }>;
 }
 
 /**
@@ -150,12 +268,6 @@ export interface DemandAnalysis {
  */
 const PLACEHOLDER_SKUS = new Set(['shopify', 'n/a', 'none', '-', '--']);
 
-/** Sales orders in these states have shipped/settled — stock already left the building */
-const SETTLED_BOSTA_STATUSES = new Set([
-  'DELIVERED',
-  'RETURNED',
-  'CANCELLED',
-]);
 
 @Injectable()
 export class DemandPlanningService {
@@ -182,22 +294,18 @@ export class DemandPlanningService {
   }
 
   /**
-   * A sales order still holding stock: not cancelled, not archived, and not
-   * yet handed over to the courier as a completed delivery.
-   */
-  private isOpenSalesOrder(tx: TransactionDocument): boolean {
-    if (tx.type !== 'مبيعات') return false;
-    if (tx.cancelled || tx.archived) return false;
-    if (SETTLED_BOSTA_STATUSES.has(this.norm(tx.bostaStatus).toUpperCase())) {
-      return false;
-    }
-    if (this.norm(tx.pickupStatus) === 'Delivered') return false;
-    return true;
-  }
-
-  /**
    * Core analysis. Groups the selected orders' items by SKU, reconciles each
    * against the live inventory ledger, and computes shortage + purchase advice.
+   *
+   * Stock terms (Nov 22, 2026), the same on both entry points:
+   *   onHand            physically in the warehouse = balance before these orders + held
+   *   reservedConfirmed confirmed sales not handed to the carrier yet (already out of the balance)
+   *   notSellable       damaged + lost + awaiting inspection, still inside the balance
+   *   sellable          max(0, balance before these orders − notSellable)
+   *   reservedOlder     claimed first by older orders outside the selection (FIFO)
+   *   freeToUse         sellable − reservedOlder
+   * ⚠ `reservedConfirmed` is DISPLAY ONLY: the balance already excludes it. The first
+   *   version subtracted other open orders a second time here (double reservation).
    */
   async analyze(
     dto: AnalyzeDemandDto,
@@ -251,26 +359,25 @@ export class DemandPlanningService {
     }
 
     // ── Inventory + product master ────────────────────────────────────────
-    const inventory = await this.transactionsService.getInventory();
+    const [inventory, products, breakdown] = await Promise.all([
+      this.transactionsService.getInventory(),
+      this.productsService.findAll(),
+      loadInventoryBreakdown(this.txModel.db),
+    ]);
     const invBySku = new Map(
-      inventory.map((r) => [this.skuKey(r.code), r]),
+      (inventory as InventoryRow[]).map((r) => [this.skuKey(r.code), r]),
     );
-    const products = await this.productsService.findAll();
     const productBySku = new Map(
-      products.map((p) => [this.skuKey(p.code), p]),
+      (products as ProductRow[]).map((p) => [this.skuKey(p.code), p]),
     );
 
     const selectedIdSet = new Set(demandOrders.map((t) => String(t._id)));
 
-    // ── Reserved stock, and undoing the selection's own deduction ─────────
-    // getInventory() subtracts EVERY non-cancelled sale, shipped or not. So:
-    //
-    //  • Every selected order's qty must be added back, regardless of its
-    //    shipping state — otherwise its demand is counted twice (once as
-    //    `required`, once as a deduction already applied to `current`).
-    //  • Only *other* orders that have not yet shipped still hold stock; their
-    //    qty is re-expressed as an explicit reservation. Other orders that
-    //    already shipped are genuinely gone and stay subtracted.
+    // ── Undo the selection's own deduction; note what others still hold ──
+    // getInventory() subtracts EVERY non-cancelled sale. The selected orders'
+    // qty is added back (it is counted as `required`). Other confirmed orders
+    // still in the warehouse stay subtracted — they are reported, never
+    // subtracted again.
     const allSales = await this.txModel
       .find({
         type: 'مبيعات',
@@ -279,25 +386,17 @@ export class DemandPlanningService {
       })
       .exec();
 
-    const reservedBySku = new Map<string, number>();
+    const heldBySku = new Map<string, number>();
     const selectedDeductedBySku = new Map<string, number>();
     allSales.forEach((tx) => {
       const isSelected = selectedIdSet.has(String(tx._id));
-      // Non-selected orders only matter while they still hold stock
-      if (!isSelected && !this.isOpenSalesOrder(tx)) return;
+      if (!isSelected && !saleAwaitingDispatch(tx)) return;
       (tx.items || []).forEach((item) => {
         const key = this.skuKey(item.code);
-        if (!key) return;
         const qty = Number(item.qty) || 0;
-        if (qty <= 0) return;
-        if (isSelected) {
-          selectedDeductedBySku.set(
-            key,
-            (selectedDeductedBySku.get(key) || 0) + qty,
-          );
-        } else {
-          reservedBySku.set(key, (reservedBySku.get(key) || 0) + qty);
-        }
+        if (!key || qty <= 0) return;
+        const target = isSelected ? selectedDeductedBySku : heldBySku;
+        target.set(key, (target.get(key) || 0) + qty);
       });
     });
 
@@ -305,17 +404,14 @@ export class DemandPlanningService {
     const lastPurchasePriceBySku = await this.buildLastPurchasePriceMap();
 
     // ── Group selected demand by SKU ──────────────────────────────────────
-    interface Bucket {
-      sku: string;
-      displaySku: string;
-      name: string;
-      required: number;
-      affectedOrders: AffectedOrder[];
-    }
-    const buckets = new Map<string, Bucket>();
+    const buckets = new Map<string, DemandBucket>();
     const unknownSkus = new Set<string>();
+    const queue: QueueOrder[] = [];
+    const meta = new Map<string, PlanMeta>();
 
     demandOrders.forEach((tx) => {
+      const need = new Map<string, number>();
+      const names = new Map<string, { sku: string; name: string }>();
       (tx.items || []).forEach((item) => {
         const displaySku = this.norm(item.code);
         const key = this.skuKey(displaySku);
@@ -330,57 +426,49 @@ export class DemandPlanningService {
           return;
         }
         if (!productBySku.has(key)) unknownSkus.add(displaySku);
-
-        let bucket = buckets.get(key);
-        if (!bucket) {
-          bucket = {
-            sku: key,
-            displaySku,
-            name: this.norm(item.name),
-            required: 0,
-            affectedOrders: [],
-          };
-          buckets.set(key, bucket);
-        }
-        bucket.required += qty;
-        if (!bucket.name) bucket.name = this.norm(item.name);
-
-        const existing = bucket.affectedOrders.find(
-          (o) => o.transactionId === String(tx._id),
-        );
-        if (existing) {
-          existing.qty += qty;
-        } else {
-          bucket.affectedOrders.push({
-            transactionId: String(tx._id),
-            ref: this.norm(tx.ref) || String(tx._id).slice(-6),
-            client: this.norm(tx.client) || '—',
-            phone: this.norm(tx.phone),
-            date: this.norm(tx.transactionDate) || this.norm(tx.date),
-            qty,
-            variant: this.norm((item as { variant?: string }).variant),
-            cancelled: !!tx.cancelled,
-            pickupStatus: this.norm(tx.pickupStatus),
-            bostaStatus: this.norm(tx.bostaStatus),
-            orderTotal: Number(tx.total) || 0,
-            deposit: Number(tx.deposit) || 0,
-            payment: this.norm(tx.depMethod) || this.norm(tx.payment),
-            notes: '',
-            tags: '',
-          });
-        }
+        need.set(key, (need.get(key) || 0) + qty);
+        if (!names.has(key)) names.set(key, { sku: displaySku, name: this.norm(item.name) });
+        this.addToBucket(buckets, key, displaySku, this.norm(item.name), qty, {
+          transactionId: String(tx._id),
+          ref: this.norm(tx.ref) || String(tx._id).slice(-6),
+          client: this.norm(tx.client) || '—',
+          phone: this.norm(tx.phone),
+          date: this.createdOf(tx),
+          qty,
+          variant: this.norm((item as { variant?: string }).variant),
+          cancelled: !!tx.cancelled,
+          pickupStatus: this.norm(tx.pickupStatus),
+          bostaStatus: this.norm(tx.bostaStatus),
+          orderTotal: Number(tx.total) || 0,
+          deposit: Number(tx.deposit) || 0,
+          payment: this.norm(tx.depMethod) || this.norm(tx.payment),
+          notes: '',
+          tags: '',
+        });
+      });
+      const id = String(tx._id);
+      queue.push({ id, createdAt: this.createdOf(tx), selected: true, unlinked: false, need });
+      meta.set(id, {
+        ref: this.norm(tx.ref) || id.slice(-6), client: this.norm(tx.client) || '—', date: this.createdOf(tx),
+        orderTotal: Number(tx.total) || 0, deposit: Number(tx.deposit) || 0,
+        payment: this.norm(tx.depMethod) || this.norm(tx.payment), names,
       });
     });
 
-    // ── Build the report lines ────────────────────────────────────────────
+    // ── Stock figures, then the oldest-first allocation ───────────────────
+    const keys = new Set<string>(buckets.keys());
+    const figures = this.stockFigures(keys, {
+      invBySku, productBySku, breakdown,
+      addBackBySku: selectedDeductedBySku, heldBySku,
+    });
+    const allocation = allocateOrders(queue, this.sellableMap(figures));
+
     const lines = this.buildLines(buckets, {
       invBySku,
       productBySku,
       lastPurchasePriceBySku,
-      // Selected transactions were already deducted from the ledger, so their
-      // qty is added back to recover on-hand-before-these-orders.
-      addBackBySku: selectedDeductedBySku,
-      reservedBySku,
+      figures,
+      reservedOlderBySku: allocation.reservedOlder,
     });
 
     const analysis = this.summarize(
@@ -389,6 +477,8 @@ export class DemandPlanningService {
       skippedOrders,
       unknownSkus,
     );
+    analysis.orderPlan = this.buildPlan(queue, allocation, meta);
+    analysis.queueSize = queue.length;
 
     if (dto.persistLog !== false) {
       await this.writeLog({
@@ -408,10 +498,140 @@ export class DemandPlanningService {
     return analysis;
   }
 
+  private divergenceOf(order: any): DivergenceInfo | null {
+    const d = order?.shopifyDivergence;
+    if (!d) return null;
+    const shopifyTotal = Number(d.shopifyTotal) || 0;
+    const erpTotal = Number(d.erpTotal ?? order.total) || 0;
+    return {
+      shopifyTotal,
+      erpTotal,
+      diff: Number.isFinite(Number(d.diff)) ? Number(d.diff) : Math.round((erpTotal - shopifyTotal) * 100) / 100,
+      by: this.norm(d.by),
+      at: this.norm(d.at),
+      changes: Array.isArray(d.changes) ? d.changes.slice(0, 10).map((c: unknown) => this.norm(c)) : [],
+    };
+  }
+
+  /** The order's creation date — the FIFO key. Never the last edit. */
+  private createdOf(doc: { shopifyCreatedAt?: unknown; createdAt?: unknown }): string {
+    const s = this.norm(doc.shopifyCreatedAt);
+    if (s) return s;
+    const c = doc.createdAt as unknown;
+    if (c instanceof Date) return c.toISOString();
+    return this.norm(c);
+  }
+
+  private addToBucket(
+    buckets: Map<string, DemandBucket>,
+    key: string,
+    displaySku: string,
+    name: string,
+    qty: number,
+    order: AffectedOrder,
+  ): void {
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = { sku: key, displaySku, name, required: 0, affectedOrders: [] };
+      buckets.set(key, bucket);
+    }
+    bucket.required += qty;
+    if (!bucket.name) bucket.name = name;
+    const existing = bucket.affectedOrders.find((o) => o.transactionId === order.transactionId);
+    if (existing) existing.qty += qty;
+    else bucket.affectedOrders.push(order);
+  }
+
   /**
-   * Turns SKU demand buckets into report lines. Shared by both entry points;
-   * the only difference between them is `addBackBySku` — transactions have
-   * already been deducted from the ledger, pending Shopify orders have not.
+   * The stock terms of one SKU (see analyze()). `warehouse` limits balance,
+   * held and not-sellable to one warehouse — Shopify orders are confirmed into
+   * MAIN, so MAIN is all they can draw on.
+   */
+  private stockFigures(
+    keys: Set<string>,
+    ctx: {
+      invBySku: Map<string, InventoryRow>;
+      productBySku: Map<string, ProductRow>;
+      breakdown: Record<string, ProductBreakdown>;
+      addBackBySku: Map<string, number>;
+      heldBySku?: Map<string, number>;
+      warehouse?: string;
+    },
+  ): Map<string, StockFigures> {
+    const out = new Map<string, StockFigures>();
+    keys.forEach((key) => {
+      const inv = ctx.invBySku.get(key);
+      const ledger = inv
+        ? ctx.warehouse && inv.warehouseBalances
+          ? Number(inv.warehouseBalances[ctx.warehouse] || 0)
+          : Number(inv.current) || 0
+        : 0;
+      const base = ledger + (ctx.addBackBySku.get(key) || 0);
+      const productId = ctx.productBySku.get(key)?._id;
+      const row = productId ? ctx.breakdown[String(productId)] : undefined;
+      let held = 0;
+      let issue = 0;
+      Object.entries(row?.byWarehouse || {}).forEach(([code, w]) => {
+        if (ctx.warehouse && code !== ctx.warehouse) return;
+        issue += (w.damaged || 0) + (w.lost || 0) + (w.inspection || 0);
+        if (!ctx.heldBySku) held += w.reserved || 0;
+      });
+      if (ctx.heldBySku) held = ctx.heldBySku.get(key) || 0;
+      const notSellable = Math.max(0, Math.min(issue, Math.max(0, base)));
+      out.set(key, {
+        onHand: Math.max(0, base) + held,
+        reservedConfirmed: held,
+        notSellable,
+        sellable: Math.max(0, base - notSellable),
+        balance: base,
+      });
+    });
+    return out;
+  }
+
+  private sellableMap(figures: Map<string, StockFigures>): Map<string, number> {
+    const m = new Map<string, number>();
+    figures.forEach((f, k) => m.set(k, f.sellable));
+    return m;
+  }
+
+  /** Per selected order, in queue order: ready / short / unlinked, and why. */
+  private buildPlan(
+    queue: QueueOrder[],
+    allocation: AllocationResult,
+    meta: Map<string, PlanMeta>,
+  ): OrderPlanEntry[] {
+    return queue
+      .filter((o) => o.selected)
+      .map((o) => ({ o, a: allocation.orders.get(o.id)! }))
+      .sort((x, y) => x.a.position - y.a.position)
+      .map(({ o, a }) => {
+        const m = meta.get(o.id)!;
+        return {
+          transactionId: o.id,
+          ref: m.ref,
+          client: m.client,
+          date: m.date,
+          orderTotal: m.orderTotal,
+          deposit: m.deposit,
+          payment: m.payment,
+          state: a.state,
+          blocks: m.blocks || [],
+          divergence: m.divergence || null,
+          position: a.position,
+          items: [...o.need.entries()].map(([key, qty]) => ({
+            sku: m.names.get(key)?.sku || key,
+            name: m.names.get(key)?.name || key,
+            qty,
+            missing: a.missing.get(key) || 0,
+            freeAtTurn: a.freeAtTurn.get(key) || 0,
+          })),
+        };
+      });
+  }
+
+  /**
+   * Turns SKU demand buckets into report lines. Shared by both entry points.
    */
   private buildLines(
     buckets: Map<string, DemandBucket>,
@@ -419,18 +639,17 @@ export class DemandPlanningService {
       invBySku: Map<string, InventoryRow>;
       productBySku: Map<string, ProductRow>;
       lastPurchasePriceBySku: Map<string, number>;
-      addBackBySku: Map<string, number>;
-      reservedBySku: Map<string, number>;
+      figures: Map<string, StockFigures>;
+      reservedOlderBySku: Map<string, number>;
     },
   ): DemandLine[] {
     return [...buckets.values()]
       .map((b) => {
         const invRow = ctx.invBySku.get(b.sku);
         const product = ctx.productBySku.get(b.sku);
-        const ledgerCurrent = invRow ? Number(invRow.current) || 0 : 0;
-        const available = ledgerCurrent + (ctx.addBackBySku.get(b.sku) || 0);
-        const reserved = ctx.reservedBySku.get(b.sku) || 0;
-        const freeToUse = available - reserved;
+        const f = ctx.figures.get(b.sku) || { onHand: 0, reservedConfirmed: 0, notSellable: 0, sellable: 0, balance: 0 };
+        const reservedOlder = ctx.reservedOlderBySku.get(b.sku) || 0;
+        const freeToUse = f.sellable - reservedOlder;
         const shortage = Math.max(0, b.required - freeToUse);
         const safetyStock = Math.max(
           0,
@@ -452,10 +671,9 @@ export class DemandPlanningService {
         const lastPurchasePrice =
           ctx.lastPurchasePriceBySku.get(b.sku) ?? buyPrice;
 
-        // Highest-value orders first — they are the ones worth protecting when
-        // stock is short. Quantity breaks ties.
+        // Oldest first — the order the stock is given out in.
         b.affectedOrders.sort(
-          (a, z) => z.orderTotal - a.orderTotal || z.qty - a.qty,
+          (a, z) => (Date.parse(a.date) || Infinity) - (Date.parse(z.date) || Infinity) || z.qty - a.qty,
         );
 
         return {
@@ -464,8 +682,13 @@ export class DemandPlanningService {
           imageUrl: product?.imageUrl || invRow?.imageUrl || '',
           supplier: this.norm(product?.supplier),
           required: b.required,
-          available,
-          reserved,
+          available: f.onHand,
+          onHand: f.onHand,
+          reservedConfirmed: f.reservedConfirmed,
+          notSellable: f.notSellable,
+          sellable: f.sellable,
+          reservedOlder,
+          reserved: reservedOlder,
           freeToUse,
           shortage,
           safetyStock,
@@ -518,12 +741,14 @@ export class DemandPlanningService {
 
   /**
    * Demand analysis for PENDING Shopify orders — the orders that have not yet
-   * been pushed into the transactions log.
+   * been pushed into the transactions log, so nothing is added back.
    *
-   * Key difference from analyze(): these orders have NOT touched inventory, so
-   * their quantities are pure new demand with nothing to add back. `reserved`
-   * is every open sales order already in the ledger, since all of it competes
-   * with this incoming demand for the same on-hand stock.
+   * ⚠ The stock is shared out over EVERY pending Shopify order, oldest first —
+   *   not only the selection (owner, Nov 22, 2026: oldest first, no double
+   *   reservation). An older pending order that was not selected claims its
+   *   share first; that share is shown as «محجوز لأوردرات أقدم».
+   * ⚠ MAIN only: Shopify orders are confirmed into MAIN, and the Shopify page's
+   *   own stock check reads MAIN.
    */
   async analyzeShopify(
     dto: AnalyzeShopifyDemandDto,
@@ -569,26 +794,49 @@ export class DemandPlanningService {
       );
     }
 
-    const inventory = await this.transactionsService.getInventory();
-    const invBySku = new Map(inventory.map((r) => [this.skuKey(r.code), r]));
-    const products = await this.productsService.findAll();
-    const productBySku = new Map(products.map((p) => [this.skuKey(p.code), p]));
-    const lastPurchasePriceBySku = await this.buildLastPurchasePriceMap();
+    const [inventory, products, breakdown, lastPurchasePriceBySku, competing] = await Promise.all([
+      this.transactionsService.getInventory(),
+      this.productsService.findAll(),
+      loadInventoryBreakdown(this.txModel.db),
+      this.buildLastPurchasePriceMap(),
+      // Every other pending order competes for the same MAIN stock.
+      this.shopifyOrderModel
+        .find({ status: 'pending', cancelled: { $ne: true }, _id: { $nin: demandOrders.map((o) => o._id) } })
+        .select({ ref: 1, items: 1, shopifyCreatedAt: 1, createdAt: 1 })
+        .lean()
+        .exec(),
+    ]);
+    const invBySku = new Map((inventory as InventoryRow[]).map((r) => [this.skuKey(r.code), r]));
+    const productBySku = new Map((products as ProductRow[]).map((p) => [this.skuKey(p.code), p]));
 
-    // By request, this analysis is scoped strictly to the SELECTED Shopify
-    // orders: required vs. what's on hand right now. Other open sales orders
-    // in the transactions log are intentionally NOT subtracted as "reserved" —
-    // scoping to the selection was an explicit, informed choice, so a shortage
-    // shown here can still be sold out from under you by unrelated pending
-    // orders. Keep this map empty rather than deleting the reserved column so
-    // the UI/report shape stays stable if that decision is ever revisited.
-    const reservedBySku = new Map<string, number>();
+    // A transaction already carrying the order's number blocks confirmation
+    // (the Shopify page refuses it: the order was most likely entered by hand).
+    const cleanRef = (r: unknown) => this.norm(r).replace(/^#+/, '');
+    const wantedRefs = [...new Set(demandOrders.map((o) => cleanRef(o.ref)).filter(Boolean))];
+    const takenRefs = new Set<string>();
+    if (wantedRefs.length) {
+      const rows = await this.txModel
+        .find({ ref: { $in: [...wantedRefs, ...wantedRefs.map((r) => '#' + r)] } })
+        .select({ ref: 1 })
+        .lean()
+        .exec();
+      (rows as Array<{ ref?: string }>).forEach((r) => takenRefs.add(cleanRef(r.ref)));
+    }
 
     // Group the pending Shopify demand by SKU
     const buckets = new Map<string, DemandBucket>();
     const unknownSkus = new Set<string>();
     const unmappedItems = new Set<string>();
+    const queue: QueueOrder[] = [];
+    const meta = new Map<string, PlanMeta>();
+    const unlinkedOrders: UnlinkedOrder[] = [];
+
     demandOrders.forEach((order) => {
+      const id = String(order._id);
+      const need = new Map<string, number>();
+      const names = new Map<string, { sku: string; name: string }>();
+      const unlinkedItems: UnlinkedOrder['items'] = [];
+      const deposit = computeDepositFieldsFromReceipts(order);
       (order.items || []).forEach((item) => {
         const displaySku = this.norm(item.code);
         const key = this.skuKey(displaySku);
@@ -596,75 +844,90 @@ export class DemandPlanningService {
         if (qty <= 0) return;
         const itemLabel =
           this.norm(item.name) || this.norm(item.shopifyName) || 'غير معروف';
+        // Same rule as the Shopify page's bulk confirm (`!i.productId`): a line
+        // without a product link blocks the whole order, whatever its code says.
+        if (!this.norm(item.productId)) {
+          unlinkedItems.push({ name: itemLabel, code: displaySku, qty });
+        }
         if (!key) {
-          skippedOrders.push({
-            id: String(order._id),
-            reason: `صنف بدون كود (SKU): ${itemLabel}`,
-          });
+          skippedOrders.push({ id, reason: `صنف بدون كود (SKU): ${itemLabel}` });
           return;
         }
         // Unmapped Shopify line items all share the placeholder code
         // "SHOPIFY", so grouping by it would merge unrelated products into one
-        // bogus row. They have no product link and cannot be purchased —
-        // report them individually so they can be mapped first.
+        // bogus row. They have no product link and cannot be purchased.
         if (PLACEHOLDER_SKUS.has(key) && !this.norm(item.productId)) {
           skippedOrders.push({
-            id: String(order._id),
+            id,
             reason: `صنف غير مرتبط بالمخزن: "${itemLabel}" — اربطه بصنف في قاعدة الأصناف أولاً`,
           });
           unmappedItems.add(itemLabel);
           return;
         }
         if (!productBySku.has(key)) unknownSkus.add(displaySku);
-
-        let bucket = buckets.get(key);
-        if (!bucket) {
-          bucket = {
-            sku: key,
-            displaySku,
-            name: this.norm(item.name) || this.norm(item.shopifyName),
-            required: 0,
-            affectedOrders: [],
-          };
-          buckets.set(key, bucket);
-        }
-        bucket.required += qty;
-        if (!bucket.name) bucket.name = this.norm(item.name);
-
-        const existing = bucket.affectedOrders.find(
-          (o) => o.transactionId === String(order._id),
-        );
-        if (existing) {
-          existing.qty += qty;
-        } else {
-          bucket.affectedOrders.push({
-            transactionId: String(order._id),
-            ref: this.norm(order.ref) || String(order._id).slice(-6),
-            client: this.norm(order.client) || '—',
-            phone: this.norm(order.phone),
-            date: this.norm(order.shopifyCreatedAt),
-            qty,
-            variant: this.norm((item as { variant?: string }).variant),
-            cancelled: !!order.cancelled,
-            pickupStatus: '',
-            bostaStatus: '',
-            orderTotal: Number(order.total) || 0,
-            deposit: computeDepositFieldsFromReceipts(order).depositAmount,
-            payment: computeDepositFieldsFromReceipts(order).depositMethod,
-            notes: this.norm(order.notes),
-            tags: this.norm(order.tags),
-          });
-        }
+        need.set(key, (need.get(key) || 0) + qty);
+        if (!names.has(key)) names.set(key, { sku: displaySku, name: itemLabel });
+        this.addToBucket(buckets, key, displaySku, itemLabel, qty, {
+          transactionId: id,
+          ref: this.norm(order.ref) || id.slice(-6),
+          client: this.norm(order.client) || '—',
+          phone: this.norm(order.phone),
+          date: this.createdOf(order),
+          qty,
+          variant: this.norm((item as { variant?: string }).variant),
+          cancelled: !!order.cancelled,
+          pickupStatus: '',
+          bostaStatus: '',
+          orderTotal: Number(order.total) || 0,
+          deposit: deposit.depositAmount,
+          payment: deposit.depositMethod,
+          notes: this.norm(order.notes),
+          tags: this.norm(order.tags),
+        });
       });
+      const m: PlanMeta = {
+        ref: this.norm(order.ref) || id.slice(-6), client: this.norm(order.client) || '—', date: this.createdOf(order),
+        orderTotal: Number(order.total) || 0, deposit: deposit.depositAmount, payment: deposit.depositMethod, names,
+        blocks: confirmBlocks(order, takenRefs.has(cleanRef(order.ref))),
+        divergence: this.divergenceOf(order),
+      };
+      meta.set(id, m);
+      queue.push({ id, createdAt: m.date, selected: true, unlinked: unlinkedItems.length > 0, need });
+      if (unlinkedItems.length) {
+        unlinkedOrders.push({ transactionId: id, ref: m.ref, client: m.client, date: m.date, orderTotal: m.orderTotal, items: unlinkedItems });
+      }
     });
+
+    (competing as Array<{ _id: unknown; items?: Array<{ code?: string; qty?: number; productId?: string }>; shopifyCreatedAt?: string; createdAt?: Date }>)
+      .forEach((order) => {
+        const need = new Map<string, number>();
+        let unlinked = false;
+        (order.items || []).forEach((item) => {
+          const qty = Number(item.qty) || 0;
+          if (qty <= 0) return;
+          if (!this.norm(item.productId)) unlinked = true;
+          const key = this.skuKey(item.code);
+          if (!key || PLACEHOLDER_SKUS.has(key)) return;
+          need.set(key, (need.get(key) || 0) + qty);
+        });
+        queue.push({ id: String(order._id), createdAt: this.createdOf(order), selected: false, unlinked, need });
+      });
+
+    const keys = new Set<string>();
+    queue.forEach((o) => o.need.forEach((_q, k) => keys.add(k)));
+    const figures = this.stockFigures(keys, {
+      invBySku, productBySku, breakdown,
+      addBackBySku: new Map(),   // pending Shopify orders never touched the ledger
+      warehouse: 'MAIN',
+    });
+    const allocation = allocateOrders(queue, this.sellableMap(figures));
 
     const lines = this.buildLines(buckets, {
       invBySku,
       productBySku,
       lastPurchasePriceBySku,
-      // Nothing to add back — pending Shopify orders never touched the ledger
-      addBackBySku: new Map(),
-      reservedBySku,
+      figures,
+      reservedOlderBySku: allocation.reservedOlder,
     });
 
     const analysis = this.summarize(
@@ -674,6 +937,9 @@ export class DemandPlanningService {
       unknownSkus,
       unmappedItems,
     );
+    analysis.unlinkedOrders = unlinkedOrders;
+    analysis.orderPlan = this.buildPlan(queue, allocation, meta);
+    analysis.queueSize = queue.length;
 
     if (dto.persistLog !== false) {
       await this.writeLog({
