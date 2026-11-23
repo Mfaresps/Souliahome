@@ -63,7 +63,7 @@ export function cairoToday(): string {
 }
 
 export function formatRsNumber(seq: number): string {
-  return 'SR-' + String(seq).padStart(5, '0');
+  return 'SR ' + String(seq).padStart(5, '0');
 }
 
 /** The rules a statement must meet before it leaves «مسودة». Returns the first problem, or ''. */

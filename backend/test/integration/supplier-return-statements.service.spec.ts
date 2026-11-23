@@ -67,7 +67,7 @@ describe('Supplier return statements — documentation only', () => {
       linkedDoc: { kind: 'po', id: String(poId) },
       lines: [line(productA, { qty: 3 }), line(productB, { reason: 'other', reasonNote: 'لون باهت' })],
     });
-    expect(doc.number).toMatch(/^SR-\d{5}$/);
+    expect(doc.number).toMatch(/^SR \d{5}$/);
     expect(doc.status).toBe('draft');
     expect(doc.linkedDoc).toMatchObject({ kind: 'po', ref: 'PO-0007' });
     expect(doc.lines.map((l: any) => [l.code, l.name, l.qty])).toEqual([['CUS-1', 'Cushion Blue', 3], ['BAG-2', 'Bag', 2]]);
@@ -192,7 +192,7 @@ describe('Supplier return statements — supplier prices and photos', () => {
 
 describe('Supplier return statement helpers', () => {
   it('formats numbers, cleans text and reports the first incomplete line', () => {
-    expect(formatRsNumber(1)).toBe('SR-00001');
+    expect(formatRsNumber(1)).toBe('SR 00001');
     expect(cleanRsText('  a‮b  \n\n\n c ')).toBe('ab\n\nc');
     expect(rsCompletenessError([{ productId: 'x', qty: 1, reason: 'other', reasonNote: '' }])).toContain('وصف');
     expect(rsCompletenessError([{ productId: 'x', qty: 1, reason: 'wrong-color' }])).toBe('');

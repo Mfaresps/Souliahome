@@ -20,6 +20,29 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Security Hardening — Round 1 (Nov 24, 2026)
+
+- **No JWT fallback secret**: `auth/jwt-secret.util.ts` `requireJwtSecret` — a missing `JWT_SECRET` stops
+  the server at start-up (was: silently signed tokens with a secret written in the repo). The value itself
+  is unchanged, so nobody is logged out. Rotating it and the Mongo password is still open
+  (`SECRETS_MIGRATION_PLAN.md`, phases 2+).
+- **No plain-text passwords**: `plainPassword` removed from the schema, create and update; existing copies
+  are `$unset` by `UsersService.onModuleInit` (idempotent); a restore drops it from old backups. The Users
+  page's password column, phone-card line and «الحالية» reveal in the user window were removed — a forgotten
+  password is reset. Login always used the bcrypt hash only. ⚠ Old backup FILES on disk still contain it.
+- **User lists send no credential**: every user query in `UsersService` selects `SECRET_USER_FIELDS`
+  (`-password -plainPassword -totpSecret`); `GET /users` used to send the bcrypt hash and the TOTP secret to
+  the browser. TOTP/login read through `findById`/`findByUsername`, which stay unfiltered.
+- **nginx security headers**: `nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`. ⚠ nginx ignores
+  server-level `add_header` in a location that has its own — every such location repeats the three lines.
+  Print iframes use `srcdoc`, which these headers do not affect.
+- Deliberately NOT changed: login throttle (the backend sees nginx's IP for everyone — a lower limit would
+  lock the whole office out together; per-account lockout already exists), CORS (Bearer tokens, same-origin
+  through nginx — little to gain), supplier write perms (already enforced for role accounts by
+  `managed-role-access.ts`), HSTS (TLS termination not verified).
+- Tests: `test/integration/users-credentials.service.spec.ts` (4, revert-checked: dropping the list filter
+  fails 1); `users-roles-unified.cjs` 46/46.
+
 ## Orders the Courier Already Has Stayed in Prep/Ready Groups (Nov 23, 2026)
 
 #3198/#3201/#3204: sent to Bosta from the prep workspace (stays 'Preparing' on purpose), collected
@@ -5755,6 +5778,9 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 23, 2026 | Printed supplier return («مرتجع مشتريات», `buildInvoiceHtml` `isSupRet`): the transaction's `total` is only the cash refund (0 for a debt offset), so the sheet reads the return order (`supplierReturns`, by `linkedTransactionId`): value = return total, «رقم المرتجع SR-…», «اسم المورد», «سبب المرتجع» instead of the machine note, and «تسوية المرتجع» (`_invSupplierReturnSettlementHtml`: value + source invoice, debt offset per invoice from `invoiceOffsets` in red, cash refund + vault, credit, fully/partly settled, green «مديونية المورد بعد هذا المرتجع» = `debtBalanceAfter`) in place of the total/paid/remaining strip. Also every printed code no longer reads «Code Code 32». Tests in `purchase-print-statement.cjs` (54) | index.html |
+| Nov 23, 2026 | Supplier «سجل المدفوعات» table rebuilt (`renderSpPaymentsPanel`, `.spx-*`): summary strip (total paid · last payment · most used method), one row per payment — columns date (day month year; weekday + «بواسطة» beneath; «اليوم/أمس» keep the full date beneath) · invoice chips that open the invoice (a split payment shows each invoice's share in its chip, no sub-rows) · amount · method logo + name (right after the amount) · note (never the employee); undo moved to the row's ⋮ menu (whole payment + each part; disabled without the perm). Grouping rules unchanged. `test/browser/supplier-payments-table.cjs` (19) | index.html |
+| Nov 23, 2026 | Printed purchase invoice: the payment strip + two detailed tables became one short «كشف حساب مختصر» (`_invPurchaseStatementHtml`): this invoice = total − earlier payments (date · method · amount) − supplier returns − credit/write-off = remaining; supplier account = this remaining + other unpaid invoices − returns held only in the debt ledger = total due; under both, «آخر دفعات السداد للمورد» (last 5: date · method · invoices · amount; from the debt ledger's live payment / advance rows + invoice opening deposits, method read from the payment on its invoice, one split payment = one row; in «هذه الفاتورة» a split payment is stated at its full value + «منها X على هذه الفاتورة»; a split payment from before `batchId` existed — parts on different invoices, same method and day, ledger rows ≤10 s apart — is joined too, e.g. 11/11 فودافون كاش 600 #900020 + 14,400 #900022 = 15,000). Two separate sections: «بيان الفاتورة #ref» (payments, returns, deductions → remaining) and, under a dashed rule, «كشف حساب المورد حتى …» (opens with this invoice's remaining carried over, then other unpaid invoices, ledger-only amounts → total due, then the latest payments). Originally one box read top to bottom (the invoice total is NOT repeated — it is the sheet's «إجمالي المشتريات» above, in ink, and «إجمالي الأصناف» is dropped when equal): payments / returns / deductions → «المتبقي على الفاتورة #ref» subtotal row → «حساب المورد» (other unpaid invoices, ledger-only amounts) → green «إجمالي المستحق للمورد» — the only highlighted figure; returns and supplier deductions in red (`.r.is-neg`). ⚠ The supplier's other open invoices are read from the server via the ledger's `purchase-debt` rows (sourceId), not only from the in-memory list — a paged/stale list missed #900024 (remaining 21) and printed it as «مبالغ أخرى في سجل المديونية +21». Every row splits description | amount with a rule. The invoice page and window now show «خصم مرتجع للمورد · SR-…» in the order summary (`_purchaseOffsetRows`). `test/browser/purchase-print-statement.cjs` (42) | index.html |
 | Nov 23, 2026 | Orders Bosta already collected/delivered no longer stay in prep/ready groups: the status sync moves them from any board stage, «نقل للجاهز» leaves them out, the ready window lists exactly the card's orders, and admins get a preview + confirm repair for the stuck ones | See "Orders the Courier Already Has Stayed in Prep/Ready Groups" above |
 | Nov 23, 2026 | Purchasing engine (separate service): demand ledger with stockout censoring, 8 backtested forecasts, safety stock / reorder levels, priority by protected margin, simulation vs the 44-day rule; in the assistant as «خطة الشراء الذكية» / «تقرير محرك الشراء» / «ليه مقترح شراء X» | See "Purchasing Engine" above |
 | Nov 22, 2026 | Assistant analysis: why sales changed, alerts against the previous 4 weeks, sales speed + run-out dates, reorder suggestions, and a morning report with a header counter for admins | See "«مساعد SOULIA»" → Analysis |

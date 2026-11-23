@@ -1,22 +1,45 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
+/** Fields that must never leave the server in a user list. */
+const SECRET_USER_FIELDS = '-password -plainPassword -totpSecret';
+
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
+  /**
+   * Passwords used to be stored a second time in plain text (`plainPassword`) so an admin
+   * could "show" them. Login has always used the bcrypt hash only, so removing the copy
+   * changes no login. Idempotent: once cleared, the query matches nothing.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      const res = await this.userModel.collection.updateMany(
+        { plainPassword: { $exists: true } },
+        { $unset: { plainPassword: '' } },
+      );
+      if (res.modifiedCount) this.logger.log(`Removed stored plain-text passwords from ${res.modifiedCount} account(s)`);
+    } catch (e) {
+      this.logger.warn(`Could not clear plain-text passwords: ${(e as Error)?.message}`);
+    }
+  }
+
   async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().sort({ role: 1, createdAt: 1 }).select('-password').exec();
+    return this.userModel.find().sort({ role: 1, createdAt: 1 }).select(SECRET_USER_FIELDS).exec();
   }
 
   async findAllForAdmin(): Promise<UserDocument[]> {
-    return this.userModel.find().sort({ role: 1, createdAt: 1 }).exec();
+    // Never send credentials to the browser — the Users page needs none of them.
+    return this.userModel.find().sort({ role: 1, createdAt: 1 }).select(SECRET_USER_FIELDS).exec();
   }
 
   async findMentionable(): Promise<{ _id: string; name: string; username: string; role: string; active: boolean; avatar: string; jobTitle: string }[]> {
@@ -62,7 +85,7 @@ export class UsersService {
       throw new ConflictException('اسم المستخدم موجود مسبقاً');
     }
     const hashed = await bcrypt.hash(data.password, 10);
-    return this.userModel.create({ ...data, password: hashed, plainPassword: data.password });
+    return this.userModel.create({ ...data, password: hashed });
   }
 
   async updateUser(id: string, data: UpdateUserDto): Promise<UserDocument> {
@@ -77,14 +100,12 @@ export class UsersService {
     delete update.perms;
     if (data.password && data.password.length >= 6) {
       update.password = await bcrypt.hash(data.password, 10);
-      update.plainPassword = data.password;
     } else {
       delete update.password;
-      delete update.plainPassword;
     }
     const user = await this.userModel
       .findByIdAndUpdate(id, update, { new: true })
-      .select('-password')
+      .select(SECRET_USER_FIELDS)
       .exec();
     if (!user) {
       throw new NotFoundException('المستخدم غير موجود');
@@ -102,7 +123,7 @@ export class UsersService {
   async toggleActive(id: string, isActive: boolean): Promise<UserDocument> {
     const user = await this.userModel
       .findByIdAndUpdate(id, { isActive }, { new: true })
-      .select('-password')
+      .select(SECRET_USER_FIELDS)
       .exec();
     if (!user) throw new NotFoundException('المستخدم غير موجود');
     return user;
@@ -134,7 +155,7 @@ export class UsersService {
         { isActive: false, lockedAt: new Date(), lockReason: reason, lockedBy },
         { new: true },
       )
-      .select('-password')
+      .select(SECRET_USER_FIELDS)
       .exec();
     if (!user) throw new NotFoundException('المستخدم غير موجود');
     return user;
@@ -147,7 +168,7 @@ export class UsersService {
         { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId },
         { new: true },
       )
-      .select('-password')
+      .select(SECRET_USER_FIELDS)
       .exec();
     if (!user) throw new NotFoundException('المستخدم غير موجود');
     return user;
@@ -156,7 +177,7 @@ export class UsersService {
   async findLockedUsers(): Promise<UserDocument[]> {
     return this.userModel
       .find({ isActive: false, lockedAt: { $ne: null } })
-      .select('-password')
+      .select(SECRET_USER_FIELDS)
       .sort({ lockedAt: -1 })
       .exec();
   }

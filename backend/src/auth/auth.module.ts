@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { requireJwtSecret } from './jwt-secret.util';
 import { PresenceGateway } from './presence.gateway';
 import { TotpService } from './totp.service';
 import { UsersModule } from '../users/users.module';
@@ -23,7 +24,7 @@ import { Settings, SettingsSchema } from '../settings/schemas/settings.schema';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'soulia_jwt_default_secret',
+        secret: requireJwtSecret(config.get<string>('JWT_SECRET')),
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '24h' },
       }),
     }),

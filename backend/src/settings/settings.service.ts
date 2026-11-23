@@ -2111,6 +2111,8 @@ export class SettingsService {
         if (!username) continue; // an account with no username can never be logged into
 
         migrateDoc('users', doc);
+        // Old backups carry a plain-text copy of each password; it is no longer stored.
+        delete doc.plainPassword;
 
         const existing = await col.findOne({ username }, session ? { session } : {});
         if (existing) {

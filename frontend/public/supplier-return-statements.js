@@ -534,7 +534,7 @@
       <div class="rs-view" data-rs-root data-rs-view>
         <div class="rs-ed-head">
           <div>
-            <div class="rs-ed-title"><bdi class="rs-num">${E(d.number)}</bdi> ${statusPill(d.status)}</div>
+            <div class="rs-ed-title">${L('بيان مرتجع للمورد', 'Supplier Return Statement')} <bdi class="rs-num">${E(d.number)}</bdi> ${statusPill(d.status)}</div>
             <div class="rs-ed-sub">${L('بيان مرتجع', 'Return statement')} · ${E(d.supplierName || s?.name || '')} · ${L('أنشأه', 'by')} ${E(d.createdBy || '')} <bdi>${E(fmtWhen(d.createdAt))}</bdi></div>
           </div>
           <button type="button" class="modal-x" data-rs-act="view-close" aria-label="${E(L('إغلاق', 'Close'))}">${ico('x', 18)}</button>
@@ -701,7 +701,7 @@ td{padding:7px 8px;border-bottom:1px solid #e3e8e5;vertical-align:top}.c{text-al
 .foot{margin-top:18px;font-size:9px;color:#8a958e;text-align:center}
 </style></head><body><div class="page">
 <div class="top"><div><img src="/soulia-logo.svg" alt="SOULIA">${issuer.length ? `<div class="issuer">${issuer.map(E).join('<br>')}</div>` : ''}</div>
-<div class="title"><h1>${L('بيان مرتجع للمورد', 'Supplier Return Statement')}</h1><div class="no"><bdi>${E(d.number)}</bdi></div><span class="badge">${E(statusLabel(d.status))}</span></div></div>
+<div class="title"><h1>${L('بيان مرتجع للمورد', 'Supplier Return Statement')} <bdi>${E(d.number)}</bdi></h1><span class="badge">${E(statusLabel(d.status))}</span></div></div>
 <dl class="meta">
 <div><dt>${L('المورد', 'Supplier')}</dt><dd>${E(d.supplierName || s.name || '')}</dd></div>
 <div><dt>${L('هاتف المورد', 'Supplier phone')}</dt><dd><bdi>${E(phones[0] || '—')}</bdi></dd></div>

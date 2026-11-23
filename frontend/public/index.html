@@ -2808,6 +2808,49 @@ body.dark-mode .spb-wrap{background:rgba(249,115,22,.09)}
 .sl-tbl .spp-count{color:var(--muted);font-weight:600}
 .sl-tbl .spp-branch{color:var(--muted);text-align:center}
 .sl-tbl .spp-part-amt{color:var(--muted);font-weight:600}
+/* Supplier payments log (renderSpPaymentsPanel) — one row per payment */
+.spx-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.spx-kpi{display:flex;flex-direction:column;gap:2px;padding:11px 16px;min-width:0}
+.spx-kpi + .spx-kpi{border-inline-start:1px solid var(--border)}
+.spx-kpi .k{font-size:.7rem;color:var(--muted);font-weight:600}
+.spx-kpi .v{font-size:1.02rem;font-weight:700;color:var(--text);white-space:nowrap}
+.spx-kpi .s{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spx-kpi-m{display:inline-flex;align-items:center;gap:6px}
+.spx-tbl{table-layout:fixed}
+.spx-tbl th.spx-c-date,.spx-tbl td.spx-c-date{width:190px}
+.spx-tbl th.spx-c-method,.spx-tbl td.spx-c-method{width:160px}
+.spx-tbl th.spx-c-note,.spx-tbl td.spx-c-note{width:150px}
+.spx-tbl th.spx-c-amt,.spx-tbl td.spx-c-amt{width:140px;text-align:start}
+.spx-tbl th.spx-c-act,.spx-tbl td.spx-c-act{width:52px;text-align:center}
+.spx-tbl tbody td{padding-top:11px;padding-bottom:11px;vertical-align:middle}
+.spx-tbl td.spx-c-act{vertical-align:middle}
+.spx-date{display:block;font-weight:700;color:var(--text);white-space:nowrap}
+.spx-sub{display:block;margin-top:2px;font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spx-method{display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--text);white-space:nowrap}
+.spx-muted{color:var(--muted)}
+.spx-note{display:block;font-size:.78rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spx-kind{display:inline-block;font-size:.68rem;font-weight:700;color:var(--primary);background:var(--primary-pale);border-radius:5px;padding:1px 7px;margin-bottom:5px}
+.spx-kind.is-dep{color:#1d4ed8;background:rgba(59,130,246,.1)}
+.spx-kind.is-split{color:#6d28d9;background:rgba(124,58,237,.09)}
+.spx-invs{display:flex;flex-wrap:wrap;gap:5px}
+.spx-inv{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;cursor:pointer;font-variant-numeric:tabular-nums;transition:border-color .12s,background .12s}
+.spx-inv:hover{border-color:var(--primary);background:var(--primary-pale)}
+.spx-inv:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.spx-inv-amt{font-weight:500;color:var(--muted);padding-inline-start:6px;border-inline-start:1px solid var(--border)}
+.spx-amt{font-size:.95rem;font-weight:700;color:var(--green,#15803d);white-space:nowrap;font-variant-numeric:tabular-nums}
+.spx-tbl tr.spx-split td{background:rgba(124,58,237,.025)}
+.spx-tbl .dd-toggle{width:30px;height:30px;border-radius:7px}
+.dd-menu-portal .spx-dd-undo{color:#c2410c}
+.dd-menu-portal .spx-undo-ico{flex-shrink:0;width:16px;height:16px}
+[dir="rtl"] .dd-menu-portal .spx-undo-ico,html[dir="rtl"] .dd-menu-portal .spx-undo-ico{transform:scaleX(-1)}
+.dd-menu-portal .spx-dd-undo:hover{background:rgba(249,115,22,.09)}
+.dd-menu-portal .dd-item.is-disabled{opacity:.45;cursor:not-allowed}
+.dd-menu-portal .spx-dd-sep{height:1px;background:var(--border);margin:4px 6px}
+body.dark-mode .spx-kind.is-dep{color:#93c5fd;background:rgba(59,130,246,.16)}
+body.dark-mode .spx-kind.is-split{color:#c4b5fd;background:rgba(124,58,237,.18)}
+body.dark-mode .spx-tbl tr.spx-split td{background:rgba(124,58,237,.06)}
+body.dark-mode .dd-menu-portal .spx-dd-undo{color:#fb923c}
+@media(max-width:640px){.spx-kpi + .spx-kpi{border-inline-start:0;border-top:1px solid var(--border)}}
 .stg-rule{font-size:.76rem;color:var(--text);line-height:1.75;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.28);border-radius:10px;padding:10px 12px}
 .stg-rule b{color:var(--primary)}
 body.dark-mode .stg-rule{background:rgba(59,130,246,.10)}
@@ -7473,15 +7516,14 @@ body.dark-mode .sup-card2-avatar{background:rgba(45,122,79,.18)}
 .users-toolbar select{padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);font-size:.83rem;color:var(--text)}
 .users-count-label{font-size:.78rem;color:var(--muted);margin-inline-start:auto}
 #users-table{table-layout:fixed}
-#users-table th[data-col="u-user"],#users-table td[data-col="u-user"]{width:26%;min-width:190px}
-#users-table th[data-col="u-job"],#users-table td[data-col="u-job"]{width:20%}
+#users-table th[data-col="u-user"],#users-table td[data-col="u-user"]{width:32%;min-width:190px}
+#users-table th[data-col="u-job"],#users-table td[data-col="u-job"]{width:28%}
 #users-table th[data-col="u-role"],#users-table td[data-col="u-role"]{width:12%}
 #users-table th[data-col="u-status"],#users-table td[data-col="u-status"]{width:10%}
-#users-table th[data-col="u-pass"],#users-table td[data-col="u-pass"]{width:14%}
 #users-table th[data-col="u-joined"],#users-table td[data-col="u-joined"]{width:12%}
 #users-table th[data-col="u-actions"],#users-table td[data-col="u-actions"]{width:52px}
 #users-table :is(th,td):is([data-col="u-user"],[data-col="u-job"]){text-align:start}
-#users-table :is(th,td):is([data-col="u-role"],[data-col="u-status"],[data-col="u-pass"],[data-col="u-joined"],[data-col="u-actions"]){text-align:center}
+#users-table :is(th,td):is([data-col="u-role"],[data-col="u-status"],[data-col="u-joined"],[data-col="u-actions"]){text-align:center}
 #users-table .users-identity{display:flex;align-items:center;gap:9px;min-width:0}
 #users-table .users-name-cell,#users-table .users-job-cell{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
 #users-table .users-name-cell{flex:1}
@@ -7527,8 +7569,7 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
   .users-mcard-top{display:flex;align-items:center;gap:10px}
   .users-mcard-id{flex:1;min-width:0;display:flex;flex-direction:column}
   .users-mcard-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .users-mcard-pw{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:.78rem}
-}
+  }
 /* ── User modal v2 — three fixed bands (head / tabs+scroll / foot) ──────
    The old layout let the whole form scroll inside `.modal`, so both the
    title and the save button walked off-screen on a 51-permission account.
@@ -7599,8 +7640,6 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
 .um2-hint-x{background:none;border:none;color:var(--muted);cursor:pointer;padding:0 2px;font-size:.85rem;line-height:1}
 .um2-hint-x:hover{color:var(--text)}
 .um2-hint{font-size:.68rem;color:var(--muted);margin-top:3px}
-.um2-cur-pw{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:6px;padding:4px 8px;font-size:.74rem;margin-bottom:5px}
-.um2-cur-pw button{background:none;border:none;cursor:pointer;padding:0;color:var(--muted);display:inline-flex}
 
 /* «الدور والصلاحيات» tab (Nov 13, 2026): the account is GIVEN a role here; the role's
    permissions are edited on the Roles page only. A list of roles + a short summary. */
@@ -22613,7 +22652,6 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
           <th data-col="u-job">الوظيفة</th>
           <th data-col="u-role">الدور</th>
           <th data-col="u-status">الحالة</th>
-          <th data-col="u-pass">الرقم السري</th>
           <th data-col="u-joined">تاريخ الانضمام</th>
           <th data-col="u-actions"></th>
         </tr>
@@ -26590,6 +26628,17 @@ const TRANSLATIONS = {
   supSrCannotEdit:{ar:'لا يمكن تعديل هذا الطلب في حالته الحالية',en:'This request cannot be edited in its current state'},
   supPayDepositBadge:{ar:'عربون',en:'Deposit'},
   supPayUndoBtn:{ar:'تراجع',en:'Undo'},
+  supPayUndoPart:{ar:'تراجع عن جزء {ref} · {v}',en:'Undo the part on {ref} · {v}'},
+  supPaySplitOn:{ar:'دفعة واحدة على {n} فواتير',en:'One payment over {n} invoices'},
+  supPayColInvoices:{ar:'الفاتورة',en:'Invoice'},
+  supPayColNote:{ar:'ملاحظة',en:'Note'},
+  supPayActions:{ar:'إجراءات الدفعة',en:'Payment actions'},
+  supPayOpenInvoice:{ar:'فتح الفاتورة',en:'Open invoice'},
+  supPayBy:{ar:'بواسطة {v}',en:'by {v}'},
+  supPayKpiTotal:{ar:'إجمالي المسدَّد',en:'Total paid'},
+  supPayKpiCount:{ar:'{n} دفعة',en:'{n} payments'},
+  supPayKpiLast:{ar:'آخر دفعة',en:'Last payment'},
+  supPayKpiTopMethod:{ar:'أكثر طريقة دفع',en:'Most used method'},
   supPayColMethod:{ar:'الطريقة',en:'Method'},
   supPayColInvoice:{ar:'الفاتورة',en:'Invoice'},
   supPayColStatement:{ar:'بيان',en:'Details'},
@@ -28851,6 +28900,9 @@ const TRANSLATIONS = {
   ivCashRefund:{ar:'رد نقدي',en:'Cash refund'},
   ivSupplierCredit:{ar:'رصيد لك عند المورد',en:'Credit with supplier'},
   ivCreditSettled:{ar:'مسدد من رصيدك عند المورد',en:'Settled from your supplier credit'},
+  ivReturnOffset:{ar:'خصم مرتجع للمورد',en:'Supplier return deduction'},
+  ivLedgerOffset:{ar:'خصم من المورد',en:'Supplier deduction'},
+  ivOffsetNoCash:{ar:'لم يخرج نقد من الخزنة',en:'No cash left the vault'},
   ivExchCredit:{ar:'رصيد المنتج المرتجع',en:'Returned item credit'},
   ivExchCreditNote:{ar:'قيمة القطعة الراجعة، مدفوعة في الفاتورة الأصلية #{ref} — تُخصم من البديل ولا تُحصَّل مرة أخرى',en:'The returned piece\'s value, already paid on original invoice #{ref} — deducted from the replacement, never collected again'},
   ivExchCollected:{ar:'حُصِّل مع شحنة الاستبدال',en:'Collected with the exchange shipment'},
@@ -64427,6 +64479,7 @@ table.iv-items td.c-total{font-size:10.5px;font-weight:600}
 .iv-tot .g{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-top:9px;border-top:1px solid var(--ink)}
 .iv-tot .g .l{font-size:11px;font-weight:600;color:var(--ink)}
 .iv-tot .g .t{font-size:18px;font-weight:600;color:var(--brand)}
+.iv-tot .g.is-quiet .t{color:var(--ink)}
 .iv-cur{font-size:8px;font-weight:500;color:var(--muted)}
 
 .iv-pay{margin-top:6mm;page-break-inside:avoid;break-inside:avoid}
@@ -64473,6 +64526,51 @@ table.iv-mini tfoot td{border-bottom:0;border-top:1px solid var(--ink);font-weig
 .iv-stmt-due.is-zero{background:#f1f6f2;color:var(--brand)}
 .iv-stmt-due.is-zero .k small,.iv-stmt-due.is-zero .iv-cur{color:var(--muted)}
 .iv-stmt-gap{margin-top:4px;font-size:7.8px;color:var(--muted)}
+.iv-sec-head .iv-chip{align-self:center}
+.iv-acct{display:grid;grid-template-columns:1fr 1fr;gap:5mm;align-items:start}
+.iv-acct.is-single{grid-template-columns:minmax(0,92mm)}
+.iv-acct-col{border:1px solid #c9d3cc;border-radius:3px;padding:7px 11px 8px;min-width:0}
+.iv-acct-col .h{font-size:8.8px;font-weight:700;color:var(--ink);padding-bottom:4px;display:flex;justify-content:space-between;gap:8px}
+.iv-acct-col .h .d{font-weight:400;color:var(--muted);font-size:7.8px}
+.iv-acct-col .r{display:grid;grid-template-columns:minmax(0,1fr) 25mm;font-size:9.2px;color:var(--ink-2);border-bottom:1px solid #f0f3f1}
+.iv-acct-col .r>span{padding:2px 0}
+.iv-acct-col .r .l{min-width:0;padding-inline-end:8px}
+.iv-acct-col .r .s{display:block;font-size:7.6px;color:var(--muted);margin-top:1px;line-height:1.5}
+.iv-acct-col .r .s .p{unicode-bidi:isolate;white-space:nowrap}
+.iv-acct-col .r .v{font-weight:600;color:var(--ink);white-space:nowrap;text-align:left;border-inline-start:1px solid #d5ddd8;padding-inline-start:8px}
+.iv-acct-col .r.is-head{border-bottom:1px solid #c9d3cc}
+.iv-acct-col .r.is-head>span{font-size:7.4px;font-weight:600;color:var(--muted);padding:2px 0}
+.iv-acct-col .r.is-head .v{font-weight:600;color:var(--muted)}
+.iv-acct-col .t{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:5px;padding:6px 10px;border-radius:3px;background:var(--brand);color:#fff}
+.iv-acct-col .t .v{text-align:left}
+.iv-acct-col .r.is-sub{border-top:1px solid var(--ink);border-bottom:0}
+.iv-acct-col .r.is-carry>span{background:#f6f8f7}
+.iv-acct-col .r.is-carry .l{padding-inline-start:6px}
+.iv-sec.iv-sec-acct{margin-top:4mm;padding-top:4mm;border-top:1.5px dashed #c9d3cc}
+.iv-acct-col .r.is-sub>span{font-weight:700;color:var(--ink);font-size:9.6px;padding:4px 0}
+.iv-acct-col .t .l{font-size:9px;font-weight:600}
+.iv-acct-col .t .l small{display:block;font-size:7.4px;font-weight:400;color:#c9ddd0;margin-top:1px}
+.iv-acct-col .t .v{font-size:13.5px;font-weight:700;white-space:nowrap}
+.iv-acct-col .t .iv-cur{color:#c9ddd0}
+.iv-acct-col .t.is-zero{background:#f1f6f2;color:var(--brand)}
+.iv-acct-col .t.is-zero .iv-cur,.iv-acct-col .t.is-zero small{color:var(--muted)}
+.iv-acct-col .n{margin-top:4px;font-size:7.8px;color:var(--muted)}
+.iv-acct.is-one{grid-template-columns:1fr}
+.iv-acct.is-one .iv-acct-col .r{grid-template-columns:minmax(0,1fr) 34mm}
+.iv-acct-col .sh{display:flex;justify-content:space-between;gap:8px;margin-top:6px;padding:0 0 3px;border-bottom:1px solid #c9d3cc;font-size:8.8px;font-weight:700;color:var(--ink)}
+.iv-acct-col .sh .d{font-weight:400;color:var(--muted);font-size:7.8px}
+.iv-acct-col .r.is-neg .l,.iv-acct-col .r.is-neg .v{color:#b42318}
+.iv-acct-col .r.is-neg .s{color:#c2554b}
+.iv-acct-pays{margin-top:3mm;border:1px solid #c9d3cc;border-radius:3px;padding:6px 11px 4px}
+.iv-acct-pays .h{font-size:8.8px;font-weight:700;color:var(--ink);padding-bottom:4px;border-bottom:1px solid #e4e9e6}
+.iv-acct-pays table{width:100%;border-collapse:collapse;table-layout:fixed}
+.iv-acct-pays td{padding:2px 0;font-size:9px;color:var(--ink-2);border-bottom:1px solid #f0f3f1;vertical-align:baseline}
+.iv-acct-pays tr:last-child td{border-bottom:0}
+.iv-acct-pays td.d{width:22mm}
+.iv-acct-pays td.m{width:30mm;font-weight:600;color:var(--ink)}
+.iv-acct-pays td.f .s{margin-inline-start:6px;font-size:7.6px;color:var(--muted)}
+.iv-acct-pays td.a{width:32mm;text-align:left;font-weight:700;color:var(--ink);white-space:nowrap;border-inline-start:1px solid #d5ddd8;padding-inline-start:8px}
+.iv-acct-pays .n{padding:4px 0;font-size:8px;color:var(--muted)}
 
 /* ── SHEET FOOT — pinned to the bottom, carries the page number ────────── */
 .sheet-foot{position:absolute;inset-inline:13mm;bottom:10mm;display:flex;
@@ -64754,87 +64852,155 @@ function _isPurchaseDetailsRestricted(tx) {
 function _invoiceDetailsDenied() {
   toast(currentLang === 'en' ? 'Purchase invoice details and printing are restricted to admins.' : 'تفاصيل وطباعة فواتير الشراء متاحة للمدير فقط.', true);
 }
-/* ── Supplier invoice print: what was paid on it, and where the account stands ──
-   Every amount between «total» and «remaining» is named: logged deposits, later
-   payments (a part of a split payment says so), supplier credit used, a write-off,
-   and — for invoices from before the logs existed — the unexplained rest as one line,
-   so the rows always add up to (total − remaining). */
+/* ── Supplier invoice print: one short account statement ─────────────────
+   Two columns. «هذه الفاتورة»: total − earlier payments − supplier returns − credit /
+   write-off = remaining; every amount between total and remaining is named, and an
+   older invoice whose payments were never logged shows the rest as one line, so the
+   column always adds up. «حساب المورد»: this invoice's remaining + the supplier's other
+   unpaid invoices ± what the debt ledger holds outside any invoice = total due. */
 function _invPrintDay(d) {
   const s = String(d || '').slice(0, 10);
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s.split('-').reverse().join('/') : '—';
 }
-function _invPurchasePaymentsHtml(tx) {
-  const money = v => `<span class="num">${fmtN(Math.round((Number(v) || 0) * 100) / 100)}</span>`;
+function _invPurchaseStatementHtml(tx, payChip) {
+  const r2 = v => Math.round((Number(v) || 0) * 100) / 100;
+  const money = v => `<span class="num">${fmtN(r2(v))}</span>`;
+  const minus = v => `<span class="num">−${fmtN(r2(v))}</span>`;
+  const plus = v => `<span class="num">+${fmtN(r2(v))}</span>`;
+  const cur = '<span class="iv-cur">EGP</span>';
+  const row = (label, value, sub, cls) => `<div class="r${cls ? ' ' + cls : ''}"><span class="l">${label}${sub ? `<span class="s">${sub}</span>` : ''}</span><span class="v">${value}</span></div>`;
+  const colHead = '<div class="r is-head"><span class="l">البيان</span><span class="v">المبلغ (EGP)</span></div>';
   const total = Number(tx.total) || 0;
   const remaining = Math.max(0, Number(tx.remaining) || 0);
-  const settled = Math.max(0, total - remaining);
-  const rows = [];
-  (tx.deposits || []).filter(d => !d.reversed && Number(d.amount) > 0).forEach(d =>
-    rows.push({ date: d.date, kind: 'دفعة عند تسجيل الفاتورة', method: d.method, amount: Number(d.amount), note: '' }));
-  (tx.payments || []).filter(p => !p.reversed && Number(p.amount) > 0).forEach(p =>
-    rows.push({ date: p.date, kind: 'سداد', method: p.method, amount: Number(p.amount),
-      note: p.batchId ? 'جزء من دفعة واحدة وُزّعت على أكثر من فاتورة' : (p.note || '') }));
-  rows.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
-  const credit = Number(tx.creditApplied) || 0;
-  if (credit > 0) rows.push({ date: tx.date, kind: 'خصم من رصيد لك عند المورد', method: '', amount: credit, note: 'لم يخرج نقد من الخزنة' });
-  const wo = Number(tx.writeOff?.amount) || 0;
-  if (wo > 0) rows.push({ date: tx.writeOff.at, kind: 'إقفال المتبقي', method: '', amount: wo, note: tx.writeOff.reason || '' });
-  (tx.supplierReturnOffsets || []).filter(o => !o.reversedAt && Number(o.amount) > 0).forEach(o =>
-    rows.push(o.kind === 'ledger-adjustment'
-      ? { date: o.at, kind: 'خصم من المورد', method: '', amount: Number(o.amount), note: `${o.reason || 'قيد في سجل المديونية'} — لم يخرج نقد من الخزنة` }
-      : { date: o.at, kind: 'خصم مرتجع للمورد', method: '', amount: Number(o.amount), note: `مرتجع ${o.returnNumber || ''} — لم يخرج نقد من الخزنة` }));
-  const listed = rows.reduce((s, r) => s + r.amount, 0);
-  const gap = Math.round((settled - listed) * 100) / 100;
-  if (gap > 0.5) rows.unshift({ date: tx.date, kind: 'مسدَّد سابقاً', method: tx.depMethod || '', amount: gap, note: 'بدون تفاصيل في السجل' });
-  if (!rows.length) return '';
-  const body = rows.map((r, i) => `<tr>
-      <td>${fmtN(i + 1)}</td>
-      <td><span class="num">${_invPrintDay(r.date)}</span></td>
-      <td>${esc(r.kind)}${r.note ? `<span class="s"><bdi>${esc(r.note)}</bdi></span>` : ''}</td>
-      <td><bdi>${esc(r.method || '—')}</bdi></td>
-      <td class="n">${money(r.amount)}</td>
-    </tr>`).join('');
-  return `<div class="iv-sec">
-    <div class="iv-sec-head"><span class="iv-k">الدفعات على هذه الفاتورة</span><span class="note">${fmtN(rows.length)} ${rows.length === 1 ? 'دفعة' : 'دفعات'}</span></div>
-    <table class="iv-mini">
-      <thead><tr><th style="width:7mm">#</th><th style="width:22mm">التاريخ</th><th>البيان</th><th style="width:30mm">الطريقة</th><th class="n" style="width:28mm">المبلغ</th></tr></thead>
-      <tbody>${body}</tbody>
-      <tfoot>
-        <tr><td colspan="4">إجمالي المسدَّد</td><td class="n">${money(settled)}</td></tr>
-        <tr><td colspan="4">المتبقي على هذه الفاتورة</td><td class="n">${money(remaining)}</td></tr>
-      </tfoot>
-    </table>
-  </div>`;
-}
-function _invSupplierStatementHtml(tx) {
+
+  // ── This invoice ──
+  const pays = [];
+  (tx.deposits || []).filter(d => !d.reversed && Number(d.amount) > 0).forEach(d => pays.push({ date: d.date, method: d.method, amount: Number(d.amount) }));
+  (tx.payments || []).filter(p => !p.reversed && Number(p.amount) > 0).forEach(p => pays.push({ id: p.id, date: p.date, method: p.method, amount: Number(p.amount), batch: p.batchId || '' }));
+  pays.sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  const payTotal = pays.reduce((s, p) => s + p.amount, 0);
+  const offsets = (tx.supplierReturnOffsets || []).filter(o => !o.reversedAt && Number(o.amount) > 0);
+  const retOffsets = offsets.filter(o => o.kind !== 'ledger-adjustment');
+  const adjOffsets = offsets.filter(o => o.kind === 'ledger-adjustment');
+  const retTotal = retOffsets.reduce((s, o) => s + Number(o.amount), 0);
+  const adjTotal = adjOffsets.reduce((s, o) => s + Number(o.amount), 0);
+  const credit = Math.max(0, Number(tx.creditApplied) || 0);
+  const wo = Math.max(0, Number(tx.writeOff?.amount) || 0);
+  const unlogged = r2(total - remaining - payTotal - retTotal - adjTotal - credit - wo);
+
+  // A payment split over several invoices is stated at its full value (what was actually paid);
+  // only the part on this invoice counts in this column's arithmetic, and the line says so.
+  const batchTotals = (tx._printStatement && tx._printStatement.batchTotals) || {};
+  const paymentTotals = (tx._printStatement && tx._printStatement.paymentTotals) || {};
+  const fullOf = p => {
+    if (p.id && Number(paymentTotals[p.id]) > p.amount) return Number(paymentTotals[p.id]);
+    if (!p.batch) return p.amount;
+    let full = Number(batchTotals[p.batch]) || 0;
+    if (!full) (transactions || []).forEach(t => (t.payments || []).forEach(x => { if (!x.reversed && x.batchId === p.batch) full += Number(x.amount) || 0; }));
+    return Math.max(full, p.amount);
+  };
+  const shown = pays.slice(0, 4).map(p => {
+    const full = fullOf(p);
+    return `<span class="p"><span class="num">${_invPrintDay(p.date)}</span> · <bdi>${esc(p.method || '—')}</bdi> · ${money(full)}${full - p.amount > 0.005 ? ` (منها ${money(p.amount)} على هذه الفاتورة)` : ''}</span>`;
+  });
+  if (pays.length > 4) shown.push(`و${fmtN(pays.length - 4)} أخرى`);
+  const retRefs = retOffsets.map(o => o.returnNumber ? `<bdi>${esc(o.returnNumber)}</bdi>` : '').filter(Boolean).join(' · ');
+
+  const inv = [
+    pays.length ? row(`دفعات سداد سابقة (${fmtN(pays.length)})`, minus(payTotal), shown.join('، ')) : row('دفعات سداد سابقة', '<span class="num">0</span>'),
+    unlogged > 0.5 ? row('مسدَّد سابقاً', minus(unlogged), 'بدون تفاصيل في السجل') : '',
+    retTotal > 0 ? row('مرتجعات للمورد', minus(retTotal), retRefs, 'is-neg') : '',
+    adjTotal > 0 ? row('خصم من المورد', minus(adjTotal), esc(adjOffsets.map(o => o.reason).filter(Boolean).join('، ')), 'is-neg') : '',
+    credit > 0 ? row('من رصيدك عند المورد', minus(credit)) : '',
+    wo > 0 ? row('إقفال المتبقي', minus(wo), esc(tx.writeOff.reason || '')) : '',
+    unlogged < -0.5 ? row('فرق', plus(-unlogged), 'المتبقي أعلى من الإجمالي ناقص ما سُدِّد') : '',
+  ].join('');
   const st = tx._printStatement;
-  if (!st) return '';
-  const money = v => `<span class="num">${fmtN(Math.round((Number(v) || 0) * 100) / 100)}</span>`;
-  const cur = '<span class="iv-cur">EGP</span>';
-  const open = st.invoices || [];
-  const sumOpen = open.reduce((s, r) => s + r.remaining, 0);
-  const rows = open.map(r => `<tr${r.isThis ? ' class="is-this"' : ''}>
-      <td><span class="num">#${esc(r.ref || '—')}</span>${r.isThis ? '<span class="iv-tag">هذه الفاتورة</span>' : ''}</td>
-      <td><span class="num">${_invPrintDay(r.date)}</span></td>
-      <td class="n">${money(r.total)}</td>
-      <td class="n">${money(r.paid)}</td>
-      <td class="n">${money(r.remaining)}</td>
-    </tr>`).join('');
-  const due = st.debt != null ? st.debt : sumOpen;
-  const gap = st.debt != null ? Math.round((sumOpen - st.debt) * 100) / 100 : 0;
+  let acc = '';
+  if (st) {
+    const others = (st.invoices || []).filter(r => !r.isThis && r.remaining > 0);
+    const othersSum = others.reduce((s, r) => s + r.remaining, 0);
+    const sumOpen = remaining + othersSum;
+    const due = st.debt != null ? st.debt : sumOpen;
+    const gap = st.debt != null ? r2(sumOpen - st.debt) : 0;
+    const refs = others.slice(0, 5).map(r => `<bdi dir="ltr" class="num">#${esc(r.ref || '—')}</bdi>`).join(' · ') + (others.length > 5 ? ` و${fmtN(others.length - 5)} أخرى` : '');
+    acc = `
+      ${colHead}${row(`المتبقي على الفاتورة <span class="num">#${esc(tx.ref || '—')}</span>`, money(remaining), 'من بيان الفاتورة أعلاه', 'is-carry')}
+      ${others.length ? row(`فواتير أخرى غير مسدَّدة (${fmtN(others.length)})`, plus(othersSum), refs) : row('فواتير أخرى غير مسدَّدة', '<span class="num">0</span>')}
+      ${gap > 0.5 ? row('مرتجعات وتسويات لم تُخصم من فاتورة', minus(gap), 'مسجَّلة في سجل المديونية', 'is-neg') : ''}
+      ${gap < -0.5 ? row('مبالغ أخرى في سجل المديونية', plus(-gap)) : ''}
+      <div class="t${due > 0 ? '' : ' is-zero'}"><span class="l">${due > 0 ? 'إجمالي المستحق للمورد' : 'لا يوجد مستحق للمورد'}<small>${st.debt != null ? 'حسب سجل المديونية' : 'من الفواتير — تعذّر قراءة سجل المديونية'}</small></span><span class="v">${money(due)} ${cur}</span></div>
+      ${st.credit > 0 ? `<div class="n">رصيد لك عند المورد: ${money(st.credit)} ${cur}</div>` : ''}`;
+  }
+  const box = `<div class="iv-acct-col">
+      ${colHead}${inv}
+      ${st ? `<div class="r is-sub"><span class="l">${remaining > 0 ? 'المتبقي على الفاتورة' : 'الفاتورة مسدَّدة بالكامل'}</span><span class="v">${money(remaining)}</span></div>`
+        : `<div class="t${remaining > 0 ? '' : ' is-zero'}"><span class="l">${remaining > 0 ? 'المتبقي على الفاتورة' : 'الفاتورة مسدَّدة بالكامل'}</span><span class="v">${money(remaining)} ${cur}</span></div>`}
+    </div>`;
+  const lastPays = st && Array.isArray(st.payments) ? st.payments : null;
+  const lastHtml = lastPays ? `<div class="iv-acct-pays">
+      <div class="h">آخر دفعات السداد للمورد</div>
+      ${lastPays.length ? `<table>
+        <tbody>${lastPays.map(p => `<tr>
+          <td class="d"><span class="num">${_invPrintDay(p.date)}</span></td>
+          <td class="m"><bdi>${esc(p.method || '—')}</bdi></td>
+          <td class="f">${p.refs.length ? `على ${p.refs.map(r => `<bdi dir="ltr" class="num">#${esc(r)}</bdi>`).join('، ')}` : ''}${p.note ? `<span class="s">${esc(p.note)}</span>` : ''}</td>
+          <td class="a">${money(p.amount)} ${cur}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<div class="n">لا توجد دفعات سداد مسجَّلة لهذا المورد.</div>'}
+    </div>` : '';
   return `<div class="iv-sec">
-    <div class="iv-sec-head"><span class="iv-k">كشف حساب المورد — الفواتير غير المسدَّدة</span><span class="note">حتى ${_invPrintDay(st.at)}</span></div>
-    ${open.length ? `<table class="iv-mini">
-      <thead><tr><th>الفاتورة</th><th style="width:22mm">التاريخ</th><th class="n" style="width:26mm">الإجمالي</th><th class="n" style="width:26mm">المسدَّد</th><th class="n" style="width:26mm">المتبقي</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="4">مجموع المتبقي على الفواتير (${fmtN(open.length)})</td><td class="n">${money(sumOpen)}</td></tr></tfoot>
-    </table>` : `<div class="iv-stmt-gap">لا توجد فواتير غير مسدَّدة لهذا المورد.</div>`}
-    <div class="iv-stmt-due${due > 0 ? '' : ' is-zero'}">
-      <span class="k">${due > 0 ? 'إجمالي المستحق للمورد' : 'لا يوجد مستحق للمورد'}<small>${st.debt != null ? 'حسب سجل المديونية' : 'من الفواتير — تعذّر قراءة سجل المديونية'}</small></span>
-      <span class="v">${money(due)} ${cur}</span>
-    </div>
-    ${st.credit > 0 ? `<div class="iv-stmt-gap">رصيد لك عند المورد: ${money(st.credit)} ${cur}</div>` : ''}
-    ${Math.abs(gap) > 0.5 ? `<div class="iv-stmt-gap">الفرق ${money(Math.abs(gap))} ${cur} بين مجموع الفواتير والمستحق: مرتجعات أو تسويات أو دفعات مسجَّلة في سجل المديونية.</div>` : ''}
+    <div class="iv-sec-head"><span class="iv-k">بيان الفاتورة <span class="num">#${esc(tx.ref || '—')}</span></span>${payChip ? `<span class="iv-chip ${payChip[0]}">${payChip[1]}</span>` : ''}</div>
+    <div class="iv-acct is-one">${box}</div>
+  </div>
+  ${st ? `<div class="iv-sec iv-sec-acct">
+    <div class="iv-sec-head"><span class="iv-k">كشف حساب المورد</span><span class="note">حتى <span class="num">${_invPrintDay(st.at)}</span></span></div>
+    <div class="iv-acct is-one"><div class="iv-acct-col">${acc}</div></div>
+    ${lastHtml}
+  </div>` : ''}`;
+}
+/* Printed supplier return: how the return was settled — debt offset (and the invoices it was
+   taken off), cash refund (and its vault), credit kept with the supplier — then the supplier's
+   debt after it. All from the return order's own `settlement`; without it the cash refund on
+   the transaction is all that is known, and the section says so. */
+function _invSupplierReturnSettlementHtml(tx, sr, value) {
+  const r2 = v => Math.round((Number(v) || 0) * 100) / 100;
+  const money = v => `<span class="num">${fmtN(r2(v))}</span>`;
+  const minus = v => `<span class="num">−${fmtN(r2(v))}</span>`;
+  const cur = '<span class="iv-cur">EGP</span>';
+  const row = (label, val, sub, cls) => `<div class="r${cls ? ' ' + cls : ''}"><span class="l">${label}${sub ? `<span class="s">${sub}</span>` : ''}</span><span class="v">${val}</span></div>`;
+  const ref = r => `<bdi dir="ltr" class="num">#${esc(r || '—')}</bdi>`;
+  const st = sr && sr.settlement;
+  const reversed = !!(sr && sr.reversal);
+  const from = sr && Array.isArray(sr.linkedInvoices) && sr.linkedInvoices.length
+    ? sr.linkedInvoices.map(l => ref(l.ref)).join('، ') : (sr && sr.originalRef ? ref(sr.originalRef) : '');
+  const head = `<div class="r is-head"><span class="l">البيان</span><span class="v">المبلغ (EGP)</span></div>`;
+  let rows = row('قيمة المرتجع', money(value), from ? `البضاعة من فاتورة ${from}` : '');
+  let chip = '';
+  if (st) {
+    const offs = Array.isArray(st.invoiceOffsets) ? st.invoiceOffsets.filter(o => Number(o.amount) > 0) : [];
+    if (offs.length) offs.forEach(o => { rows += row(`خصم من مديونية فاتورة ${ref(o.ref)}`, minus(o.amount), '', 'is-neg'); });
+    const unalloc = offs.length ? Number(st.unallocatedOffset) || 0 : Number(st.debtOffsetAmount) || 0;
+    if (unalloc > 0.005) rows += row('خصم من رصيد مديونية المورد', minus(unalloc), offs.length ? 'لا توجد فاتورة مفتوحة تستوعبه' : '', 'is-neg');
+    if (Number(st.refundAmount) > 0) rows += row('رد نقدي من المورد', minus(st.refundAmount), sr.vaultRefundAccount || tx.depMethod ? `إلى خزنة ${esc(_payMethodLabel(sr.vaultRefundAccount || tx.depMethod))}` : '');
+    if (Number(st.creditAmount) > 0) rows += row('رصيد لك عند المورد', minus(st.creditAmount), 'يُخصم من مشتريات قادمة');
+    const settled = (Number(st.debtOffsetAmount) || 0) + (Number(st.refundAmount) || 0) + (Number(st.creditAmount) || 0);
+    const left = r2(value - settled);
+    rows += `<div class="r is-sub"><span class="l">${Math.abs(left) < 0.01 ? 'المرتجع مسوّى بالكامل' : 'غير مسوّى'}</span><span class="v">${money(Math.max(0, left))}</span></div>`;
+    chip = reversed ? '<span class="iv-chip is-cancel">مُلغى التسوية</span>'
+      : Math.abs(left) < 0.01 ? '<span class="iv-chip is-full">مسوّى بالكامل</span>' : '<span class="iv-chip is-partial">مسوّى جزئياً</span>';
+  } else {
+    const cash = Number(tx.total) || 0;
+    if (cash > 0) rows += row('رد نقدي من المورد', minus(cash), tx.depMethod ? `إلى خزنة ${esc(_payMethodLabel(tx.depMethod))}` : '');
+    rows += `<div class="r is-sub"><span class="l">تفاصيل التسوية غير متاحة</span><span class="v">—</span></div>`;
+  }
+  const after = st && st.debtBalanceAfter != null && !reversed
+    ? `<div class="t${Number(st.debtBalanceAfter) > 0 ? '' : ' is-zero'}"><span class="l">مديونية المورد بعد هذا المرتجع<small>وقت التسوية${st.decidedAt ? ` · <span class="num">${_invPrintDay(st.decidedAt)}</span>` : ''}</small></span><span class="v">${money(Math.max(0, Number(st.debtBalanceAfter) || 0))} ${cur}</span></div>`
+    : '';
+  return `<div class="iv-sec">
+    <div class="iv-sec-head"><span class="iv-k">تسوية المرتجع${sr && sr.returnNumber ? ` <span class="num">${esc(sr.returnNumber)}</span>` : ''}</span>${chip}</div>
+    <div class="iv-acct is-one"><div class="iv-acct-col">${head}${rows}${after}</div></div>
+    ${reversed ? `<div class="iv-stmt-gap">أُلغيت تسوية هذا المرتجع${sr.reversal.reason ? `: ${esc(sr.reversal.reason)}` : ''}.</div>` : ''}
   </div>`;
 }
 /**
@@ -64859,11 +65025,16 @@ async function _invRefreshForPrint(tx) {
   const sid = fresh.supplierId || (suppliers || []).find(s => String(s.name || '').trim().toLowerCase() === name)?._id || '';
   const same = t => t.type === 'مشتريات' && !t.cancelled && !isStatusCancelled(t.payStatus)
     && (sid && t.supplierId ? String(t.supplierId) === String(sid) : String(t.client || '').trim().toLowerCase() === name);
-  const others = transactions.filter(t => t._id !== fresh._id && same(t) && (Number(t.remaining) || 0) > 0);
-  const [ledger, ...updated] = await Promise.all([
+  const [ledger, entries] = await Promise.all([
     sid ? api(`/supplier-ledger/supplier/${sid}/balance`).catch(() => null) : Promise.resolve(null),
-    ...others.map(o => api(`/transactions/${o._id}`).catch(() => o)),
+    sid ? api(`/supplier-ledger/supplier/${sid}`).catch(() => null) : Promise.resolve(null),
   ]);
+  const otherIds = new Set(transactions.filter(t => t._id !== fresh._id && same(t) && (Number(t.remaining) || 0) > 0).map(t => String(t._id)));
+  if (Array.isArray(entries)) entries.forEach(e => {
+    if (e.entryType === 'purchase-debt' && e.sourceId && String(e.sourceId) !== String(fresh._id)) otherIds.add(String(e.sourceId));
+  });
+  const updated = (await Promise.all([...otherIds].slice(0, 60).map(id =>
+    api(`/transactions/${id}`).catch(() => transactions.find(t => String(t._id) === id) || null)))).filter(Boolean);
   const invoices = [fresh, ...updated]
     .filter(t => t && same(t) && (t._id === fresh._id || (Number(t.remaining) || 0) > 0))
     .map(t => {
@@ -64876,8 +65047,86 @@ async function _invRefreshForPrint(tx) {
     invoices,
     debt: ledger ? Math.max(0, Number(ledger.debt) || 0) : null,
     credit: ledger ? Math.max(0, Number(ledger.credit) || 0) : 0,
+    payments: null,
+    batchTotals: {},
+    paymentTotals: {},
   };
+  if (Array.isArray(entries)) {
+    const all = await _invSupplierLastPayments(entries, [fresh, ...updated, ...transactions.filter(same)], 0);
+    fresh._printStatement.payments = all.slice(0, 5);
+    all.forEach(g => {
+      if (g.batch) fresh._printStatement.batchTotals[g.batch] = g.amount;
+      (g.pids || []).forEach(id => { fresh._printStatement.paymentTotals[id] = g.amount; });
+    });
+  }
   return fresh;
+}
+/**
+ * The supplier's latest payments for the printed statement: every live «payment» /
+ * «advance-deposit» row of the debt ledger (cash that actually left a vault for this
+ * supplier), plus the deposits paid when an invoice was recorded (those never get a ledger
+ * row of their own). The method comes from the payment on its invoice (matched by
+ * paymentId, else amount + day); one payment split over several invoices (same batchId)
+ * is one row. Newest first, at most `limit`.
+ */
+async function _invSupplierLastPayments(entries, known, limit = 5) {
+  const day = d => String(d || '').slice(0, 10);
+  const byId = new Map();
+  known.forEach(t => { if (t && t._id && !byId.has(String(t._id))) byId.set(String(t._id), t); });
+  const live = entries.filter(e => !e.reversed && !e.reversalOfEntryId && Number(e.amount) < 0
+    && (e.entryType === 'payment' || e.entryType === 'advance-deposit'));
+  const need = [...new Set(live.filter(e => e.entryType === 'payment' && e.sourceId && !(byId.get(String(e.sourceId))?.payments)).map(e => String(e.sourceId)))].slice(0, 12);
+  (await Promise.all(need.map(id => api(`/transactions/${id}`).catch(() => null))))
+    .forEach(t => { if (t && t._id) byId.set(String(t._id), t); });
+  const used = new Set();
+  const rows = live.map(e => {
+    const amount = -Number(e.amount);
+    if (e.entryType === 'advance-deposit')
+      return { at: e.createdAt || e.date, date: e.date, amount, method: e.vaultSeg || '', refs: [], note: 'دفعة مقدمة' };
+    const t = byId.get(String(e.sourceId));
+    const pays = (t?.payments || []).filter(p => !p.reversed);
+    const pid = e.meta && e.meta.paymentId;
+    const p = (pid && pays.find(x => x.id === pid))
+      || pays.find(x => !used.has(x.id) && Math.abs((Number(x.amount) || 0) - amount) < 0.01 && day(x.date) === day(e.date))
+      || pays.find(x => !used.has(x.id) && Math.abs((Number(x.amount) || 0) - amount) < 0.01);
+    if (p) used.add(p.id);
+    return { at: e.createdAt || e.date, date: p?.date || e.date, amount, method: p?.method || '', batch: p?.batchId || '', pids: p ? [p.id] : [], refs: [e.sourceRef || t?.ref].filter(Boolean) };
+  });
+  byId.forEach(t => {
+    if (t.type !== 'مشتريات' || t.cancelled) return;
+    (t.deposits || []).filter(d => !d.reversed && Number(d.amount) > 0).forEach(d =>
+      rows.push({ at: d.date || t.createdAt, date: d.date || t.date, amount: Number(d.amount), method: d.method || t.depMethod || '', refs: [t.ref].filter(Boolean), note: 'عند تسجيل الفاتورة' }));
+  });
+  const ms = v => { const n = Date.parse(v); return Number.isFinite(n) ? n : NaN; };
+  const loose = rows.filter(r => !r.batch && r.pids && r.pids.length && Number.isFinite(ms(r.at)))
+    .sort((a, b) => ms(a.at) - ms(b.at));
+  let cluster = [];
+  const close = () => {
+    if (cluster.length > 1) cluster.forEach(r => { r.batch = 'legacy:' + cluster[0].pids[0]; });
+    cluster = [];
+  };
+  loose.forEach(r => {
+    const last = cluster[cluster.length - 1];
+    if (last && last.method === r.method && day(last.date) === day(r.date) && ms(r.at) - ms(last.at) <= 10000
+        && !cluster.some(c => c.refs.some(x => r.refs.includes(x)))) cluster.push(r);
+    else { close(); cluster = [r]; }
+  });
+  close();
+  const grouped = [];
+  const byBatch = new Map();
+  rows.forEach(r => {
+    if (r.batch && byBatch.has(r.batch)) {
+      const g = byBatch.get(r.batch);
+      g.amount += r.amount; r.refs.forEach(x => { if (!g.refs.includes(x)) g.refs.push(x); });
+      g.pids = [...(g.pids || []), ...(r.pids || [])];
+      if (String(r.at) > String(g.at)) g.at = r.at;
+      return;
+    }
+    const g = { ...r, refs: [...r.refs], pids: [...(r.pids || [])] };
+    if (r.batch) byBatch.set(r.batch, g);
+    grouped.push(g);
+  });
+  return grouped.sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))).slice(0, limit || undefined);
 }
 
 function buildInvoiceHtml(tx) {
@@ -64885,6 +65134,11 @@ function buildInvoiceHtml(tx) {
   const isPur   = tx.type === 'مشتريات';
   const isSales = tx.type === 'مبيعات';
   const isRet   = tx.type === 'مرتجع' || tx.type === 'مرتجع مبيعات';
+  /* A supplier return («مرتجع مشتريات»): the transaction's `total` holds only the CASH refund
+     (0 when the return was settled against the debt), so the document value, its reason and
+     how it was settled are read from the return order itself. */
+  const isSupRet = tx.type === 'مرتجع مشتريات';
+  const supRet = isSupRet ? (supplierReturns || []).find(r => r.linkedTransactionId === tx._id) || null : null;
 
   /* ── Document identity ────────────────────────────────────────────────
      Each document type names itself: a purchase is a supplier invoice and a
@@ -64895,6 +65149,7 @@ function buildInvoiceHtml(tx) {
     : 'إشعار دائن — مرتجع مبيعات';
   const docSubEn = isSales ? 'SALES INVOICE'
     : isPur ? 'PURCHASE INVOICE'
+    : tx.type === 'مرتجع مشتريات' ? 'PURCHASE RETURN'
     : 'CREDIT NOTE';
 
   const dateStr = (tx.date || '').slice(0, 10);
@@ -64921,7 +65176,8 @@ function buildInvoiceHtml(tx) {
      invoice printed «لم يُحصّل أي مبلغ» even after a deposit was collected
      (#2545: 300 paid, 2,130 due, printed as nothing paid). The exchange-sale
      rule below is that helper's own rule, kept numeric. */
-  const total = Number(tx.total) || 0;
+  const _supRetItems = (tx.items || []).reduce((s, it) => s + (Number(it.total) || 0), 0);
+  const total = isSupRet ? (Number(supRet && supRet.total) || _supRetItems || Number(tx.total) || 0) : (Number(tx.total) || 0);
   const remaining = Math.max(0, Number(tx.remaining) || 0);
   // An exchange replacement: the return credit is printed on its own line; «المدفوع» is the cash only.
   const exchPrint = _exchCreditOf(tx);
@@ -64964,7 +65220,7 @@ function buildInvoiceHtml(tx) {
         <div class="iv-thumb">${PH}${img ? `<img src="${escHtml(img)}" alt="" onerror="this.remove()">` : ''}</div>
         <div class="iv-it-txt">
           <div class="iv-name" dir="auto">${esc(it.name || '—')}</div>
-          ${code ? `<div class="iv-code">Code ${code}</div>` : ''}
+          ${code ? `<div class="iv-code">${/^code\b/i.test(code) ? code : 'Code ' + code}</div>` : ''}
           ${off ? `<div class="iv-offer"><span class="iv-offer-tag" dir="auto">عرض ${esc(off.name || '')}</span></div>` : ''}
           ${meta ? `<div class="iv-meta" dir="auto">${meta}</div>` : ''}
           ${window.InvoiceUnitIdentities?.printLineHtml(tx, it) || ''}
@@ -65029,8 +65285,10 @@ function buildInvoiceHtml(tx) {
 
   const factCells = [
     `<div class="iv-fact"><span class="iv-k">المخزن</span><span class="v" dir="auto">${esc(window.SouliaWarehouses?.name(tx.warehouseCode || 'MAIN') || tx.warehouseCode || 'المخزن الرئيسي')}</span></div>`,
-    tx.ref ? `<div class="iv-fact"><span class="iv-k">${isRet ? 'رقم الإشعار' : 'رقم الفاتورة'}</span><span class="v big num">#${esc(tx.ref)}</span></div>` : '',
-    `<div class="iv-fact"><span class="iv-k">${isRet ? 'تاريخ الإشعار' : 'تاريخ الفاتورة'}</span><span class="v">${longDate(dateStr)}</span></div>`,
+    isSupRet && supRet && supRet.returnNumber
+      ? `<div class="iv-fact"><span class="iv-k">رقم المرتجع</span><span class="v big num">${esc(supRet.returnNumber)}</span></div>`
+      : (tx.ref ? `<div class="iv-fact"><span class="iv-k">${isRet || isSupRet ? 'رقم الإشعار' : 'رقم الفاتورة'}</span><span class="v big num">#${esc(tx.ref)}</span></div>` : ''),
+    `<div class="iv-fact"><span class="iv-k">${isRet || isSupRet ? 'تاريخ الإشعار' : 'تاريخ الفاتورة'}</span><span class="v">${longDate(dateStr)}</span></div>`,
     issuedStr && issuedStr !== dateStr ? `<div class="iv-fact"><span class="iv-k">تاريخ الإصدار</span><span class="v">${longDate(issuedStr)}</span></div>` : '',
   ].join('');
 
@@ -65052,7 +65310,7 @@ function buildInvoiceHtml(tx) {
     </div>` : ''}
 
     <div class="iv-cust${shipAddr ? '' : ' no-addr'}">
-      <div><span class="iv-k">${isPur ? 'اسم المورد' : 'اسم العميل'}</span><span class="v" dir="auto">${esc(tx.client || tx.supplier || '—')}</span></div>
+      <div><span class="iv-k">${isPur || isSupRet ? 'اسم المورد' : 'اسم العميل'}</span><span class="v" dir="auto">${esc(tx.client || tx.supplier || '—')}</span></div>
       <div><span class="iv-k">الهاتف</span><span class="v">${tx.phone ? `<span class="num">${esc(tx.phone)}</span>` : '—'}</span></div>
       ${shipAddr
         ? `<div><span class="iv-k">عنوان التسليم${carrierName ? ` · الشحن مع <b dir="auto">${esc(carrierName)}</b>` : ''}</span><span class="v addr" dir="auto">${esc(shipAddr)}</span></div>`
@@ -65075,13 +65333,15 @@ function buildInvoiceHtml(tx) {
 
     <div class="iv-sum">
       <div class="iv-side">
-        ${tx.notes ? `<div><span class="iv-k">ملاحظات</span><span class="v" dir="auto">${esc(tx.notes)}</span></div>` : ''}
+        ${isSupRet
+          ? (supRet && (supRet.reason || supRet.reasonDetails) ? `<div><span class="iv-k">سبب المرتجع</span><span class="v" dir="auto">${esc([supRet.reason, supRet.reasonDetails].filter(Boolean).join(' — '))}</span></div>` : '')
+          : (tx.notes ? `<div><span class="iv-k">ملاحظات</span><span class="v" dir="auto">${esc(tx.notes)}</span></div>` : '')}
         <div><span class="iv-k">الإجمالي كتابةً</span><span class="v words" dir="auto">${esc(amountToArabicWords(total))}</span></div>
       </div>
       <div class="iv-tot">
         ${(() => { const os = (isSales && typeof _offerSummaryOf === 'function') ? _offerSummaryOf(tx.items, undefined, undefined, tx) : null;
           return os ? `<div class="r"><span>${os.hasBundle ? (os.hasOffer ? 'الأصناف قبل العروض والباقة' : 'الأصناف قبل الباقة') : 'الأصناف قبل العروض'}</span>${money(os.before)}</div>` + os.groups.map(g => `<div class="r"><span>${g.bundle ? 'باقة' : 'عرض'} <span class="${g.bundle ? 'iv-bundle-sumtag' : 'iv-offer-tag'}" dir="auto">${esc(g.name || (g.bundle ? (_bundleMetaOf(tx).get(g.groupId)?.title || 'باقة Shopify') : ''))}</span></span><span class="num">−${fmtN(g.saved)}</span></div>`).join('') : ''; })()}
-        <div class="r"><span>إجمالي الأصناف</span>${money(itemsSubtotal)}</div>
+        ${(isPur || isSupRet) && Math.abs(itemsSubtotal - total) < 0.005 ? '' : `<div class="r"><span>إجمالي الأصناف</span>${money(itemsSubtotal)}</div>`}
         ${(() => {
           // Printed sheet: free shipping stated on its own line under the shipping (unchanged without it).
           const _sd = !isPur ? _saleShipDisc(tx) : 0;
@@ -65093,16 +65353,14 @@ function buildInvoiceHtml(tx) {
             + `<div class="r"><span>الشحن</span><span class="num">+${fmtN(tx.shipCost)}</span></div>`
             + `<div class="r"><span>شحن مجاني</span><span class="num">−${fmtN(_sd)}</span></div>`;
         })()}
-        <div class="g"><span class="l">${isPur ? 'إجمالي المشتريات' : isRet ? 'إجمالي المرتجع' : 'الإجمالي'}</span><span class="t">${money(total)} ${cur}</span></div>
+        <div class="g${(isPur || isSupRet) && !isCancelled ? ' is-quiet' : ''}"><span class="l">${isPur ? 'إجمالي المشتريات' : isSupRet ? 'قيمة المرتجع' : isRet ? 'إجمالي المرتجع' : 'الإجمالي'}</span><span class="t">${money(total)} ${cur}</span></div>
       </div>
     </div>
 
-    <div class="iv-pay">
+    ${isPur && !isCancelled ? _invPurchaseStatementHtml(tx, payChip) : isSupRet && !isCancelled ? _invSupplierReturnSettlementHtml(tx, supRet, total) : `<div class="iv-pay">
       <div class="iv-pay-head"><span class="iv-k">${isRet ? 'الرد' : 'الدفع'}</span>${isRet && !isCancelled ? '' : `<span class="iv-chip ${payChip[0]}">${payChip[1]}</span>`}</div>
       <div class="iv-pay-grid">${payCells}</div>
-    </div>
-
-    ${isPur && !isCancelled ? _invPurchasePaymentsHtml(tx) + _invSupplierStatementHtml(tx) : ''}
+    </div>`}
 
   </div>
   ${_invSheetFoot(tx, dateStr, 1, pageCount)}
@@ -65491,6 +65749,7 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
   // renderInvoiceViewPage's _creditUsed/_noCashMoved; keep the two in sync (two renderers).
   const _creditUsedM = isPurchase ? (Number(tx.creditApplied) || 0) : 0;
   const _noCashMovedM = _creditUsedM > 0 && _depositsTotal <= 0 && _paymentsTotal <= 0;
+  const _offsetRowsM = isPurchase ? _purchaseOffsetRows(tx) : [];   // mirror of _offsetRows (two renderers)
   const _receiptRows = tx.depositReceipts || [];
   const _receiptTotal = _receiptRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const _previewDepositTotal = _depositsTotal || _receiptTotal;
@@ -65678,12 +65937,13 @@ function showInvoiceDetail(id, highlightCommentId, revalidatedForOpen = false) {
           <div class="inv-breakdown">
             ${_cancelledSettlementRows(tx).map(r => `<div class="inv-breakdown-row ${r.kind ? 'discount' : 'deposit'}"><span class="label">${esc(r.label)}</span><span class="amount">${fmtJ(r.amount)}</span></div>`).join('')}
             <div class="inv-breakdown-row"><span class="label" style="color:var(--muted)">${t('ivCxNothingDue')}</span><span class="amount"></span></div>
-          </div>` : (tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 || _exchM ? `
+          </div>` : (tx.remaining || 0) > 0 || _previewDepositTotal > 0 || _paymentsTotal > 0 || _creditUsedM > 0 || _offsetRowsM.length > 0 || _exchM ? `
           <div class="inv-breakdown">
             ${_exchM && _exchM.credit > 0 ? `<div class="inv-breakdown-row deposit" title="${escHtml(t('ivExchCreditNote').replace('{ref}', _exchM.originalRef))}"><span class="label">${t('ivExchCredit')}${_exchM.originalRef ? ` · <bdi>#${esc(_exchM.originalRef)}</bdi>` : ''}</span><span class="amount">${fmtJ(_exchM.credit)}</span></div>` : ''}
             ${_exchM && _exchM.collected > 0 ? `<div class="inv-breakdown-row collection"><span class="label">${t('ivExchCollected')}</span><span class="amount">${fmtJ(_exchM.collected)}</span></div>` : ''}
             ${_previewDepositTotal > 0 ? `<div class="inv-breakdown-row deposit"><span class="label" style="display:flex;align-items:center;gap:5px">${tx.depMethod ? payMethodIcon(tx.depMethod) : ''}${isPurchase ? t('ivDepositPaid') : t('ivPrepaidDeposit')}${_spInvoiceVaultLabel(tx) ? `<span style="font-size:.78rem;opacity:.7">· ${esc(_spInvoiceVaultLabel(tx))}</span>` : ''}</span><span class="amount">${fmtJ(_previewDepositTotal)}</span></div>` : ''}
             ${_creditUsedM > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>${t('ivCreditSettled')}</span><span class="amount">${fmtJ(_creditUsedM)}</span></div>${_creditSrcSlot(tx._id)}` : ''}
+            ${_offsetRowsM.map(r => `<div class="inv-breakdown-row collection" title="${escHtml(r.title)}"><span class="label">${r.label}</span><span class="amount">${fmtJ(r.amount)}</span></div>`).join('')}
             ${_paymentsTotal > 0 ? `<div class="inv-breakdown-row collection"><span class="label" style="font-size:0.9rem"><span>${isPurchase ? t('ivExtraPayments') : t('ivmCollectedFrom', { v: tx.shipCo || t('ivmShippingGeneric') })}</span>${tx.collectMethod ? `<span style="display:block;font-size:0.85rem;color:#666;margin-top:2px">· ${esc(_payMethodLabel(tx.collectMethod))}</span>` : ''}</span><span class="amount">${fmtJ(_paymentsTotal)}</span></div>` : ''}
             ${(tx.remaining || 0) > 0 ? `<div class="inv-breakdown-row discount"><span class="label" style="display:flex;align-items:center;gap:5px">${isPurchase ? t('ivRemainingSupplier') : t('ivRemainingCollect')}${_showRemainingMethod ? `<span style="font-size:.75rem;opacity:.7;display:inline-flex;align-items:center;gap:3px">${payMethodIcon(tx.payment,12)}${esc(_payMethodLabel(tx.payment))}</span>` : ''}</span><span class="amount">${fmtJ(tx.remaining || 0)}</span></div>` : ''}
           </div>` : ''}
@@ -65789,6 +66049,40 @@ function openTxInNewTab(id) {
 
    Reuses `toggleActionMenu` / `.actions-dd` / `.dd-menu` verbatim (the portal
    pattern), so no new JS is needed — see the Movements ⋮ action-menu notes.  */
+function openPurchaseProfitEstimate(txId) {
+  const tx = (transactions || []).find(row => String(row._id) === String(txId));
+  if (!tx || tx.type !== 'مشتريات') return;
+  const catalog = [...(Array.isArray(products) ? products : []), ...(Array.isArray(inventoryCache) ? inventoryCache : [])];
+  let cost = 0, revenue = 0, missingPriceQty = 0;
+  for (const item of tx.items || []) {
+    const qty = Math.max(0, Number(item.qty) || 0);
+    const product = catalog.find(row => (item.productId && String(row._id) === String(item.productId)) || (item.code && row.code === item.code));
+    const sellPrice = Number(product?.sellPrice) || 0;
+    if (!qty || !sellPrice) { missingPriceQty += qty; continue; }
+    const lineCost = item.total != null && Number.isFinite(Number(item.total))
+      ? Number(item.total)
+      : (Number(item.price) || 0) * qty;
+    cost += lineCost;
+    revenue += sellPrice * qty;
+  }
+  const profit = revenue - cost;
+  const percentage = cost > 0 ? profit / cost * 100 : null;
+  const en = currentLang === 'en';
+  const amount = value => fmtJ(value);
+  const row = (label, value, strong = false) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border);${strong ? 'font-weight:700;font-size:1rem' : ''}"><span>${label}</span><bdi>${value}</bdi></div>`;
+  openModal(`<div style="max-width:440px;margin:auto">
+    <h3 style="margin-bottom:6px">${en ? 'Estimated profit if all items are sold' : 'تقدير الربح عند بيع كامل الكمية'}</h3>
+    <p class="text-sm text-muted" style="margin:0 0 12px">${en ? 'Based on this invoice’s purchase cost and current product selling prices.' : 'محسوب من تكلفة الشراء في الفاتورة وأسعار البيع الحالية للأصناف.'}</p>
+    ${row(en ? 'Estimated sales' : 'إجمالي البيع المتوقع', amount(revenue))}
+    ${row(en ? 'Purchase cost' : 'تكلفة الشراء', amount(cost))}
+    ${row(en ? 'Expected gross profit' : 'الربح الإجمالي المتوقع', amount(profit), true)}
+    ${row(en ? 'Profit over cost' : 'نسبة الربح من التكلفة', percentage == null ? '—' : `${fmtN(percentage)}%`)}
+    ${missingPriceQty ? `<p class="text-sm" style="margin:10px 0 0;color:var(--orange)">${en ? `${fmtN(missingPriceQty)} pcs excluded because no current selling price is set.` : `لم تدخل ${fmtN(missingPriceQty)} قطعة في التقدير لعدم وجود سعر بيع حالي.`}</p>` : ''}
+    <p class="text-xs text-muted" style="margin:10px 0 0">${en ? 'Estimate excludes shipping, operating costs, and later discounts or returns.' : 'التقدير لا يشمل الشحن أو المصاريف التشغيلية أو الخصومات والمرتجعات اللاحقة.'}</p>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button type="button" class="btn btn-outline" onclick="closeModal()">${en ? 'Close' : 'إغلاق'}</button></div>
+  </div>`, 'max-width:500px;padding:20px');
+}
+
 function _invMoreMenuHtml(tx, editLocked, secondaryActionsHtml = '') {
   const id = esc(tx._id);
   const items = secondaryActionsHtml.trim() ? [secondaryActionsHtml, '<div class="dd-divider"></div>'] : [];
@@ -65804,6 +66098,10 @@ function _invMoreMenuHtml(tx, editLocked, secondaryActionsHtml = '') {
       : g.reason === 'editTxInTransitBlocked' ? t('movEditLockTransit')
       : t('cancelled');
     items.push(`<div class="dd-item" style="opacity:.55;cursor:not-allowed" title="${escHtml(g.reason === '_exchange' ? '' : t(g.reason))}" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> ${t('editAction')} <span class="text-xs">(${lbl})</span></div>`);
+  }
+
+  if (tx.type === 'مشتريات') {
+    items.push(`<div class="dd-item" onclick="openPurchaseProfitEstimate('${id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 6-7"/></svg> ${currentLang === 'en' ? 'Estimate full-sale profit' : 'حساب ربح بيع كامل الكمية'}</div>`);
   }
 
   // WhatsApp — «مراسلة عبر واتساب»; the number stays in the tooltip.
@@ -66594,7 +66892,8 @@ function renderInvoiceViewPage() {
 
   // Settlement block — what was paid against the invoice total. Rendered AFTER the
   // grand total so the card reads: charges → الإجمالي الكلي → المدفوع → المتبقي.
-  const _hasSettlement = ((tx.remaining||0)>0||_depTotal>0||_payTotal>0||_creditUsed>0||!!_exch);
+  const _offsetRows = isPurchase ? _purchaseOffsetRows(tx) : [];
+  const _hasSettlement = ((tx.remaining||0)>0||_depTotal>0||_payTotal>0||_creditUsed>0||_offsetRows.length>0||!!_exch);
   // Supplier returns never populate deposits/payments/remaining the normal way — tx.total only
   // ever holds the cash-refund slice (see SupplierReturnsService.complete()). The real breakdown
   // (debt-offset/refund/credit) lives on the linked SupplierReturnOrder's settlement instead.
@@ -66624,6 +66923,7 @@ function renderInvoiceViewPage() {
     ${_depTotal>0 ? _sumRow(`${_exch ? t('ivPrepaidDeposit') : t('ivPaidAmount')}${!_exch && tx.depMethod ? ` · ${esc(_payMethodLabel(tx.depMethod))}` : ''}`, fmt(_depTotal)) : ''}
     ${_exch && _exch.collected>0 ? _sumRow(t('ivExchCollected'), fmt(_exch.collected)) : ''}
     ${_creditUsed>0 ? _sumRow(`${_CREDIT_ICON}${t('ivCreditSettled')}`, fmt(_creditUsed)) : ''}
+    ${_offsetRows.map(r => _sumRow(`<span style="display:inline-flex;align-items:center;gap:5px" title="${escHtml(r.title)}">${_CREDIT_ICON}${r.label}</span>`, fmt(r.amount))).join('')}
     ${(tx.remaining||0)>0
       ? _sumRow(isPurchase?t('ivRemainingSupplier'):t('ivDueOnDelivery'), fmt(tx.remaining||0), { cls:'is-danger-text', strong:true })
       : _payTotal>0
@@ -66693,6 +66993,10 @@ function renderInvoiceViewPage() {
     ${_invMoreMenuHtml(tx, _editLocked, secondaryActionsHtml)}
   `;
 
+  const supplierProfile = (isPurchase || isSupplierReturn)
+    ? (suppliers || []).find(s => String(s._id) === String(tx.supplierId || _linkedSR?.supplierId) || s.name === tx.client)
+    : null;
+
   // Party card (Customer Information)
   const partyCardHtml = `
     <div class="inv2-card">
@@ -66701,7 +67005,11 @@ function renderInvoiceViewPage() {
         <div class="inv-party-card">
           <div>
             <div style="font-size:.93rem;font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-              ${isPurchase || tx.type === 'مرتجع مشتريات' ? esc(tx.client || '-') : window.SouliaClients.customerLink(tx)}
+              ${isPurchase || tx.type === 'مرتجع مشتريات'
+                ? (supplierProfile
+                  ? `<button type="button" onclick="openSupplierProfile('${esc(supplierProfile._id)}')" style="font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px">${esc(tx.client || supplierProfile.name || '-')}</button>`
+                  : esc(tx.client || '-'))
+                : window.SouliaClients.customerLink(tx)}
               ${!isPurchase && !isReturn && !isSupplierReturn ? (()=>{
                 const _totalOrders = _custOrderCount + 1;
                 if (_totalOrders === 1) {
@@ -72530,6 +72838,18 @@ function getSupplierPurchases(supplierName) {
 // Cash that actually left the vault for one invoice: its deposit (opening deposit + every
 // payment). Supplier credit applied and a write-off settle the invoice but are not cash.
 // Legacy rows whose payments were kept outside `deposit` fall back to the explained difference.
+// Each active supplier-return / ledger deduction written onto a purchase invoice, labelled for
+// the invoice summary (page + window). They lower `remaining` without any cash moving.
+function _purchaseOffsetRows(tx) {
+  if (!tx || tx.type !== 'مشتريات') return [];
+  return (tx.supplierReturnOffsets || []).filter(o => !o.reversedAt && Number(o.amount) > 0).map(o => {
+    const ledger = o.kind === 'ledger-adjustment';
+    const ref = ledger ? '' : String(o.returnNumber || '');
+    return { amount: Number(o.amount), ref,
+      label: (ledger ? t('ivLedgerOffset') : t('ivReturnOffset')) + (ref ? ` · <bdi>${esc(ref)}</bdi>` : ''),
+      title: (ledger && o.reason ? o.reason + ' — ' : '') + t('ivOffsetNoCash') };
+  });
+}
 function _purchaseReturnOffset(t) {
   return (t.supplierReturnOffsets || []).filter(o => !o.reversedAt)
     .reduce((s, o) => s + Math.max(0, Number(o.amount) || 0), 0);
@@ -76796,9 +77116,32 @@ function renderSpPaymentsPanel(txs) {
   });
 
   const canRev = canReverseSupplierPay();
-  // Shown-but-disabled without the perm: an undo that silently isn't offered looks like the
-  // payment can't be reversed at all, which sends the user hunting for a workaround.
-  const undoBtn = e => `<button class="btn btn-outline btn-sm" style="font-size:.68rem;color:#f97316;border-color:rgba(249,115,22,.4)" onclick="confirmUndoPayment('${esc(e._txId)}','${esc(e.id)}','payment',${Number(e.amount)},'${esc(e.method||'')}')"${supLockAttr(canRev)}>${t('supPayUndoBtn')}</button>`;
+  const UNDO_ICO = '<svg class="spx-undo-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+  // Undo lives in the row's ⋮ menu: one item for a single payment; for a split payment the whole
+  // payment first, then each invoice's part. Shown-but-disabled without the perm — an undo that is
+  // silently missing reads as «this payment can't be reversed».
+  const undoItem = (e, label) => canRev
+    ? `<div class="dd-item spx-dd-undo" onclick="confirmUndoPayment('${esc(e._txId)}','${esc(e.id)}','payment',${Number(e.amount)},'${esc(e.method||'')}')">${UNDO_ICO} ${label}</div>`
+    : `<div class="dd-item is-disabled" title="${escHtml(t('supNoPermTip'))}">${UNDO_ICO} ${label}</div>`;
+  const menu = items => items ? `<div class="actions-dd" onclick="event.stopPropagation()"><button type="button" class="dd-toggle" aria-label="${escHtml(t('supPayActions'))}" onclick="toggleActionMenu(event)">⋮</button><div class="dd-menu">${items}</div></div>` : '';
+  const invChip = (e, part) => `<button type="button" class="spx-inv" onclick="openOrderView('${esc(e._txId)}')" title="${escHtml(t('supPayOpenInvoice'))}"><bdi dir="ltr">#${esc(e._ref || '—')}</bdi>${part ? `<span class="spx-inv-amt">${fmtN(Math.round((Number(e.amount) || 0) * 100) / 100)}</span>` : ''}</button>`;
+  const methodCell = m => m
+    ? `<span class="spx-method">${payMethodIcon(m, 18)}<span>${esc(_payMethodLabel(m))}</span></span>`
+    : `<span class="spx-muted">${SL_DASH}</span>`;
+  const dateCell = e => {
+    const k = _dateKey(e);
+    const d = new Date(k + 'T00:00:00');
+    if (!k || isNaN(d)) return `<span class="spx-date">${SL_DASH}</span>${whoLine(e)}`;
+    const loc = currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn';
+    const full = d.toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
+    const wd = d.toLocaleDateString(loc, { weekday: 'long' });
+    const rel = fmtDate(k);
+    const relative = !/\d/.test(String(rel).replace(/<[^>]*>/g, ''));
+    const sub = [relative ? full : wd, e.by ? t('supPayBy', { v: esc(e.by) }) : ''].filter(Boolean).join(' · ');
+    return `<span class="spx-date">${relative ? rel : full}</span><span class="spx-sub">${sub}</span>`;
+  };
+  const whoLine = e => e.by ? `<span class="spx-sub">${t('supPayBy', { v: esc(e.by) })}</span>` : '';
+  const noteCell = e => e.note ? `<span class="spx-note" dir="auto">${esc(e.note)}</span>` : `<span class="spx-muted">${SL_DASH}</span>`;
 
   // Group payloads are stashed on one keyed object (not per-group window globals).
   _spBulkGroups = {};
@@ -76807,53 +77150,58 @@ function renderSpPaymentsPanel(txs) {
   const rows = items.slice(0, shown).map((it, gi) => {
     if (it.single) {
       const e = it.single;
-      const kindLabel = e._kind === 'deposit' ? `<span class="badge badge-blue">${t('supPayDepositBadge')}</span>` : `<span class="badge badge-green">${t('supPayKindPayment')}</span>`;
-      return `<tr class="sl-zebra">
-      <td class="sl-date"><strong>${fmtDate(_dateKey(e))}</strong></td>
-      <td style="white-space:nowrap">${kindLabel}</td>
-      <td class="sl-num"><span class="sl-credit">${fmtJ(e.amount || 0)}</span></td>
-      <td style="text-align:center">${payMethodIcon(e.method || '', 18)}</td>
-      <td class="sl-ref" style="font-weight:700;color:var(--text)">#${esc(e._ref || '')}</td>
-      <td class="sl-desc">${esc(e.note || e.by || '') || SL_DASH}</td>
-      <td style="white-space:nowrap">${e._kind === 'payment' && e.id ? undoBtn(e) : ''}</td>
+      const isDep = e._kind === 'deposit';
+      return `<tr>
+      <td class="spx-c-date">${dateCell(e)}</td>
+      <td class="spx-c-inv"><span class="spx-kind${isDep ? ' is-dep' : ''}">${isDep ? t('supPayDepositBadge') : t('supPayKindPayment')}</span><div class="spx-invs">${invChip(e, false)}</div></td>
+      <td class="spx-c-amt"><span class="spx-amt">${fmtJ(e.amount || 0)}</span></td>
+      <td class="spx-c-method">${methodCell(e.method || '')}</td>
+      <td class="spx-c-note">${noteCell(e)}</td>
+      <td class="spx-c-act">${!isDep && e.id ? menu(undoItem(e, t('supPayUndoBtn'))) : ''}</td>
     </tr>`;
     }
     const h = it.head;
     _spBulkGroups[gi] = it.parts.map(p => ({ txId: p._txId, payId: p.id, amount: p.amount, ref: p._ref, method: p.method }));
-    const head = `<tr class="sl-zebra spp-group">
-      <td class="sl-date"><strong>${fmtDate(_dateKey(h))}</strong></td>
-      <td style="white-space:nowrap"><span class="badge badge-green">${t('supPayKindSplit')}</span></td>
-      <td class="sl-num"><span class="sl-credit">${fmtJ(it.total)}</span></td>
-      <td style="text-align:center">${payMethodIcon(h.method || '', 18)}</td>
-      <td class="sl-ref spp-count">${t('supBulkItemInvoices', { n: fmtN(it.parts.length) })}</td>
-      <td class="sl-desc">${esc(h.note || h.by || '') || SL_DASH}</td>
-      <td style="white-space:nowrap"><button class="btn btn-outline btn-sm" style="font-size:.68rem;color:#f97316;border-color:rgba(249,115,22,.4)" onclick="openBulkReverseModal(_spBulkGroups[${gi}])"${supLockAttr(canRev)}>${t('supBulkUndoAllBtn')}</button></td>
+    const whole = canRev
+      ? `<div class="dd-item spx-dd-undo" onclick="openBulkReverseModal(_spBulkGroups[${gi}])">${UNDO_ICO} ${t('supBulkUndoAllBtn')}</div>`
+      : `<div class="dd-item is-disabled" title="${escHtml(t('supNoPermTip'))}">${UNDO_ICO} ${t('supBulkUndoAllBtn')}</div>`;
+    const partItems = it.parts.map(p => undoItem(p, t('supPayUndoPart', { ref: `<bdi dir="ltr">#${esc(p._ref || '—')}</bdi>`, v: `<bdi dir="ltr">${fmtN(Math.round((Number(p.amount) || 0) * 100) / 100)}</bdi>` }))).join('');
+    return `<tr class="spx-split">
+      <td class="spx-c-date">${dateCell(h)}</td>
+      <td class="spx-c-inv"><span class="spx-kind is-split">${t('supPaySplitOn', { n: fmtN(it.parts.length) })}</span><div class="spx-invs">${it.parts.map(p => invChip(p, true)).join('')}</div></td>
+      <td class="spx-c-amt"><span class="spx-amt">${fmtJ(it.total)}</span></td>
+      <td class="spx-c-method">${methodCell(h.method || '')}</td>
+      <td class="spx-c-note">${noteCell(h)}</td>
+      <td class="spx-c-act">${menu(whole + '<div class="spx-dd-sep"></div>' + partItems)}</td>
     </tr>`;
-    const parts = it.parts.map(p => `<tr class="spp-part">
-      <td></td>
-      <td class="spp-branch" aria-hidden="true">↳</td>
-      <td class="sl-num"><span class="spp-part-amt">${fmtJ(p.amount || 0)}</span></td>
-      <td></td>
-      <td class="sl-ref" style="font-weight:700;color:var(--text)">#${esc(p._ref || '')}</td>
-      <td></td>
-      <td style="white-space:nowrap">${undoBtn(p)}</td>
-    </tr>`).join('');
-    return head + parts;
   }).join('');
 
+  // Summary over every payment (not only the rows shown): cash actually paid to this supplier.
+  const paidSum = items.reduce((s, it) => s + (it.single ? (Number(it.single.amount) || 0) : it.total), 0);
+  const last = items[0] ? (items[0].single || items[0].head) : null;
+  const lastAmt = items[0] ? (items[0].single ? Number(items[0].single.amount) || 0 : items[0].total) : 0;
+  const byMethod = {};
+  items.forEach(it => { const e = it.single || it.head; const m = e.method || ''; if (m) byMethod[m] = (byMethod[m] || 0) + (it.single ? Number(e.amount) || 0 : it.total); });
+  const topMethod = Object.entries(byMethod).sort((a, b) => b[1] - a[1])[0];
+  const kpis = `<div class="spx-kpis">
+      <div class="spx-kpi"><span class="k">${t('supPayKpiTotal')}</span><span class="v">${fmtJ(paidSum)}</span><span class="s">${t('supPayKpiCount', { n: fmtN(total) })}</span></div>
+      ${last ? `<div class="spx-kpi"><span class="k">${t('supPayKpiLast')}</span><span class="v">${fmtJ(lastAmt)}</span><span class="s">${fmtDate(_dateKey(last))}${last.method ? ` · ${esc(_payMethodLabel(last.method))}` : ''}</span></div>` : ''}
+      ${topMethod ? `<div class="spx-kpi"><span class="k">${t('supPayKpiTopMethod')}</span><span class="v spx-kpi-m">${payMethodIcon(topMethod[0], 18)}${esc(_payMethodLabel(topMethod[0]))}</span><span class="s">${fmtJ(topMethod[1])}${paidSum > 0 ? ` · ${fmtN(Math.round(topMethod[1] / paidSum * 100))}%` : ''}</span></div>` : ''}
+    </div>`;
+
   qs('#sp-panel-payments').innerHTML = `
-    <div class="sl-card">
+    <div class="sl-card spx-card">
       ${_spPanelCap(t('supSpTabPayments'), shown, total, t('supNounPayment'))}
+      ${kpis}
       <div class="sl-scroll">
-        <table class="sl-tbl sl-tbl-md">
+        <table class="sl-tbl sl-tbl-md spx-tbl">
           <thead><tr>
-            <th>${t('date')}</th>
-            <th>${t('supActColType')}</th>
-            <th class="sl-num">${t('colAmount')}</th>
-            <th style="text-align:center">${t('supPayColMethod')}</th>
-            <th>${t('supPayColInvoice')}</th>
-            <th>${t('supPayColStatement')}</th>
-            <th></th>
+            <th class="spx-c-date">${t('date')}</th>
+            <th class="spx-c-inv">${t('supPayColInvoices')}</th>
+            <th class="spx-c-amt">${t('colAmount')}</th>
+            <th class="spx-c-method">${t('supPayColMethod')}</th>
+            <th class="spx-c-note">${t('supPayColNote')}</th>
+            <th class="spx-c-act"><span class="sr-only">${t('supPayActions')}</span></th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -81473,6 +81821,52 @@ let currentReportData = null;
 /* Reports Security */
 let reportsUnlocked = false;
 let reportsUnlockPending = false;
+function setReportsLocked(locked) {
+  const page = qs('#page-reports');
+  if (!page) return;
+  let screen = qs('#reports-lock-screen');
+  if (locked && !screen) {
+    screen = document.createElement('div');
+    screen.id = 'reports-lock-screen';
+    screen.className = 'reports-lock-screen';
+    screen.innerHTML = `<div style="max-width:380px;padding:24px;text-align:center;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-sm,0 4px 18px rgba(0,0,0,.08))">
+      <div style="font-size:1.8rem;color:var(--primary);margin-bottom:8px">🔒</div>
+      <strong>${esc(t('lockReportsTitle'))}</strong>
+      <p class="text-sm text-muted" style="margin:8px 0 14px">${esc(t('lockReportsDesc'))}</p>
+      <button type="button" class="btn btn-primary btn-sm" onclick="unlockReports()">${esc(t('lockReportsBtn'))}</button>
+    </div>`;
+    page.appendChild(screen);
+    if (!document.getElementById('reports-lock-style')) {
+      const style = document.createElement('style');
+      style.id = 'reports-lock-style';
+      style.textContent = '#page-reports.reports-locked{position:relative;min-height:70vh}#page-reports.reports-locked>:not(#reports-lock-screen){visibility:hidden!important;pointer-events:none!important}#page-reports .reports-lock-screen{display:none}#page-reports.reports-locked>#reports-lock-screen{display:flex;position:absolute;z-index:5;inset:0;min-height:60vh;align-items:center;justify-content:center;background:var(--bg)}';
+      document.head.appendChild(style);
+    }
+  }
+  if (locked) {
+    page.classList.add('reports-locked');
+    if (screen) screen.hidden = false;
+    [...page.children].filter(child => child !== screen).forEach(child => {
+      if (!child.hasAttribute('data-reports-lock-state')) {
+        child.dataset.reportsLockState = JSON.stringify({ inert: child.inert, ariaHidden: child.getAttribute('aria-hidden') });
+      }
+      child.inert = true;
+      child.setAttribute('aria-hidden', 'true');
+    });
+    currentReportData = null;
+  } else {
+    page.classList.remove('reports-locked');
+    if (screen) screen.hidden = true;
+    [...page.children].filter(child => child !== screen).forEach(child => {
+      if (!child.hasAttribute('data-reports-lock-state')) return;
+      const previous = JSON.parse(child.dataset.reportsLockState);
+      child.inert = previous.inert;
+      if (previous.ariaHidden === null) child.removeAttribute('aria-hidden');
+      else child.setAttribute('aria-hidden', previous.ariaHidden);
+      delete child.dataset.reportsLockState;
+    });
+  }
+}
 
 /* Purchase Type Security — hides buy prices from staff behind vault password */
 let purchaseUnlocked = false;
@@ -81594,6 +81988,7 @@ async function verifyPurchasePassword() {
 }
 
 function unlockReports() {
+  setReportsLocked(true);
   openModal(`
     <div style="text-align:center">
       <div style="width:44px;height:44px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--primary-pale,rgba(22,163,74,.1));color:var(--primary)"><svg viewBox="0 0 24 24" style="display:block;width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
@@ -81606,11 +82001,17 @@ function unlockReports() {
 
       <div style="display:flex;gap:8px;justify-content:center">
         <button type="button" id="reports-unlock-btn" class="btn btn-primary btn-sm" onclick="verifyReportsPassword()">${esc(t('lockReportsBtn'))}</button>
-        <button class="btn btn-outline btn-sm" onclick="closeModal();reportsUnlocked=false">${esc(t('cancel'))}</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="cancelReportsUnlock()">${esc(t('cancel'))}</button>
       </div>
     </div>
   `, 'max-width:340px;text-align:center');
   setTimeout(() => { const i = qs('#reports-pass-input'); if (i) { _pinSync(i); i.focus(); } }, 100);
+}
+
+function cancelReportsUnlock() {
+  reportsUnlocked = false;
+  closeModal();
+  setReportsLocked(true);
 }
 
 async function verifyReportsPassword() {
@@ -81627,6 +82028,7 @@ async function verifyReportsPassword() {
     await _pinState('reports-pass-input', 'ok');
     if (qs('#reports-pass-input') !== input || !qs('#modal-overlay')?.classList.contains('active')) return;
     reportsUnlocked = true;
+    setReportsLocked(false);
     closeModal();
     loadReports();
     toast(t('lockReportsSuccess'));
@@ -81661,8 +82063,9 @@ function applyReportsPermFilter() {
 }
 
 async function loadReports() {
-  if (!reportsUnlocked && !isLockDisabled('reports')) { unlockReports(); return; }
+  if (!reportsUnlocked && !isLockDisabled('reports')) { setReportsLocked(true); unlockReports(); return; }
   reportsUnlocked = true;
+  setReportsLocked(false);
   applyReportsPermFilter();
   const stats = qs('#rep-stats');
   const hadReport = !!currentReportData;
@@ -89819,28 +90222,8 @@ function _userJoinedAgo(createdAt) {
   return { rel, exact };
 }
 
-const _USERS_EYE_OPEN_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-const _USERS_EYE_OFF_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></svg>`;
 const _USERS_ACTIVATE_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>`;
 const _USERS_DEACTIVATE_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
-
-/* Delegated handler (not an inline onclick) — avoids embedding SVG markup, which contains
-   double quotes, inside a double-quoted HTML attribute (that was breaking the row's HTML). */
-function toggleUserPasswordVisibility(btn) {
-  const s = btn.previousElementSibling;
-  const shown = s.dataset.shown === '1';
-  s.textContent = shown ? '••••••••' : (s.dataset.pw || '');
-  s.dataset.shown = shown ? '' : '1';
-  btn.innerHTML = shown ? _USERS_EYE_OPEN_SVG : _USERS_EYE_OFF_SVG;
-}
-
-function _userPasswordCellHtml(u) {
-  if (!isAdmin() || !u.plainPassword) return '<span style="color:var(--muted)">—</span>';
-  return `<span style="display:inline-flex;align-items:center;gap:6px">
-    <span id="pw-vis-${esc(u._id)}" style="font-family:monospace;letter-spacing:2px;color:var(--text)" data-shown="0" data-pw="${escHtml(u.plainPassword)}">••••••••</span>
-    <button type="button" class="users-pw-toggle" onclick="toggleUserPasswordVisibility(this)" title="إظهار/إخفاء كلمة المرور">${_USERS_EYE_OPEN_SVG}</button>
-  </span>`;
-}
 
 function _userActionsMenuHtml(u, isSuperAdmin, isInactive) {
   return `<div class="actions-dd">
@@ -89878,7 +90261,7 @@ function renderUsers() {
   const cardsWrap = qs('#users-grid');
   const countLabel = qs('#users-count-label');
   if (!users || users.length === 0) {
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="padding:40px;text-align:center">لا يوجد مستخدمون في النظام</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="padding:40px;text-align:center">لا يوجد مستخدمون في النظام</td></tr>';
     if (cardsWrap) cardsWrap.innerHTML = '';
     if (countLabel) countLabel.textContent = '';
     return;
@@ -89900,7 +90283,7 @@ function renderUsers() {
 
   if (!list.length) {
     const emptyHtml = '<div class="empty-state" style="padding:40px;text-align:center">لا توجد نتائج مطابقة</div>';
-    if (tbody) tbody.innerHTML = `<tr><td colspan="7">${emptyHtml}</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
     if (cardsWrap) cardsWrap.innerHTML = emptyHtml;
     return;
   }
@@ -89928,7 +90311,6 @@ function renderUsers() {
       <td data-col="u-job"><div class="users-job-cell"><span class="users-job-title">${u.jobTitle ? esc(jobTitleLabel(u.jobTitle)) : '<span style="color:var(--muted)">—</span>'}</span>${u.phone ? `<bdi class="users-phone-sub">${esc(u.phone)}</bdi>` : ''}</div></td>
       <td data-col="u-role" style="text-align:center">${_userRoleBadgeHtml(u)}</td>
       <td data-col="u-status" style="text-align:center"><span class="user-status-pill ${isInactive ? 'is-inactive' : 'is-active'}">${isInactive ? 'معطّل' : 'مفعّل'}</span></td>
-      <td data-col="u-pass" style="text-align:center">${_userPasswordCellHtml(u)}</td>
       <td data-col="u-joined" style="text-align:center"><span title="${joined.exact}">${joined.rel}</span></td>
       <td data-col="u-actions" style="text-align:center">${_userActionsMenuHtml(u, isSuperAdmin, isInactive)}</td>
     </tr>`;
@@ -89962,7 +90344,6 @@ function renderUsers() {
           <span class="user-status-pill ${isInactive ? 'is-inactive' : 'is-active'}">${isInactive ? 'معطّل' : 'مفعّل'}</span>
           <span title="${joined.exact}" style="color:var(--muted);font-size:.72rem">${joined.rel}</span>
         </div>
-        ${isAdmin() && u.plainPassword ? `<div class="users-mcard-pw"><span style="color:var(--muted)">الرقم السري:</span>${_userPasswordCellHtml(u)}</div>` : ''}
       </div>`;
     }).join('');
   }
@@ -90314,7 +90695,6 @@ function openUserModal(id) {
           <div class="form-group"><label>الاسم الكامل <span class="um2-req">*</span></label><input type="text" id="um-name" value="${esc(u?.name || '')}" placeholder="الاسم كما يظهر في النظام" oninput="_umSyncAvatar()"></div>
           <div class="form-group">
             <label>كلمة المرور ${u ? '' : '<span class="um2-req">*</span>'}</label>
-            ${u && u.plainPassword ? `<div class="um2-cur-pw"><span style="color:var(--muted)">الحالية:</span><span id="um-cur-pw" style="font-family:monospace;letter-spacing:2px">••••••</span><button type="button" onclick="const s=document.getElementById('um-cur-pw');const v=s.dataset.shown==='1';s.textContent=v?'••••••':'${esc(u.plainPassword)}';s.dataset.shown=v?'':'1'" title="إظهار/إخفاء"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>` : ''}
             <div style="position:relative"><input type="password" id="um-password" placeholder="${u ? 'اتركه فارغاً إذا لا تريد التغيير' : 'أدخل كلمة مرور قوية'}" oninput="checkPassStrength(this.value)" style="padding-left:36px"><button type="button" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:inline-flex" onclick="togglePassField(event)" title="إظهار/إخفاء كلمة المرور">${UM_ICON_EYE}</button></div>
             <div id="pass-strength-bar" class="pass-strength" style="display:none"></div><div id="pass-strength-text" style="font-size:.7rem;margin-top:2px"></div>
           </div>
@@ -106541,6 +106921,9 @@ function _pwCaptureReaderKey(event) {
   if (document.querySelector('#soulia-modal-overlay.active, #bsf-overlay:not(.is-docked):not(.is-out), #inv-detail-overlay.active, dialog[open]')) { _pwReaderKeys = ''; return; }
   if (event.target?.closest('input,textarea,select,[contenteditable="true"]') || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) { _pwReaderKeys = ''; return; }
   if (event.key === ' ') { _pwReaderKeys = ''; return; }
+  // This capture listener can stop propagation for HID scans before barcode-input.js
+  // gets its document-level audio-unlock listener. Resume audio on the first real key.
+  window.BarcodeScanSound?.unlock();
   const now = performance.now();
   if (now - _pwReaderAt > 500 || _pwReaderOrder !== String(_pwSelId)) _pwReaderKeys = '';
   _pwReaderOrder = String(_pwSelId);
@@ -121536,7 +121919,7 @@ function _spRenderHistoryTab() {
 <script src="/roles-permissions.js?v=20261113-bundle"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/assistant.js?v=21"></script>
-<script src="/supplier-return-statements.js?v=5"></script>
+<script src="/supplier-return-statements.js?v=6"></script>
 <script src="/bundle-analytics.js?v=2"></script>
 <script src="/promotions.js?v=6"></script>
 <script src="/push-navigation.js"></script>
@@ -121553,7 +121936,7 @@ function _spRenderHistoryTab() {
 <script src="/shopify-sync.js?v=20261114-compact"></script>
 <link rel="stylesheet" href="/inventory-units.css?v=20261119-unregistered">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
-<script src="/supplier-return-pieces.js?v=20261123-unit-code-slots"></script>
+<script src="/supplier-return-pieces.js?v=20261123-scan-input"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
 <link rel="stylesheet" href="/product-stocktake.css?v=20261027-1">
 <script src="/barcode-input.js?v=20261123-scan-audio"></script>

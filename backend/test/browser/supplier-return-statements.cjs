@@ -52,7 +52,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
         if (m === 'GET' && p.startsWith('/supplier-return-statements?')) return DB.filter((d) => !d.deletedAt).map(mask);
         if (m === 'POST' && p === '/supplier-return-statements') {
           if (body.lines.some((l) => l.reason === 'other' && !String(l.reasonNote || '').trim())) err('اكتب وصف السبب');
-          seq++; const d = { _id: 'r' + seq, seq, number: 'SR-' + String(seq).padStart(5, '0'), supplierId: body.supplierId, supplierName: 'مصنع النور', date: body.date, notes: body.notes,
+          seq++; const d = { _id: 'r' + seq, seq, number: 'SR ' + String(seq).padStart(5, '0'), supplierId: body.supplierId, supplierName: 'مصنع النور', date: body.date, notes: body.notes,
             linkedDoc: body.linkedDoc ? { ...body.linkedDoc, ref: body.linkedDoc.kind === 'po' ? 'PO-0007' : '900020' } : null,
             status: 'draft', lines: build(body.lines), revision: 1, createdBy: 'Fares', createdById: 'u1', createdAt: new Date().toISOString(), history: [{ action: 'created', by: 'Fares', at: new Date().toISOString() }] };
           DB.push(d); return d;
@@ -118,7 +118,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     ok(posted.lines.length === 2 && posted.lines[0].qty === 3 && posted.lines[0].reason === 'shipping-damage' && posted.lines[1].reasonNote === 'لون باهت', 'lines are sent with qty, reason and description');
     ok(posted.linkedDoc.kind === 'po' && posted.linkedDoc.id === 'po1', 'the linked PO is sent');
     ok(await page.evaluate(() => calls.some((c) => c[1].includes('/lines/') && c[1].endsWith('/photos'))), 'the queued photo uploads after the statement is created');
-    ok(await page.$eval('.rs-ed-title', (e) => e.textContent.includes('SR-00001')), 'the details window opens on the new number');
+    ok(await page.$eval('.rs-ed-title', (e) => e.textContent.includes('SR 00001')), 'the details window opens on the new number');
     ok(await page.$$eval('.rs-vline', (l) => l.length) === 2, 'details list both items');
     ok(await page.$$eval('.rs-thumb.is-view', (l) => l.length) === 1, 'details show the photo');
     ok(await page.$$eval('.rs-vline .rs-pimg', (l) => l.length === 2) && await page.$eval('.rs-vline .rs-pimg img', (i) => i.getAttribute('src') === 'https://cdn.test/p1.jpg'), 'each line shows the product photo (placeholder when none)');
@@ -143,7 +143,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     await page.waitForFunction(() => window.__printed === 1, { timeout: 8000 });
     const printed = await page.evaluate(() => window.__printHtml);
     if (process.env.RS_SHOTS) fs.writeFileSync(path.join(process.env.RS_SHOTS, 'print.html'), printed);
-    ok(printed.includes('SR-00001') && printed.includes('مصنع النور') && printed.includes('Cushion Blue') && printed.includes('PO-0007') && printed.includes('@page'), 'print sheet carries number, supplier, items, linked PO and A4 page');
+    ok(printed.includes('SR 00001') && printed.includes('مصنع النور') && printed.includes('Cushion Blue') && printed.includes('PO-0007') && printed.includes('@page'), 'print sheet carries number, supplier, items, linked PO and A4 page');
     ok(printed.includes('لون باهت') && printed.includes('صور توثيقية'), 'print sheet carries the reason description and the photos');
     ok(printed.includes('class="pimg" src="https://cdn.test/p1.jpg"'), 'print sheet: product photo in the row');
     ok((printed.match(/class="rtag"/g) || []).length === 2, 'print sheet: reasons highlighted');
