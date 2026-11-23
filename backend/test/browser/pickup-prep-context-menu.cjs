@@ -108,7 +108,9 @@ const card = ref => `#pu-prep-col .pu-group[data-group-key="${ref}"]`;
       await rightClick(page, `.pw-ocard[data-order-id="${orders[1]._id}"]`);
       await page.waitForSelector('.pu-ctx');
       items = await menuItems(page);
-      ok(items.length === 3, 'order menu: new group, TAG, back to pending');
+      // + «نقل إلى مجموعة» lists each other prep group (Nov 23, 2026)
+      const others = await page.evaluate(() => _puPrepGroups.filter(g => g.prepRef !== _pucoGroupKey).length);
+      ok(items.length === 3 + Math.min(others, 8), 'order menu: new group, other groups, TAG, back to pending');
       // TAG one order only → the board card states «1/2» for that tag
       await clickItem(page, /^\s*TAG[\s\d]*$/);
       await page.waitForSelector('.pu-tagpick [data-tag="Fragile"]');

@@ -42,3 +42,28 @@ body.dark-mode .gs-unit-state[data-status="unregistered"] .gs-unit-status{backgr
 }
 .gs-linked-order-status{font-size:12px;line-height:1.8;color:var(--text,#17352b)}
 .gs-unit-order.gs-sales-invoice{margin-block:10px}.gs-purchase-invoice{background:var(--surface2,#f4f8f5)}
+/* Focus the lookup on the physical scanner and keep the form compact in both directions. */
+.gs-unit-dialog{width:min(760px,calc(100vw - 28px));padding:24px;border-radius:20px}
+.gs-unit-dialog-heading{padding-bottom:14px;border-bottom:1px solid var(--border,#dde5e0)}
+.gs-unit-dialog-heading h2{font-size:17px;font-weight:700;letter-spacing:0}
+.gs-unit-dialog .iu-scanner{margin:0;padding:20px;border:0;border-radius:14px;background:var(--surface2,#f6f8f7)}
+.gs-unit-dialog .iu-scanner>h2{display:none}
+.gs-unit-dialog .iu-scanner-device{margin:0 0 18px!important;min-height:44px;box-sizing:border-box;justify-content:flex-start;padding:11px 14px;border:1px solid #d9e8dd;border-radius:10px;background:#edf6f0;color:#286246;font-weight:650}
+.gs-unit-dialog .iu-scanner-device::before{width:10px;height:10px;background:#27945b;box-shadow:0 0 0 4px #27945b20}
+.gs-unit-dialog .iu-scanner form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin:0}
+.gs-unit-dialog .iu-scanner form>label:first-child{grid-column:1/-1;display:flex;gap:4px;font-size:13px;font-weight:650;color:var(--text,#17352b)}
+.gs-unit-dialog .iu-scanner form>label:first-child small{font-size:11px;font-weight:450;color:var(--muted,#63766c)}
+.gs-unit-dialog .iu-scanner form>input{grid-column:1/-1;width:100%;height:46px;padding:10px 13px;border:1px solid #bfcfc5;border-radius:9px;background:var(--surface,#fff);font-size:14px;font-weight:550;letter-spacing:.02em;text-align:start}
+.gs-unit-dialog .iu-scanner form>input::placeholder{font-size:13px;font-weight:450}
+.gs-unit-dialog .iu-scanner form>input:focus{border-color:var(--accent,#27634d);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#27634d) 14%,transparent)}
+.gs-unit-dialog .iu-scanner form>label:nth-of-type(2){grid-column:1;grid-row:3;align-self:center;display:flex;flex-direction:row;align-items:center;gap:8px;font-size:11px;color:var(--muted,#63766c)}
+.gs-unit-dialog .iu-scanner form>label:nth-of-type(2) select{min-width:148px;padding:9px 11px}
+.gs-unit-dialog .iu-scanner form>[data-scan-submit]{grid-column:2;grid-row:3;min-width:112px;background:var(--accent,#27634d);border-color:var(--accent,#27634d);color:#fff;font-weight:700}
+.gs-unit-dialog .iu-scanner-actions{gap:9px;margin:12px 0 0}
+.gs-unit-dialog .iu-scanner-actions button{min-height:42px;padding-inline:14px;border-radius:9px}
+.gs-unit-dialog .iu-scanner-actions .gs-manual-entry{min-height:38px;font-size:12px;color:var(--accent,#27634d);border-color:#c9d9ce}
+.gs-unit-dialog .iu-scanner-actions .gs-manual-entry[aria-pressed="true"]{background:#eaf4ed}
+.gs-unit-dialog .iu-scanner [data-scan-message]{margin:12px 0 0}
+.gs-unit-dialog .iu-scanner [data-scan-location]{margin-top:12px}
+.gs-unit-dialog .iu-scanner details{margin-top:16px;padding-top:12px;border-top:1px solid var(--border,#dde5e0)}
+@media(max-width:560px){.gs-unit-dialog{padding:14px;border-radius:16px}.gs-unit-dialog .iu-scanner{padding:14px}.gs-unit-dialog .iu-scanner form{grid-template-columns:1fr}.gs-unit-dialog .iu-scanner form>label:nth-of-type(2),.gs-unit-dialog .iu-scanner form>[data-scan-submit]{grid-column:1;grid-row:auto}.gs-unit-dialog .iu-scanner form>label:nth-of-type(2){flex-wrap:wrap}.gs-unit-dialog .iu-scanner form>[data-scan-submit]{width:100%}}

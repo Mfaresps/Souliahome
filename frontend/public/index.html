@@ -17651,7 +17651,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/notification-settings.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/roles-permissions.css?v=20261113-roles1">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/assistant.css?v=18">
+<link rel="stylesheet" href="/assistant.css?v=20">
 <link rel="stylesheet" href="/bundle-analytics.css?v=1">
 <link rel="stylesheet" href="/supplier-return-statements.css?v=3">
 <link rel="stylesheet" href="/promotions.css?v=1">
@@ -17672,7 +17672,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/deposit-entry-compact.css?v=20261110-previous-deposit">
 <link rel="stylesheet" href="/shopify-receipt-peek.css?v=20261110-details">
 <link rel="stylesheet" href="/inventory-responsive.css?v=20261020-1">
-<link rel="stylesheet" href="/pickup-workspace.css?v=20261114-photo-cover">
+<link rel="stylesheet" href="/pickup-workspace.css?v=20261123-due-quiet">
 <link rel="stylesheet" href="/awb-preview.css?v=20261024">
 <link rel="stylesheet" href="/pickup-ready-return.css?v=20261024-new-group">
 <link rel="stylesheet" href="/picking-scan.css?v=20261020-always-ready">
@@ -21558,6 +21558,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   </div>
 
   <!-- ── Board View ── -->
+  <div id="pu-courier-stuck" hidden></div>
   <div id="pu-board-view">
     <div class="pu-board-3col">
 
@@ -24648,8 +24649,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/invoice-unit-identities.js?v=20261114-return-when-shipped"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
 <script src="/cancellations-analytics.js?v=20261030-details"></script>
-<link rel="stylesheet" href="/after-sales.css?v=20261119-prior">
-<script src="/after-sales.js?v=20261119-prior"></script>
+<link rel="stylesheet" href="/after-sales.css?v=20261123-account-breakdown">
+<script src="/after-sales.js?v=20261123-account-breakdown"></script>
 <link rel="stylesheet" href="/complaint-flow.css?v=20261110-inline-solution">
 <script src="/complaint-flow.js?v=20261110-verify-product-save"></script>
 <link rel="stylesheet" href="/customer-piece-return.css?v=20261020-1">
@@ -31798,7 +31799,7 @@ const TRANSLATIONS = {
   puOrderAlreadyInCard:{ar:'هذا الطلب موجود بالفعل في البطاقة',en:'This order is already in the card'},
   puOrderAddedToGroup:{ar:'تمت إضافة الطلب {ref} للمجموعة',en:'Order {ref} added to the group'},
   puOrderAddedToCard:{ar:'تمت إضافة الطلب {ref} للبطاقة',en:'Order {ref} added to the card'},
-  puReturnOrderConfirm:{ar:'إرجاع الطلب "{ref}" إلى قائمة المعلق؟',en:'Return order "{ref}" to the pending list?'},
+  puReturnOrderConfirm:{ar:'إرجاع الطلب "{ref}" إلى المعلّق؟\nسيُصفّر التحضير وتُلغى مسح القطع وتعود القطع المخصصة متاحة مرة أخرى. كمية المخزون لا تتغير.',en:'Return order "{ref}" to pending?\nPreparation resets, scans are cleared and assigned pieces become available again. Stock quantity stays the same.'},
   puReturnWord:{ar:'إرجاع',en:'Return'},
   puOrderReturned:{ar:'↩ تم إرجاع الطلب {ref} للمعلق',en:'↩ Order {ref} returned to pending'},
   puReturnFailed:{ar:'فشل الإرجاع — يرجى المحاولة مرة أخرى',en:'Return failed — please try again'},
@@ -31811,7 +31812,7 @@ const TRANSLATIONS = {
   puSaveChanges:{ar:'حفظ التعديلات',en:'Save changes'},
   puDeleteGroupTitle:{ar:'حذف مجموعة التحضير',en:'Delete prep group'},
   puDeleteGroupBtnTitle:{ar:'حذف المجموعة',en:'Delete group'},
-  puDeleteGroupConfirm:{ar:'مجموعة "{ref}" ({n} طلب) ستُحذف وتعود الطلبات إلى المعلق.',en:'Group "{ref}" ({n} orders) will be deleted and its orders returned to pending.'},
+  puDeleteGroupConfirm:{ar:'مجموعة "{ref}" ({n} طلب) ستُحذف وتعود الطلبات إلى المعلّق.\nسيُصفّر التحضير وتُلغى مسح القطع وتعود القطع المخصصة متاحة مرة أخرى. كمية المخزون لا تتغير.',en:'Group "{ref}" ({n} orders) will be deleted and its orders returned to pending.\nPreparation resets, scans are cleared and assigned pieces become available again. Stock quantity stays the same.'},
   puMergeDropHint:{ar:'أفلت للدمج هنا',en:'Drop to merge here'},
   puMergeTitle:{ar:'دمج مجموعتي تحضير',en:'Merge prep groups'},
   puMergeConfirm:{ar:'ستنتقل طلبات «{src}» ({n} طلب) إلى «{dst}» ({m} طلب)، فتصبح {total} طلب في مجموعة واحدة. تُحفظ علامات «تم التحضير» كما هي.',en:'The {n} order(s) of “{src}” will move into “{dst}” ({m} order(s)), making one group of {total}. “Prepared” ticks are kept.'},
@@ -31834,6 +31835,20 @@ const TRANSLATIONS = {
   pwAgeNow:{ar:'منذ أقل من ساعة',en:'under an hour'},
   pwAgeHours:{ar:'منذ {n} س',en:'{n}h ago'},
   pwAgeDays:{ar:'منذ {n} يوم',en:'{n}d ago'},
+  puCtxSplitMulti:{ar:'نقلها إلى مجموعة تحضير جديدة ({n})',en:'Move to a new prep group ({n})'},
+  puSplitConfirmMulti:{ar:'ستُنقل {n} من الطلبات من «{group}» إلى مجموعة تحضير جديدة. تبقى علامة «تم التحضير» كما هي.',en:'{n} orders will leave “{group}” for a new prep group. Their “prepared” ticks are kept.'},
+  puSplitDoneMulti:{ar:'نُقلت {n} من الطلبات إلى مجموعة جديدة {group}',en:'Moved {n} orders to new group {group}'},
+  puSplitAllMulti:{ar:'لا يمكن نقل كل طلبات المجموعة إلى مجموعة جديدة',en:'Not all of the group’s orders can move to a new group'},
+  puCtxMoveTo:{ar:'نقل إلى مجموعة',en:'Move to group'},
+  puMoveConfirm:{ar:'ستُنقل {n} من الطلبات من «{from}» إلى «{to}». تبقى علامة «تم التحضير» كما هي.',en:'{n} order(s) will move from “{from}” to “{to}”. Their “prepared” ticks are kept.'},
+  puMoveTakesTarget:{ar:'ستأخذ الطلبات شركة الشحن والملاحظة الخاصة بالمجموعة المستهدفة.',en:'The orders take the target group’s carrier and note.'},
+  puMoveOk:{ar:'نقل',en:'Move'},
+  puMoveDone:{ar:'نُقلت {n} من الطلبات إلى {group}',en:'Moved {n} order(s) to {group}'},
+  puMultiSelected:{ar:'طلبات محددة',en:'orders selected'},
+  puMultiActions:{ar:'إجراءات',en:'Actions'},
+  puCtxBackToPendingMulti:{ar:'إرجاعها إلى المعلّق ({n})',en:'Back to pending ({n})'},
+  puOrdersBackToPendingConfirm:{ar:'ستعود {n} من الطلبات إلى «المعلّق» ويُلغى تحضيرها.',en:'{n} order(s) go back to Pending and their preparation is cancelled.'},
+  puOrdersReturnedToPending:{ar:'أُعيدت {n} من الطلبات إلى المعلّق',en:'{n} order(s) returned to Pending'},
   puCtxSplit:{ar:'نقله إلى مجموعة تحضير جديدة',en:'Move to a new prep group'},
   puSplitAlone:{ar:'الطلب وحده في المجموعة',en:'This order is alone in its group'},
   puSplitConfirm:{ar:'سيُنقل الطلب #{ref} من «{group}» إلى مجموعة تحضير جديدة. تبقى علامة «تم التحضير» كما هي.',en:'Order #{ref} will leave “{group}” for a new prep group. Its “prepared” tick is kept.'},
@@ -31868,6 +31883,17 @@ const TRANSLATIONS = {
   puReadyMergeJoinOk:{ar:'فتح طلب الاستلام',en:'Open pickup request'},
   puRtMergeReadyTitle:{ar:'دُمج {n} طلب في مجموعة شحن',en:'{n} order(s) merged into a shipping group'},
   puGroupDeleted:{ar:'تم حذف مجموعة التحضير — الطلبات عادت للمعلق',en:'Prep group deleted — its orders are back in pending'},
+  puCourierStuckNote:{ar:'{n} طلب استلمته شركة الشحن يظهر في مكان أو تاريخ غير صحيح على اللوحة',en:'{n} order(s) the carrier collected show in the wrong place or day on the board'},
+  puShippedMore:{ar:'عرض أيام أقدم ({n})',en:'Show older days ({n})'},
+  puCourierStuckExchange:{ar:'استبدال',en:'Exchange'},
+  puCourierStuckDate:{ar:'تاريخ الشحن {from} ← تاريخ استلام المندوب {to}',en:'shipped day {from} → courier pickup day {to}'},
+  puCourierStuckReview:{ar:'مراجعة وتصحيح',en:'Review and fix'},
+  puCourierStuckTitle:{ar:'طلبات استلمتها شركة الشحن',en:'Orders the carrier already has'},
+  puCourierStuckQ:{ar:'ستُوضع هذه الطلبات في «تم الشحن» تحت يوم استلام المندوب لها كما سجّلته بوسطة. يتغيّر موضعها على اللوحة فقط — لا خزنة ولا مخزون ولا تعديل في بوسطة.',en:'These orders go under Shipped on the day the courier collected them, as Bosta recorded it. Only their place on the board changes — no vault, stock or Bosta change.'},
+  puCourierStuckMove:{ar:'تصحيح {n} طلب',en:'Fix {n} order(s)'},
+  puCourierStuckNone:{ar:'لا توجد طلبات تحتاج نقلًا',en:'No orders need moving'},
+  puCourierStuckDone:{ar:'صُحّح {n} من {total} طلب',en:'Fixed {n} of {total} order(s)'},
+  puSkippedCollected:{ar:'لم تُنقل هذه الطلبات لأن شركة الشحن استلمتها بالفعل، وستظهر في «تم الشحن»: {refs}',en:'Not moved — the carrier already has these orders; they appear under Shipped: {refs}'},
   puMovedToReady:{ar:'تم نقل {n} طلب إلى Ready to Ship · {ref}',en:'Moved {n} order(s) to Ready to Ship · {ref}'},
   puMovedLocally:{ar:'تم النقل محلياً · {v}',en:'Moved locally · {v}'},
   puGroupStatusPending:{ar:'مسجّل · بانتظار التجهيز',en:'Registered · Awaiting Prep'},
@@ -31916,12 +31942,14 @@ const TRANSLATIONS = {
   puNewGroupMulti:{ar:'مجموعة جديدة {ref} — {n} طلبات',en:'New group {ref} — {n} orders'},
   puNewGroupSingle:{ar:'مجموعة جديدة {ref}',en:'New group {ref}'},
   puNewPrepGroup:{ar:'مجموعة التحضير {ref}',en:'Prep group {ref}'},
-  puGroupBackToPendingConfirm:{ar:'إرجاع مجموعة "{ref}" ({n} طلب) إلى المعلق؟',en:'Return group "{ref}" ({n} orders) to pending?'},
+  puGroupBackToPendingConfirm:{ar:'إرجاع مجموعة "{ref}" ({n} طلب) إلى المعلّق؟\nسيُصفّر التحضير وتُلغى مسح القطع وتعود القطع المخصصة متاحة مرة أخرى. كمية المخزون لا تتغير.',en:'Return group "{ref}" ({n} orders) to pending?\nPreparation resets, scans are cleared and assigned pieces become available again. Stock quantity stays the same.'},
   puGroupReturnedToPending:{ar:'تم إرجاع المجموعة إلى المعلق',en:'Group returned to pending'},
   puSelectPrepGroupFirst:{ar:'اختر مجموعة تحضير أولاً',en:'Select a prep group first'},
   puAddedNToGroup:{ar:'تمت إضافة {n} طلب إلى {ref}',en:'{n} order(s) added to {ref}'},
-  puUndoGroupConfirm:{ar:'إرجاع "{name}" ({n} طلب) إلى المعلق؟',en:'Return "{name}" ({n} orders) to pending?'},
+  puUndoGroupConfirm:{ar:'إرجاع "{name}" ({n} طلب) إلى المعلّق؟\nسيُصفّر التحضير وتُلغى مسح القطع وتعود القطع المخصصة متاحة مرة أخرى. كمية المخزون لا تتغير.',en:'Return "{name}" ({n} orders) to pending?\nPreparation resets, scans are cleared and assigned pieces become available again. Stock quantity stays the same.'},
   puUndoGroupToPrepConfirm:{ar:'إرجاع المجموعة "{name}" ({n} طلب) إلى قيد التحضير؟ سيتم الاحتفاظ بحالة تحضير كل طلب والقطع الممسوحة وبيانات Piece identity. يمكنك نقل المجموعة إلى الجاهز مرة أخرى بعد المراجعة.',en:'Return group "{name}" ({n} orders) to Preparing? Each order keeps its preparation status, scanned pieces and Piece identity. You can move the group back to Ready after review.'},
+  puBostaPrintedPendingWarning:{ar:'تنبيه: تمت طباعة بوليصة بوسطة لـ {n} طلب. الإرجاع لا يلغي الشحنة في بوسطة؛ ألغِها هناك أولًا. إذا استلمها المندوب، لا تُرجع الطلب.',en:'Warning: A Bosta label was printed for {n} order(s). Returning does not cancel the Bosta shipment; cancel it in Bosta first. If the courier has collected it, do not return the order.'},
+  puBostaPrintedPrepWarning:{ar:'تنبيه: تمت طباعة بوليصة بوسطة لـ {n} طلب. الرجوع للتحضير لا يلغي الشحنة أو يحدّث البوليصة. راجع حالتها في بوسطة وألغِها وأعد إصدارها بعد التحضير. إذا استلمها المندوب، لا تُرجع الطلب.',en:'Warning: A Bosta label was printed for {n} order(s). Returning to Preparing does not cancel or update it. Check its status in Bosta; cancel it and print a new label after preparation. If the courier has collected it, do not return the order.'},
   puUndoToPrepTitle:{ar:'إرجاع لقيد التحضير',en:'Return to Preparing'},
   puReturnedNToPending:{ar:'تم إرجاع {n} طلب لحالة معلق',en:'{n} order(s) returned to pending'},
   puReturnedToPrep:{ar:'تم إرجاع الطلبات إلى قيد التحضير — {ref}',en:'Orders returned to Preparing — {ref}'},
@@ -38157,10 +38185,11 @@ function initMobileNav() {
 function _renderShopifyPagination(el, total, page, limit, fnName, perPageOptions, setPerPageFn) {
   const en = currentLang === 'en', pages = Math.ceil(total / limit) || 1;
   const range = total ? `${fmtN((page - 1) * limit + 1)}–${fmtN(Math.min(page * limit, total))}` : '0';
+  const rangeLabel = en ? `Orders ${range} of ${fmtN(total)}` : `الأوردرات ${range} من إجمالي ${fmtN(total)}`;
   const arrow = double => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 7-5 5 5 5${double ? 'M20 7l-5 5 5 5' : ''}"/></svg>`;
   const nav = (target, label, icon, disabled, next = false) => `<button type="button" class="sp-pag-arrow${next ? ' is-next' : ''}" onclick="${fnName}(${target})" aria-label="${label}" title="${label}"${disabled ? ' disabled' : ''}>${icon}</button>`;
   const size = perPageOptions && setPerPageFn ? `<label class="sp-pag-size"><span>${en ? 'Per page' : 'لكل صفحة'}</span><select aria-label="${en ? 'Orders per page' : 'عدد الأوردرات لكل صفحة'}" onchange="${setPerPageFn}(+this.value)">${perPageOptions.map(v => `<option value="${v}"${v === limit ? ' selected' : ''}>${fmtN(v)}</option>`).join('')}</select></label>` : '';
-  el.innerHTML = `<div class="sp-pagination"><div class="sp-pag-summary"><span class="sp-pag-range" aria-live="polite"><bdi>${range}</bdi> ${en ? 'of' : 'من'} <bdi>${fmtN(total)}</bdi></span>${size}</div>${pages > 1 ? `<nav class="sp-pag-nav" aria-label="${en ? 'Order pages' : 'صفحات الأوردرات'}">
+  el.innerHTML = `<div class="sp-pagination"><div class="sp-pag-summary"><span class="sp-pag-range" aria-live="polite">${rangeLabel}</span>${size}</div>${pages > 1 ? `<nav class="sp-pag-nav" aria-label="${en ? 'Order pages' : 'صفحات الأوردرات'}">
     ${nav(1, en ? 'First page' : 'الصفحة الأولى', arrow(true), page <= 1)}
     ${nav(page - 1, en ? 'Previous page' : 'الصفحة السابقة', arrow(false), page <= 1)}
     <label class="sp-pag-current"><span>${en ? 'Page' : 'صفحة'}</span><select aria-label="${en ? 'Go to page' : 'الانتقال إلى صفحة'}" onchange="${fnName}(+this.value)">${Array.from({length:pages}, (_, i) => `<option value="${i + 1}"${i + 1 === page ? ' selected' : ''}>${fmtN(i + 1)}</option>`).join('')}</select><span>/ <bdi>${fmtN(pages)}</bdi></span></label>
@@ -65109,9 +65138,16 @@ function _invPrintTrigger() {
   return `<script>(function(){var done=false;function go(){if(done)return;done=true;window.print();}
 var imgs=[].slice.call(document.images).filter(function(i){return !i.complete;});var left=imgs.length;
 function one(){if(--left<=0)ready();}
-function ready(){var f=document.fonts&&document.fonts.ready;(f?f.then(function(){setTimeout(go,150);}):setTimeout(go,150));}
+function shrinkProductPhotos(){return Promise.all([].slice.call(document.querySelectorAll('.iv-thumb img,table td:nth-child(2) img')).map(async function(img){if(!img.naturalWidth||img.naturalWidth<=480)return;try{var response=await fetch(img.currentSrc||img.src,{mode:'cors',credentials:'same-origin'});if(!response.ok)return;var bitmap=await createImageBitmap(await response.blob());var ratio=Math.min(1,480/Math.max(bitmap.width,bitmap.height));var canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));var context=canvas.getContext('2d');context.fillStyle='#f1f4f2';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();img.src=canvas.toDataURL('image/jpeg',.9);}catch(_){/* Keep the original full-quality photo when CORS or canvas conversion is unavailable. */}}));}
+function ready(){var f=document.fonts&&document.fonts.ready;Promise.resolve(f).catch(function(){}).then(shrinkProductPhotos).then(function(){setTimeout(go,150);});}
 if(!left)ready();else imgs.forEach(function(i){i.addEventListener('load',one);i.addEventListener('error',one);});
 setTimeout(go,4000);})();<\/script>`;
+}
+function _invoicePrintTitle(tx) {
+  const date = String(tx?.date || tx?.createdAt || '').slice(0, 10);
+  const kind = tx?.type === 'مشتريات' ? 'فاتورة مشتريات' : tx?.type === 'مبيعات' ? 'فاتورة مبيعات' : 'إشعار مرتجع';
+  return [kind, tx?.client, tx?.ref ? '#' + tx.ref : '', /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : ''].filter(Boolean).join(' - ')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
 }
 
 async function bulkPrintPDF() {
@@ -65126,7 +65162,9 @@ async function bulkPrintPDF() {
   const identityFailure = identityLoads.find(result => result.status === 'rejected');
   if (identityFailure) { w.close(); toast('تعذر تحديث هويات القطع قبل الطباعة: ' + identityFailure.reason.message, true); return; }
   const allHtml = freshList.map(tx => buildInvoiceHtml(tx)).join('');
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${allHtml}${_invPrintTrigger()}</body></html>`);
+  const date = String(freshList[0]?.date || freshList[0]?.createdAt || '').slice(0, 10);
+  const title = freshList.length === 1 ? _invoicePrintTitle(freshList[0]) : `${freshList.every(tx => tx.type === 'مشتريات') ? 'فواتير مشتريات' : 'فواتير'} - ${date || new Date().toISOString().slice(0, 10)}`;
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>${_invoiceSharedCss()}</style></head><body>${allHtml}${_invPrintTrigger()}</body></html>`);
   w.document.close();
   toast(`جارٍ طباعة ${selected.length} فاتورة`);
 }
@@ -65153,7 +65191,7 @@ async function printInvoice(id) {
   const fresh = await _invRefreshForPrint(tx);
   try { await window.InvoiceUnitIdentities?.ensure(fresh); }
   catch (error) { w.close(); toast('تعذر تحديث هويات القطع قبل الطباعة: ' + error.message, true); return; }
-  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(fresh)}${_invPrintTrigger()}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>${esc(_invoicePrintTitle(fresh))}</title><style>${_invoiceSharedCss()}</style></head><body>${buildInvoiceHtml(fresh)}${_invPrintTrigger()}</body></html>`);
   w.document.close();
 }
 
@@ -78437,6 +78475,10 @@ function _poPrintUnitPrice(item) {
   const value = p?.buyPrice;
   return value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
 }
+function _poPrintTitle(po) {
+  return ['أمر شراء', po?.supplierName, po?.poNumber, po?.createdDate].filter(Boolean).join(' - ')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
+}
 function _buildPoDocHtml(po, s, compact, showPrices = false) {
   const money = value => Number(value).toLocaleString('en-EG', {minimumFractionDigits:2, maximumFractionDigits:2});
   const prices = (po.items || []).map(_poPrintUnitPrice);
@@ -78543,8 +78585,10 @@ function _printPoDocument(poId, compact) {
   const pw = window.open('', '_blank');
   if (!pw) { toast('يرجى السماح بالنوافذ المنبثقة للطباعة', true); return; }
   const showPrices = !!qs('#po-print-prices')?.checked && (isAdmin() || hasPerm('purchase-view'));
-  pw.onload = () => { pw.focus(); pw.print(); };
-  pw.document.write(_buildPoDocHtml(po, s, compact, showPrices));
+  const html = _buildPoDocHtml(po, s, compact, showPrices)
+    .replace(/<title>[\s\S]*?<\/title>/, '<title>' + esc(_poPrintTitle(po)) + '</title>')
+    .replace('</body>', _invPrintTrigger() + '</body>');
+  pw.document.write(html);
   pw.document.close();
 }
 
@@ -103155,7 +103199,7 @@ async function deletePrepGroup(prepRef) {
   if (!_puRequireEdit()) return;
   const grp = _puPrepGroups.find(g=>g.prepRef===prepRef);
   if (!grp) return;
-  const ok = await _puConfirm(t('puDeleteGroupConfirm',{ref:prepRef,n:grp.orders.length}), t('puDeleteGroupTitle'), t('delete'), '#dc2626');
+  const ok = await _puConfirm(t('puDeleteGroupConfirm',{ref:prepRef,n:grp.orders.length}) + _puPrintedBostaWarning(grp.orders, 'pending'), t('puDeleteGroupTitle'), t('delete'), '#dc2626');
   if (!ok) return;
   const preparingIds = grp.orders.filter(o => o.pickupStatus === 'Preparing').map(o => o._id);
   try {
@@ -103226,6 +103270,89 @@ function prepGroupMoveToReady(prepRef) {
   requestAnimationFrame(() => modal.classList.add('active'));
 }
 
+// Orders Bosta already collected/delivered that the board still shows before the
+// courier (Pending / Preparing / Ready). ⚠ Mirror of backend
+// shared/courier-collected.util.ts COURIER_HAS_PARCEL_STATUSES — keep in step.
+const _PU_COURIER_HAS = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED', 'FAILED_ATTEMPT', 'DELIVERED', 'RETURNED'];
+function _puCourierStuck(o) {
+  return !!o && !o.cancelled && _PU_COURIER_HAS.includes(String(o.bostaStatus || '').trim().toUpperCase())
+    && ['Pending', 'Preparing', 'Ready', 'Picked-Up'].includes(o.pickupStatus || 'Pending');
+}
+// Cancelled-after-pickup orders for the «تم الشحن» column (see pickup-daily-shipping.js).
+let _puShippedHistoryBusy = false;
+async function _puLoadShippedHistory() {
+  if (_puShippedHistoryBusy) return;
+  _puShippedHistoryBusy = true;
+  try {
+    const rows = await api('/transactions/pickup-orders/shipped-history');
+    if (!Array.isArray(rows)) return;
+    const live = new Set((_pickupOrders || []).map(o => String(o._id)));
+    const next = rows.filter(r => !live.has(String(r._id))).map(r => ({ ...r, _shippedHistory: true }));
+    const changed = JSON.stringify(next.map(r => [r._id, r.shippedAt, r.pickupRef])) !== JSON.stringify(_puShippedHistory.map(r => [r._id, r.shippedAt, r.pickupRef]));
+    _puShippedHistory = next;
+    if (changed && currentPage === 'pickup-orders' && typeof _puPaintCurrentView === 'function') _puPaintCurrentView();
+  } catch (_) { /* the column still shows the active orders */ }
+  finally { _puShippedHistoryBusy = false; }
+  _puLoadCourierRepairCount();
+}
+// Admins: how many orders need the repair (stuck stage OR a pickup day Bosta disagrees with).
+// Dates can only be checked on the server (Bosta's pickup time is not in the board feed).
+let _puCourierRepairCount = 0, _puCourierRepairAt = 0;
+async function _puLoadCourierRepairCount(force = false) {
+  if (!isAdmin() || (!force && Date.now() - _puCourierRepairAt < 5 * 60 * 1000)) return;
+  _puCourierRepairAt = Date.now();
+  try {
+    const res = await api('/transactions/backfill/courier-collected-board', { method: 'POST', body: JSON.stringify({ dryRun: true }) });
+    _puCourierRepairCount = Number(res?.found || 0);
+    _puRenderCourierStuck();
+  } catch (_) {}
+}
+function _puRenderCourierStuck() {
+  const el = qs('#pu-courier-stuck');
+  if (!el) return;
+  const n = isAdmin() ? Math.max(_puCourierRepairCount, (_pickupOrders || []).filter(_puCourierStuck).length) : 0;
+  el.hidden = !n;
+  el.innerHTML = n ? `<div class="pu-cstuck" role="status"><span>${esc(t('puCourierStuckNote', { n: fmtN(n) }))}</span>
+    <button type="button" class="btn btn-outline btn-sm" onclick="puReviewCourierStuck(this)">${esc(t('puCourierStuckReview'))}</button></div>` : '';
+}
+async function puReviewCourierStuck(btn) {
+  if (!isAdmin()) return;
+  let preview;
+  try {
+    if (btn) btn.disabled = true;
+    preview = await api('/transactions/backfill/courier-collected-board', { method: 'POST', body: JSON.stringify({ dryRun: true }) });
+  } catch (e) { toast(t('errorPrefix', { v: e.message }), true); return; }
+  finally { if (btn) btn.disabled = false; }
+  const rows = (preview && preview.orders) || [];
+  if (!rows.length) { toast(t('puCourierStuckNone')); _puRenderCourierStuck(); return; }
+  const statusOf = r => typeof _puDailyOrderStatus === 'function' ? _puDailyOrderStatus({ bostaStatus: r.bostaStatus, cancelled: r.cancelled }).label : r.bostaStatus;
+  const line = r => r.kind !== 'stage'
+    ? (r.kind === 'exchange-date' ? esc(t('puCourierStuckExchange')) + ' · ' : '') + esc(t('puCourierStuckDate', { from: r.fromDay || '—', to: r.toDay || '—' }))
+    : `${esc(statusOf(r))}${r.fromRef ? ` · <bdi dir="ltr">${esc(r.fromRef)}</bdi>` : ''}`;
+  const list = rows.map(r => `<li><bdi>#${esc(r.ref || '—')}</bdi> · ${line(r)}</li>`).join('');
+  const ok = await showConfirm(`<p>${esc(t('puCourierStuckQ'))}</p><ul class="pu-cstuck-list">${list}</ul>`, {
+    title: t('puCourierStuckTitle'), icon: 'info', confirmLabel: t('puCourierStuckMove', { n: fmtN(rows.length) }),
+  });
+  if (!ok) return;
+  try {
+    const res = await api('/transactions/backfill/courier-collected-board', { method: 'POST', body: JSON.stringify({ dryRun: false }) });
+    toast(t('puCourierStuckDone', { n: fmtN(res.moved || 0), total: fmtN(res.found || 0) }), (res.moved || 0) < (res.found || 0));
+  } catch (e) { toast(t('errorPrefix', { v: e.message }), true); }
+  _puCourierRepairCount = 0;
+  await loadPickupOrders().catch(() => {});
+  _puLoadCourierRepairCount(true);
+}
+
+// «نقل للجاهز» leaves out orders the courier already has (server: confirmPickup →
+// res.skipped). Callers expect only the rest to move, and name the skipped ones.
+function _puConfirmExpected(res, n) { return n - ((res && res.skipped) || []).length; }
+function _puConfirmSkippedIds(res) { return new Set(((res && res.skipped) || []).map(o => String(o._id))); }
+function _puConfirmSkippedNotice(res) {
+  const skipped = (res && res.skipped) || [];
+  if (!skipped.length) return;
+  setTimeout(() => toast(t('puSkippedCollected', { refs: skipped.map(o => '#' + (o.ref || '—')).join(currentLang === 'en' ? ', ' : '، ') })), 900);
+}
+
 async function puConfirmMoveToReady() {
   if (!_puRequireEdit()) return;
   if (!_puConfirmGroupIds.length) return;
@@ -103243,7 +103370,10 @@ async function puConfirmMoveToReady() {
       method: 'POST',
       body: JSON.stringify({ ids: _puConfirmGroupIds, date, reuseOpenRun: true }),
     });
-    if (res.updated !== _puConfirmGroupIds.length) throw new Error('لم يتم تحديث كل الطلبات؛ ربما تغيّرت حالة بعضها من جهاز آخر. حدّث الصفحة وحاول مرة أخرى.');
+    if (res.updated !== _puConfirmExpected(res, _puConfirmGroupIds.length)) throw new Error('لم يتم تحديث كل الطلبات؛ ربما تغيّرت حالة بعضها من جهاز آخر. حدّث الصفحة وحاول مرة أخرى.');
+    const _skippedIds = _puConfirmSkippedIds(res);
+    if (_skippedIds.size) _puConfirmGroupIds = _puConfirmGroupIds.filter(id => !_skippedIds.has(String(id)));
+    _puConfirmSkippedNotice(res);
     const ref = res.pickupRef || prepRef || '';
     // Update local state immediately so board reflects change without waiting
     // Keep prepChecked as-is so ready column shows tick badges for prepared orders
@@ -103373,7 +103503,7 @@ function _puShowQuickTip(target, grp) {
     _puTipEl.className = 'pu-quick-tip';
     document.body.appendChild(_puTipEl);
   }
-  const totalAmt = grp.orders.reduce((s,o)=>s+(o.total||0),0);
+  const totalAmt = grp.orders.reduce((s,o)=>s+_puOrderValue(o),0);
   const itemCounts = {};
   grp.orders.forEach(o => (o.items||[]).forEach(it => {
     const name = it.name || '—';
@@ -103382,7 +103512,7 @@ function _puShowQuickTip(target, grp) {
   const topItems = Object.entries(itemCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
   _puTipEl.innerHTML = `
     <div class="pu-quick-tip-row"><span class="k">${t('puQuickTipOrders')}</span><span class="v">${fmtN(grp.orders.length)}</span></div>
-    ${_puCanViewShipmentTotals() ? `<div class="pu-quick-tip-row"><span class="k">${t('puQuickTipValue')}</span><span class="v">${fmtJT(totalAmt)}</span></div>` : ''}
+    ${_puCanViewShipmentTotals() ? `<div class="pu-quick-tip-row"><span class="k">${t('puQuickTipValue')}</span><span class="v">${fmtJT(totalAmt)}</span></div>${_puGroupDueHtml(grp.orders)}` : ''}
     ${topItems.length ? `<div class="pu-quick-tip-items">${t('puQuickTipTopItems')}<br>${topItems.map(([n,q])=>`<b>${esc(n)}</b> ×${fmtN(q)}`).join(' · ')}</div>` : ''}
   `;
   const r = target.getBoundingClientRect();
@@ -103533,7 +103663,7 @@ function _puBuildGroups(orders) {
 // Compact preparation group card; elapsed time stays out of the board.
 function _puBuildPrepGroupCard(grp) {
   const S = _puSVG;
-  const totalAmt = grp.orders.reduce((s,o)=>s+(o.total||0),0);
+  const totalAmt = grp.orders.reduce((s,o)=>s+_puOrderValue(o),0);
   const hasDirty = grp.orders.some(o=>_puDirtyCards.has(o._id));
   const checkedCount = grp.orders.filter(o=>!!o.prepChecked).length;
   const totalCount   = grp.orders.length;
@@ -103660,7 +103790,7 @@ function _puBuildPrepGroupCard(grp) {
       ${_puGroupDatePreview(grp.createdAtIso, 'created')}
       ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount">
         <span>${t('puGroupTotalLabel')}</span>
-        <strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong>
+        <strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong>${_puGroupDueHtml(grp.orders)}
       </div>` : ''}
       ${prepShipcos.length || (isAdmin() && employeeName) ? `<div class="pu-prep-meta">
         ${prepShipcos.map(company => `<span>${S.truck}<bdi>${esc(company)}</bdi></span>`).join('')}
@@ -103756,7 +103886,7 @@ function renderPickupBoard() {
   const readyOrders = [...regularReadyOrders, ...dailyReadyOrders];
   const deliveredAll   = _pickupOrders.filter(o => o.pickupStatus === 'Delivered');
   const allNonArchived = _pickupOrders.filter(o => !o.cancelled && !o.archived);
-  const sumAmt = arr => arr.reduce((s,o)=>s+(o.total||0),0);
+  const sumAmt = arr => arr.reduce((s,o)=>s+_puOrderValue(o),0);
 
   // Flag newest arrivals from the full pending set, before any search filtering
   _puComputeNewOrders(pendingOrders);
@@ -103765,6 +103895,7 @@ function renderPickupBoard() {
   const pendingGroups = _puBuildGroups(pendingOrders);
   // Ready tickets keep their persisted pickupRef so moving orders changes their actual group.
   const readyGroups   = _puBuildGroups(readyOrders);
+  _puRenderCourierStuck();
   const el = id => qs('#'+id);
   if (el('pu-pending-count')) el('pu-pending-count').textContent = fmtN(pendingGroups.length);
   if (el('pu-prep-count'))    el('pu-prep-count').textContent    = fmtN(_puPrepGroups.length);
@@ -103775,7 +103906,7 @@ function renderPickupBoard() {
   _puSetShipmentTotal('pu-pending-col-amt', sumAmt(pendingOrders));
   _puSetShipmentTotal('pu-prep-col-amt', sumAmt(_puPrepGroups.flatMap(g=>g.orders)));
   _puSetShipmentTotal('pu-ready-col-amt', sumAmt(readyOrders));
-  _puSetShipmentTotal('pu-shipped-col-amt', sumAmt(shippedOrders));
+  _puSetShipmentTotal('pu-shipped-col-amt', shippedOrders.reduce((s, o) => s + _puShippedMoney(o), 0));
   if (el('bkpi-pending'))         el('bkpi-pending').textContent         = fmtN(pendingGroups.length);
   _puSetShipmentTotal('bkpi-pending-amt', sumAmt(pendingOrders));
   if (el('bkpi-prep'))            el('bkpi-prep').textContent            = fmtN(_puPrepGroups.length);
@@ -103866,11 +103997,52 @@ function renderPickupBoard() {
     if (shippedFiltered.length === 0) {
       shippedCol.innerHTML = `<div style="text-align:center;padding:40px 12px;color:var(--muted);font-size:.83rem;pointer-events:none">${t('puNoShippedOrders')}</div>`;
     } else {
-      const fragment = document.createDocumentFragment();
-      shippedFiltered.forEach(g => fragment.appendChild(_puDailyGroupCard(g)));
-      shippedCol.replaceChildren(fragment);
+      _puRenderShippedCol(shippedCol, shippedFiltered, [globalQ, shippedQ, shipco, dateFrom, dateTo].join('|'));
     }
   }
+}
+
+// «تم الشحن» holds every day ever shipped (local: 61 days / 783 parcels = 72% of the board's
+// elements, 24 of ~35 ms per repaint — and the board repaints on every live update). Only the
+// newest days are drawn; older days are added as the column is scrolled to its end. A card's
+// totals and «المطلوب تحصيله» are computed only when that card is drawn.
+const _PU_SHIPPED_BATCH = 8;
+let _puShippedShown = _PU_SHIPPED_BATCH, _puShippedKey = '', _puShippedAll = [], _puShippedObserver = null;
+function _puRenderShippedCol(col, groups, filterKey) {
+  if (filterKey !== _puShippedKey) { _puShippedKey = filterKey; _puShippedShown = _PU_SHIPPED_BATCH; }
+  _puShippedAll = groups;
+  const fragment = document.createDocumentFragment();
+  groups.slice(0, _puShippedShown).forEach(g => fragment.appendChild(_puDailyGroupCard(g)));
+  col.replaceChildren(fragment);
+  _puShippedMoreButton(col);
+}
+function _puShippedMoreButton(col) {
+  col.querySelector('.pu-shipped-more')?.remove();
+  _puShippedObserver?.disconnect();
+  const left = _puShippedAll.length - _puShippedShown;
+  if (left <= 0) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pu-shipped-more';
+  btn.textContent = t('puShippedMore', { n: fmtN(left) });
+  btn.addEventListener('click', () => _puShippedLoadMore(col));
+  col.appendChild(btn);
+  // Scrolling the column to its end loads the next days without a click.
+  if (typeof IntersectionObserver === 'function') {
+    _puShippedObserver = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) _puShippedLoadMore(col);
+    }, { root: /(auto|scroll)/.test(getComputedStyle(col).overflowY) ? col : null, rootMargin: '0px 0px 240px 0px' });
+    _puShippedObserver.observe(btn);
+  }
+}
+function _puShippedLoadMore(col) {
+  const from = _puShippedShown;
+  _puShippedShown = Math.min(_puShippedAll.length, _puShippedShown + _PU_SHIPPED_BATCH);
+  if (_puShippedShown === from) return;
+  const fragment = document.createDocumentFragment();
+  _puShippedAll.slice(from, _puShippedShown).forEach(g => fragment.appendChild(_puDailyGroupCard(g)));
+  col.querySelector('.pu-shipped-more')?.before(fragment);
+  _puShippedMoreButton(col);
 }
 
 // ── Pending selected orders set ───────────────────────────────
@@ -104380,6 +104552,9 @@ function _puShowCtxMenu(e, title, items, returnFocus) {
 
 /** Right-click on an order inside the preparation workspace list. */
 function _pwOrderCtx(e, orderId) {
+  // Right-click on one of several selected orders acts on the whole selection.
+  if (_pwMulti.size > 1 && _pwMulti.has(String(orderId))) return _pwMultiCtx(e);
+  if (_pwMulti.size) _pwMultiClear();
   const grp = _puPrepGroups.find(g => g.orders.some(o => String(o._id) === String(orderId)));
   const o = (grp?.orders || _pickupOrders || []).find(x => String(x._id) === String(orderId));
   if (!o) return;
@@ -104390,6 +104565,7 @@ function _pwOrderCtx(e, orderId) {
     const alone = grp.orders.length < 2;
     items.push({ icon: _PU_CTX_ICO.split, label: t('puCtxSplit'), disabled: !edit || alone,
       title: alone ? t('puSplitAlone') : '', onClick: () => puSplitOrderToNewGroup(orderId) });
+    _pwMoveTargetItems(items, grp, [String(orderId)], edit);
   }
   items.push({ icon: _PU_CTX_ICO.tag, label: t('puCtxTag'), sub: (o.tags || []).length ? fmtN(o.tags.length) : '', disabled: !edit,
     keepOpen: true, onClick: () => _puOpenTagPicker(e, [orderId], `#${o.ref || ''}`) });
@@ -104428,7 +104604,7 @@ async function prepGroupBackToPending(prepRef) {
   if (!_puRequireEdit()) return;
   const grp = _puPrepGroups.find(g => g.prepRef === prepRef);
   if (!grp) return;
-  const ok = await _puConfirm(t('puGroupBackToPendingConfirm', { ref: grp.prepRef, n: grp.orders.length }), t('puBackToPending'), t('puReturnWord'), '#d97706');
+  const ok = await _puConfirm(t('puGroupBackToPendingConfirm', { ref: grp.prepRef, n: grp.orders.length }) + _puPrintedBostaWarning(grp.orders, 'pending'), t('puBackToPending'), t('puReturnWord'), '#d97706');
   if (!ok) return;
   const ids = grp.orders.filter(o => o.pickupStatus === 'Preparing').map(o => String(o._id));
   if (!ids.length) return toast(t('puAlreadyInPrep'), true);
@@ -104461,22 +104637,27 @@ function _pucoAfterOrderLeft(orderId) {
 
 /** Take one order out of its preparation group into a NEW group of its own. */
 let _puSplitting = false;
-async function puSplitOrderToNewGroup(orderId) {
+function puSplitOrderToNewGroup(orderId) { return puSplitOrdersToNewGroup([String(orderId)]); }
+/** Take one or more orders of a preparation group into a NEW group (the source keeps ≥1). */
+async function puSplitOrdersToNewGroup(ids) {
   if (!_puRequireEdit() || _puSplitting) return;
-  const grp = _puPrepGroups.find(g => g.orders.some(o => String(o._id) === String(orderId)));
-  if (!grp) return;
-  if (grp.orders.length < 2) return toast(t('puSplitAlone'), true);
-  const o = grp.orders.find(x => String(x._id) === String(orderId));
-  const ok = await _puConfirm(t('puSplitConfirm', { ref: o.ref || '—', group: grp.prepRef }), t('puCtxSplit'), t('puSplitOk'), '#2563eb');
+  ids = [...new Set((ids || []).map(String))];
+  const grp = _puPrepGroups.find(g => g.orders.some(o => ids.includes(String(o._id))));
+  if (!grp || !ids.length) return;
+  if (grp.orders.length - ids.length < 1) return toast(t(ids.length > 1 ? 'puSplitAllMulti' : 'puSplitAlone'), true);
+  const moving = grp.orders.filter(x => ids.includes(String(x._id)));
+  const ok = await _puConfirm(ids.length > 1
+    ? t('puSplitConfirmMulti', { n: fmtN(ids.length), group: grp.prepRef })
+    : t('puSplitConfirm', { ref: moving[0]?.ref || '—', group: grp.prepRef }), t('puCtxSplit'), t('puSplitOk'), '#2563eb');
   if (!ok) return;
   _puSplitting = true;
   let newRef = '';
   try {
     const result = await api('/transactions/pickup-orders/split-prep', {
-      method: 'POST', body: JSON.stringify({ sourceRef: grp.prepRef, ids: [String(orderId)] }),
+      method: 'POST', body: JSON.stringify({ sourceRef: grp.prepRef, ids }),
     });
     newRef = result?.pickupRef || '';
-    if (!newRef || result.moved !== 1) throw new Error('لم يُنقل الطلب؛ حدّث الصفحة وحاول مرة أخرى.');
+    if (!newRef || result.moved !== ids.length) throw new Error('لم تُنقل كل الطلبات؛ حدّث الصفحة وحاول مرة أخرى.');
   } catch (err) {
     _puSplitting = false;
     toast(t('errorPrefix', { v: err.message }), true);
@@ -104485,19 +104666,179 @@ async function puSplitOrderToNewGroup(orderId) {
   }
   const nowIso = new Date().toISOString();
   const by = currentUser?.name || currentUser?.username || '';
-  grp.orders = grp.orders.filter(x => String(x._id) !== String(orderId));
-  Object.assign(o, { pickupRef: newRef, _prepGroup: newRef, prepNote: '', prepShipCo: grp.shipCo || '', prepCreatedAt: nowIso, prepCreatedBy: by });
+  grp.orders = grp.orders.filter(x => !ids.includes(String(x._id)));
+  moving.forEach(o => Object.assign(o, { pickupRef: newRef, _prepGroup: newRef, prepNote: '', prepShipCo: grp.shipCo || '', prepCreatedAt: nowIso, prepCreatedBy: by }));
   _puPrepGroups.push({
     prepRef: newRef, note: '', shipCo: grp.shipCo || '',
     createdAt: new Date(nowIso).toLocaleString('ar-EG', { hour12:false, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
-    createdAtIso: nowIso, createdBy: by, orders: [o],
+    createdAtIso: nowIso, createdBy: by, orders: moving,
   });
-  _puSavePrepGroups([o]);
+  _puSavePrepGroups(moving);
   _puSplitting = false;
   _puMarkLanding(newRef);
-  _pucoAfterOrderLeft(String(orderId));
-  toast(t('puSplitDone', { ref: o.ref || '', group: newRef }));
+  _pwMultiClear();
+  _pucoAfterOrdersLeft(ids);
+  toast(ids.length > 1 ? t('puSplitDoneMulti', { n: fmtN(ids.length), group: newRef }) : t('puSplitDone', { ref: moving[0]?.ref || '', group: newRef }));
   renderPickupBoard();
+}
+
+/** Move chosen orders of one preparation group into another existing group (POST move-prep). */
+async function puMoveOrdersToGroup(ids, targetRef) {
+  if (!_puRequireEdit() || _puSplitting) return;
+  ids = [...new Set((ids || []).map(String))];
+  const grp = _puPrepGroups.find(g => g.orders.some(o => ids.includes(String(o._id))));
+  const target = _puPrepGroups.find(g => g.prepRef === targetRef);
+  if (!grp || !target || grp.prepRef === targetRef || !ids.length) return;
+  const moving = grp.orders.filter(x => ids.includes(String(x._id)));
+  const differs = (grp.shipCo || '') !== (target.shipCo || '') || (grp.note || '') !== (target.note || '');
+  const ok = await _puConfirm(t('puMoveConfirm', { n: fmtN(moving.length), from: grp.prepRef, to: targetRef }) + (differs ? '\n' + t('puMoveTakesTarget') : ''),
+    t('puCtxMoveTo'), t('puMoveOk'), '#2563eb');
+  if (!ok) return;
+  _puSplitting = true;
+  try {
+    const result = await api('/transactions/pickup-orders/move-prep', {
+      method: 'POST', body: JSON.stringify({ sourceRef: grp.prepRef, targetRef, ids }),
+    });
+    if (result?.moved !== ids.length) throw new Error('لم تُنقل كل الطلبات؛ حدّث الصفحة وحاول مرة أخرى.');
+  } catch (err) {
+    _puSplitting = false;
+    toast(t('errorPrefix', { v: err.message }), true);
+    await loadPickupOrders();
+    return;
+  }
+  grp.orders = grp.orders.filter(x => !ids.includes(String(x._id)));
+  moving.forEach(o => Object.assign(o, { pickupRef: targetRef, _prepGroup: targetRef, prepNote: target.note || '', prepShipCo: target.shipCo || '' }));
+  target.orders.push(...moving);
+  _puSavePrepGroups(moving);
+  _puSplitting = false;
+  _puMarkLanding(targetRef);
+  _pwMultiClear();
+  _pucoAfterOrdersLeft(ids);
+  toast(t('puMoveDone', { n: fmtN(moving.length), group: targetRef }));
+  renderPickupBoard();
+}
+
+/** Several orders back to «المعلق» (same route as returning a whole group). */
+async function prepOrdersBackToPending(ids) {
+  if (!_puRequireEdit()) return;
+  const orders = (_pickupOrders || []).filter(o => ids.includes(String(o._id)) && o.pickupStatus === 'Preparing');
+  if (!orders.length) return;
+  const ok = await _puConfirm(t('puOrdersBackToPendingConfirm', { n: fmtN(orders.length) }) + _puPrintedBostaWarning(orders, 'pending'), t('puBackToPending'), t('puReturnWord'), '#d97706');
+  if (!ok) return;
+  try {
+    const result = await api('/transactions/pickup-orders/undo', { method: 'POST', body: JSON.stringify({ ids: orders.map(o => String(o._id)) }) });
+    if (result.updated !== orders.length) throw new Error('لم تتم إعادة كل الطلبات إلى المعلّق. حدّث القائمة وحاول مرة أخرى.');
+    _pwMultiClear();
+    await loadPickupOrders();
+    const updated = _pucoGetGroup();
+    if (updated && updated.orders.length) _pucoRenderOrders(updated); else closePuCardOrdersModal();
+    toast(t('puOrdersReturnedToPending', { n: fmtN(orders.length) }));
+  } catch (err) {
+    toast(t('errorPrefix', { v: err.message }), true);
+    await loadPickupOrders();
+  }
+}
+
+/** After several orders left the open group: keep a sensible selection, or close. */
+function _pucoAfterOrdersLeft(ids) {
+  if (!_pucoGroupKey) return;
+  const updated = _pucoGetGroup();
+  if (!updated || !updated.orders.length) { closePuCardOrdersModal(); return; }
+  if (ids.includes(String(_pwSelId))) {
+    const visible = _pwVisible.map(String);
+    const rest = visible.filter(x => !ids.includes(x));
+    const wasAt = visible.indexOf(String(_pwSelId));
+    _pwSelId = rest[Math.min(Math.max(wasAt, 0), rest.length - 1)] || updated.orders[0]?._id || null;
+  }
+  _pucoRenderOrders(updated);
+}
+
+// ── Several orders at once in the preparation window ───────────────────────────
+// Ctrl/⌘+click toggles an order, Shift+click selects a range; right-click on a selected
+// order opens one menu for all of them (move to another group / a new group, TAG, back to
+// pending). A plain click returns to the single-order view.
+const _pwMulti = new Set();
+let _pwMultiAnchor = null;
+function pwOrderClick(e, id) {
+  id = String(id);
+  const multiOk = _pucoColType === 'prep';
+  if (multiOk && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (!_pwMulti.size && _pwSelId) _pwMulti.add(String(_pwSelId));
+    if (_pwMulti.has(id)) _pwMulti.delete(id); else _pwMulti.add(id);
+    _pwMultiAnchor = id;
+    _pwPaintMulti();
+    return;
+  }
+  if (multiOk && e.shiftKey) {
+    e.preventDefault();
+    const list = _pwVisible.map(String);
+    const from = list.indexOf(String(_pwMultiAnchor || _pwSelId)), to = list.indexOf(id);
+    if (from < 0 || to < 0) return pwSelectOrder(id);
+    _pwMulti.clear();
+    list.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(x => _pwMulti.add(x));
+    _pwPaintMulti();
+    return;
+  }
+  _pwMultiClear();
+  pwSelectOrder(id);
+}
+function _pwMultiClear() {
+  if (!_pwMulti.size) return;
+  _pwMulti.clear(); _pwMultiAnchor = null;
+  _pwPaintMulti();
+}
+function _pwPaintMulti(groupOrders) {
+  const list = qs('#puco-orders-list');
+  if (!list) return;
+  if (groupOrders) {
+    const ids = new Set(groupOrders.map(o => String(o._id)));
+    [..._pwMulti].forEach(id => { if (!ids.has(id)) _pwMulti.delete(id); });
+  }
+  list.querySelectorAll('.pw-ocard').forEach(el => {
+    const on = _pwMulti.has(String(el.dataset.orderId));
+    el.classList.toggle('is-multi', on);
+    el.setAttribute('aria-selected', on || el.classList.contains('is-sel') ? 'true' : 'false');
+  });
+  list.setAttribute('aria-multiselectable', _pucoColType === 'prep' ? 'true' : 'false');
+  let bar = qs('#pw-multi-bar');
+  if (_pwMulti.size < 2) { bar?.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'pw-multi-bar';
+    bar.className = 'pw-multi-bar';
+    bar.setAttribute('role', 'status');
+    list.parentNode.insertBefore(bar, list);
+  }
+  bar.innerHTML = `<span><b>${fmtN(_pwMulti.size)}</b> ${esc(t('puMultiSelected'))}</span>
+    <button type="button" class="pw-multi-act" onclick="_pwMultiCtx(event)">${esc(t('puMultiActions'))}</button>
+    <button type="button" class="pw-multi-x" aria-label="${esc(t('cancel'))}" title="${esc(t('cancel'))}" onclick="_pwMultiClear()">×</button>`;
+}
+function _pwMoveTargetItems(items, grp, ids, edit) {
+  const others = _puPrepGroups.filter(g => g.prepRef !== grp.prepRef);
+  if (!others.length) return;
+  items.push({ head: t('puCtxMoveTo') });
+  others.slice(0, 8).forEach(g => items.push({ icon: _PU_CTX_ICO.merge, label: g.prepRef,
+    sub: [g.note, t('puOrdersCount', { n: fmtN(g.orders.length) })].filter(Boolean).join(' · '),
+    disabled: !edit, onClick: () => puMoveOrdersToGroup(ids, g.prepRef) }));
+}
+function _pwMultiCtx(e) {
+  const grp = _pucoColType === 'prep' ? _pucoGetGroup() : null;
+  if (!grp) return;
+  const ids = grp.orders.map(o => String(o._id)).filter(id => _pwMulti.has(id));
+  if (ids.length < 2) return;
+  const edit = _puCanEdit();
+  const all = ids.length >= grp.orders.length;
+  const items = [{ icon: _PU_CTX_ICO.split, label: t('puCtxSplitMulti', { n: fmtN(ids.length) }), disabled: !edit || all,
+    title: all ? t('puSplitAllMulti') : '', onClick: () => puSplitOrdersToNewGroup(ids) }];
+  _pwMoveTargetItems(items, grp, ids, edit);
+  items.push({ sep: true });
+  items.push({ icon: _PU_CTX_ICO.tag, label: t('puCtxTag'), disabled: !edit, keepOpen: true,
+    onClick: () => _puOpenTagPicker(e, ids, t('puOrdersCount', { n: fmtN(ids.length) })) });
+  items.push({ sep: true });
+  items.push({ icon: _PU_CTX_ICO.undo, label: t('puCtxBackToPendingMulti', { n: fmtN(ids.length) }), tone: 'warn', disabled: !edit,
+    onClick: () => prepOrdersBackToPending(ids) });
+  _puShowCtxMenu(e, esc(t('puOrdersCount', { n: fmtN(ids.length) })) + ' · ' + `<bdi>${esc(grp.prepRef)}</bdi>`, items);
 }
 
 // ── Tags on pickup orders (same TAGs as سجل المعاملات, PATCH /transactions/:id/tags) ──
@@ -104747,7 +105088,7 @@ async function puPtMoveSelected() {
 // ── Build a group card DOM element ────────────────────────────
 function _puBuildGroupCard(group, colType) {
   const S = _puSVG;
-  const totalAmt = group.orders.reduce((s,o)=>s+(o.total||0),0);
+  const totalAmt = group.orders.reduce((s,o)=>s+_puOrderValue(o),0);
   const totalItems = group.orders.reduce((s,o)=>s+(o.items||[]).length,0);
   const hasDirty = group.orders.some(o => _puDirtyCards.has(o._id));
   const shipcos = [...new Set(group.orders.map(o=>o.shipCo).filter(Boolean))];
@@ -104852,7 +105193,7 @@ function _puBuildGroupCard(group, colType) {
           <span class="pu-prep-order-count">${_puGroupCountContent(group.orders.length)}</span>
         </div>
         ${_puGroupDatePreview(group.pickupDate, 'ready')}
-        ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${t('puGroupTotalLabel')}</span><strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong></div>` : ''}
+        ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${t('puGroupTotalLabel')}</span><strong class="pu-group-total"><bdi>${fmtJT(totalAmt)}</bdi></strong>${_puGroupDueHtml(group.orders)}</div>` : ''}
         <div class="pu-prep-meta">
           ${shipcos.map(company => `<span>${S.truck}<bdi>${esc(company)}</bdi></span>`).join('')}
           ${isAdmin() && readyEmployees.length ? `<span class="pu-prep-owner">${esc(readyEmployees.join(', '))}</span>` : ''}
@@ -105223,6 +105564,7 @@ function _pucoDialogKeydown(event) {
   if (event.key === 'Escape') {
     event.preventDefault();
     event.stopPropagation();
+    if (_pwMulti.size) { _pwMultiClear(); return; }
     closePuCardOrdersModal();
     return;
   }
@@ -105234,6 +105576,19 @@ function _pucoDialogKeydown(event) {
   const first = items[0], last = items[items.length - 1];
   if (event.shiftKey && (document.activeElement === first || document.activeElement === shell)) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
+// The orders a «جاهز للشحن» card stands for: Ready / Picked-Up under this pickupRef,
+// minus any the courier already took — the board moves those to «تم الشحن»
+// (renderPickupBoard: shippedGroups → dispatchedIds). ⚠ The window must use this
+// same rule, or it lists orders the card does not count (39 vs 35, Nov 23, 2026).
+function _puReadyCardOrders(groupKey) {
+  const courierHasIt = o => typeof _puDailyShipment === 'function' && typeof _puDailyAwaitingPickup === 'function'
+    && !!_puDailyShipment(o) && !_puDailyAwaitingPickup(o);
+  return (_pickupOrders || []).filter(o =>
+    ['Ready', 'Picked-Up'].includes(o.pickupStatus || 'Pending')
+    && (o.pickupRef || '') === groupKey
+    && !courierHasIt(o));
 }
 
 function openPuCardOrdersModal(groupKey, colType, trigger = null) {
@@ -105249,11 +105604,8 @@ function openPuCardOrdersModal(groupKey, colType, trigger = null) {
   if (colType === 'prep') {
     group = _puPrepGroups.find(g => g.prepRef === groupKey);
   } else {
-    // ready/shipped: group by pickupRef
-    const orders = (_pickupOrders||[]).filter(o =>
-      ['Ready', 'Picked-Up', 'Shipped'].includes(o.pickupStatus||'Pending') &&
-      (o.pickupRef||'') === groupKey
-    );
+    // ready: exactly the orders the board card counts (see _puReadyCardOrders)
+    const orders = _puReadyCardOrders(groupKey);
     if (orders.length) {
       group = { key: groupKey, pickupRef: groupKey, pickupDate: orders[0].pickupDate,
                 client: orders[0].client||'', phone: orders[0].phone||orders[0].clientPhone||'', orders };
@@ -105309,6 +105661,7 @@ function openPuCardOrdersModal(groupKey, colType, trigger = null) {
   // reopening a half-done group should resume, not restart.
   const firstUndone = (group.orders || []).find(o => !o.prepChecked);
   _pwSelId = (colType === 'prep' && firstUndone ? firstUndone : (group.orders || [])[0])?._id || null;
+  _pwMulti.clear(); _pwMultiAnchor = null;
   // Desktop shows both panels; narrow viewports open on the list so the picker
   // chooses an order before being dropped into one.
   qs('#pw-body')?.classList.remove('pw-show-work');
@@ -105331,6 +105684,7 @@ function openPuCardOrdersModal(groupKey, colType, trigger = null) {
 
 function closePuCardOrdersModal() {
   _pwReaderKeys = '';
+  _pwMulti.clear(); _pwMultiAnchor = null;
   _pwOpenLocationCards.clear();
   const modal = qs('#pu-card-orders-modal');
   clearTimeout(_pucoHideTimer);
@@ -105390,11 +105744,8 @@ function pucoLiveSearch(q) {
 function _pucoGetGroup() {
   if (!_pucoGroupKey) return null;
   if (_pucoColType === 'prep') return _puPrepGroups.find(g => g.prepRef === _pucoGroupKey) || null;
-  // ready: reconstruct from live orders
-  const orders = (_pickupOrders||[]).filter(o =>
-    ((o.pickupStatus||'Pending')==='Ready' || (o.pickupStatus||'Pending')==='Picked-Up') &&
-    (o.pickupRef||'')=== _pucoGroupKey
-  );
+  // ready: reconstruct from live orders — same membership as the board card
+  const orders = _puReadyCardOrders(_pucoGroupKey);
   return orders.length ? { key: _pucoGroupKey, pickupRef: _pucoGroupKey, pickupDate: orders[0].pickupDate,
                             client: orders[0].client||'', phone: orders[0].phone||orders[0].clientPhone||'', orders } : null;
 }
@@ -105593,7 +105944,7 @@ function _pwOrderCardHtml(o, isSel, isDone) {
   return `
     <button type="button" class="pw-ocard${isSel?' is-sel':''}${isDone?' is-done':''}"
       data-order-id="${esc(o._id)}" role="option" aria-selected="${isSel?'true':'false'}"
-      onclick="pwSelectOrder('${esc(o._id)}')" oncontextmenu="_pwOrderCtx(event,'${esc(o._id)}')">
+      onclick="pwOrderClick(event,'${esc(o._id)}')" oncontextmenu="_pwOrderCtx(event,'${esc(o._id)}')">
       <div class="pw-oc-top">
         ${isDone ? `<span class="pw-oc-done"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>` : ''}
         <span class="pw-oc-ref">#${esc(o.ref||'—')}</span>
@@ -105663,6 +106014,7 @@ function _pucoRenderOrders(group, filterQ) {
     }
     return sep + _pwOrderCardHtml(o, o._id === _pwSelId, isDone);
   }).join('');
+  _pwPaintMulti(allOrders);
 
   _pwRenderWork();
   _pwSyncCounts(orders.length, allOrders.length, q);
@@ -105810,7 +106162,7 @@ function _pwScanIntroHtml(o, state) {
     <div class="pw-station-main"><div class="pw-station-target"><span class="pw-station-eyebrow">${complete ? (manualReview ? (en?'Review before approval':'راجع قبل الاعتماد') : (en?'Order ready':'الطلب جاهز')) : (en?'Scan next':'امسح التالي')}</span><strong>${nextItem ? esc(nextItem.name || (en?'Unnamed product':'صنف بدون اسم')) : complete ? (en?'All pieces accounted for':'تم حساب جميع القطع') : (en?'Find the next piece':'حدد القطعة التالية')}</strong><small>${nextItem ? `${en?'Needed now':'المطلوب الآن'}: ${fmtN(nextRemaining)} ${en?(nextRemaining===1?'piece':'pieces'):'قطعة'}${nextItem.code ? ` · ${en?'Code':'الكود'} <bdi>${esc(nextItem.code)}</bdi>` : ''}` : manualReview ? (en?'Approve preparation after checking the exceptions below.':'اعتمد التحضير بعد مراجعة الاستثناءات أدناه.') : complete ? (en?'You can approve preparation.':'يمكنك اعتماد التحضير.') : (en?'Scans can be queued while data loads.':'يمكنك المسح أثناء تحميل البيانات.')}</small></div><div class="pw-station-remaining"><b>${state?.summary ? fmtN(Math.max(0,total-matched-skipped)) : '—'}</b><span>${en?'remaining':'متبقية'}</span></div></div>
     <div class="pw-scan-overview"><span><b>${fmtN(matched)}</b>${en?'Scanned':'تم مسحها'}</span><span><b>${fmtN(total)}</b>${en?'Required':'مطلوبة'}</span>${skipped ? `<span class="pw-scan-exceptions"><b>${fmtN(skipped)}</b>${en?'Without scan':'بدون مسح'}</span>` : ''}</div>
     <div class="pw-reader-bar"><span class="pw-reader-light${busy?' is-busy':''}" aria-hidden="true">${manualReview?'!':complete?'✓':''}</span><strong>${readyText}</strong>${complete ? '' : `<button type="button" class="pw-manual-toggle" aria-expanded="${!!state?.manualOpen}" data-pu-edit onclick="pwToggleManualScan('${esc(String(o._id))}')">${state?.manualOpen?(en?'Close manual entry':'إغلاق الإدخال اليدوي'):(en?'Type a barcode':'إدخال باركود يدوي')}</button>`}</div>
-    ${state?.manualOpen && !complete?`<form class="pw-order-scan pw-manual-form" onsubmit="event.preventDefault();pwSubmitManualScan('${esc(String(o._id))}')"><label for="pw-order-scan">${en?'Piece or pack barcode':'باركود القطعة أو الباك'}</label><div><input id="pw-order-scan" data-scan-input type="text" dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" value="${esc(state.orderScanDraft||'')}" oninput="_pwPickState('${esc(String(o._id))}').orderScanDraft=this.value" placeholder="${en?'Enter the barcode':'أدخل الباركود'}"><button type="submit">${en?'Verify':'تحقق'}</button></div></form>`:''}
+    ${state?.manualOpen && !complete?`<form class="pw-order-scan pw-manual-form" onsubmit="event.preventDefault();pwSubmitManualScan('${esc(String(o._id))}')"><label for="pw-order-scan">${en?'Piece or pack barcode':'باركود القطعة أو الباك'}</label><div><input id="pw-order-scan" data-scan-input data-unit-code-entry type="text" dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" value="${esc(state.orderScanDraft||'')}" oninput="_pwPickState('${esc(String(o._id))}').orderScanDraft=this.value" placeholder="${en?'Enter the barcode':'أدخل الباركود'}"><button type="submit">${en?'Verify':'تحقق'}</button></div></form>`:''}
     ${state?.error?`<div class="pw-scan-feedback is-error" role="alert">${esc(en?'Could not load preparation data. Check the connection, then retry.':'تعذر تحميل بيانات التحضير. تحقق من الاتصال ثم أعد المحاولة.')} <button type="button" data-pu-edit onclick="pwRetryOrderScan('${esc(String(o._id))}')">${en?'Retry':'إعادة المحاولة'}</button></div>`:''}
     ${feedback?`<div data-pw-scan-result class="pw-scan-feedback pw-station-result ${feedback.wrongProduct?'is-error is-wrong-product':feedback.error?'is-error':feedback.pending?'is-pending':feedback.exceptionAction?'is-exception':'is-success'}" role="${feedback.error?'alert':'status'}"><span class="pw-result-mark" aria-hidden="true">${feedback.wrongProduct?'!':feedback.error?'×':feedback.pending?'…':feedback.exceptionAction==='skip'?'!':feedback.exceptionAction==='undo'?'↶':'✓'}</span><div class="pw-result-copy"><strong>${feedbackLabel}</strong><span>${esc(feedback.text)}</span>${feedback.hint?`<small>${esc(feedback.hint)}</small>`:''}${feedback.identifier?`<code dir="ltr">${esc(feedback.identifier)}</code>`:''}</div>${feedback.retryable&&feedback.identifier?`<button type="button" data-pu-edit onclick="_pwRetryLastScan('${esc(String(o._id))}')">${en?'Retry scan':'أعد المحاولة'}</button>`:''}</div>`:''}
     ${feedback?.purchaseTransactionId?`<button type="button" data-pw-scan-review class="pw-undo-pick" onclick="pucoShowInvoice('${esc(feedback.purchaseTransactionId)}')">${en?'Review purchase receipt':'مراجعة فاتورة الشراء'}</button>`:''}
@@ -105856,53 +106208,13 @@ function _pwNormalizePickBarcode(value) {
 /* Scan sounds in the prep workspace. ok = a correct piece (one soft tick); warn = any other
    rejected scan (two short beeps, no extra message); alarm = a product that is not in the
    order (loud, alternating, with the red banner). Generated with WebAudio — no files. */
-let _pwAudioCtx = null;
 function _pwScanSound(kind) {
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = _pwAudioCtx || (_pwAudioCtx = new Ctx());
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    const t0 = ctx.currentTime + 0.01;
-    const tone = (freq, start, dur, type, gain) => {
-      const osc = ctx.createOscillator(), amp = ctx.createGain();
-      osc.type = type; osc.frequency.setValueAtTime(freq, t0 + start);
-      amp.gain.setValueAtTime(0.0001, t0 + start);
-      amp.gain.exponentialRampToValueAtTime(gain, t0 + start + 0.008);
-      amp.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
-      osc.connect(amp).connect(ctx.destination);
-      osc.start(t0 + start); osc.stop(t0 + start + dur + 0.02);
-    };
-    if (kind === 'ok') {
-      // Success chime: two light bell notes rising (C6 → G6), short and quiet.
-      tone(1046.5, 0, 0.16, 'sine', 0.16);
-      tone(1568, 0.07, 0.22, 'sine', 0.13);
-    } else if (kind === 'alarm') {
-      // Wrong product: a short "error buzz" — two quick low buzzes (~150 Hz square, softened by a
-      // low-pass filter), ~0.25s in all. Clearly an error, not an alarm (the owner found the long
-      // bass buzzer annoying, Nov 14).
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass'; filter.frequency.setValueAtTime(1100, t0); filter.Q.setValueAtTime(1, t0);
-      filter.connect(ctx.destination);
-      for (const start of [0, 0.14]) {
-        const osc = ctx.createOscillator(), amp = ctx.createGain();
-        osc.type = 'square'; osc.frequency.setValueAtTime(150, t0 + start);
-        amp.gain.setValueAtTime(0.0001, t0 + start);
-        amp.gain.exponentialRampToValueAtTime(0.2, t0 + start + 0.01);
-        amp.gain.setValueAtTime(0.2, t0 + start + 0.08);
-        amp.gain.exponentialRampToValueAtTime(0.0001, t0 + start + 0.11);
-        osc.connect(amp).connect(filter);
-        osc.start(t0 + start); osc.stop(t0 + start + 0.12);
-      }
-    } else {
-      // Any other rejected scan (already registered, quantity complete…): one short soft low tone.
-      tone(392, 0, 0.16, 'triangle', 0.28);
-    }
-  } catch (_) { /* sound is a convenience; never block a scan */ }
+  window.BarcodeScanSound?.play(kind === 'ok' ? 'success' : kind === 'warn' ? 'duplicate' : 'error');
 }
 function _pwScanSoundFor(feedback) {
   if (!feedback || feedback.pending) return;
-  _pwScanSound(feedback.error ? (feedback.wrongProduct ? 'alarm' : 'warn') : 'ok');
+  const duplicate = feedback.code === 'DUPLICATE_SCAN' || /already registered|already scanned|مسجل بالفعل|مسح هذه القطعة بالفعل/i.test(String(feedback.text || ''));
+  _pwScanSound(feedback.error ? (duplicate ? 'warn' : 'alarm') : 'ok');
 }
 async function pwScanAnyOrderUnit(orderId, inputId = 'pw-order-scan', suppliedIdentifier) {
   if (!_puRequireEdit()) return;
@@ -106056,7 +106368,7 @@ async function pwScanOrderUnit(orderId, lineId, inputId, suppliedIdentifier, uni
         lineId, physicalPossessionConfirmed: true }) });
     lineId = result.lineId || lineId;
     state.last = { unit: result.unit, isPack: result.isPack, packId: result.packId, quantity: result.quantity, lineId, reason: '' };
-    if (input) input.value = '';
+    if (input) window.BarcodeInput?.clear(input);
     state.loading = false;
     state.orderScanDraft = '';
     state.pendingScanAnimation = {lineId,quantity:result.quantity||1,at:Date.now()};
@@ -106144,7 +106456,7 @@ function pwSubmitManualScan(orderId) {
   const input = document.getElementById('pw-order-scan');
   const identifier = input?.value || '';
   _pwPickState(orderId).orderScanDraft = '';
-  if (input) input.value = '';
+  if (input) window.BarcodeInput?.clear(input);
   return _pwSubmitScan(orderId, identifier);
 }
 
@@ -106753,7 +107065,7 @@ document.addEventListener('keydown', e => {
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
   if (e.key === 'ArrowDown')      { e.preventDefault(); pwMoveSelection(1); }
   else if (e.key === 'ArrowUp')   { e.preventDefault(); pwMoveSelection(-1); }
-  else if (e.key === 'Escape')    { e.preventDefault(); _pwHoldEnd(); _pwPeekOpen = false; closePuCardOrdersModal(); }
+  else if (e.key === 'Escape')    { e.preventDefault(); _pwHoldEnd(); _pwPeekOpen = false; if (_pwMulti.size) _pwMultiClear(); else closePuCardOrdersModal(); }
   // Hold Space to peek at the invoice. ⚠ e.repeat is what makes it a HOLD:
   // the OS fires keydown continuously, and starting a fresh timer on each one
   // would mean the invoice never opens.
@@ -107603,7 +107915,7 @@ async function pucoRemoveFromPrep(orderId) {
   if (!group) return;
   const o = group.orders.find(x => x._id === orderId);
   if (!o) return;
-  const ok = await _puConfirm(t('puReturnOrderConfirm',{ref:o.ref||orderId}), t('puBackToPending'), t('puReturnWord'), '#d97706');
+  const ok = await _puConfirm(t('puReturnOrderConfirm',{ref:o.ref||orderId}) + _puPrintedBostaWarning([o], 'pending'), t('puBackToPending'), t('puReturnWord'), '#d97706');
   if (!ok) return;
 
   if (_pucoColType === 'prep') {
@@ -107918,7 +108230,7 @@ async function puGroupUndoReady(groupKey) {
     return key === groupKey;
   });
   if (!groupOrders.length) return;
-  const ok = await _puConfirm(t('puUndoGroupConfirm',{name:groupOrders[0].client||groupKey,n:groupOrders.length}), t('puBackToPending'), t('puReturnWord'), '#d97706');
+  const ok = await _puConfirm(t('puUndoGroupConfirm',{name:groupOrders[0].client||groupKey,n:groupOrders.length}) + _puPrintedBostaWarning(groupOrders, 'pending'), t('puBackToPending'), t('puReturnWord'), '#d97706');
   if (!ok) return;
   try {
     const result = await api('/transactions/pickup-orders/undo', {
@@ -107954,7 +108266,7 @@ async function puGroupUndoReadyToPrep(groupKey) {
   setButtons(true);
   let submitted = false;
   try {
-    const confirmed = await _puConfirm(t('puUndoGroupToPrepConfirm', {name:groupKey,n:groupOrders.length}),
+    const confirmed = await _puConfirm(t('puUndoGroupToPrepConfirm', {name:groupKey,n:groupOrders.length}) + _puPrintedBostaWarning(groupOrders, 'preparing'),
       t('puUndoToPrepTitle'), t('puUndoToPrepTitle'), '#2563eb');
     if (!confirmed) return;
     const prepRef = _genPrepRef();
@@ -108248,7 +108560,7 @@ async function puBoardDrop(e, colType) {
     }
     // prep → pending: dissolve prep group (restore to pending)
     else if (colType === 'pending') {
-      const okd = await _puConfirm(t('puGroupBackToPendingConfirm',{ref:prepGrp.prepRef,n:prepGrp.orders.length}), t('puBackToPending'), t('puReturnWord'), '#d97706');
+      const okd = await _puConfirm(t('puGroupBackToPendingConfirm',{ref:prepGrp.prepRef,n:prepGrp.orders.length}) + _puPrintedBostaWarning(prepGrp.orders, 'pending'), t('puBackToPending'), t('puReturnWord'), '#d97706');
       if (!okd) return;
       const ids = prepGrp.orders.filter(o => o.pickupStatus === 'Preparing').map(o => String(o._id));
       if (!ids.length) return toast(t('puAlreadyInPrep'), true);
@@ -108363,7 +108675,7 @@ function renderReadyToShipTable() {
 
   const cnt = qs('#pu-ready-tbl-count');
   if (cnt) cnt.textContent = _puCanViewShipmentTotals()
-    ? t('puRdyCount', { n: fmtN(rows.length), v: fmtJT(rows.reduce((s,o)=>s+(o.total||0),0)) })
+    ? t('puRdyCount', { n: fmtN(rows.length), v: fmtJT(rows.reduce((s,o)=>s+_puOrderValue(o),0)) })
     : t('puOrdersCount', { n: fmtN(rows.length) });
 
   if (!rows.length) {
@@ -108434,9 +108746,9 @@ function _puRenderKPIs() {
   const setText = (id, val) => { const el = qs('#' + id); if (el) el.textContent = val; };
   setText('pu-kpi-total',         fmtN(totalRuns));
   setText('pu-kpi-delivered',     fmtN(delivered.length));
-  _puSetShipmentTotal('pu-kpi-delivered-amt', delivered.reduce((s,o)=>s+(o.total||0),0));
+  _puSetShipmentTotal('pu-kpi-delivered-amt', delivered.reduce((s,o)=>s+_puOrderValue(o),0));
   setText('pu-kpi-pickedup',      fmtN(pickedUp.length));
-  _puSetShipmentTotal('pu-kpi-pickedup-amt', pickedUp.reduce((s,o)=>s+(o.total||0),0));
+  _puSetShipmentTotal('pu-kpi-pickedup-amt', pickedUp.reduce((s,o)=>s+_puOrderValue(o),0));
 }
 
 // ── Group orders into "runs" by pickupRef ──────────────────────
@@ -108776,7 +109088,7 @@ function renderPickupRuns() {
     if (empty) empty.style.display = 'none';
     const runsHtml = slice.map((run, i) => {
       if (run.isDailyShipping || run.isReadyRun) return _puDailyRunRowHtml(run, i, _puExpandedRunRef === run.key);
-      const totalAmt   = run.orders.reduce((s, o) => s + (o.total||0), 0);
+      const totalAmt   = run.orders.reduce((s, o) => s + _puOrderValue(o), 0);
       const shipcos    = [...new Set(run.orders.map(o => o.shipCo).filter(Boolean))];
       // Live status, not the stored pickupStatus — a shipment that arrived at the carrier but
       // whose row was never visited since is still Bosta-DELIVERED; _puDisplayStatus is the
@@ -109196,7 +109508,8 @@ async function savePuEditDate() {
   if (!ids.length) return toast(t('puNoOrdersInRun'), true);
   try {
     const result = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids, date, reuseOpenRun: true }) });
-    if (result.updated !== ids.length) throw new Error('لم يتم تحديث تاريخ كل الطلبات الجاهزة؛ حدّث القائمة وحاول مرة أخرى.');
+    if (result.updated !== _puConfirmExpected(result, ids.length)) throw new Error('لم يتم تحديث تاريخ كل الطلبات الجاهزة؛ حدّث القائمة وحاول مرة أخرى.');
+    _puConfirmSkippedNotice(result);
     closePuEditModal();
     toast(t('puDateUpdated'));
     await loadPickupOrders();
@@ -109246,7 +109559,7 @@ function _renderPuEditTargetList() {
   }
   el.innerHTML = _puEditAvailableRuns.map(run => {
     const readyCount = run.orders.filter(o => ['Ready','Picked-Up'].includes(o.pickupStatus)).length;
-    const total = run.orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const total = run.orders.reduce((sum, o) => sum + _puOrderValue(o), 0);
     // Keep this summary plain text. fmtJ returns styled HTML, which becomes
     // visible markup when it is interpolated into an escaped translation.
     const totalText = `EGP ${fmtMoneyN(total)}`;
@@ -109656,6 +109969,7 @@ async function _loadPickupOrders({ background = false, scope = _pickupRouteScope
       return { ...row, items: draft.items, total: draft.total };
     });
     _puOrdersLoaded = true;
+    _puLoadShippedHistory();
     _puOrdersFetchedAt = Date.now();
     _puOrdersWriteRevision = writeRevision;
     _puOrdersLiveRevision = revision;
@@ -109942,7 +110256,8 @@ async function submitCreatePickup() {
         method: 'POST',
         body: JSON.stringify({ ids, date, reuseOpenRun: true }),
       });
-      if (res.updated !== ids.length) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
+      if (res.updated !== _puConfirmExpected(res, ids.length)) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
+      _puConfirmSkippedNotice(res);
       const ref = res.pickupRef || '';
       const cnt = res.updated || ids.length;
       toast(t('puRunCreated',{n:fmtN(cnt),ref}));
@@ -110047,7 +110362,8 @@ async function runBulkPickup() {
     try {
       const res = await api('/transactions/pickup-orders/confirm', { method:'POST', body: JSON.stringify({ ids: matched, date, reuseOpenRun: true }) });
       updatedCount = res.updated ?? matched.length;
-      if (updatedCount !== matched.length) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
+      if (updatedCount !== _puConfirmExpected(res, matched.length)) throw new Error('لم يتم نقل كل الطلبات المحضّرة؛ حدّث القائمة وحاول مرة أخرى.');
+      _puConfirmSkippedNotice(res);
       batchRef = res.pickupRef || '';
     } catch(e) {
       _bulkPickupRunning = false;
@@ -110123,7 +110439,7 @@ function exportPickupExcel() {
     const showTotals = _puCanViewShipmentTotals();
     const rows = [[t('puXlPickupRef'),t('puXlPickupDate'),t('puXlShipCo'),t('puXlOrdersCount'),...(showTotals ? [t('puXlTotal')] : []),t('puXlEmployee')]];
     _pickupRuns.forEach(run => {
-      const total = run.orders.reduce((s,o)=>s+(o.total||0),0);
+      const total = run.orders.reduce((s,o)=>s+_puOrderValue(o),0);
       const ships = [...new Set(run.orders.map(o=>o.shipCo).filter(Boolean))].join('، ');
       rows.push([run.pickupRef, run.pickupDate||'', ships, run.orders.length, ...(showTotals ? [total] : []), run.pickupBy]);
     });
@@ -121213,13 +121529,13 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js?v=20261114-join-pickup"></script>
-<script src="/pickup-daily-shipping.js?v=20261114-collected-day"></script>
+<script src="/pickup-daily-shipping.js?v=20261123-due-quiet"></script>
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
 <script src="/roles-permissions.js?v=20261113-bundle"></script>
 <script src="/announcements.js?v=4"></script>
-<script src="/assistant.js?v=19"></script>
+<script src="/assistant.js?v=21"></script>
 <script src="/supplier-return-statements.js?v=5"></script>
 <script src="/bundle-analytics.js?v=2"></script>
 <script src="/promotions.js?v=6"></script>
@@ -121237,15 +121553,16 @@ function _spRenderHistoryTab() {
 <script src="/shopify-sync.js?v=20261114-compact"></script>
 <link rel="stylesheet" href="/inventory-units.css?v=20261119-unregistered">
 <link rel="stylesheet" href="/supplier-return-pieces.css?v=20261020-1">
-<script src="/supplier-return-pieces.js?v=20261020-1"></script>
+<script src="/supplier-return-pieces.js?v=20261123-unit-code-slots"></script>
 <link rel="stylesheet" href="/legacy-stock-labels.css?v=20261020-2">
 <link rel="stylesheet" href="/product-stocktake.css?v=20261027-1">
-<script src="/barcode-input.js?v=20261020-short-packs"></script>
+<script src="/barcode-input.js?v=20261123-scan-audio"></script>
+<link rel="stylesheet" href="/barcode-manual-entry.css?v=20261123-unit-code-slots">
 <script src="/inventory-errors.js?v=20261020-pack-origin"></script>
 <link rel="stylesheet" href="/inventory-scanner.css?v=20261020-sreturn">
-<script src="/inventory-scanner.js?v=20261119-unregistered"></script>
-<link rel="stylesheet" href="/global-search-scanner.css?v=20261119-unregistered">
-<script src="/global-search-scanner.js?v=20261119-unregistered"></script>
+<script src="/inventory-scanner.js?v=20261123-scanner-layout-2"></script>
+<link rel="stylesheet" href="/global-search-scanner.css?v=20261123-scanner-layout-2">
+<script src="/global-search-scanner.js?v=20261123-scanner-layout-2"></script>
 <link rel="stylesheet" href="/warehouses.css?v=20261103-neutral-surfaces">
 <script src="/warehouses.js?v=20261103-purchase-location"></script>
 <link rel="stylesheet" href="/inventory-overview.css?v=20261115-1">
@@ -121264,11 +121581,11 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/inventory-packs.css?v=20261020-short-code12">
 <script src="/inventory-packs.js?v=20261020-pack-print-coverage"></script>
 <script src="/legacy-stock-labels.js?v=20261020-2"></script>
-<script src="/product-stocktake.js?v=20261113-supplier"></script>
+<script src="/product-stocktake.js?v=20261123-scan-audio"></script>
 <link rel="stylesheet" href="/purchase-receiving.css?v=20261020-compact">
 <script src="/purchase-receiving.js?v=20261103-warehouse-route"></script>
 <link rel="stylesheet" href="/sales-scanner.css?v=20261112-scan-gate">
-<script src="/sales-scanner.js?v=20261113-supplier"></script>
+<script src="/sales-scanner.js?v=20261123-scan-audio"></script>
 <link rel="stylesheet" href="/purchase-scan-receive.css?v=20261115-3">
 <script src="/purchase-scan-receive.js?v=20261115-2"></script>
 <link rel="stylesheet" href="/purchase-form.css?v=20261116-2">

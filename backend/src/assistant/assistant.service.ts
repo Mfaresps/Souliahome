@@ -13,6 +13,7 @@ import { METHOD_LABEL } from '../purchasing-engine/engine.util';
 import {
   Period, Understood, addDays, cairoToday, normalizeQuestion, previousPeriod, understand, subjectOf,
 } from './assistant-intent.util';
+import { FollowUpLevel, FollowUpUrgency, compareUrgency, followUpUrgency, moreUrgent } from './followup-priority.util';
 
 /**
  * «مساعد SOULIA» — answers a typed question from the SAME functions the pages use.
@@ -33,7 +34,9 @@ type Fmt = 'money' | 'int' | 'pct' | 'dec';
 type Tone = 'bad' | 'warn' | 'good' | 'up' | 'down' | 'neutral';
 interface Point { t: string; sub?: string; tone?: Tone; link?: Link }
 type Seg = string | { v: number; f: Fmt; cite?: number } | { b: string };
-type Cell = string | number | { v: number; f: Fmt } | { t: string; link?: Link; sub?: string; tone?: string };
+type Cell = string | number | { v: number; f: Fmt } | { t: string; link?: Link; sub?: string; tone?: string }
+  /** Several links in one cell — e.g. every order number of one customer. */
+  | { links: { t: string; link?: Link }[]; sub?: string };
 /** Where a source or a table cell leads. `tab`/`from`/`to`/`period`/`filter` reopen the page in the state the answer used. */
 interface Link { kind: 'page' | 'order' | 'supplier' | 'product' | 'shopify' | 'po'; page?: string; id?: string; tab?: string; from?: string; to?: string; period?: string; filter?: string }
 interface Source { n: number; title: string; detail: string; link?: Link }
@@ -129,6 +132,7 @@ export class AssistantService {
       case 'daily': return this.daily(u, user, L, lang, today);
       case 'reorder': return this.reorder(u, user, L, lang, today);
       case 'velocity': return this.velocity(u, user, L, lang, today);
+      case 'followups': return this.followUps(u, user, L, lang);
       case 'help': return this.help(L);
       case 'clarify': return this.clarify(u, L);
       default: return this.unknown(u, L);
@@ -879,6 +883,119 @@ export class AssistantService {
     };
   }
 
+  // ── Customers needing follow-up ───────────────────────────────────────────────────────────────
+  /**
+   * Open follow-ups opened in the period (default: this month), grouped by customer — the same
+   * «open» rule as the follow-ups page and the Shopify KPI strip (`_fuIsSettled`: not cancelled and
+   * not in a settled status). ⚠ Keep FU_SETTLED in step with FU_SETTLED_STATUSES in index.html.
+   * The follow-ups page sits under the `complaints` perm; anyone else sees only follow-ups assigned to them.
+   */
+  private async followUps(u: Understood, user: AssistantUser, L: any, lang: Lang) {
+    const FU_SETTLED = ['تم حل المشكلة', 'تمت المتابعة', 'تمت عملية التأكيد', 'العميل ألغى الطلب'];
+    const p = u.period!;
+    const label = this.periodLabel(p, L, lang);
+    const topic = L('العملاء الذين يحتاجون متابعة', 'Customers needing follow-up');
+    const all = this.can(user, ['complaints']);
+    const [from] = this.cairoDayMs(p.from);
+    const [, to] = this.cairoDayMs(p.to);
+    const filter: any = { cancelled: { $ne: true }, status: { $nin: FU_SETTLED }, createdAt: { $gte: new Date(from), $lt: new Date(to) } };
+    if (!all) {
+      const me: any[] = [];
+      if (user?.userId) me.push({ responsibleId: String(user.userId) });
+      if (user?.username) me.push({ responsibleUsername: String(user.username) });
+      if (!me.length) return this.denied('followups', L('متابعة الطلبات', 'Order follow-ups'), L, topic);
+      filter.$or = me;
+    }
+    const rows: any[] = await this.connection.db!.collection('followups').find(filter, {
+      projection: { orderRef: 1, transactionId: 1, shopifyOrderId: 1, clientName: 1, clientPhone: 1, responsibleName: 1, reason: 1, createdAt: 1, escalationBaseline: 1, deferredUntil: 1 },
+    }).sort({ createdAt: 1 }).toArray();
+
+    // One customer = same phone (last 10 digits), else the same name. One order counted once.
+    // The customer's priority = their most urgent open follow-up (followup-priority.util.ts).
+    const now = Date.now();
+    type G = { name: string; phone: string; orders: Map<string, any>; owners: Set<string>; reasons: Set<string>; u: FollowUpUrgency | null };
+    const groups = new Map<string, G>();
+    for (const f of rows) {
+      const digits = String(f.clientPhone || '').replace(/\D/g, '').slice(-10);
+      const name = String(f.clientName || '').trim();
+      const key = digits.length >= 8 ? 'p:' + digits : 'n:' + (name.toLowerCase() || String(f._id));
+      let g = groups.get(key);
+      if (!g) { g = { name: name || L('بدون اسم', 'No name'), phone: String(f.clientPhone || ''), orders: new Map(), owners: new Set(), reasons: new Set(), u: null }; groups.set(key, g); }
+      const ref = String(f.orderRef || '').replace(/^#/, '').trim();
+      if (ref && !g.orders.has(ref)) g.orders.set(ref, f);
+      g.u = moreUrgent(g.u, followUpUrgency(f, now));
+      if (f.responsibleName) g.owners.add(String(f.responsibleName));
+      if (f.reason) g.reasons.add(String(f.reason));
+    }
+    const list = [...groups.values()].filter((g) => g.orders.size && g.u)
+      .sort((a, b) => compareUrgency({ u: a.u!, orders: a.orders.size }, { u: b.u!, orders: b.orders.size }));
+    if (u.reverse) list.reverse();
+    const orderCount = list.reduce((x, g) => x + g.orders.size, 0);
+    const count = (lv: FollowUpLevel) => list.filter((g) => g.u!.level === lv).length;
+    const scope = all ? '' : L(' (المسندة إليك)', ' (assigned to you)');
+    const linkOf = (f: any): Link | undefined => f.transactionId ? { kind: 'order', id: String(f.transactionId) }
+      : f.shopifyOrderId ? { kind: 'shopify', id: String(f.shopifyOrderId) } : undefined;
+    const M = lang === 'en' ? MONTHS_EN : MONTHS_AR;
+    const dayOf = (t: number) => {
+      const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', month: 'numeric', day: 'numeric' }).formatToParts(new Date(t));
+      const m = Number(parts.find((x) => x.type === 'month')?.value || 1);
+      return `${parts.find((x) => x.type === 'day')?.value || ''} ${M[m - 1]}`;
+    };
+    const LEVEL: Record<FollowUpLevel, [string, string]> = {
+      urgent: [L('عاجلة', 'Urgent'), 'bad'], late: [L('متأخرة', 'Late'), 'warn'], due: [L('مستحقة اليوم', 'Due today'), 'warn'],
+      new: [L('جديدة', 'New'), 'good'], deferred: [L('مؤجلة', 'Deferred'), ''],
+    };
+    const waited = (x: FollowUpUrgency) => {
+      if (x.level === 'deferred') return L(`حتى ${dayOf(x.until!)}`, `until ${dayOf(x.until!)}`);
+      const h = Math.floor(x.hours);
+      if (h < 1) return L('منذ أقل من ساعة', 'under an hour');
+      if (h < 48) return L(`منذ ${h} ساعة`, `${h} h waiting`);
+      const d = Math.floor(h / 24);
+      return L(`منذ ${d} يوم`, `${d} days waiting`);
+    };
+    const urgent = count('urgent'), late = count('late');
+    const shown = list.slice(0, 50);
+    return {
+      intent: 'followups', status: 'answered' as const,
+      understood: [topic, label, u.reverse ? L('الأقل أهمية أولًا', 'Least urgent first') : L('الأهم أولًا', 'Most urgent first')],
+      steps: [
+        L('فهمت السؤال: العملاء الذين لديهم متابعة مفتوحة', 'Understood: customers with an open follow-up'),
+        L(`الفترة: ${label} (تاريخ فتح المتابعة)`, `Period: ${label} (date the follow-up was opened)`),
+        L('استبعدت المتابعات المغلقة والملغاة، وجمعت أوردرات كل عميل برقم هاتفه', 'Left out closed and cancelled follow-ups; grouped each customer\'s orders by phone'),
+        L('رتّبت حسب التأخير: عاجلة (48 ساعة فأكثر) ثم متأخرة (24) ثم مستحقة اليوم (12) ثم جديدة ثم مؤجلة', 'Ordered by delay: urgent (48h+), late (24h), due today (12h), new, deferred'),
+        ...(all ? [] : [L('التحقق من الصلاحية: المسندة إليك فقط', 'Permission check: only those assigned to you')]),
+      ],
+      lead: list.length
+        ? [{ v: list.length, f: 'int', cite: 1 }, L(` عميل يحتاجون متابعة ${this.inP(p, label, L)}${scope}، على `, ` customers need follow-up ${this.inP(p, label, L)}${scope}, across `), { v: orderCount, f: 'int', cite: 1 }, L(' أوردر', ' orders'),
+          ...(urgent || late ? [L('؛ منهم ', '; '), { v: urgent, f: 'int' as Fmt }, L(' عاجل و', ' urgent and '), { v: late, f: 'int' as Fmt }, L(' متأخر.', ' late.')] : ['.'])]
+        : [this.noneIn(L(`لا يوجد عملاء يحتاجون متابعة${scope}`, `No customers need follow-up${scope}`), p, label, L)],
+      kpis: list.length ? [
+        { label: L('عاجلة', 'Urgent'), v: urgent, f: 'int' as Fmt },
+        { label: L('متأخرة', 'Late'), v: late, f: 'int' as Fmt },
+        { label: L('مستحقة اليوم', 'Due today'), v: count('due'), f: 'int' as Fmt },
+        { label: L('جديدة', 'New'), v: count('new'), f: 'int' as Fmt },
+        { label: L('مؤجلة', 'Deferred'), v: count('deferred'), f: 'int' as Fmt },
+        { label: L('الأوردرات', 'Orders'), v: orderCount, f: 'int' as Fmt },
+      ] : undefined,
+      table: list.length ? {
+        cols: [{ label: L('الأولوية', 'Priority') }, { label: L('العميل', 'Customer') }, { label: L('عدد الأوردرات', 'Orders'), num: true }, { label: L('أرقام الأوردرات', 'Order numbers') }, { label: L('المسؤول', 'Owner') }],
+        rows: shown.map((g) => [
+          { t: LEVEL[g.u!.level][0], sub: waited(g.u!), tone: LEVEL[g.u!.level][1] || undefined },
+          { t: g.name, sub: g.phone || undefined },
+          { v: g.orders.size, f: 'int' as Fmt },
+          { links: [...g.orders.entries()].map(([ref, f]) => ({ t: '#' + ref, link: linkOf(f) })), sub: [...g.reasons].slice(0, 2).join(' · ') || undefined },
+          [...g.owners].join('، ') || '—',
+        ] as Cell[]),
+      } : undefined,
+      note: [
+        list.length > shown.length ? L(`يُعرض أول ${shown.length} عميل من ${list.length}.`, `Showing the first ${shown.length} of ${list.length} customers.`) : '',
+        list.length ? (u.reverse ? L('للأهم أولًا اسأل: «المتابعات الأكثر تأخيرًا».', 'For most urgent first, ask: «most overdue follow-ups».')
+          : L('للأقل أهمية أولًا اسأل: «المتابعات الأقل أهمية».', 'For least urgent first, ask: «least urgent follow-ups».')) : '',
+      ].filter(Boolean).join(' ') || undefined,
+      sources: [{ n: 1, title: L('متابعة الطلبات', 'Order follow-ups'), detail: L('المتابعات المفتوحة', 'Open follow-ups'), link: { kind: 'page', page: 'followups' } }],
+    };
+  }
+
   // ── Sales speed (units per day) ───────────────────────────────────────────────────────────────
   /**
    * Units sold per product over a window — the same sales the reports count (type مبيعات, not
@@ -1520,8 +1637,8 @@ export class AssistantService {
   private help(L: any) {
     return {
       intent: 'help', status: 'answered' as const, understood: [L('مساعدة', 'Help')], steps: [],
-      lead: [L('أستطيع الإجابة عن: المبيعات والأرباح لأي فترة، أفضل شهر أو يوم، أكثر المنتجات مبيعًا، النواقص ورصيد أي منتج، حالة أوردر برقمه، أرصدة الموردين، الإلغاءات والمرتجعات، الخزنة، وأوردرات شوبيفاي المعلقة.',
-        'I can answer: sales and profit for any period, best month or day, best-selling products, low stock and any product\'s stock, an order by its number, supplier balances, cancellations and returns, the vault, and pending Shopify orders.')],
+      lead: [L('أستطيع الإجابة عن: المبيعات والأرباح لأي فترة، أفضل شهر أو يوم، أكثر المنتجات مبيعًا، النواقص ورصيد أي منتج، حالة أوردر برقمه، أرصدة الموردين، الإلغاءات والمرتجعات، الخزنة، أوردرات شوبيفاي المعلقة، والعملاء الذين يحتاجون متابعة.',
+        'I can answer: sales and profit for any period, best month or day, best-selling products, low stock and any product\'s stock, an order by its number, supplier balances, cancellations and returns, the vault, pending Shopify orders, and customers needing follow-up.')],
       options: SUGGESTIONS(L), sources: [],
     };
   }

@@ -1,4 +1,5 @@
 import { Connection, Types } from 'mongoose';
+import { afterSalesCollectedAt, courierHasParcel } from '../shared/courier-collected.util';
 
 /** Project carrier facts only. Warehouse receipt, cash and case completion remain explicit operations. */
 export async function projectAfterSalesShipment(db: Connection, row: any, session?: any) {
@@ -23,6 +24,9 @@ export async function projectAfterSalesShipment(db: Connection, row: any, sessio
       if (id === String(w.replacementTxId) || bundled.includes(id)) {
         if (status === 'DELIVERED') set.pickupStatus = 'Delivered';
         else if (['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(status)) set.pickupStatus = 'Shipped';
+        // The shipped column groups by the day the courier took the waybill from us.
+        const collectedAt = courierHasParcel(status) ? afterSalesCollectedAt(w) : '';
+        if (collectedAt) set.shippedAt = collectedAt;
       }
     }
     await transactions.updateOne({ _id: new Types.ObjectId(id), ...(bundled.includes(id) ? { 'afterSalesBundle.caseId': String(row._id) } : {}) }, { $set: set }, { session });

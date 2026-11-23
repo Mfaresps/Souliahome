@@ -318,3 +318,11 @@ button.ai-pt:hover{background:var(--bg-alt)}
   .ai-shimmer{animation:none;color:var(--muted)}
   .ai-reason.is-live ol li,.ai-rv-skel i{animation:none}
 }
+.ai-links{display:inline-flex;flex-wrap:wrap;gap:2px 0;max-width:260px}.ai-links .ai-tlink{white-space:nowrap}.ai-tbl td .ai-links + small{display:block}
+.ai-foot-acts{display:inline-flex;align-items:center;gap:12px;margin-inline-start:auto}
+.ai-foot-acts .ai-fix{margin-inline-start:0}
+.ai-copy{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;cursor:pointer;color:var(--muted);font-size:.72rem}
+.ai-copy svg{width:12px;height:12px}
+.ai-copy:hover{color:var(--text)}
+.ai-copy.is-done{color:var(--ai-good,#16a34a)}
+.ai-card,.ai-msg.is-bot{-webkit-user-select:text;user-select:text}

@@ -20,6 +20,76 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Orders the Courier Already Has Stayed in Prep/Ready Groups (Nov 23, 2026)
+
+#3198/#3201/#3204: sent to Bosta from the prep workspace (stays 'Preparing' on purpose), collected
+Nov 19, delivered Nov 21 — then a «نقل للجاهز» on Nov 23 moved them into ready group 131-23NOV. The
+card left them out (they count as shipped), the window listed them: 39 vs 35.
+- One rule, `shared/courier-collected.util.ts`: Bosta PICKED_UP / IN_TRANSIT / OUT_FOR_DELIVERY /
+  CUSTOMER_POSTPONED / FAILED_ATTEMPT / DELIVERED / RETURNED = the courier has the parcel.
+  `courierCollectedUpdate` moves the order to 'Shipped' (ref `SH-<collection day>`, day from Bosta's
+  `collectedFromBusiness`, else timeline code 21/23) from Pending/Preparing/Ready/Picked-Up — the
+  status sync used to promote only from 'Ready'. Never touches Shipped/Delivered. Board stage only.
+- `confirmPickup` leaves such orders out (`skipped` in the reply; all skipped → 400 naming them;
+  the write filter also excludes them). The five frontend callers expect `ids − skipped`
+  (`_puConfirmExpected`) and name them (`_puConfirmSkippedNotice`).
+- Ready window = the card: `_puReadyCardOrders(key)` (Ready/Picked-Up, same ref, not taken by the
+  courier) in `openPuCardOrdersModal` and `_pucoGetGroup`.
+- Repair: `POST /transactions/backfill/courier-collected-board` (admin, dry run unless
+  `{dryRun:false}`, conditional writes, history `courier-collected-repair`). Admins see a notice on
+  the pickup board (`#pu-courier-stuck`, `_PU_COURIER_HAS` ⚠ mirrors the backend list) → preview →
+  confirm. Local copy: 13 orders (4 recent + 9 from Aug). **Not run yet — local or live.**
+- **The shipped card's date = the day the courier collected the parcel**, read from Bosta
+  (`bostaCollectedAt`: `collectedFromBusiness`, else timeline 21/23; ⚠ only from a "Send" (type 10)
+  record — a stored "Return to Origin" record carries the RETURN pickup, #2281). `shippedAt` used to
+  be when we first heard of the pickup (a late sync put #3202, collected Nov 19, under Nov 23). The
+  status sync now corrects it (`collectedDateCorrection`), and the repair lists the wrong days
+  (kind `date`, cancelled orders too). Local: 14 wrong days.
+- **A shipped day keeps its parcel count**: board feeds leave cancelled/archived orders out, so a day
+  lost a parcel when one was cancelled after pickup. `GET /transactions/pickup-orders/shipped-history`
+  returns those (18 locally); the frontend keeps them in `_puShippedHistory` (marked
+  `_shippedHistory`), adds them ONLY to «تم الشحن» groups built from `_pickupOrders`, labels them
+  «ملغي بعد الشحن» and leaves them out of every money total (`_puShippedMoney`).
+- Admin notice count = the repair's preview (`_puLoadCourierRepairCount`, one dry run per 5 min).
+- **Money on every pickup-board total** (pickup-daily-shipping.js): `_puOrderValue(o)` = the invoice
+  total, except an exchange replacement = total − `afterSales.creditApplied` (the returned piece's
+  value, paid on the original invoice; local: 5 of 7 replacements are worth 0) and a cancelled-after-
+  pickup parcel = 0. Used by every group card, column header, KPI, run table, edit-run list and the
+  runs export. `_puGroupDueHtml` adds a quiet grey line «للتحصيل N» (Σ remaining; full wording in `title`) INSIDE the
+  total's block — ⚠ single line that truncates (`min-width:0` + ellipsis): a plain `nowrap` widened the
+  prep/ready grid column and pushed the total out of the card — when it
+  differs (131-23NOV: 83,754.5 value vs 54,553.5 to collect). Per-order lines keep the invoice total.
+- **Exchanges in «تم الشحن»**: counted in their pickup day like any parcel, tagged «استبدال», and a
+  delivered replacement reads «تم الاستبدال» (Bosta ends an exchange «RETURNED» once the old piece
+  comes back). Their pickup day: `workflow.shipment.collectedAt` (Bosta's time from the case webhook,
+  type 30 accepted) else the case history's first collected event (`afterSalesCollectedAt`), written to
+  the replacement/bundled sale as `shippedAt` by `projectAfterSalesShipment`; old ones via the repair
+  (kind `exchange-date`, 5 locally). An original order with a return/exchange request gets «عليه طلب
+  استرجاع/استبدال» (`_puAfterSalesTagHtml`, from `returnRequests` + `afterSales.shipments`) — a mark,
+  never another parcel.
+- Tests: `test/unit/courier-collected.spec.ts` (8), `test/browser/pickup-courier-collected.cjs` (21).
+
+## Prep Window: Several Orders at Once + «تم الشحن» Drawn Lazily (Nov 23, 2026)
+
+**Multi-select in a prep group window** (`pwOrderClick`, `_pwMulti`): Ctrl/⌘+click toggles an order,
+Shift+click selects a range; a bar states «N طلبات محددة». Right-click on a selected order (or the
+bar's «إجراءات») → `_pwMultiCtx`: move to a NEW group (`puSplitOrdersToNewGroup`, split-prep with all
+ids; disabled when every order is selected), move to an EXISTING group (`puMoveOrdersToGroup` →
+`POST /transactions/pickup-orders/move-prep` = `mergePrepGroups(…, wholeGroup=false)`: the ids must
+all still be in the source, the target keeps its identity, «prepared» ticks kept, live event
+`merge-prep`), TAG all of them (`_puOpenTagPicker`), back to pending (`/pickup-orders/undo`). The
+single-order menu also lists the other groups as targets. ⚠ Escape first clears the selection (both
+Escape handlers). Plain click = back to one order. Tests: 2 cases in
+`test/integration/transactions.service.spec.ts`, `test/browser/pickup-prep-multi-select.cjs` (21).
+
+**«تم الشحن» draws only the newest 8 days** (`_puRenderShippedCol`): older days are appended in
+batches of 8 when the column is scrolled to its end (IntersectionObserver on «عرض أيام أقدم (N)»,
+also clickable). A card's totals / «المطلوب تحصيله» are computed only when it is drawn; the column
+count and header total still cover every day (one cheap sum). A live repaint keeps the days already
+opened; a search/filter change starts again from the newest 8 (searching still covers every day).
+Measured on the local copy (1,112 orders, 61 shipped days): board repaint ~35 → ~23 ms, shipped
+column 1,868 → 249 elements, page 2,585 → 966. Test: `test/browser/pickup-shipped-lazy.cjs` (11).
+
 ## Purchasing Engine — `purchasing-engine/` (Nov 23, 2026)
 
 A separate, read-only service behind the assistant's «خطة الشراء الذكية», «تقرير محرك الشراء» and «ليه
@@ -88,6 +158,19 @@ external API**: the server recognises the topic and the period, then reads the S
     «يحتاج شراء الآن». Built at 08:30 Cairo by `@Cron` into raw `assistantdailyreports` (ar + en), or on first
     request; `GET /assistant/daily-status` (admin) feeds a counter on the header button and a «تقرير اليوم» card in
     the empty panel, cleared per user per day once read. No push notification (notification types are a fixed list).
+- **Customers needing follow-up (Nov 23):** intent `followups` («العملاء الذين يحتاجون متابعة هذا الشهر», any
+  «متابعه/follow up» wording; checked before cancel/orders words). Open follow-ups (not cancelled, status not in
+  `FU_SETTLED` ⚠ = `FU_SETTLED_STATUSES` in index.html) opened in the period, grouped by customer phone (else
+  name): count + every order number as its own link (table cell `{links:[…]}`, new in `assistant.js` `cell()`).
+  `complaints` perm sees all; anyone else only follow-ups assigned to them. Test: 1 case in `assistant-intent.spec.ts`.
+  Wording: `isFollowUpQuestion` / `FOLLOW_WORDS` (follow up, call, no answer, awaiting the customer…; never with
+  «مورد»; ⚠ `' chase'` keeps its leading space or «purchase» matches). Order by delay
+  (`followup-priority.util.ts`): waiting since `escalationBaseline` (else createdAt; a passed deferral restarts it) →
+  urgent ≥48h · late ≥24h · due ≥12h · new · deferred (future `deferredUntil`, lowest); a customer takes their most
+  urgent follow-up; «الأقل أهمية / الأقل تأخيرًا» → `reverse`. Tests: `test/unit/assistant-followups.spec.ts` (31 wordings).
+- **«نسخ» on every answer (Nov 23):** a button in the answer footer (`data-copy` → `copyAnswer`) copies
+  `answerText(a)` — the lead, KPIs, plan, table (` | ` columns), points and note as plain text, without source
+  marks; textarea fallback on plain-http LAN (no clipboard API). The answer text is also selectable.
 - **From the review log (Nov 22):** «تحليل …» is a sales question; an order number may come anywhere in a sentence
   about an order; «قارن أكتوبر بنوفمبر» (two named months) → `compare` (both reports side by side + why it moved);
   «آخر فاتورة شراء» → `purchases` (amounts only with `purchase-edit-price`); a product name shared by several
@@ -5672,6 +5755,7 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 23, 2026 | Orders Bosta already collected/delivered no longer stay in prep/ready groups: the status sync moves them from any board stage, «نقل للجاهز» leaves them out, the ready window lists exactly the card's orders, and admins get a preview + confirm repair for the stuck ones | See "Orders the Courier Already Has Stayed in Prep/Ready Groups" above |
 | Nov 23, 2026 | Purchasing engine (separate service): demand ledger with stockout censoring, 8 backtested forecasts, safety stock / reorder levels, priority by protected margin, simulation vs the 44-day rule; in the assistant as «خطة الشراء الذكية» / «تقرير محرك الشراء» / «ليه مقترح شراء X» | See "Purchasing Engine" above |
 | Nov 22, 2026 | Assistant analysis: why sales changed, alerts against the previous 4 weeks, sales speed + run-out dates, reorder suggestions, and a morning report with a header counter for admins | See "«مساعد SOULIA»" → Analysis |
 | Nov 22, 2026 | «مساعد SOULIA»: a question panel (header / Ctrl+/) answering sales, today's Shopify orders, profit, best month, stock, orders, suppliers, cancellations and the vault from the same report functions, with sources, permissions and a review log of missed questions | See "«مساعد SOULIA» — Ask About Any Figure" above |

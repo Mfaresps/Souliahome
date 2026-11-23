@@ -134,13 +134,13 @@
     root.classList.add('iu-scanner');
     root.innerHTML = `<h2>${tr('Scan a physical unit', 'مسح وحدة فعلية')}</h2>
       <p class="iu-scanner-device" data-scan-device data-state="waiting" role="status" aria-live="polite">${tr('Barcode scanner: waiting for a scan', 'قارئ الباركود: في انتظار المسح')}</p>
-      <form data-scan-form><label>${tr('Barcode / Unit ID', 'الباركود / معرف الوحدة')}<input data-scan-input autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="160" dir="ltr"></label>
+      <form data-scan-form><label for="iu-scanner-code">${tr('Scan barcode / Unit ID', 'امسح الباركود / معرف الوحدة')}<small>${tr('Scanner ready — scan the label now. Manual typing is available if needed.', 'القارئ جاهز — امسح الملصق الآن. الإدخال اليدوي متاح عند الحاجة.')}</small></label><input id="iu-scanner-code" data-scan-input autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="160" dir="ltr" placeholder="${tr('Ready for barcode scan…', 'جاهز لمسح الباركود…')}">
       <label>${tr('Scanner suffix', 'لاحقة القارئ')}<select data-scan-suffix><option value="Enter">Enter / CR / LF</option><option value="Tab">Tab</option><option value="none">${tr('None — use Validate', 'بدون — استخدم تحقق')}</option></select></label><button class="btn btn-outline" data-scan-submit>${tr('Validate', 'تحقق')}</button></form>
       <div class="iu-scanner-actions"><button type="button" class="btn btn-outline" data-scan-camera>${tr('Start camera', 'تشغيل الكاميرا')}</button><button type="button" class="btn btn-outline" data-scan-stop disabled>${tr('Stop camera', 'إيقاف الكاميرا')}</button>
       <button type="button" class="btn btn-outline" data-scan-check hidden disabled>${tr('Check pending request', 'التحقق من نتيجة المسح')}</button><button type="button" class="btn btn-outline" data-scan-retry hidden disabled>${tr('Retry same request', 'إعادة محاولة المسح')}</button></div>
       <video data-scan-video playsinline muted hidden></video><p data-scan-message role="status" aria-live="polite" tabindex="-1"></p><section data-scan-location hidden aria-live="polite"></section><p data-scan-pending dir="ltr"></p>
       <details data-scan-manual ${options.canManualSelect ? '' : 'hidden'}><summary>${tr('Select an eligible unit manually', 'اختيار وحدة مؤهلة يدويًا')}</summary>
-      <label>${tr('Exact barcode / Unit ID (optional)', 'باركود / معرف وحدة مطابق (اختياري)')}<input data-scan-filter maxlength="160"></label><button class="btn btn-outline" type="button" data-scan-load>${tr('Load eligible units', 'تحميل الوحدات المؤهلة')}</button>
+      <label>${tr('Exact barcode / Unit ID (optional)', 'باركود / معرف وحدة مطابق (اختياري)')}<input data-scan-filter data-unit-code-entry maxlength="160"></label><button class="btn btn-outline" type="button" data-scan-load>${tr('Load eligible units', 'تحميل الوحدات المؤهلة')}</button>
       <label>${tr('Eligible units', 'الوحدات المؤهلة')}<select data-scan-choice><option value="">${tr('Load and select a unit', 'حمّل واختر وحدة')}</option></select></label><button type="button" class="btn btn-outline" data-scan-more hidden>${tr('Next eligible units', 'الوحدات المؤهلة التالية')}</button>
       <label>${tr('Override reason', 'سبب الاختيار اليدوي')}<input data-scan-reason maxlength="1000"></label><label><input type="checkbox" data-scan-confirm>${tr('I confirm this exact unit selection.', 'أؤكد اختيار هذه الوحدة بعينها.')}</label><button type="button" class="btn btn-outline" data-scan-select>${tr('Confirm manual selection', 'تأكيد الاختيار اليدوي')}</button></details>`;
     const get = name => root.querySelector('[data-scan-' + name + ']');
@@ -180,6 +180,9 @@
       }
     }
     function feedback(code, result) {
+      if (code === 'VALIDATED') window.BarcodeScanSound?.play('success');
+      else if (code === 'DUPLICATE_SCAN') window.BarcodeScanSound?.play('duplicate');
+      else if (!['UNRESOLVED', 'RESTORED_PENDING', 'REQUEST_PENDING', 'BUSY'].includes(code)) window.BarcodeScanSound?.play('error');
       if (code === 'VALIDATED' && result?.unit) void showLocation(result);
       else { locationGeneration++; get('location').hidden = true; get('location').replaceChildren(); }
       get('message').textContent = text(code, lang) + (result?.unit ? ' ' + (result.unit.manualCode || result.unit.barcode) : '');
@@ -224,7 +227,7 @@
       try { normalize(value, method === 'keyboard' ? extra?.suffix || 'Enter' : 'none'); }
       catch { feedback('INVALID_INPUT'); get('input').focus(); return; }
       scanQueue.push({ value, method, extra });
-      if (method !== 'camera') get('input').value = '';
+      if (method !== 'camera') window.BarcodeInput?.clear(get('input'));
       void drainQueue();
     }
     get('form').onsubmit = event => { event.preventDefault(); run(get('input').value, 'manual-entry'); };
@@ -270,7 +273,7 @@
     async function resolvePending(method) {
       const task = client[method](); update(); await task;
       if (stopped) return;
-      update(); if (!client.pending && !client.storageError) { get('input').value = ''; get('input').focus(); void drainQueue(); }
+      update(); if (!client.pending && !client.storageError) { window.BarcodeInput?.clear(get('input')); get('input').focus(); void drainQueue(); }
     }
     for (const method of ['check', 'retry']) get(method).onclick = () => resolvePending(method);
     function stopCamera() {

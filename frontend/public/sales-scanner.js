@@ -42,10 +42,10 @@
     const draft = typing ? active.value : '';
     host.innerHTML = `<div class="sale-reader-bar"><span class="sale-reader-dot ${running?'is-busy':''}" aria-hidden="true"></span><strong>${running?tr('Checking scan… Keep scanning','جارٍ التحقق… يمكنك متابعة المسح'):tr('Scanner ready — scan a piece or product code','الماسح جاهز — امسح قطعة أو كود صنف')}</strong>${jobs.length>1?`<span>${jobs.length-1} ${tr('waiting','قيد الانتظار')}</span>`:''}<button type="button" data-sale-manual aria-expanded="${manual}">${manual?tr('Close manual entry','إغلاق الإدخال اليدوي'):tr('Manual entry','إدخال يدوي')}</button></div>
       <small>${tr('Every piece sold must be scanned, or marked «Sell without scan» on its line, before the invoice can be saved.','كل قطعة تُباع لازم تتمسح، أو تختار «بيع بدون مسح» على سطرها، قبل حفظ الفاتورة.')}</small>
-      ${manual?`<form data-sale-form><label for="sale-scan-code">${tr('Piece, pack or product code','كود القطعة أو الباك أو الصنف')}</label><div><input id="sale-scan-code" data-scan-input dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" required value="${html(draft)}"><button type="submit">${tr('Add','إضافة')}</button></div></form>`:''}
+      ${manual?`<form data-sale-form><label for="sale-scan-code">${tr('Piece, pack or product code','كود القطعة أو الباك أو الصنف')}</label><div><input id="sale-scan-code" data-scan-input data-unit-code-entry dir="ltr" autocomplete="off" spellcheck="false" maxlength="160" required value="${html(draft)}"><button type="submit">${tr('Add','إضافة')}</button></div></form>`:''}
       ${feedback?`<div class="sale-reader-feedback ${feedback.error?'is-error':'is-success'}" role="${feedback.error?'alert':'status'}"><b aria-hidden="true">${feedback.error?'!':'✓'}</b> <span>${html(feedback.text)}</span>${feedback.code?` <code dir="ltr">${html(feedback.code)}</code>`:''}${feedback.hint?`<small>${html(feedback.hint)}</small>`:''}</div>`:''}`;
     host.querySelector('[data-sale-manual]').onclick = () => { manual = !manual; buffer = ''; render(); if (manual) host.querySelector('input')?.focus(); };
-    host.querySelector('form')?.addEventListener('submit', event => { event.preventDefault(); const input = host.querySelector('input'); const code = input.value; input.value = ''; submit(code); });
+    host.querySelector('form')?.addEventListener('submit', event => { event.preventDefault(); const input = host.querySelector('input'); const code = input.value; window.BarcodeInput?.clear(input); submit(code); });
     if (typing) { const input = host.querySelector('input'); input?.focus({ preventScroll: true }); if (input) input.setSelectionRange(draft.length,draft.length); }
     document.querySelectorAll('#tx-items .tx-item-card').forEach((card, index) => {
       card.querySelector('.sale-piece-codes')?.remove(); card.querySelector('.sale-line-scan')?.remove();
@@ -112,7 +112,7 @@
     const code = window.BarcodeInput?.normalize(typed) || typed;
     if (!enabled() || !code || _txSaving) return;
     if (code.length>160) {feedback={error:true,text:tr('This code is too long. Scan the piece label or use Manual entry.','الكود أطول من الحد المسموح. امسح ملصق القطعة أو استخدم الإدخال اليدوي.')};render();return;}
-    if (/^(SU-|PK-|U-?\d)|^[\d]{9}$|^[a-f\d]{24}$/i.test(code) && jobs.some(job=>job.code===code && job.epoch===epoch)) return;
+    if (/^(SU-|PK-|U-?\d)|^[\d]{9}$|^[a-f\d]{24}$/i.test(code) && jobs.some(job=>job.code===code && job.epoch===epoch)) { window.BarcodeScanSound?.play('duplicate'); return; }
     if (jobs.length>=32) { feedback={error:true,text:tr('Scan queue is full. Wait, then scan this code again.','طابور المسح ممتلئ. انتظر ثم أعد مسح هذا الكود.'),code};render();return; }
     jobs.push({code,warehouse:warehouse(),epoch});
     if (!running) drain(); else render();
@@ -152,8 +152,10 @@
         if (!item) txItems.push(target);
         _dsbDismissed = false; markTxDirty(); renderTxItems(); calcTxSummary();
         feedback={text:tr(`${product.name} added · ${quantity} piece(s).`, `تمت إضافة ${product.name} · ${quantity} قطعة.`)+(scan?.supplier?' · '+scan.supplier:''),code:job.code};
+        window.BarcodeScanSound?.play('success');
       } catch(error) {
         if (job.epoch===epoch) feedback={error:true,text:error.status===404?tr('Code not found. Check the label or enter the product code.','الكود غير مسجل. راجع الملصق أو أدخل كود الصنف.'):error.message||tr('Could not read the code. Try again.','تعذر قراءة الكود. أعد المحاولة.'),code:job.code};
+        if (job.epoch===epoch) window.BarcodeScanSound?.play(/already in the invoice|already scanned|duplicate/i.test(error.message||'')?'duplicate':'error');
       } finally { if (jobs[0]===job) jobs.shift(); render(); }
     }
     running = false; render();
@@ -220,7 +222,7 @@
       flushSearch(); return;
     }
     if (event.target?.id==='sale-scan-code' && ['Enter','Tab'].includes(event.key) && !event.repeat && !event.isComposing) {
-      event.preventDefault();event.stopImmediatePropagation();buffer='';const code=event.target.value;event.target.value='';submit(code);return;
+      event.preventDefault();event.stopImmediatePropagation();buffer='';const code=event.target.value;window.BarcodeInput?.clear(event.target);submit(code);return;
     }
     flushSearch();
     if (event.target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]') || event.ctrlKey||event.metaKey||event.altKey||event.repeat||event.isComposing) {buffer='';return;}

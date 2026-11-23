@@ -219,7 +219,26 @@
         else { generation++; resultHost.hidden = true; }
       }
     });
-    dialog.querySelector('[data-scan-input]')?.focus();
+    const scanInput = dialog.querySelector('[data-scan-input]');
+    const actions = dialog.querySelector('.iu-scanner-actions');
+    if (scanInput && actions) {
+      const manual = document.createElement('button');
+      manual.type = 'button'; manual.className = 'btn btn-outline gs-manual-entry'; manual.setAttribute('aria-pressed', 'false');
+      manual.textContent = tr('Manual entry', 'إدخال يدوي');
+      manual.onclick = () => {
+        const enabled = manual.getAttribute('aria-pressed') !== 'true';
+        manual.setAttribute('aria-pressed', String(enabled));
+        manual.textContent = enabled ? tr('Back to scanner', 'العودة للمسح') : tr('Manual entry', 'إدخال يدوي');
+        const label = scanInput.previousElementSibling;
+        if (label?.firstChild) label.firstChild.textContent = enabled ? tr('Enter barcode / Unit ID', 'أدخل الباركود / معرف الوحدة') : tr('Scan barcode / Unit ID', 'امسح الباركود / معرف الوحدة');
+        const hint = label?.querySelector('small');
+        if (hint) hint.textContent = enabled ? tr('Type the code, then select Validate.', 'اكتب الكود ثم اضغط تحقق.') : tr('Scanner ready — scan the label now. Manual typing is available if needed.', 'القارئ جاهز — امسح الملصق الآن. الإدخال اليدوي متاح عند الحاجة.');
+        scanInput.placeholder = enabled ? tr('Type code here…', 'اكتب الكود هنا…') : tr('Ready for barcode scan…', 'جاهز لمسح الباركود…');
+        scanInput.focus();
+      };
+      actions.prepend(manual);
+    }
+    scanInput?.focus();
     if (identifier) {
       dialog.querySelector('[data-scan-input]').value = identifier;
       dialog.querySelector('[data-scan-form]').requestSubmit();

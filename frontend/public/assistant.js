@@ -32,6 +32,8 @@
     cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2l2-8H6.2"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>',
     out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg>',
     lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
     flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg>',
     chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V8M17 16v-8"/></svg>',
     box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>',
@@ -59,6 +61,49 @@
     if (f === 'dec') { const n = Number(v) || 0; return `<bdi class="ai-num">${n > 0 && n < 0.1 ? '<0.1' : n.toFixed(1)}</bdi>`; }
     return `<bdi class="ai-num">${Math.round(Number(v) || 0).toLocaleString('en-US')}</bdi>`;
   }
+  /** The answer as plain text for «نسخ» — the same figures the card shows, without the source marks. */
+  function valText(v, f) {
+    if (v == null) return '—';
+    const n = Number(v) || 0;
+    if (f === 'money') return `${Math.round(n).toLocaleString('en-US')} EGP`;
+    if (f === 'pct') return `${n.toFixed(1)}%`;
+    if (f === 'dec') return n > 0 && n < 0.1 ? '<0.1' : n.toFixed(1);
+    return Math.round(n).toLocaleString('en-US');
+  }
+  function cellText(c) {
+    if (c == null) return '';
+    if (typeof c === 'string' || typeof c === 'number') return String(c);
+    if ('v' in c) return valText(c.v, c.f);
+    const main = Array.isArray(c.links) ? c.links.map((x) => x.t).join(ar() ? '، ' : ', ') : String(c.t || '');
+    return c.sub ? `${main} (${c.sub})` : main;
+  }
+  function answerText(a) {
+    const out = [];
+    const lead = (a.lead || []).map((s) => typeof s === 'string' ? s : s && 'b' in s ? s.b : valText(s.v, s.f)).join('').trim();
+    if (lead) out.push(lead);
+    if (a.kpis && a.kpis.length) out.push(a.kpis.map((k) => `${k.label}: ${k.delta !== undefined ? (k.delta == null ? '—' : `${k.delta >= 0 ? '+' : '−'}${Math.abs(k.delta).toFixed(1)}%`) : (k.text || valText(k.v, k.f))}`).join('\n'));
+    if (a.plan && a.plan.groups) a.plan.groups.forEach((g) => out.push([g.title, ...g.rows.map((r) => `- ${r.name} (${r.code}): ${T('اشترِ', 'buy')} ${r.buy}`)].join('\n')));
+    if (a.table && a.table.rows.length) out.push([a.table.cols.map((c) => c.label).join(' | '), ...a.table.rows.map((r) => r.map(cellText).join(' | '))].join('\n'));
+    if (a.points && a.points.length) out.push([a.pointsTitle || '', ...a.points.map((p) => `- ${p.t}${p.sub ? ` — ${p.sub}` : ''}`)].filter(Boolean).join('\n'));
+    if (a.note) out.push(a.note);
+    if (a.options && a.options.length) out.push(a.options.map((o) => `- ${o}`).join('\n'));
+    return out.join('\n\n');
+  }
+  async function copyAnswer(mi, btn) {
+    const m = state.msgs[mi];
+    if (!m || !m.a) return;
+    const text = answerText(m.a);
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (_) {
+      // Plain-http LAN: no clipboard API — fall back to a hidden textarea.
+      try { const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0;inset-inline-start:-9999px'; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (_) {}
+    }
+    if (!ok) { if (typeof toast === 'function') toast(T('تعذّر النسخ.', 'Could not copy.'), true); return; }
+    btn.classList.add('is-done');
+    btn.innerHTML = `${ICON.check}<span>${esc(T('تم النسخ', 'Copied'))}</span>`;
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.classList.remove('is-done'); btn.innerHTML = `${ICON.copy}<span>${esc(T('نسخ', 'Copy'))}</span>`; }, 1600);
+  }
   // A raised, outlined source mark — never inline at figure size, or «11 ¹» reads as «111».
   const cite = (n, mi) => n ? `<sup class="ai-cite-wrap"><button type="button" class="ai-cite" data-cite="${n}" data-mi="${mi}" aria-label="${esc(T('افتح المصدر ', 'Open source ') + n)}">${ICON.link}</button></sup>` : '';
   function segs(list, mi) {
@@ -72,6 +117,12 @@
     if (c == null) return '<td></td>';
     if (typeof c === 'string' || typeof c === 'number') return `<td class="${num ? 'num' : ''}">${num ? `<bdi class="ai-num">${esc(c)}</bdi>` : esc(c)}</td>`;
     if ('v' in c) return `<td class="num">${fmtVal(c.v, c.f)}</td>`;
+    if (Array.isArray(c.links)) {
+      const items = c.links.map((x) => x.link
+        ? `<button type="button" class="ai-tlink" data-link='${esc(JSON.stringify(x.link))}'><bdi>${esc(x.t)}</bdi></button>`
+        : `<bdi>${esc(x.t)}</bdi>`).join(`<span class="ai-sep">${ar() ? '، ' : ', '}</span>`);
+      return `<td><span class="ai-links">${items}</span>${c.sub ? `<small dir="auto">${esc(c.sub)}</small>` : ''}</td>`;
+    }
     const tone = c.tone ? ` is-${c.tone}` : '';
     const main = c.link ? `<button type="button" class="ai-tlink" data-link='${esc(JSON.stringify(c.link))}'>${esc(c.t)}</button>` : esc(c.t);
     const sub = c.sub ? `<small><bdi>${esc(c.sub)}</bdi></small>` : '';
@@ -127,7 +178,8 @@
     const fix = a.id && (st === 'answered' || st === 'empty' || st === 'notfound')
       ? (m.flagged ? `<span class="ai-flagged">${esc(T('سُجّل للمراجعة', 'Sent for review'))}</span>`
         : `<button type="button" class="ai-fix" data-fix="${mi}">${ICON.flag}${esc(T('ليس هذا ما أقصده', 'Not what I meant'))}</button>`) : '';
-    const foot = understood || fix ? `<div class="ai-foot">${understood}${fix}</div>` : '';
+    const copy = `<button type="button" class="ai-copy" data-copy="${mi}" title="${esc(T('نسخ الرد', 'Copy the answer'))}">${ICON.copy}<span>${esc(T('نسخ', 'Copy'))}</span></button>`;
+    const foot = `<div class="ai-foot">${understood}<span class="ai-foot-acts">${copy}${fix}</span></div>`;
     // Reorder plan: product cards grouped by urgency — one look gives what to buy and why.
     const daysTxt = (d) => d == null ? '—' : T(`${d} يوم`, `${d} d`);
     const daysTone = (d) => d == null ? '' : d <= 14 ? ' is-bad' : d <= 30 ? ' is-warn' : ' is-good';
@@ -185,6 +237,7 @@
       { key: 'profit', q: T('أرباح هذا الشهر', 'Profit this month') },
       { key: 'stock', q: T('المنتجات التي قاربت على النفاد', 'Products running low') },
       { key: 'shopify', q: T('أوردرات شوبيفاي المعلقة', 'Pending Shopify orders') },
+      { key: 'followups', q: T('العملاء الذين يحتاجون متابعة هذا الشهر', 'Customers needing follow-up this month') },
       { key: 'supplier', q: T('المستحق للموردين', 'How much we owe suppliers') },
       { key: 'cancel', q: T('أسباب إلغاء الأوردرات هذا الشهر', 'Why orders were cancelled this month') },
     ];
@@ -721,6 +774,8 @@
     if (ac) { const [mi, i] = ac.dataset.act.split(':').map(Number); const act = state.msgs[mi]?.a?.actions?.[i]; if (act && act.kind === 'createPo') openPoMenu(act, ac); return; }
     const op = t.closest('[data-open-po]');
     if (op) { try { if (typeof openPoDetailModal === 'function') openPoDetailModal(op.dataset.openPo); } catch (_) {} return; }
+    const cp = t.closest('[data-copy]');
+    if (cp) { copyAnswer(+cp.dataset.copy, cp); return; }
     const f = t.closest('[data-fix]');
     if (f) { flag(+f.dataset.fix); return; }
     const rt = t.closest('[data-retry]');

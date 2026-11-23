@@ -448,6 +448,12 @@ export class TransactionsController {
   // ─── Pick-Up endpoints (must be BEFORE @Get(':id') to avoid routing conflict) ──
 
   @RequirePerms('pickup-orders')
+  @Get('pickup-orders/shipped-history')
+  async getPickupShippedHistory() {
+    return this.transactionsService.findPickupShippedHistory();
+  }
+
+  @RequirePerms('pickup-orders')
   @Get('pickup-orders/workspace')
   async getPickupWorkspaceOrders() {
     return this.transactionsService.findPickupWorkspaceOrders();
@@ -482,6 +488,17 @@ export class TransactionsController {
   ) {
     const by = req.user.name || req.user.username || 'مستخدم';
     return this.transactionsService.mergePrepGroups(body.sourceRef, body.targetRef, body.ids, by);
+  }
+
+  /** Move only the chosen orders of one prep group into another (multi-select → right-click). */
+  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @Post('pickup-orders/move-prep')
+  async movePrepOrders(
+    @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
+    @Req() req: { user: { name: string; username: string } },
+  ) {
+    const by = req.user.name || req.user.username || 'مستخدم';
+    return this.transactionsService.mergePrepGroups(body.sourceRef, body.targetRef, body.ids, by, false);
   }
 
   @RequirePerms('pickup-orders', 'pickup-orders-edit')
@@ -1031,6 +1048,16 @@ export class TransactionsController {
   @Post('backfill/shipping-discounts/rollback')
   async rollbackShippingDiscounts(@Body('runId') runId: string, @Req() req?: any) {
     return this.transactionsService.rollbackShippingDiscountCorrection(runId, req?.user?.name || req?.user?.username || 'admin');
+  }
+
+  /**
+   * Orders Bosta already collected/delivered that the pickup board still shows before the
+   * courier. dryRun by default — send {"dryRun": false} to move them to «تم الشحن».
+   */
+  @Roles('admin')
+  @Post('backfill/courier-collected-board')
+  async repairCourierCollectedBoard(@Body('dryRun') dryRun: boolean | undefined, @Req() req: any) {
+    return this.transactionsService.repairCourierCollectedBoard(dryRun !== false, req.user?.name || req.user?.username || 'admin');
   }
 
   @Roles('admin')

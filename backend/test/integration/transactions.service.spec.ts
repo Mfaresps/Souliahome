@@ -2336,6 +2336,23 @@ describe('TransactionsService (integration with mocks)', () => {
       expect(txModel.updateMany).not.toHaveBeenCalled();
     });
 
+    it('move-prep: moves only the chosen orders, the rest stay (multi-select, Nov 23 2026)', async () => {
+      sourceHas([ID_A, ID_B]);
+      targetIs(TARGET_META);
+      const res = await service.mergePrepGroups('101-14NOV', '202-14NOV', [ID_A], 'أحمد', false);
+      expect(res).toEqual({ moved: 1, pickupRef: '202-14NOV' });
+      const [filter] = txModel.updateMany.mock.calls[0];
+      expect(filter._id.$in).toEqual([ID_A]);
+      expect(filter.pickupRef).toBe('101-14NOV');
+    });
+
+    it('move-prep: refuses an order that is no longer in the source group', async () => {
+      sourceHas([ID_B]);
+      targetIs(TARGET_META);
+      await expect(service.mergePrepGroups('101-14NOV', '202-14NOV', [ID_A], 'أحمد', false)).rejects.toThrow();
+      expect(txModel.updateMany).not.toHaveBeenCalled();
+    });
+
     it('refuses when the target group no longer exists', async () => {
       sourceHas([ID_A]);
       targetIs(null);

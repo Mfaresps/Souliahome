@@ -129,4 +129,13 @@ describe('assistant — periods (Cairo calendar)', () => {
     expect(previousPeriod(p('النهارده'))).toEqual({ from: '2026-11-21', to: '2026-11-21' });
     expect(previousPeriod(p('الاسبوع ده'))).toEqual({ from: '2026-11-14', to: '2026-11-15' });
   });
+  it('customers needing follow-up: this month by default, before cancel/orders words', () => {
+    for (const q of ['العملاء الذين يحتاجون متابعة هذا الشهر', 'العملا الشهر الحالي اللي محتاجين متابعه', 'مين محتاج متابعة', 'اوردرات المتابعة الشهر ده', 'customers needing follow-up this month']) {
+      const r = u(q);
+      expect([q, r.intent]).toEqual([q, 'followups']);
+      expect(r.period!.from).toBe('2026-11-01');
+    }
+    expect(u('متابعات الشهر الماضي').period!.key).toBe('lastMonth');
+    expect(u('متابعة اوردر 3201').intent).toBe('order');
+  });
 });

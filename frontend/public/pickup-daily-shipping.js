@@ -56,6 +56,35 @@
   schedule();
 })();
 
+// Orders cancelled/archived AFTER the courier collected them (GET pickup-orders/shipped-history).
+// The board feed leaves cancelled orders out, so a shipped day lost a parcel each time one was
+// cancelled later. They are added back to «تم الشحن» only — never to pending/prep/ready —
+// marked `_shippedHistory`, labelled «ملغي بعد الشحن», and left out of every money total.
+let _puShippedHistory = [];
+// ── One money rule for every pickup-board total ─────────────────────────────
+// Value = what the order is worth in this shipment: an exchange replacement counts only the
+// DIFFERENCE (its invoice total includes the returned piece's value, already paid on the
+// original invoice — afterSales.creditApplied); a parcel cancelled after pickup counts 0.
+// Due = what is still to collect (remaining) — what the carrier's transfer is checked against.
+function _puOrderValue(order) {
+  if (!order || order.cancelled || order._shippedHistory) return 0;
+  const total = Math.max(0, Number(order.total) || 0);
+  if (order.afterSales?.role === 'replacement') return Math.max(0, total - Math.max(0, Number(order.afterSales.creditApplied) || 0));
+  return total;
+}
+function _puOrderDue(order) {
+  if (!order || order.cancelled || order._shippedHistory) return 0;
+  return Math.max(0, Number(order.remaining) || 0);
+}
+function _puShippedMoney(order) { return _puOrderValue(order); }
+function _puGroupDueHtml(orders) {
+  if (typeof _puCanViewShipmentTotals === 'function' && !_puCanViewShipmentTotals()) return '';
+  const list = orders || [];
+  const value = list.reduce((s, o) => s + _puOrderValue(o), 0);
+  const due = list.reduce((s, o) => s + _puOrderDue(o), 0);
+  if (Math.abs(due - value) < 0.005) return '';
+  return `<span class="pu-group-due" title="${esc(_puDailyText('المطلوب تحصيله', 'Still to collect') + ': ' + fmtJT(due))}">${esc(_puDailyText('للتحصيل', 'To collect'))} <bdi>${esc(fmtJT(due))}</bdi></span>`;
+}
 function _puDailyText(ar, en) { return currentLang === 'en' ? en : ar; }
 const _puDailyDateFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' });
 function _puDailyDay(value) {
@@ -71,11 +100,11 @@ function _puDailyDay(value) {
   return ['year', 'month', 'day'].map(key => parts.find(p => p.type === key).value).join('-');
 }
 function _puDailyShipment(order) {
-  if (order.deliverySource === 'MANUAL' || order.archived) return null;
+  if (order.deliverySource === 'MANUAL' || (order.archived && !order._shippedHistory)) return null;
   const events = (order.shipmentEvents || []).filter(event => ['sent', 'resent'].includes(event.type)
     && (!order.bostaOrderId || !event.bostaOrderId || String(event.bostaOrderId) === String(order.bostaOrderId))
     && Number.isFinite(Date.parse(event.at))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-  const registered = !!order.bostaOrderId || !!order.bostaTrackingNumber || events.length > 0;
+  const registered = !!order.bostaOrderId || !!order.bostaTrackingNumber || events.length > 0 || !!order._shippedHistory;
   if (!registered && !['Shipped', 'Delivered'].includes(order.pickupStatus)) return null;
   // Once the courier has the parcel, the group is the day it was COLLECTED
   // (shippedAt / the SH-<day> ref the status sync writes), not the day it was
@@ -90,6 +119,7 @@ function _puDailyShipment(order) {
   return { day, carrier: carrier || _puDailyText('شركة غير مسجلة', 'Carrier not recorded') };
 }
 function _puDailyAwaitingPickup(order) {
+  if (order?._shippedHistory) return false;
   const code = String(order.bostaStatus || '').trim();
   if (code === 'CREATED') return true;
   if (code && code !== 'VALIDATION_ERROR') return false;
@@ -98,7 +128,10 @@ function _puDailyAwaitingPickup(order) {
 function _puDailyShippingGroups(orders, stage = 'all') {
   const groups = new Map();
   const seen = new Set();
-  for (const order of orders || []) {
+  // The board's own list gets the cancelled-after-pickup orders back (shipped days only).
+  const all = stage !== 'ready' && _puShippedHistory.length && typeof _pickupOrders !== 'undefined' && orders === _pickupOrders
+    ? (orders || []).concat(_puShippedHistory) : (orders || []);
+  for (const order of all) {
     const shipment = _puDailyShipment(order);
     if (!shipment || seen.has(String(order._id))) continue;
     const waiting = _puDailyAwaitingPickup(order);
@@ -123,6 +156,12 @@ function _puDailyOrderStatus(order) {
     DELETED: ['حُذفت الشحنة', 'Shipment deleted', 'failed'],
     FAILED_ATTEMPT: ['تعذر التسليم', 'Delivery attempt failed', 'failed'],
   };
+  if (order.cancelled || order._shippedHistory) return { label: _puDailyText('ملغي بعد الشحن', 'Cancelled after pickup'), tone: 'failed' };
+  // An exchange waybill ends «RETURNED» at Bosta once the old piece comes back — after the
+  // replacement was delivered that is a completed exchange, not a returned parcel.
+  if (order.afterSales?.role === 'replacement' && (order.pickupStatus === 'Delivered' || order.deliveredAt)) {
+    return { label: _puDailyText('تم الاستبدال', 'Exchange completed'), tone: 'delivered' };
+  }
   const status = String(order.bostaStatus || '').trim();
   let entry = labels[status];
   if (!entry) {
@@ -221,7 +260,7 @@ function _puDailyGroupCard(group) {
   card.type = 'button'; card.className = 'pu-daily-group pu-stage-card pu-stage-shipped'; card.dataset.dailyGroup = group.key;
   card.innerHTML = `<div class="pu-group-accent"></div><div class="pu-group-header"><div class="pu-prep-content">
     <div class="pu-prep-heading"><span class="pu-shipped-heading">${_puGroupDatePreview(group.pickupDate) || `<span class="pu-ref-hero">${esc(group.pickupRef)}</span>`}<span class="pu-shipped-carrier">${esc(group.shipCo)}</span></span>${_puDailyCountHtml(group.orders.length)}</div>
-    ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${esc(_puDailyText('إجمالي المجموعة', 'Group total'))}</span><strong class="pu-group-total"><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></strong></div>` : ''}
+    ${_puCanViewShipmentTotals() ? `<div class="pu-prep-amount"><span>${esc(_puDailyText('إجمالي المجموعة', 'Group total'))}</span><strong class="pu-group-total"><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + _puShippedMoney(o), 0)))}</bdi></strong>${_puGroupDueHtml(group.orders)}</div>` : ''}
     <div class="pu-shipped-progress" role="progressbar" aria-label="${esc(_puDailyText('نسبة التسليم', 'Delivery progress'))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${deliveryPercent}" title="${delivered}/${group.orders.length}"><span style="width:${deliveryPercent}%"></span></div>
     <div class="pu-stage-detail pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}
     </div></div><div class="pu-group-footer"><span class="pu-card-btn pu-prep-open">${esc(_puDailyText('عرض الطلبات وحالاتها', 'View orders and statuses'))} ‹</span></div>`;
@@ -229,12 +268,25 @@ function _puDailyGroupCard(group) {
   if (typeof _puAttachGroupPreview === 'function') _puAttachGroupPreview(card.querySelector('.pu-group-header'), group, group.stage || 'shipped');
   return card;
 }
+// After-sales facts on a shipped order: the replacement of an exchange, or an original order
+// with a return/exchange request on it. A mark only — never counted as another parcel.
+function _puAfterSalesTagHtml(order) {
+  if (order?.afterSales?.role === 'replacement') return `<span class="pu-as-tag is-exchange">${esc(_puDailyText('استبدال', 'Exchange'))}</span>`;
+  const id = String(order?._id || '');
+  const reqs = (typeof returnRequests !== 'undefined' && Array.isArray(returnRequests) ? returnRequests : [])
+    .filter(r => String(r.originalTransactionId || r.transactionId || '') === id && r.status !== 'مرفوض' && !r.reversedAt);
+  const kinds = new Set(reqs.map(r => r.requestKind === 'exchange' ? 'exchange' : 'return'));
+  Object.values(order?.afterSales?.shipments || {}).forEach(sh => kinds.add(sh.kind === 'exchange' ? 'exchange' : 'return'));
+  return [...kinds].map(kind => `<span class="pu-as-tag is-${kind}">${esc(kind === 'exchange'
+    ? _puDailyText('عليه طلب استبدال', 'Exchange requested') : _puDailyText('عليه طلب استرجاع', 'Return requested'))}</span>`).join('');
+}
 function _puDailyOrdersHtml(group) {
   return `<div class="pu-daily-orders">${group.orders.map(order => `<article class="pu-daily-order" data-daily-order="${esc(String(order._id))}">
-    <header><strong><bdi>#${esc(order.ref || '—')}</bdi></strong>${_puDailyStatusHtml(order)}</header>
+    <header><strong><bdi>#${esc(order.ref || '—')}</bdi></strong>${_puAfterSalesTagHtml(order)}${_puDailyStatusHtml(order)}</header>
     <b class="pu-daily-client" dir="auto">${esc(order.client || '—')}</b>
     ${order.phone || order.clientPhone ? `<bdi class="pu-daily-phone">${esc(order.phone || order.clientPhone)}</bdi>` : ''}
     <div class="pu-daily-order-amount"><span>${esc(_puDailyText('قيمة الأوردر', 'Order total'))}</span><bdi>${esc(fmtJT(order.total || 0))}</bdi></div>
+    ${order.afterSales?.role === 'replacement' && Number(order.afterSales.creditApplied) > 0 ? `<div class="pu-daily-order-amount"><span>${esc(_puDailyText('الفرق بعد رصيد المرتجع', 'Difference after return credit'))}</span><bdi>${esc(fmtJT(_puOrderValue(order)))}</bdi></div>` : ''}
     ${order.bostaTrackingNumber ? `<div class="pu-daily-tracking">${esc(_puDailyText('رقم التتبع', 'Tracking'))}: <bdi>${esc(order.bostaTrackingNumber)}</bdi></div>` : ''}
     <div class="pu-daily-pickups">${_puDailyPickupHtml([order], true)}</div>
     <div class="pu-daily-order-footer"><details><summary>${esc(_puDailyText('المنتجات', 'Products'))} (${(order.items || []).length})</summary><ul>${(order.items || []).map(item => `<li><span dir="auto">${esc(item.name || item.code || '—')}</span><bdi>× ${esc(String(item.qty || 0))}</bdi></li>`).join('')}</ul></details>
@@ -335,6 +387,6 @@ function _puDailyRunRowHtml(group, index, open) {
     <td><button type="button" class="pu-chevron" aria-expanded="${open}" aria-controls="${rowKey}" aria-label="${esc(_puDailyText('عرض أوردرات اليوم', 'View daily orders'))}">›</button></td>
     <td><span class="pu-ref-chip" dir="ltr" title="${esc(group.pickupRef)}">${esc(shortRef)}</span></td><td>${_puDailyTableDateHtml(group.pickupDate)}</td><td><span class="pu-daily-carrier">${esc(group.shipCo)}</span></td>
     <td><div class="pu-daily-pickups">${_puDailyPickupHtml(group.orders)}</div>${_puDailySummaryHtml(group)}</td><td>${_puDailyCountHtml(group.orders.length)}</td>
-    ${_puCanViewShipmentTotals() ? `<td><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + Number(o.total || 0), 0)))}</bdi></td>` : '<td hidden></td>'}<td></td></tr>
+    ${_puCanViewShipmentTotals() ? `<td><bdi>${esc(fmtJT(group.orders.reduce((sum, o) => sum + _puShippedMoney(o), 0)))}</bdi></td>` : '<td hidden></td>'}<td></td></tr>
     <tr class="pu-detail-row" data-run-detail="${esc(group.key)}" id="${rowKey}" style="display:${open ? 'table-row' : 'none'}"><td colspan="${_puCanViewShipmentTotals() ? 8 : 7}"><div class="pu-detail-panel">${actions}${_puDailyOrdersHtml(group)}</div></td></tr>`;
 }

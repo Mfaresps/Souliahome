@@ -1,4 +1,14 @@
 const _puReadyReturnBusy = new Set();
+function _puPrintedBostaWarning(orders, target) {
+  const rows = Array.isArray(orders) ? orders : [orders];
+  const printed = rows.filter(order => {
+    const tracking = String(order?.bostaTrackingNumber || '');
+    return (Array.isArray(order?.bostaAwbPrints) ? order.bostaAwbPrints : []).some(print =>
+      !print.trackingNumber || !tracking || print.trackingNumber === tracking);
+  }).length;
+  if (!printed) return '';
+  return '\n' + t(target === 'pending' ? 'puBostaPrintedPendingWarning' : 'puBostaPrintedPrepWarning', { n: fmtN(printed) });
+}
 function _puReadyReturnButtonsHtml(order) {
   if (!_puCanEdit()) return '';
   if (!_puDailyAwaitingPickup(order)) return '';
@@ -15,7 +25,7 @@ function _puChooseReturnPrepGroup(order, groups) {
   const focus = document.activeElement, overflow = document.body.style.overflow;
   host.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="pu-return-target-title" dir="${en ? 'ltr' : 'rtl'}">
     <h3 id="pu-return-target-title">${en ? 'Return to Preparing' : 'إرجاع للتحضير'} <bdi>#${esc(order.ref || '—')}</bdi></h3>
-    <p>${en ? 'Preparation checks, scanned pieces and Piece identity will be preserved.' : 'سيتم الاحتفاظ بحالة التحضير والقطع الممسوحة وبيانات Piece identity كما هي.'}</p>
+    <p style="white-space:pre-line">${en ? 'Preparation checks, scanned pieces and Piece identity will be preserved.' : 'سيتم الاحتفاظ بحالة التحضير والقطع الممسوحة وبيانات Piece identity كما هي.'}${esc(_puPrintedBostaWarning([order], 'preparing'))}</p>
     <label>${en ? 'Choose a preparation group' : 'اختر مجموعة التحضير'}<select id="pu-return-prep-select">
       ${groups.length ? `<option value="" disabled selected>${en ? 'Choose a group…' : 'اختر المجموعة…'}</option>` : ''}
       ${groups.map(group => `<option value="${esc(group.prepRef)}">${esc(group.prepRef)} · ${group.orders.length} ${en ? 'orders' : 'أوردر'}${group.note ? ' · '+esc(group.note) : ''}</option>`).join('')}
@@ -72,8 +82,8 @@ async function _puReturnReadyOrder(orderId, mode) {
     let target = null;
     if (mode === 'pending') {
       const confirmed = await _puConfirm(en
-        ? `Return order #${order.ref || orderId} to Pending? Preparation will be cancelled and scanned piece identities removed from this invoice.`
-        : `إرجاع الأوردر #${order.ref || orderId} للمعلّق؟ سيتم إلغاء تحضيره وإزالة أكواد القطع الممسوحة المرتبطة بهذه الفاتورة.`,
+        ? `Return order #${order.ref || orderId} to Pending? Preparation will be cancelled and scanned piece identities removed from this invoice.${_puPrintedBostaWarning([order], 'pending')}`
+        : `إرجاع الأوردر #${order.ref || orderId} للمعلّق؟ سيتم إلغاء تحضيره وإزالة أكواد القطع الممسوحة المرتبطة بهذه الفاتورة.${_puPrintedBostaWarning([order], 'pending')}`,
         en ? 'Cancel preparation' : 'إلغاء التحضير والإرجاع للمعلّق', en ? 'Return to Pending' : 'إرجاع للمعلّق', '#dc2626');
       if (!confirmed) return;
     } else {

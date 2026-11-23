@@ -31,6 +31,7 @@ import { CreatePickupDto } from './dto/create-pickup.dto';
 import { ExtendPickupDto } from './dto/extend-pickup.dto';
 import { pickupSchedule, pickupDateReason, pickupReasonMessage, pickupCarrierReason, pickupClock } from './pickup-schedule.util';
 import { bostaDelayFlag } from './bosta-delay.util';
+import { bostaCollectedAt, collectedDateCorrection, courierCollectedUpdate } from '../shared/courier-collected.util';
 
 // ── Bosta status → Arabic label map ────────────────────────────────────────
 const BOSTA_STATUS_LABELS: Record<string, string> = {
@@ -333,13 +334,6 @@ export function pickupCanAttach(r: any, today: string): boolean {
     && !['pending', 'uncertain'].includes(r.updateState) && String(r.scheduledDate || '') >= today;
 }
 
-function shippingReceivedRef(shipCo: unknown, date: string): string {
-  const carrier = String(shipCo || 'Bosta');
-  let hash = 0;
-  for (let i = 0; i < carrier.length; i++) hash = ((hash * 31) + carrier.charCodeAt(i)) & 0xffff;
-  return `SH-${date}-${hash.toString(36).toUpperCase().padStart(4, '0')}`;
-}
-
 @Injectable()
 export class BostaService {
   @PushOptional() @PushInject(NotificationsService) private readonly notifications?: NotificationsService;
@@ -535,6 +529,8 @@ export class BostaService {
       'workflow.shipment.lastEventAt': stamp.toISOString(), 'workflow.shipment.lastSyncAt': new Date().toISOString() };
     if (id) set['workflow.shipment.deliveryId'] = id;
     if (tracking) { set['workflow.shipment.trackingNumber'] = tracking; set.returnTrackingNumber = tracking; }
+    const collectedAt = bostaCollectedAt(d);
+    if (collectedAt && !previous.collectedAt) set['workflow.shipment.collectedAt'] = collectedAt;
     if ([47, 48, 49, 100, 101, 102, 103].includes(code) && !row.workflow.exception) set['workflow.exception'] = `بوسطة: ${d.state?.value || status}`;
     const event = { action: 'carrier-status', by: 'Bosta', at: stamp.toISOString(), note: set['workflow.shipment.carrierLabel'],
       eventId: `carrier:${row._id}:${stamp.toISOString()}:${code}:${status}`, caseId: String(row._id), caseRef: row.workflow.ref, kind: row.requestKind,
@@ -1607,21 +1603,15 @@ export class BostaService {
     // Compute the new codCollectionStatus — only advance, never regress
     const codUpdate = this.resolveCodStatusUpdate(tx, statusCode);
 
-    // Creating the Bosta order leaves pickupStatus 'Ready' (registered, not collected). The
-    // courier picking it up is what makes it genuinely shipped, so promote it here — and only
-    // from 'Ready', so a later 'Delivered' is never dragged back to 'Shipped'.
-    const courierCollected = ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'CUSTOMER_POSTPONED'].includes(statusCode) && tx.pickupStatus === 'Ready';
-    // Once the courier has the parcel, move it out of its preparation ticket and
-    // into one deterministic shipping ticket per carrier and calendar day. This
-    // keeps orders received in separate ready tickets together after refresh.
-    const pickupUpdate = courierCollected
-      ? {
-          pickupStatus: 'Shipped',
-          shippedAt: (tx as any).shippedAt || now,
-          pickupRef: shippingReceivedRef((tx as any).shipCo, now.slice(0, 10)),
-          pickupDate: now.slice(0, 10),
-        }
-      : {};
+    // Once the courier has the parcel, move the order out of its prep/ready ticket and
+    // into one deterministic shipping ticket per carrier and collection day. This runs
+    // from ANY board stage before the courier — an order sent from the prep workspace
+    // stays 'Preparing', and promoting only from 'Ready' left delivered orders in prep
+    // groups (#3198). 'Shipped'/'Delivered' are never touched (courier-collected.util).
+    // An order already in «تم الشحن» still gets Bosta's own pickup time when the stored one
+    // (the moment we first heard) falls on another day — the card is the collection day.
+    const collected = courierCollectedUpdate(tx, statusCode, d, now);
+    const pickupUpdate = Object.keys(collected).length ? collected : collectedDateCorrection({ ...tx, bostaStatus: statusCode }, d);
 
     // First arrival at DELIVERED queues the automatic settlement. Only a marker is written here —
     // the price is read a minute later (see CarrierAutoSettleService), because Bosta writes the

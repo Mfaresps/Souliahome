@@ -97,12 +97,11 @@ export class AfterSalesService {
   }
   /** Enrich the committed response without fetching the same case again. */
   async describe(row: any) {
-    if (row.addressHint && row.rollback) return row;
     // Fetch both invoices in one round trip, without their items, carrier payloads
     // or event histories. Reuse this fresh replacement state for rollback checks.
     const invoiceIds = [row.originalTransactionId, row.workflow.replacementTxId].filter(Boolean).map(value => this.id(String(value)));
     const invoices = await this.connection.collection('transactions').find({ _id: { $in: invoiceIds } }, { projection: {
-      shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1,
+      shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1, total: 1, deposit: 1, remaining: 1,
       ...this.rollbackReplacementProjection,
     } }).toArray();
     const originalAddress = invoices.find(tx => String(tx._id) === String(row.originalTransactionId));
@@ -112,6 +111,14 @@ export class AfterSalesService {
       row.workflow.replacementPickupStatus = replacement?.pickupStatus || 'Pending';
       row.workflow.replacementPrepared = replacement?.prepChecked === true;
       row.advance = advanceView(row.workflow.quote?.collectDue, replacement);
+    }
+    if (originalAddress && row.requestKind === 'exchange') {
+      const originalRemaining = Math.max(0, Number(originalAddress.remaining) || 0);
+      const exchangeRemaining = money(Math.max(0, Number(row.workflow.quote?.collectDue || 0) - Number(row.advance?.paid || 0) - Number(row.workflow.collection?.amount || 0)));
+      row.accounting = { originalTotal: Number(originalAddress.total) || 0, originalPaid: Number(originalAddress.deposit) || 0,
+        originalRemaining, exchangeDifference: Number(row.workflow.quote?.collectDue) || 0,
+        exchangePaid: money(Number(row.advance?.paid || 0) + Number(row.workflow.collection?.amount || 0)), exchangeRemaining,
+        combinedRemaining: money(originalRemaining + exchangeRemaining) };
     }
     row.rollback = await this.rollbackOption(row, undefined, replacement);
     if ((row.workflow.bundledSales || []).length) {

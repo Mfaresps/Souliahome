@@ -212,6 +212,7 @@ export function describeSaleLineChanges(before: any[], after: any[]): string[] {
   for (const [k, n] of a) if (!b.has(k)) out.push(`أُضيف صنف: ${name(n)} (كمية ${Number(n.qty) || 0})`);
   return out;
 }
+import { COURIER_HAS_PARCEL_STATUSES, afterSalesCollectedAt, cairoDay, collectedDateCorrection, courierHasParcel, courierCollectedButOnBoard, courierCollectedUpdate } from '../shared/courier-collected.util';
 
 @Injectable()
 export class TransactionsService implements ClassificationInit {
@@ -1041,7 +1042,6 @@ export class TransactionsService implements ClassificationInit {
     deposits: 0,
     deliveryAuditLog: 0,
     afterSalesEvents: 0,
-    bostaAwbPrints: 0,
     pickingExceptions: 0,
     bostaShippedAddress: 0,
   } as const;
@@ -6713,6 +6713,27 @@ export class TransactionsService implements ClassificationInit {
       .exec();
   }
 
+  /**
+   * Orders cancelled or archived AFTER the courier collected them. The board feeds leave
+   * cancelled orders out, so a shipped day lost a parcel whenever one was cancelled later
+   * (e.g. a failed delivery closed). The «تم الشحن» column adds these back so each day keeps
+   * the number of parcels the courier actually took. Display only.
+   */
+  async findPickupShippedHistory() {
+    return cachedRead('pickup-shipped-history', 3000, () => this.transactionModel
+      .find({
+        type: 'مبيعات',
+        $and: [
+          { $or: [{ cancelled: true }, { archived: true }] },
+          { $or: [{ shippedAt: { $nin: [null, ''] } }, { bostaStatus: { $in: COURIER_HAS_PARCEL_STATUSES } }] },
+        ],
+      })
+      .select(TransactionsService.PICKUP_WORKSPACE_EXCLUDED_FIELDS)
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec());
+  }
+
   /** Smaller grouped-board feed; GET /pickup-orders remains unchanged. */
   async findPickupWorkspaceOrders() {
     return cachedRead('pickup-workspace', 3000, () => this.transactionModel
@@ -6833,6 +6854,9 @@ export class TransactionsService implements ClassificationInit {
     targetRef: string,
     ids: string[],
     by: string,
+    /** false = move only the chosen orders (multi-select in the prep window); they must all
+     *  still be in the source group. true (the card drag) = the source must hold exactly `ids`. */
+    wholeGroup = true,
   ): Promise<{ moved: number; pickupRef: string }> {
     const src = String(sourceRef || '').trim();
     const dst = String(targetRef || '').trim();
@@ -6844,7 +6868,7 @@ export class TransactionsService implements ClassificationInit {
     const base = { type: 'مبيعات', cancelled: { $ne: true }, pickupStatus: 'Preparing' };
     const sourceNow = await this.transactionModel.find({ ...base, pickupRef: src }).select('_id').lean().exec();
     const sourceIds = new Set(sourceNow.map((o: any) => String(o._id)));
-    if (sourceIds.size !== validIds.length || validIds.some(id => !sourceIds.has(id))) {
+    if ((wholeGroup && sourceIds.size !== validIds.length) || validIds.some(id => !sourceIds.has(id))) {
       throw new ConflictException('تغيّرت المجموعة المسحوبة منذ فتح الصفحة؛ حدّث الصفحة وحاول مرة أخرى');
     }
 
@@ -7004,14 +7028,25 @@ export class TransactionsService implements ClassificationInit {
   }
 
   /** Confirm pick-up for one or more transaction IDs — moves to Ready */
-  async confirmPickup(ids: string[], by: string, date?: string, reuseOpenRun = false): Promise<{ updated: number; pickupRef: string }> {
-    const validIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
-    if (!validIds.length) return { updated: 0, pickupRef: '' };
-    const sourceOrders = await this.transactionModel.find({
-      _id: { $in: validIds },
+  async confirmPickup(ids: string[], by: string, date?: string, reuseOpenRun = false): Promise<{ updated: number; pickupRef: string; skipped?: Array<{ _id: string; ref: string; bostaStatus: string }> }> {
+    const requestedIds = [...new Set(ids.filter(id => isValidObjectId(id)))];
+    if (!requestedIds.length) return { updated: 0, pickupRef: '' };
+    const foundOrders = await this.transactionModel.find({
+      _id: { $in: requestedIds },
       type: 'مبيعات',
       cancelled: { $ne: true },
-    }).select('_id pickupStatus prepChecked').exec();
+    }).select('_id ref pickupStatus prepChecked bostaStatus').exec();
+    // ⚠ An order the courier already has (picked up … delivered) is never moved back to
+    // «جاهز»: a prep group moved to Ready on Nov 23 carried orders Bosta had delivered on
+    // Nov 21 into a new ready ticket (#3198). They are left out and named to the caller.
+    const skipped = foundOrders.filter(o => courierHasParcel((o as any).bostaStatus))
+      .map(o => ({ _id: String(o._id), ref: String((o as any).ref || ''), bostaStatus: String((o as any).bostaStatus || '') }));
+    const skippedIds = new Set(skipped.map(o => o._id));
+    const validIds = requestedIds.filter(id => !skippedIds.has(String(id)));
+    if (!validIds.length) {
+      throw new BadRequestException(`شركة الشحن استلمت هذه الطلبات بالفعل، فلا يمكن نقلها إلى الجاهز: ${skipped.map(o => '#' + o.ref).join('، ')}`);
+    }
+    const sourceOrders = foundOrders.filter(o => !skippedIds.has(String(o._id)));
     const allOrdersPrepared = sourceOrders.length === validIds.length && sourceOrders.every(order =>
       order.pickupStatus === 'Preparing' && order.prepChecked === true,
     );
@@ -7043,6 +7078,7 @@ export class TransactionsService implements ClassificationInit {
     const result = await this.transactionModel.updateMany(
       {
         _id: { $in: validIds }, type: 'مبيعات', cancelled: { $ne: true },
+        bostaStatus: { $nin: COURIER_HAS_PARCEL_STATUSES },
         ...(mixedPreparedAndReady
           ? { $or: [{ pickupStatus: 'Preparing', prepChecked: true }, { pickupStatus: { $in: ['Ready', 'Picked-Up'] } }] }
           : {
@@ -7059,7 +7095,7 @@ export class TransactionsService implements ClassificationInit {
       this.emit('pickup:updated', { ids: validIds, action: 'ready', pickupRef: batchRef, pickupDate: now });
     }
 
-    return { updated: result.modifiedCount, pickupRef: batchRef };
+    return { updated: result.modifiedCount, pickupRef: batchRef, ...(skipped.length ? { skipped } : {}) };
   }
 
   /** Undo pick-up for one or more transaction IDs — reverts Ready or Preparing → Pending */
@@ -7465,6 +7501,96 @@ export class TransactionsService implements ClassificationInit {
   async rollbackShippingDiscountCorrection(runId: string, by: string) {
     if (!String(runId || '').trim()) throw new BadRequestException('runId مطلوب');
     return rollbackCorrection(this.transactionModel.db, String(runId), by);
+  }
+
+  /**
+   * Two board facts that must come from Bosta, fixed together (courier-collected.util):
+   *  - kind 'stage': Bosta picked up / delivered the order while the board still shows it
+   *    in «معلّق» / «قيد التجهيز» / «جاهز» (the sync used to promote only from Ready) →
+   *    «تم الشحن» under its collection day.
+   *  - kind 'date': already shipped, but shippedAt (when we first heard) falls on another
+   *    day than Bosta's own pickup time → corrected, so the shipped card shows the day the
+   *    courier collected it. Cancelled/archived orders included — they stay in that day.
+   * Board fields only: no money, stock, pieces or carrier call. Dry run unless dryRun=false;
+   * each write is conditional on the order being unchanged since the read.
+   */
+  async repairCourierCollectedBoard(dryRun = true, by = 'system'): Promise<{
+    dryRun: boolean;
+    found: number;
+    moved: number;
+    orders: Array<{ _id: string; ref: string; kind: 'stage' | 'date' | 'exchange-date'; bostaStatus: string; from: string; fromRef: string; toRef: string; fromDay: string; toDay: string; shippedAt: string; cancelled: boolean; moved?: boolean }>;
+  }> {
+    const rows = await this.transactionModel.find({
+      type: 'مبيعات',
+      bostaStatus: { $in: COURIER_HAS_PARCEL_STATUSES },
+    }).select('_id ref type cancelled archived pickupStatus pickupRef bostaStatus shipCo shippedAt deliveredAt bostaRawResponse.collectedFromBusiness bostaRawResponse.timeline bostaRawResponse.data.collectedFromBusiness bostaRawResponse.data.timeline').lean().exec();
+    const now = new Date().toISOString();
+    const orders: any[] = [];
+    let moved = 0;
+    for (const tx of rows as any[]) {
+      let kind: 'stage' | 'date';
+      let update: Record<string, any>;
+      if (courierCollectedButOnBoard(tx)) {
+        kind = 'stage';
+        update = courierCollectedUpdate(tx, tx.bostaStatus, tx.bostaRawResponse, now);
+      } else {
+        kind = 'date';
+        update = collectedDateCorrection(tx, tx.bostaRawResponse);
+      }
+      if (!Object.keys(update).length) continue;
+      const row: any = {
+        _id: String(tx._id), ref: String(tx.ref || ''), kind, bostaStatus: String(tx.bostaStatus || ''),
+        from: String(tx.pickupStatus || 'Pending'), fromRef: String(tx.pickupRef || ''),
+        toRef: String(update.pickupRef || tx.pickupRef || ''),
+        fromDay: tx.shippedAt ? cairoDay(new Date(tx.shippedAt).toISOString()) : '',
+        toDay: cairoDay(String(update.shippedAt || '')), shippedAt: String(update.shippedAt || ''),
+        cancelled: !!(tx.cancelled || tx.archived),
+      };
+      if (!dryRun) {
+        const res = await this.transactionModel.updateOne(
+          { _id: tx._id, bostaStatus: tx.bostaStatus, pickupStatus: tx.pickupStatus ?? { $in: [null, ''] }, shippedAt: tx.shippedAt ?? null },
+          {
+            $set: update,
+            $push: { pickupHistory: { action: kind === 'stage' ? 'courier-collected-repair' : 'collected-date-repair', date: now.slice(0, 10), by, pickupRef: row.toRef, fromRef: row.fromRef, fromStatus: row.from, fromDay: row.fromDay, toDay: row.toDay, bostaStatus: row.bostaStatus } },
+          },
+        );
+        row.moved = res.modifiedCount === 1;
+        if (row.moved) { moved++; this.emit('tx:updated', { _id: row._id }); }
+      }
+      orders.push(row);
+    }
+    // Exchange replacements (and sales bundled into the waybill): their waybill lives on the
+    // after-sales case and never stored a pickup day, so the shipped column guessed one.
+    const cases = await this.transactionModel.db.collection('returnrequests').find({
+      'workflow.replacementTxId': { $nin: [null, ''] }, 'workflow.shipment.carrierStatus': { $in: COURIER_HAS_PARCEL_STATUSES },
+    }).project({ 'workflow.replacementTxId': 1, 'workflow.shipment': 1, 'workflow.history': 1 }).toArray();
+    for (const c of cases as any[]) {
+      const at = afterSalesCollectedAt(c.workflow);
+      if (!at) continue;
+      const ids = [c.workflow.replacementTxId, ...((c.workflow.shipment?.bundled || []).map((b: any) => b.transactionId))]
+        .filter(Boolean).map(String).filter(id => isValidObjectId(id));
+      const txs = await this.transactionModel.find({ _id: { $in: ids } }).select('_id ref pickupStatus pickupRef bostaStatus shippedAt cancelled archived').lean().exec();
+      for (const tx of txs as any[]) {
+        const fromDay = tx.shippedAt ? cairoDay(new Date(tx.shippedAt).toISOString()) : '';
+        if (fromDay === cairoDay(at)) continue;
+        const row: any = {
+          _id: String(tx._id), ref: String(tx.ref || ''), kind: 'exchange-date', bostaStatus: String(tx.bostaStatus || ''),
+          from: String(tx.pickupStatus || ''), fromRef: String(tx.pickupRef || ''), toRef: String(tx.pickupRef || ''),
+          fromDay, toDay: cairoDay(at), shippedAt: at, cancelled: !!(tx.cancelled || tx.archived),
+        };
+        if (!dryRun) {
+          const res = await this.transactionModel.updateOne(
+            { _id: tx._id, shippedAt: tx.shippedAt ?? null },
+            { $set: { shippedAt: at }, $push: { pickupHistory: { action: 'collected-date-repair', date: now.slice(0, 10), by, fromDay, toDay: row.toDay, exchange: true } } },
+          );
+          row.moved = res.modifiedCount === 1;
+          if (row.moved) { moved++; this.emit('tx:updated', { _id: row._id }); }
+        }
+        orders.push(row);
+      }
+    }
+    if (!dryRun) this.logger.log(`courier-collected repair by ${by}: fixed ${moved}/${orders.length}`);
+    return { dryRun, found: orders.length, moved, orders };
   }
 
   async freezeLegacyLineCosts(dryRun = true): Promise<{

@@ -13,7 +13,8 @@
 export type Intent =
   | 'sales' | 'profit' | 'top' | 'best' | 'stock' | 'product' | 'order' | 'supplier'
   | 'cancel' | 'returns' | 'vault' | 'shopify' | 'help' | 'clarify' | 'unknown'
-  | 'alerts' | 'daily' | 'reorder' | 'velocity' | 'compare' | 'purchases' | 'smartplan' | 'engine' | 'explain';
+  | 'alerts' | 'daily' | 'reorder' | 'velocity' | 'compare' | 'purchases' | 'smartplan' | 'engine' | 'explain'
+  | 'followups';
 
 export interface Period {
   from: string; // YYYY-MM-DD, Cairo calendar day
@@ -42,6 +43,8 @@ export interface Understood {
   period2?: Period;
   /** The question clearly asked about stock ("متاح كام من …"), so a missing product is «not found», not «not understood». */
   explicit?: boolean;
+  /** followups: least urgent first («الأقل أهمية / الأقل تأخيرًا»). Default is most urgent first. */
+  reverse?: boolean;
 }
 
 const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
@@ -131,6 +134,24 @@ function subjectOf(t: string): string {
 
 export { subjectOf };
 
+/**
+ * Customers needing follow-up. Words about following up / calling / waiting for the customer.
+ * ⚠ Checked before cancel / orders / superlatives («الأقل أهمية» must not become a ranking question).
+ * A supplier question («نكلم المورد») is never a follow-up question.
+ */
+const FOLLOW_WORDS = [
+  'متابعه', 'متابعات', 'متابعين', 'نتابع', 'يتابع', 'تتابع', 'اتابع', 'يتتابع', 'هنتابع', 'نتابعهم', 'نتابعه',
+  'نكلم', 'نكلمهم', 'اكلمهم', 'نتصل', 'اتصل بيهم', 'نتواصل', 'التواصل مع العملاء', 'تواصل مع العميل', 'نرجع للعملاء', 'نرجع لهم',
+  'مردوش', 'مردش', 'مرديش', 'مش بيرد', 'مش بيردوا', 'مابيردوش', 'مبيردوش', 'لم يرد', 'لم يردوا', 'لا يرد',
+  'بانتظار العميل', 'في انتظار العميل', 'في انتظار رد', 'منتظرين رد', 'مستنيين رد', 'مستنيين العميل',
+  'عملاء معلقين', 'العملاء المعلقين', 'عملاء متعلقين', 'تذكير العملاء', 'تذكيرات المتابعه',
+  'follow up', 'follow-up', 'followup', 'follow-ups', ' chase', 'call back', 'callback', 'awaiting customer', 'no answer',
+];
+export function isFollowUpQuestion(t: string): boolean {
+  if (has(t, 'مورد', 'موردين', 'supplier')) return false;
+  return has(t, ...FOLLOW_WORDS);
+}
+
 export function understand(question: string, today: string): Understood {
   const t = normalizeQuestion(question);
   const base = { text: t.trim() };
@@ -153,6 +174,12 @@ export function understand(question: string, today: string): Understood {
       const p1 = parsePeriod(' ' + MONTH_KEYS[found[0].m] + ' ', today), p2 = parsePeriod(' ' + MONTH_KEYS[found[1].m] + ' ', today);
       return { ...base, intent: 'compare', period: p1, period2: p2, metric: has(t, 'ربح', 'ارباح', 'profit') ? 'profit' : 'sales' };
     }
+  }
+
+  // Customers needing follow-up — before «الغاء» / «طلبات» / «اوردرات», which these questions contain.
+  if (isFollowUpQuestion(t)) {
+    return { ...base, intent: 'followups', period: parsePeriod(t, today),
+      reverse: has(t, 'الاقل اهميه', 'اقل اهميه', 'الاقل اولويه', 'اقل اولويه', 'الاقل تاخير', 'اقل تاخير', 'الاحدث', 'الاجدد', 'least urgent', 'lowest priority', 'newest first') };
   }
 
   // Purchase invoices — before reorder, whose words they share («اشترينا» contains «اشتري»).

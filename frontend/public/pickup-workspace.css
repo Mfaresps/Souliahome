@@ -1021,3 +1021,34 @@ body.pu-readonly .pu-pt-shift-hint,
 body.pu-readonly .pu-card-prep-tick-wrap,
 body.pu-readonly .pw-cmt-compose {display:none!important}
 body.pu-readonly .bp-request-button {background:var(--surface);border-color:var(--border);color:var(--text)}
+
+/* Orders the carrier already has but the board still shows before shipping (admin only). */
+.pu-cstuck{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  margin:0 0 12px;padding:9px 12px;border:1px solid var(--border);border-inline-start:3px solid #d97706;
+  border-radius:8px;background:var(--surface,var(--bg-alt));color:var(--text);font-size:.82rem}
+.pu-cstuck .btn{flex-shrink:0}
+.pu-cstuck-list{margin:8px 0 0;padding-inline-start:18px;max-height:220px;overflow:auto;font-size:.84rem;line-height:1.7}
+/* «المطلوب تحصيله» — a quiet second line under the group total (same block, never a headline). */
+#page-pickup-orders .pu-stage-card .pu-prep-amount:has(.pu-group-due){flex-wrap:wrap}
+#page-pickup-orders .pu-group-due{flex-basis:100%;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.66rem;font-weight:400;color:var(--muted);line-height:1.3;text-align:end}
+#page-pickup-orders .pu-group-due bdi{font-weight:500;color:inherit}
+.pu-as-tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:999px;font-size:.68rem;font-weight:600;border:1px solid var(--bdl-line,#c4b5fd);color:var(--bdl-ink,#5b21b6);background:var(--bdl-bg-soft,#f5f3ff);margin-inline-start:6px}
+.pu-as-tag.is-return{border-color:#fcd34d;color:#92400e;background:#fffbeb}
+body.dark-mode .pu-as-tag{color:#c4b5fd;background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.4)}
+body.dark-mode .pu-as-tag.is-return{color:#fcd34d;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4)}
+
+/* Several orders selected (Ctrl/Shift+click) in the preparation window. */
+#pu-card-orders-modal .pw-ocard.is-multi{border-color:#2563eb;background:color-mix(in srgb,#2563eb 8%,var(--surface));box-shadow:inset 0 0 0 1px #2563eb}
+#pu-card-orders-modal .pw-ocard.is-multi::before{background:#2563eb;width:3px}
+.pw-multi-bar{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:6px 10px;border:1px solid #bfdbfe;border-radius:8px;
+  background:#eff6ff;color:#1e3a8a;font-size:.8rem}
+.pw-multi-bar>span{flex:1}
+.pw-multi-act{border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;padding:3px 10px;font-size:.76rem;font-weight:600;cursor:pointer}
+.pw-multi-x{border:0;background:transparent;color:inherit;font-size:1.1rem;line-height:1;cursor:pointer;padding:0 4px}
+body.dark-mode .pw-multi-bar{background:rgba(37,99,235,.16);border-color:rgba(96,165,250,.4);color:#bfdbfe}
+body.dark-mode #pu-card-orders-modal .pw-ocard.is-multi{background:rgba(37,99,235,.14)}
+/* «تم الشحن» draws the newest days first; older ones load at the end of the column. */
+.pu-shipped-more{display:block;width:100%;margin:4px 0 2px;padding:8px;border:1px dashed var(--border);border-radius:8px;
+  background:transparent;color:var(--muted);font-size:.78rem;font-weight:600;cursor:pointer}
+.pu-shipped-more:hover{color:var(--text);border-color:var(--text-muted,var(--muted))}
+#main #page-pickup-orders #pu-shipped-col > .pu-shipped-more { flex-shrink: 0; }

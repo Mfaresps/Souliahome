@@ -68,9 +68,9 @@
     const code = (window.BarcodeInput?.normalize(el('code').value) || el('code').value).trim().toUpperCase();
     if (!code) return;
     const unit = session.summary.units.find(unit => [unit.barcode, unit.manualCode].some(value => value && String(value).toUpperCase() === code));
-    if (!unit) feedback(tr('This code is not in this product’s counted warehouse stock.', 'الكود ليس ضمن رصيد هذا المنتج في المخزن المختار.'), true);
-    else if (session.checked.has(String(unit._id))) feedback(tr('Already scanned. Count unchanged.', 'تم مسح هذه القطعة من قبل؛ لم تُحتسب مرتين.'));
-    else { session.checked.add(String(unit._id)); render(); feedback(tr('Piece scanned: ', 'تم مسح القطعة: ') + (unit.manualCode || unit.barcode) + ((sup => sup ? ' · ' + sup : '')(window.SouliaUnitSupplier?.text(unit) || ''))); }
+    if (!unit) { feedback(tr('This code is not in this product’s counted warehouse stock.', 'الكود ليس ضمن رصيد هذا المنتج في المخزن المختار.'), true); window.BarcodeScanSound?.play('error'); }
+    else if (session.checked.has(String(unit._id))) { feedback(tr('Already scanned. Count unchanged.', 'تم مسح هذه القطعة من قبل؛ لم يتغير الجرد.')); window.BarcodeScanSound?.play('duplicate'); }
+    else { session.checked.add(String(unit._id)); render(); feedback(tr('Piece scanned: ', 'تم مسح القطعة: ') + (unit.manualCode || unit.barcode) + ((sup => sup ? ' · ' + sup : '')(window.SouliaUnitSupplier?.text(unit) || ''))); window.BarcodeScanSound?.play('success'); }
     el('code').value = ''; el('code').focus();
   }
   function finish() {
