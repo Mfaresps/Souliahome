@@ -101,7 +101,7 @@ export class AfterSalesService {
     // or event histories. Reuse this fresh replacement state for rollback checks.
     const invoiceIds = [row.originalTransactionId, row.workflow.replacementTxId].filter(Boolean).map(value => this.id(String(value)));
     const invoices = await this.connection.collection('transactions').find({ _id: { $in: invoiceIds } }, { projection: {
-      shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1, total: 1, deposit: 1, remaining: 1,
+      shippingAddress: 1, shippingBostaCity: 1, shippingGov: 1, phone: 1, client: 1,
       ...this.rollbackReplacementProjection,
     } }).toArray();
     const originalAddress = invoices.find(tx => String(tx._id) === String(row.originalTransactionId));
