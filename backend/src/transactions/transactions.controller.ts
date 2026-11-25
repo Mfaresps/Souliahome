@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { canSeeSupplier, maskProductPrivacy } from '../shared/cost-visibility.util';
 import {
   Controller,
   Get,
@@ -47,6 +49,8 @@ import { ExpensesService } from '../expenses/expenses.service';
 import { maskTransactionForRole, maskTransactionsForRole, filterPurchasesForPerms } from './purchase-mask.util';
 import { inDateWindow } from '../shared/date-window.util';
 import type { MovementsState } from './movements-page.util';
+import { stripMovementFilters } from './movements-page.util';
+import { BrowseAccessService, MIN_SEARCH_CHARS, MOVEMENTS_FREE_PAGES, MOVEMENTS_FREE_PAGE_SIZE, maskRowPhones } from '../browse-access/browse-access.service';
 import { DepositReceiptsService, MAX_RECEIPT_UPLOAD_BYTES, UploadedImage, ReceiptActor } from '../shopify/deposit-receipts.service';
 import { ConfirmManualDepositReceiptDto } from './dto/manual-deposit-receipt.dto';
 import { cachedRead } from '../shared/read-cache.util';
@@ -63,6 +67,7 @@ export class TransactionsController {
     private readonly carrierSettlementService: CarrierSettlementService,
     private readonly depositReceipts: DepositReceiptsService,
     private readonly orderCredit: OrderCreditService,
+    @Optional() private readonly browseAccess?: BrowseAccessService,
   ) {}
 
   // ── Carrier settlement-file import ────────────────────────────────────────────────────────
@@ -201,7 +206,26 @@ export class TransactionsController {
   ) {
     const role = req?.user?.role;
     const canSeePurchases = role === 'admin' || !!req?.user?.perms?.includes('purchase-view');
-    return this.transactionsService.findMovementsPage(state || {}, role, canSeePurchases);
+    // «فلاتر وترتيب سجل المعاملات» (Nov 25, 2026): without it the date, sort, amount, discount, TAG
+    // and drawer filters are dropped — search, the type tab, status and paging still work.
+    const canFilter = role === 'admin' || !!req?.user?.perms?.includes('movements-filters');
+    let query: MovementsState = canFilter ? (state || {}) : stripMovementFilters(state || {});
+    // Bulk-browsing protection (Nov 25, 2026): first MOVEMENTS_FREE_PAGES pages, searches of 3+
+    // characters, paging watched — unless «تصفح سجل المعاملات كاملًا» or a manager-approved grant.
+    if (this.browseAccess && !(await this.browseAccess.canBrowse(req?.user, 'movements'))) {
+      const page = Math.max(1, Number(query.page) || 1);
+      if (page > MOVEMENTS_FREE_PAGES) {
+        throw new ForbiddenException({ code: 'BROWSE_PRIVATE', scope: 'movements',
+          message: 'حفاظًا على خصوصية البيانات، يمكنك تصفّح أول ' + MOVEMENTS_FREE_PAGES + ' صفحات فقط. ابحث عن المعاملة برقمها أو باسم العميل، أو اطلب صلاحية التصفح من المدير.' });
+      }
+      const search = String(query.search || '').trim();
+      if (search && search.length < MIN_SEARCH_CHARS) query = { ...query, search: '' };
+      const limit = Number(query.limit) || MOVEMENTS_FREE_PAGE_SIZE;
+      if (limit > MOVEMENTS_FREE_PAGE_SIZE) query = { ...query, limit: MOVEMENTS_FREE_PAGE_SIZE };
+      if (page > 1) await this.browseAccess.trackPaging(req?.user, 'movements');
+    }
+    const result: any = await this.transactionsService.findMovementsPage(query, role, canSeePurchases);
+    return result && Array.isArray(result.pageRows) ? { ...result, pageRows: maskRowPhones(result.pageRows, req?.user) } : result;
   }
 
   /**
@@ -243,20 +267,30 @@ export class TransactionsController {
   }
 
   @Get('inventory')
-  async getInventory() {
+  async getInventory(@Req() req?: any) {
     // Display only: every open tab asks for this, and it walks the whole transaction
     // history. Shared for 5s and cleared by any write — see shared/read-cache.util.ts.
     // Internal callers (oversell guard, movement log) still call getInventory() directly.
-    return cachedRead('inventory', 5000, () => this.transactionsService.getInventory());
+    const rows = await cachedRead('inventory', 5000, () => this.transactionsService.getInventory());
+    return maskProductPrivacy(rows, req?.user); // purchase price and supplier only for those who may see them
   }
 
   @Get('inventory/breakdown')
-  async getInventoryBreakdown() {
+  async getInventoryBreakdown(@Req() req?: any) {
     // Display only: reserved / issue / incoming per product and warehouse (inventory-breakdown.ts).
-    return cachedRead('inventory-breakdown', 5000, () => this.transactionsService.getInventoryBreakdown());
+    const data = await cachedRead('inventory-breakdown', 5000, () => this.transactionsService.getInventoryBreakdown());
+    if (canSeeSupplier(req?.user)) return data;
+    // The incoming purchase orders name their supplier — same rule as the product card.
+    // The cached object is shared between callers: build a copy, never mutate it.
+    const out: Record<string, any> = {};
+    for (const [id, b] of Object.entries(data || {})) {
+      out[id] = { ...b, incomingOrders: (b.incomingOrders || []).map(({ supplier, ...o }) => o) };
+    }
+    return out;
   }
 
   @Get('reports')
+  @Roles('admin')
   async getReports(
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -465,7 +499,7 @@ export class TransactionsController {
     return this.transactionsService.findPickupOrders();
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/preparing')
   async setPickupPreparing(
     @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; createdAt?: string },
@@ -480,7 +514,7 @@ export class TransactionsController {
     });
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/merge-prep')
   async mergePrepGroups(
     @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
@@ -491,7 +525,7 @@ export class TransactionsController {
   }
 
   /** Move only the chosen orders of one prep group into another (multi-select → right-click). */
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/move-prep')
   async movePrepOrders(
     @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
@@ -501,7 +535,7 @@ export class TransactionsController {
     return this.transactionsService.mergePrepGroups(body.sourceRef, body.targetRef, body.ids, by, false);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/merge-ready')
   async mergeReadyGroups(
     @Body() body: { sourceRef: string; targetRef: string; ids: string[] },
@@ -512,7 +546,7 @@ export class TransactionsController {
   }
 
   /** The picker read «the order changed during preparation» and resumes. Clears only that notice. */
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-prepare')
   @Post('pickup-orders/:id/prep-edit-ack')
   async ackPrepEdit(
     @Param('id') id: string,
@@ -522,7 +556,7 @@ export class TransactionsController {
     return this.transactionsService.ackPrepEditNotice(id, String(body?.noticeId || ''), req.user.name || req.user.username || 'مستخدم');
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/split-prep')
   async splitPrepGroup(
     @Body() body: { sourceRef: string; ids: string[] },
@@ -532,7 +566,7 @@ export class TransactionsController {
     return this.transactionsService.splitPrepGroup(body.sourceRef, body.ids, by);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/confirm')
   async confirmPickup(
     @Body() body: { ids: string[]; date?: string; reuseOpenRun?: boolean },
@@ -542,7 +576,7 @@ export class TransactionsController {
     return this.transactionsService.confirmPickup(body.ids, by, body.date, body.reuseOpenRun === true);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-cancel')
   @Post('pickup-orders/undo')
   async undoPickup(
     @Body() body: { ids: string[]; sourceRef?: string },
@@ -552,7 +586,7 @@ export class TransactionsController {
     return this.transactionsService.undoPickup(body.ids, by, req.user.userId, body.sourceRef);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/return-to-preparing')
   async returnPickupToPreparing(
     @Body() body: { ids: string[]; prepRef: string; note?: string; shipCo?: string; sourceRef?: string; joinExisting?: boolean },
@@ -562,7 +596,7 @@ export class TransactionsController {
     return this.transactionsService.returnPickupToPreparing(body.ids, by, req.user.userId, body.prepRef, body);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Post('pickup-orders/add-to-run')
   async addToPickupRun(
     @Body() body: { id?: string; ids?: string[]; pickupRef: string; date?: string },
@@ -573,7 +607,7 @@ export class TransactionsController {
     return this.transactionsService.addToPickupRun(ids, body.pickupRef, by, body.date);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-prepare')
   @Patch('pickup-orders/:id/prep-check')
   async setPrepChecked(
     @Param('id') id: string,
@@ -584,13 +618,13 @@ export class TransactionsController {
     return this.transactionsService.setPrepChecked(id, body.prepChecked, by, body.reason || '');
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-move')
   @Put('pickup-orders/:id')
   async updatePickupOrder(@Param('id') id: string, @Body() dto: UpdateTransactionDto, @Req() req: any) {
     return this.update(id, dto, req);
   }
 
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders')
   @Post('pickup-orders/:id/comments')
   async addPickupComments(@Param('id') id: string, @Body() body: { comments: Array<any> }, @Req() req: any) {
     return this.addComments(id, body, req);
@@ -782,6 +816,7 @@ export class TransactionsController {
    * card. JWT-only, like collect: any employee who can work the card can finish
    * the job they were assigned.
    */
+  @RequirePerms('delivery-issues-close')
   @Post(':id/failed-delivery/close')
   async closeFailedDelivery(
     @Param('id') id: string,
@@ -799,6 +834,7 @@ export class TransactionsController {
   }
 
   /** "Not yet" — the courier says it is coming; the order stays on the card. */
+  @RequirePerms('delivery-issues-follow')
   @Post(':id/failed-delivery/awaiting')
   async markFailedDeliveryAwaiting(@Param('id') id: string, @Req() req: any) {
     const by = req.user?.name || req.user?.username || 'مستخدم';
@@ -806,6 +842,7 @@ export class TransactionsController {
   }
 
   /** Send it out again — new waybill, same transaction, same reference. */
+  @RequirePerms('delivery-issues-follow')
   @Post(':id/failed-delivery/reship')
   async reshipFailedDelivery(
     @Param('id') id: string,
@@ -869,6 +906,12 @@ export class TransactionsController {
     // Perms are forwarded rather than enforced by a route decorator: this endpoint serves both
     // customer collection and supplier payment, and only the loaded transaction knows which.
     const callerPerms: string[] = req.user?.perms || [];
+    // Collecting from a CUSTOMER moves cash into a vault (Nov 25, 2026): «تحصيل المبلغ من العميل».
+    // Supplier payments keep their own rule inside collect() (suppliers-pay).
+    if (callerRole !== 'admin' && !callerPerms.includes('sales-collect')) {
+      const tx: any = await this.transactionsService.findById(id);
+      if (tx && tx.type !== 'مشتريات') throw new ForbiddenException('ليست لديك صلاحية «تحصيل المبلغ من العميل»');
+    }
     return this.transactionsService.collect(id, dto, by, callerRole, callerPerms);
   }
 

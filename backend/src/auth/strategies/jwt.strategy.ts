@@ -1,3 +1,5 @@
+import { HttpException } from '@nestjs/common';
+import { suspensionPayload } from '../../abuse-guard/abuse-guard.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -28,6 +30,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException(
         `🔒 تم تعطيل هذا الحساب — ${user.lockReason || 'تواصل مع المدير لإعادة التفعيل'}`,
       );
+    }
+    // Temporarily suspended for tampering (abuse-guard): every session stops at once.
+    const suspendedUntil = (user as any).suspendedUntil ? new Date((user as any).suspendedUntil) : null;
+    if (user.role !== 'admin' && suspendedUntil && suspendedUntil.getTime() > Date.now()) {
+      throw new HttpException(suspensionPayload(user as any), 423);
     }
     return {
       userId: payload.sub,

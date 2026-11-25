@@ -88,6 +88,10 @@ export class UsersService implements OnModuleInit {
     return this.userModel.create({ ...data, password: hashed });
   }
 
+  async markOnboarded(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id, onboardingPending: true }, { $set: { onboardingPending: false, onboardedAt: new Date() } }).exec();
+  }
+
   async updateUser(id: string, data: UpdateUserDto): Promise<UserDocument> {
     const update: Record<string, unknown> = { ...data };
     // Don't allow changing username via update
@@ -145,7 +149,21 @@ export class UsersService implements OnModuleInit {
   }
 
   async resetLoginAttempts(id: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(id, { loginAttempts: 0 }).exec();
+    await this.userModel.findByIdAndUpdate(id, { loginAttempts: 0, loginLockedUntil: null, loginLockLevel: 0 }).exec();
+  }
+
+  /**
+   * Starts a temporary sign-in pause once the failed count reaches the limit. Conditional on
+   * the count, so simultaneous wrong attempts start ONE pause, not several longer ones.
+   * Returns the pause end, or null when another request already started it.
+   */
+  async startLoginPause(id: string, maxAttempts: number, level: number, minutes: number, now: Date): Promise<Date | null> {
+    const until = new Date(now.getTime() + minutes * 60000);
+    const res = await this.userModel.updateOne(
+      { _id: id, loginAttempts: { $gte: maxAttempts } },
+      { $set: { loginAttempts: 0, loginLockedUntil: until, loginLockStartedAt: now, loginLockLevel: level } },
+    ).exec();
+    return res.modifiedCount ? until : null;
   }
 
   async lockAccount(id: string, reason: string, lockedBy = 'system'): Promise<UserDocument> {
@@ -165,7 +183,7 @@ export class UsersService implements OnModuleInit {
     const user = await this.userModel
       .findByIdAndUpdate(
         id,
-        { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId },
+        { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId, loginLockedUntil: null, loginLockLevel: 0, suspendedUntil: null, suspensionReason: '', suspensionDetail: '' },
         { new: true },
       )
       .select(SECRET_USER_FIELDS)
@@ -176,9 +194,13 @@ export class UsersService implements OnModuleInit {
 
   async findLockedUsers(): Promise<UserDocument[]> {
     return this.userModel
-      .find({ isActive: false, lockedAt: { $ne: null } })
+      .find({ $or: [
+        { isActive: false, lockedAt: { $ne: null } },
+        { loginLockedUntil: { $gt: new Date() } }, // temporary sign-in pause, still running
+        { suspendedUntil: { $gt: new Date() } }, // suspended for tampering (abuse-guard)
+      ] })
       .select(SECRET_USER_FIELDS)
-      .sort({ lockedAt: -1 })
+      .sort({ lockedAt: -1, loginLockStartedAt: -1 })
       .exec();
   }
 

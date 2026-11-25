@@ -41,3 +41,9 @@ body.dark-mode .cp-good{background:#193c2c;color:#9ad5b6}body.dark-mode .cp-warn
 .cp-table td .cp-deposit-paid{color:var(--primary);font-weight:600}
 
 .cp-after-sales-table{table-layout:fixed}.cp-after-sales-table th,.cp-after-sales-table td{white-space:normal;overflow-wrap:anywhere}.cp-after-sales-table th:first-child{width:24%}.cp-after-sales-table th:nth-child(2){width:16%}.cp-after-sales-table th:nth-child(3){width:13%}.cp-after-sales-table th:nth-child(4),.cp-after-sales-table th:nth-child(5){width:14%}.cp-after-sales-table th:last-child{width:19%}.cp-after-sales-table .cp-order-reason{min-width:0;max-width:none}
+
+/* Privacy hint beside the client pager (Nov 25, 2026) */
+.cp-private-hint{display:inline-flex;align-items:center;gap:5px;align-self:center;margin-inline-start:8px;font-size:.76rem;color:var(--muted)}
+.cp-private-hint svg{flex-shrink:0;opacity:.8}
+.cp-private-lock{display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.cp-private-lock:hover{color:var(--text)}

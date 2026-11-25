@@ -32,9 +32,11 @@ function ui() {
     withButtonLoading: (_button: unknown, task: () => Promise<unknown>) => task(),
     _doSaveProduct: jest.fn(async () => {}),
     _doRequestProductEdit: jest.fn(async () => {}),
+    _pmFinish: jest.fn(), currentLang: 'ar', _EDIT_FIELD_LABELS: {},
+    window: { SouliaManagerOtp: { ask: jest.fn(async () => 'f'.repeat(24)) } },
   };
   vm.createContext(context);
-  vm.runInContext(['saveProduct', '_pmToggleLock', 'generateProductCodePreview'].map(shipped).join('\n'), context);
+  vm.runInContext(['saveProduct', '_pmToggleLock', 'generateProductCodePreview', '_canEditBuyPrice', '_canEditSellPrice', '_prodEditMode', '_diffRecord', '_editSummary', '_canSeeSupplier'].map(shipped).join('\n'), context);
   return { context, values };
 }
 
@@ -47,11 +49,25 @@ describe('Shipped product form SKU compatibility', () => {
     expect(body).not.toHaveProperty('code');
     expect(body).toMatchObject({ name: 'Changed name', colors: ['Red'], size: 'Large', sellPrice: 90, buyPrice: 20, openingBalance: 5 });
   });
-  it('keeps the ordinary staff edit-request workflow without asking for SKU authority', async () => {
+  // Nov 25, 2026: without an edit permission the product is view only (no save, no request).
+  it('view only saves nothing', async () => {
     const { context } = ui(); context.isAdmin = () => false; context.hasPerm = () => false;
     await context.saveProduct('a'.repeat(24));
-    expect(context._doRequestProductEdit).toHaveBeenCalled();
-    expect(context._doRequestProductEdit.mock.calls[0][1]).not.toHaveProperty('code');
+    expect(context._doSaveProduct).not.toHaveBeenCalled();
+    expect(context._doRequestProductEdit).not.toHaveBeenCalled();
+    expect(context.window.SouliaManagerOtp.ask).not.toHaveBeenCalled();
+  });
+  it('a manager-code edit sends only the changed fields with the verified code, never the SKU or a price it may not change', async () => {
+    const { context } = ui(); context.isAdmin = () => false; context.hasPerm = (p: string) => p === 'products-edit-otp';
+    await context.saveProduct('a'.repeat(24));
+    const ask = context.window.SouliaManagerOtp.ask.mock.calls[0][0];
+    expect(ask).toMatchObject({ entity: 'product', id: 'a'.repeat(24), label: 'Original' });
+    const [, body] = context._doSaveProduct.mock.calls[0];
+    expect(body.otpId).toBe('f'.repeat(24));
+    expect(Object.keys(body).sort()).toEqual([...ask.fields, 'otpId'].sort());
+    expect(body).not.toHaveProperty('code');
+    expect(body).not.toHaveProperty('sellPrice');
+    expect(body).not.toHaveProperty('buyPrice');
   });
   it('does not unlock or regenerate the SKU on an existing product', () => {
     const { context, values } = ui(); context._pmEditingId = 'a'.repeat(24);

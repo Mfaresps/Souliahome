@@ -1,7 +1,7 @@
 import { notifyApproval } from '../notifications/admin-events';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Inject, Optional } from '@nestjs/common';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DiscountOtp, DiscountOtpDocument } from './schemas/discount-otp.schema';
@@ -862,6 +862,70 @@ export class DiscountOtpService {
     return async () => {
       await this.otpModel.updateOne({ _id: otpId, txId: receiptId }, { $set: { txId: '' } }).exec();
     };
+  }
+
+  /**
+   * «تعديل صنف / تصنيف / مجموعة» by an employee holding the «…بكود المدير» permission (Nov 25, 2026).
+   * Bound to the record (`editTxId` = entity:id) and the names of the fields the employee changed
+   * (`txType`, sorted, comma-joined). Spent once at save by `consumeRecordEditOtp`.
+   */
+  async requestRecordEditOtp(args: {
+    entity: 'product' | 'category' | 'collection'; id: string; label: string; fields: string[]; summary: string;
+    requestedById: string; requestedByName: string; requestedByUsername: string;
+  }): Promise<{ otpId: string; expiresAt: string }> {
+    const fields = [...new Set((args.fields || []).map(String).filter(Boolean))].sort();
+    if (!args.id) throw new BadRequestException('السجل غير محدد');
+    if (!fields.length) throw new BadRequestException('لا توجد تعديلات');
+    const now = new Date();
+    const ttlMin = await this.getTtlMin();
+    const expiresAt = new Date(now.getTime() + ttlMin * 60 * 1000);
+    const otp = this.generateOtp();
+    const doc = await this.createOtpDocument({
+      otp, discountAmount: 0, itemsTotal: 0, client: '',
+      txType: fields.join(','), txRef: String(args.label || '').slice(0, 120),
+      requestedById: args.requestedById, requestedByName: args.requestedByName, requestedByUsername: args.requestedByUsername,
+      createdAt: now.toISOString(), expiresAt: expiresAt.toISOString(), status: 'unused', attempts: 0, thresholdAtRequest: 0,
+      kind: 'record-edit', editTxId: `${args.entity}:${args.id}`, requestReason: String(args.summary || '').slice(0, 600),
+    });
+    const what = { product: 'صنف', category: 'تصنيف', collection: 'مجموعة' }[args.entity] || 'سجل';
+    try {
+      const users = await this.usersService.findAll();
+      const admins = users.filter((u: any) => u.role === 'admin');
+      const text =
+        `🔐 كود التحقق: ${otp}` +
+        `\nطلب تعديل ${what} يحتاج موافقتك` +
+        `\nالموظف: ${args.requestedByName || args.requestedByUsername || 'موظف'}` +
+        `\n${what}: ${args.label || '-'}` +
+        (args.summary ? `\nالتعديلات: ${String(args.summary).slice(0, 400)}` : '') +
+        `\nصالح حتى: ${expiresAt.toISOString()}`;
+      const rows = admins.map((a: any) => ({
+        targetUserId: String(a._id), targetUsername: (a.username || '').toLowerCase(), targetName: a.name || '',
+        fromUserId: 'system', fromName: 'نظام تعديل البيانات', txId: String(doc._id), txRef: doc.txRef || '',
+        commentId: 0, commentText: text,
+      }));
+      this.pushMentions(await this.mentionsService.createMany(rows) as any[]);
+    } catch { /* notification failure must not break OTP creation */ }
+    return { otpId: String(doc._id), expiresAt: expiresAt.toISOString() };
+  }
+
+  /** Spends a verified record-edit code once. The saved change may touch only the approved fields. */
+  async consumeRecordEditOtp(otpId: string, entity: string, id: string, fields: string[]): Promise<() => Promise<void>> {
+    if (!otpId || !/^[a-f0-9]{24}$/.test(String(otpId))) throw new ForbiddenException('يلزم كود تحقق من المدير لحفظ هذا التعديل');
+    const doc = await this.otpModel.findById(otpId).lean().exec();
+    if (!doc || doc.kind !== 'record-edit') throw new BadRequestException('كود التحقق غير صحيح');
+    if (doc.status !== 'used') throw new BadRequestException('كود التحقق لم يتم التحقق منه بعد');
+    if (doc.txId) throw new BadRequestException('تم استخدام كود التحقق بالفعل — اطلب كوداً جديداً');
+    if (doc.editTxId !== `${entity}:${id}`) throw new BadRequestException('كود التحقق صادر لسجل آخر');
+    const approved = new Set(String(doc.txType || '').split(',').filter(Boolean));
+    const extra = (fields || []).filter(f => !approved.has(f));
+    if (extra.length) throw new BadRequestException('التعديل تغيّر بعد طلب الكود — اطلب كوداً جديداً');
+    const mark = 'edit:' + Date.now();
+    const claimed = await this.otpModel.findOneAndUpdate(
+      { _id: otpId, kind: 'record-edit', status: 'used', txId: { $in: ['', null] } },
+      { $set: { txId: mark } }, { new: true },
+    ).exec();
+    if (!claimed) throw new BadRequestException('تم استخدام كود التحقق بالفعل — اطلب كوداً جديداً');
+    return async () => { await this.otpModel.updateOne({ _id: otpId, txId: mark }, { $set: { txId: '' } }).exec(); };
   }
 
   async requestVaultAccessOtp(args: VaultAccessOtpArgs): Promise<{ otpId: string; expiresAt: string }> {

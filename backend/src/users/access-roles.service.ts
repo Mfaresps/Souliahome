@@ -1,22 +1,22 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { isValidObjectId } from 'mongoose';
 import { AccessRole, AccessRoleDocument } from './schemas/access-role.schema';
 import { User, UserDocument } from './schemas/user.schema';
-import { ACCESS_ROLE_PERMISSIONS, NON_DELEGABLE_PERMISSIONS, VIEWER_PERMISSIONS, normalizeRolePermissions, validateRolePermissionTier } from './access-role-permissions';
+import { ACCESS_ROLE_PERMISSIONS, LEGACY_PICKUP_EDIT, PICKUP_ACTION_PERMISSIONS, NON_DELEGABLE_PERMISSIONS, VIEWER_PERMISSIONS, normalizeRolePermissions, validateRolePermissionTier } from './access-role-permissions';
 
 export const DEFAULT_ACCESS_ROLES: Array<{slug:string;name:string;description:string;baseRole:'staff'|'viewer';perms:string[]}> = [
-  { slug:'manager', name:'Manager', description:'Operations, orders, stock and approvals.', baseRole:'staff', perms:['dashboard','transaction','movements','pickup-orders','pickup-orders-edit','approvals','inventory','products','clients','suppliers','suppliers-create','suppliers-edit','complaints','expenses','categories-view','categories-create','categories-edit','categories-assign-products','purchase-create','purchase-view','delivery-manual-confirm','delivery-view-audit','reports','reports-kpis','reports-charts','suppliers-tab-invoices','suppliers-tab-pos'] },
+  { slug:'manager', name:'Manager', description:'Operations, orders, stock and approvals.', baseRole:'staff', perms:['dashboard','transaction','movements','pickup-orders','pickup-orders-prepare','pickup-orders-move','pickup-orders-cancel','pickup-orders-bosta','pickup-orders-bosta-cancel','approvals','inventory','products','clients','suppliers','suppliers-create','suppliers-edit','complaints','expenses','categories-view','categories-create','categories-edit','categories-assign-products','purchase-create','purchase-view','delivery-manual-confirm','delivery-view-audit','delivery-issues-follow','delivery-issues-close','products-price-sell','reports','reports-kpis','reports-charts','suppliers-tab-invoices','suppliers-tab-pos'] },
   { slug:'accountant', name:'Accountant', description:'Financial records, suppliers and reports.', baseRole:'staff', perms:['dashboard','movements','pickup-orders','expenses','vault','clients','suppliers','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','purchase-view','suppliers-tab-invoices','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-pos','carrier-settle-view'] },
   { slug:'sales', name:'Sales', description:'Orders, customers and product information.', baseRole:'staff', perms:['dashboard','transaction','movements','pickup-orders','clients','products','inventory','complaints','categories-view','shopify-orders','shopify-deposit-upload'] },
-  { slug:'warehouse', name:'Warehouse', description:'Inventory, units and order preparation.', baseRole:'staff', perms:['dashboard','inventory','products','movements','pickup-orders','pickup-orders-edit','categories-view','categories-assign-products','inventory-units-view','inventory-units-register','inventory-units-allocate'] },
+  { slug:'warehouse', name:'Warehouse', description:'Inventory, units and order preparation.', baseRole:'staff', perms:['dashboard','inventory','products','movements','pickup-orders','pickup-orders-prepare','categories-view','categories-assign-products','inventory-units-view','inventory-units-register','inventory-units-allocate'] },
   { slug:'customer-service', name:'Customer Service', description:'Customer cases, orders and follow-ups.', baseRole:'staff', perms:['dashboard','clients','complaints','movements','pickup-orders','products','inventory','categories-view','shopify-orders','shopify-deposit-upload','csp-view','csp-create','csp-edit'] },
   { slug:'viewer', name:'Viewer', description:'Read-only overview and reports.', baseRole:'viewer', perms:['dashboard','inventory','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','categories-view'] },
   // The four job presets the user window used to carry (JOB_TEMPLATES) — now real roles, so a
   // job is granted in ONE place. Inserted with $setOnInsert: an existing database gains them
   // without any role it already has being touched.
-  { slug:'fulfillment', name:'Fulfillment', description:'Order preparation, shipping and delivery.', baseRole:'staff', perms:['dashboard','movements','pickup-orders','pickup-orders-edit','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','shopify-orders','shopify-prepare-ship','shopify-deposit-upload'] },
+  { slug:'fulfillment', name:'Fulfillment', description:'Order preparation, shipping and delivery.', baseRole:'staff', perms:['dashboard','movements','pickup-orders','pickup-orders-prepare','pickup-orders-move','pickup-orders-bosta','inventory','products','clients','delivery-manual-confirm','delivery-view-audit','delivery-issues-follow','delivery-issues-close','shopify-orders','shopify-prepare-ship','shopify-deposit-upload'] },
   { slug:'cashier', name:'Cashier', description:'Cash register and expenses.', baseRole:'staff', perms:['dashboard','vault','expenses','movements','pickup-orders','clients'] },
   { slug:'purchasing', name:'Purchasing', description:'Suppliers, purchase invoices and supplier returns.', baseRole:'staff', perms:['dashboard','suppliers','products','inventory','movements','pickup-orders','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-link-suppliers','suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-activity','suppliers-returns'] },
   { slug:'marketing', name:'Marketing', description:'Products, collections and sales reports.', baseRole:'staff', perms:['dashboard','products','inventory','categories-view','categories-create','categories-edit','categories-assign-products','reports','reports-kpis','reports-charts','reports-discounts','shopify-orders'] },
@@ -29,12 +29,103 @@ const RESERVED_SLUGS = new Set(['super-admin','admin',...DEFAULT_ACCESS_ROLES.ma
 export interface RoleInput { name?: string; description?: string; baseRole?: 'staff'|'viewer'; perms?: string[] }
 
 @Injectable()
-export class AccessRolesService {
+export class AccessRolesService implements OnModuleInit {
+  private readonly logger = new Logger(AccessRolesService.name);
   private defaultsReady: Promise<void> | null = null;
   constructor(
     @InjectModel(AccessRole.name) private readonly roles: Model<AccessRoleDocument>,
     @InjectModel(User.name) private readonly users: Model<UserDocument>,
   ) {}
+
+  onModuleInit() {
+    this.migratePermsNov25d().catch(error => this.logger.warn(`Permission migration (Nov 25d) failed: ${error?.message || error}`));
+    this.migratePermsNov25c().catch(error => this.logger.warn(`Permission migration (Nov 25c) failed: ${error?.message || error}`));
+    this.migratePermsNov25b().catch(error => this.logger.warn(`Permission migration (Nov 25b) failed: ${error?.message || error}`));
+    this.migratePermsNov25().catch(error => this.logger.warn(`Permission migration (Nov 25) failed: ${error?.message || error}`));
+    this.migratePickupEdit().catch(error => this.logger.warn(`Pick-Up permission migration failed: ${error?.message || error}`));
+  }
+
+  /** `pickup-orders-edit` → the five Pick-Up action keys (Nov 24, 2026), on roles AND accounts, so
+   *  nobody loses an action. Idempotent: only documents still holding the old key are written. */
+  async migratePickupEdit(): Promise<{ roles: number; users: number }> {
+    const update = [{ $set: { perms: { $setUnion: [{ $setDifference: ['$perms', [LEGACY_PICKUP_EDIT]] }, ['pickup-orders', ...PICKUP_ACTION_PERMISSIONS]] } } }];
+    const roles = await this.roles.updateMany({ perms: LEGACY_PICKUP_EDIT }, update as any).exec();
+    const users = await this.users.updateMany({ perms: LEGACY_PICKUP_EDIT }, update as any).exec();
+    if (roles.modifiedCount || users.modifiedCount) this.logger.log(`Pick-Up permissions split: ${roles.modifiedCount} roles, ${users.modifiedCount} accounts`);
+    return { roles: roles.modifiedCount, users: users.modifiedCount };
+  }
+
+  /** Nov 25, 2026 split, run ONCE (marker in `permissionmigrations`) — re-running it would undo an
+   *  admin who later narrowed a role. Nobody loses what they could do the day before:
+   *  · products-edit → + products-price-sell (it changed the sale price) and products-cost-view? no —
+   *    seeing cost was always purchase-edit-price, which now implies products-cost-view.
+   *  · products without products-edit → + products-edit-otp (they could send an edit request).
+   *  · purchase-edit-price / purchase-create → + products-cost-view (they saw the purchase price).
+   *  · delivery-manual-confirm / pickup-orders-bosta / -move → + delivery-issues-follow & -close
+   *    (the delivery-issue buttons were open to every account). */
+  async migratePermsNov25(): Promise<{ roles: number; users: number } | null> {
+    const markers = this.roles.db.collection('permissionmigrations');
+    const id = 'perms-split-2026-11-25';
+    const claimed = await markers.updateOne({ _id: id as any }, { $setOnInsert: { at: new Date() } }, { upsert: true });
+    if (!claimed.upsertedCount) return null;
+    const steps: Array<[Record<string, unknown>, string[]]> = [
+      [{ perms: 'products-edit' }, ['products-price-sell']],
+      [{ perms: 'products', $nor: [{ perms: 'products-edit' }] }, ['products-edit-otp']],
+      [{ perms: { $in: ['purchase-edit-price', 'purchase-create'] } }, ['products-cost-view']],
+      [{ perms: { $in: ['delivery-manual-confirm', 'pickup-orders-bosta', 'pickup-orders-move', 'pickup-orders-edit'] } }, ['delivery-issues-follow', 'delivery-issues-close']],
+    ];
+    let roles = 0, users = 0;
+    for (const [filter, keys] of steps) {
+      roles += (await this.roles.updateMany(filter, { $addToSet: { perms: { $each: keys } } }).exec()).modifiedCount;
+      users += (await this.users.updateMany(filter, { $addToSet: { perms: { $each: keys } } }).exec()).modifiedCount;
+    }
+    this.logger.log(`Permission split (Nov 25): ${roles} role updates, ${users} account updates`);
+    return { roles, users };
+  }
+
+  /** Nov 25, 2026 (b), run ONCE: «تصدير وطباعة البيانات» goes to whoever was already trusted with
+   *  report exports (`reports-export`). Supplier visibility and the smart product card are NOT
+   *  granted — the owner's decision is that employees lose them unless a role gives them back. */
+  /** Nov 25, 2026 (c), run ONCE: customer collection became «تحصيل المبلغ من العميل». It was open to
+   *  every account; roles that work with sales or cash keep it (transaction, movements, vault,
+   *  carrier-import, shopify-prepare-ship). Narrow a role afterwards on the Roles page. */
+  /** Nov 25, 2026 (d), run ONCE: phone numbers in LISTS became «رؤية أرقام العملاء في القوائم».
+   *  Roles whose job is contacting customers keep them (complaints, shopify-orders, pickup Bosta). */
+  async migratePermsNov25d(): Promise<{ roles: number; users: number } | null> {
+    const markers = this.roles.db.collection('permissionmigrations');
+    const claimed = await markers.updateOne({ _id: 'perms-split-2026-11-25d' as any }, { $setOnInsert: { at: new Date() } }, { upsert: true });
+    if (!claimed.upsertedCount) return null;
+    const filter = { perms: { $in: ['complaints', 'shopify-orders', 'pickup-orders-bosta', 'pickup-orders-edit'] } };
+    const update = { $addToSet: { perms: 'customers-phone-view' } };
+    const roles = (await this.roles.updateMany(filter, update).exec()).modifiedCount;
+    const users = (await this.users.updateMany(filter, update).exec()).modifiedCount;
+    this.logger.log(`Permission split (Nov 25d): ${roles} roles, ${users} accounts got customers-phone-view`);
+    return { roles, users };
+  }
+
+  async migratePermsNov25c(): Promise<{ roles: number; users: number } | null> {
+    const markers = this.roles.db.collection('permissionmigrations');
+    const claimed = await markers.updateOne({ _id: 'perms-split-2026-11-25c' as any }, { $setOnInsert: { at: new Date() } }, { upsert: true });
+    if (!claimed.upsertedCount) return null;
+    const filter = { perms: { $in: ['transaction', 'movements', 'vault', 'carrier-import', 'shopify-prepare-ship'] } };
+    const update = { $addToSet: { perms: 'sales-collect' } };
+    const roles = (await this.roles.updateMany(filter, update).exec()).modifiedCount;
+    const users = (await this.users.updateMany(filter, update).exec()).modifiedCount;
+    this.logger.log(`Permission split (Nov 25c): ${roles} roles, ${users} accounts got sales-collect`);
+    return { roles, users };
+  }
+
+  async migratePermsNov25b(): Promise<{ roles: number; users: number } | null> {
+    const markers = this.roles.db.collection('permissionmigrations');
+    const claimed = await markers.updateOne({ _id: 'perms-split-2026-11-25b' as any }, { $setOnInsert: { at: new Date() } }, { upsert: true });
+    if (!claimed.upsertedCount) return null;
+    const filter = { perms: 'reports-export' };
+    const update = { $addToSet: { perms: 'data-export' } };
+    const roles = (await this.roles.updateMany(filter, update).exec()).modifiedCount;
+    const users = (await this.users.updateMany(filter, update).exec()).modifiedCount;
+    this.logger.log(`Permission split (Nov 25b): ${roles} roles, ${users} accounts got data-export`);
+    return { roles, users };
+  }
 
   async ensureDefaults() {
     if (!this.defaultsReady) this.defaultsReady = this.roles.bulkWrite(DEFAULT_ACCESS_ROLES.map(role => ({ updateOne: {

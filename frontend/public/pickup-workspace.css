@@ -1018,8 +1018,7 @@ body.pu-readonly #page-pickup-orders input[type="checkbox"],
 body.pu-readonly #puco-add-row,
 body.pu-readonly .pu-group-drag-handle,
 body.pu-readonly .pu-pt-shift-hint,
-body.pu-readonly .pu-card-prep-tick-wrap,
-body.pu-readonly .pw-cmt-compose {display:none!important}
+body.pu-readonly .pu-card-prep-tick-wrap {display:none!important}
 body.pu-readonly .bp-request-button {background:var(--surface);border-color:var(--border);color:var(--text)}
 
 /* Orders the carrier already has but the board still shows before shipping (admin only). */
@@ -1052,3 +1051,11 @@ body.dark-mode #pu-card-orders-modal .pw-ocard.is-multi{background:rgba(37,99,23
   background:transparent;color:var(--muted);font-size:.78rem;font-weight:600;cursor:pointer}
 .pu-shipped-more:hover{color:var(--text);border-color:var(--text-muted,var(--muted))}
 #main #page-pickup-orders #pu-shipped-col > .pu-shipped-more { flex-shrink: 0; }
+
+/* Pick-Up permissions split (Nov 24, 2026): a button whose action the user lacks stays visible,
+   dimmed; its click explains which permission is missing (_puRequire). Fully read-only = hidden. */
+body.pu-no-prepare [data-pu-edit="prepare"],
+body.pu-no-move [data-pu-edit="move"],
+body.pu-no-cancel [data-pu-edit="cancel"],
+body.pu-no-bosta [data-pu-edit="bosta"] {opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
+body.pu-no-prepare .pu-card-prep-tick-wrap {display:none!important}

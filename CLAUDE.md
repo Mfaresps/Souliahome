@@ -20,6 +20,294 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Shopify: «تأجيل التواصل» (Confirmation Deferral) + Address Check Before Confirming (Nov 25, 2026 g)
+
+`frontend/public/shopify-confirm-deferral.js/.css` (`SouliaConfirmDeferral`, `SouliaAddrCheck`).
+- **Deferral** = the customer has NOT confirmed and asked to be called later. ≠ «تأجيل الشحن» (confirmed,
+  delivery later): never blocks confirming, ends by itself when the order leaves «pending».
+  `ShopifyOrder.confirmationDeferral {dueAt, status scheduled|due|cancelled, reasonCode, note, count, createdBy…}`
+  + `confirmationDeferralHistory`. `PATCH/DELETE /shopify/orders/:id/confirmation-deferral` (perm
+  `shopify-orders`; ≤14 days; «other» needs a note). Reasons: `confirmation-deferral.util.ts` ⚠ mirrored by
+  `SCD_REASONS`. Cron (30s) claims due rows once and sends a `followup` / `followup-due` notification
+  (recordId `shopify:<id>`) to the employee who deferred it + the assignee. Live event
+  `shopify:confirmation-deferral-changed`.
+- **Written into the follow-up thread**: `FollowUpsService.recordConfirmationDeferral` finds the order's open
+  confirmation follow-up (or opens one assigned to the employee), sets `deferredUntil` (deferReason
+  `confirmation_contact`), status لم يرد / متردد / أجل الطلب, and pushes a normal comment «تأجيل التواصل مع العميل:
+  … — موعد المتابعة: ISO» (reactions/replies like any comment). The deferral stores `followUpId`; the Shopify cron
+  skips that follow-up's owner (the follow-up cron reminds them). Removing the deferral → `clearConfirmationDeferral`
+  (comment + clears that time).
+- **Unconfirmed orders only** (owner): `orderAwaitsConfirmation` (util) ⇄ `awaitsConfirmation` (js) — pending, no
+  deposit recorded (approved or in review), not «ship without deposit», not `confirmationApproved`, no `confirmed`
+  tag. The server refuses others; the menu item, quick-view row and the active state follow the same rule.
+- Dialog uses the app's calendar (`.sp-calendar-*`, as «تأجيل الشحن») + a time row of two value buttons (hour ·
+  minute in 5s) that open a 6-column number grid, and ص/م — never `datetime-local` or native selects (the app's
+  global select style broke them). Quick view: ONE compact block `.scd-pp` with a slim row per postpone (contact · shipping),
+  replacing the two separate cards (`peekHtml(o, {canShip})`; the old `postponePanel` is the fallback only).
+- UI: blue «تأجيل تواصل · غدًا 11:00ص» tag in the ref cell (amber «حان موعد التواصل» when due, ×N count),
+  ⋮ item (desktop + mobile), filter card `confirmation-deferred` «مؤجل التأكيد»
+  (⚠ same key in the server `filterKeys`). **Counted under «متابعة»** in the period KPIs — both
+  `_spkBucket` (shopify-kpis.js) and the server summary `bucket`.
+- **Address check** in the confirm dialog (`checkHtml`): errors = no/invalid phone (must be 01[0125]+8),
+  no address, no governorate → «تأكيد» disabled until «راجعتُ البيانات مع العميل» is ticked; warnings =
+  short address, no building number, address = city, governorate not in `CITY_GROUPS`, no city. Bulk confirm
+  skips orders with errors. ⚠ Browser rule only (not re-checked by the server). Local copy: 50 pending
+  orders → 0 errors, 11 with warnings.
+- Tests: `test/unit/confirmation-deferral.spec.ts` (7; revert-checked: dropping the «other» note rule fails 1), `confirmation-deferral-followup.spec.ts` (2).
+  Not yet clicked through in the real app.
+
+## Shopify Quick View — Postpones as Header Icons (Nov 25, 2026)
+
+«تأجيل التواصل» and «تأجيل الشحن» left the body of the order quick view (two full rows with «تحديد موعد»)
+and became icon buttons in the header beside ⋮ (`SouliaConfirmDeferral.headHtml(o, {canShip})` in
+shopify-confirm-deferral.js; `_spPeekDeferHead` in the peek renderer). Not set → a quiet icon (tooltip says
+before/after confirming); set → a pill with its time (amber contact / blue shipping, red once due), reason,
+author and note in the tooltip; a click opens the existing dialog, whose footer removes it. Phones (≤640px):
+icons only, a coloured dot when set. The old body panel (`postponePanel`) still renders when the header has
+nothing (order not pending). `peekHtml` stays exported but is no longer drawn there.
+- Same day (b): the two header buttons are labelled (icon over «تأجيل تواصل» / «تأجيل شحن», 66×48, bordered like
+  ⋮/×, a divider before them); when set the name becomes the time. The list mark (`badgeHtml`, Shopify table +
+  cards) is one 22px icon button (count badge when postponed more than once; amber pulse once due), details in
+  the tooltip. The «تأجيل التواصل» dialog is two columns (reason + note | quick times + calendar + time) and fits
+  without scrolling (measured 572px tall at 1280×720, phone 775/844); the time row was rebuilt — the global
+  select/button rules had squeezed the hour box and the AM/PM toggle.
+
+## Approvals Page — Type Tabs, a Table, and One Window per Request (Nov 25, 2026)
+
+Presentation only — every approve/reject function and its confirm dialog is unchanged.
+- **Type tabs** (`#appr-kpi`, `_apprTypesHtml`): كل الطلبات · الاستبدال والاسترجاع · التعديلات · الإلغاءات ·
+  المصاريف · مرتجعات الموردين, each with its pending count; approved/rejected are a quiet toggle at the end
+  (`setApprStatusQuick`). `APPR_GROUPS` + `_apprGroupOf(_type)` map 7 kinds to 5 groups; `_apprGroup` filters
+  (`setApprGroup`, cleared by `clearApprFilters`). ⚠ Tab counts are computed with `_apprItemPending` — the
+  same rule the list uses (an approved supplier return still counts) — so a tab and its section always agree.
+  The «نوع الطلب» select in the filter popover is hidden (tabs replace it).
+- **The list is one table** (`#appr-tbody[role=table]`, `_apprTheadHtml`, `_apprCardHtml`): columns الطلب ·
+  مقدم الطلب · التاريخ · الحالة · الإجراء, one grid template shared by the header and every row. No amount
+  column (owner, Nov 25 — the amount is in the window). Pending rows are grouped under a tinted group row per type;
+  decided rows sit under «تمت مراجعتها». ≤1280px drops the date, 769–1020px the requester; ≤768px each row
+  is a card (title / requester + status / full-width actions). One tone per type (`--appr-tone`) on its icon,
+  label and group row only.
+- **Clicking a request opens the request window** (`openApprWindow(key)`, `#appr-win`, z 1250 — below
+  `#modal-overlay` 1300 and the confirm `#soulia-modal-overlay`, so confirms open above it): header (type,
+  title, status), facts (مقدّم الطلب · تاريخ الطلب · القيمة), «تفاصيل الطلب» (the row's own `detail`), and a
+  footer with the row's actions + previous/next (`stepApprWindow`, also ↑/↓ and ←/→; Escape closes). There
+  are no inline details any more (`toggleApprRow` now opens the window). `_apprRowsList` holds the filtered
+  rows; every `renderApprovals()` repaints the open window, so after a decision it shows the new status
+  (and closes if the request left the list). Phones: a bottom sheet. Return/exchange products are drawn
+  with photos (`_apprItemsHtml`, via `_pwItemImgUrl`), and the return/exchange wording was rewritten in MSA.
+- **Round 4 (same day)**: tabs are a quiet underline bar (active = green underline, counts neutral, the active
+  count amber). Exchange and return carry their own mark (`r.mark` exchange|refund, `_apprKindChip`: swap icon +
+  blue / back-arrow + burnt orange) in the table and the window header. Exchange/return details are rebuilt
+  (`_apprReturnDetailHtml`): facts as label|value rows (invoice + date, reason via `_apprReasonLabel` — the raw
+  code «customer-choice» used to show, fulfillment, return window, note), returned and replacement items as
+  tables (photo, item, qty, unit price, total, subtotal; phone = stacked cells), then «التسوية المالية».
+  ⚠ The money is read from `workflow.quote` (credit, replacement, customerFee, collectDue/refundDue). For
+  after-sales cases `priceDifference` = collectDue − refundDue, i.e. POSITIVE = the customer owes — the old
+  line read it the legacy way and said «يُرَدّ إلى العميل» for money to collect. Legacy rows keep their sign.
+- Tests: `test/browser/shopify-edit-review.cjs` now opens the window (`#appr-win .edit-diff-product`).
+
+## External API for Instinct — `/api/v1` + «واجهة API الخارجية» (Nov 25, 2026 g)
+
+`backend/src/public-api/`. Outside apps (Instinct follows orders and replies on follow-ups) use an
+API KEY, never a session. Admin panel: Settings ← التكاملات وواجهات API ← «API» (`api-access.js/.css`,
+`#api-access-root`, provider `api` in `STG_PROVIDERS`, card `#stg-api-card` in the data panel).
+- **Keys** (`apikeys`, raw): `sk_live_` + 32 random bytes, shown ONCE (create/rotate); only the SHA-256
+  is stored (unique index). Each key: sections (`API_SCOPES`: orders · shipping · followups ·
+  followups-write · mentions · complaints · inventory · reports), linked user account (notes are
+  written as it, mentions to it reach the API), rate limit/min (10–600, in memory), IP allow-list
+  (IPv4 CIDR), expiry, phones (`detail` = full only in a single order, `masked`, `full`), webhook URL.
+  Status active / paused / revoked (revoke also replaces the hash). History on the key.
+- **Panel**: master switch (`apiconfig` `_id:'global'`, read ≤1 s cache → 503 `API_DISABLED`), per key
+  pause/resume, section chips switched from the card, settings, rotate, revoke, webhook test, request
+  log (filters). Create / rotate / revoke and changing account, IPs, expiry or webhook need the system
+  PIN (`verifyVaultPassword`); pause and the master switch do not (emergency stop).
+- **Guard** `ApiKeyGuard`: `X-API-Key` (or `Bearer sk_live_…`), scope from `@ApiScopeRequired`, IP from
+  `X-Real-IP` (nginx `$remote_addr` — ⚠ never X-Forwarded-For, which the caller can forge). Codes:
+  API_KEY_MISSING/INVALID/REVOKED/PAUSED/EXPIRED, IP_NOT_ALLOWED, SCOPE_NOT_ALLOWED, RATE_LIMITED
+  (+ Retry-After). Every request — refused ones too — goes to `apirequestlogs` (TTL 90 days; never the key).
+- **Routes**: `me`, `orders` (≤31 days; `status`, `confirmation` = KPI-strip buckets, `followup=none|open|no-open|any`,
+  `shipping=problem`), `orders/:ref`, `orders/:ref/shipping`, `shipping/problems`, `orders/:ref/followups`,
+  `followups`, `followups/:id`, `mentions` (+ `:id/read`), `complaints` (+ category counts), `inventory`
+  (ready/reserved/attention/incoming — no prices), `reports/daily` (getReports — no profit). Only writes:
+  `POST followups/:id/notes` and `orders/:ref/followup-notes` (newest open follow-up) → `FollowUpsService.addComment`
+  as the linked user, `requestId` makes a retry save once. ⚠ No delete/edit/cancel route exists — keep it so.
+  ⚠ Responses are built field by field in `public-api.view.ts` (no cost, raw Bosta, receipts).
+- **Mentions**: employee replies on a follow-up Instinct wrote on, and @mentions of its account, are mention
+  rows for the linked user → `GET /v1/mentions?since=` or the webhook (cron 15 s, `mention.created`,
+  `X-Soulia-Signature: sha256=HMAC(secret, body)`, cursor per key, a failing event is skipped after 24 h).
+- Shared: `shared/shopify-confirmation-bucket.util.ts` (`confirmationBucket`) — the assistant now uses it too.
+- Tests: `test/unit/api-key.spec.ts` (7; revert-checked: rate limit). Verified over the compiled API on a
+  scratch copy (dropped after): 53 end-to-end checks + webhook delivery with a valid signature; 23 browser
+  checks (ar/en, dark, 390). **Not deployed / not tried on live.** HTTPS is nginx's job; `/api/v1` needs no
+  nginx change.
+
+## Tampering Protection — Temporary Suspension + Alerts (Nov 25, 2026 f)
+
+`backend/src/abuse-guard/` (@Global; `AbuseGuardInterceptor` = APP_INTERCEPTOR, runs after guards
+on every write; the global HttpExceptionFilter calls `AbuseGuardService.instance.onHttpError`).
+Admins are never counted; `EXEMPT` paths (auth, presence, mentions, drafts, assistant, scans,
+movements-page/summary-page, prep-check…) never count. Counters in memory (one process).
+- **Strict → suspension** (30 min → 2 h → until lifted; level forgotten after 7 days): 10 refused
+  WRITE requests in 10 min (⚠ read 403s never count — screens fetch data they then hide); the same
+  write + same body 6× in 10 s → 429 `ACTION_REPEATED` (3 refusals in 10 min → suspend); 150 writes
+  a minute; forged fields (`perms`, `roleId`, `isAdmin`, `suspendedUntil`…) — alert, 3rd in a day →
+  suspend; uploads > 20 / 10 min → 429 `UPLOAD_LIMIT`, > 40 or 6 rejected files → suspend;
+  comments (`checkComment`, NEW comments only — a list that does not grow is an edit): same text
+  within 2 min → `COMMENT_DUPLICATE`, > 5 on one record in 10 min → `COMMENT_DENSITY`, > 8 in 5 min
+  → `COMMENT_LIMIT` (admins told once), 5 refusals in 10 min → suspend. ⚠ `addInvoiceComment` now
+  drops its optimistic comment on failure (it stayed in memory and was re-sent).
+- **Alert only** (admins notified + employee warned, throttled 10 min): mass delete/cancel/reject
+  (> 5 / 10 min), sale-price edits (> 15), negative stock adjustments (> 10), reversals (> 5), code
+  requests (> 8), 3 paging pauses a day (`onBrowsePause`), a write 00:00–07:00 Cairo (once a day),
+  every deposit receipt reject / withdraw / deposit undo.
+- Suspension = user fields `suspendedUntil/suspendedAt/suspensionLevel/suspensionReason/
+  suspensionDetail`; **JwtStrategy throws 423 `ACCOUNT_SUSPENDED`** for a non-admin, so every
+  session stops at once; socket `account:suspended`. Lift = security panel «رفع الإيقاف» (same
+  `unlock/:userId`, `unlockAccount` clears it, `onLifted` → `account:restored`). Audit types
+  `account_suspended`, `abuse_alert`; admins notified by mention «نظام حماية النظام» (→ Users ←
+  security panel).
+- Page: `abuse-guard.js/.css` (`SouliaAbuse.suspended/restored/warn`) — full-screen notice with the
+  reason and time left (closes itself), amber warning bar; `api()` routes any 423 to it.
+- Tests: `abuse-guard.spec.ts` (11, clock pinned to Cairo noon — the night rule is time-dependent).
+
+## Bulk-Browsing Protection + «طلب صلاحية التصفح» + Customer Collection (Nov 25, 2026 e)
+
+- **Depth**: `backend/src/browse-access/` (@Global). Transactions log: first `MOVEMENTS_FREE_PAGES`
+  (5) pages, clients: page 1 — unless `movements-browse` / `clients-browse` or an approved grant.
+  `POST /transactions/movements-page` page > 5 → 403 `BROWSE_PRIVATE`; searches < 3 chars dropped;
+  paging past page 1 counted (`trackPaging`): > 30/hour → 429 `BROWSE_PAUSED` for 15 min, a
+  `bulk_browsing` security-audit row and one admin notification. In memory (one process).
+- **Request**: `POST /browse-access/request {scope, reason}` (one open per scope), admins notified by
+  mention (sender «نظام طلبات التصفح» → click opens approvals); `GET /browse-access/pending`,
+  `POST :id/approve {hours: 1|8|24}` / `:id/reject` (admin, atomic pending→decided, employee notified);
+  grant = `expiresAt`, read by `canBrowse` (cached 20 s). Collection `browseaccessrequests`.
+- **Phones in lists** (movements-page rows, client list rows) masked `010•••••678` without
+  `customers-phone-view` (`maskRowPhones`); invoice / client profile keep full numbers. One-time
+  migration (d): complaints / shopify-orders / pickup Bosta roles keep them.
+- Page: `browse-access.js/.css` (`SouliaBrowseAccess.load/can/lock/renderAdmin`) — lock window «صفحات
+  محمية» + «طلب صلاحية التصفح» (pending state shown), approvals section `#appr-browse-requests`;
+  `setMovPage`, `_clientsPrivacyNotice`, `_canBrowseMovements/_canBrowseClients`; bulk reference
+  check ≤ 20 without browse access. ⚠ `startup-overview` still sends every sale to the browser —
+  this limits the UI and the paged API, not a technical user (stage 2, not done).
+- **Customer collection** = `sales-collect` «تحصيل المبلغ من العميل», checked on the ROUTE
+  (`POST :id/collect`, sales only — Bosta settlement services call `collect()` internally);
+  `openCollectMovement` refuses, the invoice-page button is disabled (`_collectLockAttr`). Migration
+  (c): roles with transaction / movements / vault / carrier-import / shopify-prepare-ship keep it.
+- Tests: `browse-access.service.spec.ts` (6, scratch Mongo 27018), `sales-collect-permission.spec.ts` (3).
+
+## Transactions Log Filters — «فلاتر وترتيب سجل المعاملات» (Nov 25, 2026 d)
+
+`movements-filters` (implies `movements`): date menu, sort menu, advanced-filter drawer, TAG filter,
+bulk reference check. Without it: `POST /transactions/movements-page` passes the state through
+`stripMovementFilters` (movements-page.util.ts — keeps page/limit/search/type/status/excluded only,
+newest first); the page sends the same reduced state (`_movServerState`), the five tools are dimmed
+(`_movSyncFilterPerms`, `.is-perm-locked`, reason in `title`) and refuse with a toast
+(`_requireMovFilters`). Search, type tabs, columns/view and export stay open. Not granted by
+migration. Tests: `movements-filters.spec.ts` (3).
+
+## Client List Privacy — «تصفح قائمة العملاء كاملة» (Nov 25, 2026 c)
+
+`clients-browse` (implies `clients`). Without it `GET /clients?page>1` → 403 `CLIENTS_PRIVATE`
+(with or without `q` — a one-letter search would otherwise list everyone; it replaced the old silent
+«2 pages for staff» rule). Holders and admins get `total` = full pagination. Page:
+`setClientsPage(p>1)` → `_clientsPrivacyNotice()` («صفحات العملاء محمية», «ابحث عن عميل» focuses
+the search); the non-browser pager shows page 1 + «›» + a hint (clients-profile.js); a restored page
+number falls back to 1. Not granted to anyone by migration. Test: `clients-privacy.spec.ts` (3).
+⚠ `access-roles.spec` «catalog matches» fails on an `assistant` key added to
+access-role-permissions.ts by parallel assistant work (not in PERMS yet) — not from this change.
+
+## Supplier Identity, Exports & Report Printing, Smart Product Card (Nov 25, 2026 b)
+
+- **Supplier name was sent to everyone.** `canSeeSupplier` (shared/cost-visibility.util.ts) = admin |
+  `products-supplier-view` | `suppliers` | `purchase-create/-view/-edit-price`; `maskProductPrivacy`
+  (cost + supplier) on `GET /products`, `/products/:id`, `/transactions/inventory`, analytics card;
+  search neither shows nor scores by supplier. A save by a non-viewer drops `supplier/supplierId`
+  (never wipes it); bulk-update with a supplier → 403. `GET /suppliers` + `/:id` now check the reader
+  list (`MANAGED_READERS['/suppliers']`, `products` replaced by `products-supplier-view`) for EVERY
+  account; ⚠ `_BOOT_READERS` mirrors it and `_bootMayLoad('/suppliers')` applies to legacy accounts too.
+  Product page removes the field (`_prdApplyEditMode` / new-product path); saveProduct never sends it.
+- **Smart product card** (`showProductCard`, product page «الأداء» tab): `products-analytics` on
+  `analytics/card` + `analytics/search`; button hidden (`#prod-smart-card-btn`, renderProducts).
+- **Excel / CSV / report printing**: `data-export`. One gate on `XLSX.writeFile` (`__souliaGuardXlsx`,
+  installed when the library loads) + `writeCsv` + report prints (`_GATED_PRINTS`, wrapped on
+  DOMContentLoaded). Without it → `requireExportOtp` (manager code); a verified code opens a 60 s
+  window (`_exportGrantUntil`). Invoices, AWB and barcode labels stay open (daily work).
+  ⚠ Client-side only: the data is already in the browser — this stops casual exports, not a determined user.
+- Manual delivery confirmation was already `delivery-manual-confirm` on both layers (single + bulk).
+- One-time migration `migratePermsNov25b`: `reports-export` holders get `data-export`. Supplier view and
+  the smart card are NOT granted (owner's decision) — give them back per role.
+- Tests: `product-edit-permissions.spec.ts` (+4), `product-edit-modes.cjs` (25). ⚠ Pre-existing:
+  `purchase-document-permissions.spec.ts` 3 fail on a missing `_invRefreshForPrint` stub.
+
+## Product / Category Edit Modes, Cost Visibility, Delivery Issues (Nov 25, 2026)
+
+- **Delivery issues** (the «المرتجع وصل؟» banner) were JWT-only. Now `delivery-issues-follow` («لم تصل
+  بعد»، «إعادة الشحن») and `delivery-issues-close` («استلمت الشحنة»: restock + refund, sensitive) on the
+  three `:id/failed-delivery/*` routes; buttons disabled with the reason (`_fdDisabled`). The bulk
+  «تأكيد التسليم يدويًا» was already `delivery-manual-confirm` on both layers.
+- **Cost was sent to everyone** (hidden by CSS only). `shared/cost-visibility.util.ts` `canSeeCost` =
+  admin | `products-cost-view` | `purchase-edit-price` | `purchase-create`; `maskCost` strips
+  buyPrice/avgCost on `GET /products`, `/products/:id`, `/transactions/inventory`; `maskAnalyticsCost`
+  on the product analytics card; global search drops «شراء». ⚠ Frontend mirror `_canSeeCost()`.
+  ⚠ Still sent elsewhere (demand planning, purchasing engine, assistant, inventory breakdown) — not done.
+- **Product edit modes** (`products.controller` PUT, rules on what CHANGED via `changedFields`):
+  `products-edit` direct · `products-edit-otp` with a manager code · `products-price-sell` alone =
+  sale price only · none = view only. Sale price needs `products-price-sell`, purchase price
+  `purchase-edit-price`, in every mode. `request-edit` now needs an edit permission.
+- **Manager code** = `DiscountOtpService.requestRecordEditOtp/consumeRecordEditOtp`, kind
+  `record-edit`, `editTxId` = `entity:id`, `txType` = approved field names; spent once, refused if
+  the save touches another field, given back if the save fails. Route
+  `POST /discount-otp/record-edit-request`. Frontend `manager-otp.js/.css` (`SouliaManagerOtp.ask`,
+  4-box entry) and `_editPut(entity,id,body)` (sends ONLY changed fields + otpId) — product page,
+  categories, collections (`categories-edit-otp`, same rule on both controllers).
+- ⚠ `_diffRecord` (index.html) ≡ `changedFields` (server): never-set ≡ form default (0, false, '',
+  [], {}, size «standard») — without it untouched fields asked the manager to approve non-changes.
+- Product page: `_prdApplyEditMode` — notice, read-only fields, price fields locked per permission.
+- **One-time migration** `AccessRolesService.migratePermsNov25` (marker in `permissionmigrations`, so a
+  later narrowing survives restarts): products-edit → +price-sell; products without edit →
+  +edit-otp; purchase-edit-price/-create → +cost-view; delivery-manual-confirm / pickup-bosta/-move →
+  +both delivery-issue keys. Verified on a scratch DB (second run = null).
+- Tests: `product-edit-permissions.spec.ts` (14; revert-checked: dropping the field check fails 1),
+  `product-sku-ui.spec.ts` (7), `product-edit-modes.cjs` (17), roles/users/pickup suites unchanged.
+
+## Pick-Up Permissions Split — `pickup-orders-edit` → five actions (Nov 24, 2026)
+
+`pickup-orders` (view board, open cards/invoices, comment) + `pickup-orders-prepare` (scan, «تجهيز بدون
+مسح», approve preparation, prep-check, edit-ack) · `-move` (pending→prep, move/merge/split groups, to
+Ready and back, run date, tags, card item edits) · `-cancel` (back to Pending, delete group/run) ·
+`-bosta` (send to Bosta, AWB print record, pickup requests, COD confirm) · `-bosta-cancel` (cancel a
+sent shipment — server route only, sensitive). Each implies `pickup-orders`.
+- Server: per-route `@RequirePerms` (transactions/bosta/inventory-units/packs controllers);
+  `core/pickup-access.ts` `hasPickupAction/assertPickupEditable(user, action)`. The old key is still
+  honoured (PermsGuard `LEGACY_PERM_ALIASES`, `hasPickupAction`, `normalizeRolePermissions` converts it).
+- `AccessRolesService.onModuleInit` → `migratePickupEdit`: every role AND account holding the old key
+  gets all five (nobody loses access; idempotent). Verified on a scratch DB. ⚠ Existing roles (e.g.
+  «المخزن») therefore keep all five — narrow them on the Roles page; only NEW databases get the narrower
+  defaults (warehouse = prepare; fulfillment = prepare/move/bosta; manager = all).
+- Frontend: `_puCan(action)` / `_puRequire(action)` (index.html, mirrors pickup-access.ts); `_puCanEdit()`
+  = any action. Every action button carries `data-pu-edit="<action>"`; a missing action dims it
+  (`body.pu-no-<action>`) and its click names the permission. Context menus: «back to pending» items
+  follow `cancel`. `_bsfMaybeOffer` offers «send to Bosta» only with `bosta`. Comments are open to viewers.
+- Roles page: own section «التجهيز والشحن» (with the two delivery-confirmation keys), catalog text.
+- Tests: `pickup-permissions.spec.ts` (route ↔ action, others refused, legacy honoured, each page
+  function asks its action), `pickup-permissions.cjs` (+ prepare-only / move-only scenarios).
+
+## New Account Welcome + Tour — «جولة تعريفية» (Nov 24, 2026)
+
+An account created from the user window (`POST /users`) gets `onboardingPending: true`; existing
+accounts never see it. The flag rides the login / `GET /auth/me` payload (`buildAuthUserPayload`).
+After the splash (`dismissSplash` → `SouliaOnboarding.maybeStart`, waits while any window is open)
+`frontend/public/onboarding.js/.css` shows a `<dialog>`: welcome (name, role) → what SOULIA is →
+the sidebar sections this account may open (`_navItemAllowed`; a card opens that page) → its
+permissions grouped like the Roles page with each one's limits (`SouliaRBAC.permName/permInfo` —
+⚠ never `/roles`, which is admin-only) → tips. Finish, skip, Escape or a section card →
+`POST /users/me/onboarding-done` (`markOnboarded`, conditional, sets `onboardedAt`). Profile menu
+«جولة تعريفية» (`#pm-tour`) replays it and writes nothing. Also in the user window (same day):
+photo upload (`purpose:'avatar'` on `/invoice-images` → `compressAvatar`, 256px square ≤40 KB),
+password + confirmation with an eye on each and a 4-step strength meter (save refused on mismatch).
+Permission names/details: `catalog` in `roles-permissions.js` (ⓘ popover on each row).
+Tests: `test/browser/onboarding-tour.cjs` (23), `roles-permissions.cjs`, `users-roles-unified.cjs` 46/46.
+
 ## Security Hardening — Round 1 (Nov 24, 2026)
 
 - **No JWT fallback secret**: `auth/jwt-secret.util.ts` `requireJwtSecret` — a missing `JWT_SECRET` stops
@@ -42,6 +330,19 @@ Settings ← الأمان: new + confirm boxes, save enabled only when they matc
   `managed-role-access.ts`), HSTS (TLS termination not verified).
 - Tests: `test/integration/users-credentials.service.spec.ts` (4, revert-checked: dropping the list filter
   fails 1); `users-roles-unified.cjs` 46/46.
+- **Wrong passwords pause sign-in, never disable the account** (same day). 4 wrong passwords used to set
+  `isActive:false` — anyone typing «admin» could shut the admin out (open sessions included, JwtStrategy
+  refuses a disabled account) until another admin re-enabled it. Now `auth/login-lockout.util.ts`: new
+  sign-ins wait 15 → 30 → 60 min (level forgotten after 24h), checked BEFORE the password (the right
+  password is refused too while it runs), `isActive` untouched. User fields `loginLockedUntil`,
+  `loginLockStartedAt`, `loginLockLevel`; `startLoginPause` is conditional on the count so simultaneous
+  attempts start one pause. Success clears it; admins are notified; the security panel lists it («فك
+  الإيقاف» → the same unlock route, which clears it). The message has no 🔒, so the login form shows it
+  inline instead of the disabled-account banner. ⚠ Vault-PIN and OTP lockouts (signed-in users only) still
+  disable — deliberately unchanged. ⚠ An attacker can still keep one account's NEW sign-ins paused (4 tries
+  an hour); a per-IP limit needs the real client IP first — `extractIpFrom` takes the FIRST X-Forwarded-For
+  entry, which the client can forge (nginx appends). Not fixed yet: depends on what sits in front of nginx.
+  Tests: `test/integration/login-lockout.service.spec.ts` (6, revert-checked: disabling again fails 4).
 
 ## Orders the Courier Already Has Stayed in Prep/Ready Groups (Nov 23, 2026)
 

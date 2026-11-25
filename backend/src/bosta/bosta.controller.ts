@@ -88,35 +88,35 @@ export class BostaController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('pickups')
   async createPickup(@Body() body: CreatePickupDto, @Req() req: any) {
     return this.bostaService.createPickup(body, req.user?.username || req.user?.name || 'system');
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('pickups/:id/add-orders')
   async extendPickup(@Param('id') id: string, @Body() body: ExtendPickupDto, @Req() req: any) {
     return this.bostaService.extendPickup(id, body, req.user?.username || req.user?.name || 'system');
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('pickups/:id/attach-orders')
   async attachToPickup(@Param('id') id: string, @Body() body: ExtendPickupDto, @Req() req: any) {
     return this.bostaService.attachToPickup(id, body, req.user?.username || req.user?.name || 'system');
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('pickups/:id/verify-update')
   async verifyPickupUpdate(@Param('id') id: string) {
     return this.bostaService.verifyPickupUpdate(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('create-order/:txId')
   async createOrder(@Param('txId') txId: string, @Req() req: any) {
     const operator: string = req.user?.username || req.user?.name || 'system';
@@ -141,7 +141,7 @@ export class BostaController {
   /** Record that the AWB was opened for printing (called by the client once the
    * print page is ready — fetching alone is not printing: the server prefetches). */
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('awb/:txId/printed')
   async awbPrinted(@Param('txId') txId: string, @Req() req: any) {
     const by: string = req.user?.name || req.user?.username || 'مستخدم';
@@ -204,7 +204,7 @@ export class BostaController {
 
   /** Cancel a Bosta order — admin only */
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta-cancel')
   @Post('cancel/:txId')
   @Roles('admin')
   async cancelOrder(@Param('txId') txId: string, @Req() req: any) {
@@ -226,7 +226,7 @@ export class BostaController {
    * Body: { method: string, note?: string }
    */
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
-  @RequirePerms('pickup-orders', 'pickup-orders-edit')
+  @RequirePerms('pickup-orders', 'pickup-orders-bosta')
   @Post('confirm-collection/:txId')
   async confirmCollection(
     @Param('txId') txId: string,

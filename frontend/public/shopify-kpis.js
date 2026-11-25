@@ -168,6 +168,9 @@ function _spkBucket(o) {
   if (_spDepositOf(o).deposit > 0) return 'deposit';
   if (o.shipWithoutDeposit === true || o.status === 'approved') return 'nodep';
   if (_spFollowUpsFor(o).some(f => !_fuIsSettled(f))) return 'followup';
+  /* «تأجيل التواصل» — the customer asked to be called back: counted as follow-up (owner, Nov 25, 2026).
+     ⚠ Same rule in the server summary page (bucket → confirmationDeferralActive). */
+  if (window._spConfirmDeferralActive?.(o)) return 'followup';
   return 'open';
 }
 

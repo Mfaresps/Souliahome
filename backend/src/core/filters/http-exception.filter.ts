@@ -1,3 +1,4 @@
+import { AbuseGuardService } from '../../abuse-guard/abuse-guard.service';
 import {
   ExceptionFilter,
   Catch,
@@ -83,6 +84,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
     };
 
+    // abuse-guard: count refusals (403) and rejected uploads per employee — never blocks the response.
+    try { AbuseGuardService.instance?.onHttpError(request, status); } catch { /* best effort */ }
     response.status(status).json(body);
   }
 }

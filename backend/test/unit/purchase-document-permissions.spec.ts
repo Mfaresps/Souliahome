@@ -18,7 +18,7 @@ function fixture(rows: any[], admin = false, canShip = false) {
   const documentWrite = jest.fn(), open = jest.fn(() => ({document:{write:documentWrite,close:jest.fn()},close:jest.fn()}));
   const c: any = {
     transactions:rows, selectedMovIds:new Set(rows.map(row=>row._id)), currentLang:'en',
-    isAdmin:()=>admin, hasPerm:()=>false, _puCanEdit:()=>canShip, _puRequireEdit:()=>canShip,
+    isAdmin:()=>admin, hasPerm:()=>false, _puCanEdit:()=>canShip, _puRequireEdit:()=>canShip, _puCan:()=>canShip, _puRequire:()=>canShip,
     qs:(selector: string)=>buttons.get(selector.slice(1)) || null,
     qsa:()=>[], _bostaCaseId:(tx: any)=>tx.afterSales?.caseId || '',
     carrierIntegration:(code: string)=>code === 'Bosta' ? 'bosta' : '',

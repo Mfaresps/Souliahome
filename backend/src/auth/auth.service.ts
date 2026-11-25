@@ -9,7 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { TotpService } from './totp.service';
 import { ClientContext } from '../shared/client-context.util';
 
-const MAX_LOGIN_ATTEMPTS = 4;
+import { MAX_LOGIN_ATTEMPTS, lockMinutesFor, minutesLeft, nextLockLevel } from './login-lockout.util';
 
 // In-memory store for password reset tokens (token → { userId, expiresAt })
 const resetTokens = new Map<string, { userId: string; expiresAt: number }>();
@@ -32,6 +32,7 @@ export interface AuthUserPayload {
   createdAt: string | null;
   isActive: boolean;
   totpEnabled: boolean;
+  onboardingPending: boolean;
 }
 
 /**
@@ -66,6 +67,7 @@ export function buildAuthUserPayload(
     createdAt: iso(user.createdAt),
     isActive: user.isActive !== false,
     totpEnabled: !!user.totpEnabled,
+    onboardingPending: !!user.onboardingPending,
   };
 }
 
@@ -123,6 +125,26 @@ export class AuthService {
       );
     }
 
+    // A sign-in pause is checked BEFORE the password: while it runs, even the right password is
+    // refused, or the pause would not slow down someone guessing.
+    const now = new Date();
+    const pausedFor = minutesLeft(user.loginLockedUntil, now);
+    if (pausedFor > 0) {
+      try {
+        await this.auditService.log({
+          userId: user._id.toString(),
+          username: user.username,
+          violationType: 'failed_login',
+          action: 'محاولة تسجيل دخول أثناء الإيقاف المؤقت',
+          ipAddress,
+          client,
+        });
+      } catch { /* the refusal does not depend on the audit row */ }
+      throw new UnauthorizedException(
+        `تم إيقاف تسجيل الدخول إلى هذا الحساب مؤقتًا بسبب محاولات فاشلة متكررة — حاول بعد ${pausedFor} دقيقة`,
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
 
     if (!isPasswordValid) {
@@ -139,39 +161,44 @@ export class AuthService {
       });
 
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
-        const lockReason = `تم تعطيل الحساب تلقائياً بعد ${MAX_LOGIN_ATTEMPTS} محاولات دخول فاشلة`;
-        await this.usersService.lockAccount(user._id.toString(), lockReason, 'system');
+        // Pause new sign-ins; never disable the account (auth/login-lockout.util.ts).
+        const level = nextLockLevel(user.loginLockLevel, user.loginLockStartedAt, now);
+        const minutes = lockMinutesFor(level);
+        const until = await this.usersService.startLoginPause(user._id.toString(), MAX_LOGIN_ATTEMPTS, level, minutes, now);
 
-        await this.auditService.log({
-          userId: user._id.toString(),
-          username: user.username,
-          violationType: 'account_locked',
-          action: lockReason,
-          detail: `IP: ${ipAddress || 'غير معروف'}`,
-          ipAddress,
-          client,
-        });
+        if (until) {
+          const lockReason = `إيقاف مؤقت لتسجيل الدخول ${minutes} دقيقة بعد ${MAX_LOGIN_ATTEMPTS} محاولات فاشلة`;
+          await this.auditService.log({
+            userId: user._id.toString(),
+            username: user.username,
+            violationType: 'account_locked',
+            action: lockReason,
+            detail: `IP: ${ipAddress || 'غير معروف'}`,
+            ipAddress,
+            client,
+          });
 
-        // The notification names the origin too — an admin reading it on their
-        // phone should not have to open the panel to learn whether this came
-        // from the office or from an unknown device.
-        const origin = [client?.browser, client?.os, client?.device]
-          .filter(Boolean)
-          .join(' · ');
-        await this._notifyAdmins(
-          user.username,
-          user.name,
-          `🚨 تم تعطيل حساب "${user.name || user.username}" تلقائياً بعد ${MAX_LOGIN_ATTEMPTS} محاولات دخول فاشلة. IP: ${ipAddress || 'غير معروف'}${origin ? ` — ${origin}` : ''}`,
-        );
+          // The notification names the origin too — an admin reading it on their
+          // phone should not have to open the panel to learn whether this came
+          // from the office or from an unknown device.
+          const origin = [client?.browser, client?.os, client?.device]
+            .filter(Boolean)
+            .join(' · ');
+          await this._notifyAdmins(
+            user.username,
+            user.name,
+            `🚨 تم إيقاف تسجيل الدخول إلى حساب "${user.name || user.username}" مؤقتًا لمدة ${minutes} دقيقة بعد ${MAX_LOGIN_ATTEMPTS} محاولات فاشلة. الجلسات المفتوحة لم تتأثر، ويمكن فك الإيقاف من صفحة الأمان. IP: ${ipAddress || 'غير معروف'}${origin ? ` — ${origin}` : ''}`,
+          );
+        }
 
         throw new UnauthorizedException(
-          `🔒 تم تعطيل حسابك بعد ${MAX_LOGIN_ATTEMPTS} محاولات فاشلة — تواصل مع المدير لإعادة التفعيل`,
+          `تم إيقاف تسجيل الدخول إلى هذا الحساب مؤقتًا بسبب محاولات فاشلة متكررة — حاول بعد ${minutes} دقيقة`,
         );
       }
 
       const remaining = MAX_LOGIN_ATTEMPTS - attempts;
       throw new UnauthorizedException(
-        `كلمة المرور غير صحيحة — تبقى ${remaining} محاولة قبل تعطيل الحساب`,
+        `كلمة المرور غير صحيحة — تبقى ${remaining} محاولة قبل إيقاف تسجيل الدخول مؤقتًا`,
       );
     }
 

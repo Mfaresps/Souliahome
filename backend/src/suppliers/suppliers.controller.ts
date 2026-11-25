@@ -14,6 +14,7 @@ import { SuppliersService } from './suppliers.service';
 import { CreateSupplierDto, UpdateSupplierDto, AddSupplierLogDto } from './dto/supplier.dto';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { DiscountOtpService } from '../discount-otp/discount-otp.service';
+import { MANAGED_READERS } from '../core/guards/managed-role-access';
 
 @UseGuards(JwtAuthGuard)
 @Controller('suppliers')
@@ -23,13 +24,24 @@ export class SuppliersController {
     private readonly otpService: DiscountOtpService,
   ) {}
 
+  /** Supplier names and phones are a business secret (Nov 25, 2026): only the screens that need
+   *  them (MANAGED_READERS['/suppliers']) may read the list — for every account, not only roles. */
+  private assertReader(req: any) {
+    const user = req?.user || {};
+    if (user.role === 'admin') return;
+    const perms: string[] = user.perms || [];
+    if (!MANAGED_READERS['/suppliers'].some(p => perms.includes(p))) throw new ForbiddenException('ليست لديك صلاحية على بيانات الموردين');
+  }
+
   @Get()
-  async findAll() {
+  async findAll(@Req() req: any) {
+    this.assertReader(req);
     return this.suppliersService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    this.assertReader(req);
     return this.suppliersService.findById(id);
   }
 

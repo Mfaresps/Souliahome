@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { randomBytes } from 'crypto';
+import sharp from 'sharp';
 import { compressReceipt } from '../shopify/receipt-upload-policy.util';
 import { r2GetObjectBuffer, r2PutObject } from '../shared/r2-uploader.util';
 import { SettingsService } from '../settings/settings.service';
@@ -19,7 +20,10 @@ import { SettingsService } from '../settings/settings.service';
 export const INVOICE_IMAGES_COLLECTION = 'purchaseinvoiceimages';
 export const INVOICE_IMAGE_PREFIX = 'purchase-invoices/';
 export const EXPENSE_IMAGE_PREFIX = 'expenses/';
-export type InvoiceImagePurpose = 'purchase' | 'expense';
+export const AVATAR_IMAGE_PREFIX = 'avatars/';
+export type InvoiceImagePurpose = 'purchase' | 'expense' | 'avatar';
+/** Profile photos are shown at ≤52px: a 256px square ≤ 40 KB is plenty. */
+export const MAX_AVATAR_BYTES = 40 * 1024;
 export const INVOICE_IMAGE_URL_BASE = '/api/invoice-images/';
 export const MAX_INVOICE_UPLOAD_BYTES = 12 * 1024 * 1024;
 const ID_RE = /^[a-f0-9]{64}$/;
@@ -27,8 +31,25 @@ const ID_RE = /^[a-f0-9]{64}$/;
 const UPLOAD_PERMS: Record<InvoiceImagePurpose, string[]> = {
   purchase: ['purchase-create', 'purchase-edit', 'purchase-edit-price'],
   expense: ['expenses'],
+  avatar: [], // any signed-in account (own profile photo; the user window is admin-only anyway)
 };
-const PREFIX: Record<InvoiceImagePurpose, string> = { purchase: INVOICE_IMAGE_PREFIX, expense: EXPENSE_IMAGE_PREFIX };
+const PREFIX: Record<InvoiceImagePurpose, string> = { purchase: INVOICE_IMAGE_PREFIX, expense: EXPENSE_IMAGE_PREFIX, avatar: AVATAR_IMAGE_PREFIX };
+
+/** Square crop from the centre, 256px (192px if needed), metadata stripped, ≤ MAX_AVATAR_BYTES JPEG. */
+export async function compressAvatar(input: Buffer): Promise<Buffer> {
+  const options = { failOn: 'error' as const, limitInputPixels: 40_000_000 };
+  const meta = await sharp(input, options).metadata();
+  if (!['jpeg', 'png', 'webp'].includes(meta.format || '') || (meta.pages || 1) > 1) throw new Error('Unsupported image');
+  for (const side of [256, 192]) {
+    for (const quality of [80, 68, 55]) {
+      const out = await sharp(input, options).rotate().flatten({ background: '#fff' })
+        .resize({ width: side, height: side, fit: 'cover', position: 'attention' })
+        .jpeg({ quality, mozjpeg: true }).toBuffer();
+      if (out.length <= MAX_AVATAR_BYTES) return out;
+    }
+  }
+  throw new Error('Avatar too large');
+}
 const CACHE_MAX = 200;
 
 export interface InvoiceImageActor { userId?: string; role?: string; perms?: string[]; name?: string; username?: string }
@@ -48,19 +69,20 @@ export class InvoiceImagesService {
   static canUpload(user: InvoiceImageActor | undefined, purpose: InvoiceImagePurpose = 'purchase'): boolean {
     if (!user) return false;
     if (user.role === 'admin') return true;
+    if (purpose === 'avatar') return !!user.userId;
     const perms = user.perms || [];
     return UPLOAD_PERMS[purpose].some((p) => perms.includes(p));
   }
 
   async upload(user: InvoiceImageActor, file: { buffer: Buffer; originalname?: string } | undefined, rawPurpose?: string) {
-    const purpose: InvoiceImagePurpose = rawPurpose === 'expense' ? 'expense' : 'purchase';
+    const purpose: InvoiceImagePurpose = rawPurpose === 'expense' ? 'expense' : rawPurpose === 'avatar' ? 'avatar' : 'purchase';
     if (!InvoiceImagesService.canUpload(user, purpose)) {
       throw new ForbiddenException(purpose === 'expense' ? 'ليست لديك صلاحية رفع صور المصاريف' : 'ليست لديك صلاحية رفع صور فواتير المشتريات');
     }
-    if (!file?.buffer?.length) throw new BadRequestException('اختر صورة الفاتورة');
+    if (!file?.buffer?.length) throw new BadRequestException(purpose === 'avatar' ? 'اختر صورة' : 'اختر صورة الفاتورة');
     if (file.buffer.length > MAX_INVOICE_UPLOAD_BYTES) throw new BadRequestException('حجم الصورة أكبر من 12 ميجابايت');
     let buffer: Buffer;
-    try { buffer = await compressReceipt(file.buffer); }
+    try { buffer = purpose === 'avatar' ? await compressAvatar(file.buffer) : await compressReceipt(file.buffer); }
     catch { throw new BadRequestException('استخدم صورة JPEG أو PNG أو WebP واضحة'); }
 
     const id = randomBytes(32).toString('hex');

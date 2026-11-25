@@ -264,7 +264,7 @@
         ${window.InventoryUnitLabels?.openStockUnits ? `<button type="button" class="btn btn-outline btn-sm invo-pop-action" onclick="window.InvOverview.openPieces('${e(String(row._id))}')">${e(tr('Open the pieces', 'عرض القطع'))}</button>` : ''}`;
     } else {
       body = `<p class="invo-pop-help">${e(tr('Purchase orders not received yet. Not part of the balance until received.', 'أوامر شراء لم تُستلم بعد، ولا تدخل الرصيد إلا عند الاستلام.'))}</p><ul class="invo-pop-list">${f.pos.map(p =>
-        `<li><button type="button" onclick="window.InvOverview.openPo('${e(p.id)}')"><bdi dir="ltr">${e(p.poNumber)}</bdi><span>${e(p.supplier)}</span><em>${e(p.expected || p.status)}</em><b>× ${n(p.qty)}</b></button></li>`).join('')}</ul>`;
+        `<li><button type="button" onclick="window.InvOverview.openPo('${e(p.id)}')"><bdi dir="ltr">${e(p.poNumber)}</bdi>${p.supplier ? `<span>${e(p.supplier)}</span>` : ''}<em>${e(p.expected || p.status)}</em><b>× ${n(p.qty)}</b></button></li>`).join('')}</ul>`;
     }
     const pop = document.createElement('div');
     pop.className = 'invo-pop'; pop.dataset.for = kind + anchor.dataset.invoKey; pop.setAttribute('role', 'dialog');

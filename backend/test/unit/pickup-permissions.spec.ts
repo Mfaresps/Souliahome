@@ -36,13 +36,28 @@ const allow = (controller: any, method: string, user: any) => guard.canActivate(
   getHandler: () => controller.prototype[method], getClass: () => controller,
   switchToHttp: () => ({ getRequest: () => ({ user }) }),
 } as unknown as ExecutionContext);
-const editor = { role: 'staff', perms: ['pickup-orders', 'pickup-orders-edit', 'inventory-units-view', 'inventory-units-allocate'] };
+const legacyEditor = { role: 'staff', perms: ['pickup-orders', 'pickup-orders-edit', 'inventory-units-view', 'inventory-units-allocate'] };
 const viewer = { role: 'staff', perms: ['pickup-orders', 'movements', 'inventory-units-view', 'inventory-units-allocate'] };
-const writes: [any, string][] = [
-  ...['setPickupPreparing','confirmPickup','undoPickup','returnPickupToPreparing','addToPickupRun','setPrepChecked','updatePickupOrder','addPickupComments'].map(method => [TransactionsController, method] as [any,string]),
-  ...['createPickup','extendPickup','verifyPickupUpdate','createOrder','awbPrinted','cancelOrder','confirmCollection'].map(method => [BostaController, method] as [any,string]),
-  ...['identify','pickException','pickScan','preparePicking'].map(method => [InventoryUnitsController, method] as [any,string]),
-  ...['scan','undo'].map(method => [InventoryPacksController, method] as [any,string]),
+const ACTIONS = ['pickup-orders-prepare','pickup-orders-move','pickup-orders-cancel','pickup-orders-bosta','pickup-orders-bosta-cancel'];
+const holder = (perm: string) => ({ role: 'staff', perms: ['pickup-orders', perm, 'inventory-units-view', 'inventory-units-allocate'] });
+// Each write and the one action that unlocks it (Nov 24, 2026 split of pickup-orders-edit).
+const writes: [any, string, string][] = [
+  [TransactionsController, 'setPickupPreparing', 'pickup-orders-move'],
+  [TransactionsController, 'confirmPickup', 'pickup-orders-move'],
+  [TransactionsController, 'undoPickup', 'pickup-orders-cancel'],
+  [TransactionsController, 'returnPickupToPreparing', 'pickup-orders-move'],
+  [TransactionsController, 'addToPickupRun', 'pickup-orders-move'],
+  [TransactionsController, 'setPrepChecked', 'pickup-orders-prepare'],
+  [TransactionsController, 'updatePickupOrder', 'pickup-orders-move'],
+  [BostaController, 'createPickup', 'pickup-orders-bosta'],
+  [BostaController, 'extendPickup', 'pickup-orders-bosta'],
+  [BostaController, 'verifyPickupUpdate', 'pickup-orders-bosta'],
+  [BostaController, 'createOrder', 'pickup-orders-bosta'],
+  [BostaController, 'awbPrinted', 'pickup-orders-bosta'],
+  [BostaController, 'cancelOrder', 'pickup-orders-bosta-cancel'],
+  [BostaController, 'confirmCollection', 'pickup-orders-bosta'],
+  ...['identify','pickException','pickScan','preparePicking'].map(method => [InventoryUnitsController, method, 'pickup-orders-prepare'] as [any,string,string]),
+  ...['scan','undo'].map(method => [InventoryPacksController, method, 'pickup-orders-prepare'] as [any,string,string]),
 ];
 
 describe('Pick-Up Orders access', () => {
@@ -53,26 +68,38 @@ describe('Pick-Up Orders access', () => {
     expect(allow(TransactionsController, 'getPickupOrders', undefined)).toBe(false);
   });
 
-  it.each(writes)('protects every pickup mutation on %p.%s', (controller, method) => {
-    expect(Reflect.getMetadata(PERMS_KEY, controller.prototype[method])).toEqual(expect.arrayContaining(['pickup-orders','pickup-orders-edit']));
+  it.each(writes)('protects %p.%s with %s only', (controller, method, perm) => {
+    expect(Reflect.getMetadata(PERMS_KEY, controller.prototype[method])).toEqual(expect.arrayContaining(['pickup-orders', perm]));
     expect(allow(controller, method, viewer)).toBe(false);
-    expect(allow(controller, method, { ...editor, perms: ['pickup-orders-edit','inventory-units-allocate'] })).toBe(false);
-    expect(allow(controller, method, editor)).toBe(true);
+    expect(allow(controller, method, holder(perm))).toBe(true);
+    for (const other of ACTIONS.filter(key => key !== perm)) expect(allow(controller, method, holder(other))).toBe(false);
+    expect(allow(controller, method, { role: 'staff', perms: [perm, 'inventory-units-allocate', 'inventory-units-view'] })).toBe(false);
+    expect(allow(controller, method, legacyEditor)).toBe(true); // the pre-split key still works
     expect(allow(controller, method, { role: 'admin' })).toBe(true);
     const guards = Reflect.getMetadata(GUARDS_METADATA, controller.prototype[method]) || Reflect.getMetadata(GUARDS_METADATA, controller);
     expect(guards).toContain(PermsGuard);
   });
 
+  it('lets anyone who can view the board comment on an order', () => {
+    expect(Reflect.getMetadata(PERMS_KEY, TransactionsController.prototype.addPickupComments)).toEqual(['pickup-orders']);
+    expect(allow(TransactionsController, 'addPickupComments', viewer)).toBe(true);
+    expect(allow(TransactionsController, 'addPickupComments', { role: 'staff', perms: ['movements'] })).toBe(false);
+  });
+
   it('protects individual preparation actions without blocking unrelated inventory actions', () => {
     expect(() => assertPickupEditable(viewer)).toThrow(ForbiddenException);
-    expect(() => assertPickupEditable(editor)).not.toThrow();
+    expect(() => assertPickupEditable(legacyEditor)).not.toThrow();
+    expect(() => assertPickupEditable(holder('pickup-orders-prepare'), 'prepare')).not.toThrow();
+    expect(() => assertPickupEditable(holder('pickup-orders-move'), 'prepare')).toThrow(ForbiddenException);
     const service = { action: jest.fn() };
     const controller = new InventoryUnitsController(service as any, undefined as any, undefined as any);
     for (const action of ['picking','prepare','undo-picking']) {
       expect(() => controller.action('unit', { action } as any, { user: viewer } as any)).toThrow(ForbiddenException);
+      expect(() => controller.action('unit', { action } as any, { user: holder('pickup-orders-move') } as any)).toThrow(ForbiddenException);
     }
+    controller.action('unit', { action: 'picking' } as any, { user: holder('pickup-orders-prepare') } as any);
     controller.action('unit', { action: 'inspect' } as any, { user: viewer } as any);
-    expect(service.action).toHaveBeenCalledTimes(1);
+    expect(service.action).toHaveBeenCalledTimes(2);
   });
 
   it('keeps every inline script syntactically valid', () => {
@@ -82,30 +109,47 @@ describe('Pick-Up Orders access', () => {
     }
   });
 
-  it.each(["openPrepGroupModal","submitPrepGroup","deletePrepGroup","prepGroupMoveToReady","puConfirmMoveToReady","_puAddPendingToPrepGroup","puPtRowCheck","puPtToggleAll","puPtMoveSelected","_puPersistPrepCheck","puCardPrepTick","_pwEnsurePickLines","_pwEnsurePickLinesImpl","pwRetryOrderScan","pwScanAnyOrderUnit","pwSkipDamagedLabel","pwScanOrderUnit","pwToggleManualScan","pwSubmitManualScan","_pwRetryLastScan","_pwSubmitScan","_pwDrainScans","pwUndoLastPick","pwAddComment","_pwAutoPrepareScannedOrder","pucoTickOrder","_pucoTickOrderImpl","pucoAddOrder","pucoRemoveFromPrep","pucoRestoreFromReady","pucoReturnReadyToPrep","pucoMoveOrderToReady","pucoMoveGroupToReady","pucoMovePendingToPrep","puCardItemChange","puCardAddItem","puCardDelItem","puCardSave","puGroupSaveAll","puCreatePrepGroup","puMovePendingGroupToPrep","puGroupMoveToReady","puGroupUndoReady","puGroupUndoReadyToPrep","puJoinPrepGroup","openPuBulkModal","submitPuBulk","_puGroupDragStart","puBoardDrop","undoPickupRun","deletePickupRun","openPuEditModal","savePuEditDate","puEditRemoveOrder","puEditMoveSelectedToRun","openCreatePickupModal","submitCreatePickup","openPickupBulkModal","runBulkPickup","openPuDateModal","savePuDateEdit"])('blocks %s before any local or server change', async name => {
-    const env: any = { _puRequireEdit: () => false };
-    runInNewContext(grab(name), env);
+  // Each Pick-Up function checks ITS action before any local or server change.
+  it.each([['_puPersistPrepCheck','prepare'],['puCardPrepTick','prepare'],['_pwEnsurePickLines','prepare'],['_pwEnsurePickLinesImpl','prepare'],['pwRetryOrderScan','prepare'],['pwScanAnyOrderUnit','prepare'],['pwSkipDamagedLabel','prepare'],['pwScanOrderUnit','prepare'],['pwToggleManualScan','prepare'],['pwSubmitManualScan','prepare'],['_pwRetryLastScan','prepare'],['_pwSubmitScan','prepare'],['_pwDrainScans','prepare'],['pwUndoLastPick','prepare'],['_pwAutoPrepareScannedOrder','prepare'],['pucoTickOrder','prepare'],['_pucoTickOrderImpl','prepare'],['pwAckPrepEdit','prepare'],['openPrepGroupModal','move'],['submitPrepGroup','move'],['prepGroupMoveToReady','move'],['puConfirmMoveToReady','move'],['_puAddPendingToPrepGroup','move'],['puPtRowCheck','move'],['puPtToggleAll','move'],['puPtMoveSelected','move'],['pucoAddOrder','move'],['pucoReturnReadyToPrep','move'],['pucoMoveOrderToReady','move'],['pucoMoveGroupToReady','move'],['pucoMovePendingToPrep','move'],['puCardItemChange','move'],['puCardAddItem','move'],['puCardDelItem','move'],['puCardSave','move'],['puGroupSaveAll','move'],['puCreatePrepGroup','move'],['puMovePendingGroupToPrep','move'],['puGroupMoveToReady','move'],['puGroupUndoReadyToPrep','move'],['puJoinPrepGroup','move'],['openPuBulkModal','move'],['submitPuBulk','move'],['_puGroupDragStart','move'],['openPuEditModal','move'],['savePuEditDate','move'],['puEditMoveSelectedToRun','move'],['openCreatePickupModal','move'],['submitCreatePickup','move'],['openPickupBulkModal','move'],['runBulkPickup','move'],['openPuDateModal','move'],['savePuDateEdit','move'],['deletePrepGroup','cancel'],['pucoRemoveFromPrep','cancel'],['pucoRestoreFromReady','cancel'],['puGroupUndoReady','cancel'],['undoPickupRun','cancel'],['deletePickupRun','cancel'],['puEditRemoveOrder','cancel'],['pwSendToBosta','bosta'],['bulkSendToBosta','bosta']] as [string,string][])('%s checks the «%s» permission first', async (name, action) => {
+    const src = grab(name);
+    expect(src).toContain(`_puRequire('${action}')`);
+    const asked: string[] = [];
+    const env: any = { _puRequire: (a: string) => { asked.push(a); return false; }, currentLang: 'ar' };
+    runInNewContext(src, env);
     await env[name]();
+    expect(asked[0]).toBe(action);
+  });
+
+  it('a drop on Pending needs «cancel», elsewhere «move»', async () => {
+    for (const [col, action] of [['pending','cancel'],['prep','move'],['ready','move']]) {
+      const asked: string[] = [];
+      const env: any = { _puRequire: (a: string) => { asked.push(a); return false; } };
+      runInNewContext(grab('puBoardDrop'), env);
+      await env.puBoardDrop({ preventDefault() {} }, col);
+      expect(asked).toEqual([action]);
+    }
   });
 
   it('blocks writes from invoice dialogs opened on the read-only page while allowing viewing and label preview', () => {
     const env: any = { currentPage: 'pickup-orders', _puCanEdit: () => false };
     runInNewContext(grab('_puRequestBlocked'), env);
-    for (const path of ['/transactions/order/comments','/transactions/pickup-orders/confirm','/shipping/create-order/id','/inventory-units/unit/actions','/after-sales/case/approve']) {
+    for (const path of ['/transactions/pickup-orders/confirm','/shipping/create-order/id','/inventory-units/unit/actions','/after-sales/case/approve']) {
       expect(env._puRequestBlocked(path, 'POST')).toBe(true);
     }
     expect(env._puRequestBlocked('/transactions/pickup-orders', 'GET')).toBe(false);
+    expect(env._puRequestBlocked('/transactions/order/comments', 'POST')).toBe(false); // comments open to viewers
     expect(env._puRequestBlocked('/shipping/awb/id', 'POST')).toBe(false);
     expect(env._puRequestBlocked('/shipping/awb/id/printed', 'POST')).toBe(true);
     env.currentPage = 'movements';
     expect(env._puRequestBlocked('/transactions/order/comments', 'POST')).toBe(false);
   });
 
-  it('automatically includes view when granting edit and removes edit when revoking view', () => {
-    // Grants are edited on the Roles page only; the same rule holds on the server.
-    expect(rbacReconcile(['pickup-orders-edit'], 'pickup-orders-edit', true).has('pickup-orders')).toBe(true);
-    expect(rbacReconcile(['pickup-orders-edit'], 'pickup-orders', false).has('pickup-orders-edit')).toBe(false);
-    expect(normalizeRolePermissions(['pickup-orders-edit'])).toContain('pickup-orders');
+  it('every Pick-Up action includes view, and revoking view removes them all', () => {
+    for (const key of ACTIONS) {
+      expect(rbacReconcile([key], key, true).has('pickup-orders')).toBe(true);
+      expect(normalizeRolePermissions([key])).toContain('pickup-orders');
+    }
+    const after = rbacReconcile(['pickup-orders', ...ACTIONS], 'pickup-orders', false);
+    expect(ACTIONS.some(key => after.has(key))).toBe(false);
   });
 });
-

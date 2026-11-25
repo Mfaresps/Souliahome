@@ -1,0 +1,24 @@
+/* Manager code window (manager-otp.js) + product page edit modes (Nov 25, 2026). */
+.mgr-otp{padding:0;border:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.mgr-otp:not([open]){display:none}
+.mgr-otp::backdrop{background:rgba(15,23,20,.45)}
+.mgr-otp-card{box-sizing:border-box;width:min(440px,calc(100% - 32px));background:var(--surface,#fff);color:var(--text);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.22);padding:20px 22px 16px}
+.mgr-otp-title{margin:0 0 6px;font-size:1.05rem;font-weight:700}
+.mgr-otp-lead{margin:0 0 12px;font-size:.84rem;color:var(--muted);line-height:1.7}
+.mgr-otp-what{display:grid;gap:2px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-alt);font-size:.82rem;margin-bottom:14px}
+.mgr-otp-what span{color:var(--muted);line-height:1.6}
+.mgr-otp-entry{display:flex;justify-content:center;margin:4px 0 6px}
+.mgr-otp-entry input:not(.pinbx-input){width:9rem;text-align:center;font-size:1.4rem;letter-spacing:.4em;padding:8px}
+.mgr-otp-msg{min-height:1.4em;text-align:center;font-size:.8rem;color:var(--red)}
+.mgr-otp-msg.is-ok{color:var(--green,#16a34a)}
+.mgr-otp-foot{display:flex;align-items:center;gap:8px;margin-top:10px}
+.mgr-otp-gap{flex:1}
+.mgr-otp-link{background:none;border:0;padding:4px 0;color:var(--primary);font:inherit;font-size:.8rem;cursor:pointer;text-decoration:underline}
+body.dark-mode .mgr-otp-card{background:var(--surface,#161d18)}
+
+/* Product page: view-only / manager-code notice */
+.prd-mode-note{margin:0 0 12px;padding:9px 14px;border-radius:10px;font-size:.84rem;border:1px solid var(--border);background:var(--bg-alt);color:var(--text)}
+.prd-mode-note.is-otp{border-color:color-mix(in srgb,#d97706 40%,var(--border));background:color-mix(in srgb,#d97706 7%,var(--surface,#fff))}
+.prd-readonly .prd-grid .prd-card:not(.prd-activity):not(.ps-sec) :is(.pm-sel,.pm-spec-picker,.pm-lock-btn,label){pointer-events:none}
+.prd-readonly:not(.prd-price-only) #prd-savebar{display:none!important}
+.prd-readonly .pm-lock-btn{display:none}

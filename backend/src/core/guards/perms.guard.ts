@@ -26,6 +26,13 @@ const LEGACY_PERM_ALIASES: Record<string, string[]> = {
   'suppliers-tab-payments': ['suppliers'],
   'suppliers-tab-ledger': ['suppliers'],
   'suppliers-tab-activity': ['suppliers'],
+  // `pickup-orders-edit` was split into five keys (Nov 24, 2026). AccessRolesService migrates
+  // every role and account at start-up; this alias only covers the moment before that runs.
+  'pickup-orders-prepare': ['pickup-orders-edit'],
+  'pickup-orders-move': ['pickup-orders-edit'],
+  'pickup-orders-cancel': ['pickup-orders-edit'],
+  'pickup-orders-bosta': ['pickup-orders-edit'],
+  'pickup-orders-bosta-cancel': ['pickup-orders-edit'],
 };
 
 @Injectable()

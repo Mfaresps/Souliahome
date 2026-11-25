@@ -11,7 +11,10 @@ export type ViolationType =
   | 'unauthorized_access'
   | 'settings_tampering'
   | 'account_unlocked'
-  | 'export_excel';
+  | 'export_excel'
+  | 'bulk_browsing'
+  | 'account_suspended'
+  | 'abuse_alert';
 
 @Schema({ timestamps: true })
 export class SecurityAuditLog {

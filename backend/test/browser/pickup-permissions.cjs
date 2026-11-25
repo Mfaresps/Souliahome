@@ -74,6 +74,60 @@ const root = path.resolve(__dirname, '../../..'), publicDir = path.join(root, 'f
       await page.screenshot({path:path.join(output,'read-only-'+width+'.png')});
       console.log('PASS read-only page, detail viewing, filters and denied writes:',width);
     }
+    // Split permissions (Nov 24, 2026): «prepare» only, then «move» only.
+    const base = ['movements','inventory-units-view','inventory-units-allocate','pickup-orders'];
+    const prepOnly = await page.evaluate(async base => {
+      currentUser.perms = [...base, 'pickup-orders-prepare']; buildSidebar(); puSwitchView('board'); _puPaintCurrentView();
+      pickupWrites.length = 0; document.querySelectorAll('.toast').forEach(el => el.remove());
+      const page = qs('#page-pickup-orders');
+      const moveBtns = [...document.querySelectorAll('[data-pu-edit="move"]')].filter(el => el.getClientRects().length);
+      const r = {
+        readonly: document.body.classList.contains('pu-readonly'),
+        classes: ['prepare','move','cancel','bosta','bosta-cancel'].filter(a => document.body.classList.contains('pu-no-' + a)),
+        moveDimmed: moveBtns.length > 0 && moveBtns.every(el => getComputedStyle(el).opacity < 0.6),
+        draggable: page.querySelectorAll('[draggable="true"]').length,
+      };
+      await openPrepGroupModal(); await pucoRemoveFromPrep('prep'); await puBoardDrop({preventDefault(){}}, 'pending'); await pwSendToBosta('prep');
+      r.blockedWrites = pickupWrites.length;
+      r.toast = [...document.querySelectorAll('.toast')].map(el => el.textContent).join(' | ');
+      openPuCardOrdersModal('PREP-TEST', 'prep');
+      r.scanTools = !!qs('#pw-work .pw-barcode-tools');
+      r.offer = await Promise.race([_bsfMaybeOffer(_pickupOrders.find(o => o._id === 'prep')).then(() => 'none'), new Promise(res => setTimeout(() => res('dialog'), 400))]);
+      closePuCardOrdersModal();
+      await Promise.resolve(_puPersistPrepCheck('prep', true)).catch(() => {}); // the mock answers [] — only the request matters
+      r.prepWrite = pickupWrites.length;
+      return r;
+    }, base);
+    assert.equal(prepOnly.readonly, false, 'prepare-only is not read-only');
+    assert.deepEqual(prepOnly.classes, ['move','cancel','bosta','bosta-cancel']);
+    assert(prepOnly.moveDimmed, 'move buttons stay visible but dimmed');
+    assert.equal(prepOnly.draggable, 0, 'cards cannot be dragged without «move»');
+    assert.equal(prepOnly.blockedWrites, 0, 'move / cancel / Bosta refused before any request');
+    assert(/move cards/.test(prepOnly.toast) && /cancel cards/.test(prepOnly.toast) && /Bosta shipping/.test(prepOnly.toast), prepOnly.toast);
+    assert.equal(prepOnly.scanTools, true, 'scanning is available with «prepare»');
+    assert.equal(prepOnly.offer, 'none', 'no «send to Bosta» offer without the Bosta permission');
+    assert(prepOnly.prepWrite >= 1, 'the preparation tick is saved');
+    console.log('PASS prepare-only: dimmed actions, refusals named, scanning and tick allowed.');
+
+    const moveOnly = await page.evaluate(async base => {
+      currentUser.perms = [...base, 'pickup-orders-move']; buildSidebar(); puSwitchView('board'); _puPaintCurrentView();
+      pickupWrites.length = 0; document.querySelectorAll('.toast').forEach(el => el.remove());
+      const r = { draggable: qs('#page-pickup-orders').querySelectorAll('[draggable="true"]').length };
+      await pucoRemoveFromPrep('prep'); await Promise.resolve(_puPersistPrepCheck('prep', true)).catch(() => {});
+      r.blockedWrites = pickupWrites.length;
+      r.toast = [...document.querySelectorAll('.toast')].map(el => el.textContent).join(' | ');
+      openPuCardOrdersModal('PREP-TEST', 'prep');
+      r.scanTools = !!qs('#pw-work .pw-barcode-tools');
+      closePuCardOrdersModal();
+      return r;
+    }, base);
+    assert(moveOnly.draggable > 0, 'cards can be dragged with «move»');
+    assert.equal(moveOnly.blockedWrites, 0, 'cancel / prepare refused for move-only');
+    assert(/cancel cards/.test(moveOnly.toast) && /prepare orders/.test(moveOnly.toast), moveOnly.toast);
+    assert.equal(moveOnly.scanTools, false, 'no scanning without «prepare»');
+    console.log('PASS move-only: drag allowed, cancel and preparation refused.');
+    await page.evaluate(base => { currentUser.perms = [...base]; }, base);
+
     const editor = await page.evaluate(() => {
       currentUser.perms.push('pickup-orders-edit'); buildSidebar(); puSwitchView('board');
       return {allowed:_puCanEdit(),readonlyClass:document.body.classList.contains('pu-readonly'),draggable:qs('#page-pickup-orders').querySelectorAll('[draggable="true"]').length};

@@ -10,6 +10,8 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ClientsModule } from './clients/clients.module';
+import { BrowseAccessModule } from './browse-access/browse-access.module';
+import { AbuseGuardModule } from './abuse-guard/abuse-guard.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { CollectionsModule } from './collections/collections.module';
 import { ExpensesModule } from './expenses/expenses.module';
@@ -42,6 +44,7 @@ import { InvoiceImagesModule } from './invoice-images/invoice-images.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { PurchasingEngineModule } from './purchasing-engine/purchasing-engine.module';
+import { PublicApiModule } from './public-api/public-api.module';
 import { SeedService } from './seed/seed.service';
 import { WarehousesModule } from './warehouses/warehouses.module';
 import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
@@ -61,6 +64,8 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     ProductsModule,
     TransactionsModule,
     ClientsModule,
+    BrowseAccessModule,
+    AbuseGuardModule,
     SuppliersModule,
     CollectionsModule,
     ExpensesModule,
@@ -95,6 +100,7 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     PromotionsModule,
     AssistantModule,
     PurchasingEngineModule,
+    PublicApiModule,
   ],
   providers: [SeedService],
 })

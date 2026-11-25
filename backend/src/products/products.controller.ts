@@ -30,6 +30,8 @@ import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
+import { DiscountOtpService } from '../discount-otp/discount-otp.service';
+import { canSeeSupplier, changedFields, maskAnalyticsPrivacy, maskProductPrivacy } from '../shared/cost-visibility.util';
 import { PromotionAuditService } from '../promotions/promotion-audit.service';
 import { canViewPromotions } from '../promotions/promotion-perms';
 
@@ -47,11 +49,12 @@ export class ProductsController {
     private readonly analyticsService: ProductAnalyticsService,
     private readonly productCost: ProductCostService,
     @Optional() private readonly promoAudit?: PromotionAuditService,
+    @Optional() private readonly otp?: DiscountOtpService,
   ) {}
 
   @Get()
-  async findAll() {
-    return this.productsService.findAll();
+  async findAll(@Request() req: ReqUser) {
+    return maskProductPrivacy(await this.productsService.findAll(), req.user);
   }
 
   /** سجل متوسط التكلفة (خطوة 3) — نفس قاعدة رؤية سعر الشراء: أدمن أو purchase-edit-price. */
@@ -122,19 +125,21 @@ export class ProductsController {
     return { code: await this.productsService.suggestProductCode(name, exclude) };
   }
 
+  @RequirePerms('products-analytics')
   @Get('analytics/card/:productCodeOrName')
-  async getProductCard(@Param('productCodeOrName') productCodeOrName: string) {
-    return this.analyticsService.getProductAnalytics(productCodeOrName);
+  async getProductCard(@Param('productCodeOrName') productCodeOrName: string, @Request() req: ReqUser) {
+    return maskAnalyticsPrivacy(await this.analyticsService.getProductAnalytics(productCodeOrName), req.user);
   }
 
+  @RequirePerms('products-analytics')
   @Get('analytics/search/:partial')
   async searchProductsForAnalytics(@Param('partial') partial: string) {
     return this.analyticsService.searchProducts(partial);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.productsService.findById(id);
+  async findOne(@Param('id') id: string, @Request() req: ReqUser) {
+    return maskProductPrivacy(await this.productsService.findById(id), req.user);
   }
 
   @Post()
@@ -150,7 +155,15 @@ export class ProductsController {
   }
 
   @Post('bulk-update')
-  async bulkUpdate(@Body() dto: BulkUpdateProductDto) {
+  @RequirePerms('products-edit')
+  async bulkUpdate(@Body() dto: BulkUpdateProductDto, @Request() req: ReqUser) {
+    if (dto.buyPrice !== undefined && req.user?.role !== 'admin' && !(req.user?.perms || []).includes('purchase-edit-price')) {
+      throw new ForbiddenException('ليس لديك صلاحية تعديل سعر الشراء');
+    }
+    if ((dto as any).sellPrice !== undefined && req.user?.role !== 'admin' && !(req.user?.perms || []).includes('products-price-sell')) {
+      throw new ForbiddenException('ليس لديك صلاحية تعديل سعر البيع');
+    }
+    if ((dto as any).supplier !== undefined && !canSeeSupplier(req.user)) throw new ForbiddenException('ليست لديك صلاحية على مورد الصنف');
     const { ids, ...fields } = dto;
     const count = await this.productsService.bulkUpdate(ids, fields);
     return { message: `تم تعديل ${count} صنف`, modifiedCount: count };
@@ -180,6 +193,8 @@ export class ProductsController {
 
   @Post(':id/request-edit')
   async requestEdit(@Param('id') id: string, @Body() dto: RequestProductEditDto, @Request() req: ReqUser) {
+    const p = req.user?.perms || [];
+    if (req.user?.role !== 'admin' && !p.includes('products-edit') && !p.includes('products-edit-otp')) throw new ForbiddenException('ليست لديك صلاحية تعديل الأصناف');
     return this.productsService.requestProductEdit(id, {
       requestedBy: actorOf(req),
       requestedById: req.user?.userId,
@@ -204,19 +219,40 @@ export class ProductsController {
     return this.productsService.rejectProductEdit(id, reviewedBy, dto.rejectedReason);
   }
 
+  /**
+   * Product edit (Nov 25, 2026): `products-edit` saves directly; `products-edit-otp` saves with a
+   * manager code bound to this product and these fields. Prices are separate: the sale price needs
+   * `products-price-sell`, the purchase price `purchase-edit-price` — whatever the edit mode.
+   * Rules are on what CHANGED, so a form that re-sends an unchanged price is not refused.
+   */
   @Put(':id')
+  @RequirePerms('products')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
     @Request() req: ReqUser,
   ) {
-    if (dto.buyPrice !== undefined && req.user?.role !== 'admin') {
-      const perms = req.user?.perms || [];
-      if (!perms.includes('purchase-edit-price')) {
-        throw new ForbiddenException('ليس لديك صلاحية تعديل سعر الشراء');
-      }
+    const admin = req.user?.role === 'admin';
+    const perms = req.user?.perms || [];
+    const { otpId, ...body } = dto as UpdateProductDto & { otpId?: string };
+    // Someone who may not see the supplier cannot change it — and an empty field must not wipe it.
+    if (!canSeeSupplier(req.user)) { delete (body as any).supplier; delete (body as any).supplierId; }
+    const existing = await this.productsService.findById(id);
+    // A user who may not see the purchase price never sends it; drop an echo of the stored value.
+    const changed = changedFields(existing, body as Record<string, unknown>);
+    if (changed.includes('buyPrice') && !admin && !perms.includes('purchase-edit-price')) throw new ForbiddenException('ليس لديك صلاحية تعديل سعر الشراء');
+    if (changed.includes('sellPrice') && !admin && !perms.includes('products-price-sell')) throw new ForbiddenException('ليس لديك صلاحية تعديل سعر البيع');
+    if (admin || perms.includes('products-edit')) return this.productsService.update(id, body as UpdateProductDto, actorOf(req));
+    // «تعديل سعر البيع» alone: the sale price may change on its own, nothing else.
+    if (changed.length && changed.every(f => f === 'sellPrice') && perms.includes('products-price-sell')) {
+      return this.productsService.update(id, { sellPrice: (body as UpdateProductDto).sellPrice } as UpdateProductDto, actorOf(req));
     }
-    return this.productsService.update(id, dto, actorOf(req));
+    if (!perms.includes('products-edit-otp')) throw new ForbiddenException('ليست لديك صلاحية تعديل الأصناف');
+    if (!changed.length) return maskProductPrivacy(existing, req.user);
+    if (!this.otp) throw new ForbiddenException('تعذّر التحقق من كود المدير');
+    const release = await this.otp.consumeRecordEditOtp(String(otpId || ''), 'product', id, changed);
+    try { return await this.productsService.update(id, body as UpdateProductDto, actorOf(req)); }
+    catch (error) { await release(); throw error; }
   }
 
   @Delete(':id')

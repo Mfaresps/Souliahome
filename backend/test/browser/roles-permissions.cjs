@@ -65,6 +65,16 @@ const fixtureRoles = [
     assert.equal(await page.$$eval('.rbac-role-item',items=>items.length),8);
     await page.click('[data-role="manager"]');
     if (process.env.RBAC_SCREENSHOT_DIR) await page.screenshot({path:path.join(process.env.RBAC_SCREENSHOT_DIR,'roles-desktop.png'),fullPage:true});
+    // ⓘ details: every row has one, it opens a popover, never ticks the row's checkbox, Escape closes it.
+    assert.equal(await page.$$eval('.rbac-perm-row [data-perm]',rows=>rows.every(input=>input.closest('.rbac-perm-row').querySelector('.rbac-info'))),true,'every permission row has an info button');
+    assert.equal(await page.$eval('.rbac-perm-row [data-perm="dashboard"]',el=>el.closest('.rbac-perm-row').querySelector('strong').textContent),'عرض الصفحة الرئيسية');
+    const before=await page.$eval('[data-perm="shopify-cancel"]',el=>el.checked);
+    await page.click('[data-info="shopify-cancel"]');
+    assert.equal(await page.$eval('#rbac-tip',el=>!el.hidden&&el.textContent.includes('لا أثر على المخزون')),true,'info popover explains the permission');
+    assert.equal(await page.$eval('#rbac-tip',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;}),true,'popover stays on screen');
+    assert.equal(await page.$eval('[data-perm="shopify-cancel"]',el=>el.checked),before,'info click does not toggle the permission');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.$eval('#rbac-tip',el=>el.hidden),true,'Escape closes the popover');
     await page.evaluate(()=>{currentLang='en';applyLang();window.rbacOpen();});
     assert.equal(await page.$eval('#rbac-root',el=>el.dir),'ltr');
     if (process.env.RBAC_SCREENSHOT_DIR) await page.screenshot({path:path.join(process.env.RBAC_SCREENSHOT_DIR,'roles-desktop-en.png'),fullPage:true});

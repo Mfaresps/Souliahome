@@ -12,6 +12,12 @@ export type MovementsState = {
   pickup?: string[]; recentUpdates?: Record<string, number>;
 };
 
+/** What a user without «فلاتر وترتيب سجل المعاملات» may ask for: search, type tab, status, paging. */
+export function stripMovementFilters(state: MovementsState): MovementsState {
+  const { page, limit, search, type, status, showExcluded, excludedIds, recentUpdates } = state || {};
+  return { page, limit, search, type, status, showExcluded, excludedIds, recentUpdates, sort: 'date-desc' };
+}
+
 const SALES = 'مبيعات', PURCHASE = 'مشتريات', RETURN = 'مرتجع';
 const PURCHASE_RETURN = 'مرتجع مشتريات', SALES_RETURN = 'مرتجع مبيعات';
 const PENDING = 'معلق', COMPLETED = 'مكتمل', CANCELLED = 'ملغي';

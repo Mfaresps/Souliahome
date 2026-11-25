@@ -232,6 +232,24 @@ export class ShopifyController {
     return this.shopifyService.cancelShippingPostponement(id, { id: actor.id, name: actor.name || actor.username || 'staff' });
   }
 
+  // «تأجيل التواصل» — anyone who works the Shopify orders list (confirmation calls).
+  @Patch('orders/:id/confirmation-deferral')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-orders')
+  async deferConfirmation(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    const actor = actorOf(req);
+    return this.shopifyService.deferConfirmation(id, { dueAt: body?.dueAt, reasonCode: body?.reasonCode, note: body?.note },
+      { id: actor.id, name: actor.name || actor.username || 'staff' });
+  }
+
+  @Delete('orders/:id/confirmation-deferral')
+  @UseGuards(JwtAuthGuard, PermsGuard)
+  @RequirePerms('shopify-orders')
+  async cancelConfirmationDeferral(@Param('id') id: string, @Request() req: any) {
+    const actor = actorOf(req);
+    return this.shopifyService.cancelConfirmationDeferral(id, { id: actor.id, name: actor.name || actor.username || 'staff' });
+  }
+
   @Post('orders/:id/deposit-receipts/upload')
   @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
   @RequirePerms('shopify-deposit-upload')

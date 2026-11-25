@@ -380,8 +380,8 @@ function _puDailyRunRowHtml(group, index, open) {
   const rowKey = `run-${index}`;
   const shortRef = group.isDailyShipping && group.pickupDate ? `SH-${group.pickupDate}` : group.pickupRef;
   const actions = group.isReadyRun ? `<div class="pu-daily-order-actions">
-    <button type="button" class="btn btn-outline btn-sm" data-run-ref="${esc(group.pickupRef)}" data-pu-edit onclick="event.stopPropagation();openPuEditModal(this.dataset.runRef)">Edit run</button>
-    <button type="button" class="btn btn-outline btn-sm" ${_puReturnGroupBusy ? 'disabled aria-busy="true"' : ''} data-run-ref="${esc(group.pickupRef)}" data-pu-edit onclick="event.stopPropagation();puGroupUndoReadyToPrep(this.dataset.runRef)">Return group</button>
+    <button type="button" class="btn btn-outline btn-sm" data-run-ref="${esc(group.pickupRef)}" data-pu-edit="move" onclick="event.stopPropagation();openPuEditModal(this.dataset.runRef)">Edit run</button>
+    <button type="button" class="btn btn-outline btn-sm" ${_puReturnGroupBusy ? 'disabled aria-busy="true"' : ''} data-run-ref="${esc(group.pickupRef)}" data-pu-edit="move" onclick="event.stopPropagation();puGroupUndoReadyToPrep(this.dataset.runRef)">Return group</button>
   </div>` : '';
   return `<tr class="pu-run-row pu-daily-run ${group.isReadyRun ? 'pu-run-ready' : 'pu-run-shipped'}${open ? ' pu-run-open' : ''}" id="run-header-${rowKey}" data-run-ref="${esc(group.key)}" onclick="toggleRunExpand('${rowKey}')">
     <td><button type="button" class="pu-chevron" aria-expanded="${open}" aria-controls="${rowKey}" aria-label="${esc(_puDailyText('عرض أوردرات اليوم', 'View daily orders'))}">›</button></td>

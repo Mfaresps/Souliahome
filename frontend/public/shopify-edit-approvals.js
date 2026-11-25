@@ -181,8 +181,8 @@ async function _spConfirmEditSubmission(order, proposal) {
   overlay.innerHTML = `<section class="edit-proposal-dialog" role="dialog" aria-modal="true" aria-labelledby="sp-proposal-title">
     <h3 id="sp-proposal-title">${esc(spEditText('مراجعة التعديلات قبل الإرسال', 'Review changes before sending'))} <bdi>#${esc(order.ref || '')}</bdi></h3>
     ${_spEditComparisonHtml(order, _spEditProposalPatch(order, proposal), changes)}
-    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">${esc(spEditText('سيتم تطبيق التعديلات بعد موافقة الأدمن.', 'Changes will be applied after admin approval.'))}</p>
-    <div class="edit-review-footer"><button type="button" class="btn btn-primary" data-send>${esc(spEditText('إرسال للأدمن للموافقة', 'Send to admin for approval'))}</button><button type="button" class="btn btn-outline" data-back>${esc(spEditText('رجوع للتعديل', 'Back to editing'))}</button></div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">${esc(spEditText('تُطبَّق التعديلات بعد موافقة المدير.', 'Changes will be applied after admin approval.'))}</p>
+    <div class="edit-review-footer"><button type="button" class="btn btn-primary" data-send>${esc(spEditText('إرسال إلى المدير للموافقة', 'Send to admin for approval'))}</button><button type="button" class="btn btn-outline" data-back>${esc(spEditText('رجوع للتعديل', 'Back to editing'))}</button></div>
     </section>`;
   return new Promise(resolve => {
     let done = false;
@@ -477,7 +477,7 @@ document.addEventListener('keydown', event => {
 
 function _apprRowShopifyEdit(order) {
   const r = order.editRequest, pending = r.status === 'معلق';
-  return { key: 'shopify-edit:' + order._id, kindLabel: spEditText('تعديل أوردر شوبيفاي', 'Shopify order edit'),
+  return { key: 'shopify-edit:' + order._id, kindLabel: spEditText('تعديل طلب Shopify', 'Shopify order edit'),
     isPending: pending, amount: r.patch?.total ?? order.total,
     title: `#${esc(order.ref)}`, subtitle: esc(order.client || ''), party: r.requestedBy,
     dateLabel: fmtDate(r.requestedAt), statusLabel: pending ? _spEditPendingLabel() : _apprStatusLabel(r.status), statusClass: _APPR_STATUS_CLASS[r.status] || 'st-pending',

@@ -32,7 +32,9 @@ describe('Access roles', () => {
   });
   test('permission catalog rejects unknown grants and enforces dependencies and tiers', () => {
     expect(() => normalizeRolePermissions(['made-up-power'])).toThrow();
-    expect(normalizeRolePermissions(['pickup-orders-edit'])).toEqual(['pickup-orders-edit','pickup-orders']);
+    // The pre-split Pick-Up key becomes the five action keys (Nov 24, 2026); each implies viewing.
+    expect(normalizeRolePermissions(['pickup-orders-edit']).sort()).toEqual(['pickup-orders','pickup-orders-bosta','pickup-orders-bosta-cancel','pickup-orders-cancel','pickup-orders-move','pickup-orders-prepare']);
+    expect(normalizeRolePermissions(['pickup-orders-move'])).toEqual(['pickup-orders-move','pickup-orders']);
     expect(() => validateRolePermissionTier('staff', ['users'])).toThrow();
     expect(() => validateRolePermissionTier('viewer', ['shopify-cancel'])).toThrow();
     expect(() => validateRolePermissionTier('viewer', ['dashboard','reports-kpis'])).not.toThrow();
@@ -47,7 +49,7 @@ describe('Access roles', () => {
     expect(managedRoleRequiredPermissions('/api/transactions','POST',{type:'مبيعات'})).toEqual(['transaction']);
     expect(managedRoleRequiredPermissions('/api/shopify/orders','GET')).toEqual(['shopify-orders']);
     expect(managedRoleRequiredPermissions('/api/vault','GET')).toEqual(['vault']);
-    expect(managedRoleRequiredPermissions('/api/products/123','PUT')).toEqual(['products-edit']);
+    expect(managedRoleRequiredPermissions('/api/products/123','PUT')).toEqual(['products-edit','products-edit-otp','products-price-sell']);
     expect(managedRoleRequiredPermissions('/api/suppliers','POST')).toEqual(['suppliers-create']);
     expect(managedRoleRequiredPermissions('/api/notifications','GET')).toBeNull();
     // Startup reference data every screen reads stays open to an account on a role.
@@ -55,7 +57,9 @@ describe('Access roles', () => {
     expect(managedRoleRequiredPermissions('/api/transactions/inventory','GET')).toBeNull();
     expect(managedRoleRequiredPermissions('/api/transactions/startup-overview','GET')).toBeNull();
     // Lists some screens read name every reader; writes keep their own key.
-    expect(managedRoleRequiredPermissions('/api/suppliers','GET')).toEqual(expect.arrayContaining(['suppliers','products']));
+    // Nov 25, 2026: the supplier list is a business secret — the products screens no longer read it.
+    expect(managedRoleRequiredPermissions('/api/suppliers','GET')).toEqual(expect.arrayContaining(['suppliers','products-supplier-view']));
+    expect(managedRoleRequiredPermissions('/api/suppliers','GET')).not.toContain('products');
     expect(managedRoleRequiredPermissions('/api/supplier-returns','GET')).toContain('approvals');
     expect(managedRoleRequiredPermissions('/api/supplier-returns','POST')).toEqual(['suppliers-returns']);
     expect(managedRoleRequiredPermissions('/api/expenses','POST')).toEqual(['expenses']);

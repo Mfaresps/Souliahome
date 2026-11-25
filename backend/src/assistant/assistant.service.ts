@@ -1,3 +1,4 @@
+import { confirmationBucket, FOLLOWUP_SETTLED_STATUSES } from '../shared/shopify-confirmation-bucket.util';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
@@ -147,6 +148,11 @@ export class AssistantService {
     return perms.some((p) => own.includes(p));
   }
 
+  /** Aggregate financial figures are owner-only, even when an employee can open operational reports. */
+  private canSeeFinancials(user: AssistantUser): boolean {
+    return user?.role === 'admin';
+  }
+
   private denied(intent: string, what: string, L: (a: string, e: string) => string, topic: string) {
     return {
       intent, status: 'denied' as const,
@@ -227,7 +233,7 @@ export class AssistantService {
   // ── Sales ─────────────────────────────────────────────────────────────────────────────────────
   private async sales(u: Understood, user: AssistantUser, L: any, lang: Lang, today: string) {
     const topic = L('المبيعات', 'Sales');
-    if (!this.can(user, REPORT_PERMS)) return this.denied('sales', L('أرقام المبيعات', 'Sales figures'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('sales', L('أرقام المبيعات', 'Sales figures'), L, topic);
     const p = u.period!;
     const label = this.periodLabel(p, L, lang);
     const prev = previousPeriod(p);
@@ -292,21 +298,11 @@ export class AssistantService {
     ).toArray();
     const orders = candidates.filter((o) => { const ms = new Date(o.shopifyCreatedAt || o.createdAt || 0).getTime(); return ms >= from && ms < to; });
     const ids = orders.map((o) => String(o._id));
-    const SETTLED = ['تم حل المشكلة', 'تمت المتابعة', 'تمت عملية التأكيد', 'العميل ألغى الطلب'];
     const fus: any[] = ids.length ? await db.collection('followups').find(
-      { shopifyOrderId: { $in: ids }, cancelled: { $ne: true }, status: { $nin: SETTLED } }, { projection: { shopifyOrderId: 1 } },
+      { shopifyOrderId: { $in: ids }, cancelled: { $ne: true }, status: { $nin: FOLLOWUP_SETTLED_STATUSES } }, { projection: { shopifyOrderId: 1 } },
     ).toArray() : [];
     const openFu = new Set(fus.map((f) => String(f.shopifyOrderId)));
-    const bucket = (o: any) => {
-      if (o.cancelled || o.status === 'rejected') return 'cancelled';
-      const rec = Array.isArray(o.depositReceipts) ? o.depositReceipts : [];
-      const approved = rec.filter((r: any) => r.status === 'معتمد').reduce((x: number, r: any) => x + (Number(r.amount) || 0), 0);
-      const legacy = o.status === 'approved' && !rec.length ? Number(o.depositAmount) || 0 : 0;
-      if (approved + legacy > 0) return 'deposit';
-      if (o.shipWithoutDeposit === true || o.status === 'approved') return 'nodep';
-      if (openFu.has(String(o._id))) return 'followup';
-      return 'open';
-    };
+    const bucket = (o: any) => confirmationBucket(o, openFu.has(String(o._id)));
     const c: Record<string, number> = { deposit: 0, nodep: 0, followup: 0, open: 0, cancelled: 0 };
     const val = { confirmed: 0, pending: 0 };
     const pendingRows: { o: any; b: string }[] = [];
@@ -332,7 +328,7 @@ export class AssistantService {
     const p = u.period!;
     const label = this.periodLabel(p, L, lang);
     const topic = L('أوردرات شوبيفاي الواردة', 'Incoming Shopify orders');
-    if (!this.can(user, ['shopify-orders', ...REPORT_PERMS])) return this.denied('sales', L('أوردرات شوبيفاي', 'Shopify orders'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('sales', L('أرقام الطلبات وقيمتها', 'Order and sales figures'), L, topic);
     const { c, val, pendingRows, received, confirmed, pending, rate } = await this.intakeCounts(p.from);
     const range = this.rangeLabel(p.from, p.to, lang);
     const src: Source = { n: 1, title: L('صفحة شوبيفاي ← مؤشرات الفترة', 'Shopify page → period KPIs'), detail: range, link: { kind: 'page', page: 'shopify-orders', period: p.key } };
@@ -405,7 +401,7 @@ export class AssistantService {
   private async compare(u: Understood, user: AssistantUser, L: any, lang: Lang, today: string) {
     const isProfit = u.metric === 'profit';
     const topic = L('مقارنة', 'Comparison');
-    if (isProfit ? !this.can(user, 'admin') : !this.can(user, REPORT_PERMS)) return this.denied('compare', isProfit ? L('الأرباح', 'Profit figures') : L('تقارير المبيعات', 'Sales reports'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('compare', isProfit ? L('الأرباح', 'Profit figures') : L('تقارير المبيعات', 'Sales reports'), L, topic);
     const a = u.period!, b = u.period2!;
     const la = this.periodLabel(a, L, lang), lb = this.periodLabel(b, L, lang);
     const [ra, rb] = await Promise.all([this.report(a.from, a.to), this.report(b.from, b.to)]);
@@ -443,8 +439,8 @@ export class AssistantService {
   private async purchases(_u: Understood, user: AssistantUser, L: any, lang: Lang) {
     const topic = L('فواتير الشراء', 'Purchase invoices');
     if (!this.can(user, ['purchase-view', 'purchase-create', 'purchase-edit-price'])) return this.denied('purchases', L('فواتير الشراء', 'Purchase invoices'), L, topic);
-    // Amounts follow the purchase screens: admins and purchase-price editors see them.
-    const seeMoney = this.can(user, ['purchase-edit-price']);
+    // Purchase invoice amounts are financial figures and remain admin-only in the assistant.
+    const seeMoney = this.canSeeFinancials(user);
     const list: any[] = await this.connection.db!.collection('transactions').find(
       { type: 'مشتريات', cancelled: { $ne: true }, archived: { $ne: true } },
       { projection: { ref: 1, client: 1, supplier: 1, date: 1, createdAt: 1, total: 1, remaining: 1, items: 1 } },
@@ -517,7 +513,7 @@ export class AssistantService {
   // ── Top products ──────────────────────────────────────────────────────────────────────────────
   private async top(u: Understood, user: AssistantUser, L: any, lang: Lang) {
     const topic = L('أكثر المنتجات مبيعًا', 'Best-selling products');
-    if (!this.can(user, REPORT_PERMS)) return this.denied('top', L('تقارير المبيعات', 'Sales reports'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('top', L('تقارير المبيعات', 'Sales reports'), L, topic);
     const p = u.period!;
     const label = this.periodLabel(p, L, lang);
     const r = await this.report(p.from, p.to);
@@ -543,7 +539,7 @@ export class AssistantService {
     const word = worst ? L('أضعف', 'Weakest') : L('أفضل', 'Best');
     const unitW = u.unit === 'month' ? L('شهر', 'month') : L('يوم', 'day');
     const topic = `${word} ${unitW}`;
-    if (isProfit ? !this.can(user, 'admin') : !this.can(user, REPORT_PERMS)) {
+    if (!this.canSeeFinancials(user)) {
       return this.denied('best', isProfit ? L('الأرباح', 'Profit figures') : L('تقارير المبيعات', 'Sales reports'), L, topic);
     }
     const M = lang === 'en' ? MONTHS_EN : MONTHS_AR;
@@ -694,7 +690,9 @@ export class AssistantService {
         { label: L('يحتاج مراجعة', 'Needs attention'), v: best.attention, f: 'int' as Fmt },
         { label: L('وارد', 'Incoming'), v: best.incoming, f: 'int' as Fmt },
       ],
-      note: L(`الحد الأدنى ${best.min}. سعر البيع ${Math.round(best.price).toLocaleString('en-US')} جنيه.`, `Minimum ${best.min}. Sell price EGP ${Math.round(best.price).toLocaleString('en-US')}.`),
+      note: this.canSeeFinancials(user)
+        ? L(`الحد الأدنى ${best.min}. سعر البيع ${Math.round(best.price).toLocaleString('en-US')} جنيه.`, `Minimum ${best.min}. Sell price EGP ${Math.round(best.price).toLocaleString('en-US')}.`)
+        : L(`الحد الأدنى ${best.min}.`, `Minimum ${best.min}.`),
       sources: [{ n: 1, title: L('صفحة المنتج', 'Product page'), detail: best.code, link: { kind: 'product', id: best.id } }],
     };
   }
@@ -725,9 +723,11 @@ export class AssistantService {
         steps: [L(`فهمت السؤال: حالة الأوردر #${ref}`, `Understood: status of order #${ref}`), L('قرأت الفاتورة من سجل المعاملات', 'Read the invoice from the transactions log')],
         lead: [L('أوردر ', 'Order '), { b: '#' + ref }, L(' لـ ', ' for '), { b: String(tx.client || tx.supplier || '—') }, ` · ${state[0]}`],
         kpis: [
-          { label: L('الإجمالي', 'Total'), v: Number(tx.total) || 0, f: 'money' as Fmt, cite: 1 },
-          { label: L('المدفوع', 'Paid'), v: Number(tx.deposit) || 0, f: 'money' as Fmt },
-          { label: L('المتبقي', 'Remaining'), v: tx.cancelled ? null : Number(tx.remaining) || 0, f: 'money' as Fmt, text: tx.cancelled ? '—' : undefined },
+          ...(this.canSeeFinancials(user) ? [
+            { label: L('الإجمالي', 'Total'), v: Number(tx.total) || 0, f: 'money' as Fmt, cite: 1 },
+            { label: L('المدفوع', 'Paid'), v: Number(tx.deposit) || 0, f: 'money' as Fmt },
+            { label: L('المتبقي', 'Remaining'), v: tx.cancelled ? null : Number(tx.remaining) || 0, f: 'money' as Fmt, text: tx.cancelled ? '—' : undefined },
+          ] : []),
         ],
         note: [date && this.rangeLabel(date, date, lang), tx.shipCo && L(`الشحن: ${tx.shipCo}`, `Carrier: ${tx.shipCo}`),
           tx.bostaTrackingNumber && L(`رقم التتبع ${tx.bostaTrackingNumber}`, `Tracking ${tx.bostaTrackingNumber}`),
@@ -744,7 +744,7 @@ export class AssistantService {
         understood: [topic, '#' + ref],
         steps: [L(`فهمت السؤال: حالة الأوردر #${ref}`, `Understood: status of order #${ref}`), L('لم يُسجّل كفاتورة بعد؛ قرأته من أوردرات شوبيفاي', 'Not an invoice yet; read from Shopify orders')],
         lead: [L('أوردر ', 'Order '), { b: '#' + ref }, L(' لـ ', ' for '), { b: String(so.client || '—') }, ` · ${st}`],
-        kpis: [{ label: L('الإجمالي', 'Total'), v: Number(so.total) || 0, f: 'money' as Fmt, cite: 1 }],
+        kpis: this.canSeeFinancials(user) ? [{ label: L('الإجمالي', 'Total'), v: Number(so.total) || 0, f: 'money' as Fmt, cite: 1 }] : [],
         sources: [{ n: 1, title: L('صفحة شوبيفاي', 'Shopify page'), detail: '#' + ref, link: { kind: 'shopify', id: String(so._id) } }],
       };
     }
@@ -759,7 +759,7 @@ export class AssistantService {
   // ── Suppliers ─────────────────────────────────────────────────────────────────────────────────
   private async supplier(u: Understood, user: AssistantUser, L: any) {
     const topic = L('الموردون', 'Suppliers');
-    if (!this.can(user, ['suppliers', 'suppliers-tab-ledger'])) return this.denied('supplier', L('أرصدة الموردين', 'Supplier balances'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('supplier', L('أرصدة الموردين', 'Supplier balances'), L, topic);
     const [balances, sups] = await Promise.all([
       this.ledger.getAllBalances(),
       this.connection.db!.collection('suppliers').find({}, { projection: { name: 1 } }).toArray(),
@@ -800,7 +800,7 @@ export class AssistantService {
   // ── Cancellations / returns ─────────────────────────────────────────────────────────────────
   private async cancel(u: Understood, user: AssistantUser, L: any, lang: Lang) {
     const topic = L('الإلغاءات', 'Cancellations');
-    if (!this.can(user, ['reports', 'reports-cancellations'])) return this.denied('cancel', L('تقرير الإلغاءات', 'The cancellations report'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('cancel', L('تقرير الإلغاءات', 'The cancellations report'), L, topic);
     const p = u.period!;
     const label = this.periodLabel(p, L, lang);
     const c = (await this.report(p.from, p.to)).cancellations || {};
@@ -828,7 +828,7 @@ export class AssistantService {
 
   private async returns(u: Understood, user: AssistantUser, L: any, lang: Lang) {
     const topic = L('المرتجعات', 'Returns');
-    if (!this.can(user, REPORT_PERMS)) return this.denied('returns', L('تقارير المبيعات', 'Sales reports'), L, topic);
+    if (!this.canSeeFinancials(user)) return this.denied('returns', L('تقارير المبيعات', 'Sales reports'), L, topic);
     const p = u.period!;
     const label = this.periodLabel(p, L, lang);
     const r = await this.report(p.from, p.to);
@@ -1196,7 +1196,7 @@ export class AssistantService {
     const topic = L('خطة الشراء الذكية', 'Smart purchase plan');
     if (!this.canPlan(user)) return this.denied('smartplan', L('خطة الشراء', 'The purchase plan'), L, topic);
     const run = await this.engine.run(today);
-    const seeCost = this.can(user, ['purchase-edit-price', 'purchase-create']);
+    const seeCost = this.canSeeFinancials(user);
     const buy = run.plans.filter((p) => p.qty > 0);
     const urgent = buy.filter((p) => p.priority === 'urgent'), order = buy.filter((p) => p.priority === 'order');
     const watch = run.plans.filter((p) => p.priority === 'watch');
@@ -1255,7 +1255,7 @@ export class AssistantService {
     if (!this.canPlan(user)) return this.denied('engine', L('تقرير محرك الشراء', 'The engine report'), L, topic);
     const run = await this.engine.run(today);
     const v = run.validation;
-    const seeMoney = this.can(user, 'admin') || this.can(user, ['purchase-edit-price']);
+    const seeMoney = this.canSeeFinancials(user);
     const fill = (s: any) => (s.demand > 0 ? (s.served / s.demand) * 100 : 0);
     const net = (s: any) => s.marginEarned - s.holdingCost;
     const perStock = (s: any) => (s.avgStockValue > 0 ? net(s) / s.avgStockValue : 0);
@@ -1314,7 +1314,7 @@ export class AssistantService {
         options: found.slice(0, 6).map((p: any) => L(`ليه مقترح شراء ${p.name}`, `Why is ${p.name} suggested`)), sources: [] };
     }
     const p: any = found[0];
-    const seeCost = this.can(user, ['purchase-edit-price', 'purchase-create']);
+    const seeCost = this.canSeeFinancials(user);
     const row = this.engineRow(p, L, lang, seeCost);
     const prioText: Record<string, [string, string]> = { urgent: ['مقترح شراؤه — عاجل', 'Suggested — urgent'], order: ['مقترح شراؤه الآن', 'Suggested now'], watch: ['غير مقترح الآن — تحت المراقبة', 'Not now — watch'], ok: ['غير مقترح — لا يحتاج شراء', 'Not suggested — no need'], excluded: ['مستبعد من الخطة', 'Excluded from the plan'] };
     const reasons = lang === 'en' ? p.reasonsEn : p.reasons;
@@ -1378,7 +1378,7 @@ export class AssistantService {
     const topic = L('اقتراح كميات الشراء', 'Reorder suggestions');
     if (!this.canStock(user)) return this.denied('reorder', L('المخزون', 'Stock'), L, topic);
     const { list, covered, orders } = await this.reorderPlan(today);
-    const seeCost = this.can(user, ['purchase-edit-price', 'purchase-create']);
+    const seeCost = this.canSeeFinancials(user);
     const incomingUsed = list.reduce((x, r) => x + Math.min(r.incoming, r.gross), 0) + covered.reduce((x, r) => x + Math.min(r.incoming, r.gross), 0);
     const prodById = new Map((await this.transactions.getInventory()).map((p) => [String(p._id), p]));
     const costOf = (id: string) => Number(currentUnitCost(prodById.get(id) as any)) || 0;
@@ -1491,7 +1491,7 @@ export class AssistantService {
     const pct = (a: number, b: number) => (b > 0 ? Math.round(((a - b) / b) * 100) : null);
     const wkFrom = addDays(today, -7), wkTo = addDays(today, -1);
     const baseFrom = addDays(today, -35), baseTo = addDays(today, -8);
-    if (this.can(user, REPORT_PERMS)) {
+    if (this.canSeeFinancials(user)) {
       checked += 3;
       const [w, b] = await Promise.all([this.report(wkFrom, wkTo), this.report(baseFrom, baseTo)]);
       sources.push(this.reportSource(sources.length + 1, L('تقرير آخر 7 أيام', 'Last 7 days report'), { from: wkFrom, to: wkTo }, lang));
@@ -1550,7 +1550,7 @@ export class AssistantService {
   // ── Daily report ──────────────────────────────────────────────────────────────────────────────
   private async daily(_u: Understood, user: AssistantUser, L: any, lang: Lang, today: string) {
     const topic = L('التقرير اليومي', 'Daily report');
-    const canRep = this.can(user, REPORT_PERMS), canShop = this.can(user, ['shopify-orders', ...REPORT_PERMS]), canInv = this.canStock(user);
+    const canRep = this.canSeeFinancials(user), canShop = this.can(user, ['shopify-orders']), canInv = this.canStock(user);
     if (!canRep && !canShop && !canInv) return this.denied('daily', L('التقرير اليومي', 'The daily report'), L, topic);
     const y = addDays(today, -1);
     const kpis: any[] = [];

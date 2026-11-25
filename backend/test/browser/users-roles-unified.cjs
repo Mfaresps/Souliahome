@@ -100,7 +100,7 @@ const unassigned = [{ id: '3', username: 'hassan', name: 'Hassan', tier: 'staff'
       // New account: a role is required, and is sent as roleId.
       await page.evaluate(() => { openUserModal(); });
       await page.waitForSelector('input[name="um-role"]');
-      await page.evaluate(() => { document.querySelector('#um-username').value = 'nour'; document.querySelector('#um-name').value = 'Nour'; document.querySelector('#um-password').value = 'secret12'; });
+      await page.evaluate(() => { document.querySelector('#um-username').value = 'nour'; document.querySelector('#um-name').value = 'Nour'; document.querySelector('#um-password').value = 'secret12'; document.querySelector('#um-password2').value = 'secret12'; });
       writes.length = 0;
       await page.evaluate(() => saveUser(''));
       check(`${tag} no role → not sent, role tab shown`, !writes.length && await page.$eval('[data-um-panel="role"]', el => !el.hidden));

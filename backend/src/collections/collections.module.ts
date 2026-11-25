@@ -1,3 +1,4 @@
+import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Category, CategorySchema } from './schemas/category.schema';
@@ -27,6 +28,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: Supplier.name, schema: SupplierSchema },
     ]),
     AuthModule,
+    DiscountOtpModule,
   ],
   controllers: [CategoriesController, CollectionsController],
   providers: [CategoriesService, CollectionsService],

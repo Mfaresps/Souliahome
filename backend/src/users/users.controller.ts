@@ -52,6 +52,15 @@ export class UsersController {
     };
   }
 
+  /** The welcome + tour was seen (finished or skipped). Own account only; idempotent. */
+  @Post('me/onboarding-done')
+  async onboardingDone(@Req() req: { user: { userId?: string; sub?: string } }) {
+    const userId = (req.user?.userId || req.user?.sub) as string;
+    if (!userId) throw new BadRequestException('تعذر تحديد هوية المستخدم');
+    await this.usersService.markOnboarded(userId);
+    return { ok: true };
+  }
+
   @Put('me')
   async updateSelf(
     @Req() req: { user: { userId?: string; sub?: string; username: string } },
@@ -96,7 +105,7 @@ export class UsersController {
     if (roleId === 'super-admin') throw new ForbiddenException('Super Admin cannot be assigned');
     if (roleId !== 'admin') await this.accessRoles.findRolePublic(roleId);
     const { role: _role, perms: _perms, roleId: _roleId, ...profile } = dto as CreateUserDto & Record<string, unknown>;
-    const user = await this.usersService.createUser({ ...(profile as unknown as CreateUserDto), role: 'viewer', perms: [] });
+    const user = await this.usersService.createUser({ ...(profile as unknown as CreateUserDto), role: 'viewer', perms: [], onboardingPending: true } as any);
     try {
       await this.accessRoles.assign(roleId, String(user._id));
     } catch (error) {

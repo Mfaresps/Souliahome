@@ -67,7 +67,7 @@ export class DraftsService {
     await this.draftModel.deleteOne({ draftId });
   }
 
-  async deleteAll(): Promise<void> {
-    await this.draftModel.deleteMany({});
+  async deleteAll(keepSpecSheets = false): Promise<void> {
+    await this.draftModel.deleteMany(keepSpecSheets ? { draftId: { $not: /^spec:/ } } : {});
   }
 }

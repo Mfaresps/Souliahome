@@ -247,7 +247,13 @@ export class SearchService {
     @Optional() @InjectModel(ReturnRequest.name) private readonly returnModel?: Model<any>,
   ) {}
 
-  async search(query: string): Promise<SearchResponse> {
+  async search(
+    query: string,
+    canViewPurchases = false,
+    canSearchSuppliers = false,
+    canSeeCost = false,
+    canSeeSupplier = false,
+  ): Promise<SearchResponse> {
     const raw = toLatinDigits(String(query || '')).trim();
     const trimmed = raw.replace(/^#+/, '').trim();
     if (!trimmed) {
@@ -257,7 +263,7 @@ export class SearchService {
     const numeric = isNumericOnly(trimmed);
     const isPhone = isPhoneNumber(trimmed);
 
-    let results = await this.runPass(trimmed, numeric, isPhone, false);
+    let results = await this.runPass(trimmed, numeric, isPhone, false, canViewPurchases, canSearchSuppliers, canSeeCost, canSeeSupplier);
 
     // لا شيء إطلاقاً؟ أعد المحاولة بتسامح إملائي (بحث نصي فقط — الأرقام
     // لا تُصحَّح، فرقم مرجع مقارب لا يعني شيئاً وقد يفتح أوردر خطأ).
@@ -267,7 +273,7 @@ export class SearchService {
       !isPhone &&
       trimmed.length >= FUZZY_MIN_LEN
     ) {
-      results = await this.runPass(trimmed, numeric, isPhone, true);
+      results = await this.runPass(trimmed, numeric, isPhone, true, canViewPurchases, canSearchSuppliers, canSeeCost, canSeeSupplier);
     }
 
     if (this.returnModel) {
@@ -286,6 +292,10 @@ export class SearchService {
     numeric: boolean,
     isPhone: boolean,
     fuzzy: boolean,
+    canViewPurchases: boolean,
+    canSearchSuppliers: boolean,
+    canSeeCost = false,
+    canSeeSupplier = false,
   ): Promise<SearchResultItem[]> {
     const ctx: ScoreCtx = {
       tokens: this.tokenizeQuery(trimmed),
@@ -298,9 +308,9 @@ export class SearchService {
       // يبدأ بـ 01 → رقم هاتف بالتأكيد: عملاء وموردون وحركات
       const [customers, supplierResults, orders, complaintResults] =
         await Promise.all([
-          this.searchCustomersByPhone(trimmed, ctx),
-          this.searchSuppliersByPhone(trimmed, ctx),
-          this.searchOrdersByPhone(trimmed, ctx),
+          this.searchCustomersByPhone(trimmed, ctx, canViewPurchases),
+          this.searchSuppliersByPhone(trimmed, ctx, canSearchSuppliers),
+          this.searchOrdersByPhone(trimmed, ctx, canViewPurchases),
           this.searchComplaintsByText(trimmed, ctx),
         ]);
       return [
@@ -315,10 +325,10 @@ export class SearchService {
       // أرقام لا تبدأ بمقدمة هاتف صالحة: رقم مرجع أوردر أو رقم تتبع بوسطة
       const [orders, complaintResults, shopifyResults, trackingResults] =
         await Promise.all([
-          this.searchOrdersByRef(trimmed, ctx),
+          this.searchOrdersByRef(trimmed, ctx, canViewPurchases),
           this.searchComplaintsByText(trimmed, ctx),
           this.searchShopifyOrdersByRef(trimmed, ctx),
-          this.searchOrdersByTracking(trimmed, ctx),
+          this.searchOrdersByTracking(trimmed, ctx, canViewPurchases),
         ]);
       // دمج نتائج رقم التتبع مع نتائج المرجع (بدون تكرار نفس الحركة)
       const seenIds = new Set(orders.map((o) => o.id));
@@ -332,10 +342,10 @@ export class SearchService {
     // نص عام
     const [products, orders, customers, supplierResults, complaintResults] =
       await Promise.all([
-        this.searchProducts(trimmed, ctx),
-        this.searchOrdersByText(trimmed, ctx),
-        this.searchCustomersByText(trimmed, ctx),
-        this.searchSuppliers(trimmed, ctx),
+        this.searchProducts(trimmed, ctx, canSeeCost, canSeeSupplier),
+        this.searchOrdersByText(trimmed, ctx, canViewPurchases),
+        this.searchCustomersByText(trimmed, ctx, canViewPurchases),
+        this.searchSuppliers(trimmed, ctx, canSearchSuppliers),
         this.searchComplaintsByText(trimmed, ctx),
       ]);
     return [
@@ -345,6 +355,11 @@ export class SearchService {
       ...supplierResults,
       ...complaintResults,
     ];
+  }
+
+  /** Apply purchase visibility at the database query boundary, before results are scored or serialized. */
+  private transactionSearchFilter(filter: Record<string, any>, canViewPurchases: boolean) {
+    return canViewPurchases ? filter : { ...filter, type: { $nin: ['مشتريات', 'مرتجع مشتريات'] } };
   }
 
   private normalizeSearchText(value: string): string {
@@ -512,9 +527,10 @@ export class SearchService {
   private async searchOrdersByRef(
     ref: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({ ...TX_ANY_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } })
+      .find(this.transactionSearchFilter({ ...TX_ANY_FILTER, ref: { $regex: `^${escapeRegex(ref)}`, $options: 'i' } }, canViewPurchases))
       .select(
         'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
@@ -539,12 +555,13 @@ export class SearchService {
   private async searchOrdersByTracking(
     trackingNo: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({
+      .find(this.transactionSearchFilter({
         ...TX_ANY_FILTER,
         bostaTrackingNumber: { $regex: `^${escapeRegex(trackingNo)}`, $options: 'i' },
-      })
+      }, canViewPurchases))
       .select(
         'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
@@ -626,9 +643,10 @@ export class SearchService {
   private async searchOrdersByPhone(
     phone: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({ ...TX_ANY_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
+      .find(this.transactionSearchFilter({ ...TX_ANY_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } }, canViewPurchases))
       .select(
         'ref client phone type total payStatus items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode notes cancelled cancelledAt cancelReason',
       )
@@ -653,9 +671,10 @@ export class SearchService {
   private async searchCustomersByPhone(
     phone: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     const transactions = await this.transactionModel
-      .find({ ...TX_ACTIVE_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } })
+      .find(this.transactionSearchFilter({ ...TX_ACTIVE_FILTER, phone: { $regex: escapeRegex(phone), $options: 'i' } }, canViewPurchases))
       .select('client phone total')
       .limit(2500)
       .lean()
@@ -666,7 +685,9 @@ export class SearchService {
   private async searchSuppliersByPhone(
     phone: string,
     ctx: ScoreCtx,
+    canSearchSuppliers: boolean,
   ): Promise<SearchResultItem[]> {
+    if (!canSearchSuppliers) return [];
     const suppliers = await this.supplierModel
       .find({ phone: { $regex: escapeRegex(phone), $options: 'i' } })
       .select('name phone address email products notes')
@@ -686,6 +707,8 @@ export class SearchService {
   private async searchProducts(
     query: string,
     ctx: ScoreCtx,
+    canSeeCost = false,
+    canSeeSupplier = false,
   ): Promise<SearchResultItem[]> {
     if (!ctx.tokens.length) return [];
     const products = await this.productModel
@@ -703,7 +726,7 @@ export class SearchService {
         [
           { v: p.name, w: 1, primary: true },
           { v: p.code, w: 0.95, primary: true },
-          { v: p.supplier, w: 0.45 },
+          ...(canSeeSupplier ? [{ v: p.supplier, w: 0.45 }] : []),
           { v: p.colors, w: 0.3 },
           // مثل الألوان: وزن منخفض حتى لا يزاحم مطابقة الاسم/الكود، لكنه يجعل
           // البحث بـ "waterproof" يصل إلى الأصناف المقاومة للماء.
@@ -720,7 +743,7 @@ export class SearchService {
         title: p.name,
         subtitle: `كود: ${p.code}`,
         icon: '🏷️',
-        meta: `بيع: ${p.sellPrice} | شراء: ${p.buyPrice}`,
+        meta: canSeeCost ? `بيع: ${p.sellPrice} | شراء: ${p.buyPrice}` : `بيع: ${p.sellPrice}`,
         imageUrl: p.imageUrl || '',
         // الأصناف الموقوفة تنزل قليلاً — لا تُخفى، فقد تكون هي المقصودة
         score:
@@ -733,10 +756,11 @@ export class SearchService {
   private async searchOrdersByText(
     query: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     if (!ctx.tokens.length) return [];
     const transactions = await this.transactionModel
-      .find(TX_ANY_FILTER)
+      .find(this.transactionSearchFilter(TX_ANY_FILTER, canViewPurchases))
       .select(
         'ref client phone type total payStatus notes items createdAt transactionDate date afterSales bostaStatusLabel bostaStatus bostaOrderId pickupStatus deliverySource bostaTrackingNumber shipmentAttempts prepChecked shipCo carrierCode cancelled cancelledAt cancelReason',
       )
@@ -762,10 +786,11 @@ export class SearchService {
   private async searchCustomersByText(
     query: string,
     ctx: ScoreCtx,
+    canViewPurchases: boolean,
   ): Promise<SearchResultItem[]> {
     if (!ctx.tokens.length) return [];
     const transactions = await this.transactionModel
-      .find(TX_ACTIVE_FILTER)
+      .find(this.transactionSearchFilter(TX_ACTIVE_FILTER, canViewPurchases))
       .select('client phone total')
       .limit(2500)
       .lean()
@@ -905,7 +930,9 @@ export class SearchService {
   private async searchSuppliers(
     query: string,
     ctx: ScoreCtx,
+    canSearchSuppliers: boolean,
   ): Promise<SearchResultItem[]> {
+    if (!canSearchSuppliers) return [];
     if (!ctx.tokens.length) return [];
     const suppliers = await this.supplierModel
       .find()

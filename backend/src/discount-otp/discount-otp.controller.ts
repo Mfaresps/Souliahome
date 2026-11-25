@@ -1,8 +1,10 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { DiscountOtpService } from './discount-otp.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('discount-otp')
@@ -193,6 +195,25 @@ export class DiscountOtpController {
     });
   }
 
+  /** «تعديل صنف / تصنيف / مجموعة بكود المدير» (Nov 25, 2026). */
+  @Post('record-edit-request')
+  async requestRecordEditOtp(
+    @Body() body: { entity?: string; id?: string; label?: string; fields?: string[]; summary?: string },
+    @Req() req: any,
+  ) {
+    const user = req.user || {};
+    const perms: string[] = user.perms || [];
+    const entity = body.entity === 'category' || body.entity === 'collection' ? body.entity : body.entity === 'product' ? 'product' : '';
+    if (!entity) throw new BadRequestException('نوع السجل غير معروف');
+    const need = entity === 'product' ? ['products-edit-otp', 'products-edit'] : ['categories-edit-otp', 'categories-edit'];
+    if (user.role !== 'admin' && !need.some(p => perms.includes(p))) throw new ForbiddenException('لا تملك صلاحية تعديل هذا السجل');
+    return this.otpService.requestRecordEditOtp({
+      entity: entity as any, id: String(body.id || ''), label: String(body.label || '').slice(0, 120),
+      fields: Array.isArray(body.fields) ? body.fields.map(String).slice(0, 60) : [], summary: String(body.summary || '').slice(0, 600),
+      requestedById: user.userId || '', requestedByName: user.name || '', requestedByUsername: user.username || '',
+    });
+  }
+
   @Post('vault-access-request')
   async requestVaultAccessOtp(@Req() req: any) {
     const user = req.user || {};
@@ -324,7 +345,9 @@ export class DiscountOtpController {
     };
   }
 
-  @Roles('admin')
+  // «سجل عمليات التحقق» tab — admins, or approvals-otp-log (PermsGuard lets admins through).
+  @UseGuards(PermsGuard)
+  @RequirePerms('approvals-otp-log')
   @Get()
   async list(
     @Query('status') status?: string,
@@ -336,7 +359,8 @@ export class DiscountOtpController {
     return this.otpService.list({ status, kind, dateFrom, dateTo, employee });
   }
 
-  @Roles('admin')
+  @UseGuards(PermsGuard)
+  @RequirePerms('approvals-otp-log')
   @Get('stats')
   async stats() {
     return this.otpService.stats();

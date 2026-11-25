@@ -38,6 +38,7 @@ import { ShopifyAdminService } from './shopify-admin.service';
 import { stampSaleLineCosts } from '../shared/line-cost.util';
 import { knownUnitCost } from '../shared/avg-cost.util';
 import { stampSaleLinePrices } from '../shared/price-offer.util';
+import { CONFIRMATION_DEFERRAL_REASONS, CONFIRMATION_DEFERRAL_LABELS, confirmationDeferralActive, orderAwaitsConfirmation } from './confirmation-deferral.util';
 import {
   approvedDepositTotal,
   computeDepositFieldsFromReceipts,
@@ -1084,6 +1085,102 @@ export class ShopifyService {
     return { success: true };
   }
 
+  /**
+   * «تأجيل التواصل» — the customer asked to be called back before confirming.
+   * Only on a pending order; never blocks confirming; reminder at `dueAt`.
+   */
+  async deferConfirmation(orderId: string, input: { dueAt?: unknown; reasonCode?: unknown; note?: unknown }, actor: { id: string; name: string }) {
+    if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
+    const dueAtMs = typeof input.dueAt === 'string' ? Date.parse(input.dueAt) : NaN;
+    const now = Date.now();
+    if (!Number.isFinite(dueAtMs) || dueAtMs <= now + 60000 || dueAtMs > now + 14 * 86400000)
+      throw new BadRequestException('اختر موعد تواصل قادمًا خلال 14 يومًا');
+    const reasonCode = typeof input.reasonCode === 'string' ? input.reasonCode : '';
+    if (!CONFIRMATION_DEFERRAL_REASONS.includes(reasonCode)) throw new BadRequestException('سبب التأجيل غير صالح');
+    const note = typeof input.note === 'string' ? input.note.replace(/[\u0000-\u001f‪-‮⁦-⁩]/g, ' ').trim().slice(0, 240) : '';
+    if (reasonCode === 'other' && note.length < 3) throw new BadRequestException('اكتب سبب التأجيل');
+    const order = await this.shopifyOrderModel.findOne({ _id: orderId, status: 'pending', cancelled: { $ne: true } });
+    if (!order) throw new BadRequestException('لا يمكن تأجيل التواصل لهذا الأوردر');
+    if (!orderAwaitsConfirmation(order)) throw new BadRequestException('تأجيل التواصل متاح للطلبات غير المؤكدة فقط');
+    const dueAt = new Date(dueAtMs).toISOString();
+    const at = new Date(now).toISOString();
+    const previous = (order as any).confirmationDeferral;
+    const state = {
+      dueAt, status: 'scheduled', reasonCode, note,
+      count: (Number(previous?.count) || 0) + 1,
+      createdAt: previous?.createdAt || at,
+      createdBy: actor.name, createdById: actor.id,
+      updatedAt: at, updatedBy: actor.name, notifiedAt: '',
+    };
+    (order as any).confirmationDeferralHistory = [...((order as any).confirmationDeferralHistory || []), {
+      action: previous && ['scheduled', 'due'].includes(previous.status) ? 'rescheduled' : 'scheduled',
+      dueAt, reasonCode, note, by: actor.name, byId: actor.id, at,
+    }].slice(-30);
+    (order as any).confirmationDeferral = state;
+    order.markModified('confirmationDeferral');
+    order.markModified('confirmationDeferralHistory');
+    await order.save();
+    // The same deferral is written into the order's confirmation follow-up as a normal comment.
+    const linked = await this.followUpsService?.recordConfirmationDeferral(order as any, new Date(dueAt),
+      reasonCode, CONFIRMATION_DEFERRAL_LABELS[reasonCode] || reasonCode, note, actor);
+    if (linked) {
+      Object.assign(state, { followUpId: linked.id, followUpResponsibleId: linked.responsibleId });
+      await this.shopifyOrderModel.updateOne({ _id: order._id, 'confirmationDeferral.dueAt': dueAt },
+        { $set: { 'confirmationDeferral.followUpId': linked.id, 'confirmationDeferral.followUpResponsibleId': linked.responsibleId } });
+    }
+    this.emit('shopify:confirmation-deferral-changed', { orderId: String(order._id), dueAt });
+    return { success: true, confirmationDeferral: state };
+  }
+
+  async cancelConfirmationDeferral(orderId: string, actor: { id: string; name: string }) {
+    if (!/^[a-f\d]{24}$/i.test(orderId)) throw new BadRequestException('Invalid order id');
+    const order = await this.shopifyOrderModel.findOne({ _id: orderId });
+    const current = (order as any)?.confirmationDeferral;
+    if (!order || !current || !['scheduled', 'due'].includes(current.status)) throw new BadRequestException('لا يوجد تأجيل تواصل نشط لهذا الأوردر');
+    const at = new Date().toISOString();
+    (order as any).confirmationDeferral = { ...current, status: 'cancelled', updatedAt: at, updatedBy: actor.name };
+    (order as any).confirmationDeferralHistory = [...((order as any).confirmationDeferralHistory || []), {
+      action: 'cancelled', dueAt: current.dueAt, by: actor.name, byId: actor.id, at,
+    }].slice(-30);
+    order.markModified('confirmationDeferral');
+    order.markModified('confirmationDeferralHistory');
+    await order.save();
+    if (current.followUpId) await this.followUpsService?.clearConfirmationDeferral(String(current.followUpId), current.dueAt, actor);
+    this.emit('shopify:confirmation-deferral-changed', { orderId: String(order._id) });
+    return { success: true };
+  }
+
+  /** At the agreed time: the employee who deferred it and the assignee are reminded, once. */
+  @Cron('*/30 * * * * *')
+  async notifyDueConfirmationDeferrals() {
+    const now = new Date();
+    const notified = { $or: [{ 'confirmationDeferral.notifiedAt': { $exists: false } }, { 'confirmationDeferral.notifiedAt': '' }, { 'confirmationDeferral.notifiedAt': null }] };
+    const due = await this.shopifyOrderModel.find({
+      status: 'pending', cancelled: { $ne: true },
+      'confirmationDeferral.status': 'scheduled',
+      'confirmationDeferral.dueAt': { $lte: now.toISOString() },
+      ...notified,
+    }).select('_id ref assignedTo confirmationDeferral').limit(100).lean();
+    for (const order of due as any[]) {
+      const d = order.confirmationDeferral;
+      const claimed = await this.shopifyOrderModel.updateOne({ _id: order._id, 'confirmationDeferral.dueAt': d.dueAt,
+        'confirmationDeferral.status': 'scheduled', ...notified },
+        { $set: { 'confirmationDeferral.status': 'due', 'confirmationDeferral.notifiedAt': now.toISOString() } });
+      if (!claimed.modifiedCount) continue;
+      // The linked follow-up reminds its own responsible employee; remind everyone else here.
+      const recipients = [...new Set([d.createdById, order.assignedTo].filter(Boolean).map(String))]
+        .filter(id => !d.followUpId || id !== String(d.followUpResponsibleId || ''));
+      if (this.notifications && recipients.length) {
+        try {
+          await this.notifications.enqueue('followup', `confirm-deferral-due:${order._id}:${d.dueAt}`, order.ref || '',
+            `shopify:${order._id}`, recipients, undefined,
+            { actionKey: 'followup-due', followupAt: d.dueAt, followupReason: 'confirmation_contact' });
+        } catch (err: any) { this.logger.warn(`Confirmation deferral reminder failed: ${err.message}`); }
+      }
+      this.emit('shopify:confirmation-deferral-changed', { orderId: String(order._id), due: true });
+    }
+  }
+
   /** Release due orders once; notification inbox/push writes are idempotent by event id. */
   @Cron('*/30 * * * * *')
   async notifyDueShippingPostponements() {
@@ -1152,7 +1249,7 @@ export class ShopifyService {
     // Share source reads across staff and filter/page changes. Receipt visibility
     // stays below the cache so one employee can never receive another's drafts.
     const [rawOrders, inventory, sales, followUps] = await cachedRead('shopify-workspace-sources', 3000, () => Promise.all([
-      this.shopifyOrderModel.find().select('-rawData -editHistory -editRequestHistory -assignmentHistory -localItemsBaseline -commentReactions -depositDecisionHistory').lean(),
+      this.shopifyOrderModel.find().select('-rawData -editHistory -editRequestHistory -assignmentHistory -localItemsBaseline -commentReactions -depositDecisionHistory -confirmationDeferralHistory').lean(),
       cachedRead('inventory', 5000, () => this.transactionsService.getInventory()),
       this.txModel.find({ type: 'مبيعات' }).select('_id ref client phone total cancelled shopifyOrderId pickupStatus bostaStatus bostaOrderId deliverySource shipCo payStatus shipmentAttempts createdAt').lean(),
       this.followUpsService?.findDashboardSummary() || Promise.resolve([]),
@@ -1228,7 +1325,7 @@ export class ShopifyService {
       if (tags.includes('confirmed') || o.confirmationApproved || o.status === 'approved') return 'easy';
       return 'attention';
     };
-    const filterKeys = ['ship-without-deposit', 'deposit-paid', 'no-deposit', 'deposit-paid-in-stock', 'stock-blocked', 'shipping-postponed'];
+    const filterKeys = ['ship-without-deposit', 'deposit-paid', 'no-deposit', 'deposit-paid-in-stock', 'stock-blocked', 'shipping-postponed', 'confirmation-deferred'];
     const matchesCard = (o: any, key: string) => {
       const block = stockBlock(o);
       if (key === 'ship-without-deposit') return !o.cancelled && !!o.shipWithoutDeposit && !recorded(o);
@@ -1238,6 +1335,7 @@ export class ShopifyService {
       if (key === 'stock-blocked') return !o.cancelled && o.status === 'pending' && !!(block.missing || block.short);
       if (key === 'shipping-postponed') return !o.cancelled && o.status === 'pending'
         && ['scheduled', 'due'].includes(o.shippingPostponement?.status);
+      if (key === 'confirmation-deferred') return confirmationDeferralActive(o);
       return true;
     };
     const matchesPanel = (o: any) => {
@@ -1279,6 +1377,8 @@ export class ShopifyService {
     const bucket = (o: any) => {
       const confirmed = shopifyConfirmationBucket(o);
       if (confirmed) return confirmed;
+      // A customer who asked to be called back is being followed up (owner, Nov 25, 2026).
+      if (confirmationDeferralActive(o)) return 'followup';
       const tickets = [...(followupById.get(String(o.shopifyOrderId || '')) || []), ...(followupByRef.get(refKey(o.ref)) || [])];
       if (tickets.some(ticket => !ticket.cancelled && !settled.has(ticket.status))) return 'followup';
       return 'open';

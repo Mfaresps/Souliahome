@@ -9,7 +9,11 @@ import {
   Query,
   UseGuards,
   Request,
+  Optional,
+  ForbiddenException,
 } from '@nestjs/common';
+import { DiscountOtpService } from '../discount-otp/discount-otp.service';
+import { changedFields } from '../shared/cost-visibility.util';
 import { CollectionsService } from './collections.service';
 import {
   CreateCollectionDto,
@@ -33,7 +37,7 @@ function actorOf(req: ReqUser): string {
 @UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('collections')
 export class CollectionsController {
-  constructor(private readonly collectionsService: CollectionsService) {}
+  constructor(private readonly collectionsService: CollectionsService, @Optional() private readonly otp?: DiscountOtpService) {}
 
   @Get()
   @RequirePerms('categories-view')
@@ -73,14 +77,23 @@ export class CollectionsController {
     return this.collectionsService.create(dto, actorOf(req));
   }
 
+  /** `categories-edit` saves directly; `categories-edit-otp` needs a manager code (Nov 25, 2026). */
   @Put(':id')
-  @RequirePerms('categories-edit')
+  @RequirePerms('categories-view')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCollectionDto,
     @Request() req: ReqUser,
   ) {
-    return this.collectionsService.update(id, dto, actorOf(req));
+    const { otpId, ...body } = dto as UpdateCollectionDto & { otpId?: string };
+    const user: any = (req as any)?.user || {}, perms: string[] = user.perms || [];
+    if (user.role === 'admin' || perms.includes('categories-edit')) return this.collectionsService.update(id, body as UpdateCollectionDto, actorOf(req));
+    if (!perms.includes('categories-edit-otp') || !this.otp) throw new ForbiddenException('ليست لديك صلاحية تعديل المجموعات');
+    const changed = changedFields(await this.collectionsService.findById(id), body as Record<string, unknown>);
+    if (!changed.length) return this.collectionsService.findById(id);
+    const release = await this.otp.consumeRecordEditOtp(String(otpId || ''), 'collection', id, changed);
+    try { return await this.collectionsService.update(id, body as UpdateCollectionDto, actorOf(req)); }
+    catch (error) { await release(); throw error; }
   }
 
   @Delete(':id')

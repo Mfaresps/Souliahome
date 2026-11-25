@@ -664,6 +664,68 @@ export class FollowUpsService implements OnModuleInit {
     return doc;
   }
 
+  /**
+   * «تأجيل التواصل» from the Shopify orders page. Writes it into the order's open confirmation
+   * follow-up (or opens one, assigned to the employee who deferred it) exactly like «تحديد موعد
+   * المتابعة»: deferredUntil + reminder + a normal comment in the thread (reactions, replies).
+   * Never throws — the deferral on the order is already saved.
+   */
+  async recordConfirmationDeferral(order: { _id: unknown; shopifyId?: unknown; ref?: string; client?: string; phone?: string },
+    until: Date, reasonCode: string, reasonText: string, note: string, actor: { id: string; name: string }): Promise<{ id: string; responsibleId: string } | null> {
+    try {
+      const ref = String(order.ref || '').replace(/^#+/, '').trim();
+      const ids = [String(order._id), String(order.shopifyId || '')].filter(Boolean);
+      const links: Record<string, unknown>[] = [{ shopifyOrderId: { $in: ids } }];
+      if (ref) links.push({ orderRef: { $in: [ref, '#' + ref] } });
+      const open = { $or: links, cancelled: { $ne: true }, status: { $nin: DONE_STATUSES }, orderOutcome: { $in: ['', null] } };
+      let existing: any = await this.model.findOne({ ...open, reason: 'عملية تأكيد الطلب', autoSource: { $ne: 'shipping-issue' } }).sort({ createdAt: -1 }).lean()
+        || await this.model.findOne({ ...open, autoSource: { $nin: ['shipping-issue', 'shipping-followup'] } }).sort({ createdAt: -1 }).lean();
+      const status = reasonCode === 'no_answer' ? 'العميل لم يرد' : reasonCode === 'consulting' ? 'العميل مازال متردد' : 'العميل أجل الطلب';
+      if (!existing) {
+        const created = await this.model.create({
+          ticketNo: await this.generateTicketNo(ref), orderRef: ref, shopifyOrderId: String(order._id),
+          clientName: order.client || '', clientPhone: order.phone || '',
+          responsibleId: actor.id, responsibleName: actor.name, reason: 'عملية تأكيد الطلب', status,
+          assignSource: 'confirmation-deferral', notified: true, comments: [],
+        });
+        existing = created.toObject();
+      }
+      const now = new Date();
+      const isConfirmation = existing.reason === 'عملية تأكيد الطلب';
+      const text = `تأجيل التواصل مع العميل: ${reasonText} — موعد المتابعة: ${until.toISOString()}${note ? ` — ${note}` : ''}`;
+      const doc = await this.model.findOneAndUpdate({ _id: existing._id, orderOutcome: { $in: ['', null] } }, {
+        $set: { deferredUntil: until, deferReason: 'confirmation_contact', deferNote: note, deferReminderSent: false,
+          escalationBaseline: until, escalationLevel: 0, ...(isConfirmation ? { status } : {}) },
+        $push: { comments: { authorId: actor.id, authorName: actor.name, kind: 'note', edited: false, contactChannel: 'phone',
+          text, createdAt: now, updatedAt: now } },
+      }, { new: true }).lean();
+      if (!doc) return null;
+      try {
+        const recipients = await this.notifications?.notifyFollowUpSchedule({ id: String(doc._id), orderRef: doc.orderRef, responsibleId: doc.responsibleId,
+          until: until.toISOString(), reason: 'confirmation_contact' }, false, actor.id, actor.name);
+        for (const recipient of recipients || []) this.presence.emitToUser(recipient, 'followup:notify', { id: String(doc._id), orderRef: doc.orderRef, reason: 'تم تحديد موعد المتابعة', fromName: actor.name });
+      } catch (err: any) { this.logger.warn(`Confirmation deferral notification failed: ${err.message}`); }
+      this.presence.emitEvent('followup:changed', { action: 'update', id: String(doc._id) });
+      return { id: String(doc._id), responsibleId: String(doc.responsibleId || '') };
+    } catch (err: any) {
+      this.logger.error(`Confirmation deferral follow-up failed: ${err.message}`);
+      return null;
+    }
+  }
+
+  /** The deferral was removed on the order: say so in the thread and drop the follow-up time it set. */
+  async clearConfirmationDeferral(followUpId: string, dueAt: string, actor: { id: string; name: string }): Promise<void> {
+    try {
+      if (!/^[a-f\d]{24}$/i.test(followUpId)) return;
+      const now = new Date();
+      const until = new Date(dueAt);
+      await this.model.updateOne({ _id: followUpId, deferredUntil: until }, { $set: { deferredUntil: null, deferReminderSent: false, escalationBaseline: now, escalationLevel: 0 } }).exec();
+      await this.model.updateOne({ _id: followUpId }, { $push: { comments: { authorId: actor.id, authorName: actor.name, kind: 'note', edited: false,
+        text: 'أُلغي تأجيل التواصل مع العميل', createdAt: now, updatedAt: now } } }).exec();
+      this.presence.emitEvent('followup:changed', { action: 'update', id: followUpId });
+    } catch (err: any) { this.logger.warn(`Clearing confirmation deferral failed: ${err.message}`); }
+  }
+
   async update(id: string, dto: UpdateFollowUpDto) {
     const existing = await this.model.findById(id).lean();
     if (existing?.orderOutcome) throw new ForbiddenException('المتابعة مغلقة بنتيجة الطلب');

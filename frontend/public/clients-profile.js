@@ -1,7 +1,8 @@
 /* Customer list and profile. All analysis comes from the complete server-side order history. */
 window.SouliaClients = (() => {
   const CLIENTS_PAGE_SIZE = 30;
-  let rows = [], loading = null, loadedAt = 0, loadedRevision = '', profile = null, serial = 0;
+  let rows = [], loading = null, loadingPage = 0, loadingQuery = '', loadedAt = 0, loadedPage = 0, loadedQuery = '', loadedRevision = '', profile = null, serial = 0;
+  let listTotal = null, listHasMore = false, serverPagedList = false;
   let account = '', dataEpoch = 0;
   let refreshTimer = 0, profileStale = false;
   const profileCache = new Map(), profileTasks = new Map(), ticketCache = new Map(), ticketTasks = new Map();
@@ -45,7 +46,7 @@ window.SouliaClients = (() => {
   function syncAccount() {
     const session = localStorage.getItem('token') || String(currentUser?._id || currentUser?.username || '');
     if (account === session) return;
-    account = session; dataEpoch++; serial++; rows = []; loading = null; loadedAt = 0; profile = null;
+    account = session; dataEpoch++; serial++; rows = []; loading = null; loadingPage = 0; loadingQuery = ''; loadedAt = 0; loadedPage = 0; loadedQuery = ''; listTotal = null; listHasMore = false; profile = null;
     profileCache.clear(); profileTasks.clear(); ticketCache.clear(); ticketTasks.clear();
     orderSummaries.clear(); clearTimeout(summaryRefreshTimer);
     selectedClientNames.clear();
@@ -92,16 +93,25 @@ window.SouliaClients = (() => {
     return `<div class="cp-empty" role="alert"><p>${e(message)}</p><button class="btn btn-outline" data-cp="${retry}">${tr('إعادة المحاولة', 'Retry')}</button></div>`;
   }
   async function load(force = false) {
-    if (loading) return loading;
-    if (!force && loadedAt && Date.now() - loadedAt < 30000 && loadedRevision === revision()) return rows;
+    const requestedQuery = String($('#clients-search')?.value || '').trim();
+    if (loading && loadingPage === clientsPage && loadingQuery === requestedQuery) return loading;
+    if (!force && loadedPage === clientsPage && loadedQuery === requestedQuery && loadedAt && Date.now() - loadedAt < 30000 && loadedRevision === revision()) return rows;
     const requestedRevision = revision();
+    const requestedPage = clientsPage;
     const epoch = dataEpoch;
-    loading = api('/clients').then(data => {
-      if (epoch !== dataEpoch) return rows;
-      if (!Array.isArray(data)) throw new Error(tr('تعذّر تحميل بيانات العملاء', 'Unable to load clients'));
-      rows = data; loadedAt = Date.now(); loadedRevision = requestedRevision;
+    loadingPage = requestedPage;
+    loadingQuery = requestedQuery;
+    const params = new URLSearchParams({ page: String(requestedPage) });
+    if (requestedQuery) params.set('q', requestedQuery);
+    loading = api('/clients?' + params.toString()).then(data => {
+      if (epoch !== dataEpoch || requestedPage !== clientsPage || requestedQuery !== String($('#clients-search')?.value || '').trim()) return rows;
+      const envelope = Array.isArray(data) ? { rows: data, total: data.length, hasMore: false } : data;
+      if (!Array.isArray(envelope?.rows)) throw new Error(tr('Unable to load clients', 'Unable to load clients'));
+      rows = envelope.rows; listTotal = Number.isFinite(envelope.total) ? envelope.total : null;
+      listHasMore = !!envelope.hasMore; serverPagedList = !Array.isArray(data);
+      loadedAt = Date.now(); loadedPage = requestedPage; loadedQuery = requestedQuery; loadedRevision = requestedRevision;
       return rows;
-    }).finally(() => { if (epoch === dataEpoch) loading = null; });
+    }).finally(() => { if (epoch === dataEpoch && loadingPage === requestedPage && loadingQuery === requestedQuery) loading = null; });
     return loading;
   }
   function showLoading() {
@@ -117,6 +127,8 @@ window.SouliaClients = (() => {
   async function renderList() {
     if (!$('#clients-list-view')) return;
     syncAccount();
+    const sortControl = $('#clients-order-filter');
+    if (sortControl) sortControl.hidden = !isAdmin();
     const key = routeKey();
     if (key) {
       view(true);
@@ -125,18 +137,22 @@ window.SouliaClients = (() => {
       return;
     }
     serial++; profile = null; view(false);
+    // A restored page number (Back) never reaches page 2+ without «تصفح قائمة العملاء كاملة».
+    if (clientsPage > 1 && typeof _canBrowseClients === 'function' && !_canBrowseClients()) clientsPage = 1;
     const host = $('#clients-grid');
     if (!loadedAt && !rows.length) {
       showLoading();
     }
     const epoch = dataEpoch;
+    const requestedPage = clientsPage;
+    const requestedQuery = String($('#clients-search')?.value || '').trim();
     try { await load(); }
     catch (error) { if (epoch === dataEpoch) { host.innerHTML = failure(error.message); host.setAttribute('aria-busy', 'false'); } return; }
     if (epoch === dataEpoch) host.setAttribute('aria-busy', 'false');
-    if (epoch !== dataEpoch || currentPage !== 'clients' || routeKey()) return;
+    if (epoch !== dataEpoch || requestedPage !== clientsPage || requestedQuery !== String($('#clients-search')?.value || '').trim() || currentPage !== 'clients' || routeKey()) return;
     const tokens = normalizeUiSearch($('#clients-search')?.value || '').split(/\s+/).filter(Boolean);
     const debt = $('#clients-has-remaining')?.value;
-    const sort = $('#clients-order-filter')?.value;
+    const sort = isAdmin() ? $('#clients-order-filter')?.value : 'orders';
     let data = rows.filter(p => {
       const blob = normalizeUiSearch([p.name, ...p.phones, p.email].join(' '));
       return tokens.every(token => blob.includes(token)) && (debt === '1' ? p.money.remaining > 0 : debt === '0' ? p.money.remaining <= 0
@@ -144,8 +160,8 @@ window.SouliaClients = (() => {
     });
     data.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : sort === 'total' ? b.money.total - a.money.total
       : sort === 'remaining' ? b.money.remaining - a.money.remaining : b.stats.orders - a.stats.orders);
-    clientsPage = Math.max(1, Math.min(clientsPage, Math.ceil(data.length / CLIENTS_PAGE_SIZE) || 1));
-    const pageRows = data.slice((clientsPage - 1) * CLIENTS_PAGE_SIZE, clientsPage * CLIENTS_PAGE_SIZE);
+    if (listTotal !== null) clientsPage = Math.max(1, Math.min(clientsPage, Math.ceil(listTotal / CLIENTS_PAGE_SIZE) || 1));
+    const pageRows = serverPagedList ? data : data.slice((clientsPage - 1) * CLIENTS_PAGE_SIZE, clientsPage * CLIENTS_PAGE_SIZE);
     const isList = $('#clients-view-mode')?.value === 'list';
     host.className = isList ? 'cp-list' : 'cp-client-grid'; host.style.display = '';
     const select = p => `<input type="checkbox" data-cp-select="${e(p.key)}" aria-label="${e(tr('تحديد ', 'Select ') + p.name)}" ${selectedClientNames.has(p.key) ? 'checked' : ''}>`;
@@ -154,7 +170,13 @@ window.SouliaClients = (() => {
     host.innerHTML = !pageRows.length ? `<div class="cp-empty">${tr('لا يوجد عملاء مطابقون', 'No matching clients')}</div>` : isList
       ? `<div class="cp-table-scroll"><table class="cp-table"><thead><tr><th></th><th>${tr('العميل', 'Client')}</th><th>${tr('التقييم', 'Assessment')}</th><th>${tr('نجاح الاستلام', 'Delivery success')}</th><th>${tr('المتبقي', 'Due')}</th></tr></thead><tbody>${pageRows.map(p => `<tr><td>${select(p)}</td><td>${name(p)}<small><bdi>${e(p.phone || p.email || '—')}</bdi></small></td><td>${badge(p)}</td><td>${rate(p)}</td><td>${fmtJ(p.money.remaining)}</td></tr>`).join('')}</tbody></table></div>`
       : pageRows.map(p => `<article class="cp-client-card" data-cp-card="${e(p.key)}"><div class="cp-card-top"><span class="cp-avatar" aria-hidden="true">${e(p.name.slice(0, 1))}</span><div>${name(p)}<small><bdi>${e(p.phone || p.email || tr('بدون بيانات تواصل', 'No contact details'))}</bdi></small></div>${select(p)}</div>${badge(p)}<footer>${tr('آخر طلب', 'Last order')} · ${e(fmtDate(p.lastOrder))}</footer></article>`).join('');
-    renderPagination('clients-pagination', data.length, clientsPage, CLIENTS_PAGE_SIZE, 'setClientsPage');
+    const pagination = $('#clients-pagination');
+    if (listTotal !== null) renderPagination('clients-pagination', listTotal, clientsPage, CLIENTS_PAGE_SIZE, 'setClientsPage');
+    else if (pagination) {
+      // Without «تصفح قائمة العملاء كاملة» only page 1 is readable; «›» stays to explain why (privacy notice).
+      const more = listHasMore ? `<button class="cp-private-lock" onclick="setClientsPage(2)" title="${e(tr('صفحات العملاء محمية', 'Client pages are private'))}" aria-label="${e(tr('صفحات العملاء محمية', 'Client pages are private'))}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button><span class="cp-private-hint"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>${tr('الصفحات الأخرى محمية — ابحث عن العميل بالاسم أو الهاتف', 'Other pages are private — search for the client by name or phone')}</span>` : '';
+      pagination.innerHTML = `<div class="pagination"><button disabled>‹</button><button class="active" onclick="setClientsPage(1)">1</button>${more}</div>`;
+    }
     updateClientsSelBar();
     if (restoreListScroll) { restoreListScroll = false; requestAnimationFrame(() => window.scrollTo(0, listScroll)); }
   }

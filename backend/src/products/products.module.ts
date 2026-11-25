@@ -1,3 +1,4 @@
+import { DiscountOtpModule } from '../discount-otp/discount-otp.module';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema } from './schemas/product.schema';
@@ -24,6 +25,7 @@ import { MentionsModule } from '../mentions/mentions.module';
     ]),
     AuthModule,
     MentionsModule,
+    DiscountOtpModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService, ProductAnalyticsService, ProductCostService],

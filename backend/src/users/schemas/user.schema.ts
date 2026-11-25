@@ -60,6 +60,42 @@ export class User {
   @Prop({ default: '' })
   lockedBy: string; // 'system' or admin userId
 
+  // Temporary sign-in pause after repeated wrong passwords (auth/login-lockout.util.ts).
+  // The account stays active; only new sign-ins wait until `loginLockedUntil`.
+  @Prop({ type: Date, default: null })
+  loginLockedUntil: Date | null;
+
+  @Prop({ type: Date, default: null })
+  loginLockStartedAt: Date | null;
+
+  @Prop({ type: Number, default: 0 })
+  loginLockLevel: number;
+
+  // First-sign-in welcome + tour («جولة تعريفية»). True only for accounts created from the user window
+  // after Nov 24, 2026 — existing accounts never see it. Cleared by POST /users/me/onboarding-done.
+  @Prop({ type: Boolean, default: false })
+  onboardingPending: boolean;
+
+  @Prop({ type: Date, default: null })
+  onboardedAt: Date | null;
+
+  // Temporary suspension for tampering (abuse-guard, Nov 25, 2026). Enforced by JwtStrategy on every
+  // request (423). Cleared by «فك الإيقاف» (UsersService.unlockAccount).
+  @Prop({ type: Date, default: null })
+  suspendedUntil: Date | null;
+
+  @Prop({ type: Date, default: null })
+  suspendedAt: Date | null;
+
+  @Prop({ type: Number, default: 0 })
+  suspensionLevel: number;
+
+  @Prop({ type: String, default: '' })
+  suspensionReason: string;
+
+  @Prop({ type: String, default: '' })
+  suspensionDetail: string;
+
   // TOTP 2FA fields
   @Prop({ default: null })
   totpSecret: string;

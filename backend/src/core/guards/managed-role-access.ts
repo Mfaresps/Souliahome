@@ -12,7 +12,7 @@
  * ⚠ Keep READERS in step with `_bootMayLoad` in index.html.
  */
 export const MANAGED_READERS: Record<string, string[]> = {
-  '/suppliers': ['suppliers','products','purchase-create','purchase-view','categories-link-suppliers','approvals'],
+  '/suppliers': ['suppliers','products-supplier-view','purchase-create','purchase-view','purchase-edit-price','categories-link-suppliers','approvals'],
   '/expenses': ['expenses','reports','approvals'],
   '/purchase-orders': ['purchase-view','purchase-create','suppliers-tab-pos'],
   '/supplier-returns': ['suppliers-returns','suppliers-tab-sreturns','approvals'],
@@ -43,9 +43,10 @@ export function managedRoleRequiredPermissions(path: string, method: string, bod
   if (route === '/products/offers/all') return ['promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit'];
   if (/^\/products\/[^/]+\/offers(?:\/|$)/.test(route)) return method === 'GET' ? ['products','inventory','promotions-view','promotions-offers'] : ['promotions-offers'];
   if (starts('/products')) {
-    if (route.endsWith('/request-edit')) return ['products','inventory'];
+    if (route.endsWith('/request-edit')) return ['products-edit','products-edit-otp'];
     if (method === 'DELETE' || route.endsWith('/bulk-delete') || route.endsWith('/batch-delete')) return ['products-delete'];
-    if (method === 'PUT' || method === 'PATCH' || route.endsWith('/bulk-update')) return ['products-edit'];
+    if (route.endsWith('/bulk-update')) return ['products-edit'];
+    if (method === 'PUT' || method === 'PATCH') return ['products-edit','products-edit-otp','products-price-sell'];
     if (method === 'POST') return ['products-create'];
     return read ? null : ['products','inventory']; // the catalogue is read by every order screen
   }
@@ -57,7 +58,7 @@ export function managedRoleRequiredPermissions(path: string, method: string, bod
   }
   if (starts('/categories')) {
     if (method === 'POST') return ['categories-create'];
-    if (method === 'PUT' || method === 'PATCH') return ['categories-edit'];
+    if (method === 'PUT' || method === 'PATCH') return ['categories-edit','categories-edit-otp'];
     if (method === 'DELETE') return ['categories-delete'];
     return ['categories-view'];
   }

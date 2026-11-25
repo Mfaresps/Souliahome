@@ -430,6 +430,31 @@ export class ShopifyOrder {
   @Prop({ type: [Object], default: [] })
   shippingPostponementHistory: Array<Record<string, any>>;
 
+  /**
+   * «تأجيل التواصل»: the customer has NOT confirmed yet and asked to be contacted later.
+   * Different from shippingPostponement (a confirmed customer who wants delivery later):
+   * it never blocks confirmation, and it ends by itself once the order leaves «pending».
+   */
+  @Prop({ type: Object, default: null })
+  confirmationDeferral: {
+    dueAt: string;
+    status: 'scheduled' | 'due' | 'cancelled';
+    reasonCode: string;
+    note?: string;
+    count: number;
+    createdAt: string;
+    createdBy: string;
+    createdById: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    notifiedAt?: string;
+    followUpId?: string;
+    followUpResponsibleId?: string;
+  } | null;
+
+  @Prop({ type: [Object], default: [] })
+  confirmationDeferralHistory: Array<Record<string, any>>;
+
   /** Local structured customer reason and shipping exception; never derived from Shopify notes. */
   @Prop({ type: Object, default: null })
   depositDecision: Record<string, any> | null;

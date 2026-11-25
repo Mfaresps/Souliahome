@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { PermsGuard } from '../core/guards/perms.guard';
 import { RequirePerms } from '../core/decorators/perms.decorator';
 import { PurchaseReceivingService } from './purchase-receiving.service';
+import { canSeeSupplier, maskPurchaseOrders } from '../shared/cost-visibility.util';
 
 @UseGuards(JwtAuthGuard, PermsGuard)
 @Controller('purchase-orders')
@@ -31,18 +32,20 @@ export class PurchaseOrdersController {
   receipt(@Param('id') id: string) { return this.receiving.summary(id); }
 
   @Get()
-  findAll() {
-    return this.poService.findAll();
+  async findAll(@Req() req: any) {
+    return maskPurchaseOrders(await this.poService.findAll(), req.user);
   }
 
   @Get('supplier/:supplierId')
-  findBySupplier(@Param('supplierId') supplierId: string) {
-    return this.poService.findBySupplier(supplierId);
+  async findBySupplier(@Param('supplierId') supplierId: string, @Req() req: any) {
+    // Listing by supplier names the supplier — refused without supplier view.
+    if (!canSeeSupplier(req.user)) return [];
+    return maskPurchaseOrders(await this.poService.findBySupplier(supplierId), req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.poService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return maskPurchaseOrders(await this.poService.findById(id), req.user);
   }
 
   @Post()

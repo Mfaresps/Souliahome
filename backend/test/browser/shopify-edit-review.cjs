@@ -91,11 +91,12 @@ fs.mkdirSync(output, { recursive: true });
       assert.equal(review.actions, 2); assert.equal(review.overflow, false);
       await page.screenshot({ path: path.join(output, `admin-review-${width}.png`) });
       await page.evaluate(() => {
-        closeModal(); navigateTo('approvals'); _apprOpenRows.add('shopify-edit:order-1'); renderApprovals();
+        closeModal(); navigateTo('approvals'); renderApprovals(); openApprWindow('shopify-edit:order-1');
       });
       await settle();
-      assert.equal(await page.$$eval('#appr-tbody .edit-diff-product', items => items.length), 2);
+      assert.equal(await page.$$eval('#appr-win .edit-diff-product', items => items.length), 2);
       await page.screenshot({ path: path.join(output, `admin-approvals-${width}.png`) });
+      await page.evaluate(() => closeApprWindow());
       await page.evaluate(() => {
         currentUser = { _id: 'staff-1', role: 'staff', perms: ['shopify-orders', 'movements'] }; navigateTo('shopify-orders');
       });

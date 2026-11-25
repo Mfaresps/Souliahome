@@ -135,6 +135,11 @@ export class CreateProductDto {
 }
 
 export class UpdateProductDto {
+  /** Manager code for an edit by `products-edit-otp` (consumed by the controller, never stored). */
+  @IsOptional()
+  @IsString()
+  readonly otpId?: string;
+
   @IsString() @Matches(/^(?:|[a-f\d]{24})$/i) @IsOptional()
   readonly storageLocationId?: string;
   @IsString()

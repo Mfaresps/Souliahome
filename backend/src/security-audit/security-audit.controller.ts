@@ -1,3 +1,4 @@
+import { AbuseGuardService } from '../abuse-guard/abuse-guard.service';
 import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { SecurityAuditService } from './security-audit.service';
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
@@ -49,7 +50,7 @@ export class SecurityAuditController {
         try {
           attempts = await this.auditService.findLockoutAttempts(
             u._id.toString(),
-            (u as any).lockedAt ?? null,
+            (u as any).lockedAt ?? (u as any).loginLockStartedAt ?? null,
           );
         } catch {
           attempts = [];
@@ -80,6 +81,7 @@ export class SecurityAuditController {
   ) {
     const admin = req.user;
     const user = await this.usersService.unlockAccount(userId, admin.userId);
+    AbuseGuardService.instance?.onLifted(userId); // their open screens leave the suspension notice
 
     await this.auditService.log({
       userId,

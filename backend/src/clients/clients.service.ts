@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { buildClientProfiles, clientCode, clientPhone, shopifyContact } from './client-profile.util';
+import { toLatinDigits } from '../shared/digits.util';
 
 const COMMON = '_id client phone customerEmail shopifyCustomerId ref total deposit remaining date transactionDate createdAt shopifyCreatedAt '
   + 'cancelled payStatus cancelReason cancelReasonCode shippingAddress shippingCity shippingGov';
@@ -62,8 +63,25 @@ export class ClientsService {
         emailSource: hasOverride ? 'manual' : p.email ? 'shopify' : '' };
     });
   }
-  async list() {
-    return (await this.profiles()).map(({ history, addresses, returns, emails, ...profile }) => profile);
+  async list(page = 1, includeTotal = false, query = '') {
+    const pageSize = 30;
+    let profiles = (await this.profiles())
+      .map(({ history, addresses, returns, emails, ...profile }) => profile)
+      .sort((a: any, b: any) => (Number(b.stats?.orders) || 0) - (Number(a.stats?.orders) || 0));
+    const tokens = toLatinDigits(String(query || '')).normalize('NFKC').trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    if (tokens.length) profiles = profiles.filter((profile: any) => {
+      const searchable = toLatinDigits([profile.name, ...(profile.phones || []), profile.phone, profile.email]
+        .filter(Boolean).join(' ')).normalize('NFKC').toLocaleLowerCase();
+      return tokens.every(token => searchable.includes(token));
+    });
+    const rows = profiles.slice((page - 1) * pageSize, page * pageSize);
+    return {
+      rows,
+      page,
+      pageSize,
+      hasMore: page * pageSize < profiles.length,
+      ...(includeTotal ? { total: profiles.length } : {}),
+    };
   }
   async profile(key: string) {
     return this.resolveProfile(await this.profiles(), key);

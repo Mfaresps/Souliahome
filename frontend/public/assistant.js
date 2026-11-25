@@ -265,7 +265,7 @@
   async function loadDaily(force) {
     if (!admin() || (!force && Date.now() - dailyAt < 30 * 60_000)) return;
     dailyAt = Date.now();
-    try { daily = await api('/assistant/daily-status'); syncBadge(); if (state.open && !state.msgs.length) renderMsgs(false); } catch (_) { dailyAt = 0; }
+    try { daily = await api('/assistant/daily-status'); if (state.open) markDailySeen(); else syncBadge(); if (state.open && !state.msgs.length) renderMsgs(false); } catch (_) { dailyAt = 0; }
   }
   function syncBadge() {
     const b = document.getElementById('ai-hdr-btn');
@@ -414,6 +414,8 @@
       requestAnimationFrame(() => p.classList.add('is-open'));
       loadPopular();
       loadDaily(false);
+      // Opening the panel shows today's report card, so the header counter has been seen.
+      markDailySeen();
       document.body.classList.add('ai-open');
       syncBtn();
     }

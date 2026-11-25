@@ -25,6 +25,8 @@ export const ACTIONS: Record<string, [string, string]> = {
   otp_violation: ['فشل التحقق من OTP', 'OTP verification failed'], vault_violation: ['محاولة دخول الخزنة', 'Cash register access violation'],
   unauthorized_access: ['محاولة وصول غير مصرح', 'Unauthorized access'], settings_tampering: ['محاولة تعديل إعدادات', 'Settings access violation'],
   account_unlocked: ['إلغاء قفل حساب', 'Account unlocked'], export_excel: ['تصدير بيانات', 'Data export'],
+  bulk_browsing: ['تصفح جماعي مشتبه به', 'Suspected bulk browsing'],
+  account_suspended: ['إيقاف حساب موظف مؤقتًا', 'Employee suspended'], abuse_alert: ['نشاط مشبوه', 'Suspicious activity'],
 };
 export function actionLabel(key: string | undefined, language: 'ar' | 'en') {
   return (ACTIONS[key || ''] || ['إجراء بالنظام', 'System action'])[language === 'en' ? 1 : 0];

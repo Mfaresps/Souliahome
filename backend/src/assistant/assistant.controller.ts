@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nest
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
+import { PermsGuard } from '../core/guards/perms.guard';
+import { RequirePerms } from '../core/decorators/perms.decorator';
 import { AssistantService } from './assistant.service';
 
 /**
@@ -9,17 +11,19 @@ import { AssistantService } from './assistant.service';
  * permissions inside the service (a refused topic says so — it never answers 0).
  * ⚠ `review` is declared before `:id/wrong` — Nest matches in declaration order.
  */
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermsGuard)
 @Controller('assistant')
 export class AssistantController {
   constructor(private readonly service: AssistantService) {}
 
   @Post('ask')
+  @RequirePerms('assistant')
   ask(@Req() req: any, @Body() body: any) {
     return this.service.ask(req.user, body || {});
   }
 
   @Get('popular')
+  @RequirePerms('assistant')
   popular() {
     return this.service.popular();
   }
@@ -38,6 +42,7 @@ export class AssistantController {
   }
 
   @Post(':id/wrong')
+  @RequirePerms('assistant')
   wrong(@Req() req: any, @Param('id') id: string) {
     return this.service.markWrong(req.user, id);
   }
