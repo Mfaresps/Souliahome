@@ -17826,21 +17826,21 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <form id="login-form" onsubmit="event.preventDefault();doLogin()" novalidate>
   <div class="lfp-header">
     <span class="lfp-logo-wrap"><img src="/soulia-startup-flat.svg" alt="Soulia" class="lfp-logo" draggable="false"></span>
-    <h1 class="lfp-title" data-i18n="loginWelcome">Welcome back</h1>
-    <p class="lfp-sub" data-i18n="loginSubtitle">Sign in to continue to your account</p>
+    <h1 class="lfp-title">Welcome back</h1>
+    <p class="lfp-sub">Sign in to continue to your account</p>
   </div>
 
   <div id="login-error" role="alert" aria-live="polite"></div>
 
   <div class="lfp-field">
-    <label for="login-user" data-i18n="loginUsername">Username</label>
-    <input type="text" id="login-user" placeholder="Enter your username" autocomplete="username" name="username" required autocapitalize="none" spellcheck="false" enterkeyhint="next" data-i18n-placeholder="loginUsernamePh" aria-describedby="login-error" oninput="clearLoginError()" onkeydown="if(event.key==='Enter'&&!this.form.querySelector('#login-pass').value){event.preventDefault();qs('#login-pass').focus()}">
+    <label for="login-user">Username</label>
+    <input type="text" id="login-user" placeholder="Enter your username" autocomplete="username" name="username" required autocapitalize="none" spellcheck="false" enterkeyhint="next"aria-describedby="login-error" oninput="clearLoginError()" onkeydown="if(event.key==='Enter'&&!this.form.querySelector('#login-pass').value){event.preventDefault();qs('#login-pass').focus()}">
   </div>
 
   <div class="lfp-field">
-    <label for="login-pass" data-i18n="loginPassword">Password</label>
+    <label for="login-pass">Password</label>
     <div class="lfp-pass-wrap">
-      <input type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password" style="width:100%;box-sizing:border-box" name="password" required enterkeyhint="go" data-i18n-placeholder="loginPasswordPh" aria-describedby="login-error login-caps-warning" oninput="clearLoginError()" onkeyup="loginCapsLock(event)" onkeydown="loginCapsLock(event)" onblur="qs('#login-caps-warning').hidden=true">
+      <input type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password" style="width:100%;box-sizing:border-box" name="password" required enterkeyhint="go"aria-describedby="login-error login-caps-warning" oninput="clearLoginError()" onkeyup="loginCapsLock(event)" onkeydown="loginCapsLock(event)" onblur="qs('#login-caps-warning').hidden=true">
       <button type="button" id="login-pass-toggle" class="login-pass-toggle" onclick="toggleLoginPassword()" title="Show password" aria-label="Show password" aria-pressed="false" aria-controls="login-pass">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="stroke:currentColor">
           <path d="M2 2L22 22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -17851,7 +17851,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
   </div>
 
-  <p id="login-caps-warning" data-i18n="loginCapsLock" role="status" hidden>Caps Lock is on</p>
+  <p id="login-caps-warning" role="status" hidden>Caps Lock is on</p>
 
   <div class="lfp-row">
     <label class="lfp-remember" for="login-remember">
@@ -17859,14 +17859,14 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <input type="checkbox" id="login-remember" onchange="updateRememberBox(this.checked)">
         <span id="login-remember-box"></span>
       </span>
-      <span data-i18n="loginRemember">Remember me</span>
+      <span>Remember me</span>
     </label>
-    <span id="login-saved-badge" style="display:none;align-items:center;gap:5px"><span data-i18n="loginSaved">Saved</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <span id="login-saved-badge" style="display:none;align-items:center;gap:5px"><span>Saved</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </div>
 
-  <button type="submit" class="lfp-btn-login" aria-busy="false"><span id="login-submit-label" data-i18n="loginSignIn">Sign In</span></button>
+  <button type="submit" class="lfp-btn-login" aria-busy="false"><span id="login-submit-label">Sign In</span></button>
 
-  <button type="button" class="lfp-forgot" onclick="openForgotPassword()"><span data-i18n="loginForgot">Forgot password?</span></button>
+  <button type="button" class="lfp-forgot" onclick="openForgotPassword()"><span>Forgot password?</span></button>
 </form>
 
   <!-- Mobile-only: inline quote bar at bottom -->
@@ -32717,7 +32717,7 @@ function applyLangAttributes(root = document) {
   });
 }
 function applyLang() {
-  qs('#login-form')?.setAttribute('dir', currentLang === 'en' ? 'ltr' : 'rtl');
+  qs('#login-form')?.setAttribute('dir', 'ltr'); // the login form is English in every language
   applyLangAttributes();
   document.documentElement.lang = currentLang === 'en' ? 'en' : 'ar';
   document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
@@ -35798,7 +35798,7 @@ async function doLogin() {
   const btn = qs('.lfp-btn-login');
   const submitLabel = qs('#login-submit-label');
   if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
-  if (submitLabel) submitLabel.textContent = t('loginSigningIn');
+  if (submitLabel) submitLabel.textContent = 'Signing in…';
   errEl.style.display = 'none';
 
   const rememberMe = qs('#login-remember')?.checked;
@@ -35833,7 +35833,7 @@ async function doLogin() {
     currentUser = data.user;
     await showApp();
   } catch (e) {
-    const msg = e.message || t('loginErrWrong');
+    const msg = e.message || 'Invalid credentials';
     if (msg.includes('🔒')) {
       _showLockedAccountBanner(msg);
       errEl.style.display = 'none';
@@ -35845,7 +35845,7 @@ async function doLogin() {
   } finally {
     _loginSubmitting = false;
     if (btn) { btn.disabled = false; btn.setAttribute('aria-busy', 'false'); }
-    if (submitLabel) submitLabel.textContent = t('loginSignIn');
+    if (submitLabel) submitLabel.textContent = 'Sign In';
   }
 }
 
