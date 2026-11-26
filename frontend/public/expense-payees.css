@@ -1,0 +1,135 @@
+/* «الجهات المحفوظة» in the expense form — expense-payees.js. App tokens only, so dark mode follows. */
+.xp .xp-sub { font-size: .78rem; color: var(--muted); }
+.xp .xp-label { display: block; font-size: .82rem; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
+.xp .xp-link { background: none; border: 0; padding: 0; color: var(--primary); cursor: pointer; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.xp .xp-link.is-danger { color: var(--red, #dc2626); margin-inline-start: auto; }
+.xp .xp-msg { font-size: .8rem; margin-top: 6px; }
+.xp .xp-msg.is-error { color: var(--red, #dc2626); }
+.xp .xp-skel { height: 42px; border-radius: 10px; background: linear-gradient(90deg, var(--bg-alt) 25%, var(--border) 50%, var(--bg-alt) 75%); background-size: 200% 100%; animation: xpSkel 1.2s infinite linear; }
+@keyframes xpSkel { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .xp .xp-skel { animation: none; } }
+
+/* search + list */
+.xp .xp-search { position: relative; }
+.xp #xp-q { width: 100%; box-sizing: border-box; }
+.xp .xp-list { position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 30; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 28px rgba(15, 23, 42, .14); max-height: 260px; overflow-y: auto; padding: 4px; }
+.xp .xp-list[hidden] { display: none; }
+.xp .xp-opt { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: .88rem; }
+.xp .xp-opt.is-active, .xp .xp-opt:hover { background: var(--primary-pale, var(--bg-alt)); }
+.xp .xp-opt.is-add { color: var(--primary); font-weight: 600; }
+.xp .xp-opt.is-empty { color: var(--muted); cursor: default; }
+.xp .xp-recent { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.xp .xp-chip { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 4px 12px; font-size: .8rem; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xp .xp-chip:hover, .xp .xp-chip:focus-visible { border-color: var(--primary); color: var(--primary); }
+.xp .xp-empty-hint { margin-top: 8px; }
+/* an active account whose salary is not recorded yet */
+.xp .xp-chip.is-new { border-style: dashed; }
+.xp .xp-emps { max-height: 112px; overflow-y: auto; }
+
+/* selected party */
+.xp .xp-sel { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-alt); }
+.xp .xp-sel.is-archived { border-style: dashed; }
+.xp .xp-ico { width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); color: var(--primary); flex-shrink: 0; border: 1px solid var(--border); }
+.xp .xp-ico svg, .xp .xp-form-head svg { width: 18px; height: 18px; }
+.xp .xp-sel-body { flex: 1; min-width: 0; }
+.xp .xp-sel-body b { font-size: .95rem; }
+.xp .xp-sel-body .xp-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xp .xp-tag { margin-inline-start: 6px; font-size: .7rem; padding: 1px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+.xp .xp-sel-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.xp .xp-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 5px 12px; font-size: .8rem; cursor: pointer; }
+.xp .xp-btn:hover, .xp .xp-btn:focus-visible { border-color: var(--primary); color: var(--primary); }
+
+/* inline add / edit form */
+.xp .xp-form { border: 1px solid var(--primary); border-radius: 12px; padding: 12px; background: var(--surface); }
+.xp .xp-form-head { display: flex; align-items: center; gap: 8px; color: var(--primary); margin-bottom: 10px; font-size: .9rem; }
+.xp .xp-form-head b { color: var(--text); }
+.xp .xp-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.xp .xp-form-grid .form-group { margin: 0; }
+.xp .xp-span { grid-column: 1 / -1; }
+.xp .xp-amt { position: relative; }
+.xp .xp-amt input { padding-inline-end: 42px; }
+.xp .xp-amt span { position: absolute; inset-inline-end: 12px; top: 50%; transform: translateY(-50%); font-size: .72rem; font-weight: 600; color: var(--muted); }
+.xp .xp-form-acts { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+/* segmented choices (platform, cycle, period) */
+.xp .xp-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.xp .xp-seg-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 12px; font-size: .8rem; cursor: pointer; width: auto; min-height: 0; }
+.xp .xp-seg-btn:hover { border-color: var(--primary); }
+.xp .xp-seg-btn.is-on { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* Dark --primary is a light grey (#a3a3a3): white on it is unreadable. */
+body.dark-mode .xp .xp-seg-btn.is-on { color: #171717; }
+.xp .xp-period-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.xp .xp-period-row label { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted); }
+.xp .xp-period-row input { width: auto; }
+.xp .xp-period-sum { margin-top: 8px; font-size: .84rem; color: var(--text); }
+.xp .xp-ahead { display: inline-block; margin-inline-start: 8px; padding: 1px 9px; border-radius: 999px; font-size: .74rem; font-weight: 600; background: #e0f2fe; color: #075985; }
+body.dark-mode .xp .xp-ahead { background: rgba(56, 189, 248, .16); color: #7dd3fc; }
+.xp .xp-period-row input[type=month], .xp .xp-period-row input[type=date] { min-width: 150px; height: 38px; padding: 0 10px; }
+.xp .xp-range-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer; width: auto; }
+.xp .xp-range-btn svg { color: var(--primary); flex-shrink: 0; }
+.xp .xp-range-btn small { color: var(--muted); font-weight: 500; font-size: .76rem; margin-inline-start: 6px; }
+.xp .xp-range-btn:hover, .xp .xp-range-btn:focus-visible { border-color: var(--primary); }
+
+.xp .xp-save-amount { margin-top: 12px; font-size: .84rem; }
+.xp .xp-save-amount[hidden] { display: none; }
+.xp .xp-save-amount label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.xp .xp-save-amount input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; margin: 0; }
+.xp .xp-title-preview { margin-top: 10px; }
+.xp .xp-title-preview:empty { display: none; }
+
+.xp .xp-msg.is-warn { color: #b45309; }
+
+/* ── salary details («تفاصيل المرتب») ── */
+.xp .xp-sal { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--bg-alt); }
+.xp .xp-sal.is-off { background: none; border-style: dashed; padding: 10px 12px; }
+.xp .xp-sal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: .88rem; }
+.xp .xp-sal-head .xp-link { font-size: .78rem; font-weight: 500; color: var(--muted); }
+.xp .xp-sal-row { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.xp .xp-sal-f { display: flex; flex-direction: column; gap: 4px; font-size: .78rem; color: var(--muted); min-width: 140px; flex: 1 1 150px; }
+.xp .xp-sal-f .xp-amt input { width: 100%; font-variant-numeric: tabular-nums; direction: ltr; text-align: end; }
+.xp .xp-sal-f.is-neg .xp-amt input { color: var(--red, #dc2626); }
+.xp .xp-sal-row.is-points .xp-sal-f { flex: 1 1 110px; min-width: 100px; }
+.xp .xp-sal-op { padding-bottom: 10px; color: var(--muted); font-weight: 600; }
+.xp .xp-sal-out { display: flex; flex-direction: column; gap: 4px; font-size: .78rem; color: var(--muted); min-width: 120px; flex: 1 1 120px; padding-bottom: 8px; }
+.xp .xp-sal-out b { color: var(--text); font-size: .95rem; }
+.xp .xp-sal-note { flex: 2 1 200px; width: auto; min-width: 0; }
+.xp .xp-sal-fetch { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.xp .xp-sal-fetch .xp-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.xp .xp-sal-total { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: .9rem; }
+.xp .xp-sal-total b { font-size: 1.15rem; color: var(--primary); }
+.xp .xp-sal [hidden] { display: none; }
+
+/* salary lines in the expense details window */
+.xp-dsal { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.xp-dsal-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 7px 12px; font-size: .86rem; border-bottom: 1px solid var(--border); }
+.xp-dsal-row:last-child { border-bottom: none; }
+.xp-dsal-row small { display: block; color: var(--muted); font-size: .74rem; }
+.xp-dsal-row b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.xp-dsal-row.is-neg b { color: var(--red, #dc2626); }
+.xp-dsal-row.is-total { background: var(--primary-pale); font-weight: 700; }
+
+/* ── expense form: bigger formatted amount, its value in words, the app's dropdowns ── */
+.exp-amt-wrap { position: relative; }
+/* The field is always LTR (a number): figure on the left, «EGP» fixed at its right end. */
+.exp-amt-input { font-size: 1.35rem !important; font-weight: 600; letter-spacing: .01em; font-variant-numeric: tabular-nums; padding: 0 56px 0 14px !important; height: 50px; text-align: left; }
+.exp-amt-input.is-derived { background: var(--bg-alt) !important; cursor: default; }
+.exp-amt-cur { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: .75rem; font-weight: 700; color: var(--muted); pointer-events: none; }
+.exp-amt-words { min-height: 1.1em; margin-top: 5px; font-size: .78rem; color: var(--muted); line-height: 1.5; }
+.exp-form-section .pm-sel-btn { min-height: 42px; font-size: .9rem; padding: 8px 12px; }
+.exp-cat-ic { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--ec-bg); color: var(--ec-fg); flex-shrink: 0; }
+.exp-cat-ic svg { width: 14px; height: 14px; }
+body.dark-mode .exp-cat-ic { background: color-mix(in srgb, var(--ec-fg) 22%, transparent); color: color-mix(in srgb, var(--ec-fg) 55%, #fff); }
+.exp-filters-row .pm-sel { width: auto; min-width: 170px; flex: 0 1 200px; }
+.exp-filters-row .pm-sel-btn { min-height: 38px; font-size: .85rem; }
+
+/* duplicate warning list inside the confirm dialog */
+.xp-dup { margin: 8px 0; padding-inline-start: 18px; font-size: .86rem; }
+
+/* «Nova Media · نوفمبر 2026» under an expense row */
+.xp-row-tag { display: block; font-size: .74rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+
+@media (max-width: 560px) {
+  .xp .xp-form-grid { grid-template-columns: 1fr; }
+  .xp .xp-sel { flex-wrap: wrap; }
+  .xp .xp-sel-acts { width: 100%; justify-content: flex-end; }
+}

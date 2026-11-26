@@ -170,7 +170,7 @@
     const reasoning = (a.steps && a.steps.length) ? `
       <div class="ai-reason${m.reasonOpen ? ' is-open' : ''}">
         <button type="button" class="ai-reason-btn" data-reason="${mi}" aria-expanded="${m.reasonOpen ? 'true' : 'false'}">
-          ${ICON.steps}<span>${esc(T('الخطوات', 'Steps'))} · <bdi>${secs(a.ms)}</bdi> ${esc(T('ث', 's'))}</span>${ICON.chev}
+          ${ICON.steps}<span>${esc(T('فكّر لمدة', 'Thought for'))} <bdi>${secs(a.ms)}</bdi> ${esc(T('ث', 's'))}</span>${ICON.chev}
         </button>
         <div class="ai-reason-body"><div><ol>${a.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol></div></div>
       </div>` : '';
@@ -236,10 +236,18 @@
     return `${reasoning}<div class="ai-card${st === 'denied' ? ' is-denied' : ''}">${lead}${kpis}${plan}${acts}${table}${pts}${note}${opts}</div>${srcs}${foot}`;
   }
 
+  /** While the answer is being read: a live timer and the steps lighting up one after another. */
   function thinkingHtml() {
-    return `<div class="ai-reason is-open is-live"><span class="ai-reason-btn">${ICON.steps}<span class="ai-shimmer">${esc(T('جارٍ قراءة البيانات…', 'Reading the data…'))}</span></span>
-      <div class="ai-reason-body"><div><ol><li>${esc(T('فهم السؤال وتحديد الفترة', 'Understanding the question and the period'))}</li>
-      <li>${esc(T('التحقق من صلاحياتك', 'Checking your permissions'))}</li><li>${esc(T('قراءة التقرير المناسب', 'Reading the matching report'))}</li></ol></div></div></div>`;
+    const steps = [
+      T('فهم السؤال وتحديد الفترة', 'Understanding the question and the period'),
+      T('التحقق من صلاحياتك', 'Checking your permissions'),
+      T('قراءة التقرير المناسب', 'Reading the matching report'),
+    ];
+    return `<div class="ai-think" role="status">
+      <div class="ai-think-head"><span class="ai-think-orb" aria-hidden="true"></span>
+        <span class="ai-shimmer">${esc(T('يفكّر', 'Thinking'))}</span><span class="ai-think-t"><bdi>0.0</bdi> ${esc(T('ث', 's'))}</span></div>
+      <ol class="ai-think-steps">${steps.map((s, i) => `<li style="--d:${i * 380}ms"><span class="ai-think-mark" aria-hidden="true"></span>${esc(s)}</li>`).join('')}</ol>
+    </div>`;
   }
 
   const fmtTime = (v) => { try { const d = new Date(v); return isNaN(d) ? '' : d.toLocaleTimeString(ar() ? 'ar-EG-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; } };
@@ -248,21 +256,26 @@
   /** A question sent to the external assistant: its mail state while it waits, then the reply. */
   function extHtml(m, mi) {
     const x = m.ext || {};
-    const head = `<div class="ai-ext-head"><span class="ai-ext-av">${ICON.ext}</span><b>${esc(EXT_NAME())}</b></div>`;
+    // Small and quiet, like the system's own answers: a one-line name tag, no box, no badge.
+    const tag = (extra) => `<div class="ai-ext-tag"><span class="ai-ext-av">${ICON.ext}</span><b>Instinct</b>${extra || ''}</div>`;
+    const swapIcon = m.q ? `<button type="button" class="ai-ext-swap" data-resend="${mi}" title="${esc(T('اسأل مساعد النظام بدلًا منه', 'Ask the system assistant instead'))}" aria-label="${esc(T('اسأل مساعد النظام بدلًا منه', 'Ask the system assistant instead'))}">${ICON.swap}</button>` : '';
     const swapBtn = m.q ? `<button type="button" class="ai-copy ai-resend" data-resend="${mi}" title="${esc(T('إرسال نفس السؤال إلى مساعد النظام', 'Send the same question to the system assistant'))}">${ICON.swap}<span>${esc(T('اسأل مساعد النظام', 'Ask the system assistant'))}</span></button>` : '';
     if (x.error) {
-      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext">${head}
-        <p class="ai-lead">${esc(x.error)}</p>
-        <div class="ai-opts"><button type="button" class="ai-chip" data-ext-retry="${mi}">${esc(T('إعادة المحاولة', 'Try again'))}</button></div></div></div>`;
+      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}">${tag()}
+        <p class="ai-ext-line is-bad">${esc(x.error)} <button type="button" class="ai-ext-retry" data-ext-retry="${mi}">${esc(T('إعادة المحاولة', 'Try again'))}</button></p></div>`;
     }
     const r = x.reply;
     if (!r) {
       const mail = x.mail || {};
+      // One short status after the name; the full wording stays in the tooltip.
       const sub = !x.messageId ? T('جارٍ الإرسال…', 'Sending…')
-        : mail.status === 'sent' ? T(`أُرسل السؤال بالبريد · ${fmtTime(mail.sentAt)}`, `Question sent by email · ${fmtTime(mail.sentAt)}`)
+        : mail.status === 'sent' ? T(`أُرسل ${fmtTime(mail.sentAt)}`, `sent ${fmtTime(mail.sentAt)}`)
+        : mail.status === 'failed' ? T('تعذّر الإرسال · إعادة تلقائية', 'Not sent · retrying')
+        : mail.status === 'gave-up' ? T('تعذّر الإرسال · أبلغ المدير', 'Not sent · tell the admin')
+        : T('جارٍ الإرسال…', 'Sending…');
+      const full = mail.status === 'sent' ? T(`أُرسل السؤال بالبريد · ${fmtTime(mail.sentAt)}`, `Question sent by email · ${fmtTime(mail.sentAt)}`)
         : mail.status === 'failed' ? T(`تعذّر إرسال البريد — ستُعاد المحاولة تلقائيًا (المحاولة ${mail.attempts || 1})`, `The email could not be sent — retrying automatically (attempt ${mail.attempts || 1})`)
-        : mail.status === 'gave-up' ? T('تعذّر إرسال البريد بعد عدة محاولات. أبلغ مدير النظام.', 'The email could not be sent after several attempts. Tell the system admin.')
-        : T('جارٍ إرسال البريد…', 'Sending the email…');
+        : mail.status === 'gave-up' ? T('تعذّر إرسال البريد بعد عدة محاولات. أبلغ مدير النظام.', 'The email could not be sent after several attempts. Tell the system admin.') : sub;
       const tone = mail.status === 'gave-up' ? ' is-bad' : mail.status === 'failed' ? ' is-warn' : '';
       // Admins only (the server sends `failure` to admins): why the send failed and what to fix.
       const f = mail.failure;
@@ -275,10 +288,10 @@
           'Reason: the server cannot reach the mail server (port blocked or timed out). Ask the host to open port 465, or use another mail service.'),
       }[f.kind] || T('السبب: خطأ من خادم البريد — التفاصيل أدناه.', 'Reason: an error from the mail server — details below.'));
       const whyHtml = !f ? '' : `<p class="ai-ext-why">${esc(why)}</p><p class="ai-ext-why-detail" dir="ltr">${esc(f.detail || '')}</p>`;
-      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext is-waiting">${head}
-        <div class="ai-ext-wait"><span class="ai-ext-dot" aria-hidden="true"></span><b>${esc(T('في انتظار الرد', 'Awaiting reply'))}</b></div>
-        <p class="ai-ext-mail${tone}">${ICON.mail}<span>${esc(sub)}</span></p>${whyHtml}</div>
-        <div class="ai-foot"><span class="ai-foot-acts">${swapBtn}</span></div></div>`;
+      const status = tone
+        ? `<span class="ai-ext-st${tone}" title="${esc(full)}">${esc(sub)}</span>`
+        : `<span class="ai-typing" role="status" aria-label="${esc(T('Instinct يكتب الرد', 'Instinct is typing'))}"><i></i><i></i><i></i></span><span class="ai-ext-st" title="${esc(full)}">${esc(sub)}</span>`;
+      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}">${tag(status + swapIcon)}${whyHtml}</div>`;
     }
     const tables = (r.tables || []).map((t) => `<div class="ai-ext-tbl">${t.caption ? `<div class="ai-ext-cap" dir="auto">${esc(t.caption)}</div>` : ''}
       <div class="ai-tbl"><table><thead><tr>${t.columns.map((c) => `<th dir="auto">${esc(c)}</th>`).join('')}</tr></thead>
@@ -287,18 +300,17 @@
     const links = r.sourceLinks && r.sourceLinks.length ? `<div class="ai-ext-links"><div class="ai-ext-links-h">${esc(T('المصادر', 'Sources'))}</div><ul>${r.sourceLinks
       .filter((l) => /^https?:\/\//i.test(l.url || ''))
       .map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">${ICON.out}<span dir="auto">${esc(l.label || l.url)}</span></a></li>`).join('')}</ul></div>` : '';
-    return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext is-answered">${head}
-      <span class="ai-ext-badge">${esc(T('رد من المساعد الخارجي', 'Reply from the external assistant'))}</span>
+    return `<div class="ai-msg is-bot is-ext" data-mi="${mi}">${tag(x.repliedAt ? `<span class="ai-ext-st">· <bdi>${esc(fmtTime(x.repliedAt))}</bdi></span>` : '')}
+      <div class="ai-card ai-ext-body">
       ${r.title ? `<h4 class="ai-ext-title" dir="auto">${esc(r.title)}</h4>` : ''}
       ${r.summary ? `<p class="ai-ext-sum" dir="auto">${esc(r.summary)}</p>` : ''}
-      ${tables}${links}
-      ${x.repliedAt ? `<small class="ai-ext-at">${esc(T('وصل الرد', 'Replied'))} · <bdi>${esc(fmtTime(x.repliedAt))}</bdi></small>` : ''}</div>
+      ${tables}${links}</div>
       <div class="ai-foot"><span class="ai-foot-acts"><button type="button" class="ai-copy" data-copy="${mi}" title="${esc(T('نسخ الرد', 'Copy the answer'))}">${ICON.copy}<span>${esc(T('نسخ', 'Copy'))}</span></button>${swapBtn}</span></div></div>`;
   }
 
   function msgHtml(m, mi) {
     if (m.role === 'user') {
-      if (m.target === 'external') return `<div class="ai-msg is-user is-ext"><span class="ai-to">${ICON.ext}${esc(T('إلى المساعد الخارجي', 'To the external assistant'))}</span><div class="ai-bubble" dir="auto">${esc(m.text)}</div></div>`;
+      if (m.target === 'external') return `<div class="ai-msg is-user is-ext"><div class="ai-bubble" dir="auto" title="${esc(T('إلى Instinct', 'To Instinct'))}">${esc(m.text)}</div></div>`;
       return `<div class="ai-msg is-user"><div class="ai-bubble" dir="auto">${esc(m.text)}</div></div>`;
     }
     if (m.kind === 'ext') return extHtml(m, mi);
@@ -396,6 +408,67 @@
     if (scrollEnd) box.scrollTop = box.scrollHeight;
   }
 
+  // ── Fast drawing: touch only the messages that changed (a long chat is never redrawn per question) ──
+  /** Each message is exactly one child of #ai-msgs; anything else (the empty state) → full draw. */
+  const inStep = () => { const box = document.getElementById('ai-msgs'); return !!box && box.children.length === state.msgs.length && !box.querySelector(':scope > .ai-empty'); };
+  function appendMsgs(from) {
+    const box = document.getElementById('ai-msgs');
+    if (!box) return;
+    if (box.querySelector(':scope > .ai-empty')) box.innerHTML = '';
+    if (box.children.length !== from) { renderMsgs(true); return; }
+    box.insertAdjacentHTML('beforeend', state.msgs.slice(from).map((m, i) => msgHtml(m, from + i)).join(''));
+    box.scrollTo({ top: box.scrollHeight, behavior: reduced() ? 'auto' : 'smooth' });
+  }
+  function replaceMsg(mi, reveal) {
+    const box = document.getElementById('ai-msgs');
+    if (!box) return;
+    if (!inStep()) { renderMsgs(true); return; }
+    const tmp = document.createElement('div');
+    tmp.innerHTML = msgHtml(state.msgs[mi], mi);
+    const node = tmp.firstElementChild;
+    if (!node) return;
+    box.children[mi].replaceWith(node);
+    if (reveal && !reduced()) revealAnswer(node);
+    // A long answer: bring the question into view so it is read from its start; a short one: to the end.
+    const q = box.children[mi - 1];
+    const tall = node.offsetHeight > box.clientHeight * 0.7;
+    box.scrollTo({ top: tall && q ? Math.max(0, q.offsetTop - 8) : box.scrollHeight, behavior: reduced() ? 'auto' : 'smooth' });
+  }
+  /**
+   * The answer "streams" in: the lead's words appear one after another, then each block of the card
+   * rises in turn. Display only — the text is already complete (copying reads the data, not the DOM).
+   */
+  function revealAnswer(node) {
+    const lead = node.querySelector('.ai-card > .ai-lead');
+    let words = 0;
+    if (lead) {
+      const walker = document.createTreeWalker(lead, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) => (n.parentElement && n.parentElement.closest('button, sup') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+      });
+      const texts = [];
+      while (walker.nextNode()) texts.push(walker.currentNode);
+      for (const tn of texts) {
+        const parts = tn.nodeValue.split(/(\s+)/);
+        if (parts.length < 2 && !parts[0]) continue;
+        const frag = document.createDocumentFragment();
+        for (const part of parts) {
+          if (!part) continue;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); continue; }
+          const w = document.createElement('span');
+          w.className = 'ai-w';
+          w.style.setProperty('--i', String(Math.min(words++, 60)));
+          w.textContent = part;
+          frag.appendChild(w);
+        }
+        tn.parentNode.replaceChild(frag, tn);
+      }
+    }
+    node.style.setProperty('--lead', Math.min(words, 60) * 16 + 'ms');
+    node.classList.add('is-reveal');
+    // Drop the animation hooks once played, so a later re-draw never replays them.
+    setTimeout(() => node.classList.remove('is-reveal'), Math.min(words, 60) * 16 + 900);
+  }
+
   function renderReview(data, error) {
     const box = document.getElementById('ai-review');
     if (!box) return;
@@ -467,17 +540,16 @@
       </div>` : ''}
       <div class="ai-msgs" id="ai-msgs" aria-live="polite" ${state.view === 'chat' ? '' : 'hidden'}></div>
       <div class="ai-review" id="ai-review" ${state.view === 'review' ? '' : 'hidden'}></div>
-      <form class="ai-composer${state.target === 'external' ? ' is-external' : ''}" id="ai-form" ${state.view === 'chat' ? '' : 'hidden'}>
-        <div class="ai-target" role="radiogroup" aria-label="${esc(T('من يجيب عن سؤالك؟', 'Who answers your question?'))}">
-          <button type="button" role="radio" data-target="system" aria-checked="${state.target === 'system'}">${ICON.spark}<span>${esc(T('مساعد سوليا (النظام)', 'SOULIA Assistant (system)'))}</span></button>
-          <button type="button" role="radio" data-target="external" aria-checked="${state.target === 'external'}">${ICON.ext}<span>${esc(T('المساعد الخارجي (Instinct)', 'External assistant (Instinct)'))}</span></button>
-        </div>
+      <form class="ai-composer${state.target === 'external' ? ' is-external' : ''}${state.busy ? ' is-busy' : ''}" id="ai-form" ${state.view === 'chat' ? '' : 'hidden'}>
         <div class="ai-input-wrap">
           <textarea id="ai-input" rows="1" maxlength="${state.target === 'external' ? 1000 : 300}" placeholder="${esc(state.target === 'external' ? T('اكتب سؤالك للمساعد الخارجي…', 'Write your question for the external assistant…') : T('اسأل عن المبيعات أو المخزون أو أوردر…', 'Ask about sales, stock or an order…'))}" aria-label="${esc(T('اكتب سؤالك', 'Type your question'))}"></textarea>
-          <button type="submit" class="ai-send" aria-label="${esc(state.target === 'external' ? T('إرسال إلى المساعد الخارجي', 'Send to the external assistant') : T('إرسال', 'Send'))}">${ICON.send}</button>
+          <div class="ai-tools">
+            ${modelPickerHtml()}
+            <button type="submit" class="ai-send" aria-label="${esc(state.target === 'external' ? T('إرسال إلى المساعد الخارجي', 'Send to the external assistant') : T('إرسال', 'Send'))}">${ICON.send}<span class="ai-send-spin" aria-hidden="true"></span></button>
+          </div>
         </div>
         <p class="ai-hint">${esc(state.target === 'external'
-          ? T('يُرسل سؤالك بالبريد إلى المساعد الخارجي، ويظهر رده هنا عند وصوله. مساعد النظام لا يجيب عنه.', 'Your question is emailed to the external assistant; its reply appears here when it arrives. The system assistant does not answer it.')
+          ? T('يُرسل سؤالك إلى Instinct، ويظهر رده هنا عند وصوله.', 'Sent to Instinct; the reply shows here when it arrives.')
           : T('Enter للإرسال · Shift+Enter لسطر جديد · Ctrl+/ لفتح المساعد', 'Enter to send · Shift+Enter for a new line · Ctrl+/ to open'))}</p>
       </form>
       <div class="ai-pop" id="ai-pop" role="tooltip" hidden></div>`;
@@ -537,6 +609,38 @@
   }
   const toggle = () => (state.open ? close() : open());
 
+  // ── Who answers: a small picker inside the input box (like a model picker) ─────────────────────
+  const MODELS = () => [
+    { key: 'system', icon: ICON.spark, name: 'SOULIA', desc: T('إجابة فورية من تقارير النظام', 'Instant answers from the system reports') },
+    { key: 'external', icon: ICON.ext, name: 'Instinct', desc: T('مساعد خارجي — يصل رده بعد قليل', 'External assistant — replies a little later') },
+  ];
+  function modelPickerHtml() {
+    const cur = MODELS().find((m) => m.key === state.target) || MODELS()[0];
+    return `<div class="ai-model">
+      <button type="button" class="ai-model-btn" data-model-menu aria-haspopup="menu" aria-expanded="false" title="${esc(T('من يجيب عن سؤالك؟', 'Who answers your question?'))}">
+        <span class="ai-model-ic">${cur.icon}</span><span class="ai-model-name">${esc(cur.name)}</span>${ICON.chev}
+      </button>
+      <div class="ai-model-menu" role="menu" aria-label="${esc(T('من يجيب عن سؤالك؟', 'Who answers your question?'))}" hidden>
+        ${MODELS().map((m) => `<button type="button" role="menuitemradio" class="ai-model-opt is-${m.key}" data-target="${m.key}" aria-checked="${m.key === state.target}">
+          <span class="ai-model-ic">${m.icon}</span>
+          <span class="ai-model-t"><b>${esc(m.name)}</b><small>${esc(m.desc)}</small></span>
+          <span class="ai-model-ok">${ICON.check}</span>
+        </button>`).join('')}
+      </div>
+    </div>`;
+  }
+  function modelMenu(openIt) {
+    const p = document.getElementById('ai-panel');
+    const menu = p?.querySelector('.ai-model-menu');
+    const btn = p?.querySelector('[data-model-menu]');
+    if (!menu || !btn) return;
+    const show = openIt === undefined ? menu.hidden : !!openIt;
+    menu.hidden = !show;
+    btn.setAttribute('aria-expanded', String(show));
+    if (show) (menu.querySelector('[aria-checked="true"]') || menu.querySelector('[data-target]'))?.focus();
+  }
+  const modelMenuOpen = () => { const m = document.querySelector('#ai-panel .ai-model-menu'); return !!m && !m.hidden; };
+
   // ── Asking ────────────────────────────────────────────────────────────────────────────────────
   /** Switches who answers the next question, in place (what is typed stays). */
   function setTarget(t) {
@@ -546,6 +650,10 @@
     const ext = state.target === 'external';
     p.querySelector('#ai-form')?.classList.toggle('is-external', ext);
     p.querySelectorAll('[data-target]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.target === state.target)));
+    const cur = MODELS().find((m) => m.key === state.target);
+    const mb = p.querySelector('[data-model-menu]');
+    if (mb && cur) { mb.querySelector('.ai-model-ic').innerHTML = cur.icon; mb.querySelector('.ai-model-name').textContent = cur.name; }
+    modelMenu(false);
     const i = p.querySelector('#ai-input');
     if (i) {
       i.maxLength = ext ? 1000 : 300;
@@ -556,7 +664,7 @@
     if (s) s.setAttribute('aria-label', ext ? T('إرسال إلى المساعد الخارجي', 'Send to the external assistant') : T('إرسال', 'Send'));
     const h = p.querySelector('.ai-hint');
     if (h) h.textContent = ext
-      ? T('يُرسل سؤالك بالبريد إلى المساعد الخارجي، ويظهر رده هنا عند وصوله. مساعد النظام لا يجيب عنه.', 'Your question is emailed to the external assistant; its reply appears here when it arrives. The system assistant does not answer it.')
+      ? T('يُرسل سؤالك إلى Instinct، ويظهر رده هنا عند وصوله.', 'Sent to Instinct; the reply shows here when it arrives.')
       : T('Enter للإرسال · Shift+Enter لسطر جديد · Ctrl+/ لفتح المساعد', 'Enter to send · Shift+Enter for a new line · Ctrl+/ to open');
   }
 
@@ -568,33 +676,44 @@
     if (state.view !== 'chat') { state.view = 'chat'; shell(); }
     const input = document.getElementById('ai-input');
     if (input) { input.value = ''; autosize(); }
+    const from = state.msgs.length;
     state.msgs.push({ role: 'user', text, target: 'system' });
     const bot = { role: 'bot', pending: true, q: text, target: 'system' };
     state.msgs.push(bot);
-    state.busy = true;
-    renderMsgs(true);
+    setBusy(true);
+    appendMsgs(from);
     const t0 = performance.now();
+    // The thinking line counts the seconds while the answer is read.
+    const tick = setInterval(() => {
+      const el = document.querySelector(`#ai-msgs > :nth-child(${state.msgs.indexOf(bot) + 1}) .ai-think-t bdi`);
+      if (el) el.textContent = ((performance.now() - t0) / 1000).toFixed(1);
+    }, 100);
     try {
       const a = await api('/assistant/ask', { method: 'POST', body: JSON.stringify({ question: text, lang: ar() ? 'ar' : 'en', target: 'system', chatId: chatId() }) });
-      // Let the "reading" state be seen for a moment — an instant swap reads as a glitch.
-      const wait = reduced() ? 0 : Math.max(0, 450 - (performance.now() - t0));
+      // A very fast answer still shows "thinking" for a beat — an instant swap reads as a glitch.
+      const wait = reduced() ? 0 : Math.max(0, 260 - (performance.now() - t0));
       if (wait) await new Promise((r) => setTimeout(r, wait));
       bot.pending = false;
       bot.a = a;
       if (a && a.intent === 'daily') markDailySeen();
-      bot.reasonOpen = true; // shown open, then folds away (like a model's reasoning panel)
-      bot.autoFold = true;
+      bot.reasonOpen = false; // "Thought for N s" — folded; the steps are one click away
     } catch (e) {
       bot.pending = false;
       bot.error = (e && e.message) || T('تعذّر الاتصال بالخادم.', 'Could not reach the server.');
     } finally {
-      state.busy = false;
-      renderMsgs(true);
-      save();
+      clearInterval(tick);
+      setBusy(false);
       const mi = state.msgs.indexOf(bot);
-      if (bot.autoFold) setTimeout(() => { if (bot.autoFold) { bot.reasonOpen = false; bot.autoFold = false; foldReason(mi, false); save(); } }, reduced() ? 0 : 1200);
+      if (mi >= 0) replaceMsg(mi, !bot.error);
+      save();
       document.getElementById('ai-input')?.focus();
     }
+  }
+
+  /** Busy: the send button turns into a spinner and the composer shows it is working. */
+  function setBusy(on) {
+    state.busy = !!on;
+    document.getElementById('ai-form')?.classList.toggle('is-busy', state.busy);
   }
 
   // ── External assistant (Instinct) ─────────────────────────────────────────────────────────────
@@ -611,14 +730,14 @@
     await sendExternal(bot);
   }
   async function sendExternal(bot) {
-    state.busy = true;
+    setBusy(true);
     try {
       const r = await api('/assistant/external', { method: 'POST', body: JSON.stringify({ target: 'external', chatId: chatId(), question: bot.q, requestKey: bot.key }) });
       bot.ext = r || {};
     } catch (e) {
       bot.ext = { error: (e && e.message) || T('تعذّر الاتصال بالخادم.', 'Could not reach the server.') };
     } finally {
-      state.busy = false;
+      setBusy(false);
       renderMsgs(true);
       save();
       armExternalPoll();
@@ -962,8 +1081,10 @@
     if (q) { if (q.dataset.daily) markDailySeen(); ask(q.dataset.q, 'system'); return; }
     if (t.closest('[data-close]')) { close(); return; }
     if (t.closest('[data-new]')) { state.msgs = []; state.chatId = newChatId(); state.target = 'system'; save(); state.view = 'chat'; shell(); document.getElementById('ai-input')?.focus(); return; }
+    if (t.closest('[data-model-menu]')) { modelMenu(); return; }
     const tg = t.closest('[data-target]');
     if (tg) { setTarget(tg.dataset.target); return; }
+    if (modelMenuOpen() && !t.closest('.ai-model')) modelMenu(false);
     // Re-send the same question to the other side — the employee's choice, never automatic.
     const rs = t.closest('[data-resend]');
     if (rs) { const m = state.msgs[+rs.dataset.resend]; if (m && m.q && !state.busy) ask(m.q, m.kind === 'ext' ? 'system' : 'external'); return; }
@@ -993,6 +1114,17 @@
   }
 
   function onKey(e) {
+    if (modelMenuOpen()) {
+      const items = [...document.querySelectorAll('#ai-panel .ai-model-opt')];
+      const i = items.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.stopPropagation(); modelMenu(false); document.querySelector('#ai-panel [data-model-menu]')?.focus(); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+        return;
+      }
+      if (e.key === 'Tab') modelMenu(false);
+    }
     if (e.key === 'Escape') {
       if (popFor) { hidePop(); e.stopPropagation(); return; }
       e.stopPropagation();

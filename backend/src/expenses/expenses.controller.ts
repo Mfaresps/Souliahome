@@ -12,6 +12,7 @@ import {
   UploadedFile,
   BadRequestException,
   Res,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -22,7 +23,11 @@ import { ExpensesService } from './expenses.service';
 import {
   CreateExpenseDto,
   UpdateExpenseDto,
+  ExpensePayeeDto,
 } from './dto/expense.dto';
+
+type ReqUser = { user?: { name?: string; username?: string; role?: string } };
+const actorOf = (req: ReqUser) => ({ name: req.user?.name || req.user?.username || '', isAdmin: req.user?.role === 'admin' });
 import { JwtAuthGuard } from '../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/guards/roles.guard';
 import { Roles } from '../core/decorators/roles.decorator';
@@ -32,9 +37,20 @@ import { Roles } from '../core/decorators/roles.decorator';
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
+  /** A salary breakdown is private: only an admin, or whoever recorded the expense, gets it. */
+  private maskSalary(row: any, req: ReqUser) {
+    if (!row?.salary) return row;
+    const actor = actorOf(req);
+    if (actor.isAdmin || (actor.name && row.employee === actor.name)) return row;
+    const o = typeof row.toObject === 'function' ? row.toObject() : { ...row };
+    o.salary = null;
+    return o;
+  }
+
   @Get()
-  async findAll() {
-    return this.expensesService.findAll();
+  async findAll(@Req() req: ReqUser) {
+    const rows = await this.expensesService.findAll();
+    return rows.map(r => this.maskSalary(r, req));
   }
 
   // Static routes MUST come before :id dynamic routes
@@ -45,6 +61,22 @@ export class ExpensesController {
     }
     const count = await this.expensesService.bulkRemovePending(body.ids);
     return { message: `تم حذف ${count} مصروف`, count };
+  }
+
+  // Saved parties: ad agencies, employees on payroll, subscriptions.
+  @Get('payees')
+  async listPayees(@Query('kind') kind: string, @Query('archived') archived: string, @Req() req: ReqUser) {
+    return this.expensesService.listPayees(kind || undefined, archived === '1', actorOf(req).isAdmin);
+  }
+
+  @Post('payees')
+  async createPayee(@Body() dto: ExpensePayeeDto, @Req() req: ReqUser) {
+    return this.expensesService.createPayee(dto, actorOf(req));
+  }
+
+  @Put('payees/:id')
+  async updatePayee(@Param('id') id: string, @Body() dto: ExpensePayeeDto, @Req() req: ReqUser) {
+    return this.expensesService.updatePayee(id, dto, actorOf(req));
   }
 
   @Post('upload-attachment')
@@ -89,18 +121,18 @@ export class ExpensesController {
 
   // Dynamic :id routes come after static routes
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.expensesService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: ReqUser) {
+    return this.maskSalary(await this.expensesService.findById(id), req);
   }
 
   @Post()
-  async create(@Body() dto: CreateExpenseDto) {
-    return this.expensesService.create(dto);
+  async create(@Body() dto: CreateExpenseDto, @Req() req: ReqUser) {
+    return this.expensesService.create(dto, actorOf(req));
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateExpenseDto) {
-    return this.expensesService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateExpenseDto, @Req() req: ReqUser) {
+    return this.expensesService.update(id, dto, actorOf(req));
   }
 
   @Roles('admin')

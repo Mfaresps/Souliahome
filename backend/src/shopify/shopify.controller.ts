@@ -129,7 +129,8 @@ export class ShopifyController {
   @UseGuards(JwtAuthGuard)
   async getSummaryPage(@Query() query: Record<string, string>, @Request() req: any,
     @Res({ passthrough: true }) res: Response) {
-    const result = await this.shopifyService.getOrdersSummaryPage(query, actorOf(req).id);
+    const result = await this.shopifyService.getOrdersSummaryPage(query, actorOf(req).id,
+      { role: req.user?.role, perms: req.user?.perms || [] });
     // Revalidate on every visit so financial and payment indicators remain live.
     // The browser can reuse unchanged bytes after a 304 response.
     const etag = `"${createHash('sha1').update(JSON.stringify(result)).digest('hex')}"`;

@@ -23,13 +23,22 @@ pipeline {
 
     stage('Deploy') {
       steps {
-        sh '''
-          set -eu
-          cd /opt/Souliahome
-          export BUILD_NUMBER
-          docker compose config --quiet
-          docker compose up -d --build --no-deps backend frontend
-        '''
+        // Credentials (Jenkins ← Credentials) reach docker-compose as environment variables:
+        // soulia-live-sync-token (Secret text) → LIVE_SYNC_EXPORT_TOKEN
+        // soulia-smtp (Username with password: sending Gmail + App Password) → SMTP_USER / SMTP_PASS,
+        // the external assistant's email. Without it every question shows «SMTP not configured».
+        withCredentials([
+          string(credentialsId: 'soulia-live-sync-token', variable: 'LIVE_SYNC_EXPORT_TOKEN'),
+          usernamePassword(credentialsId: 'soulia-smtp', usernameVariable: 'SMTP_USER', passwordVariable: 'SMTP_PASS'),
+        ]) {
+          sh '''
+            set -eu
+            cd /opt/Souliahome
+            export BUILD_NUMBER
+            docker compose config --quiet
+            docker compose up -d --build --no-deps backend frontend
+          '''
+        }
       }
     }
 

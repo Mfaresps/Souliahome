@@ -219,7 +219,8 @@
   #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed {background:rgba(148,163,184,.10)}
   #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-completed:hover {background:rgba(148,163,184,.16)}
   #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-cancelled {background:rgba(148,163,184,.04)}
-  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-new > td:first-child {border-right:3px solid #95bf47}
+  #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-new > td:first-child {border-right:3px solid #c6ef1f}
+  body.dark-mode #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-new > td:first-child {border-right-color:#d9ff3d}
   #main #shopify-orders-table-wrap .data-table tbody tr:hover > td {box-shadow:none;z-index:auto}
   #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected {background:var(--primary-pale)!important}
   #main #shopify-orders-table-wrap .data-table tbody tr.sp-row-selected > td {background:transparent}
@@ -262,7 +263,7 @@
   }
   #main #shopify-orders-table-wrap .sp-confirm-btn {font-size:13px;min-height:32px}
   #main #shopify-orders-table-wrap :is(.sp-repeat-badge,.sp-day-sep-label) {font-size:12px;font-weight:600}
-  #main #shopify-orders-table-wrap .sp-new-badge {font-size:11px;font-weight:600}
+  #main #shopify-orders-table-wrap .sp-new-badge {font-size:10px;font-weight:600;padding:0 5px;line-height:16px}
   #main #mov-table tr:not(.mov-row-cancelled) .mov-col-remaining-zero {color:var(--muted)!important}
   /* Employee metadata previously combined translucent colour with .65 opacity. */
   #main #mov-table .mov-col-employee {color:var(--muted)!important;font-size:12px!important;font-weight:400!important;opacity:1}

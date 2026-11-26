@@ -37,7 +37,7 @@
     const text = note.split(/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)/g)
       .map((part, index) => index % 2 && compactDate(part) ? `<bdi>${esc(compactDate(part))}</bdi>` : esc(part)).join('');
     if (!note && !scheduled) return '';
-    return `<div class="ath-context">${note ? `<div class="ath-note"><div class="ath-note-meta"><span>${label('آخر تعليق', 'Latest comment')}</span>${row.note.authorName ? `<bdi>${esc(row.note.authorName)}</bdi>` : ''}</div><p dir="auto">${text}</p></div>` : ''}${scheduled ? `<div class="ath-schedule"><span>${label('المتابعة', 'Follow-up')}</span><time datetime="${escHtml(row.until)}"><bdi>${esc(scheduled)}</bdi></time></div>` : ''}</div>`;
+    return `<div class="ath-context">${note ? `<div class="ath-note"><div class="ath-note-meta"><span>${label('آخر تعليق', 'Latest comment')}</span>${row.note.authorName ? `<bdi>${esc(typeof _fuAuthorLabel === 'function' ? _fuAuthorLabel(row.note) : row.note.authorName)}</bdi>` : ''}</div><p dir="auto">${text}</p></div>` : ''}${scheduled ? `<div class="ath-schedule"><span>${label('المتابعة', 'Follow-up')}</span><time datetime="${escHtml(row.until)}"><bdi>${esc(scheduled)}</bdi></time></div>` : ''}</div>`;
   }
   window.hideAdminTeamWorkspace = () => {
     overviewRun++; detailRun++; team = detail = null; selected = owner = ''; busy = detailBusy = false;

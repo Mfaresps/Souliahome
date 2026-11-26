@@ -119,7 +119,7 @@
     const when = contact?.at && Number.isFinite(new Date(contact.at).getTime())
       ? new Intl.DateTimeFormat(en() ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(contact.at)) : '';
     return `<section class="employee-session-contact-history"><h4>${esc(label('آخر تواصل مسجّل', 'Last recorded contact'))}</h4>${contact
-      ? `<div class="employee-session-result-line"><span class="employee-session-result-icon" data-outcome="${result}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><strong>${esc(channel)}${outcome ? ` · ${esc(outcome)}` : ''}</strong></div><div>${contact.authorName ? `<span dir="auto">${esc(contact.authorName)}</span>` : ''}${when ? `<time datetime="${escHtml(contact.at)}" title="${escHtml(fmtDateTime(contact.at))}">${esc(when)}</time>` : ''}</div>`
+      ? `<div class="employee-session-result-line"><span class="employee-session-result-icon" data-outcome="${result}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><strong>${esc(channel)}${outcome ? ` · ${esc(outcome)}` : ''}</strong></div><div>${contact.authorName ? `<span dir="auto">${esc(typeof _fuAuthorLabel === 'function' ? _fuAuthorLabel(contact) : contact.authorName)}</span>` : ''}${when ? `<time datetime="${escHtml(contact.at)}" title="${escHtml(fmtDateTime(contact.at))}">${esc(when)}</time>` : ''}</div>`
       : `<p>${esc(label('لا يوجد تواصل مسجّل بعد', 'No contact recorded yet'))}</p>`}</section>`;
   }
 

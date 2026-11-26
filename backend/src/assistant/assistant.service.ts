@@ -15,6 +15,7 @@ import {
   Period, Understood, addDays, cairoToday, normalizeQuestion, previousPeriod, understand, subjectOf,
 } from './assistant-intent.util';
 import { FollowUpLevel, FollowUpUrgency, compareUrgency, followUpUrgency, moreUrgent } from './followup-priority.util';
+import { shopifyReportDays } from '../shared/shopify-report-access.util';
 
 /**
  * «مساعد SOULIA» — answers a typed question from the SAME functions the pages use.
@@ -1555,7 +1556,7 @@ export class AssistantService {
   // ── Daily report ──────────────────────────────────────────────────────────────────────────────
   private async daily(_u: Understood, user: AssistantUser, L: any, lang: Lang, today: string) {
     const topic = L('التقرير اليومي', 'Daily report');
-    const canRep = this.canSeeFinancials(user), canShop = this.can(user, ['shopify-orders']), canInv = this.canStock(user);
+    const canRep = this.canSeeFinancials(user), canShop = this.can(user, ['shopify-orders']) && shopifyReportDays(user) > 0, canInv = this.canStock(user);
     if (!canRep && !canShop && !canInv) return this.denied('daily', L('التقرير اليومي', 'The daily report'), L, topic);
     const y = addDays(today, -1);
     const kpis: any[] = [];

@@ -20,6 +20,77 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Expenses — Saved Parties, Covered Period, Salary Breakdown + Slip & Cheque (Nov 26, 2026)
+
+`frontend/public/expense-payees.js/.css` (`window.SouliaExpensePayees`), backend `expenses/` (`expense-payee.util.ts`,
+`schemas/expense-payee.schema.ts`, raw collection `expensepayees`, in backup lists + section «expenses»).
+- **Parties («الجهات»)** for إعلانات / مرتبات / اشتراكات (`PAYEE_KIND_BY_CATEGORY` ⚠ mirrored by `XP_KIND_BY_CAT`; stored
+  category values unchanged): ad agency (+ platform), employee (+ monthly salary, `pointValue`, `userId`), subscription
+  (+ price, monthly/quarterly/yearly). `GET/POST /expenses/payees`, `PUT /expenses/payees/:id` (admin; `active:false` =
+  archive). Unique per kind by `payeeNameKey`; an archived name comes back on re-add. Salary records: admin-only to
+  create; a non-admin reads them with `amount:0, amountHidden`.
+- **Expense fields** `payeeId/payeeName/payeeKind` (name copied — a rename never rewrites history), `periodFrom/periodTo`
+  (≤366 days). Period chips: السابق · الحالي · القادم · عدة أشهر (start month + 2/3/6/12) · شهر آخر · فترة مخصصة —
+  future months allowed (paying ahead, marked «دفع مقدّم»). ⚠ «فترة مخصصة» is a button that opens
+  `SouliaDateRange.open` and shows the range on it — never a bare from/to `<input type=date>` pair: soulia-range.js
+  auto-replaces such a pair with an icon-only trigger that hides the dates. A new expense in the three categories must name its party (unless the list failed to load). Picking
+  fills amount/vault; the title is written for you («إعلانات Nova Media (TikTok) — لشهر نوفمبر 2026») until you type
+  your own. Same party + overlapping period → asks before saving (client, from `expenses`). `updatePayeeAmount` saves the
+  amount (with a breakdown: base + point value) as the party's default.
+- **Salaries pick from ACTIVE user accounts** (owner): `salaryCandidates()` = saved records whose account is not
+  disabled + (admins) every active account without one; picking an account creates its record linked by `userId`.
+- **Salary breakdown** (`expense.salary`, admin form): base + points × point value + overtime − deductions (each with a
+  note). ⚠ The SERVER (`cleanSalaryBreakdown`) computes bonus and net and sets `amount = net`; negative points earn no
+  bonus. «جلب نقاط الشهر» → `GET /employee-performance/points/:employeeId?month=YYYY-MM` (admin,
+  `getMyPerformanceSummary` for that month). `GET /expenses` strips `salary` for non-admins who did not record it.
+  Print: the regular «طباعة» on a salary expense (`printExpenseDetails` → `printSalary`, hidden iframe, A4) prints
+  «إشعار صرف مرتب» (owner's rules, Nov 26): logo only (no company text under it); name + job title with no label;
+  date · «تحويل عن طريق X» / «صُرف نقدًا»; short lines (points shown as «N نقطة» — never the per-point rate); a
+  cheque-style block WITHOUT the word «شيك» (serial digits only, date boxes, «ادفعوا لأمر / مبلغًا وقدره / وذلك عن»,
+  «يُصرف للمستفيد الأول», amount line); signatures under it: «المستلم» and «المدير — عن <company>». Never print the
+  «رقم المصروف» label or the expense status.
+- **PDF file name** = `_expPrintTitle(e)` (index.html): the expense title («مرتب Fares — لشهر نوفمبر 2026»), + the
+  party if the title lacks it, + the date when there is no period; `\/:*?"<>|` removed. It is the `<title>` of both
+  print pages; `printSalary` also sets the app's `document.title` while printing from its frame (restored on afterprint).
+- **Order analysis** picks ad expenses by the period they pay for (`expenseWindowClause`; rows with no period by date),
+  shows agency + period, searches by agency.
+- **Form**: amount is a text field with live thousands separators (`_expAmountInput` / `_expAmountValue` — read it with
+  that, never `Number(value)`), larger type, value in words under it. Category and vault selects (form + filter bar)
+  use the app dropdown with icons (`data-icons="expense-cat"` / `pay-method`). Labels fixed: إعلانات · مواصلات وتنقل · أخرى.
+- ⚠ **Esc inside an app dropdown closed the whole window** (every modal): the global Esc handler now returns when
+  `_pmSelOpen` or the event was already handled.
+- Tests: `test/unit/expense-payees.spec.ts` (14), `order-audit-marketing.spec.ts` updated to the period query,
+  `test/browser/expense-payees.cjs` (70, ar/en, dark, 390), `expense-image-upload.cjs` 14/14. Not tried on live.
+
+## Shopify Page Reports Are Permissions, With a Viewing Window (Nov 26, 2026)
+
+The period KPI strip and «تقرير» (image / copy / share) on the Shopify page were open to every
+`shopify-orders` holder, any period. Now (owner's decision) group «تقارير شوبيفاي» on the Roles page:
+- **Range keys = how far back**: `shopify-reports-today` · `-3d` · `-7d` · `-30d` · `-all` (widest held
+  wins; the Roles page keeps one — ticking one clears the others). No key → no strip, no show/hide
+  button, no «تقرير الأوردرات» menu item. Admin = any period.
+- `shopify-reports-share` = download / copy / share (implies `-today` when no range is ticked).
+  Every key implies `shopify-orders`. **Nothing is granted by migration** — the admin decides per role.
+- Rules: `shared/shopify-report-access.util.ts` (window starts at Cairo midnight N−1 days back, 1h
+  slack) ⚠ mirrored by `SHOPIFY_REPORT_RANGES` / `_spRepDays` / `_spRepMinDate` / `_spRepCanShare` (index.html).
+- **Server**: `summary-page` gets the user; a `kpiFrom` outside the window → `kpiStats:null`,
+  `kpiDenied:true` and the KPI filter is ignored (the list size would leak it); the comparison
+  (`prevReceived`) is `null` when ITS period is outside. Deposit money totals (`depositSummary`
+  instapay/vodafone) go to admins only — ⚠ `#shopify-deposit-summary-bar` no longer exists in the
+  page, so no screen shows them. The assistant's daily report counts today's Shopify orders only
+  for a holder of a range key.
+- **Calendar**: `SouliaDateRange.open(…, {min})` disables days before `min` (and presets / quarters
+  that start before it); the strip offers only presets inside the window, writes the limit in the
+  calendar (`.spk-drx-limit`), refuses an outside period (toast), and falls back to today when a
+  kept period has left the window.
+- ⚠ `GET /shopify/orders` (the full list the page works with) is unchanged — a technical user can
+  still count the orders they are allowed to see; this limits the reports, not the list.
+- **Every report names its author**: the image footer and the copied text end with
+  «أُنشئ d/m/yyyy · HH:MM · بواسطة <name>» (`_spkStamp`, name = `currentUser.name || username`), so a
+  report that leaves the system can be traced. A long name drops the footer's «SOULIA», never overlaps it.
+- Tests: `test/unit/shopify-report-access.spec.ts` (7; revert-checked: dropping the window check on
+  the server fails 2), `test/browser/shopify-report-perms.cjs` (22).
+
 ## Shopify: «تأجيل التواصل» (Confirmation Deferral) + Address Check Before Confirming (Nov 25, 2026 g)
 
 `frontend/public/shopify-confirm-deferral.js/.css` (`SouliaConfirmDeferral`, `SouliaAddrCheck`).
@@ -1723,6 +1794,10 @@ lowered quantity made approval impossible (scanned + skipped had to equal qty).
   Test: `test/browser/pickup-tag-colour.cjs` (first load + a refresh with /tags slow; revert-checked).
 - Prep cards: product photos fill their square (`object-fit: cover`, pickup-workspace.css line ~591;
   was `contain`, which left grey bands on non-square photos).
+  **Nov 26, 2026**: the photo now fills the card's whole photo column edge to edge (full card height,
+  touching its top/bottom/start edges, keeping the card's outer corners). End of
+  `prep-workspace-compact.css`: card padding pinned to `--pwc-pad` (10px, 9px ≤600px) and the photo
+  cancels it with negative margins — ⚠ change both together. The «N ×» badge stays on its corner.
 
 ### Right-click menus + TAGs on prep cards (same day)
 - **Group card on the board** (`_puPrepGroupCtx`): فتح الطلبات · TAG لكل طلبات المجموعة · دمجها في
@@ -2481,6 +2556,10 @@ backdrop close, comments layout, 7 widths, 390px mobile, zero page errors.
   reserves 27px in the table (starring is in ⋮). Below 62px of content it becomes a
   green dot with the word in `title` — never clipped. Word at 1920/1440, dot at
   1280/1100 (measured).
+  **Nov 26, 2026**: the order time was cut («9:27 p…») to make room for the pill. Now the time
+  never shrinks, and `_spFitRefLines()` (after every table paint, in `_spFitOrderTable`, on resize)
+  marks a ref line that overflows `.is-tight` → the pill becomes an 8px lime dot (word in `title`).
+  Measured per row, not a width threshold — the line's width depends on what else it carries.
 - 83 browser assertions; backend Shopify specs 45/45; `node dist/main.js` loads.
 
 ### Round 4 (same day)

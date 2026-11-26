@@ -1,4 +1,5 @@
 import { ADVERTISING_CATEGORY, calculateAuditMarketing, calculateAuditFinancials, previousMarketingWindows, OrderAuditMarketingService } from '../../src/shopify/order-audit-marketing.service';
+import { expenseWindowClause } from '../../src/expenses/expense-payee.util';
 
 const row = (more: any = {}) => ({ registered:true, syncStatus:'synced', orderTotal:1500, netProfit:500, productCost:900, shippingCost:100, actualShipCost:100, hasProfit:true, ...more });
 const chain = (items: any[]) => { const q:any={}; for(const method of ['sort','skip','limit','select']) q[method]=jest.fn(()=>q); q.lean=jest.fn(async()=>items); return q; };
@@ -18,7 +19,11 @@ it('restricts listing to advertising even when arbitrary categories are supplied
   const filter=expenses.find.mock.calls[0][0];
   expect(filter.category).toBe(ADVERTISING_CATEGORY); expect(filter.category.test('اعلانات')).toBe(true); expect(filter.category.test('rent')).toBe(false);
   expect(filter.$or[0].desc.test('anything')).toBe(false);expect(filter.$or[0].desc.test('.*')).toBe(true);
-  expect(filter.$and[0].date.test('2026-02-20')).toBe(false);expect(filter.$and[0].date.test('2026-03-20')).toBe(true);
+  // The period clause, then one window per chosen month (Jan, Mar — never Feb), each matching an ad by
+  // the period it pays for, or an old row by its date.
+  expect(filter.$and[0]).toEqual(expenseWindowClause('2026-01-01','2026-03-31'));
+  expect(filter.$and[1].$or).toEqual([expenseWindowClause('2026-01-01','2026-01-31'),expenseWindowClause('2026-03-01','2026-03-31')]);
+  expect(filter.$or.some((c:any)=>c.payeeName)).toBe(true);
   expect(query.limit).toHaveBeenCalledWith(31);
 });
 it('deduplicates and validates approved advertising invoices on the server and forwards the exact period', async () => {
@@ -61,7 +66,7 @@ it('uses independent approved advertising expenses and identical order scopes fo
   const result=await service.analyze(body);
   expect(result.metrics.spend).toBe(200);expect(result.comparison.metrics).toMatchObject({spend:500,orders:1,roas:2,profitAfterAdvertising:-200});
   expect(result.comparison.expenseMode).toBe('all-approved');expect(result.comparison.financials.sales).toBe(1000);
-  expect(find.mock.calls[1][0]).toMatchObject({category:ADVERTISING_CATEGORY,status:'معتمد',amount:{$gt:0},$or:[{date:{$gte:'2026-09-01',$lt:'2026-09-22'}}]});
+  expect(find.mock.calls[1][0]).toMatchObject({category:ADVERTISING_CATEGORY,status:'معتمد',amount:{$gt:0},$or:[expenseWindowClause('2026-09-01','2026-09-21')]});
   expect(audit.runAuditPeriod.mock.calls.every(call=>call[1].persist===false)).toBe(true);
   expect((await service.analyze({...body,previousExpenseIds:[]})).comparison.metrics.spend).toBe(0);
   expect((await service.analyze({...body,compare:false})).comparison).toBeNull();

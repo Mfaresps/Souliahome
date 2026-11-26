@@ -16,7 +16,42 @@
 
 let _spkPeriod = 'today';
 let _spkFilter = '';
+/* ── Report permissions (Nov 26, 2026) ──
+   The strip, its period and the «تقرير» follow the Shopify report permissions
+   (`_spRepDays` / `_spRepCanShare` in index.html, ⚠ mirrored by the server, which drops the
+   figures of a period outside the window). No range key → no strip at all. */
+function _spkDays() { return typeof _spRepDays === 'function' ? _spRepDays() : Infinity; }
+function _spkMinDate() { return typeof _spRepMinDate === 'function' ? _spRepMinDate() : undefined; }
+function _spkCanShare() { return typeof _spRepCanShare === 'function' ? _spRepCanShare() : true; }
+/** True when the period's first day is inside the user's window. */
+function _spkPeriodAllowed(p) {
+  const days = _spkDays();
+  if (!days) return false;
+  const min = _spkMinDate();
+  return !min || _spkRange(p).from.getTime() >= min.getTime();
+}
+/* A period kept from before a permission was narrowed (or a custom range that has aged out of
+   the window) falls back to today. */
+function _spkClampPeriod() {
+  if (_spkPeriodAllowed(_spkPeriod)) return;
+  _spkPeriod = 'today';
+  _spkFilter = '';
+}
+function _spkSyncAccess(days) {
+  const toggle = document.getElementById('sp-kpi-toggle');
+  if (toggle) toggle.hidden = !days;
+  const report = document.getElementById('sp-tools-report');
+  if (report) report.hidden = !days || !_spkCanShare();
+}
+function _spkLimitText() {
+  const days = _spkDays();
+  if (!Number.isFinite(days)) return '';
+  if (days === 1) return _spkT('limitToday');
+  return _spkT('limitDays').replace('{n}', days);
+}
+
 function _spkSetFilter(key) {
+  if (!_spkDays()) return;
   if (key && !['received','confirmed','followup','cancelled','rate'].includes(key)) return;
   _spkFilter = key && _spkFilter !== key ? key : '';
   shopifyPage = 1;
@@ -102,10 +137,14 @@ const _SPK_L = {
   drawFail: ['تعذّر إنشاء الصورة', 'Could not create the image'],
   loadFail: ['تعذّر تحميل الأوردرات', 'Could not load orders'],
   fuFail: ['المتابعات لم تُحمَّل — قد يقلّ عدد «متابعة»', 'Follow-ups did not load — «Follow-up» may be undercounted'],
-  generated: ['أُنشئ', 'Generated'],
+  generated: ['أُنشئ', 'Generated'], by: ['بواسطة', 'by'],
   close: ['إغلاق', 'Close'],
   hide: ['إخفاء الملخص', 'Hide summary'], show: ['عرض الملخص', 'Show summary'],
   pickPeriod: ['الفترة', 'Period'],
+  limitToday: ['صلاحيتك تسمح بتقرير اليوم فقط', 'Your permission covers today only'],
+  limitDays: ['صلاحيتك تسمح بآخر {n} أيام فقط', 'Your permission covers the last {n} days only'],
+  outOfRange: ['هذه الفترة خارج المدة المسموح لك بعرضها', 'This period is outside the range you may view'],
+  noShare: ['ليست لديك صلاحية تحميل التقرير أو مشاركته', 'You do not have permission to download or share the report'],
 };
 function _spkT(k) { const v = _SPK_L[k]; return v ? v[currentLang === 'en' ? 1 : 0] : k; }
 function _spkEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -200,8 +239,9 @@ function _spkStats(period) {
      yesterday would read as a drop every morning. prev = [from − days, min(to, now) − days). */
   const shift = (ms) => { const x = new Date(ms); x.setDate(x.getDate() - r.days); return x.getTime(); };
   const prevTo = shift(Math.min(r.to.getTime(), Date.now()));
-  const prev = _spkCount(shift(r.from.getTime()), prevTo);
-  return Object.assign(s, { period, from: r.from, to: r.to, days: r.days, prevReceived: prev.received });
+  const prevFrom = shift(r.from.getTime()), min = _spkMinDate();
+  const prevReceived = min === null || (min && prevFrom < min.getTime()) ? null : _spkCount(prevFrom, prevTo).received;
+  return Object.assign(s, { period, from: r.from, to: r.to, days: r.days, prevReceived });
 }
 
 /* ── Formatting ── */
@@ -221,6 +261,8 @@ function _spkReportDate(s) {
   return `${_spkDmy(s.from)} – ${_spkDmy(new Date(s.to.getTime() - 1))}`;
 }
 function _spkDeltaText(s) {
+  /* The comparison period may lie outside the user's window — the server then sends no figure. */
+  if (s.prevReceived == null) return '';
   const d = s.received - s.prevReceived;
   const vs = _spkT(({ today: 'vsToday', yesterday: 'vsYesterday', three: 'vsThree', week: 'vsWeek', custom: 'vsCustom' })[s.period || _spkPeriod]);
   if (!d) return `${_spkT('noChange')} ${vs}`;
@@ -244,6 +286,10 @@ function _spkRender(state) {
   if (state) _spkState = state;
   const host = document.getElementById('sp-kpi');
   if (!host) return;
+  const days = _spkDays();
+  _spkSyncAccess(days);
+  if (!days) { host.hidden = true; host.innerHTML = ''; _spkFilter = ''; return; }
+  _spkClampPeriod();
   const hidden = _spkHidden();
   _spkSyncToggle(hidden);
   host.hidden = hidden;
@@ -286,9 +332,9 @@ function _spkRender(state) {
       ${openNote}${fuWarn}
       <div class="spk-actions">
         ${seg}
-        <button type="button" class="spk-report-btn" onclick="_spkOpenReport()" ${loading?'disabled':''} title="${_spkEsc(_spkT('reportTitle'))}">
+        ${_spkCanShare() ? `<button type="button" class="spk-report-btn" onclick="_spkOpenReport()" ${loading?'disabled':''} title="${_spkEsc(_spkT('reportTitle'))}">
           ${_spkIco('report', 14)}<span>${_spkEsc(_spkT('report'))}</span>
-        </button>
+        </button>` : ''}
       </div>
     </div>
     <div class="spk-grid">
@@ -321,7 +367,8 @@ const _SPK_PERIODS = ['today', 'yesterday', 'three', 'week', 'custom'];
 /* Calendar icon button + its menu. The period is NAMED in .spk-range at the start of the
    row, so the button itself can stay an icon; its title / aria-label state it too. */
 function _spkPeriodHtml() {
-  const cur = _spkT(_spkPeriod);
+  const limit = _spkLimitText();
+  const cur = _spkT(_spkPeriod) + (limit ? ' · ' + limit : '');
   return `<div class="spk-period">
     <button type="button" class="spk-icon-btn${_spkPeriod !== 'today' ? ' is-set' : ''}" id="spk-period-btn"
       aria-haspopup="dialog" aria-expanded="false" onclick="_spkOpenSharedRange(this)"
@@ -330,13 +377,25 @@ function _spkPeriodHtml() {
 }
 function _spkOpenSharedRange(button) {
   const range = _spkRange(_spkPeriod);
+  const days = _spkDays(), min = _spkMinDate();
+  if (!days) return;
+  /* Only the presets that fit the window; the calendar greys out every day before it. */
+  const presets = [['today', 1], ['yesterday', 2], ['last3', 3], ['last7', 7]].filter(([, n]) => n <= days).map(([id]) => id);
+  const limit = _spkLimitText();
   SouliaDateRange.open(button, {
     from: _spkYmd(range.from),
     to: _spkYmd(new Date(range.to.getTime() - 1)),
-    presets: ['today', 'yesterday', 'last3', 'last7'],
+    presets,
     max: _spkYmd(new Date()),
+    min: min ? _spkYmd(min) : undefined,
     allowPartial: false,
+    onOpen: portal => {
+      if (!limit) return;
+      const main = portal.querySelector('.drx-main');
+      if (main && !main.querySelector('.spk-drx-limit')) main.insertAdjacentHTML('afterbegin', `<div class="spk-drx-limit" role="note">${_spkEsc(limit)}</div>`);
+    },
     onApply: (from, to) => {
+      if (min && from < _spkYmd(min)) { toast(_spkT('outOfRange'), true); return; }
       const now = new Date();
       const names = { today: 'today', yesterday: 'yesterday', last3: 'three', last7: 'week' };
       const matching = Object.entries(names).find(([preset]) => {
@@ -386,6 +445,7 @@ document.addEventListener('mousedown', e => {
 
 function _spkSetPeriod(p) {
   if (!_SPK_PERIODS.includes(p)) return;
+  if (p !== 'custom' && !_spkPeriodAllowed(p)) { toast(_spkT('outOfRange'), true); return; }
   if (p === 'custom' && !_spkCustomFrom) {
     const range = _spkRange(_spkPeriod);
     _spkCustomFrom = _spkDraftFrom = _spkYmd(range.from);
@@ -408,6 +468,18 @@ function _spkSetPeriod(p) {
 function _spkReportTitle(s) {
   return _spkT(s.days === 1 ? 'dailyReport' : s.period === 'week' ? 'weeklyReport' : s.period === 'three' ? 'threeReport' : 'reportTitle');
 }
+/* Who made the report and when — written on the image and the copied text, so a report that
+   travels outside the system can be traced back to its author (Nov 26, 2026). */
+function _spkAuthor() {
+  const u = typeof currentUser !== 'undefined' && currentUser ? currentUser : null;
+  return String(u?.name || u?.username || '').trim();
+}
+function _spkStamp(n) {
+  n = n || new Date();
+  const hm = `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+  const who = _spkAuthor();
+  return `${_spkT('generated')} ${_spkDmy(n)} · ${hm}${who ? ` · ${_spkT('by')} ${who}` : ''}`;
+}
 function _spkReportText(s) {
   const en = currentLang === 'en';
   const title = _spkReportTitle(s);
@@ -425,6 +497,7 @@ function _spkReportText(s) {
   ];
   if (s.open) lines.push(`⏸ ${en ? 'No action yet' : 'بدون إجراء بعد'}: ${s.open}`);
   lines.push('', `📊 ${_spkT('rate')}: ${s.rate == null ? '—' : s.rate + '%'}`);
+  lines.push('', `👤 ${_spkStamp()}`);
   return lines.join('\n');
 }
 
@@ -539,17 +612,23 @@ async function _spkDrawReport(s) {
   y += 52;
   x.strokeStyle = '#e5ece8'; x.lineWidth = 2;
   x.beginPath(); x.moveTo(P, y - 22); x.lineTo(W - P, y - 22); x.stroke();
-  const n = new Date();
-  const hm = `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
   x.fillStyle = '#94a39a'; font(400, 24);
-  text(`${_spkT('generated')} ${_spkDmy(n)} · ${hm}`, P, y + 16);
-  text('SOULIA', W - P, y + 16, 'end');
+  const stamp = _spkStamp();
+  text(stamp, P, y + 16);
+  /* A long name pushes the brand word out rather than overlapping it. */
+  if (x.measureText(stamp).width < W - P * 2 - 140) text('SOULIA', W - P, y + 16, 'end');
   return c;
 }
 
 let _spkRepCanvas = null, _spkRepStats = null, _spkRepFile = null;
 
+function _spkShareGuard() {
+  if (_spkCanShare() && _spkPeriodAllowed(_spkPeriod)) return true;
+  toast(_spkT(_spkCanShare() ? 'outOfRange' : 'noShare'), true);
+  return false;
+}
 async function _spkOpenReport() {
+  if (!_spkShareGuard()) return;
   const s = _spkStats(_spkPeriod);
   _spkRepStats = s; _spkRepCanvas = null; _spkRepFile = null;
   openModal(`
@@ -594,6 +673,7 @@ function _spkBlob() {
   return new Promise((res, rej) => _spkRepCanvas ? _spkRepCanvas.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png') : rej(new Error('no canvas')));
 }
 async function _spkDownload() {
+  if (!_spkShareGuard()) return;
   try {
     const b = await _spkBlob();
     const url = URL.createObjectURL(b);
@@ -605,6 +685,7 @@ async function _spkDownload() {
   } catch (_) { toast(_spkT('drawFail'), true); }
 }
 async function _spkShare() {
+  if (!_spkShareGuard()) return;
   try {
     if (!_spkRepStats || !_spkRepCanvas) return;
     const text = _spkReportText(_spkRepStats);
@@ -615,6 +696,7 @@ async function _spkShare() {
   } catch (e) { if (e && e.name !== 'AbortError') toast(_spkT('drawFail'), true); }
 }
 async function _spkCopyText() {
+  if (!_spkShareGuard()) return;
   const s = _spkRepStats || _spkStats(_spkPeriod);
   const ok = await _copyTextWithFallback(_spkReportText(s));
   toast(_spkT(ok ? 'copied' : 'copyFail'), !ok);

@@ -206,6 +206,18 @@ export class EmployeePerformanceController {
     return this.scoringService.getMyAssignedOrders(String(userId), p);
   }
 
+  /**
+   * One employee's points for one calendar month — read by the salary form in المصاريف
+   * («جلب نقاط الشهر»). Admin-only: it reads a colleague's score.
+   */
+  @Get('points/:employeeId')
+  @Roles('admin')
+  async getEmployeeMonthPoints(@Param('employeeId') employeeId: string, @Query('month') month?: string) {
+    const key = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(month || '')) ? String(month) : undefined;
+    const s = await this.scoringService.getMyPerformanceSummary(String(employeeId), 'month', key);
+    return { employeeId, month: s.periodKey, label: s.periodLabel, points: s.totalPoints, deliveredOrders: s.deliveredOrdersCount };
+  }
+
   @Get('logs')
   @Roles('admin')
   async getLogs(

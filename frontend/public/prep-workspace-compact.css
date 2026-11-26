@@ -355,3 +355,35 @@ body.dark-mode #pu-card-orders-modal .pw-pe-unit { background: #1f1a10; border-c
 body.dark-mode #pu-card-orders-modal .pw-pe-list li.is-removed>span { background: #4a2420; color: #ffb4a8; }
 body.dark-mode #pu-card-orders-modal .pw-pe-list li.is-added>span { background: #1d3b2a; color: #a2dfb8; }
 body.dark-mode #pu-card-orders-modal .pw-pe-paused { color: #ffb36b; }
+
+/* Product photo fills the card's whole photo column, edge to edge (owner, Nov 26, 2026).
+   The card's padding is pinned to --pwc-pad so the photo can cancel it exactly; the photo
+   keeps the card's outer corners (logical, so RTL and LTR both work). */
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-grid>.pw-item { --pwc-pad: 10px; padding: var(--pwc-pad); }
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item-front { align-items: stretch; }
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item .pw-item-pic {
+  position: relative; display: block; width: auto; max-width: none; min-height: 100%; align-self: stretch;
+  margin-block: calc(-1 * var(--pwc-pad)); margin-inline-start: calc(-1 * var(--pwc-pad));
+  overflow: hidden; border-radius: 0; background: var(--surface2);
+}
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item .pw-item-pic .product-thumb {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; aspect-ratio: auto;
+  border: 0; border-radius: 0; box-shadow: none;
+}
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item .pw-item-pic .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item .pw-item-pic .tx-item-img-fallback svg { width: 40%; height: 40%; }
+@media (max-width: 600px) {
+  #pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-grid>.pw-item { --pwc-pad: 9px; }
+}
+/* The «next to pick» line (an inset shadow) was hidden behind the photo on its side —
+   draw it over the whole card instead, so the frame stays one piece. */
+/* The card clips its own content to its rounded corners, so the photo and the line follow
+   the border exactly (rounding each piece separately left steps at the corners). */
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-grid>.pw-item { position: relative; overflow: hidden; }
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-grid>.pw-item.is-next-pick { box-shadow: none; }
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-grid>.pw-item.is-next-pick::after {
+  content: ''; position: absolute; inset-block-start: 0; inset-inline: 0; height: 3px; z-index: 3; pointer-events: none;
+  background: var(--pw-accent);
+}
+/* a hairline between the photo and the card body */
+#pu-card-orders-modal[data-workspace="prep"] #pw-work .pw-item .pw-item-pic { border-inline-end: 1px solid var(--pw-divider, var(--border)); box-sizing: border-box; }

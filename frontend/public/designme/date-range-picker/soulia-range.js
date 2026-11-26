@@ -20,7 +20,9 @@
     const q = s => root.querySelector(s), qa = s => [...root.querySelectorAll(s)];
     const today = () => { const value = options.today ? options.today() : new Date(); const n = typeof value === 'string' ? parse(value) : value; return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
     const maxDate = () => { const current = iso(today()); return options.max && options.max < current ? options.max : current; };
-    const allowed = d => !!d && iso(d) <= maxDate();
+    // `min` (YYYY-MM-DD): days before it cannot be chosen — e.g. a permission's report window.
+    const minDate = () => options.min || '';
+    const allowed = d => !!d && iso(d) <= maxDate() && (!minDate() || iso(d) >= minDate());
     let A = null, B = null, hover = null, cursor = null, base = null, appliedTimer;
     const l = labels(), locale = lang() === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US';
     const ids = options.presets || ['last7','last30','quarter'];
@@ -64,12 +66,12 @@
       const n=A&&B ? Math.round((Date.UTC(B.getFullYear(),B.getMonth(),B.getDate())-Date.UTC(A.getFullYear(),A.getMonth(),A.getDate()))/864e5)+1 : 0;
       q('.drx-n').textContent=n ? `${n} ${n===1?l.day:l.days}` : B?l.anyStart:A?l.pickEnd:l.pickStart;
       q('.drx-ok').disabled=(options.allowPartial?!(A||B):!(A&&B)) || !!(A&&!allowed(A) || B&&!allowed(B));
-      qa('.drx-p').forEach(p => { const range=presets[p.dataset.p]?.(today()); p.disabled=!!(range&&!allowed(range[1])); p.classList.toggle('on',!!(range&&A&&B&&iso(A)===iso(range[0])&&iso(B)===iso(range[1]))); p.setAttribute('aria-pressed',String(p.classList.contains('on'))); });
-      qa('.drx-quarter-item').forEach(b => { b.disabled=b.dataset.to>maxDate(); const selected=!!(A&&B&&iso(A)===b.dataset.from&&iso(B)===b.dataset.to); b.classList.toggle('on',selected); b.setAttribute('aria-pressed',String(selected)); });
+      qa('.drx-p').forEach(p => { const range=presets[p.dataset.p]?.(today()); p.disabled=!!(range&&(!allowed(range[1])||!allowed(range[0]))); p.classList.toggle('on',!!(range&&A&&B&&iso(A)===iso(range[0])&&iso(B)===iso(range[1]))); p.setAttribute('aria-pressed',String(p.classList.contains('on'))); });
+      qa('.drx-quarter-item').forEach(b => { b.disabled=b.dataset.to>maxDate()||!!(minDate()&&b.dataset.from<minDate()); const selected=!!(A&&B&&iso(A)===b.dataset.from&&iso(B)===b.dataset.to); b.classList.toggle('on',selected); b.setAttribute('aria-pressed',String(selected)); });
     }
     function set(from,to) { A=parse(from); B=parse(to); hover=cursor=null; const d=B||A||today(); base=new Date(d.getFullYear(),d.getMonth()-(window.innerWidth<=500?0:1),1); build(); }
     function click(d) { if (!allowed(d)) return; if (!A||B||key(d)<key(A)) { A=d; B=null; } else B=d; hover=null; deco(); }
-    qa('.drx-p').forEach(p => p.onclick=() => { const range=presets[p.dataset.p]?.(today()); if (!range||!allowed(range[1])) return; A=range[0]; B=range[1]; hover=null; base=new Date(B.getFullYear(),B.getMonth()-(window.innerWidth<=500?0:1),1); build(); });
+    qa('.drx-p').forEach(p => p.onclick=() => { const range=presets[p.dataset.p]?.(today()); if (!range||!allowed(range[1])||!allowed(range[0])) return; A=range[0]; B=range[1]; hover=null; base=new Date(B.getFullYear(),B.getMonth()-(window.innerWidth<=500?0:1),1); build(); });
     const showQuarterScreen = show => {
       q('.drx').hidden=show;
       q('.drx-quarter-screen').hidden=!show;
@@ -89,7 +91,7 @@
       const next=e.key==='Home'?0:e.key==='End'?items.length-1:e.key==='ArrowDown'?Math.min(items.length-1,Math.max(0,at+1)):Math.max(0,at-1);
       items[next]?.focus({preventScroll:true});
     };
-    qa('.drx-quarter-item').forEach(b => b.onclick=() => { if (b.dataset.to>maxDate()) return; A=parse(b.dataset.from); B=parse(b.dataset.to); hover=cursor=null; base=new Date(B.getFullYear(),B.getMonth()-(window.innerWidth<=500?0:1),1); build(); showQuarterScreen(false); q('.drx-ok').focus({preventScroll:true}); });
+    qa('.drx-quarter-item').forEach(b => b.onclick=() => { if (b.dataset.to>maxDate()||(minDate()&&b.dataset.from<minDate())) return; A=parse(b.dataset.from); B=parse(b.dataset.to); hover=cursor=null; base=new Date(B.getFullYear(),B.getMonth()-(window.innerWidth<=500?0:1),1); build(); showQuarterScreen(false); q('.drx-ok').focus({preventScroll:true}); });
     q('.drx-clr').onclick=() => { A=B=hover=null; deco(); options.onClear?.(); };
     if (options.allowPartial) { q('.drx-open-start').onclick=() => { A=null;hover=null;deco(); }; q('.drx-open-end').onclick=() => { B=null;hover=null;deco(); }; }
     q('.drx-ok').onclick=() => { if ((!A&&!B)||(!options.allowPartial&&(!A||!B))||(A&&!allowed(A))||(B&&!allowed(B))) return; options.onApply?.(iso(A),iso(B)); q('.drx-ok').textContent=l.applied; clearTimeout(appliedTimer); appliedTimer=setTimeout(() => { if (root.isConnected) q('.drx-ok').textContent=l.apply; },1200); };
@@ -137,7 +139,7 @@
     }
     portal.hidden=false; portal.style.visibility='hidden'; portal.setAttribute('aria-label',labels().range);
     active={anchor,api:null}; anchor.setAttribute('aria-expanded','true'); anchor.setAttribute('aria-controls',portal.id);
-    active.api=mount(portal,{from:opts.from||'',to:opts.to||'',presets:opts.presets,today:opts.today,max:opts.max,
+    active.api=mount(portal,{from:opts.from||'',to:opts.to||'',presets:opts.presets,today:opts.today,max:opts.max,min:opts.min,
       allowPartial:opts.allowPartial!==false,onLayoutChange:position,
       onApply:(from,to)=>{opts.onApply?.(from,to);close(true);},
       onClear:()=>{opts.onClear?.();close(true);}});

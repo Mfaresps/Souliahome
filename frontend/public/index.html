@@ -3622,6 +3622,10 @@ body.dark-mode #header .notif-btn:hover,body.dark-mode #header .adb-reopen-btn:h
 .cmt-who{display:inline-flex;flex-direction:column;min-width:0;line-height:1.25}
 .tx-cmt-meta:has(.cmt-who){align-items:baseline}
 .pw-cmt-b .cmt-jt{margin:-1px 0 3px}
+.fu-name-v{display:inline-flex;align-items:center;gap:3px;max-width:100%}
+.fu-name-v>.fu-name-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fu-verified{display:inline-flex;flex-shrink:0;line-height:0}
+.fu-verified svg{display:block}
 .cmt-jt{display:block;unicode-bidi:isolate;font-size:.66rem;font-weight:400;color:var(--muted);line-height:1.2;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:start}
 .profile-trigger .pt-av-wrap{position:relative;display:inline-flex;flex-shrink:0}
 .profile-trigger .pt-presence{position:absolute;bottom:-1px;inset-inline-end:-1px;width:10px;height:10px;border-radius:50%;background:#9ca3af;box-shadow:0 0 0 2px var(--shell-white,#fff);transition:background .25s}
@@ -5973,9 +5977,15 @@ body.dark-mode .sp-mk.is-warn{color:#fdba74}
 #shopify-orders-table-wrap .data-table .sp-ref-line .sp-ref-link{flex:0 0 auto}
 #shopify-orders-table-wrap .data-table .sp-ref-line .sp-ref-time{display:inline-flex;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #shopify-orders-table-wrap .data-table .sp-ref-line .sp-ref-link + .sp-ref-time{margin-inline-start:8px}
-#shopify-orders-table-wrap .data-table .sp-ref-line .sp-new-badge{font-size:.6rem;padding:1px 5px}
-.sp-new-badge{display:inline-flex;align-items:center;flex-shrink:0;padding:1px 7px;border-radius:5px;background:#dcefe2;color:#1f4d31;font-size:.66rem;font-weight:700;line-height:1.5;vertical-align:middle;white-space:nowrap}
-body.dark-mode .sp-new-badge{background:rgba(74,222,128,.16);color:#86efac}
+#shopify-orders-table-wrap .data-table .sp-ref-line .sp-new-badge{font-size:.6rem;padding:0 5px}
+/* The order time is never cut («9:27 p…», Nov 26): it does not shrink, and when the ref cell
+   is too narrow for «Recent / حديث» the pill becomes a lime dot (word kept in its title; the
+   row's lime stripe already marks it). _spFitRefLines measures each line. */
+#shopify-orders-table-wrap .data-table .sp-ref-line .sp-ref-time{flex:0 0 auto;overflow:visible}
+#main #shopify-orders-table-wrap .data-table .sp-ref-line.is-tight .sp-new-badge{width:8px;height:8px;min-width:8px;padding:0;border-radius:50%;font-size:0;line-height:0;color:transparent;overflow:hidden;margin-inline-start:2px}
+/* «جديد»: small fluorescent lime pill, dark ink (≈15:1) */
+.sp-new-badge{display:inline-flex;align-items:center;flex-shrink:0;padding:0 5px;border-radius:4px;background:#d9ff3d;color:#1d2a00;font-size:.6rem;font-weight:600;line-height:16px;vertical-align:middle;white-space:nowrap}
+body.dark-mode .sp-new-badge{background:#c8f03a;color:#1d2a00}
 
 /* ═══ Staff cell ═══ */
 .sp-staff-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 8px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--text);font:inherit;font-size:.74rem;font-weight:500;cursor:pointer;white-space:nowrap}
@@ -17719,7 +17729,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/roles-permissions.css?v=20261113-roles1">
 <link rel="stylesheet" href="/announcements.css?v=4">
 <link rel="stylesheet" href="/api-access.css?v=6">
-<link rel="stylesheet" href="/assistant.css?v=22">
+<link rel="stylesheet" href="/assistant.css?v=25">
 <link rel="stylesheet" href="/onboarding.css?v=1">
 <link rel="stylesheet" href="/manager-otp.css?v=1">
 <link rel="stylesheet" href="/browse-access.css?v=4">
@@ -17727,7 +17737,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/bundle-analytics.css?v=1">
 <link rel="stylesheet" href="/supplier-return-statements.css?v=3">
 <link rel="stylesheet" href="/promotions.css?v=1">
-<link rel="stylesheet" href="/shopify-kpis.css?v=20261029-metric-strip">
+<link rel="stylesheet" href="/shopify-kpis.css?v=20261126-report-perms">
 <link rel="stylesheet" href="/shopify-confirm-deferral.css?v=20261125-unconfirmed">
 <link rel="stylesheet" href="/settings-responsive.css?v=20261020-connection-status">
 <link rel="stylesheet" href="/r2-meter.css?v=20261109b">
@@ -17759,7 +17769,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/startup-experience.css?v=20261102-8">
 <link rel="stylesheet" href="/data-loading.css?v=20261110-shopify-subtabs">
 <link rel="stylesheet" href="/scan-station-redesign.css?v=20261102-larger-compact-photos">
-<link rel="stylesheet" href="/prep-workspace-compact.css?v=20261114-prep-edit">
+<link rel="stylesheet" href="/prep-workspace-compact.css?v=20261126-photo-frame2">
 <link rel="stylesheet" href="/reports-refined.css?v=20261103-1">
 <link rel="stylesheet" href="/comment-thread.css?v=20261110-neutral-cards">
 <link rel="stylesheet" href="/comment-inline-edit.css?v=20261109-1">
@@ -20226,20 +20236,20 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <input type="date" id="exp-from" title="من تاريخ" data-i18n-title="expFromDate" onchange="expPage=1;renderExpenses()" class="exp-filter-input date-filter-icon">
       <input type="date" id="exp-to" title="إلى تاريخ" data-i18n-title="expToDate" onchange="expPage=1;renderExpenses()" class="exp-filter-input date-filter-icon">
       <!-- ⚠ option value="" stays Arabic — it is the filter/DB value; only the visible text is translated -->
-      <select id="exp-cat-filter" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+      <select id="exp-cat-filter" data-icons="expense-cat" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
         <option value="" data-i18n="expAllCategories">كل الفئات</option>
         <option value="إيجارات" data-i18n="expCatRent">إيجارات</option>
-        <option value="اعلانات" data-i18n="expCatAds">اعلانات</option>
+        <option value="اعلانات" data-i18n="expCatAds">إعلانات</option>
         <option value="تغليف" data-i18n="expCatPackaging">تغليف</option>
-        <option value="موصلات وتنقل" data-i18n="expCatTransport">موصلات وتنقل</option>
+        <option value="موصلات وتنقل" data-i18n="expCatTransport">مواصلات وتنقل</option>
         <option value="اشتراكات" data-i18n="expCatSubscriptions">اشتراكات</option>
         <option value="مرتبات" data-i18n="expCatSalaries">مرتبات</option>
         <option value="كهرباء ومياه" data-i18n="expCatUtilities">كهرباء ومياه</option>
         <option value="مستلزمات مكتبية" data-i18n="expCatOfficeSupplies">مستلزمات مكتبية</option>
         <option value="ضيافة عملاء" data-i18n="expCatHospitality">ضيافة عملاء</option>
-        <option value="اخرى" data-i18n="expCatOther">اخرى</option>
+        <option value="اخرى" data-i18n="expCatOther">أخرى</option>
       </select>
-      <select id="exp-acc-filter" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
+      <select id="exp-acc-filter" data-icons="pay-method" onchange="expPage=1;renderExpenses()" class="exp-filter-input">
         <option value="" data-i18n="expAllAccounts">كل الحسابات</option>
         <option value="كاش" data-i18n="paymentMethodCash">كاش</option>
         <option value="فودافون كاش" data-i18n="paymentMethodVodafoneCash">فودافون كاش</option>
@@ -20258,7 +20268,6 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <table id="exp-table" class="exp-table">
       <thead>
         <tr>
-          <th style="width:36px;text-align:center"><input type="checkbox" id="exp-select-all" onchange="document.querySelectorAll('.exp-chk:not(:disabled)').forEach(c=>c.checked=this.checked)"></th>
           <th style="width:110px" data-i18n="date">التاريخ</th>
           <th data-i18n="expColExpense">المصروف</th>
           <th style="width:130px" data-i18n="expColCategory">الفئة</th>
@@ -22310,7 +22319,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
         <button class="btn btn-sm sp-icon-btn" id="sp-kpi-toggle" type="button" onclick="_spkToggle()" aria-controls="sp-kpi" aria-pressed="true" title="إخفاء الملخص">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/></svg>
         <span id="sp-kpi-toggle-label">إظهار الملخص</span></button>
-        <button type="button" class="btn btn-sm" onclick="_spkOpenReport()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6v20h14V8zM14 2v6h6M9 13h8M9 17h5"/></svg><span data-i18n="spCompactReport">تقرير الأوردرات</span></button>
+        <button type="button" class="btn btn-sm" id="sp-tools-report" onclick="_spkOpenReport()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6v20h14V8zM14 2v6h6M9 13h8M9 17h5"/></svg><span data-i18n="spCompactReport">تقرير الأوردرات</span></button>
         <span id="shopify-last-refresh" role="status"></span>
       </div>
     </details>
@@ -24737,7 +24746,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <script src="/deposit-history.js?v=20261110-shimmer"></script>
 <link rel="stylesheet" href="/deposit-decision.css?v=20261110-small-reason">
 <script src="/deposit-decision.js?v=20261110-small-reason"></script>
-<script src="/shopify-kpis.js?v=20261125-deferral"></script>
+<script src="/shopify-kpis.js?v=20261126-report-author"></script>
 <script src="/shopify-confirm-deferral.js?v=20261125-unconfirmed"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261114-return-when-shipped">
 <script src="/invoice-unit-identities.js?v=20261114-return-when-shipped"></script>
@@ -26133,7 +26142,9 @@ const PERMS = ['dashboard','assistant','transaction','inventory','movements','cl
   // Promotions page — one perm per area. ⚠ Mirrored by backend promotions/promotion-perms.ts.
   'promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit',
   // «بيانات المرتجعات» — documentation only. ⚠ Mirrored by backend supplier-return-statement.constants.ts.
-  'suppliers-rs-view','suppliers-rs-create','suppliers-rs-edit','suppliers-rs-status','suppliers-rs-delete','suppliers-rs-export'];
+  'suppliers-rs-view','suppliers-rs-create','suppliers-rs-edit','suppliers-rs-status','suppliers-rs-delete','suppliers-rs-export',
+  // Shopify page reports (Nov 26, 2026) — the range keys decide how far back; see SHOPIFY_REPORT_RANGES.
+  'shopify-reports-today','shopify-reports-3d','shopify-reports-7d','shopify-reports-30d','shopify-reports-all','shopify-reports-share'];
 const PERMS_AR = {dashboard:'الرئيسية',assistant:'مساعد SOULIA',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
   'pickup-orders':'التجهيز والشحن - عرض الطلبات',
   'pickup-orders-prepare':'التجهيز والشحن - تحضير الطلبات',
@@ -26178,7 +26189,8 @@ const PERMS_AR = {dashboard:'الرئيسية',assistant:'مساعد SOULIA',tra
   'promotions-view':'العروض والخصومات - فتح الصفحة (عرض فقط)','promotions-offers':'العروض والخصومات - إنشاء وتعديل وإيقاف عروض الأسعار',
   'promotions-codes':'العروض والخصومات - إدارة أكواد الخصم','promotions-bundles':'العروض والخصومات - إدارة باقات الخصم الذكية',
   'promotions-tags':'العروض والخصومات - إدارة TAGs','promotions-audit':'العروض والخصومات - عرض سجل المراجعة',
-  'suppliers-rs-view':'بيانات المرتجعات - عرض','suppliers-rs-create':'بيانات المرتجعات - إنشاء بيان','suppliers-rs-edit':'بيانات المرتجعات - تعديل بيان','suppliers-rs-status':'بيانات المرتجعات - تغيير الحالة','suppliers-rs-delete':'بيانات المرتجعات - حذف بيان','suppliers-rs-export':'بيانات المرتجعات - طباعة وتصدير'};
+  'suppliers-rs-view':'بيانات المرتجعات - عرض','suppliers-rs-create':'بيانات المرتجعات - إنشاء بيان','suppliers-rs-edit':'بيانات المرتجعات - تعديل بيان','suppliers-rs-status':'بيانات المرتجعات - تغيير الحالة','suppliers-rs-delete':'بيانات المرتجعات - حذف بيان','suppliers-rs-export':'بيانات المرتجعات - طباعة وتصدير',
+  'shopify-reports-today':'تقارير شوبيفاي - اليوم فقط','shopify-reports-3d':'تقارير شوبيفاي - حتى آخر 3 أيام','shopify-reports-7d':'تقارير شوبيفاي - حتى آخر 7 أيام','shopify-reports-30d':'تقارير شوبيفاي - حتى آخر 30 يومًا','shopify-reports-all':'تقارير شوبيفاي - أي فترة','shopify-reports-share':'تقارير شوبيفاي - تحميل ومشاركة التقرير'};
 
 // Module grouping for the ERP-style hierarchical permissions UI
 /* Access is granted by ROLES only (Nov 13, 2026) — roles-permissions.js owns the catalog
@@ -30724,7 +30736,7 @@ const TRANSLATIONS = {
   spColTracking:{ar:'تتبع العميل',en:'Tracking'},
 
   /* Rows, cells, chips */
-  spNewBadge:{ar:'جديد',en:'New'},
+  spNewBadge:{ar:'حديث',en:'Recent'},
   spItemsCount:{ar:'{n} صنف',en:'{n} items'},
   spItemsCountOne:{ar:'{n} صنف',en:'{n} item'},
   spOrdersCount:{ar:'{n} طلب',en:'{n} orders'},
@@ -32243,15 +32255,15 @@ const TRANSLATIONS = {
   expAllAccounts:{ar:'كل الحسابات',en:'All accounts'},
   expClearBtn:{ar:'مسح',en:'Clear'},
   expCatRent:{ar:'إيجارات',en:'Rent'},
-  expCatAds:{ar:'اعلانات',en:'Advertising'},
+  expCatAds:{ar:'إعلانات',en:'Advertising'},
   expCatPackaging:{ar:'تغليف',en:'Packaging'},
-  expCatTransport:{ar:'موصلات وتنقل',en:'Transport & travel'},
+  expCatTransport:{ar:'مواصلات وتنقل',en:'Transport & travel'},
   expCatSubscriptions:{ar:'اشتراكات',en:'Subscriptions'},
   expCatSalaries:{ar:'مرتبات',en:'Salaries'},
   expCatUtilities:{ar:'كهرباء ومياه',en:'Electricity & water'},
   expCatOfficeSupplies:{ar:'مستلزمات مكتبية',en:'Office supplies'},
   expCatHospitality:{ar:'ضيافة عملاء',en:'Client hospitality'},
-  expCatOther:{ar:'اخرى',en:'Other'},
+  expCatOther:{ar:'أخرى',en:'Other'},
   expColExpense:{ar:'المصروف',en:'Expense'},
   expColCategory:{ar:'الفئة',en:'Category'},
   expColAccount:{ar:'الحساب',en:'Account'},
@@ -32330,11 +32342,6 @@ const TRANSLATIONS = {
   expDelPassRequired:{ar:'أدخل الرقم السري المكوّن من 4 أرقام',en:'Enter the 4-digit PIN'},
   expDelFinal:{ar:'حذف نهائي',en:'Delete permanently'},
   expDefaultDesc:{ar:'المصروف',en:'the expense'},
-  expBulkNoneSelected:{ar:'لم يتم تحديد مصاريف',en:'No expenses selected'},
-  expBulkNotPending:{ar:'المصاريف المحددة ليست في حالة معلق',en:'The selected expenses are not pending'},
-  expBulkConfirm:{ar:'حذف {n} مصروف معلق؟',en:'Delete {n} pending expense(s)?'},
-  expBulkTitle:{ar:'حذف مجمّع',en:'Bulk delete'},
-  expBulkDeleted:{ar:'تم حذف {n} مصروف',en:'{n} expense(s) deleted'},
   expExportOtpReason:{ar:'تصدير المصاريف',en:'Export expenses'},
   expExportSheet:{ar:'المصاريف',en:'Expenses'},
   expExportColDesc:{ar:'الوصف',en:'Description'},
@@ -35171,6 +35178,25 @@ function isAdmin() { return currentUser && currentUser.role === 'admin'; }
 function hasPerm(p) { if (isAdmin()) return true; return currentUser && currentUser.perms && currentUser.perms.includes(p); }
 /* Products & delivery issues (Nov 25, 2026) — mirrors shared/cost-visibility.util.ts, the
    products controller PUT and the failed-delivery routes. */
+/* Shopify page reports (Nov 26, 2026) — ⚠ mirrors backend shared/shopify-report-access.util.ts.
+   The widest range key held decides how many calendar days back (today included) the period
+   KPI strip and the «تقرير» may cover; 0 = the strip is not shown at all. */
+const SHOPIFY_REPORT_RANGES = [['shopify-reports-today', 1], ['shopify-reports-3d', 3], ['shopify-reports-7d', 7], ['shopify-reports-30d', 30], ['shopify-reports-all', Infinity]];
+function _spRepDays() {
+  if (isAdmin()) return Infinity;
+  return SHOPIFY_REPORT_RANGES.reduce((days, [key, n]) => hasPerm(key) ? Math.max(days, n) : days, 0);
+}
+/** Earliest day (local midnight) the user may view, null = none, undefined = any. */
+function _spRepMinDate() {
+  const days = _spRepDays();
+  if (!days) return null;
+  if (!Number.isFinite(days)) return undefined;
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (days - 1));
+  return d;
+}
+function _spRepCanShare() { return isAdmin() || (_spRepDays() > 0 && hasPerm('shopify-reports-share')); }
+/* Deposit money totals: admins only (the server leaves them out for everyone else). */
+function _spRepCanDeposit() { return isAdmin(); }
 function _canSeeCost() { return isAdmin() || ['products-cost-view', 'purchase-edit-price', 'purchase-create'].some(p => hasPerm(p)); }
 function _canEditBuyPrice() { return isAdmin() || hasPerm('purchase-edit-price'); }
 function _canEditSellPrice() { return isAdmin() || hasPerm('products-price-sell'); }
@@ -43386,11 +43412,35 @@ function _fuCarrierCommentPresentation(text) {
   }
   return { title, reason, appointment, scheduled };
 }
+// Automatic follow-up entries are stored with authorName 'النظام'; show a clear,
+// language-aware label instead of that stored word.
+function _fuAuthorLabel(comment) {
+  const raw = String(comment?.authorName || '').trim();
+  const en = typeof currentLang !== 'undefined' && currentLang === 'en';
+  const isSystem = String(comment?.authorId || '') === 'system' || /^(?:النظام|system)$/i.test(raw);
+  if (!isSystem) return raw;
+  if (/^(?:بوسطة|bosta)$/i.test(raw) || /تحديث بوسطة:/.test(comment?.text || '')) return en ? 'Bosta' : 'بوسطة';
+  if (!raw || /^(?:النظام|system)$/i.test(raw)) return 'Soulia';
+  return raw;
+}
+// Green verified mark (like Facebook's) after the «Soulia» author name.
+function _fuVerifiedHtml(u) {
+  if (!u?.verified) return '';
+  const en = typeof currentLang !== 'undefined' && currentLang === 'en';
+  const label = en ? 'Verified · Soulia system' : 'موثّق · نظام Soulia';
+  return `<span class="fu-verified" role="img" aria-label="${label}" title="${label}"><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="#16a34a"/><path d="M4.6 8.2l2.2 2.2 4.6-4.7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+}
+function _fuNameHtml(u) {
+  const name = esc(u?.name || '—');
+  if (!u?.verified) return `<span dir="auto">${name}</span>`;
+  // dir="auto": the mark follows the NAME's own direction — «Soulia ✓» for a
+  // Latin name (also on Arabic screens), «✓ سوليا» for an Arabic one.
+  return `<span class="fu-name-v" dir="auto"><span class="fu-name-t">${name}</span>${_fuVerifiedHtml(u)}</span>`;
+}
 function _fuCommentAuthor(comment) {
   if (String(comment.authorId || '') === 'system') {
     const bosta = /^(?:بوسطة|bosta)$/i.test(String(comment.authorName || '').trim()) || /تحديث بوسطة:/.test(comment.text || '');
-    const en = typeof currentLang !== 'undefined' && currentLang === 'en';
-    return { _id: 'system', name: bosta ? (en ? 'Bosta' : 'بوسطة') : (comment.authorName || (en ? 'System' : 'النظام')), ...(bosta ? { carrier: 'bosta' } : {}) };
+    return { _id: 'system', name: _fuAuthorLabel(comment), ...(bosta ? { carrier: 'bosta' } : { verified: true }) };
   }
   const user = (typeof users !== 'undefined' && Array.isArray(users) ? users : []).find(u => String(u._id) === String(comment.authorId));
   return { ...(user || {}), _id: comment.authorId || user?._id, name: comment.authorName || user?.name || '' };
@@ -43468,12 +43518,12 @@ function renderMyFollowUpComment(f, layout = 'bubble') {
     return `<button type="button" class="employee-priority-comment" data-followup-id="${escHtml(f.id || f._id || '')}" data-comment-id="${escHtml(comment.id || '')}" onclick="event.stopPropagation();openMyFollowUpTrail(this.dataset.followupId,this.dataset.commentId,this)" ${!(f.id || f._id) || !_canAccessPage('followups') ? 'disabled' : ''} title="${escHtml(en ? 'Read the full conversation' : 'عرض المحادثة كاملة')}">
       <span class="employee-priority-comment-label">${en ? 'Latest comment · Read conversation' : 'آخر تعليق · عرض المحادثة'}<span aria-hidden="true">${en ? '↗' : '↖'}</span></span>
       <span class="employee-priority-comment-text" dir="auto"${_fuCommentTimeAttrs(text)}>${_fuCommentDisplayHtml(text)}</span>
-      <span class="employee-priority-comment-meta">${userAvatarHtml(profile, 20)}<span dir="auto">${esc(profile.name)}</span>${timestamp ? `<time datetime="${escHtml(comment.at)}" title="${escHtml(_fuRelTime(comment.at))}">${esc(timestamp)}</time>` : ''}</span>
+      <span class="employee-priority-comment-meta">${userAvatarHtml(profile, 20)}${_fuNameHtml(profile)}${timestamp ? `<time datetime="${escHtml(comment.at)}" title="${escHtml(_fuRelTime(comment.at))}">${esc(timestamp)}</time>` : ''}</span>
     </button>`;
   }
   return `<button type="button" class="employee-sample-comment employee-comment-message" data-followup-id="${escHtml(f.id || f._id || '')}" data-comment-id="${escHtml(comment.id || '')}" onclick="event.stopPropagation();openMyFollowUpTrail(this.dataset.followupId,this.dataset.commentId,this)" ${!(f.id || f._id) || !_canAccessPage('followups') ? 'disabled' : ''} title="${escHtml(en ? 'Open follow-up trail' : 'فتح مسار المتابعة')}">
     <span class="employee-comment-avatar">${userAvatarHtml(profile, 26)}</span>
-    <span class="employee-comment-content"><span class="employee-comment-bubble" dir="auto"${_fuCommentTimeAttrs(comment.text)}>${_fuCommentDisplayHtml(comment.text)}</span><span class="employee-comment-meta">${profile.name ? `<span dir="auto">${esc(profile.name)}</span>` : ''}${timestamp ? `<time datetime="${escHtml(comment.at)}" data-comment-relative title="${escHtml(timestamp)}">${esc(_fuRelTime(comment.at))}</time>` : ''}</span></span>
+    <span class="employee-comment-content"><span class="employee-comment-bubble" dir="auto"${_fuCommentTimeAttrs(comment.text)}>${_fuCommentDisplayHtml(comment.text)}</span><span class="employee-comment-meta">${profile.name ? _fuNameHtml(profile) : ''}${timestamp ? `<time datetime="${escHtml(comment.at)}" data-comment-relative title="${escHtml(timestamp)}">${esc(_fuRelTime(comment.at))}</time>` : ''}</span></span>
   </button>`;
 }
 function myPriorityCommentText(f) {
@@ -71091,6 +71141,11 @@ function _pmSelectIcon(sel, value) {
   if (sel.dataset.icons === 'complaint-solution') return window.ComplaintFlow?.solutionIcon?.(value) || '';
   if (sel.dataset.icons === 'complaint-category') return window.ComplaintFlow?.categoryIcon?.(value) || '';
   if (sel.dataset.icons === 'after-sales') return window.AfterSales?.selectIcon?.(value) || '';
+  if (sel.dataset.icons === 'expense-cat') {
+    if (!value) return '';
+    const m = getExpCatMeta(value);
+    return `<span class="pm-select-icon exp-cat-ic" style="--ec-bg:${m.bg};--ec-fg:${m.color}">${m.emoji}</span>`;
+  }
   if (sel.dataset.icons === 'pay-method') {
     // «آجل» is not a vault — a clock, not the cash note payMethodIcon would fall back to
     const ic = value === 'آجل'
@@ -79422,6 +79477,9 @@ function renderExpenses() {
   const cat = qs('#exp-cat-filter')?.value;
   const acc = qs('#exp-acc-filter')?.value;
   const search = qs('#exp-search')?.value?.toLowerCase() || '';
+  // The app's own dropdown (category / vault icons) instead of the OS list; idempotent.
+  const _expFilterRow = qs('.exp-filters-row');
+  if (_expFilterRow && !_expFilterRow.dataset.enhanced) { _expFilterRow.dataset.enhanced = '1'; _pmEnhanceSelects(_expFilterRow); }
 
   /* KPI Counts (all expenses, unfiltered) */
   const approved  = expenses.filter(e => e.status === 'معتمد');
@@ -79491,7 +79549,7 @@ function renderExpenses() {
     if (to && e.date && e.date.slice(0, 10) > to) return false;
     if (cat && e.category !== cat) return false;
     if (acc && e.account !== acc) return false;
-    if (search && !(e.desc || '').toLowerCase().includes(search) && !(e.expenseNo || '').toLowerCase().includes(search)) return false;
+    if (search && !(e.desc || '').toLowerCase().includes(search) && !(e.expenseNo || '').toLowerCase().includes(search) && !(e.payeeName || '').toLowerCase().includes(search)) return false;
     return true;
   });
   data.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -79535,24 +79593,24 @@ function renderExpenses() {
   const tbody = qs('#exp-tbody');
   if (tbody) {
     if (!pageData.length) {
-      tbody.innerHTML = `<tr><td colspan="9" style="padding:0">${_expEmptyHtml}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="padding:0">${_expEmptyHtml}</td></tr>`;
     } else {
       let html = '';
       let lastMonthKey = null;
       pageData.forEach(e => {
         const mk = monthKey(e.date);
         if (mk !== lastMonthKey) {
-          html += `<tr class="exp-month-sep"><td colspan="9">${esc(monthLabel(mk))}</td></tr>`;
+          html += `<tr class="exp-month-sep"><td colspan="8">${esc(monthLabel(mk))}</td></tr>`;
           lastMonthKey = mk;
         }
         const meta = getExpCatMeta(e.category);
         const canOpen = isAdmin() || e.employee === (currentUser?.name || currentUser?.username);
         html += `<tr class="exp-clickable-row${e.status === 'معلق' ? ' exp-row-pending' : ''}" ${canOpen ? `onclick="openExpenseDetail('${esc(e._id)}')"` : ''}>
-        <td style="text-align:center" onclick="event.stopPropagation()"><input type="checkbox" class="exp-chk" value="${esc(e._id)}" ${e.status === 'معتمد' ? 'disabled' : ''}></td>
         <td style="white-space:nowrap;color:var(--muted);font-size:.83rem">${fmtDate(e.date)}</td>
         <td>
           <span class="exp-row-desc">${esc(e.desc || '-')}</span>
           ${e.expenseNo ? `<span class="exp-row-no">#${esc(e.expenseNo)}</span>` : ''}
+          ${(!e.desc || !e.payeeName || !e.desc.includes(e.payeeName)) ? (window.SouliaExpensePayees?.rowTagHtml(e) || '') : ''}
         </td>
         <td>
           <span class="exp-cat-badge">
@@ -79681,6 +79739,7 @@ async function openExpenseDetail(id) {
       <div class="exp-detail-field"><div class="exp-detail-field-label">${t('expDetailExpenseNo')}</div><div class="exp-detail-field-val">${esc(e.expenseNo || '-')}</div></div>
       <div class="exp-detail-field"><div class="exp-detail-field-label">${t('expColCategory')}</div><div class="exp-detail-field-val">${meta.emoji} ${e.category ? esc(expCatLabel(e.category)) : '-'}</div></div>
       <div class="exp-detail-field"><div class="exp-detail-field-label">${t('expColAccount')}</div><div class="exp-detail-field-val">${e.account ? esc(_payMethodLabel(e.account)) : '-'}</div></div>
+      ${window.SouliaExpensePayees?.detailHtml(e) || ''}
       <div class="exp-detail-field"><div class="exp-detail-field-label">${t('expColEmployee')}</div><div class="exp-detail-field-val">${esc(e.employee || '-')}</div></div>
       <div class="exp-detail-field"><div class="exp-detail-field-label">${t('status')}</div><div class="exp-detail-field-val"><span class="exp-status ${statusClass}"><span class="exp-status-dot"></span>${esc(_statusLabel(e.status))}</span></div></div>
       ${e.notes ? `<div class="exp-detail-field" style="grid-column:1/-1"><div class="exp-detail-field-label">${t('expDetailNotes')}</div><div class="exp-detail-field-val">${esc(e.notes)}</div></div>` : ''}
@@ -79703,8 +79762,7 @@ async function openExpenseDetail(id) {
       <div class="exp-timeline">${createdStep}${approvalStep}</div>
     </div>
     <div class="flex gap-8" style="flex-wrap:wrap">
-      ${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="printExpenseDetails('${esc(e._id)}')">${t('print')}</button>` : ''}
-      ${e.status === 'معلق' && (isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="closeModal();openExpenseModal('${esc(e._id)}')">${t('edit')}</button>` : ''}
+      ${(isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="printExpenseDetails('${esc(e._id)}')">${t('print')}</button>` : ''}      ${e.status === 'معلق' && (isAdmin() || e.employee === (currentUser?.name || currentUser?.username)) ? `<button class="btn btn-outline btn-sm" onclick="closeModal();openExpenseModal('${esc(e._id)}')">${t('edit')}</button>` : ''}
       ${isAdmin() && e.status === 'معلق' ? `<button class="btn btn-primary btn-sm" onclick="closeModal();approveExpense('${esc(e._id)}')">${t('expActionApprove')}</button>` : ''}
       ${(isAdmin() || (e.employee === (currentUser?.name || currentUser?.username) && e.status !== 'معتمد')) ? `<button class="btn btn-danger btn-sm" style="margin-right:auto" onclick="closeModal();deleteExpenseWithPassword('${esc(e._id)}')">${e.status === 'معتمد' ? t('expDeleteUnapprove') : t('delete')}</button>` : `<button class="btn btn-outline btn-sm" style="margin-right:auto" onclick="closeModal()">${t('close')}</button>`}
       <button class="btn btn-outline btn-sm" onclick="closeModal()">${t('close')}</button>
@@ -79737,10 +79795,10 @@ function openExpenseModal(id) {
         </div>
         <div class="form-group">
           <label>${t('expFormCategoryReq')}</label>
-          <select id="em-cat" required>
+          <select id="em-cat" required data-icons="expense-cat" onchange="window.SouliaExpensePayees&&SouliaExpensePayees.onCategory()">
             <option value="">${t('expFormPickCategory')}</option>
-            ${/* ⚠ option value stays the stored Arabic category — only the label is localized */''}
-            ${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${getExpCatMeta(c).emoji} ${esc(expCatLabel(c))}</option>`).join('')}
+            ${/* ⚠ option value stays the stored Arabic category — only the label is localized; the icon comes from data-icons */''}
+            ${EXP_CATEGORIES.map(c => `<option value="${esc(c)}" ${e?.category === c ? 'selected' : ''}>${esc(expCatLabel(c))}</option>`).join('')}
           </select>
         </div>
         <div class="form-group" style="grid-column:1/-1">
@@ -79749,6 +79807,9 @@ function openExpenseModal(id) {
         </div>
       </div>
     </div>
+
+    ${/* Ads / salaries / subscriptions: who is paid + the period it covers (expense-payees.js) */''}
+    <div id="em-xp-slot"></div>
 
     <div class="exp-form-section">
       <div class="exp-form-section-title">${t('expDetailItems')}</div>
@@ -79771,15 +79832,17 @@ function openExpenseModal(id) {
       <div class="grid grid-2 gap-12">
         <div class="form-group">
           <label>${t('expFormAmountReq')}</label>
-          <div style="position:relative">
-            <input type="number" id="em-amount" value="${e?.amount || ''}" min="0.01" step="0.01" placeholder="0.00" style="padding-left:40px" required data-require-nonzero="true">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:600;color:var(--muted);font-size:.72rem">EGP</span>
+          ${/* Text, not number: a number field cannot show thousands separators. _expAmountValue() parses it. */''}
+          <div class="exp-amt-wrap">
+            <input type="text" id="em-amount" class="exp-amt-input" inputmode="decimal" autocomplete="off" dir="ltr" value="${e?.amount ? esc(_expFmtAmount(e.amount)) : ''}" placeholder="0.00" required oninput="_expAmountInput(this)" onblur="_expAmountBlur(this)">
+            <span class="exp-amt-cur">EGP</span>
           </div>
+          <div class="exp-amt-words" id="em-amount-words" aria-live="polite">${e?.amount ? esc(_expAmountWords(e.amount)) : ''}</div>
         </div>
         <div class="form-group">
           <label>${t('expFormPayMethod')}</label>
           ${/* ⚠ option value stays the stored Arabic method — only the label is localized */''}
-          <select id="em-account">
+          <select id="em-account" data-icons="pay-method">
             <option value="كاش" ${(!e || e.account === 'كاش') ? 'selected' : ''}>${t('paymentMethodCash')}</option>
             <option value="فودافون كاش" ${e?.account === 'فودافون كاش' ? 'selected' : ''}>${t('paymentMethodVodafoneCash')}</option>
             <option value="Instapay" ${e?.account === 'Instapay' ? 'selected' : ''}>${t('paymentMethodInstapay')}</option>
@@ -79834,6 +79897,50 @@ function openExpenseModal(id) {
       ${isEdit ? t('expFormSaveEdits') : t('expFormSaveNew')}
     </button>
   `);
+  _pmEnhanceSelects(qs('#em-cat')?.closest('.modal') || qs('#modal-overlay'));
+  window.SouliaExpensePayees?.mount(e);
+}
+
+/* ── Expense amount: typed with thousands separators, read back as a number ── */
+function _expAmountValue(raw) {
+  const v = raw !== undefined ? raw : (qs('#em-amount')?.value || '');
+  const latin = String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٫]/g, '.').replace(/[^\d.]/g, '');
+  const n = Number(latin);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function _expFmtAmount(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function _expAmountWords(n) {
+  const v = Number(n) || 0;
+  if (v <= 0) return '';
+  return currentLang === 'en' ? '' : amountToArabicWords(v);
+}
+/** Regroups the digits as they are typed, keeping the caret after the same digit. */
+function _expAmountInput(el) {
+  const raw = el.value;
+  const caret = el.selectionStart ?? raw.length;
+  const digitsBefore = raw.slice(0, caret).replace(/[^\d٠-٩۰-۹.٫]/g, '').length;
+  let clean = raw.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٫]/g, '.').replace(/[^\d.]/g, '');
+  const dot = clean.indexOf('.');
+  if (dot >= 0) clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+  const [int, frac] = clean.split('.');
+  const grouped = (int || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = dot >= 0 ? `${grouped || '0'}.${frac || ''}` : grouped;
+  el.value = out;
+  let pos = 0, seen = 0;
+  while (pos < out.length && seen < digitsBefore) { if (/[\d.]/.test(out[pos])) seen++; pos++; }
+  try { el.setSelectionRange(pos, pos); } catch (_) {}
+  const w = qs('#em-amount-words');
+  if (w) w.textContent = _expAmountWords(_expAmountValue(out));
+  el.dispatchEvent(new CustomEvent('exp-amount-change', { bubbles: true }));
+}
+function _expAmountBlur(el) {
+  const n = _expAmountValue(el.value);
+  if (el.value.trim()) el.value = _expFmtAmount(n);
 }
 
 function addExpDescItem() {
@@ -79886,11 +79993,24 @@ async function saveExpense(id) {
   const formScope = qs('#em-cat')?.closest('.exp-form-section')?.parentElement || document.getElementById('modal-overlay') || document;
   if (!validateRequired(formScope).ok) { toast(t('expFillRequired'), true); return; }
   const cat = (qs('#em-cat')?.value || '').trim();
+  if (window.InvoiceImageUpload?.busy('#em-attach-section')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
+  if (!cat) { toast(t('expFillRequired'), true); return; }
+  if (!(_expAmountValue() > 0)) {
+    const amt = qs('#em-amount');
+    if (typeof markInvalid === 'function' && amt) markInvalid(amt, currentLang === 'en' ? 'Enter an amount above zero' : 'أدخل مبلغًا أكبر من صفر');
+    amt?.focus();
+    return;
+  }
   const expenseNo = (qs('#em-expno')?.value || '').trim() || ('EXP-' + Date.now().toString().slice(-5));
   const descItems = Array.from(document.querySelectorAll('.exp-desc-item-input')).map(i => i.value.trim()).filter(Boolean);
   if (window.InvoiceImageUpload?.busy('#em-attach-section')) { toast(InvoiceImageUpload.busyMessage(), true); return; }
   const attachment = qs('#em-attachment-path')?.value || '';
-  const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: cat, amount: Number(qs('#em-amount').value) || 0, account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '', descItems, attachment };
+  const body = { expenseNo, date: qs('#em-date').value, desc: qs('#em-desc').value, category: cat, amount: _expAmountValue(), account: qs('#em-account').value, notes: qs('#em-notes').value, employee: currentUser?.name || currentUser?.username || '', descItems, attachment };
+  // Ads / salaries / subscriptions carry their saved party and the period they pay for.
+  const xp = window.SouliaExpensePayees?.collect(id) || { fields: {} };
+  if (xp.error) { toast(xp.error, true); return; }
+  Object.assign(body, xp.fields);
+  if (window.SouliaExpensePayees && !(await SouliaExpensePayees.confirmDuplicate(body, id))) return;
   if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
   try {
     if (id) {
@@ -79898,6 +80018,7 @@ async function saveExpense(id) {
       if (isLikelyOffline()) { toast(t('expEditNeedsOnline'), true); return; }
       await api('/expenses/' + id, { method: 'PUT', body: JSON.stringify(body) });
       toast(t('expSavedEdits'));
+      window.SouliaExpensePayees?.invalidate();
       closeModal();
       expenses = await api('/expenses').catch(() => expenses);
       renderExpenses(); buildSidebar(); buildNotifications();
@@ -79911,6 +80032,7 @@ async function saveExpense(id) {
         toast(t('oqSyncQueued'));
       } else {
         toast(t('expAddedAwaiting'));
+        window.SouliaExpensePayees?.invalidate();
         expenses = await api('/expenses').catch(() => expenses);
         renderExpenses();
       }
@@ -79991,9 +80113,31 @@ async function confirmDeleteExpenseWithPassword(id) {
   }
 }
 
+/**
+ * The printed page's <title> — what «حفظ كملف PDF» offers as the file name: the expense's own title
+ * (it already names the party and the period, e.g. «مرتب Fares — لشهر نوفمبر 2026»), the party when the
+ * title does not, and the date when there is no period. Characters a file name cannot hold are dropped.
+ */
+function _expPrintTitle(e) {
+  if (!e) return 'مصروف';
+  const desc = String(e.desc || '').trim() || expCatLabel(e.category) || 'مصروف';
+  const parts = [desc];
+  if (e.payeeName && !desc.includes(e.payeeName)) parts.push(e.payeeName);
+  if (!e.periodFrom && e.date) {
+    const d = String(e.date).slice(0, 10).split('-');
+    if (d.length === 3) parts.push(`${Number(d[2])}-${Number(d[1])}-${d[0]}`);
+  }
+  return parts.join(' — ').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 120);
+}
+
 function printExpenseDetails(id) {
   const exp = expenses.find(e => e._id === id);
   if (!exp) return;
+  // A salary prints as a salary notice + cheque (expense-payees.js), not as the generic expense sheet.
+  if (exp.category === 'مرتبات' && (exp.payeeName || exp.salary) && window.SouliaExpensePayees?.printSalary) {
+    SouliaExpensePayees.printSalary(id);
+    return;
+  }
   
   const statusColors = {
     'معتمد': { bg: '#10b981', color: '#fff' },
@@ -80020,6 +80164,7 @@ function printExpenseDetails(id) {
     <html dir="${_en ? 'ltr' : 'rtl'}" lang="${_en ? 'en' : 'ar'}">
     <head>
       <meta charset="UTF-8">
+      <title>${esc(_expPrintTitle(exp))}</title>
       <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; }
@@ -80138,19 +80283,6 @@ function printExpenseDetails(id) {
   const w = window.open('', '_blank');
   w.document.write(html);
   w.document.close();
-}
-async function bulkDeleteExpenses() {
-  const ids = Array.from(document.querySelectorAll('.exp-chk:checked')).map(c => c.value);
-  if (!ids.length) { toast(t('expBulkNoneSelected'), true); return; }
-  const pendingIds = ids.filter(id => { const e = expenses.find(x => x._id === id); return e && e.status === 'معلق'; });
-  if (!pendingIds.length) { toast(t('expBulkNotPending'), true); return; }
-  if (!await showConfirm(t('expBulkConfirm', { n: fmtN(pendingIds.length) }), { title: t('expBulkTitle'), icon: 'danger', danger: true })) return;
-  try {
-    await api('/expenses/bulk-delete', { method: 'POST', body: JSON.stringify({ ids: pendingIds }) });
-    toast(t('expBulkDeleted', { n: fmtN(pendingIds.length) }));
-    expenses = await api('/expenses').catch(() => expenses);
-    renderExpenses();
-  } catch (e) { toast(t('errorPrefix', { v: e.message }), true); }
 }
 function exportExpensesExcel() {
   // Column headers follow the UI language; the stored category/status/account values are
@@ -97530,6 +97662,8 @@ function handleEnterToSubmit(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    // An open app dropdown (.pm-sel) owns this Escape: it closes the list, never the window under it.
+    if (e.defaultPrevented || (typeof _pmSelOpen !== 'undefined' && _pmSelOpen)) return;
     if (qs('#tx-dirty-overlay')?.style.display === 'flex') txDirtyCancel();
     else if (qs('#tx-picker-overlay')?.style.display !== 'none' && qs('#tx-picker-overlay')?.style.display) closeProductPicker();
     // نافذة الخصم تُفتح فوق نافذة التعديل — تُغلق أولاً حتى لا تُغلق نافذة التعديل من تحتها
@@ -101589,7 +101723,7 @@ function renderFollowUps() {
           </div>
           ${lastComment ? `<div class="fu-trail-panel-body">
             ${FU_TRAIL_COMMENT_ICON}
-            <span class="fu-card-comment-text"><strong>${esc(lastComment.authorName || '')}:</strong> ${esc(lastComment.text)}</span>
+            <span class="fu-card-comment-text"><strong>${esc(_fuAuthorLabel(lastComment))}:</strong> ${esc(lastComment.text)}</span>
           </div>` : ''}
         </div>`
       : `<div class="fu-trail-panel" onclick="event.stopPropagation();openFuCommentPopup('${fId}')">
@@ -102873,7 +103007,7 @@ function _fuRenderCommentThread(options = {}) {
       <div class="fu-timeline-content">
         <div class="fu-timeline-top">
           <div class="fu-timeline-who">
-            <span class="cmt-who"><span class="fu-timeline-name">${esc(u.name || '—')}</span>${cmtJobTitleHtml(u)}</span>
+            <span class="cmt-who"><span class="fu-timeline-name">${_fuNameHtml(u)}</span>${cmtJobTitleHtml(u)}</span>
           </div>
           ${menuBtn}
         </div>
@@ -113750,9 +113884,12 @@ function _renderShopifyDepositSummary(data) {
   const bar = qs('#shopify-deposit-summary-bar');
   if (!bar) return;
 
+  // Money totals are admin-only — everyone else sees the paid / unpaid counts.
+  // ⚠ The server also leaves the amounts out (summary-page).
+  const canMoney = _spRepCanDeposit();
   // Approved receipts only, each in the vault its money actually came into — an order paid
   // 500 Instapay + 300 cash counts in both, not 800 in one.
-  if (_shopifySelectedIds.size) {
+  if (_shopifySelectedIds.size && canMoney) {
     const selectionRows = _spServerEnabled && currentPage === 'shopify-orders'
       ? _spServerResponse?.selectionRows || [] : data;
     const selected = selectionRows.filter(o => _shopifySelectedIds.has(String(o._id)));
@@ -113792,7 +113929,7 @@ function _renderShopifyDepositSummary(data) {
     }
   }
 
-  bar.innerHTML = `
+  bar.innerHTML = (canMoney ? `
     <div class="sp-deposit-chip" title="${t('spDepositInstapay')}">
       ${instapayLogoHtml(15)}
       <span>${fmtN(instapay)}</span>
@@ -113801,7 +113938,7 @@ function _renderShopifyDepositSummary(data) {
       <img src="/vodafone.svg" alt="Vodafone">
       <span>${fmtN(vodafone)}</span>
     </div>
-    <span class="sp-deposit-sep"></span>
+    <span class="sp-deposit-sep"></span>` : '') + `
     <div class="sp-deposit-chip" title="${t('spPaidOrders')}">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
       <span>${fmtN(paidCount)}</span>
@@ -114707,7 +114844,7 @@ function _spPeekFuHtml(o) {
     return `<li class="sp-pk-tl">
       <span class="sp-pk-tl-av">${userAvatarHtml(u, 24)}</span>
       <div class="sp-pk-tl-b">
-        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${esc(u.name || '—')}</b>${cmtJobTitleHtml(u)}</span><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
+        <div class="sp-pk-tl-top"><span class="cmt-who"><b>${_fuNameHtml(u)}</b>${cmtJobTitleHtml(u)}</span><time title="${escHtml(_pwWhenFull(c.createdAt))}">${esc(_pwWhen(c.createdAt))}</time></div>
         ${body}
       </div>
     </li>`;
@@ -116467,6 +116604,7 @@ function _spRebuildOrderTable(wrap, html) {
  *  the loading skeleton gets the same height. Phones show cards — nothing to fit there. */
 let _spFitHeadObserver = null;
 function _spFitOrderTable() {
+  _spFitRefLines();
   if (window.SouliaTableViewport) { window.SouliaTableViewport.schedule(); return; }
   const page = qs('#page-shopify-orders');
   const head = page?.querySelector('.sp-sticky-head');
@@ -116496,6 +116634,17 @@ function _spFitOrderTable() {
   page.style.setProperty('--sp-table-overscroll', lock ? 'contain' : 'auto');
 }
 window.addEventListener('resize', () => requestAnimationFrame(_spFitOrderTable));
+/* The order time is never cut («9:27 p…», Nov 26, 2026): a ref line that does not fit shows
+   the «Recent / حديث» pill as a lime dot (word kept in its title). Measured, not guessed —
+   the cell's width depends on the viewport and on what else the line carries. */
+function _spFitRefLines() {
+  const lines = document.querySelectorAll('#shopify-orders-table-wrap .sp-ref-line');
+  if (!lines.length) return;
+  lines.forEach(l => l.classList.remove('is-tight'));
+  const tight = [...lines].filter(l => l.querySelector('.sp-new-badge') && l.scrollWidth > l.clientWidth + 1);
+  tight.forEach(l => l.classList.add('is-tight'));
+}
+window.addEventListener('resize', () => requestAnimationFrame(_spFitRefLines));
 function _spPaintLiveOrderTable(wrap, html) {
   const current = wrap.querySelector('.sp-table-scroll > table');
   if (!_spLivePaint || !current?.tBodies[0]) { _spRebuildOrderTable(wrap, html); return; }
@@ -116885,6 +117034,7 @@ function renderShopifyOrders() {
   _spPaintLiveOrderTable(wrap, _spTableHtml);
   try { applyShopifyColsVisibility(); } catch(_) {}
   _spFitOrderTable();
+  _spFitRefLines();
   /* بعد إخفاء/إظهار الأعمدة مباشرةً — عرض العمود صار نهائياً، فيمكن قياس القص */
 
   } else { wrap.replaceChildren(); }
@@ -122684,9 +122834,9 @@ function _spFuLastEntryHtml(o) {
     ? '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/>'
     : '<path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>'}
   </svg>`;
-  return `<button type="button" class="sp-card-fu-last${isCall ? ' is-call' : ''}" title="${escHtml(`${last.authorName || '—'} — ${bodyTxt} — ${whenFull}`)}" onclick="event.stopPropagation();_spPeekOpenTrail('${esc(String(f._id))}')">
+  return `<button type="button" class="sp-card-fu-last${isCall ? ' is-call' : ''}" title="${escHtml(`${_fuAuthorLabel(last) || '—'} — ${bodyTxt} — ${whenFull}`)}" onclick="event.stopPropagation();_spPeekOpenTrail('${esc(String(f._id))}')">
     ${icon}
-    <span class="sp-card-fu-last-b"><span class="sp-card-comment-meta"><b dir="auto">${esc(last.authorName || '—')}</b><span class="sp-card-followup-badge">${isEn ? 'Follow-up' : 'متابعة'}</span><time title="${escHtml(whenFull)}">${esc(when)}</time></span><span class="sp-card-comment-text" dir="auto">${esc(bodyTxt)}</span></span>
+    <span class="sp-card-fu-last-b"><span class="sp-card-comment-meta"><b dir="auto">${esc(_fuAuthorLabel(last) || '—')}</b><span class="sp-card-followup-badge">${isEn ? 'Follow-up' : 'متابعة'}</span><time title="${escHtml(whenFull)}">${esc(when)}</time></span><span class="sp-card-comment-text" dir="auto">${esc(bodyTxt)}</span></span>
     <svg class="sp-card-followup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
   </button>`;
 }
@@ -122780,10 +122930,10 @@ function _spRenderHistoryTab() {
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
-<script src="/roles-permissions.js?v=20261126-assistant"></script>
+<script src="/roles-permissions.js?v=20261126-shopify-reports"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/api-access.js?v=7"></script>
-<script src="/assistant.js?v=25"></script>
+<script src="/assistant.js?v=28"></script>
 <script src="/onboarding.js?v=1"></script>
 <script src="/manager-otp.js?v=1"></script>
 <script src="/browse-access.js?v=3"></script>
@@ -122797,7 +122947,7 @@ function _spRenderHistoryTab() {
 <script src="/followup-reminders.js?v=20261109-phase8"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>
 <script src="/order-audit-insights.js?v=20261021-6"></script>
-<script src="/order-audit-marketing.js?v=20261021-7"></script>
+<script src="/order-audit-marketing.js?v=20261126-payee"></script>
 <script src="/order-audit-periods.js?v=20261118-apply-range"></script>
 <script src="/notification-history.js?v=20261110-prep-groups"></script>
 <script src="/shopify-settings.js?v=20261020-connection-status"></script>
@@ -122842,6 +122992,8 @@ function _spRenderHistoryTab() {
 <script src="/purchase-scan-receive.js?v=20261115-2"></script>
 <link rel="stylesheet" href="/purchase-form.css?v=20261116-2">
 <script src="/invoice-image-upload.js?v=20261116-3"></script>
+<link rel="stylesheet" href="/expense-payees.css?v=20261126-1">
+<script src="/expense-payees.js?v=20261126-1"></script>
 <link rel="stylesheet" href="/shopify-compact-header.css?v=20261110-inline-tabs">
 <script src="/shopify-compact-header.js?v=20261110-inline-tabs"></script>
 <link rel="stylesheet" href="/otp-audit.css?v=20261026-mobile-filters-time-labels">
@@ -122857,8 +123009,8 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/dashboard-clarity.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/shipping-command-center.css?v=20261115-aftersales2">
 <link rel="stylesheet" href="/window-system.css?v=20261109-center">
-<link rel="stylesheet" href="/designme/date-range-picker/soulia-range.css?v=4">
-<script src="/designme/date-range-picker/soulia-range.js?v=4"></script>
+<link rel="stylesheet" href="/designme/date-range-picker/soulia-range.css?v=5">
+<script src="/designme/date-range-picker/soulia-range.js?v=5"></script>
 <script>
 (function () {
   const movButton=document.querySelector('#mov-date-btn');

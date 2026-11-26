@@ -121,3 +121,9 @@ button.spk-tile{font:inherit;color:inherit;text-align:start;cursor:pointer;appea
 button.spk-tile:hover{border-color:var(--accent,#287d52);box-shadow:0 2px 8px #15302112}
 button.spk-tile.is-active{outline:2px solid var(--accent,#287d52);outline-offset:-2px}
 button.spk-tile:focus-visible{outline:3px solid var(--accent,#287d52);outline-offset:2px}
+
+/* Report window note inside the period calendar (Nov 26, 2026) — states how far back the
+   employee's permission reaches; days before it are disabled by the calendar itself. */
+.spk-drx-limit{margin:0 0 8px;padding:6px 10px;border-radius:8px;background:var(--bg-alt,#f4f6f5);
+  color:var(--text-muted,#5b6660);font-size:.76rem;line-height:1.5}
+body.dark-mode .spk-drx-limit{background:rgba(255,255,255,.06);color:#c6d0ca}

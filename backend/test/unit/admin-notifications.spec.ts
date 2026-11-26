@@ -107,7 +107,7 @@ describe('Admin-only notifications and OTP secrecy', () => {
   it('expense approval sends the decision only after the vault deduction succeeds', async () => {
     const expense: any = { _id: id, expenseNo: 'EXP-1', employee: 'Ahmed', status: 'معلق', save: jest.fn(async () => expense) };
     const vault: any = { assertSufficientBalance: jest.fn(async () => {}), addSystemEntry: jest.fn(async () => {}) };
-    const service: any = new ExpensesService({ findById: () => ({ exec: async () => expense }) } as any, vault);
+    const service: any = new ExpensesService({ findById: () => ({ exec: async () => expense }) } as any, {} as any, vault);
     service.notifications = { enqueue: jest.fn(async () => {}) };
     vault.addSystemEntry.mockRejectedValueOnce(new Error('vault failure'));
     await expect(service.approve(id, 'Admin')).rejects.toThrow('vault failure');

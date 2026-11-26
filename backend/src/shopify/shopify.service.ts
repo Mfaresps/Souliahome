@@ -81,6 +81,7 @@ import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 import { DEPOSIT_REASONS, DEPOSIT_EXCEPTIONS, validateDepositDecision, depositDecisionReport } from './deposit-decision.util';
 import { depositFromShopifyNote } from './shopify-note-deposit.util';
 import { DEPOSIT_NO_PENDING_REQUESTS, depositOrderConflict } from './deposit-order-conflict.util';
+import { ReportUser, shopifyReportAllows, canSeeShopifyDepositTotals } from '../shared/shopify-report-access.util';
 
 @Injectable()
 export class ShopifyService {
@@ -1220,7 +1221,10 @@ export class ShopifyService {
    * Read-only, paged workspace feed. The legacy GET /orders response is deliberately
    * unchanged: other screens and external consumers still use its full documents.
    */
-  async getOrdersSummaryPage(query: Record<string, string>, actorId: string) {
+  /** `viewer` = the signed-in user (role + perms); omitted only by internal callers and tests,
+   *  which see everything. The period KPIs and the deposit money totals follow the Shopify
+   *  report permissions (shared/shopify-report-access.util.ts). */
+  async getOrdersSummaryPage(query: Record<string, string>, actorId: string, viewer?: ReportUser) {
     const page = Math.max(1, Math.min(100000, Number.parseInt(query.page || '1', 10) || 1));
     const limit = Math.max(1, Math.min(100, Number.parseInt(query.limit || '30', 10) || 30));
     const tab = query.tab === 'all' ? 'all' : 'pending';
@@ -1230,11 +1234,16 @@ export class ShopifyService {
     const statusFilter = String(query.statusFilter || '');
     const columnStatus = String(query.columnStatus || '');
     const starred = query.starred === '1';
-    const kpiFilter = String(query.kpiFilter || '');
     const kpiFrom = query.kpiFrom ? new Date(query.kpiFrom).getTime() : NaN;
     const kpiTo = query.kpiTo ? new Date(query.kpiTo).getTime() : NaN;
     const kpiPrevFrom = query.kpiPrevFrom ? new Date(query.kpiPrevFrom).getTime() : NaN;
     const kpiPrevTo = query.kpiPrevTo ? new Date(query.kpiPrevTo).getTime() : NaN;
+    // ⚠ A period outside the caller's report window gets no figures — and its KPI filter is
+    // ignored too, or the list's row count would give the same number away.
+    const reportViewer: ReportUser = viewer === undefined ? { role: 'admin' } : viewer;
+    const kpiAllowed = shopifyReportAllows(reportViewer, kpiFrom);
+    const kpiPrevAllowed = kpiAllowed && shopifyReportAllows(reportViewer, kpiPrevFrom);
+    const kpiFilter = kpiAllowed ? String(query.kpiFilter || '') : '';
     const selectedPanel = (() => { try { return JSON.parse(query.panel || '{}'); } catch { return {}; } })();
     const panel = {
       deposit: String(selectedPanel.deposit || ''),
@@ -1521,8 +1530,13 @@ export class ShopifyService {
           byMethod[o.depositMethod] = Number(o.depositAmount) || 0;
         return { _id: o._id, status: o.status, cancelled: o.cancelled, total: o.total, byMethod };
       }),
-      depositSummary, panelFacets,
-      kpiStats: Number.isFinite(kpiFrom) && Number.isFinite(kpiTo) ? { ...kpiStats(kpiFrom, kpiTo), prevReceived: kpiStats(kpiPrevFrom, kpiPrevTo).received } : null,
+      depositSummary: canSeeShopifyDepositTotals(reportViewer) ? depositSummary
+        : { ...depositSummary, instapay: null, vodafone: null, amountsHidden: true },
+      panelFacets,
+      kpiStats: kpiAllowed && Number.isFinite(kpiTo)
+        ? { ...kpiStats(kpiFrom, kpiTo), prevReceived: kpiPrevAllowed ? kpiStats(kpiPrevFrom, kpiPrevTo).received : null }
+        : null,
+      kpiDenied: !kpiAllowed,
       pendingCancelCount: orders.filter(o => o.cancelRequest?.status === 'معلق').length,
       pendingEditCount: orders.filter(o => o.editRequest?.status === 'معلق').length,
     };

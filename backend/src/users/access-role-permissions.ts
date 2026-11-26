@@ -1,3 +1,5 @@
+import { SHOPIFY_REPORT_RANGE_KEYS, SHOPIFY_REPORT_SHARE } from '../shared/shopify-report-access.util';
+
 // Existing, server-enforced SOULIA permission keys. Do not add a UI-only action here.
 export const ACCESS_ROLE_PERMISSIONS = new Set([
   'dashboard','assistant','transaction','inventory','movements','clients','products','suppliers','expenses',
@@ -26,6 +28,8 @@ export const ACCESS_ROLE_PERMISSIONS = new Set([
   'promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit',
   // «بيانات المرتجعات» (Nov 13, 2026) — documentation only, see supplier-return-statements/.
   'suppliers-rs-view','suppliers-rs-create','suppliers-rs-edit','suppliers-rs-status','suppliers-rs-delete','suppliers-rs-export',
+  // Shopify page reports (Nov 26, 2026) — see shared/shopify-report-access.util.ts.
+  ...SHOPIFY_REPORT_RANGE_KEYS, SHOPIFY_REPORT_SHARE,
 ]);
 
 // These routes use the legacy admin guard rather than a delegable permission.
@@ -45,6 +49,7 @@ export const VIEWER_PERMISSIONS = new Set([
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns',
   'suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
   'carrier-settle-view','delivery-view-audit','promotions-view','suppliers-rs-view',
+  ...SHOPIFY_REPORT_RANGE_KEYS,
 ]);
 
 export function validateRolePermissionTier(baseRole: 'staff' | 'viewer', perms: string[]) {
@@ -71,6 +76,11 @@ export function normalizeRolePermissions(value: unknown): string[] {
     if (!perms.includes('shopify-deposit-upload')) perms.push('shopify-deposit-upload');
     if (!perms.includes('shopify-orders')) perms.push('shopify-orders');
   }
+  // Shopify reports live on the Shopify page. Sharing a report needs a window to read it in —
+  // the narrowest one (today) when no range was chosen.
+  if (perms.includes(SHOPIFY_REPORT_SHARE) && !perms.some(key => SHOPIFY_REPORT_RANGE_KEYS.includes(key))) perms.push('shopify-reports-today');
+  if (perms.some(key => key === SHOPIFY_REPORT_SHARE || SHOPIFY_REPORT_RANGE_KEYS.includes(key))
+    && !perms.includes('shopify-orders')) perms.push('shopify-orders');
   if (perms.some(key => ['products-create','products-edit','products-delete','products-edit-otp','products-price-sell','products-cost-view','products-supplier-view','products-analytics'].includes(key)) && !perms.includes('products')) perms.push('products');
   // Editing the purchase price means seeing it.
   if (perms.includes('purchase-edit-price') && !perms.includes('products-cost-view')) perms.push('products-cost-view');

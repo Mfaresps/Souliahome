@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Expense, ExpenseDocument } from '../expenses/schemas/expense.schema';
 import { AuditResult, AuditRow, OrderAuditService } from './order-audit.service';
+import { expenseInWindow, expenseWindowClause } from '../expenses/expense-payee.util';
 
 export const ADVERTISING_CATEGORY = /^\s*(?:اعلانات|إعلانات|الإعلانات|advertising)\s*$/i;
-const FIELDS = '_id expenseNo date desc category amount status account notes attachment';
+const FIELDS = '_id expenseNo date desc category amount status account notes attachment payeeId payeeName periodFrom periodTo';
 const validDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v;
 type Window = {fromDate:string;toDate:string};
 const iso = (date:Date) => date.toISOString().slice(0,10);
@@ -76,18 +77,19 @@ export class OrderAuditMarketingService {
       let windows:Window[];
       try { windows=JSON.parse(query.windows); } catch {throw new BadRequestException('فترة المقارنة غير صحيحة');}
       if (!Array.isArray(windows)||!windows.length||windows.length>12||windows.some(window=>!window||!validDate(window.fromDate)||!validDate(window.toDate)||window.fromDate>window.toDate)) throw new BadRequestException('فترة المقارنة غير صحيحة');
-      filter.$and=[{$or:windows.map(window=>{const next=new Date(window.toDate);next.setUTCDate(next.getUTCDate()+1);return {date:{$gte:window.fromDate,$lt:iso(next)}};})}];
+      // An ad belongs to a window when the period it pays for overlaps it (else by its date).
+      filter.$and=[{$or:windows.map(window=>expenseWindowClause(window.fromDate,window.toDate))}];
     }
-    if (query.search) { const search = query.search.trim().slice(0,100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); filter.$or = [{desc:new RegExp(search,'i')},{expenseNo:new RegExp(search,'i')}]; }
+    if (query.search) { const search = query.search.trim().slice(0,100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); filter.$or = [{desc:new RegExp(search,'i')},{expenseNo:new RegExp(search,'i')},{payeeName:new RegExp(search,'i')}]; }
+    if (query.payeeId) { if (!/^[a-f\d]{24}$/i.test(query.payeeId)) throw new BadRequestException('الجهة غير صحيحة'); filter.payeeId = query.payeeId; }
     if (query.fromDate || query.toDate) {
       if (!validDate(query.fromDate) || !validDate(query.toDate) || query.fromDate > query.toDate) throw new BadRequestException('اختر فترة مصروفات صحيحة');
-      const next = new Date(query.toDate); next.setUTCDate(next.getUTCDate()+1);
-      filter.date = { $gte:query.fromDate, $lt:next.toISOString().slice(0,10) };
+      filter.$and = [...(filter.$and||[]), expenseWindowClause(query.fromDate, query.toDate)];
     }
     if (query.months) {
       const months = [...new Set(query.months.split(',').map(Number))], year = Number(query.year);
       if (months.some(month => !Number.isInteger(month) || month < 1 || month > 12) || !Number.isInteger(year) || year < 1970 || year > 2100) throw new BadRequestException('الشهور غير صحيحة');
-      filter.$and = [...(filter.$and||[]),{date:new RegExp(`^(?:${months.map(month=>`${year}-${String(month).padStart(2,'0')}`).join('|')})-`)}];
+      filter.$and = [...(filter.$and||[]),{$or:months.map(month=>{const mm=String(month).padStart(2,'0');const last=new Date(Date.UTC(year,month,0)).getUTCDate();return expenseWindowClause(`${year}-${mm}-01`,`${year}-${mm}-${String(last).padStart(2,'0')}`);})}];
     }
     const items = await this.expenses.find(filter).sort({date:-1,_id:-1}).skip((page-1)*30).limit(31).select(FIELDS).lean();
     return {items:items.slice(0,30), hasMore:items.length>30, page};
@@ -122,10 +124,10 @@ export class OrderAuditMarketingService {
         const previousIds=body.previousExpenseIds===undefined?null:[...new Set<string>(body.previousExpenseIds)];
         const filter:any={category:ADVERTISING_CATEGORY,status:'معتمد',amount:{$gt:0}};
         if (previousIds) filter._id={$in:previousIds.map(id=>new Types.ObjectId(id))};
-        else filter.$or=windows.map(window=>{const next=new Date(window.toDate);next.setUTCDate(next.getUTCDate()+1);return {date:{$gte:window.fromDate,$lt:iso(next)}};});
+        else filter.$or=windows.map(window=>expenseWindowClause(window.fromDate,window.toDate));
         const previousInvoices:any[]=windows.length ? await this.expenses.find(filter).select(FIELDS).lean() : [];
         if (previousIds && previousInvoices.length!==previousIds.length) throw new BadRequestException('أحد مصروفات المقارنة غير متاح أو غير معتمد');
-        const outsideExpenseCount=previousInvoices.filter(invoice=>!windows.some(window=>String(invoice.date).slice(0,10)>=window.fromDate&&String(invoice.date).slice(0,10)<=window.toDate)).length;
+        const outsideExpenseCount=previousInvoices.filter(invoice=>!windows.some(window=>expenseInWindow(invoice,window.fromDate,window.toDate))).length;
         const basis=data.period.months?.length?'selected-months':data.period.fromDate.slice(0,7)===data.period.toDate.slice(0,7)?'calendar-month':'previous-days';
         comparison={windows,basis,financials:calculateAuditFinancials(previousRows),metrics:calculateAuditMarketing(previousRows,previousInvoices),invoices:previousInvoices,expenseMode:previousIds?'selected':'all-approved',outsideExpenseCount};
       } catch(error) {
