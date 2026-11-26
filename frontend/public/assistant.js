@@ -264,9 +264,20 @@
         : mail.status === 'gave-up' ? T('تعذّر إرسال البريد بعد عدة محاولات. أبلغ مدير النظام.', 'The email could not be sent after several attempts. Tell the system admin.')
         : T('جارٍ إرسال البريد…', 'Sending the email…');
       const tone = mail.status === 'gave-up' ? ' is-bad' : mail.status === 'failed' ? ' is-warn' : '';
+      // Admins only (the server sends `failure` to admins): why the send failed and what to fix.
+      const f = mail.failure;
+      const why = !f ? '' : ({
+        'not-configured': T('السبب: حساب البريد غير مُعدّ على الخادم (SMTP_USER / SMTP_PASS). أضِفه في Jenkins باسم soulia-smtp ثم أعد النشر.',
+          'Reason: no mail account on the server (SMTP_USER / SMTP_PASS). Add it in Jenkins as soulia-smtp, then redeploy.'),
+        auth: T('السبب: رفض خادم البريد كلمة المرور. استخدم «كلمة مرور التطبيقات» من جوجل (16 حرفًا) لا كلمة مرور الحساب، ثم أعد النشر.',
+          'Reason: the mail server refused the password. Use a Google App Password (16 characters), not the account password, then redeploy.'),
+        network: T('السبب: الخادم لا يصل إلى خادم البريد (المنفذ مغلق أو انتهت المهلة). اطلب من الاستضافة فتح المنفذ 465، أو استخدم خدمة إرسال أخرى.',
+          'Reason: the server cannot reach the mail server (port blocked or timed out). Ask the host to open port 465, or use another mail service.'),
+      }[f.kind] || T('السبب: خطأ من خادم البريد — التفاصيل أدناه.', 'Reason: an error from the mail server — details below.'));
+      const whyHtml = !f ? '' : `<p class="ai-ext-why">${esc(why)}</p><p class="ai-ext-why-detail" dir="ltr">${esc(f.detail || '')}</p>`;
       return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext is-waiting">${head}
         <div class="ai-ext-wait"><span class="ai-ext-dot" aria-hidden="true"></span><b>${esc(T('في انتظار الرد', 'Awaiting reply'))}</b></div>
-        <p class="ai-ext-mail${tone}">${ICON.mail}<span>${esc(sub)}</span></p></div>
+        <p class="ai-ext-mail${tone}">${ICON.mail}<span>${esc(sub)}</span></p>${whyHtml}</div>
         <div class="ai-foot"><span class="ai-foot-acts">${swapBtn}</span></div></div>`;
     }
     const tables = (r.tables || []).map((t) => `<div class="ai-ext-tbl">${t.caption ? `<div class="ai-ext-cap" dir="auto">${esc(t.caption)}</div>` : ''}

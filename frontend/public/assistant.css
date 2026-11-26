@@ -374,5 +374,8 @@ body.dark-mode .ai-msg.is-user.is-ext .ai-bubble{color:#141832}
 .ai-ext-mail svg{width:13px;height:13px;flex-shrink:0}
 .ai-ext-mail.is-warn{color:var(--ai-warn)}
 .ai-ext-mail.is-bad{color:var(--ai-bad)}
+/* Admins only: why the email failed and what to fix */
+.ai-ext-why{margin:6px 0 0;font-size:.76rem;line-height:1.55;color:var(--text)}
+.ai-ext-why-detail{margin:3px 0 0;font:.68rem/1.45 ui-monospace,Consolas,monospace;color:var(--muted);text-align:start;unicode-bidi:plaintext;overflow-wrap:anywhere}
 .ai-resend svg{width:12px;height:12px}
 @media(prefers-reduced-motion:reduce){.ai-ext-dot{animation:none;opacity:1}}

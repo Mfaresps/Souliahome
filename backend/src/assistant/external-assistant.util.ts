@@ -65,6 +65,31 @@ export function mailBody(p: ExternalMailPayload): string {
   return JSON.stringify({ chatId: p.chatId, messageId: p.messageId, userName: p.userName, userRole: p.userRole, question: p.question, createdAt: p.createdAt }, null, 2);
 }
 
+/** The stored error text: the error code once, then the message (the message may already start with it). */
+export function mailErrorText(e: any): string {
+  const code = String(e?.code || '');
+  const msg = String(e?.message || e || '');
+  const text = code && !msg.startsWith(code) ? `${code}: ${msg}` : msg;
+  return text.slice(0, 300);
+}
+
+/**
+ * Why a send failed, in one of four kinds an admin can act on (shown to admins in the chat):
+ *  not-configured → SMTP_USER/SMTP_PASS missing on the server
+ *  auth           → the mail server refused the login (wrong password / not an App Password)
+ *  network        → the server could not reach the mail server (port blocked, DNS, timeout)
+ *  other          → anything else (the raw text is shown beside it)
+ */
+export type MailFailureKind = 'not-configured' | 'auth' | 'network' | 'other';
+export function mailFailureKind(lastError: unknown): MailFailureKind | '' {
+  const s = String(lastError ?? '');
+  if (!s) return '';
+  if (/SMTP_NOT_CONFIGURED/i.test(s)) return 'not-configured';
+  if (/EAUTH|\b535\b|\b534\b|Invalid login|Username and Password not accepted|Application-specific password|BadCredentials/i.test(s)) return 'auth';
+  if (/ETIMEDOUT|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|ESOCKET|ECONNECTION|EHOSTUNREACH|ENETUNREACH|timeout/i.test(s)) return 'network';
+  return 'other';
+}
+
 /** Minutes to wait before the next attempt after `attempts` failed tries; null = give up. */
 export function nextRetryDelayMin(attempts: number): number | null {
   if (attempts >= MAIL_MAX_ATTEMPTS) return null;

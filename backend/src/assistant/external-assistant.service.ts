@@ -5,7 +5,7 @@ import { Connection, Types } from 'mongoose';
 import { PresenceGateway } from '../auth/presence.gateway';
 import {
   EXTERNAL_COLLECTION, MAIL_MAX_ATTEMPTS, cleanChatId, cleanQuestion, mailBody, mailSubject,
-  newMessageId, nextRetryDelayMin, validateReply,
+  mailErrorText, mailFailureKind, newMessageId, nextRetryDelayMin, validateReply,
 } from './external-assistant.util';
 import { MailSender, SmtpMailSender } from './external-mailer';
 
@@ -68,7 +68,7 @@ export class ExternalAssistantService implements OnModuleInit {
 
     if (requestKey) {
       const prev = await this.col.findOne({ userId, requestKey });
-      if (prev) return this.view(prev);
+      if (prev) return this.view(prev, user?.role === 'admin');
     }
 
     const who = await this.asker(user);
@@ -91,13 +91,13 @@ export class ExternalAssistantService implements OnModuleInit {
     } catch (e: any) {
       if (e?.code === 11000 && requestKey) {
         const prev = await this.col.findOne({ userId, requestKey });
-        if (prev) return this.view(prev);
+        if (prev) return this.view(prev, user?.role === 'admin');
       }
       throw e;
     }
     // Sent at once; a failure stays queued for the retry worker and the row still awaits its reply.
     await this.deliver(String(doc._id));
-    return this.view(await this.col.findOne({ _id: doc._id } as any));
+    return this.view(await this.col.findOne({ _id: doc._id } as any), user?.role === 'admin');
   }
 
   private async asker(user: ExternalAsker): Promise<{ name: string; role: string }> {
@@ -149,7 +149,7 @@ export class ExternalAssistantService implements OnModuleInit {
       });
       return true;
     } catch (e: any) {
-      const error = String(e?.code || '') + (e?.code ? ': ' : '') + String(e?.message || e).slice(0, 300);
+      const error = mailErrorText(e);
       const wait = nextRetryDelayMin(attempts);
       this.logger.warn(`mail for ${doc._id} failed (attempt ${attempts}/${MAIL_MAX_ATTEMPTS}): ${error}`);
       await this.col.updateOne({ _id: doc._id, 'mail.status': 'sending' }, {
@@ -193,11 +193,13 @@ export class ExternalAssistantService implements OnModuleInit {
     if (ids.length) filter._id = { $in: ids };
     if (!chatId && !ids.length) return { items: [] };
     const rows = await this.col.find(filter, { sort: { createdAt: 1 }, limit: 100 }).toArray();
-    return { items: rows.map((r) => this.view(r)) };
+    return { items: rows.map((r) => this.view(r, user?.role === 'admin')) };
   }
 
-  view(r: any) {
+  /** `admin` adds why the last send failed — server settings are an admin's to fix, not the asker's. */
+  view(r: any, admin = false) {
     if (!r) return null;
+    const failed = admin && (r.mail?.status === 'failed' || r.mail?.status === 'gave-up') && r.mail?.lastError;
     return {
       messageId: String(r._id),
       chatId: r.chatId,
@@ -210,6 +212,7 @@ export class ExternalAssistantService implements OnModuleInit {
         attempts: Number(r.mail?.attempts) || 0,
         sentAt: r.mail?.sentAt || null,
         nextAttemptAt: r.mail?.nextAttemptAt || null,
+        ...(failed ? { failure: { kind: mailFailureKind(r.mail.lastError), detail: String(r.mail.lastError) } } : {}),
       },
       reply: r.reply || null,
       repliedAt: r.repliedAt || null,

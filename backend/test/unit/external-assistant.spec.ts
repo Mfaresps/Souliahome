@@ -94,3 +94,19 @@ describe('System assistant — never answers an external question', () => {
     await expect(svc.ask({ userId: 'u1' }, { question: 'مبيعات اليوم', target: 'external' })).rejects.toMatchObject({ response: { code: 'WRONG_TARGET' } });
   });
 });
+
+describe('mail failure reason (shown to admins)', () => {
+  const { mailErrorText, mailFailureKind } = require('../../src/assistant/external-assistant.util');
+  it('writes the error code once', () => {
+    expect(mailErrorText({ code: 'SMTP_NOT_CONFIGURED', message: 'SMTP_NOT_CONFIGURED: set SMTP_USER' })).toBe('SMTP_NOT_CONFIGURED: set SMTP_USER');
+    expect(mailErrorText({ code: 'EAUTH', message: 'Invalid login: 535-5.7.8' })).toBe('EAUTH: Invalid login: 535-5.7.8');
+  });
+  it('classifies the four kinds', () => {
+    expect(mailFailureKind('SMTP_NOT_CONFIGURED: SMTP_NOT_CONFIGURED: set SMTP_USER')).toBe('not-configured');
+    expect(mailFailureKind('EAUTH: Invalid login: 535-5.7.8 Username and Password not accepted')).toBe('auth');
+    expect(mailFailureKind('ETIMEDOUT: Connection timeout')).toBe('network');
+    expect(mailFailureKind('ESOCKET: connect ECONNREFUSED 1.2.3.4:465')).toBe('network');
+    expect(mailFailureKind('EENVELOPE: No recipients defined')).toBe('other');
+    expect(mailFailureKind('')).toBe('');
+  });
+});
