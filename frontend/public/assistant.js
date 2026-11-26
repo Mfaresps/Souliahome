@@ -18,6 +18,9 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uid = () => { try { return String(currentUser?._id || currentUser?.id || currentUser?.username || ''); } catch (_) { return ''; } };
   const admin = () => { try { return typeof isAdmin === 'function' && isAdmin(); } catch (_) { return false; } };
+  // The chat is a permission the admin grants per role («استخدام مساعد SOULIA», key `assistant`); the
+  // server refuses every question without it, so the button is not drawn for those accounts.
+  const allowed = () => { try { return !!uid() && (admin() || (typeof hasPerm === 'function' && hasPerm('assistant'))); } catch (_) { return false; } };
   const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const ICON = {
@@ -988,7 +991,7 @@
 
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.code === 'Slash')) {
-      if (!uid()) return;
+      if (!allowed()) return;
       e.preventDefault();
       toggle();
     } else if (e.key === 'Escape' && state.open && !document.querySelector('#modal-overlay.active')) {
@@ -1008,6 +1011,11 @@
     b.setAttribute('aria-label', label);
   }
   function mountBtn() {
+    if (!allowed()) {
+      document.getElementById('ai-hdr-btn')?.remove();
+      if (state.open) close();
+      return;
+    }
     const host = document.querySelector('#header .header-actions');
     if (!host || document.getElementById('ai-hdr-btn')) return;
     const b = document.createElement('button');
@@ -1026,7 +1034,13 @@
   // Language switch: redraw in the new language (answers already given stay as written).
   function relang() { mountBtn(); syncBtn(); if (state.open) shell(); }
 
-  window.SouliaAssistant = { open, close, toggle, ask: (q) => open(q), relang };
+  window.SouliaAssistant = { open: (q) => { if (allowed()) open(q); }, close, toggle: () => { if (allowed()) toggle(); }, ask: (q) => { if (allowed()) open(q); }, relang, sync: mountBtn };
+  // updateHeader() runs after sign-in and whenever the account is refreshed: re-check the permission then.
+  if (typeof window.updateHeader === 'function' && !window.updateHeader.__ai) {
+    const origHeader = window.updateHeader;
+    window.updateHeader = function () { const r = origHeader.apply(this, arguments); try { mountBtn(); } catch (_) {} return r; };
+    window.updateHeader.__ai = true;
+  }
   // applyLang() is a global function declaration — wrap it so the panel follows a language switch.
   if (typeof window.applyLang === 'function' && !window.applyLang.__ai) {
     const orig = window.applyLang;
@@ -1037,8 +1051,9 @@
   // Admins get the morning report counter without opening the panel (checked after sign-in, then every 30 min).
   // Questions still waiting on the external assistant keep being checked after a page reload, panel closed or not.
   setTimeout(function tick() {
-    if (uid()) {
-      mountBtn(); loadDaily(false); bindSocket();
+    mountBtn();
+    if (allowed()) {
+      loadDaily(false); bindSocket();
       if (!state.msgs.length) restore();
       armExternalPoll();
     }

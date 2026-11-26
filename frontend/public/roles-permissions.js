@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const groups = [
-    ['dashboard','Dashboard','الرئيسية',['dashboard','reports-kpis','reports-charts']],
+    ['dashboard','Dashboard','الرئيسية',['dashboard','assistant','reports-kpis','reports-charts']],
     ['orders','Orders','الطلبات',['shopify-orders','transaction','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-edit-direct','shopify-bundle-discount-override','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp']],
     ['pickup','Preparation & shipping','التجهيز والشحن',['pickup-orders','pickup-orders-prepare','pickup-orders-move','pickup-orders-cancel','pickup-orders-bosta','pickup-orders-bosta-cancel','delivery-issues-follow','delivery-issues-close','delivery-manual-confirm','delivery-view-audit']],
     ['inventory','Inventory','المخزون',['inventory','inventory-log-browse','products','products-cost-view','products-supplier-view','products-analytics','products-specs-view','products-specs-manage','products-edit-otp','products-edit','products-price-sell','products-create','products-delete','products-sku-manage','inventory-units-view','inventory-units-register','inventory-units-receive','inventory-units-allocate','inventory-units-condition','inventory-units-reconcile','inventory-units-reconcile-approve','inventory-units-print','inventory-units-manual-select','categories-view','categories-create','categories-edit-otp','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers']],
@@ -22,7 +22,7 @@
     settings:[['Edit Settings','تعديل الإعدادات','Edit'],['Manage Integrations','إدارة التكاملات','Edit']],
   };
   const specialNames = {
-    dashboard:['View Dashboard','عرض الرئيسية'], 'reports-kpis':['View Analytics','عرض مؤشرات الأداء'],
+    dashboard:['View Dashboard','عرض الرئيسية'], assistant:['SOULIA Assistant','مساعد SOULIA'], 'reports-kpis':['View Analytics','عرض مؤشرات الأداء'],
     'shopify-orders':['View Orders','عرض طلبات شوبيفاي'], transaction:['Create Transactions / Orders','إنشاء معاملات وطلبات'],
     'shopify-edit-direct':['Edit Orders','تعديل الطلبات'], 'shopify-bundle-discount-override':['Discount on Shopify bundles (exception)','خصم على باقات Shopify (استثناء)'], 'shopify-cancel':['Cancel Orders','إلغاء الطلبات'],
     'shopify-deposit-no-image':['Add Deposit Without Image (direct)','إضافة عربون بدون صورة (مباشرة)'],
@@ -48,6 +48,7 @@
   const catalog = {
     // ── الرئيسية
     dashboard:['عرض الصفحة الرئيسية','View dashboard','view','فتح الصفحة الرئيسية بملخص اليوم والطلبات والتنبيهات. لا تعرض الأرباح ولا أرصدة الخزنة؛ فهي للمدير فقط.','Opens the home page with today’s summary, orders and alerts. Profit and cash balances stay admin-only.'],
+    assistant:['استخدام مساعد SOULIA','Use the SOULIA Assistant','view','يُظهر زر المساعد في أعلى الصفحة: السؤال عن الأرقام (كل إجابة تحترم باقي صلاحيات الموظف، فلا يرى ما لا تسمح به صفحاته)، وإرسال سؤال إلى المساعد الخارجي (Instinct) بالبريد. بدونها لا يظهر الزر ويرفض الخادم أي سؤال.','Shows the assistant button at the top: questions about figures (each answer follows the employee’s other permissions, so it never shows what their pages hide), and sending a question to the external assistant (Instinct) by email. Without it the button is hidden and the server refuses every question.'],
     'reports-kpis':['التقارير: مؤشرات الأداء','Reports: KPIs','view','عرض بطاقات المؤشرات في صفحة التقارير (المبيعات، متوسط الفاتورة، المرتجعات…). تمنح «فتح صفحة التقارير» تلقائيًا.','Shows the KPI cards on the reports page. Grants “Open reports” automatically.'],
     'reports-charts':['التقارير: المبيعات والمشتريات','Reports: sales & purchases','view','عرض تبويب المبيعات والمشتريات ورسومه البيانية. تمنح «فتح صفحة التقارير» تلقائيًا.','Shows the sales & purchases tab and its charts. Grants “Open reports” automatically.'],
     // ── الطلبات

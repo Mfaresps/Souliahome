@@ -26122,7 +26122,7 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
+const PERMS = ['dashboard','assistant','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'products-supplier-view','products-analytics','products-specs-view','products-specs-manage','approvals-history','approvals-otp-log','data-export','clients-browse','movements-filters','sales-collect','movements-browse','movements-collections','inventory-log-browse','customers-phone-view','delivery-issues-follow','delivery-issues-close','products-cost-view','products-edit-otp','products-price-sell','categories-edit-otp','pickup-orders','pickup-orders-prepare','pickup-orders-move','pickup-orders-cancel','pickup-orders-bosta','pickup-orders-bosta-cancel',
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
@@ -26134,7 +26134,7 @@ const PERMS = ['dashboard','transaction','inventory','movements','clients','prod
   'promotions-view','promotions-offers','promotions-codes','promotions-bundles','promotions-tags','promotions-audit',
   // «بيانات المرتجعات» — documentation only. ⚠ Mirrored by backend supplier-return-statement.constants.ts.
   'suppliers-rs-view','suppliers-rs-create','suppliers-rs-edit','suppliers-rs-status','suppliers-rs-delete','suppliers-rs-export'];
-const PERMS_AR = {dashboard:'الرئيسية',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
+const PERMS_AR = {dashboard:'الرئيسية',assistant:'مساعد SOULIA',transaction:'المعاملات',inventory:'المخزن',movements:'سجل المعاملات',clients:'العملاء',products:'الأصناف',suppliers:'الموردون',expenses:'المصاريف',complaints:'خدمة العملاء',approvals:'الموافقات',reports:'التقارير',
   'pickup-orders':'التجهيز والشحن - عرض الطلبات',
   'pickup-orders-prepare':'التجهيز والشحن - تحضير الطلبات',
   'pickup-orders-move':'التجهيز والشحن - نقل الكروت وتنظيمها',
@@ -122780,10 +122780,10 @@ function _spRenderHistoryTab() {
 <script src="/awb-preview.js?v=20261024"></script>
 <script src="/pickup-ready-return.js?v=20261029-permissions"></script>
 <script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
-<script src="/roles-permissions.js?v=20261113-bundle"></script>
+<script src="/roles-permissions.js?v=20261126-assistant"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/api-access.js?v=7"></script>
-<script src="/assistant.js?v=23"></script>
+<script src="/assistant.js?v=24"></script>
 <script src="/onboarding.js?v=1"></script>
 <script src="/manager-otp.js?v=1"></script>
 <script src="/browse-access.js?v=3"></script>

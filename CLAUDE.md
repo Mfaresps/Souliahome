@@ -184,6 +184,12 @@ API KEY, never a session. Admin panel: Settings ← التكاملات وواج�
 
 ## «مساعد SOULIA» ⇄ External Assistant (Instinct) — Two Targets, Email Out, API Reply In (Nov 26, 2026)
 
+**Permission «استخدام مساعد SOULIA» (`assistant`)** covers the whole chat (system + external). It was
+server-enforced but missing from `PERMS` and the Roles page, so no employee role could get it while every
+employee saw the button and got 403. Now on the Roles page (group «الرئيسية»), in `PERMS`/`PERMS_AR`, and
+`assistant.js` draws the button only for admins or holders (`allowed()`, re-checked on `updateHeader`).
+Not granted to any role automatically — the admin decides per role.
+
 One chat, two answerers that never mix. Every message carries `target`: `system` (the system's own
 assistant, `POST /assistant/ask`) or `external` (Instinct). Default = system, reset on every panel open
 and «محادثة جديدة».
@@ -306,8 +312,7 @@ migration. Tests: `movements-filters.spec.ts` (3).
 `setClientsPage(p>1)` → `_clientsPrivacyNotice()` («صفحات العملاء محمية», «ابحث عن عميل» focuses
 the search); the non-browser pager shows page 1 + «›» + a hint (clients-profile.js); a restored page
 number falls back to 1. Not granted to anyone by migration. Test: `clients-privacy.spec.ts` (3).
-⚠ `access-roles.spec` «catalog matches» fails on an `assistant` key added to
-access-role-permissions.ts by parallel assistant work (not in PERMS yet) — not from this change.
+(The `access-roles.spec` «catalog matches» failure on the `assistant` key was fixed Nov 26, 2026.)
 
 ## Supplier Identity, Exports & Report Printing, Smart Product Card (Nov 25, 2026 b)
 
