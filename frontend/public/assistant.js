@@ -39,14 +39,30 @@
     box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>',
     truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',
     wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12.5h2"/><path d="M3 9h18"/></svg>',
+    // The external assistant: a person-like mark with an outward arrow — never the system's spark.
+    ext: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><path d="M16 5h5v5M21 5l-6 6"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h13M17 12l4 4-4 4M21 16H8"/></svg>',
   };
 
   const STORE_KEY = () => 'soulia_ai_chat_v1:' + uid();
-  const state = { open: false, view: 'chat', busy: false, msgs: [], seq: 0 };
+  // target: who answers the next question — 'system' (this assistant, the default) or 'external'
+  // (Instinct, by email). Every message keeps the target it was sent to; nothing moves on its own.
+  const state = { open: false, view: 'chat', busy: false, msgs: [], seq: 0, target: 'system', chatId: '' };
+  const rand = (n) => { const a = new Uint8Array(n); (window.crypto || window.msCrypto).getRandomValues(a); return Array.from(a, (b) => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'[b & 63]).join(''); };
+  const newChatId = () => 'chat_' + rand(12);
 
   // ── Persistence (per user, this browser session only) ─────────────────────────────────────────
-  function save() { try { sessionStorage.setItem(STORE_KEY(), JSON.stringify(state.msgs.slice(-40))); } catch (_) {} }
-  function restore() { try { const v = JSON.parse(sessionStorage.getItem(STORE_KEY()) || '[]'); state.msgs = Array.isArray(v) ? v : []; } catch (_) { state.msgs = []; } }
+  function save() { try { sessionStorage.setItem(STORE_KEY(), JSON.stringify({ chatId: state.chatId, msgs: state.msgs.slice(-40) })); } catch (_) {} }
+  function restore() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem(STORE_KEY()) || '[]');
+      // Older sessions stored the message list alone.
+      state.msgs = Array.isArray(v) ? v : (Array.isArray(v && v.msgs) ? v.msgs : []);
+      state.chatId = (v && !Array.isArray(v) && /^[A-Za-z0-9_-]{6,64}$/.test(v.chatId || '')) ? v.chatId : newChatId();
+    } catch (_) { state.msgs = []; state.chatId = newChatId(); }
+  }
+  const chatId = () => { if (!state.chatId) state.chatId = newChatId(); return state.chatId; };
 
   // ── Formatting ────────────────────────────────────────────────────────────────────────────────
   function money(v) {
@@ -89,10 +105,20 @@
     if (a.options && a.options.length) out.push(a.options.map((o) => `- ${o}`).join('\n'));
     return out.join('\n\n');
   }
+  /** An external reply as plain text: title, summary, tables, links. */
+  function extText(r) {
+    const out = [];
+    if (r.title) out.push(r.title);
+    if (r.summary) out.push(r.summary);
+    (r.tables || []).forEach((t) => out.push([t.caption || '', t.columns.join(' | '), ...t.rows.map((row) => row.join(' | '))].filter(Boolean).join('\n')));
+    if (r.sourceLinks && r.sourceLinks.length) out.push(r.sourceLinks.map((l) => `- ${l.label}: ${l.url}`).join('\n'));
+    return out.join('\n\n');
+  }
   async function copyAnswer(mi, btn) {
     const m = state.msgs[mi];
-    if (!m || !m.a) return;
-    const text = answerText(m.a);
+    const reply = m && m.kind === 'ext' && m.ext && m.ext.reply;
+    if (!m || (!m.a && !reply)) return;
+    const text = reply ? extText(reply) : answerText(m.a);
     let ok = false;
     try { await navigator.clipboard.writeText(text); ok = true; } catch (_) {
       // Plain-http LAN: no clipboard API — fall back to a hidden textarea.
@@ -179,7 +205,9 @@
       ? (m.flagged ? `<span class="ai-flagged">${esc(T('سُجّل للمراجعة', 'Sent for review'))}</span>`
         : `<button type="button" class="ai-fix" data-fix="${mi}">${ICON.flag}${esc(T('ليس هذا ما أقصده', 'Not what I meant'))}</button>`) : '';
     const copy = `<button type="button" class="ai-copy" data-copy="${mi}" title="${esc(T('نسخ الرد', 'Copy the answer'))}">${ICON.copy}<span>${esc(T('نسخ', 'Copy'))}</span></button>`;
-    const foot = `<div class="ai-foot">${understood}<span class="ai-foot-acts">${copy}${fix}</span></div>`;
+    // Wrong side? The employee re-sends it to the external assistant — never moved automatically.
+    const other = m.q ? `<button type="button" class="ai-copy ai-resend" data-resend="${mi}" title="${esc(T('إرسال نفس السؤال إلى المساعد الخارجي', 'Send the same question to the external assistant'))}">${ICON.swap}<span>${esc(T('اسأل المساعد الخارجي', 'Ask the external assistant'))}</span></button>` : '';
+    const foot = `<div class="ai-foot">${understood}<span class="ai-foot-acts">${copy}${other}${fix}</span></div>`;
     // Reorder plan: product cards grouped by urgency — one look gives what to buy and why.
     const daysTxt = (d) => d == null ? '—' : T(`${d} يوم`, `${d} d`);
     const daysTone = (d) => d == null ? '' : d <= 14 ? ' is-bad' : d <= 30 ? ' is-warn' : ' is-good';
@@ -211,8 +239,55 @@
       <li>${esc(T('التحقق من صلاحياتك', 'Checking your permissions'))}</li><li>${esc(T('قراءة التقرير المناسب', 'Reading the matching report'))}</li></ol></div></div></div>`;
   }
 
+  const fmtTime = (v) => { try { const d = new Date(v); return isNaN(d) ? '' : d.toLocaleTimeString(ar() ? 'ar-EG-u-nu-latn' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; } };
+  const EXT_NAME = () => T('المساعد الخارجي · Instinct', 'External assistant · Instinct');
+
+  /** A question sent to the external assistant: its mail state while it waits, then the reply. */
+  function extHtml(m, mi) {
+    const x = m.ext || {};
+    const head = `<div class="ai-ext-head"><span class="ai-ext-av">${ICON.ext}</span><b>${esc(EXT_NAME())}</b></div>`;
+    const swapBtn = m.q ? `<button type="button" class="ai-copy ai-resend" data-resend="${mi}" title="${esc(T('إرسال نفس السؤال إلى مساعد النظام', 'Send the same question to the system assistant'))}">${ICON.swap}<span>${esc(T('اسأل مساعد النظام', 'Ask the system assistant'))}</span></button>` : '';
+    if (x.error) {
+      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext">${head}
+        <p class="ai-lead">${esc(x.error)}</p>
+        <div class="ai-opts"><button type="button" class="ai-chip" data-ext-retry="${mi}">${esc(T('إعادة المحاولة', 'Try again'))}</button></div></div></div>`;
+    }
+    const r = x.reply;
+    if (!r) {
+      const mail = x.mail || {};
+      const sub = !x.messageId ? T('جارٍ الإرسال…', 'Sending…')
+        : mail.status === 'sent' ? T(`أُرسل السؤال بالبريد · ${fmtTime(mail.sentAt)}`, `Question sent by email · ${fmtTime(mail.sentAt)}`)
+        : mail.status === 'failed' ? T(`تعذّر إرسال البريد — ستُعاد المحاولة تلقائيًا (المحاولة ${mail.attempts || 1})`, `The email could not be sent — retrying automatically (attempt ${mail.attempts || 1})`)
+        : mail.status === 'gave-up' ? T('تعذّر إرسال البريد بعد عدة محاولات. أبلغ مدير النظام.', 'The email could not be sent after several attempts. Tell the system admin.')
+        : T('جارٍ إرسال البريد…', 'Sending the email…');
+      const tone = mail.status === 'gave-up' ? ' is-bad' : mail.status === 'failed' ? ' is-warn' : '';
+      return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext is-waiting">${head}
+        <div class="ai-ext-wait"><span class="ai-ext-dot" aria-hidden="true"></span><b>${esc(T('في انتظار الرد', 'Awaiting reply'))}</b></div>
+        <p class="ai-ext-mail${tone}">${ICON.mail}<span>${esc(sub)}</span></p></div>
+        <div class="ai-foot"><span class="ai-foot-acts">${swapBtn}</span></div></div>`;
+    }
+    const tables = (r.tables || []).map((t) => `<div class="ai-ext-tbl">${t.caption ? `<div class="ai-ext-cap" dir="auto">${esc(t.caption)}</div>` : ''}
+      <div class="ai-tbl"><table><thead><tr>${t.columns.map((c) => `<th dir="auto">${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${t.rows.map((row) => `<tr>${row.map((c) => `<td dir="auto">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`).join('');
+    // Only http(s) links reach the browser (the server refuses anything else); opened in a new tab.
+    const links = r.sourceLinks && r.sourceLinks.length ? `<div class="ai-ext-links"><div class="ai-ext-links-h">${esc(T('المصادر', 'Sources'))}</div><ul>${r.sourceLinks
+      .filter((l) => /^https?:\/\//i.test(l.url || ''))
+      .map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">${ICON.out}<span dir="auto">${esc(l.label || l.url)}</span></a></li>`).join('')}</ul></div>` : '';
+    return `<div class="ai-msg is-bot is-ext" data-mi="${mi}"><div class="ai-ext is-answered">${head}
+      <span class="ai-ext-badge">${esc(T('رد من المساعد الخارجي', 'Reply from the external assistant'))}</span>
+      ${r.title ? `<h4 class="ai-ext-title" dir="auto">${esc(r.title)}</h4>` : ''}
+      ${r.summary ? `<p class="ai-ext-sum" dir="auto">${esc(r.summary)}</p>` : ''}
+      ${tables}${links}
+      ${x.repliedAt ? `<small class="ai-ext-at">${esc(T('وصل الرد', 'Replied'))} · <bdi>${esc(fmtTime(x.repliedAt))}</bdi></small>` : ''}</div>
+      <div class="ai-foot"><span class="ai-foot-acts"><button type="button" class="ai-copy" data-copy="${mi}" title="${esc(T('نسخ الرد', 'Copy the answer'))}">${ICON.copy}<span>${esc(T('نسخ', 'Copy'))}</span></button>${swapBtn}</span></div></div>`;
+  }
+
   function msgHtml(m, mi) {
-    if (m.role === 'user') return `<div class="ai-msg is-user"><div class="ai-bubble" dir="auto">${esc(m.text)}</div></div>`;
+    if (m.role === 'user') {
+      if (m.target === 'external') return `<div class="ai-msg is-user is-ext"><span class="ai-to">${ICON.ext}${esc(T('إلى المساعد الخارجي', 'To the external assistant'))}</span><div class="ai-bubble" dir="auto">${esc(m.text)}</div></div>`;
+      return `<div class="ai-msg is-user"><div class="ai-bubble" dir="auto">${esc(m.text)}</div></div>`;
+    }
+    if (m.kind === 'ext') return extHtml(m, mi);
     if (m.pending) return `<div class="ai-msg is-bot">${thinkingHtml()}</div>`;
     if (m.error) return `<div class="ai-msg is-bot"><div class="ai-card is-error"><p class="ai-lead">${esc(m.error)}</p>
       <div class="ai-opts"><button type="button" class="ai-chip" data-retry="${mi}">${esc(T('إعادة المحاولة', 'Try again'))}</button></div></div></div>`;
@@ -378,12 +453,18 @@
       </div>` : ''}
       <div class="ai-msgs" id="ai-msgs" aria-live="polite" ${state.view === 'chat' ? '' : 'hidden'}></div>
       <div class="ai-review" id="ai-review" ${state.view === 'review' ? '' : 'hidden'}></div>
-      <form class="ai-composer" id="ai-form" ${state.view === 'chat' ? '' : 'hidden'}>
-        <div class="ai-input-wrap">
-          <textarea id="ai-input" rows="1" maxlength="300" placeholder="${esc(T('اسأل عن المبيعات أو المخزون أو أوردر…', 'Ask about sales, stock or an order…'))}" aria-label="${esc(T('اكتب سؤالك', 'Type your question'))}"></textarea>
-          <button type="submit" class="ai-send" aria-label="${esc(T('إرسال', 'Send'))}">${ICON.send}</button>
+      <form class="ai-composer${state.target === 'external' ? ' is-external' : ''}" id="ai-form" ${state.view === 'chat' ? '' : 'hidden'}>
+        <div class="ai-target" role="radiogroup" aria-label="${esc(T('من يجيب عن سؤالك؟', 'Who answers your question?'))}">
+          <button type="button" role="radio" data-target="system" aria-checked="${state.target === 'system'}">${ICON.spark}<span>${esc(T('مساعد سوليا (النظام)', 'SOULIA Assistant (system)'))}</span></button>
+          <button type="button" role="radio" data-target="external" aria-checked="${state.target === 'external'}">${ICON.ext}<span>${esc(T('المساعد الخارجي (Instinct)', 'External assistant (Instinct)'))}</span></button>
         </div>
-        <p class="ai-hint">${esc(T('Enter للإرسال · Shift+Enter لسطر جديد · Ctrl+/ لفتح المساعد', 'Enter to send · Shift+Enter for a new line · Ctrl+/ to open'))}</p>
+        <div class="ai-input-wrap">
+          <textarea id="ai-input" rows="1" maxlength="${state.target === 'external' ? 1000 : 300}" placeholder="${esc(state.target === 'external' ? T('اكتب سؤالك للمساعد الخارجي…', 'Write your question for the external assistant…') : T('اسأل عن المبيعات أو المخزون أو أوردر…', 'Ask about sales, stock or an order…'))}" aria-label="${esc(T('اكتب سؤالك', 'Type your question'))}"></textarea>
+          <button type="submit" class="ai-send" aria-label="${esc(state.target === 'external' ? T('إرسال إلى المساعد الخارجي', 'Send to the external assistant') : T('إرسال', 'Send'))}">${ICON.send}</button>
+        </div>
+        <p class="ai-hint">${esc(state.target === 'external'
+          ? T('يُرسل سؤالك بالبريد إلى المساعد الخارجي، ويظهر رده هنا عند وصوله. مساعد النظام لا يجيب عنه.', 'Your question is emailed to the external assistant; its reply appears here when it arrives. The system assistant does not answer it.')
+          : T('Enter للإرسال · Shift+Enter لسطر جديد · Ctrl+/ لفتح المساعد', 'Enter to send · Shift+Enter for a new line · Ctrl+/ to open'))}</p>
       </form>
       <div class="ai-pop" id="ai-pop" role="tooltip" hidden></div>`;
     const form = p.querySelector('#ai-form');
@@ -407,7 +488,12 @@
     if (!state.open) {
       lastFocus = document.activeElement;
       if (!state.msgs.length) restore();
+      // The system assistant is the default each time the panel opens.
+      state.target = 'system';
       state.open = true;
+      bindSocket();
+      syncExternal();
+      armExternalPoll();
       shell();
       p.hidden = false;
       document.getElementById('ai-scrim').hidden = false;
@@ -438,20 +524,44 @@
   const toggle = () => (state.open ? close() : open());
 
   // ── Asking ────────────────────────────────────────────────────────────────────────────────────
-  async function ask(text) {
+  /** Switches who answers the next question, in place (what is typed stays). */
+  function setTarget(t) {
+    state.target = t === 'external' ? 'external' : 'system';
+    const p = document.getElementById('ai-panel');
+    if (!p) return;
+    const ext = state.target === 'external';
+    p.querySelector('#ai-form')?.classList.toggle('is-external', ext);
+    p.querySelectorAll('[data-target]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.target === state.target)));
+    const i = p.querySelector('#ai-input');
+    if (i) {
+      i.maxLength = ext ? 1000 : 300;
+      i.placeholder = ext ? T('اكتب سؤالك للمساعد الخارجي…', 'Write your question for the external assistant…') : T('اسأل عن المبيعات أو المخزون أو أوردر…', 'Ask about sales, stock or an order…');
+      i.focus();
+    }
+    const s = p.querySelector('.ai-send');
+    if (s) s.setAttribute('aria-label', ext ? T('إرسال إلى المساعد الخارجي', 'Send to the external assistant') : T('إرسال', 'Send'));
+    const h = p.querySelector('.ai-hint');
+    if (h) h.textContent = ext
+      ? T('يُرسل سؤالك بالبريد إلى المساعد الخارجي، ويظهر رده هنا عند وصوله. مساعد النظام لا يجيب عنه.', 'Your question is emailed to the external assistant; its reply appears here when it arrives. The system assistant does not answer it.')
+      : T('Enter للإرسال · Shift+Enter لسطر جديد · Ctrl+/ لفتح المساعد', 'Enter to send · Shift+Enter for a new line · Ctrl+/ to open');
+  }
+
+  /** `target` is fixed when the question is sent and kept on the message; the default is the toggle. */
+  async function ask(text, target) {
     text = String(text || '').trim();
     if (!text || state.busy) return;
+    if ((target || state.target) === 'external') return askExternal(text);
     if (state.view !== 'chat') { state.view = 'chat'; shell(); }
     const input = document.getElementById('ai-input');
     if (input) { input.value = ''; autosize(); }
-    state.msgs.push({ role: 'user', text });
-    const bot = { role: 'bot', pending: true, q: text };
+    state.msgs.push({ role: 'user', text, target: 'system' });
+    const bot = { role: 'bot', pending: true, q: text, target: 'system' };
     state.msgs.push(bot);
     state.busy = true;
     renderMsgs(true);
     const t0 = performance.now();
     try {
-      const a = await api('/assistant/ask', { method: 'POST', body: JSON.stringify({ question: text, lang: ar() ? 'ar' : 'en' }) });
+      const a = await api('/assistant/ask', { method: 'POST', body: JSON.stringify({ question: text, lang: ar() ? 'ar' : 'en', target: 'system', chatId: chatId() }) });
       // Let the "reading" state be seen for a moment — an instant swap reads as a glitch.
       const wait = reduced() ? 0 : Math.max(0, 450 - (performance.now() - t0));
       if (wait) await new Promise((r) => setTimeout(r, wait));
@@ -471,6 +581,78 @@
       if (bot.autoFold) setTimeout(() => { if (bot.autoFold) { bot.reasonOpen = false; bot.autoFold = false; foldReason(mi, false); save(); } }, reduced() ? 0 : 1200);
       document.getElementById('ai-input')?.focus();
     }
+  }
+
+  // ── External assistant (Instinct) ─────────────────────────────────────────────────────────────
+  async function askExternal(text) {
+    if (state.view !== 'chat') { state.view = 'chat'; shell(); }
+    const input = document.getElementById('ai-input');
+    if (input) { input.value = ''; autosize(); }
+    state.msgs.push({ role: 'user', text, target: 'external' });
+    // One key per question: a retry after a lost reply never sends a second email.
+    const bot = { role: 'bot', kind: 'ext', target: 'external', q: text, key: 'rk_' + rand(16), ext: {} };
+    state.msgs.push(bot);
+    renderMsgs(true);
+    save();
+    await sendExternal(bot);
+  }
+  async function sendExternal(bot) {
+    state.busy = true;
+    try {
+      const r = await api('/assistant/external', { method: 'POST', body: JSON.stringify({ target: 'external', chatId: chatId(), question: bot.q, requestKey: bot.key }) });
+      bot.ext = r || {};
+    } catch (e) {
+      bot.ext = { error: (e && e.message) || T('تعذّر الاتصال بالخادم.', 'Could not reach the server.') };
+    } finally {
+      state.busy = false;
+      renderMsgs(true);
+      save();
+      armExternalPoll();
+      document.getElementById('ai-input')?.focus();
+    }
+  }
+
+  const waitingExt = () => state.msgs.filter((m) => m.kind === 'ext' && m.ext && m.ext.messageId && !m.ext.reply);
+  let extPolling = false, extAgain = false;
+  /** Reads the asker's waiting external questions; draws any reply that arrived. */
+  async function syncExternal() {
+    // A reply event that lands while a read is in flight runs one more read right after it.
+    if (extPolling) { extAgain = true; return; }
+    const list = waitingExt();
+    if (!list.length) return;
+    extPolling = true;
+    try {
+      const r = await api('/assistant/external?ids=' + encodeURIComponent(list.map((m) => m.ext.messageId).join(',')));
+      let answered = 0, changed = false;
+      for (const it of (r && r.items) || []) {
+        const m = list.find((x) => x.ext.messageId === it.messageId);
+        if (!m) continue;
+        if (it.reply && !m.ext.reply) answered++;
+        if (JSON.stringify(m.ext) !== JSON.stringify(it)) { m.ext = it; changed = true; }
+      }
+      if (changed) {
+        save();
+        if (state.open) {
+          const box = document.getElementById('ai-msgs');
+          const atEnd = box && box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+          renderMsgs(!!(answered && atEnd));
+        }
+      }
+      if (answered && !state.open && typeof toast === 'function') toast(T('وصل رد المساعد الخارجي — افتح مساعد SOULIA', 'The external assistant replied — open the SOULIA Assistant'));
+    } catch (_) { /* next tick */ } finally {
+      extPolling = false;
+      if (extAgain) { extAgain = false; syncExternal(); }
+    }
+  }
+  let extTimer = null;
+  function armExternalPoll() {
+    if (extTimer || !waitingExt().length) return;
+    extTimer = setInterval(() => { if (!waitingExt().length) { clearInterval(extTimer); extTimer = null; return; } syncExternal(); }, 20_000);
+  }
+  function bindSocket() {
+    if (typeof socket === 'undefined' || !socket || socket.__aiExtBound) return;
+    socket.__aiExtBound = true;
+    socket.on('assistant:external-reply', () => { syncExternal(); });
   }
 
   function foldReason(mi, openIt) {
@@ -762,9 +944,17 @@
   function onClick(e) {
     const t = e.target;
     const q = t.closest('[data-q]');
-    if (q) { if (q.dataset.daily) markDailySeen(); ask(q.dataset.q); return; }
+    // Suggestions and options are the system assistant's own questions, whatever the toggle says.
+    if (q) { if (q.dataset.daily) markDailySeen(); ask(q.dataset.q, 'system'); return; }
     if (t.closest('[data-close]')) { close(); return; }
-    if (t.closest('[data-new]')) { state.msgs = []; save(); state.view = 'chat'; shell(); document.getElementById('ai-input')?.focus(); return; }
+    if (t.closest('[data-new]')) { state.msgs = []; state.chatId = newChatId(); state.target = 'system'; save(); state.view = 'chat'; shell(); document.getElementById('ai-input')?.focus(); return; }
+    const tg = t.closest('[data-target]');
+    if (tg) { setTarget(tg.dataset.target); return; }
+    // Re-send the same question to the other side — the employee's choice, never automatic.
+    const rs = t.closest('[data-resend]');
+    if (rs) { const m = state.msgs[+rs.dataset.resend]; if (m && m.q && !state.busy) ask(m.q, m.kind === 'ext' ? 'system' : 'external'); return; }
+    const xr = t.closest('[data-ext-retry]');
+    if (xr) { const m = state.msgs[+xr.dataset.extRetry]; if (m && m.kind === 'ext' && !state.busy) { m.ext = {}; renderMsgs(true); sendExternal(m); } return; }
     const v = t.closest('[data-view]');
     if (v) { state.view = v.dataset.view; shell(); return; }
     if (t.closest('[data-rv-reload]')) { loadReview(); return; }
@@ -781,7 +971,7 @@
     const f = t.closest('[data-fix]');
     if (f) { flag(+f.dataset.fix); return; }
     const rt = t.closest('[data-retry]');
-    if (rt) { const m = state.msgs[+rt.dataset.retry]; if (m) { const qtext = m.q; state.msgs.splice(+rt.dataset.retry - 1, 2); ask(qtext); } return; }
+    if (rt) { const m = state.msgs[+rt.dataset.retry]; if (m) { const qtext = m.q; state.msgs.splice(+rt.dataset.retry - 1, 2); ask(qtext, 'system'); } return; }
     const c = t.closest('.ai-cite');
     if (c) { const m = state.msgs[+c.dataset.mi]; const s2 = m && m.a && (m.a.sources || []).find((x) => String(x.n) === c.dataset.cite); if (s2) go(s2.link); return; }
     const l = t.closest('[data-link]');
@@ -845,5 +1035,13 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBtn); else mountBtn();
   // Admins get the morning report counter without opening the panel (checked after sign-in, then every 30 min).
-  setTimeout(function tick() { if (uid()) { mountBtn(); loadDaily(false); } setTimeout(tick, 60_000); }, 6000);
+  // Questions still waiting on the external assistant keep being checked after a page reload, panel closed or not.
+  setTimeout(function tick() {
+    if (uid()) {
+      mountBtn(); loadDaily(false); bindSocket();
+      if (!state.msgs.length) restore();
+      armExternalPoll();
+    }
+    setTimeout(tick, 60_000);
+  }, 6000);
 })();

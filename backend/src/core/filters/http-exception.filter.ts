@@ -18,6 +18,13 @@ interface ExceptionResponseBody {
 }
 
 
+/** An Express body-parser refusal: a 4xx `http-errors` error marked safe to show (`expose`). */
+export function isBodyParserError(e: unknown): boolean {
+  const x = e as { status?: unknown; expose?: unknown; type?: unknown } | null;
+  return !!x && typeof x === 'object' && x.expose === true && typeof x.type === 'string' && String(x.type).startsWith('entity.')
+    && typeof x.status === 'number' && x.status >= 400 && x.status < 500;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -65,6 +72,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = HttpStatus.CONFLICT;
       message = 'البيانات موجودة مسبقاً';
       errorName = 'ConflictException';
+    } else if (isBodyParserError(exception)) {
+      // The request body was refused before any route ran (over 100 KB, or not valid JSON). It is the
+      // caller's error — a 500 would tell an API client to retry the same body forever.
+      const e = exception as { status: number; type?: string };
+      status = e.status;
+      receiptDetails.code = e.type === 'entity.too.large' ? 'PAYLOAD_TOO_LARGE' : e.type === 'entity.parse.failed' ? 'INVALID_JSON' : 'BAD_REQUEST_BODY';
+      message = e.type === 'entity.too.large' ? 'حجم الطلب أكبر من المسموح (100 KB)' : 'جسم الطلب ليس JSON صالحًا';
+      errorName = e.type === 'entity.too.large' ? 'PayloadTooLargeException' : 'BadRequestException';
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'حدث خطأ غير متوقع في الخادم — يرجى المحاولة مرة أخرى، وإبلاغ الدعم الفني إذا تكررت المشكلة';

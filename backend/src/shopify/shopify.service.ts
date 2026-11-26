@@ -1200,7 +1200,7 @@ export class ShopifyService {
       if (!released.matchedCount) continue;
       if (this.notifications) {
         await this.notifications.enqueue('shopifyShipDue', `shopify-ship-due:${order._id}:${order.shippingPostponement.dueAt}`,
-          order.ref || '', `shopify:${order._id}`, undefined, undefined, { postponedUntil: order.shippingPostponement.dueAt });
+          order.ref || '', `shopify:${order._id}`, undefined, undefined, { postponedUntil: order.shippingPostponement.dueAt, postponedById: String(order.shippingPostponement.createdById || '') });
         await this.shopifyOrderModel.updateOne({ _id: order._id, 'shippingPostponement.dueAt': order.shippingPostponement.dueAt },
           { $set: { 'shippingPostponement.notifiedAt': at } });
       }

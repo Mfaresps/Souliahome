@@ -326,3 +326,53 @@ button.ai-pt:hover{background:var(--bg-alt)}
 .ai-copy:hover{color:var(--text)}
 .ai-copy.is-done{color:var(--ai-good,#16a34a)}
 .ai-card,.ai-msg.is-bot{-webkit-user-select:text;user-select:text}
+
+/* ── External assistant (Instinct) ───────────────────────────────────────────────────────────────
+   One indigo tone marks everything external — the toggle, the question bubble and the reply card —
+   so it never reads as the system's own (green) answer. */
+:root{--ai-ext:#3d4fc4;--ai-ext-bg:#eef0fd;--ai-ext-line:#c9cff6}
+body.dark-mode{--ai-ext:#a9b3ff;--ai-ext-bg:#1e2342;--ai-ext-line:#3a4277}
+.ai-target{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;margin-bottom:8px;border:1px solid var(--border);border-radius:11px;background:var(--bg-alt)}
+.ai-target button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:34px;border:0;border-radius:8px;background:transparent;padding:5px 8px;font-size:.76rem;color:var(--muted);cursor:pointer;text-align:center;line-height:1.25}
+.ai-target button svg{width:15px;height:15px;flex-shrink:0}
+.ai-target button[aria-checked=true]{background:var(--surface);color:var(--primary);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.ai-target button[data-target=external][aria-checked=true]{color:var(--ai-ext);background:var(--ai-ext-bg)}
+.ai-target button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.ai-composer.is-external .ai-input-wrap{border-color:var(--ai-ext-line)}
+.ai-composer.is-external .ai-input-wrap:focus-within{border-color:var(--ai-ext);box-shadow:0 0 0 3px var(--ai-ext-bg)}
+.ai-composer.is-external .ai-send{background:var(--ai-ext)}
+body.dark-mode .ai-composer.is-external .ai-send{color:#141832!important}
+.ai-composer.is-external .ai-hint{color:var(--ai-ext)}
+@media(max-width:760px){.ai-composer.is-external .ai-hint{display:block}}
+
+.ai-msg.is-user.is-ext .ai-bubble{background:var(--ai-ext)}
+body.dark-mode .ai-msg.is-user.is-ext .ai-bubble{color:#141832}
+.ai-to{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;color:var(--ai-ext)}
+.ai-to svg{width:12px;height:12px}
+
+.ai-ext{display:flex;flex-direction:column;gap:9px;min-width:0;border:1px solid var(--ai-ext-line);border-inline-start:3px solid var(--ai-ext);border-radius:12px;padding:11px 13px;background:color-mix(in srgb,var(--ai-ext-bg) 55%,var(--surface))}
+.ai-ext-head{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ai-ext)}
+.ai-ext-av{width:24px;height:24px;border-radius:7px;background:var(--ai-ext-bg);display:grid;place-items:center;flex-shrink:0}
+.ai-ext-av svg{width:15px;height:15px}
+.ai-ext-badge{align-self:flex-start;font-size:.68rem;font-weight:600;color:var(--ai-ext);background:var(--ai-ext-bg);border:1px solid var(--ai-ext-line);border-radius:99px;padding:2px 9px}
+.ai-ext-title{margin:0;font-size:.95rem;font-weight:700;line-height:1.4}
+.ai-ext-sum{margin:0;font-size:.86rem;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-ext-tbl{display:flex;flex-direction:column;gap:5px}
+.ai-ext-cap{font-size:.74rem;font-weight:600;color:var(--muted)}
+.ai-ext .ai-tbl{background:var(--surface)}
+.ai-ext-links-h{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.ai-ext-links ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.ai-ext-links a{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--ai-ext);text-decoration:none;overflow-wrap:anywhere}
+.ai-ext-links a:hover{text-decoration:underline}
+.ai-ext-links svg{width:13px;height:13px;flex-shrink:0}
+#ai-panel[dir=rtl] .ai-ext-links svg{transform:scaleX(-1)}
+.ai-ext-at{font-size:.68rem;color:var(--muted)}
+.ai-ext-wait{display:flex;align-items:center;gap:8px;font-size:.84rem}
+.ai-ext-dot{width:8px;height:8px;border-radius:50%;background:var(--ai-ext);animation:aiExtPulse 1.4s ease-in-out infinite}
+@keyframes aiExtPulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+.ai-ext-mail{display:flex;align-items:center;gap:6px;margin:0;font-size:.74rem;color:var(--muted)}
+.ai-ext-mail svg{width:13px;height:13px;flex-shrink:0}
+.ai-ext-mail.is-warn{color:var(--ai-warn)}
+.ai-ext-mail.is-bad{color:var(--ai-bad)}
+.ai-resend svg{width:12px;height:12px}
+@media(prefers-reduced-motion:reduce){.ai-ext-dot{animation:none;opacity:1}}

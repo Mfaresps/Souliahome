@@ -18,7 +18,14 @@ export const API_SCOPES = [
   { code: 'mentions', ar: 'إشعارات المنشن والرد عليها', en: 'Mentions', write: false },
   { code: 'complaints', ar: 'الشكاوى', en: 'Complaints', write: false },
   { code: 'inventory', ar: 'المخزون', en: 'Inventory', write: false },
-  { code: 'reports', ar: 'تقرير المبيعات اليومي', en: 'Daily sales report', write: false },
+  { code: 'reports', ar: 'التقارير والمؤشرات', en: 'Reports & KPIs', write: false },
+  { code: 'reports-financial', ar: 'التقارير المالية (الأرباح والمصاريف والمشتريات)', en: 'Financial reports (profit, expenses, purchases)', write: false },
+  { code: 'products', ar: 'المنتجات ومبيعاتها', en: 'Products & product sales', write: false },
+  { code: 'purchasing', ar: 'اقتراحات الشراء', en: 'Purchase suggestions', write: false },
+  { code: 'stock-analysis', ar: 'تحليل احتياج المخزون للأوردرات', en: 'Order stock analysis', write: false },
+  { code: 'purchasing-write', ar: 'طلب أمر شراء', en: 'Request purchase orders', write: true },
+  { code: 'returns', ar: 'المرتجعات والاستبدال', en: 'Returns & exchanges', write: false },
+  { code: 'assistant-write', ar: 'الرد على أسئلة الموظفين في مساعد SOULIA', en: 'Reply to staff questions in the SOULIA chat', write: true },
 ] as const;
 export type ApiScope = (typeof API_SCOPES)[number]['code'];
 export const API_SCOPE_CODES: string[] = API_SCOPES.map((s) => s.code);
@@ -61,6 +68,8 @@ export function normalizeScopes(input: unknown): string[] {
   const out = API_SCOPE_CODES.filter((c) => list.includes(c));
   // Writing a note without reading the follow-up it lands on makes no sense.
   if (out.includes('followups-write') && !out.includes('followups')) out.push('followups');
+  if (out.includes('purchasing-write') && !out.includes('purchasing')) out.push('purchasing');
+  if (out.includes('reports-financial') && !out.includes('reports')) out.push('reports');
   return out;
 }
 

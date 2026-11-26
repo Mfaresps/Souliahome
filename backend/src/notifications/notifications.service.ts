@@ -17,7 +17,7 @@ const EN_TITLES = { orderEdit: 'Order Edit Decision', announcement: 'Announcemen
 export const STAFF_TYPES = TYPES.filter(type => !(ADMIN_TYPES as readonly string[]).includes(type));
 export interface NotificationDetails { followupAt?: string; followupReason?: string; afterSalesAction?: string; editRequestId?: string; releaseVersion?: string; announcementText?: string; announcementCategory?: string; pointDelta?: number; pointReason?: string; weekly?: boolean; balance?: number; earned?: number; deducted?: number; assignedUserId?: string; assignedToYou?: boolean; actionKey?: string; status?: 'pending' | 'approved' | 'rejected' | 'modified'; changedFields?: string[]; expiresAt?: string; actorUserId?: string; actorName?: string; amount?: number; pendingApproval?: boolean; vaultName?: string; commentId?: string | number; receiptId?: string; depositId?: string; commentText?: string; followupComment?: boolean; orderTotal?: number; itemCount?: number; deliveryStatus?: string; }
 export interface NotificationDetails { postponedUntil?: string; deliveryReason?: string; deliveryReasonOriginal?: string; reaction?: string; }
-export interface NotificationDetails { prepRef?: string; orderCount?: number; }
+export interface NotificationDetails { prepRef?: string; orderCount?: number; postponedById?: string; }
 function cleanText(value: string | undefined, length: number) {
   return String(value || '').replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, length);
 }
@@ -389,7 +389,8 @@ export class NotificationsService implements OnModuleInit {
       const queued = await Promise.allSettled(users.map(async user => {
         const userId = String(user._id);
         if (details.afterSalesAction && user.role !== 'admin' && !['transaction', 'movements', 'reports', 'inventory-units-condition', 'shopify-prepare-ship'].some(p => (user.perms || []).includes(p))) return;
-        if (type === 'shopifyShipDue' && user.role !== 'admin' && (user.role !== 'staff' || !(user.perms || []).includes('shopify-prepare-ship'))) return;
+        // The employee who postponed the shipment is told too, even without «تحضير وشحن» (Nov 26, 2026).
+        if (type === 'shopifyShipDue' && user.role !== 'admin' && userId !== String(details.postponedById || '') && (user.role !== 'staff' || !(user.perms || []).includes('shopify-prepare-ship'))) return;
         if (type === 'performance' && user.role !== 'staff') return;
         // Exclude the account that performed the action, across all its devices.
         if ((type === 'comment' || type === 'followup') && !['followup-scheduled', 'followup-due'].includes(details.actionKey || '') && details.actorUserId && userId === String(details.actorUserId)) return;

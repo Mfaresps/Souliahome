@@ -83,8 +83,13 @@ export class AssistantService {
   ) {}
 
   // ── Entry ─────────────────────────────────────────────────────────────────────────────────────
-  async ask(user: AssistantUser, body: { question?: string; lang?: string }): Promise<AssistantAnswer> {
+  async ask(user: AssistantUser, body: { question?: string; lang?: string; target?: string; chatId?: string }): Promise<AssistantAnswer> {
     const started = Date.now();
+    // ⚠ The system's assistant answers target = system only. A question for the external assistant
+    // (Instinct) is never answered here and never moved here automatically — the employee chooses.
+    if (body?.target != null && body.target !== 'system') {
+      throw new BadRequestException({ code: 'WRONG_TARGET', message: 'هذا السؤال موجّه إلى المساعد الخارجي، ولا يجيب عنه مساعد النظام' });
+    }
     const question = String(body?.question || '').replace(/[\u0000-\u001f‪-‮⁦-⁩]/g, ' ').trim().slice(0, MAX_QUESTION);
     if (!question) throw new BadRequestException('اكتب سؤالًا');
     const lang: Lang = body?.lang === 'en' ? 'en' : 'ar';
@@ -103,7 +108,7 @@ export class AssistantService {
         sources: [],
       };
     }
-    const id = await this.log(user, question, u, answer.status);
+    const id = await this.log(user, question, u, answer.status, String(body?.chatId || '').slice(0, 64));
     return { ...answer, id, ms: Date.now() - started };
   }
 
@@ -1662,9 +1667,10 @@ export class AssistantService {
   }
 
   // ── Question log ──────────────────────────────────────────────────────────────────────────────
-  private async log(user: AssistantUser, question: string, u: Understood, status: string): Promise<string | null> {
+  private async log(user: AssistantUser, question: string, u: Understood, status: string, chatId = ''): Promise<string | null> {
     try {
       const r = await this.connection.db!.collection(LOG_COLLECTION).insertOne({
+        target: 'system', chatId: /^[A-Za-z0-9_-]{6,64}$/.test(chatId) ? chatId : '',
         question, normalized: u.text, intent: u.intent, status, wrong: false,
         topic: u.intent === 'sales' && (u.period?.key === 'today' || u.period?.key === 'yesterday') ? 'intake' : u.intent,
         userId: String(user?.userId || ''), userName: String(user?.name || user?.username || ''), createdAt: new Date(),

@@ -193,7 +193,11 @@ export class ReportsExportService implements OnModuleDestroy {
   }
 
   async buildPdf(report: ReportShape): Promise<Buffer> {
-    const html = renderReportHtml(report);
+    return this.htmlToPdf(renderReportHtml(report));
+  }
+
+  /** Any self-contained HTML sheet → A4 PDF on the shared headless browser (also the API's purchase-order PDF). */
+  async htmlToPdf(html: string): Promise<Buffer> {
     const browser = await this.getBrowser();
     const page = await browser.newPage();
     try {

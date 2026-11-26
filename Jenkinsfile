@@ -67,19 +67,26 @@ pipeline {
         // Secret text بالمعرّف soulia-live-sync-token، ويُمرَّر هنا كمتغير بيئة يقرأه
         // docker-compose (LIVE_SYNC_EXPORT_TOKEN). غياب المفتاح لا يُفشل النشر — يبقى
         // التصدير مغلقاً (404) كما كان.
+        //
+        // «المساعد الخارجي»: بريد الإرسال يُحفظ في Jenkins ← Credentials كـ «Username with password»
+        // بالمعرّف soulia-smtp (اسم المستخدم = إيميل الإرسال، كلمة المرور = Gmail App Password)،
+        // ويُمرَّر كـ SMTP_USER/SMTP_PASS. غيابه لا يُفشل النشر — تبقى الأسئلة «في انتظار الرد».
         script {
           def deployCmd = 'BUILD_NUMBER=${BUILD_NUMBER} GIT_COMMIT=${GIT_COMMIT} docker compose -p soulia up -d --build --no-deps backend frontend'
-          def hasSyncKey = false
+          def binds = []
           try {
-            withCredentials([string(credentialsId: 'soulia-live-sync-token', variable: 'SYNC_KEY_PROBE')]) { hasSyncKey = true }
+            withCredentials([string(credentialsId: 'soulia-live-sync-token', variable: 'SYNC_KEY_PROBE')]) { }
+            binds << string(credentialsId: 'soulia-live-sync-token', variable: 'LIVE_SYNC_EXPORT_TOKEN')
           } catch (e) {
             echo 'Live sync export key (soulia-live-sync-token) not set in Jenkins — export stays off.'
           }
-          if (hasSyncKey) {
-            withCredentials([string(credentialsId: 'soulia-live-sync-token', variable: 'LIVE_SYNC_EXPORT_TOKEN')]) {
-              sh deployCmd
-            }
-          } else {
+          try {
+            withCredentials([usernamePassword(credentialsId: 'soulia-smtp', usernameVariable: 'SMTP_USER_PROBE', passwordVariable: 'SMTP_PASS_PROBE')]) { }
+            binds << usernamePassword(credentialsId: 'soulia-smtp', usernameVariable: 'SMTP_USER', passwordVariable: 'SMTP_PASS')
+          } catch (e) {
+            echo 'SMTP account (soulia-smtp) not set in Jenkins — external assistant emails stay queued.'
+          }
+          withCredentials(binds) {
             sh deployCmd
           }
         }

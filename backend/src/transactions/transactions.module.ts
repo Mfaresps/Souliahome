@@ -88,6 +88,6 @@ import { FollowUpsModule } from '../followups/followups.module';
     CarrierAutoSettleService,
     CarrierBatchPayoutService,
   ],
-  exports: [TransactionsService, OrderCreditService, CarrierStatementService, CarrierSettlementService, CarrierAutoSettleService],
+  exports: [TransactionsService, OrderCreditService, CarrierStatementService, CarrierSettlementService, CarrierAutoSettleService, ReportsExportService],
 })
 export class TransactionsModule {}

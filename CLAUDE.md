@@ -37,6 +37,10 @@ Settings ← الأمان: new + confirm boxes, save enabled only when they matc
   … — موعد المتابعة: ISO» (reactions/replies like any comment). The deferral stores `followUpId`; the Shopify cron
   skips that follow-up's owner (the follow-up cron reminds them). Removing the deferral → `clearConfirmationDeferral`
   (comment + clears that time).
+- **Both postpones are open to employees** (owner, Nov 26): contact deferral and «تأجيل الشحن» need only
+  `shopify-orders` (route + `_spCanPostponeShip()`); confirming still needs `shopify-prepare-ship`. The postpone
+  button is split from the confirm button. `shopifyShipDue` also reaches the employee who postponed
+  (`details.postponedById`). ⚠ `notifications.spec` «queues shopifyShipDue to all opted-in staff» fails before this too.
 - **Unconfirmed orders only** (owner): `orderAwaitsConfirmation` (util) ⇄ `awaitsConfirmation` (js) — pending, no
   deposit recorded (approved or in review), not «ship without deposit», not `confirmationApproved`, no `confirmed`
   tag. The server refuses others; the menu item, quick-view row and the active state follow the same rule.
@@ -132,14 +136,103 @@ API KEY, never a session. Admin panel: Settings ← التكاملات وواج�
   `POST followups/:id/notes` and `orders/:ref/followup-notes` (newest open follow-up) → `FollowUpsService.addComment`
   as the linked user, `requestId` makes a retry save once. ⚠ No delete/edit/cancel route exists — keep it so.
   ⚠ Responses are built field by field in `public-api.view.ts` (no cost, raw Bosta, receipts).
+- **Added Nov 26, 2026** (owner's decision):
+  - `POST orders/:ref/followups {note, reason?}` (`followups-write`) → `openFollowup`: a follow-up assigned to the key's
+    account + the first note as it. 409 `FOLLOWUP_EXISTS` (+`followupId`) when one is open, 409 `ORDER_CLOSED`
+    (cancelled / delivered, `orderClosedReason`), 404 `ORDER_NOT_FOUND`, 400 `NOTE_REQUIRED`. Unknown reason text →
+    «أخرى» + reasonOther; default reason = «عملية تأكيد الطلب» before recording, else «أخرى». In-process lock + re-read.
+  - `GET orders?include=items` (same `itemsView` as the detail).
+  - `GET returns?from&to(≤92 d)&kind&stage&page` (new scope `returns`) → `returns-api.view.ts`. Both systems share
+    `returnrequests`: after-sales cases (`workflow.version 2`: requested → approved → shipping → settlement(=received)
+    → closed / cancelled; approver = `workflow.approvedBy/At` — ⚠ the top-level `approvedBy/At` on those rows is the
+    RECEIPT time) and legacy requests (معلق → معتمد, which books stock + refund at once / مرفوض; `reversedAt`).
+    Each row: orderRef, date, amount, reason (label), items, resolution (استرداد/استبدال/مخزن), stage, recordedBy,
+    approval {by, at}, received, refund, stock (only once received), reversed.
+  - Tests: `test/unit/public-api-returns-followups.spec.ts` (11; revert-checked: dropping the open-follow-up guard fails 1).
 - **Mentions**: employee replies on a follow-up Instinct wrote on, and @mentions of its account, are mention
   rows for the linked user → `GET /v1/mentions?since=` or the webhook (cron 15 s, `mention.created`,
   `X-Soulia-Signature: sha256=HMAC(secret, body)`, cursor per key, a failing event is skipped after 24 h).
 - Shared: `shared/shopify-confirmation-bucket.util.ts` (`confirmationBucket`) — the assistant now uses it too.
+- **Products, sales, purchasing (Nov 26)** — scopes `products`, `purchasing`, `purchasing-write` (implies `purchasing`),
+  `purchasing-api.service.ts`: `GET /v1/products` (active/inactive), `/v1/products/sales` (getReports `productProfits` by
+  name + previous period, ABC: A = first 80% of units, B = next 15%, C = rest, D = none), `/v1/purchasing/suggestions`
+  = purchasing engine `planProduct` + `purchase-suggestion.util.ts` `suggestPurchase`: available = ready − units on
+  pending Shopify orders, position = available + incoming, order when ≤ reorder level or < min, qty = ⌈orderUpTo −
+  position⌉; `engineQty` beside it; full `calculation.steps`. ⚠ The 44-day rule / assistant are untouched. Supplier id
+  falls back to the supplier NAME (most products store the name only). `POST /v1/purchase-orders` → a DRAFT
+  (`apipurchasedrafts`, `APO-0001`), never counted as incoming; admins notified («نظام أوامر الشراء الآلية» → the API
+  panel). Admin approves in the panel (`/api-keys/po-drafts/:id/approve`, atomic claim, may change qty; 0 drops a
+  line) → `PurchaseOrdersService.create` («معلق», supplier price else card). PDF (`/pdf`, quantities only) through
+  `ReportsExportService.htmlToPdf` (now exported). No price/cost/score in any API answer (owner's decision).
+  Tests: `test/unit/purchase-suggestion.spec.ts` (8; revert-checked: dropping the pending netting fails 2); 32 API +
+  8 browser checks on a scratch copy.
+- **Order stock analysis (Nov 26)** — scope `stock-analysis`: `GET /v1/purchasing/order-analysis[?refs=a,b]` runs
+  `DemandPlanningService.analyzeShopify` (the Shopify page's «تحليل احتياج المخزون») over every pending order or the
+  named ones, `persistLog:false`; prices/cost removed, phones in product lists masked, block codes labelled. 9 checks on a
+  scratch copy: same orders, queue order, states and shortages as the page.
+- **Reports page (Nov 26)** — `reports-api.service.ts`, `GET /v1/reports?period=|from=&to=` (≤ 366 days): `getReports`
+  with the expense total computed as `TransactionsController.getReports`, every KPI `{value, previous, changePct}` vs
+  the previous period of the same length (a running month vs the same days of last month). Owner's decision: two
+  sections — `reports` (sales side, no profit/cost) and `reports-financial` (implies `reports`; adds `financial`:
+  profit, margins, expenses, purchases, carrier cost, shipping report, cost/profit per product, stagnant value).
+  ⚠ Built field by field — never pass the report object through. `stagnantStock` is `{items, count, totalValue,
+  neverSold}`, not an array. 12 checks on a scratch copy: KPIs and financial figures equal the reports page.
 - Tests: `test/unit/api-key.spec.ts` (7; revert-checked: rate limit). Verified over the compiled API on a
   scratch copy (dropped after): 53 end-to-end checks + webhook delivery with a valid signature; 23 browser
   checks (ar/en, dark, 390). **Not deployed / not tried on live.** HTTPS is nginx's job; `/api/v1` needs no
   nginx change.
+
+## «مساعد SOULIA» ⇄ External Assistant (Instinct) — Two Targets, Email Out, API Reply In (Nov 26, 2026)
+
+One chat, two answerers that never mix. Every message carries `target`: `system` (the system's own
+assistant, `POST /assistant/ask`) or `external` (Instinct). Default = system, reset on every panel open
+and «محادثة جديدة».
+- **Never crossed**: `AssistantService.ask` refuses `target != system` (400 `WRONG_TARGET`); the external
+  route refuses anything but `external`. A message sent to the wrong side is never moved — the answer's
+  footer offers «اسأل المساعد الخارجي» / «اسأل مساعد النظام», which RE-SENDS the same question (the
+  employee's choice). Suggestion chips and options always go to the system side, whatever the toggle says.
+  The system log `assistantquestions` now stores `target:'system'` + `chatId`.
+- **Chat id**: the conversation was browser-only and had no id; `assistant.js` now keeps
+  `{chatId, msgs}` in sessionStorage (`chat_` + 12 random chars; older array-only sessions still load).
+- **Out — email** (`backend/src/assistant/external-assistant.*`, `ExternalAssistantModule`, perm
+  `assistant`): `POST /api/assistant/external {target:'external', chatId, question ≤1000, requestKey}` →
+  raw collection `assistantexternalmessages` (`_id` = `xm_…`, status awaiting|answered, `mail{status
+  pending|sending|sent|failed|gave-up, attempts, nextAttemptAt, lastError, log}`) → mailed at once to
+  `ASSISTANT_MAIL_TO` (default souliaalerts@gmail.com), subject `[ERP-CHAT] <chatId>`, plain-text body =
+  JSON `{chatId, messageId, userName, userRole, question, createdAt}` (exactly these, in order; name/role
+  read from the user record) + headers `X-Soulia-Chat-Id/-Message-Id`. Sender = `ASSISTANT_MAIL_FROM`
+  (default `SMTP_USER`), display name «SOULIA ERP», over `nodemailer` (`SMTP_HOST/PORT/USER/PASS`, env only).
+  Jenkins credential `soulia-smtp` («Username with password»: the sending Gmail + its App Password) →
+  `SMTP_USER/SMTP_PASS` in the Deploy stage (optional, like `soulia-live-sync-token`). ⚠ Not a `.env`
+  file: compose runs from the Jenkins workspace, which a clean checkout can wipe. ⚠ Each send is an atomic claim (`findOneAndUpdate`
+  on mail status) — the request and the 30-s cron never mail twice; a stuck `sending` claim is retaken
+  after 5 min. Failure → retry after 1, 2, 5, 10, 30, 60, 120 min (8 attempts) → `gave-up`; the question
+  stays «في انتظار الرد» throughout. Same `requestKey` → same message, no second mail.
+  `GET /api/assistant/external?ids=|chatId=` returns only the asker's own rows.
+- **In — API**: `POST /api/v1/assistant/replies` (new scope `assistant-write`, same key guard, IP list,
+  rate limit and request log) `{chatId, messageId, title, summary, tables[{caption, columns, rows}],
+  sourceLinks[{label,url}]}` → stored once (update filtered on `reply` absent) → 201; again → 409
+  `ALREADY_REPLIED` (+repliedAt); unknown id or a chatId that does not match → 404 `MESSAGE_NOT_FOUND`.
+  Limits (`REPLY_LIMITS`): title 200, summary 6000, 5 tables × 12 columns × 200 rows, cell 500, 3000
+  cells, 10 links (http/https only — `javascript:` → 400 `REPLY_INVALID`), whole body 90 KB → 400
+  `REPLY_TOO_LARGE` (never truncated). Socket `assistant:external-reply {messageId, chatId}` to the asker.
+- **⚠ Body-parser errors were a 500 app-wide**: Express refuses JSON over 100 KB (and malformed JSON)
+  before any route; `HttpExceptionFilter` turned that into «خطأ غير متوقع» 500 — an API client would
+  retry forever. Now `isBodyParserError` → 413 `PAYLOAD_TOO_LARGE` / 400 `INVALID_JSON`.
+- **UI** (`assistant.js/.css`): a two-option toggle above the input («مساعد سوليا (النظام)» / «المساعد
+  الخارجي (Instinct)»; switching keeps what was typed). Everything external is indigo (`--ai-ext*`, light
+  + dark): the question bubble with «إلى المساعد الخارجي», a card named «المساعد الخارجي · Instinct» —
+  waiting («في انتظار الرد» + mail state: sent at / retrying / gave up), then «رد من المساعد الخارجي» +
+  title, summary, tables, links (new tab, noopener). Replies are read on the socket event and every 20 s
+  while any question waits (also after a reload, panel closed → toast). A socket event during a read
+  queues one more read. API panel: scope help + developer reference rows/limits/codes.
+- Tests: `test/unit/external-assistant.spec.ts` (9), `test/integration/external-assistant.service.spec.ts`
+  (10, scratch Mongo 27017; revert-checked: dropping the one-reply filter fails 1, claiming without the
+  mail-status filter fails 1), `http-exception-filter.spec.ts` (+3). Compiled API on a scratch DB with a
+  local fake SMTP server: 25 end-to-end checks (real nodemailer, subject/From/To/JSON, both refusals,
+  401/403/404/400/413/201/409, other account cannot read, request log, rate limit 429, SMTP down → cron
+  re-send). Browser: 48 checks over the shipped files (ar light 1440, en dark 1440, ar dark 390).
+  **Not deployed; no real SMTP account configured; Instinct's side not tried.**
 
 ## Tampering Protection — Temporary Suspension + Alerts (Nov 25, 2026 f)
 
@@ -6079,6 +6172,7 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 26, 2026 | «مساعد SOULIA» gets an external assistant (Instinct): a system/external toggle, external questions emailed as `[ERP-CHAT] <chatId>` JSON with retries, replies via `POST /api/v1/assistant/replies` (scope `assistant-write`) drawn with their own badge; body-parser errors now 413/400 instead of 500 | See "«مساعد SOULIA» ⇄ External Assistant" above |
 | Nov 23, 2026 | Printed supplier return («مرتجع مشتريات», `buildInvoiceHtml` `isSupRet`): the transaction's `total` is only the cash refund (0 for a debt offset), so the sheet reads the return order (`supplierReturns`, by `linkedTransactionId`): value = return total, «رقم المرتجع SR-…», «اسم المورد», «سبب المرتجع» instead of the machine note, and «تسوية المرتجع» (`_invSupplierReturnSettlementHtml`: value + source invoice, debt offset per invoice from `invoiceOffsets` in red, cash refund + vault, credit, fully/partly settled, green «مديونية المورد بعد هذا المرتجع» = `debtBalanceAfter`) in place of the total/paid/remaining strip. Also every printed code no longer reads «Code Code 32». Tests in `purchase-print-statement.cjs` (54) | index.html |
 | Nov 23, 2026 | Supplier «سجل المدفوعات» table rebuilt (`renderSpPaymentsPanel`, `.spx-*`): summary strip (total paid · last payment · most used method), one row per payment — columns date (day month year; weekday + «بواسطة» beneath; «اليوم/أمس» keep the full date beneath) · invoice chips that open the invoice (a split payment shows each invoice's share in its chip, no sub-rows) · amount · method logo + name (right after the amount) · note (never the employee); undo moved to the row's ⋮ menu (whole payment + each part; disabled without the perm). Grouping rules unchanged. `test/browser/supplier-payments-table.cjs` (19) | index.html |
 | Nov 23, 2026 | Printed purchase invoice: the payment strip + two detailed tables became one short «كشف حساب مختصر» (`_invPurchaseStatementHtml`): this invoice = total − earlier payments (date · method · amount) − supplier returns − credit/write-off = remaining; supplier account = this remaining + other unpaid invoices − returns held only in the debt ledger = total due; under both, «آخر دفعات السداد للمورد» (last 5: date · method · invoices · amount; from the debt ledger's live payment / advance rows + invoice opening deposits, method read from the payment on its invoice, one split payment = one row; in «هذه الفاتورة» a split payment is stated at its full value + «منها X على هذه الفاتورة»; a split payment from before `batchId` existed — parts on different invoices, same method and day, ledger rows ≤10 s apart — is joined too, e.g. 11/11 فودافون كاش 600 #900020 + 14,400 #900022 = 15,000). Two separate sections: «بيان الفاتورة #ref» (payments, returns, deductions → remaining) and, under a dashed rule, «كشف حساب المورد حتى …» (opens with this invoice's remaining carried over, then other unpaid invoices, ledger-only amounts → total due, then the latest payments). Originally one box read top to bottom (the invoice total is NOT repeated — it is the sheet's «إجمالي المشتريات» above, in ink, and «إجمالي الأصناف» is dropped when equal): payments / returns / deductions → «المتبقي على الفاتورة #ref» subtotal row → «حساب المورد» (other unpaid invoices, ledger-only amounts) → green «إجمالي المستحق للمورد» — the only highlighted figure; returns and supplier deductions in red (`.r.is-neg`). ⚠ The supplier's other open invoices are read from the server via the ledger's `purchase-debt` rows (sourceId), not only from the in-memory list — a paged/stale list missed #900024 (remaining 21) and printed it as «مبالغ أخرى في سجل المديونية +21». Every row splits description | amount with a rule. The invoice page and window now show «خصم مرتجع للمورد · SR-…» in the order summary (`_purchaseOffsetRows`). `test/browser/purchase-print-statement.cjs` (42) | index.html |

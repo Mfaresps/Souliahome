@@ -43,6 +43,7 @@ import { SupplierReturnStatementsModule } from './supplier-return-statements/sup
 import { InvoiceImagesModule } from './invoice-images/invoice-images.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { AssistantModule } from './assistant/assistant.module';
+import { ExternalAssistantModule } from './assistant/external-assistant.module';
 import { PurchasingEngineModule } from './purchasing-engine/purchasing-engine.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { SeedService } from './seed/seed.service';
@@ -99,6 +100,7 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     InvoiceImagesModule,
     PromotionsModule,
     AssistantModule,
+    ExternalAssistantModule,
     PurchasingEngineModule,
     PublicApiModule,
   ],

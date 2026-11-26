@@ -92,7 +92,7 @@ export function shippingView(tx: any, detailed = false) {
   return view;
 }
 
-function itemsView(items: any[]) {
+export function itemsView(items: any[]) {
   return (Array.isArray(items) ? items : []).map((it: any) => ({
     code: it.code || '',
     name: it.name || it.shopifyName || '',

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, HttpException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { ObjectId } from 'mongodb';
@@ -8,7 +8,18 @@ import { PresenceGateway } from '../auth/presence.gateway';
 import { confirmationBucket, ConfirmationBucket, FOLLOWUP_SETTLED_STATUSES } from '../shared/shopify-confirmation-bucket.util';
 import { SHIP_ISSUE_ACTIVE_STATES } from '../shared/ship-issue-state.util';
 import { ApiKeyDoc } from './api-keys.service';
-import { complaintView, followupView, FOLLOWUP_OPEN_FILTER, mentionView, orderView, phoneFor, shippingView } from './public-api.view';
+import { returnStage, returnView, RETURN_STAGES } from './returns-api.view';
+import { complaintView, followupView, FOLLOWUP_OPEN_FILTER, itemsView, mentionView, orderView, phoneFor, shippingView } from './public-api.view';
+
+/** Follow-up reasons the app knows (stored Arabic values). Anything else is stored as «أخرى» + reasonOther. */
+export const API_FOLLOWUP_REASONS = ['عملية تأكيد الطلب', 'رفض الاستلام', 'أجل الاستلام', 'طلب فتح الشحنة', 'مشكلة في الاستلام', 'أخرى'];
+
+/** An order a follow-up may no longer be opened on: cancelled or delivered. */
+export function orderClosedReason(shop: any, tx: any): 'cancelled' | 'delivered' | '' {
+  if (tx ? tx.cancelled : (shop?.cancelled || shop?.status === 'rejected')) return 'cancelled';
+  if (tx && (tx.deliveredAt || tx.pickupStatus === 'Delivered' || String(tx.bostaStatus || '').toUpperCase() === 'DELIVERED')) return 'delivered';
+  return '';
+}
 
 /**
  * Read side of the external API plus the one write (a follow-up note).
@@ -97,6 +108,9 @@ export class PublicApiService {
 
     const [fuByOrder, txByShopify] = await Promise.all([this.followupsFor(orders), this.salesFor(orders)]);
     const withShipping = (key.scopes || []).includes('shipping');
+    const include = String(q?.include || '').split(',').map((s) => s.trim());
+    if (include.some((s) => s && s !== 'items')) throw new BadRequestException({ code: 'BAD_FILTER', message: 'include: items' });
+    const withItems = include.includes('items');
     let rows = orders.map((o) => {
       const fus = fuByOrder.get(String(o._id)) || [];
       const openFu = fus.some((f) => !f.cancelled && !FOLLOWUP_SETTLED_STATUSES.includes(f.status));
@@ -127,7 +141,12 @@ export class PublicApiService {
     rows.sort((a, b) => new Date(b.o.shopifyCreatedAt || b.o.createdAt).getTime() - new Date(a.o.shopifyCreatedAt || a.o.createdAt).getTime());
     return {
       from: range.from, to: range.to, total: rows.length, page, limit,
-      items: rows.slice(skip, skip + limit).map((r) => orderView({ shop: r.o, tx: r.tx, followups: r.fus, bucket: r.bucket, phoneMode: key.phoneAccess || 'detail', isDetail: false, withShipping })),
+      items: rows.slice(skip, skip + limit).map((r) => {
+        const view = orderView({ shop: r.o, tx: r.tx, followups: r.fus, bucket: r.bucket, phoneMode: key.phoneAccess || 'detail', isDetail: false, withShipping });
+        // `include=items`: the lines of every order in one call (best sellers without a request per order).
+        if (withItems) view.items = itemsView((r.tx || r.o).items);
+        return view;
+      }),
     };
   }
 
@@ -274,11 +293,80 @@ export class PublicApiService {
     return { ok: true, followupId, orderRef: doc.orderRef || '', note: mine ? { id: String(mine._id), author: mine.authorName, text: mine.text, at: mine.createdAt ? new Date(mine.createdAt).toISOString() : null } : null };
   }
 
+  /** Orders whose follow-up is being opened right now — two simultaneous calls must not open two. */
+  private readonly opening = new Set<string>();
+
+  /**
+   * POST /orders/{ref}/followups — opens a follow-up on an order that has none open, with its first
+   * note written as the key's account. 409 FOLLOWUP_EXISTS (with the open id) / ORDER_CLOSED.
+   */
+  async openFollowup(refRaw: string, body: any, key: ApiKeyDoc) {
+    if (!key.linkedUserId) throw new ForbiddenException({ code: 'NO_LINKED_USER', message: 'المفتاح غير مربوط بحساب مستخدم' });
+    const note = String(body?.note ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u202a-\u202e\u2066-\u2069]/g, '').trim();
+    if (!note) throw new BadRequestException({ code: 'NOTE_REQUIRED', message: 'نص الملاحظة الأولى مطلوب' });
+    if (note.length > 2000) throw new BadRequestException({ code: 'TEXT_TOO_LONG', message: 'أقصى طول للملاحظة 2000 حرف' });
+    const reasonIn = String(body?.reason ?? '').replace(/[\u0000-\u001f\u202a-\u202e\u2066-\u2069]/g, '').trim().slice(0, 120);
+    const { ref, shop, tx, fus } = await this.findOrder(refRaw);
+    const open = fus.find((f) => !f.cancelled && !FOLLOWUP_SETTLED_STATUSES.includes(f.status) && !f.orderOutcome);
+    if (open) throw new ConflictException({ code: 'FOLLOWUP_EXISTS', message: `يوجد متابعة مفتوحة على الأوردر ${ref}`, followupId: String(open._id), ticketNo: open.ticketNo || '' });
+    const closed = orderClosedReason(shop, tx);
+    if (closed) throw new ConflictException({ code: 'ORDER_CLOSED', message: closed === 'cancelled' ? `الأوردر ${ref} ملغي` : `الأوردر ${ref} تم تسليمه`, state: closed });
+    const lock = 'fu:' + ref;
+    if (this.opening.has(lock)) throw new ConflictException({ code: 'FOLLOWUP_EXISTS', message: `يجري فتح متابعة على الأوردر ${ref}` });
+    this.opening.add(lock);
+    try {
+      // Re-read inside the lock: another call may have opened one since the first read.
+      const again: any = await this.db.collection('followups').findOne({ $or: [{ orderRef: { $in: [ref, '#' + ref] } }, ...(shop ? [{ shopifyOrderId: String(shop._id) }] : []), ...(tx ? [{ transactionId: String(tx._id) }] : [])],
+        cancelled: { $ne: true }, status: { $nin: FOLLOWUP_SETTLED_STATUSES }, orderOutcome: { $in: ['', null] } }, { projection: { _id: 1, ticketNo: 1 } });
+      if (again) throw new ConflictException({ code: 'FOLLOWUP_EXISTS', message: `يوجد متابعة مفتوحة على الأوردر ${ref}`, followupId: String(again._id), ticketNo: again.ticketNo || '' });
+      const known = API_FOLLOWUP_REASONS.includes(reasonIn);
+      const reason = known ? reasonIn : reasonIn ? 'أخرى' : (tx ? 'أخرى' : 'عملية تأكيد الطلب');
+      const src = tx || shop || {};
+      const created: any = await this.followups.create({
+        orderRef: ref, transactionId: tx ? String(tx._id) : '', shopifyOrderId: shop ? String(shop._id) : '',
+        clientName: src.client || '', clientPhone: src.phone || '',
+        responsibleId: key.linkedUserId, responsibleName: key.linkedUserName,
+        reason, reasonOther: !known && reasonIn ? reasonIn : (reason === 'أخرى' ? 'متابعة من الـ API' : ''),
+        status: reason === 'عملية تأكيد الطلب' ? 'في انتظار العميل' : 'في انتظار المتابعة',
+        assignSource: 'api',
+      } as any, key.linkedUserId);
+      const id = String(created._id);
+      await this.followups.addComment(id, key.linkedUserId, key.linkedUserName, note);
+      try { this.presence.emitEvent('followup:changed', { action: 'create', id }); } catch { /* best effort */ }
+      return { ok: true, created: true, followupId: id, ticketNo: created.ticketNo || '', orderRef: ref, reason, status: created.status,
+        note: { author: key.linkedUserName, text: note } };
+    } finally { this.opening.delete(lock); }
+  }
+
   async addNoteToOrder(ref: string, body: any, key: ApiKeyDoc) {
     const { ref: r, fus } = await this.findOrder(ref);
     const open = fus.find((f) => !f.cancelled && !FOLLOWUP_SETTLED_STATUSES.includes(f.status) && !f.orderOutcome);
     if (!open) throw new NotFoundException({ code: 'NO_OPEN_FOLLOWUP', message: `لا توجد متابعة مفتوحة على الأوردر ${r}` });
     return this.addNote(String(open._id), body, key);
+  }
+
+  // ── Returns ───────────────────────────────────────────────────────────────────────────────────
+  /** Both return systems (after-sales cases + legacy requests) by the day they were recorded. */
+  async listReturns(q: any) {
+    const range = dayRange(q, 30, 92);
+    const { limit, page, skip } = paging(q);
+    const filter: any = { createdAt: { $gte: new Date(range.fromMs), $lt: new Date(range.toMs) } };
+    const kind = String(q?.kind || '');
+    if (kind === 'return' || kind === 'exchange') filter.requestKind = kind;
+    else if (kind) throw new BadRequestException({ code: 'BAD_FILTER', message: 'kind: return | exchange' });
+    const stage = String(q?.stage || '');
+    if (stage && !RETURN_STAGES[stage]) throw new BadRequestException({ code: 'BAD_FILTER', message: 'stage: ' + Object.keys(RETURN_STAGES).join(' | ') });
+    const rows: any[] = await this.db.collection('returnrequests').find(filter, { projection: {
+      originalRef: 1, returnTxRef: 1, requestKind: 1, createdAt: 1, updatedAt: 1, total: 1, itemsTotal: 1, reason: 1, reasonDetails: 1,
+      'items.code': 1, 'items.name': 1, 'items.qty': 1, 'items.condition': 1, status: 1, requestedBy: 1, approvedBy: 1, approvedAt: 1,
+      rejectedReason: 1, vaultRefundAccount: 1, reversedAt: 1, reversedBy: 1, reversalReason: 1,
+      'workflow.version': 1, 'workflow.ref': 1, 'workflow.stage': 1, 'workflow.approvedBy': 1, 'workflow.approvedAt': 1,
+      'workflow.receivedAt': 1, 'workflow.receivedBy': 1, 'workflow.cancelledAt': 1, 'workflow.cancelledBy': 1,
+      'workflow.quote.credit': 1, 'workflow.quote.refundDue': 1, 'workflow.refund.amount': 1, 'workflow.refund.method': 1,
+      'workflow.refund.at': 1, 'workflow.refund.by': 1, 'workflow.history': { $slice: 1 },
+    } }).sort({ createdAt: -1 }).toArray();
+    const matched = stage ? rows.filter((r) => returnStage(r) === stage) : rows;
+    return { from: range.from, to: range.to, total: matched.length, page, limit, items: matched.slice(skip, skip + limit).map(returnView) };
   }
 
   // ── Mentions ──────────────────────────────────────────────────────────────────────────────────

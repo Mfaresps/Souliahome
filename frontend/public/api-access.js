@@ -24,7 +24,7 @@
     play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
   };
 
-  const state = { data: null, loading: false, error: '', log: null, logFilter: { keyId: '', result: '', method: '', page: 1 }, dialog: null };
+  const state = { data: null, loading: false, error: '', log: null, logFilter: { keyId: '', result: '', method: '', page: 1 }, dialog: null, drafts: null, draftFilter: 'pending' };
 
   function scopeLabel(code) {
     const s = (state.data?.scopes || []).find((x) => x.code === code);
@@ -53,6 +53,11 @@
     try { state.log = await api('/api-keys/log?' + q.toString(), { deduplicate: false }); }
     catch (e) { state.log = { error: e?.message || 'error' }; }
   }
+  async function loadDrafts() {
+    const q = state.draftFilter ? '?status=' + state.draftFilter : '';
+    try { state.drafts = await api('/api-keys/po-drafts' + q, { deduplicate: false }); }
+    catch (e) { state.drafts = { error: e?.message || 'error' }; }
+  }
 
   function root() { return document.getElementById('api-access-root'); }
 
@@ -61,7 +66,7 @@
     if (typeof isAdmin === 'function' && !isAdmin()) { el.innerHTML = ''; return; }
     if (!state.data || force) {
       if (!state.data) el.innerHTML = `<div class="apx-skel"><i></i><i></i><i></i></div>`;
-      await Promise.all([load(), loadLog()]);
+      await Promise.all([load(), loadLog(), loadDrafts()]);
     }
     draw();
   }
@@ -95,6 +100,8 @@
           <div class="${d.rejectedUnknown24h ? 'is-warn' : ''}" title="${E(L('طلبات بمفتاح غير موجود أو بدون مفتاح', 'Requests with no key or an unknown key'))}"><b>${NUM(d.rejectedUnknown24h)}</b><span>${L('مفتاح مجهول', 'Unknown key')}</span></div>
         </div>
       </div>
+
+      ${draftsHtml()}
 
       <div class="apx-bar">
         <h4>${L('المفاتيح', 'Keys')}</h4>
@@ -185,22 +192,128 @@
       </section>`;
   }
 
+  const DRAFT_STATUS = { pending: ['بانتظار موافقتك', 'Awaiting approval', 'is-paused'], approved: ['معتمد', 'Approved', 'is-active'], rejected: ['مرفوض', 'Rejected', 'is-revoked'] };
+  function draftsHtml() {
+    const dr = state.drafts;
+    const rows = dr?.items || [];
+    const pending = rows.filter((d) => d.status === 'pending').length;
+    const tabs = [['pending', L('بانتظار الموافقة', 'Awaiting approval')], ['approved', L('معتمدة', 'Approved')], ['rejected', L('مرفوضة', 'Rejected')], ['', L('الكل', 'All')]]
+      .map(([v, t]) => `<button type="button" class="apx-tab ${state.draftFilter === v ? 'is-on' : ''}" data-apx="draft-filter" data-v="${v}">${E(t)}</button>`).join('');
+    return `<section class="apx-drafts ${state.draftFilter === 'pending' && pending ? 'has-pending' : ''}">
+      <div class="apx-bar"><h4>${L('طلبات أوامر الشراء من API', 'Purchase-order requests from the API')}${state.draftFilter === 'pending' && pending ? ` <span class="apx-count">${NUM(pending)}</span>` : ''}</h4><div class="apx-tabs">${tabs}</div></div>
+      ${dr?.error ? `<div class="apx-error">${E(dr.error)}</div>` : rows.length ? `<div class="apx-table-wrap"><table class="apx-table">
+        <thead><tr><th>${L('الطلب', 'Request')}</th><th>${L('المورد', 'Supplier')}</th><th>${L('الأصناف', 'Lines')}</th><th>${L('القطع', 'Units')}</th><th>${L('من', 'From')}</th><th>${L('الحالة', 'Status')}</th><th></th></tr></thead>
+        <tbody>${rows.map((d) => { const st = DRAFT_STATUS[d.status] || DRAFT_STATUS.pending; return `<tr>
+          <td dir="ltr"><b>${E(d.draftNo)}</b>${d.purchaseOrder ? `<small>${E(d.purchaseOrder.poNumber)}</small>` : ''}</td>
+          <td>${E(d.supplier)}</td><td>${NUM(d.lines.length)}</td><td>${NUM(d.totalUnits)}</td>
+          <td>${E(d.createdBy)}<small title="${E(full(d.createdAt))}">${E(when(d.createdAt))}</small></td>
+          <td><span class="apx-pill ${st[2]}">${E(L(st[0], st[1]))}</span></td>
+          <td class="apx-row-act"><button class="btn btn-outline btn-sm" data-apx="draft-open" data-id="${d.id}">${d.status === 'pending' ? L('مراجعة', 'Review') : L('عرض', 'View')}</button></td></tr>`; }).join('')}</tbody></table></div>`
+        : `<div class="apx-empty is-small">${state.draftFilter === 'pending' ? L('لا توجد طلبات بانتظار موافقتك.', 'No requests awaiting approval.') : L('لا توجد طلبات.', 'No requests.')}</div>`}
+    </section>`;
+  }
+
+  function draftDialog(d) {
+    const pending = d.status === 'pending';
+    const st = DRAFT_STATUS[d.status] || DRAFT_STATUS.pending;
+    const lines = d.lines.map((l, i) => `<tr>
+      <td dir="ltr" class="apx-c">${E(l.code)}</td><td>${E(l.name)}${l.note ? `<small>${E(l.note)}</small>` : ''}</td>
+      <td class="apx-n">${l.suggestedQty === null ? '—' : NUM(l.suggestedQty)}</td>
+      <td class="apx-n">${pending ? `<input type="number" min="0" max="100000" step="1" class="apx-qty" data-code="${E(l.code)}" value="${E(l.qty)}" aria-label="${E(L('الكمية', 'Quantity') + ' ' + l.name)}">` : `<b>${NUM(l.qty)}</b>`}</td></tr>`).join('');
+    return `
+      <header class="apx-dlg-head">
+        <h3>${E(d.draftNo)} · ${E(d.supplier)} <span class="apx-pill ${st[2]}">${E(L(st[0], st[1]))}</span></h3>
+        <p>${L(`أرسله ${E(d.createdBy)} ${E(when(d.createdAt))}`, `Sent by ${E(d.createdBy)} ${E(when(d.createdAt))}`)}${d.expectedDeliveryDate ? ' · ' + L('التسليم المتوقع ', 'Expected ') + E(d.expectedDeliveryDate) : ''}${d.purchaseOrder ? ' · ' + L('أمر الشراء ', 'PO ') + `<b dir="ltr">${E(d.purchaseOrder.poNumber)}</b>` : ''}</p>
+      </header>
+      ${d.notes ? `<p class="apx-note-box">${E(d.notes)}</p>` : ''}
+      ${d.rejectReason ? `<p class="apx-note-box is-bad">${L('سبب الرفض: ', 'Reason: ')}${E(d.rejectReason)}</p>` : ''}
+      <div class="apx-table-wrap"><table class="apx-table">
+        <thead><tr><th>${L('الكود', 'Code')}</th><th>${L('الصنف', 'Product')}</th><th class="apx-n">${L('المقترح', 'Suggested')}${tip('كمية محرك الشراء وقت إرسال الطلب، محسوبة من الطلب المتوقع والمخزون والأوردرات المعلقة والوارد.', 'The purchasing engine quantity when the request was sent — from forecast demand, stock, pending orders and incoming.')}</th><th class="apx-n">${L('المطلوب', 'Requested')}</th></tr></thead>
+        <tbody>${lines}</tbody></table></div>
+      ${pending ? `<p class="apx-sub">${L('يمكنك تعديل الكميات قبل الاعتماد، والكمية 0 تحذف الصنف. الاعتماد ينشئ أمر شراء «معلق» عادي بأسعار المورد المسجلة.', 'You can change quantities before approving; 0 removes a line. Approving creates a normal «pending» PO priced from the supplier price list.')}</p>
+      <label class="apx-field" id="apx-reject-wrap" hidden><span class="apx-lbl">${L('سبب الرفض', 'Reason for rejecting')}</span><input id="apx-reject-reason" maxlength="300"></label>` : ''}
+      <p class="apx-form-err" role="alert" hidden></p>
+      <div class="apx-dlg-actions">
+        <button type="button" class="btn btn-outline" data-apx-close>${L('إغلاق', 'Close')}</button>
+        <button type="button" class="btn btn-outline" data-apx-pdf>${L('تنزيل PDF', 'Download PDF')}</button>
+        ${pending ? `<button type="button" class="btn btn-outline apx-danger" data-apx-reject>${L('رفض', 'Reject')}</button>
+        <button type="button" class="btn btn-primary" data-apx-approve>${L('اعتماد وإنشاء أمر الشراء', 'Approve & create PO')}</button>` : ''}
+      </div>`;
+  }
+
+  async function openDraft(id) {
+    let d;
+    try { d = await api('/api-keys/po-drafts/' + encodeURIComponent(id), { deduplicate: false }); }
+    catch (e) { return toast(e?.message || L('تعذّر فتح الطلب', 'Could not open the request'), true); }
+    dialog(draftDialog(d), (dlg) => {
+      const err = dlg.querySelector('.apx-form-err');
+      const fail = (ex) => { err.textContent = ex?.message || 'error'; err.hidden = false; };
+      dlg.querySelector('[data-apx-close]').onclick = closeDialog;
+      dlg.querySelector('[data-apx-pdf]').onclick = () => downloadPdf(d);
+      const ap = dlg.querySelector('[data-apx-approve]');
+      if (ap) ap.onclick = async () => {
+        const lines = [...dlg.querySelectorAll('.apx-qty')].map((i) => ({ code: i.dataset.code, qty: Math.max(0, Math.round(Number(i.value) || 0)) }));
+        if (!lines.some((l) => l.qty > 0)) return fail({ message: L('أدخل كمية أكبر من صفر لصنف واحد على الأقل.', 'Enter a quantity above zero for at least one line.') });
+        ap.disabled = true; err.hidden = true;
+        try {
+          const r = await api(`/api-keys/po-drafts/${d.id}/approve`, { method: 'POST', body: JSON.stringify({ lines }) });
+          closeDialog(); toast(L(`تم إنشاء أمر الشراء ${r.purchaseOrder?.poNumber || ''}`, `Purchase order ${r.purchaseOrder?.poNumber || ''} created`));
+          await loadDrafts(); draw();
+        } catch (ex) { fail(ex); } finally { ap.disabled = false; }
+      };
+      const rj = dlg.querySelector('[data-apx-reject]');
+      if (rj) rj.onclick = async () => {
+        const wrap = dlg.querySelector('#apx-reject-wrap'); const inp = dlg.querySelector('#apx-reject-reason');
+        if (wrap.hidden) { wrap.hidden = false; rj.textContent = L('تأكيد الرفض', 'Confirm reject'); inp.focus(); return; }
+        if (String(inp.value).trim().length < 3) return fail({ message: L('اكتب سبب الرفض.', 'Write the reason.') });
+        rj.disabled = true; err.hidden = true;
+        try {
+          await api(`/api-keys/po-drafts/${d.id}/reject`, { method: 'POST', body: JSON.stringify({ reason: inp.value }) });
+          closeDialog(); toast(L('تم رفض الطلب', 'Request rejected')); await loadDrafts(); draw();
+        } catch (ex) { fail(ex); } finally { rj.disabled = false; }
+      };
+    });
+  }
+
+  async function downloadPdf(d) {
+    try {
+      const res = await fetch('/api/api-keys/po-drafts/' + encodeURIComponent(d.id) + '/pdf', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message || ('HTTP ' + res.status));
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = (d.purchaseOrder?.poNumber || d.draftNo) + '.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (e) { toast(L('تعذّر تنزيل الملف: ', 'Could not download: ') + (e?.message || ''), true); }
+  }
+
   function docsHtml() {
     const base = location.origin + '/api/v1';
     const rows = [
       ['GET', '/me', L('بيانات المفتاح وصلاحياته', 'The key and its sections'), ''],
       ['GET', '/orders?from=&to=&status=&confirmation=&followup=none', L('الأوردرات (حتى 31 يومًا) — followup=none للأوردرات بدون متابعة', 'Orders (≤31 days) — followup=none for orders without a follow-up'), 'orders'],
-      ['GET', '/orders/{ref}', L('تفاصيل أوردر برقمه', 'One order by number'), 'orders'],
+      ['GET', '/orders/{ref}', L('تفاصيل أوردر برقمه مع المنتجات (الاسم، الكمية، السعر)', 'One order by number, with its items (name, qty, price)'), 'orders'],
+      ['GET', '/orders?include=items', L('قائمة الأوردرات مع منتجات كل أوردر في طلب واحد', 'Order list with the items of every order in one call'), 'orders'],
       ['GET', '/orders/{ref}/shipping', L('حالة الشحن ومشاكله وأحداث شركة الشحن', 'Shipping status, problems and carrier events'), 'shipping'],
       ['GET', '/shipping/problems?state=attempt|open|awaiting', L('الأوردرات التي عليها مشكلة شحن', 'Orders with a shipping problem'), 'shipping'],
       ['GET', '/orders/{ref}/followups', L('متابعات الأوردر وملاحظاتها', 'The order\'s follow-ups and notes'), 'followups'],
       ['GET', '/followups?status=open&updatedSince=', L('المتابعات', 'Follow-ups'), 'followups'],
       ['POST', '/followups/{id}/notes', L('إضافة ملاحظة {text, author, requestId}', 'Add a note {text, author, requestId}'), 'followups-write'],
+      ['POST', '/orders/{ref}/followups', L('فتح متابعة جديدة {note, reason} — 409 إن وُجدت متابعة مفتوحة أو كان الأوردر ملغيًا/مُسلَّمًا', 'Open a follow-up {note, reason} — 409 if one is open or the order is cancelled/delivered'), 'followups-write'],
       ['POST', '/orders/{ref}/followup-notes', L('ملاحظة على المتابعة المفتوحة للأوردر', 'Note on the order\'s open follow-up'), 'followups-write'],
+      ['GET', '/returns?from=&to=&kind=return|exchange&stage=&page=', L('المرتجعات والاستبدال (حتى 92 يومًا): المرحلة الحالية، ومن سجّل ومن وافق ومتى، والمبلغ المسترد', 'Returns and exchanges (≤92 days): current stage, who recorded and who approved and when, refund'), 'returns'],
       ['GET', '/mentions?since=&unread=1', L('ردود الموظفين والمنشن لحساب التكامل', 'Employee replies and mentions for the account'), 'mentions'],
       ['GET', '/complaints?categoryGroup=&category=', L('الشكاوى بالتصنيف', 'Complaints by category'), 'complaints'],
       ['GET', '/inventory?q=&state=', L('المخزون (صالح للبيع، محجوز، وارد)', 'Stock (ready, reserved, incoming)'), 'inventory'],
+      ['GET', '/reports?period=this-month|last-month|today|yesterday|last-7|last-30|this-year  ·  from=&to=', L('صفحة التقارير والمؤشرات مع المقارنة بالفترة السابقة (الأرقام المالية مع قسم التقارير المالية)', 'Reports page and KPIs vs the previous period (financial figures with the financial section)'), 'reports'],
       ['GET', '/reports/daily?date=YYYY-MM-DD', L('تقرير المبيعات اليومي', 'Daily sales report'), 'reports'],
+      ['GET', '/products?status=active|inactive|all', L('المنتجات النشطة وغير النشطة', 'Active and inactive products'), 'products'],
+      ['GET', '/products/sales?month=YYYY-MM', L('مبيعات كل منتج في الشهر، الأكثر والأقل مبيعًا (تصنيف ABC)', 'Units sold per product in a month, best and worst sellers (ABC)'), 'products'],
+      ['GET', '/purchasing/suggestions?show=needed|watch|all', L('اقتراحات الشراء مع طريقة الحساب لكل منتج', 'Purchase suggestions with the full calculation'), 'purchasing'],
+      ['GET', '/purchasing/order-analysis?refs=2777,2780', L('تحليل احتياج المخزون للأوردرات المعلقة (كلها أو المحددة)', 'Stock-need analysis of pending orders (all or the ones named)'), 'stock-analysis'],
+      ['POST', '/purchase-orders', L('طلب أمر شراء (مسودة حتى موافقة المدير)', 'Request a purchase order (draft until an admin approves)'), 'purchasing-write'],
+      ['GET', '/purchase-orders/{id}/pdf', L('ملف PDF لطلب أمر الشراء (الكميات فقط)', 'PDF of the request (quantities only)'), 'purchasing'],
+      ['POST', '/assistant/replies', L('الرد على سؤال وصل بالبريد [ERP-CHAT] {chatId, messageId, title, summary, tables, sourceLinks} — 409 إن سبق الرد، 404 إن لم يوجد', 'Answer a question that arrived by email [ERP-CHAT] {chatId, messageId, title, summary, tables, sourceLinks} — 409 if already answered, 404 if unknown'), 'assistant-write'],
     ];
     return `<details class="apx-docs"><summary>${L('دليل الاستخدام للمطوّر', 'Developer reference')}</summary>
       <p>${L('كل الطلبات على HTTPS مع الهيدر', 'Every request over HTTPS with the header')} <code dir="ltr">X-API-Key: sk_live_…</code>. ${L('لا يوجد أي مسار للحذف أو التعديل أو الإلغاء.', 'There is no delete, edit or cancel route.')}</p>
@@ -210,7 +323,16 @@
 curl -X POST -H "X-API-Key: sk_live_…" -H "Content-Type: application/json" \\
   -d '{"text":"تم التواصل مع العميل","author":"Instinct","requestId":"msg-1001"}' \\
   "${E(base)}/followups/{id}/notes"</pre>
-      <p>${L('الأخطاء ترجع بـ code ثابت: API_KEY_INVALID، API_KEY_PAUSED، SCOPE_NOT_ALLOWED، IP_NOT_ALLOWED، RATE_LIMITED (مع Retry-After)، API_DISABLED، ORDER_NOT_FOUND، NO_OPEN_FOLLOWUP.', 'Errors carry a stable code: API_KEY_INVALID, API_KEY_PAUSED, SCOPE_NOT_ALLOWED, IP_NOT_ALLOWED, RATE_LIMITED (with Retry-After), API_DISABLED, ORDER_NOT_FOUND, NO_OPEN_FOLLOWUP.')}</p>
+      <p><b>${L('أسئلة مساعد SOULIA للمساعد الخارجي', 'SOULIA chat questions for the external assistant')}</b> — ${L('يصل كل سؤال ببريد عنوانه', 'Each question arrives by email with the subject')} <code dir="ltr">[ERP-CHAT] &lt;chatId&gt;</code> ${L('وجسمه JSON:', 'and a JSON body:')}</p>
+      <pre dir="ltr">{ "chatId": "chat_…", "messageId": "xm_…", "userName": "…", "userRole": "admin|staff|viewer",
+  "question": "…", "createdAt": "2026-11-26T10:15:00.000Z" }</pre>
+      <p>${L('الرد يُرسل مرة واحدة لكل messageId. الحدود: العنوان 200 حرف، الملخص 6000، حتى 5 جداول × 12 عمودًا × 200 صف، الخلية 500 حرف، 3000 خلية إجمالًا، 10 روابط http(s)، وحجم الطلب كله حتى 90 KB (فوقها REPLY_TOO_LARGE، وفوق 100 KB يرفض الخادم الطلب بـ 413).', 'One reply per messageId. Limits: title 200 chars, summary 6000, up to 5 tables × 12 columns × 200 rows, 500 chars per cell, 3000 cells in all, 10 http(s) links, and the whole body up to 90 KB (above it REPLY_TOO_LARGE; above 100 KB the server refuses with 413).')}</p>
+      <pre dir="ltr">curl -X POST -H "X-API-Key: sk_live_…" -H "Content-Type: application/json" \\
+  -d '{"chatId":"chat_…","messageId":"xm_…","title":"مبيعات الأسبوع","summary":"…",
+       "tables":[{"caption":"أعلى المنتجات","columns":["المنتج","القطع"],"rows":[["Bow dining",12]]}],
+       "sourceLinks":[{"label":"التقرير","url":"https://example.com/r/1"}]}' \\
+  "${E(base)}/assistant/replies"</pre>
+      <p>${L('الأخطاء ترجع بـ code ثابت: API_KEY_INVALID، API_KEY_PAUSED، SCOPE_NOT_ALLOWED، IP_NOT_ALLOWED، RATE_LIMITED (مع Retry-After)، API_DISABLED، ORDER_NOT_FOUND، NO_OPEN_FOLLOWUP، FOLLOWUP_EXISTS (مع followupId)، ORDER_CLOSED، NOTE_REQUIRED، MESSAGE_NOT_FOUND، ALREADY_REPLIED (مع repliedAt)، REPLY_INVALID، REPLY_TOO_LARGE.', 'Errors carry a stable code: API_KEY_INVALID, API_KEY_PAUSED, SCOPE_NOT_ALLOWED, IP_NOT_ALLOWED, RATE_LIMITED (with Retry-After), API_DISABLED, ORDER_NOT_FOUND, NO_OPEN_FOLLOWUP, FOLLOWUP_EXISTS (with followupId), ORDER_CLOSED, NOTE_REQUIRED, MESSAGE_NOT_FOUND, ALREADY_REPLIED (with repliedAt), REPLY_INVALID, REPLY_TOO_LARGE.')}</p>
       <p>${L('الـ Webhook يُرسل POST بالحدث mention.created وتوقيع X-Soulia-Signature = sha256=HMAC(السر، جسم الطلب).', 'The webhook POSTs mention.created, signed X-Soulia-Signature = sha256=HMAC(secret, body).')}</p>
     </details>`;
   }
@@ -277,11 +399,18 @@ curl -X POST -H "X-API-Key: sk_live_…" -H "Content-Type: application/json" \\
     orders: ['قائمة الأوردرات وتفاصيل كل أوردر: العميل، الأصناف، الإجمالي، العربون، وحالة التأكيد.', 'Order list and details: customer, items, total, deposit and confirmation state.'],
     shipping: ['حالة الشحنة ورقم التتبع، ومحاولات التسليم الفاشلة وسببها، والشحنات الراجعة.', 'Parcel status and tracking, failed delivery attempts and their reason, returns.'],
     followups: ['المتابعات المفتوحة والمغلقة، والمسؤول عنها، وكل الملاحظات المكتوبة فيها.', 'Open and closed follow-ups, who owns them, and every note in them.'],
-    'followups-write': ['إضافة ملاحظة على متابعة باسم الحساب المختار. هذه هي الكتابة الوحيدة الممكنة.', 'Add a note to a follow-up as the chosen account. The only write possible.'],
+    'followups-write': ['إضافة ملاحظة على متابعة، وفتح متابعة جديدة لأوردر ليس عليه متابعة مفتوحة، باسم الحساب المختار.', 'Add a note to a follow-up, and open a follow-up on an order that has none open, as the chosen account.'],
     mentions: ['ردود الموظفين على ملاحظات الحساب، وأي منشن موجّه إليه، ليرد عليها.', 'Employee replies to the account notes and mentions of it, so it can answer.'],
     complaints: ['الشكاوى بتصنيفها وحالتها وأولويتها، والإجراء المتخذ فيها.', 'Complaints with their category, status, priority and the action taken.'],
     inventory: ['الكميات الصالحة للبيع والمحجوزة والواردة لكل منتج، بدون أي أسعار.', 'Ready, reserved and incoming quantities per product — no prices.'],
-    reports: ['أرقام مبيعات يوم واحد وأوردرات Shopify الواردة فيه، بدون الأرباح.', 'One day of sales figures and incoming Shopify orders — no profit.'],
+    reports: ['صفحة التقارير لأي فترة: صافي المبيعات، والأوردرات، ومتوسط الأوردر، والخصومات، والمرتجعات، والإلغاءات وأسبابها، والشحن، وأفضل العملاء، ومبيعات كل منتج، والرسم اليومي، مع مقارنة بالفترة السابقة. بدون أرباح أو تكلفة.', 'The reports page for any period: net sales, orders, average order, discounts, returns, cancellations and reasons, shipping, top customers, product sales, daily trend, compared with the previous period. No profit or cost.'],
+    'reports-financial': ['يضيف للتقارير: إجمالي وصافي الربح وهامشه، والمصاريف، والمشتريات، وتكلفة وربح كل منتج، وتكلفة شركة الشحن، وقيمة المخزون الراكد. أرقام حساسة — فعّله فقط إذا احتاجه التطبيق.', 'Adds to the reports: gross and net profit and margins, expenses, purchases, cost and profit per product, carrier cost, frozen stock value. Sensitive — switch on only if the app needs it.'],
+    products: ['المنتجات النشطة وغير النشطة، والكميات المباعة لكل منتج في الشهر مرتبة من الأكثر إلى الأقل مبيعًا.', 'Active and inactive products, and units sold per product in a month, best to worst.'],
+    purchasing: ['الكميات المقترحة للشراء لكل منتج وطريقة حسابها، وقراءة طلبات أوامر الشراء وملفها PDF. بدون أسعار.', 'Suggested purchase quantities with their calculation, and reading purchase-order requests and their PDF. No prices.'],
+    returns: ['المرتجعات والاستبدال: الأوردر، التاريخ، المبلغ، السبب، المنتجات، المرحلة الحالية، ومن سجّلها ومن وافق عليها ومتى. بدون أي حذف أو تعديل.', 'Returns and exchanges: order, date, amount, reason, items, current stage, who recorded it and who approved it and when. Read only.'],
+    'stock-analysis': ['نفس «تحليل احتياج المخزون» في صفحة Shopify: أي أوردرات معلقة جاهزة للشحن وأيها ينقصه مخزون أو يحتاج إجراء، والكمية الناقصة من كل منتج. بدون أسعار.', 'The Shopify page stock-need analysis: which pending orders are ready to ship, short of stock or need an action, and what each product is short. No prices.'],
+    'purchasing-write': ['إرسال طلب أمر شراء. يُحفظ مسودة ولا يصبح أمر شراء إلا بعد موافقة مدير.', 'Send a purchase-order request. Saved as a draft; it becomes a PO only after an admin approves it.'],
+    'assistant-write': ['الرد على أسئلة الموظفين المرسلة من مساعد SOULIA إلى المساعد الخارجي بالبريد. رد واحد لكل سؤال، ويظهر في المحادثة بشارة «رد من المساعد الخارجي».', 'Answer staff questions sent from the SOULIA chat to the external assistant by email. One reply per question; it appears in the chat marked «Reply from the external assistant».'],
   };
   const PHONE_HELP = {
     detail: ['القوائم تُظهر الرقم مخفيًا (010•••••678)، وتفاصيل الأوردر الواحد تُظهره كاملًا للتواصل مع العميل.', 'Lists show 010•••••678; a single order shows the full number to contact the customer.'],
@@ -490,6 +619,8 @@ curl -X POST -H "X-API-Key: sk_live_…" -H "Content-Type: application/json" \\
         await load(); return draw();
       }
       if (name === 'log-refresh') { await loadLog(); return draw(); }
+      if (name === 'draft-filter') { state.draftFilter = el.dataset.v || ''; await loadDrafts(); return draw(); }
+      if (name === 'draft-open') return openDraft(id);
       if (name === 'log-prev' || name === 'log-next') { state.logFilter.page += name === 'log-next' ? 1 : -1; await loadLog(); return draw(); }
     } catch (ex) {
       toast(ex?.message || L('تعذّر تنفيذ الطلب', 'Request failed'), true);
@@ -514,6 +645,19 @@ curl -X POST -H "X-API-Key: sk_live_…" -H "Content-Type: application/json" \\
 
   window.SouliaApiAccess = {
     render,
+    /** From the «نظام أوامر الشراء الآلية» notification: open the API page and the request. */
+    async openDrafts(id) {
+      try {
+        if (typeof navigateTo === 'function') navigateTo('settings');
+        await new Promise((r) => setTimeout(r, 400));
+        if (typeof stgOpenInnerPage === 'function') stgOpenInnerPage('integrations', document.querySelector('#stg-nav-integrations'));
+        if (typeof stgSetIntegrationProvider === 'function') stgSetIntegrationProvider('api');
+        state.draftFilter = 'pending';
+        await render(true);
+        document.querySelector('.apx-drafts')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        if (id) openDraft(id);
+      } catch (_) { /* best effort */ }
+    },
     /** For the provider tab badge: 'connected' | 'unconfigured' | 'disconnected' | 'error'. */
     async connectionState() {
       try {

@@ -17718,8 +17718,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/notification-settings.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/roles-permissions.css?v=20261113-roles1">
 <link rel="stylesheet" href="/announcements.css?v=4">
-<link rel="stylesheet" href="/api-access.css?v=3">
-<link rel="stylesheet" href="/assistant.css?v=20">
+<link rel="stylesheet" href="/api-access.css?v=6">
+<link rel="stylesheet" href="/assistant.css?v=21">
 <link rel="stylesheet" href="/onboarding.css?v=1">
 <link rel="stylesheet" href="/manager-otp.css?v=1">
 <link rel="stylesheet" href="/browse-access.css?v=4">
@@ -40632,6 +40632,11 @@ async function onMentionNotifClick(mentionId, txId, commentId) {
   if (m?.fromName === 'نظام طلبات التصفح') {
     if (isAdmin()) { navigateTo('approvals'); setTimeout(() => qs('#appr-browse-requests')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 400); }
     else { await window.SouliaBrowseAccess?.load(); toast(String(m.commentText || '').split('\n')[0]); }
+    return;
+  }
+  // «نظام أوامر الشراء الآلية»: a purchase-order request sent through the API → Settings ← Integrations ← API.
+  if (m?.fromName === 'نظام أوامر الشراء الآلية') {
+    if (isAdmin()) window.SouliaApiAccess?.openDrafts(String(m.txId || '').replace(/^api-po:/, ''));
     return;
   }
 
@@ -114989,7 +114994,7 @@ function _spPeekHtml(o) {
   const postpone = o.shippingPostponement;
   const postponeActive = _spPostponementActive(o);
   // Both postpones live in the header as icons; the old body panel stays only when the header has none.
-  const _spPeekDeferHead = window.SouliaConfirmDeferral?.headHtml ? SouliaConfirmDeferral.headHtml(o, { canShip: hasPerm('shopify-prepare-ship') && canConfirm }) : '';
+  const _spPeekDeferHead = window.SouliaConfirmDeferral?.headHtml ? SouliaConfirmDeferral.headHtml(o, { canShip: _spCanPostponeShip() && canConfirm }) : '';
   const postponeReasonLabel = (code) => ({
     customer_request: t('spPostponeReasonCustomer'),
     stock_shortage: t('spPostponeReasonStock'),
@@ -115001,7 +115006,7 @@ function _spPeekHtml(o) {
   })[code] || postpone?.reason || t('spPostponeNotSpecified');
   const postponePanel = postponeActive
     ? `<section class="sp-pk-sec sp-pk-postpone-card"><div class="sp-pk-sec-h"><span class="sp-pk-postpone-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg></span><b>${t('spPostponeTitle')}</b><span class="sp-pk-postpone-state${Date.parse(postpone.dueAt||'')<=Date.now()?' is-due':''}">${Date.parse(postpone.dueAt||'')<=Date.now()?esc(t('spPostponeDueBadge')):esc(t('spPostponeBadge'))}</span></div><div class="sp-pk-postpone-facts"><div><small>${esc(t('spPostponeWhen'))}</small><strong><bdi dir="ltr">${esc(_spFormatShippingDue(postpone.dueAt))}</bdi></strong></div><div><small>${esc(t('spPostponeRequestedBy'))}</small><strong>${esc(postpone.createdBy||t('spPostponeNotSpecified'))}</strong></div><div class="sp-pk-postpone-reason"><small>${esc(t('spPostponeReason'))}</small><strong>${esc(postponeReasonLabel(postpone.reasonCode))}</strong>${postpone.reason?`<span>${esc(postpone.reason)}</span>`:''}</div></div>${hasPerm('shopify-prepare-ship')&&canConfirm?`<div class="sp-pk-postpone-actions"><button type="button" onclick="openSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeEditAction'))}</button><button type="button" class="is-remove" onclick="cancelSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeCancel'))}</button></div>`:''}</section>`
-    : canConfirm&&hasPerm('shopify-prepare-ship') ? `<section class="sp-pk-sec sp-pk-postpone-cta"><span class="sp-pk-postpone-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg></span><span><b>${esc(t('spPostpone'))}</b></span><button type="button" onclick="openSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeScheduleAction'))}</button></section>` : '';
+    : canConfirm&&_spCanPostponeShip() ? `<section class="sp-pk-sec sp-pk-postpone-cta"><span class="sp-pk-postpone-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg></span><span><b>${esc(t('spPostpone'))}</b></span><button type="button" onclick="openSpShippingPostponement('${esc(String(o._id))}')">${esc(t('spPostponeScheduleAction'))}</button></section>` : '';
   const orderEditMark = _spOrderEditMark(o, 'items');
   return `<div class="sp-pk-grip" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5M7 13l5 5 5-5"/></svg></div><header class="sp-pk-head">
       <div class="sp-pk-head-row">
@@ -116812,6 +116817,7 @@ function renderShopifyOrders() {
               : o.status === 'pending' && !o.cancelled ? `
                 <div class="sp-act-row">
                   ${_spCommentsBtnHtml(o, 'sm')}
+                  ${_spCanPostponeShip() && !hasPerm('shopify-prepare-ship') ? `<button type="button" class="sp-postpone-btn${_spPostponementActive(o)?' is-scheduled':''}" title="${escHtml(t(_spPostponementActive(o)?'spPostponeEditAction':'spPostpone'))}" onclick="event.stopPropagation();openSpShippingPostponement('${o._id}')">${_spPostponementActive(o)?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg>'}</button>` : ''}
                   ${hasPerm('shopify-prepare-ship') ? `<button type="button" class="sp-postpone-btn${_spPostponementActive(o)?' is-scheduled':''}" title="${escHtml(t(_spPostponementActive(o)?'spPostponeEditAction':'spPostpone'))}" onclick="event.stopPropagation();openSpShippingPostponement('${o._id}')">${_spPostponementActive(o)?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16"/><circle cx="15.5" cy="15.5" r="3.5"/><path d="M15.5 13.5v2l1.3.8"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 9h16M8 13h3m-3 4h3"/></svg>'}</button><button class="sp-confirm-btn" title="${t('spSendToTransactionsTitle')}" onclick="approveShopifyOrder('${o._id}')">
                     ${SP_CONFIRM_ICON}
                     <span>${t('spSendToTransactionsShort')}</span>
@@ -116942,7 +116948,7 @@ function renderShopifyOrders() {
           <div class="actions-dd sp-card-menu">
             <button type="button" class="dd-toggle" aria-label="${escHtml(t('spCardActions'))}" aria-haspopup="true" onclick="toggleActionMenu(event)">⋮</button>
             <div class="dd-menu">
-              ${window.SouliaConfirmDeferral?.menuItemHtml(o, 'button') || ''}${hasPerm('shopify-prepare-ship') ? `<button type="button" class="dd-item" onclick="openSpShippingPostponement('${o._id}')">◷<span>${esc(t('spPostpone'))}</span></button><button type="button" class="dd-item sp-mobile-confirm" onclick="approveShopifyOrder('${o._id}')">${SP_CONFIRM_ICON}<span>${esc(t('spSendToTransactions'))}</span></button>` : ''}
+              ${window.SouliaConfirmDeferral?.menuItemHtml(o, 'button') || ''}${_spCanPostponeShip() ? `<button type="button" class="dd-item" onclick="openSpShippingPostponement('${o._id}')">◷<span>${esc(t('spPostpone'))}</span></button>` : ''}${hasPerm('shopify-prepare-ship') ? `<button type="button" class="dd-item sp-mobile-confirm" onclick="approveShopifyOrder('${o._id}')">${SP_CONFIRM_ICON}<span>${esc(t('spSendToTransactions'))}</span></button>` : ''}
               ${_spMobileDepositMenuItemHtml(o)}
               ${invoiceImageActions('shopify', o._id)}
               <div class="dd-item" onclick="editShopifyOrder('${o._id}')"><svg viewBox="0 0 24 24" style="display:inline-block;vertical-align:middle;flex-shrink:0;width:1em;height:1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> تعديل</div>
@@ -119807,6 +119813,10 @@ function _spApproveSiblingBannerHtml(siblings) {
   </div>`;
 }
 
+/* Shipping postponement is open to every employee who works the Shopify orders list
+   (owner, Nov 26, 2026) — confirming the order still needs «تحضير وشحن». */
+function _spCanPostponeShip() { return hasPerm('shopify-orders') || hasPerm('shopify-prepare-ship'); }
+
 function _spRequirePrepareShip() {
   if (hasPerm('shopify-prepare-ship')) return true;
   toast(t('spPrepareShipDenied'), true);
@@ -119834,7 +119844,7 @@ function _spPostponeCalendarHTML() {
 function _spShiftPostponeMonth(delta) { const [year,month]=_spPostponeMonth.split('-').map(Number),next=new Date(Date.UTC(year,month-1+delta,1));_spPostponeMonth=`${next.getUTCFullYear()}-${String(next.getUTCMonth()+1).padStart(2,'0')}`;document.getElementById('sp-postpone-calendar').innerHTML=_spPostponeCalendarHTML(); }
 function _spChoosePostponeDate(date) { _spPostponeDate=date;document.getElementById('sp-postpone-calendar').innerHTML=_spPostponeCalendarHTML(); }
 async function openSpShippingPostponement(id) {
-  if(!_spRequirePrepareShip())return;
+  if(!_spCanPostponeShip()){toast(t('spPrepareShipDenied'),true);return;}
   const order=_spOrderById(id)||await _spEnsureFullOrder(id).catch(()=>null);
   if(!order||order.status!=='pending'||order.cancelled)return;
   document.getElementById('sp-shipping-postpone-modal')?.remove();
@@ -122772,8 +122782,8 @@ function _spRenderHistoryTab() {
 <script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
 <script src="/roles-permissions.js?v=20261113-bundle"></script>
 <script src="/announcements.js?v=4"></script>
-<script src="/api-access.js?v=3"></script>
-<script src="/assistant.js?v=22"></script>
+<script src="/api-access.js?v=7"></script>
+<script src="/assistant.js?v=23"></script>
 <script src="/onboarding.js?v=1"></script>
 <script src="/manager-otp.js?v=1"></script>
 <script src="/browse-access.js?v=3"></script>

@@ -218,7 +218,8 @@ export class ShopifyController {
 
   @Patch('orders/:id/shipping-postponement')
   @UseGuards(JwtAuthGuard, PermsGuard)
-  @RequirePerms('shopify-prepare-ship')
+  // Open to every employee on the Shopify orders list (owner, Nov 26, 2026); confirming still needs shopify-prepare-ship.
+  @RequirePerms('shopify-orders')
   async postponeShipping(@Param('id') id: string, @Body('dueAt') dueAt: unknown, @Body('reason') reason: unknown, @Body('reasonCode') reasonCode: unknown, @Request() req: any) {
     const actor = actorOf(req);
     return this.shopifyService.postponeShipping(id, dueAt, reason, { id: actor.id, name: actor.name || actor.username || 'staff' }, reasonCode);
@@ -226,7 +227,8 @@ export class ShopifyController {
 
   @Delete('orders/:id/shipping-postponement')
   @UseGuards(JwtAuthGuard, PermsGuard)
-  @RequirePerms('shopify-prepare-ship')
+  // Open to every employee on the Shopify orders list (owner, Nov 26, 2026); confirming still needs shopify-prepare-ship.
+  @RequirePerms('shopify-orders')
   async cancelShippingPostponement(@Param('id') id: string, @Request() req: any) {
     const actor = actorOf(req);
     return this.shopifyService.cancelShippingPostponement(id, { id: actor.id, name: actor.name || actor.username || 'staff' });

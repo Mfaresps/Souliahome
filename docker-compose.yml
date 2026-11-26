@@ -48,6 +48,16 @@ services:
       # «مزامنة من النسخة الحية»: يفعّل GET /api/settings/sync-export لنسخة الجهاز المحلي.
       # القيمة في ملف .env بجوار هذا الملف على السيرفر (32 حرفاً على الأقل)، لا هنا. فارغة = المسار غير موجود.
       LIVE_SYNC_EXPORT_TOKEN: ${LIVE_SYNC_EXPORT_TOKEN:-}
+      # «المساعد الخارجي» في مساعد SOULIA: كل سؤال موجّه إليه يُرسل بالبريد من ASSISTANT_MAIL_FROM
+      # إلى ASSISTANT_MAIL_TO. SMTP_USER/SMTP_PASS يمرّرهما Jenkins من الاعتماد soulia-smtp
+      # (Username with password)، لا تُكتب هنا. لـ Gmail: SMTP_PASS = App Password.
+      # بدون SMTP_USER/SMTP_PASS تبقى الأسئلة «في انتظار الرد» وتُعاد محاولة إرسالها تلقائيًا.
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      ASSISTANT_MAIL_FROM: ${ASSISTANT_MAIL_FROM:-}
+      ASSISTANT_MAIL_TO: ${ASSISTANT_MAIL_TO:-souliaalerts@gmail.com}
       TZ: ${TZ:-Africa/Cairo}
       BUSINESS_TZ: ${BUSINESS_TZ:-Africa/Cairo}
     ports:
