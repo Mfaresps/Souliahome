@@ -6,7 +6,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 /** Fields that must never leave the server in a user list. */
-const SECRET_USER_FIELDS = '-password -plainPassword -totpSecret';
+const SECRET_USER_FIELDS = '-password -passwordHistory -plainPassword -totpSecret -trustedDevices -totpBackupCodes -totpLastStep -securityEmailPending';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -102,11 +102,9 @@ export class UsersService implements OnModuleInit {
     // edit never writes the tier or the permission list.
     delete update.role;
     delete update.perms;
-    if (data.password && data.password.length >= 6) {
-      update.password = await bcrypt.hash(data.password, 10);
-    } else {
-      delete update.password;
-    }
+    // ⚠ A profile edit never changes the password (Nov 27, 2026): every change goes through
+    // setPassword (own change with current password + code, staff reset with a code, recovery).
+    delete update.password;
     const user = await this.userModel
       .findByIdAndUpdate(id, update, { new: true })
       .select(SECRET_USER_FIELDS)
@@ -148,6 +146,64 @@ export class UsersService implements OnModuleInit {
     return user?.loginAttempts ?? 0;
   }
 
+  /** Is plain the current password or one of the previous 4 (= the last 5 used)? */
+  async passwordReused(id: string, plain: string): Promise<boolean> {
+    const doc: any = await this.userModel.findById(id).select('password passwordHistory').lean().exec();
+    if (!doc) return false;
+    const hashes = [doc.password, ...(Array.isArray(doc.passwordHistory) ? doc.passwordHistory : [])].filter(Boolean).slice(-5);
+    for (const h of hashes) { try { if (await bcrypt.compare(String(plain || ''), h)) return true; } catch { /* unreadable hash */ } }
+    return false;
+  }
+
+  /** Sets a new password (bcrypt), keeps the previous hash in the history, clears failed attempts. */
+  async setPassword(id: string, plain: string): Promise<void> {
+    const doc: any = await this.userModel.findById(id).select('password').lean().exec();
+    if (!doc) throw new NotFoundException('المستخدم غير موجود');
+    const hash = await bcrypt.hash(String(plain), 10);
+    const update: any = { $set: { password: hash, passwordChangedAt: new Date(), loginAttempts: 0, passwordResetRequestedAt: null } };
+    if (doc.password) update.$push = { passwordHistory: { $each: [doc.password], $slice: -4 } };
+    await this.userModel.updateOne({ _id: id }, update).exec();
+  }
+
+  async setResetRight(id: string, allowed: boolean): Promise<void> {
+    await this.userModel.updateOne({ _id: id, role: 'admin' }, { $set: { canResetStaffPasswords: !!allowed } }).exec();
+  }
+
+  async markPasswordResetRequested(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { $set: { passwordResetRequestedAt: new Date() } }).exec();
+  }
+
+  async setPasswordChangedAt(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { $set: { passwordChangedAt: new Date() } }).exec();
+  }
+
+  // ─── Security email (admin accounts, Nov 27, 2026) ───────────────────────
+  async setSecurityEmailPending(id: string, pending: { email: string; codeHash: string; expiresAt: Date; attempts: number; sentAt: Date } | null): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { $set: { securityEmailPending: pending } }).exec();
+  }
+
+  async bumpSecurityEmailAttempts(id: string): Promise<number> {
+    const doc: any = await this.userModel.findOneAndUpdate(
+      { _id: id, securityEmailPending: { $ne: null } },
+      { $inc: { 'securityEmailPending.attempts': 1 } },
+      { new: true },
+    ).select('securityEmailPending').lean().exec();
+    return Number(doc?.securityEmailPending?.attempts || 99);
+  }
+
+  /** Conditional on the pending code read, so a replaced request cannot be confirmed. */
+  async confirmSecurityEmail(id: string, email: string, codeHash: string): Promise<boolean> {
+    const res = await this.userModel.updateOne(
+      { _id: id, 'securityEmailPending.email': email, 'securityEmailPending.codeHash': codeHash },
+      { $set: { securityEmail: email, securityEmailVerifiedAt: new Date(), securityEmailPending: null } },
+    ).exec();
+    return res.modifiedCount > 0;
+  }
+
+  async clearSecurityEmail(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id }, { $set: { securityEmail: '', securityEmailVerifiedAt: null, securityEmailPending: null } }).exec();
+  }
+
   async resetLoginAttempts(id: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(id, { loginAttempts: 0, loginLockedUntil: null, loginLockLevel: 0 }).exec();
   }
@@ -183,12 +239,16 @@ export class UsersService implements OnModuleInit {
     const user = await this.userModel
       .findByIdAndUpdate(
         id,
-        { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId, loginLockedUntil: null, loginLockLevel: 0, suspendedUntil: null, suspensionReason: '', suspensionDetail: '' },
+        { isActive: true, loginAttempts: 0, lockedAt: null, lockReason: '', lockedBy: adminId, loginLockedUntil: null, loginLockLevel: 0, suspendedUntil: null, suspensionReason: '', suspensionDetail: '', loginBlock: null },
         { new: true },
       )
       .select(SECRET_USER_FIELDS)
       .exec();
     if (!user) throw new NotFoundException('المستخدم غير موجود');
+    // Blocked sign-in sources of this account (login-guard) are lifted too.
+    try {
+      await this.userModel.db.collection('loginguard').deleteMany({ userKey: String(user.username || '').trim().toLowerCase(), kind: { $in: ['src', 'acct'] } });
+    } catch { /* the account itself is unlocked either way */ }
     return user;
   }
 
@@ -198,6 +258,8 @@ export class UsersService implements OnModuleInit {
         { isActive: false, lockedAt: { $ne: null } },
         { loginLockedUntil: { $gt: new Date() } }, // temporary sign-in pause, still running
         { suspendedUntil: { $gt: new Date() } }, // suspended for tampering (abuse-guard)
+        { 'loginBlock.hard': true }, // a sign-in source blocked until lifted (login-guard)
+        { 'loginBlock.until': { $gt: new Date() } }, // a sign-in source paused
       ] })
       .select(SECRET_USER_FIELDS)
       .sort({ lockedAt: -1, loginLockStartedAt: -1 })

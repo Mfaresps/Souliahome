@@ -54,6 +54,8 @@ export function notificationTitle(type: NotificationType, details: NotificationD
   else if (type === 'comment' && details.reaction && COMMENT_REACTION_LABELS[details.reaction]) title = [COMMENT_REACTION_LABELS[details.reaction][0], 'تفاعل جديد على تعليقك', 'New reaction to your comment'];
   else if (type === 'comment' && details.followupComment) title = ['📌', 'تعليق متابعة جديد', 'New Follow-up'];
   else if (type === 'security' && details.actionKey === 'failed_login') title = ['❌', 'محاولة تسجيل دخول فاشلة', 'Failed Login Attempt'];
+  else if (type === 'security' && details.actionKey === 'login-approval') title = ['🔐', 'طلب دخول إلى حسابك', 'Sign-in request for your account'];
+  else if (type === 'security' && details.actionKey === 'login-alert') title = ['⚠️', 'محاولات دخول على حسابك', 'Sign-in attempts on your account'];
   else if (type === 'approval') {
     if (details.actionKey === 'prep-group') title = ['📦', 'طلبات مجموعة التحضير', 'Prep group orders'];
     else if (details.status === 'approved' && details.actionKey === 'order') title = ['📦', 'جارٍ تحضير الطلب للشحن', 'Order is being prepared for shipment'];

@@ -1,0 +1,128 @@
+/* Users page — disabled accounts section, security log, sign-in attempts, «آخر ظهور» (Nov 27, 2026).
+   Compact layout (owner, Nov 27): every row is ONE line (details in the tooltip), slim headers, 10 rows
+   per page — phones get two short lines per row. Same card language as «الجلسات والأجهزة» (user-sessions.css). */
+#page-users{--ux-ok:#15803d;--ux-ok-bg:#ecfdf3;--ux-bad:#b42318;--ux-bad-bg:#fef3f2;--ux-warn:#a15c07;--ux-warn-bg:#fffaeb;--ux-info:#475467;--ux-info-bg:#f2f4f7}
+body.dark-mode #page-users{--ux-ok:#6ee7a0;--ux-ok-bg:rgba(74,222,128,.12);--ux-bad:#fda29b;--ux-bad-bg:rgba(240,68,56,.14);--ux-warn:#fcd34d;--ux-warn-bg:rgba(245,158,11,.14);--ux-info:#d0d5dd;--ux-info-bg:rgba(255,255,255,.07)}
+#page-users bdi{unicode-bidi:isolate}
+.ux-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── Main table ─────────────────────────────────────────────────────────── */
+#users-table .users-username-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit;font-size:.72rem;direction:inherit;text-align:start}
+#users-table .users-job-title{font-size:.82rem;color:var(--text)}
+#users-table td[data-col="u-role"] .user-role-badge{font-weight:500}
+.user-role-badge.user-role-none{background:var(--ux-info-bg);color:var(--muted);font-weight:500}
+.users-status-dot{left:auto;inset-inline-start:-1px;bottom:-1px}
+.users-seen{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);white-space:nowrap}
+.users-seen i{width:7px;height:7px;border-radius:50%;background:#22c55e}
+.users-seen.is-on{color:var(--ux-ok);font-weight:500}
+.users-seen.is-never{opacity:.7}
+.users-hold-tag{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:999px;font-size:.66rem;font-weight:500;color:var(--ux-warn);background:var(--ux-warn-bg);vertical-align:middle}
+.users-mcard-job{font-size:.74rem;color:var(--text)}
+.users-mcard-seen{margin-inline-start:auto}
+
+/* ── Card shell ─────────────────────────────────────────────────────────── */
+.ux-card{margin-top:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+.ux-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.ux-head-ic{display:inline-flex;width:28px;height:28px;border-radius:8px;align-items:center;justify-content:center;background:var(--primary-pale);color:var(--accent);flex-shrink:0}
+.ux-head-ic svg{width:15px;height:15px}
+.ux-head-ic.is-muted{background:var(--bg-alt);color:var(--muted)}
+.ux-head-txt{flex:1;min-width:0}
+.ux-head h3{margin:0;font-size:.9rem;font-weight:650;color:var(--text);display:flex;align-items:center;gap:8px}
+/* The description / 24-hour summary: one quiet line, the full text in its tooltip. */
+.ux-head p{margin:1px 0 0;font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ux-count{display:inline-flex;min-width:20px;height:18px;padding:0 6px;align-items:center;justify-content:center;border-radius:999px;background:var(--bg-alt);border:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--text)}
+.ux-count:empty{display:none}
+.ux-head-tools{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ux-head-tools select{width:auto!important;min-width:140px;height:30px;padding:0 8px;font-size:.76rem;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);min-height:0}
+.ux-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:.76rem;font-weight:500;cursor:pointer;white-space:nowrap;width:auto;min-height:0}
+.ux-btn:hover:not(:disabled){background:var(--bg-alt)}
+.ux-btn:disabled{opacity:.5;cursor:not-allowed}
+.ux-empty{padding:16px 12px;text-align:center;color:var(--muted);font-size:.8rem;margin:0}
+.ux-chip{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;font-size:.7rem;font-weight:500;white-space:nowrap;line-height:1.6}
+.ux-chip.is-bad{color:var(--ux-bad);background:var(--ux-bad-bg)}
+.ux-chip.is-warn{color:var(--ux-warn);background:var(--ux-warn-bg)}
+.ux-chip.is-ok{color:var(--ux-ok);background:var(--ux-ok-bg)}
+.ux-chip.is-info{color:var(--ux-info);background:var(--ux-info-bg)}
+.ux-ell{display:inline-block;max-width:100%;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Disabled accounts: one line each ───────────────────────────────────── */
+.ux-dis-row{display:flex;align-items:center;gap:10px;padding:6px 14px;min-height:40px}
+.ux-dis-row+.ux-dis-row{border-top:1px solid var(--border)}
+.ux-dis-av{filter:grayscale(.85);opacity:.8;width:26px!important;height:26px!important;min-width:26px;font-size:.62rem!important}
+.ux-dis-av img{width:26px;height:26px}
+.ux-dis-who{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;column-gap:10px;row-gap:4px}
+.ux-dis-name{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text);white-space:nowrap;flex-shrink:0}
+.ux-dis-name b{font-weight:600}
+.ux-dis-handle{font-size:.7rem;color:var(--muted)}
+.ux-dis-reason{flex:1 1 160px;min-width:0;font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ux-dis-when{opacity:.85}
+.ux-dis-who .sec-att-wrap{margin:0;flex-shrink:0}
+.ux-dis-who .sec-att-wrap[open]{flex-basis:100%}
+.ux-dis-list .sec-att-summary{font-size:.72rem;white-space:nowrap}
+.ux-dis-act{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.ux-dis-act .ux-btn{height:28px;padding:0 10px}
+.ux-dis-act .dd-toggle{width:28px!important;height:28px!important;min-height:0!important;padding:0!important}
+
+/* ── Tables (security log, sign-in attempts): one line per row ──────────── */
+.ux-table-wrap{overflow-x:auto}
+.ux-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.ux-table th{text-align:start;font-weight:500;color:var(--muted);font-size:.7rem;padding:6px 12px;background:var(--bg-alt);border-bottom:1px solid var(--border);white-space:nowrap}
+.ux-table td{padding:6px 12px;height:36px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);white-space:nowrap}
+.ux-table tr:last-child td{border-bottom:0}
+.ux-table tbody tr:hover td{background:color-mix(in srgb,var(--bg-alt) 60%,transparent)}
+.ux-table td:first-child{width:1%}
+.ux-when{color:var(--muted);font-size:.74rem;font-variant-numeric:tabular-nums}
+.ux-sub{font-size:.7rem;color:var(--muted);margin-inline-start:6px}
+.ux-who{display:inline-flex;align-items:baseline;gap:6px;max-width:260px;overflow:hidden}
+.ux-who b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ux-who .ux-sub{margin:0}
+.ux-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem}
+.ux-detail{color:var(--text);opacity:.85}
+.ux-detail .ux-ell{max-width:340px}
+.ux-muted{color:var(--muted)}
+.ux-table .sec-origin{flex-direction:row;align-items:center;gap:8px;white-space:nowrap}
+.ux-table .sec-origin-sub{flex-wrap:nowrap;gap:6px}
+.ux-pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 12px;font-size:.74rem;color:var(--muted);border-top:1px solid var(--border)}
+.ux-pager .ux-btn{height:26px;padding:0 10px}
+.ux-pager:empty{display:none}
+
+/* ── «سجل محاولات الدخول» ─────────────────────────────────────────────────── */
+.la-tools input[type=search]{width:200px!important;height:30px;padding:0 10px;font-size:.76rem;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);min-height:0}
+.la-tools select{min-width:130px!important}
+.la-link{display:inline;padding:0;margin:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;width:auto;min-height:0;text-align:start}
+.la-link:hover bdi,.la-link:focus-visible bdi{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.ux-who b+.la-link bdi{font-size:.7rem;color:var(--muted)}
+.la-trusted{color:var(--ux-ok)}
+
+@media (max-width:900px){
+  .ux-head{flex-wrap:wrap}
+  .ux-head-tools{width:100%}
+  .ux-head-tools select,.la-tools input[type=search]{flex:1;min-width:0!important;width:auto!important}
+}
+@media (max-width:760px){
+  .ux-head{padding:10px 12px}
+  .ux-dis-row{padding:6px 12px;align-items:flex-start}
+  .ux-dis-who{row-gap:2px}
+  .ux-dis-name{flex-shrink:1;min-width:0;overflow:hidden}
+  .ux-dis-name b{overflow:hidden;text-overflow:ellipsis}
+  .ux-dis-handle{display:none}
+  .ux-dis-reason{flex-basis:100%;font-size:.7rem}
+  .ux-table thead{display:none}
+  /* Two short lines per row: who + time, then the result + what / which device. */
+  .ux-table,.ux-table tbody{display:block}
+  .ux-table tr{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;padding:7px 12px;border-bottom:1px solid var(--border)}
+  .ux-table tr:last-child{border-bottom:0}
+  .ux-table tr::after{content:'';order:3;flex-basis:100%;height:0}
+  /* ⚠ index.html gives every table cell on phones `padding:8px 10px !important` — it tripled these rows. */
+  .ux-table td{display:block;border:0;padding:0!important;height:auto;width:auto!important;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .ux-table td:nth-child(3){order:1;flex:1 1 0}
+  .ux-table td:nth-child(1){order:2}
+  .ux-table td:nth-child(2){order:4}
+  .ux-table td:nth-child(4){order:5;flex:1 1 0;font-size:.72rem;color:var(--muted)}
+  .ux-table td:nth-child(5){display:none}
+  .ux-table td.ux-empty{flex-basis:100%}
+  .ux-who{max-width:100%}
+  .ux-detail .ux-ell{max-width:100%}
+  .ux-table .sec-origin-head{font-size:.72rem}
+  .ux-table .sec-origin-sub{display:none}
+}

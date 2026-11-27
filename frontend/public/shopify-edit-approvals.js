@@ -24,13 +24,16 @@ function _spEditGroupItems(items) {
 function _spEditProposalPatch(order, proposal) {
   if (proposal.invoice) return proposal.invoice;
   const patch = { ...(proposal.discount || {}), ...(proposal.items ? { items: proposal.items } : {}) };
-  if (proposal.items || proposal.discount) {
-    const itemsTotal = (proposal.items || order.items || []).reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
-    const discount = Number(order.discount || 0) + Number(patch.manualDiscount ?? order.manualDiscount ?? 0)
-      + Number(patch.codesDiscount ?? order.codesDiscount ?? 0);
-    patch.total = Math.max(0, itemsTotal - Math.min(itemsTotal, discount) + Number(order.shipCost || 0));
-  }
+  if (proposal.items || proposal.discount) patch.total = _spEditProposalTotal(order, proposal);
   return patch;
+}
+/* The proposed total — the one rule (_spOrderMoney ⇄ server shopify-order-total.util.ts), «شحن مجاني» included. */
+function _spEditProposalTotal(order, proposal) {
+  const d = proposal.discount || {};
+  const itemsTotal = (proposal.items || order.items || []).reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
+  const ours = Number(d.manualDiscount ?? order.manualDiscount ?? 0) + Number(d.codesDiscount ?? order.codesDiscount ?? 0);
+  const free = d.freeShipping !== undefined ? !!d.freeShipping : !!order.freeShipping;
+  return _spOrderMoney(order, itemsTotal, ours, free).total;
 }
 /* ← بالعربي و→ بالإنجليزي: «→» وسط نص عربي يُعرض معكوساً. */
 function _spEditArrow() { return typeof currentLang !== 'undefined' && currentLang === 'en' ? '→' : '←'; }
@@ -152,11 +155,14 @@ function _spEditProposalChanges(order, proposal) {
     lines.push(spEditText(...label) + ': ' + _spEditPair(money.has(key) ? _spEditMoneyText(Number(before)) : String(before || '—'),
       money.has(key) ? _spEditMoneyText(Number(after)) : String(after || '—')));
   }
+  if (!invoice && proposal.discount && proposal.discount.freeShipping !== undefined && !!proposal.discount.freeShipping !== !!order.freeShipping) {
+    const ship = _spEditMoneyText(Number(order.shipCost || 0));
+    lines.push(proposal.discount.freeShipping
+      ? spEditText(`شحن مجاني: لا يُحصَّل الشحن (${ship}) من العميل`, `Free shipping: the customer does not pay the shipping (${ship})`)
+      : spEditText(`إلغاء الشحن المجاني: يُحصَّل الشحن (${ship}) من العميل`, `Free shipping removed: the customer pays the shipping (${ship})`));
+  }
   if (!invoice && (items || proposal.discount)) {
-    const itemsTotal = (items || order.items || []).reduce((sum, item) => sum + Number(item.qty) * Number(item.price), 0);
-    const discount = Number(order.discount || 0) + Number(proposal.discount?.manualDiscount ?? order.manualDiscount ?? 0)
-      + Number(proposal.discount?.codesDiscount ?? order.codesDiscount ?? 0);
-    const total = Math.max(0, itemsTotal - Math.min(itemsTotal, discount) + Number(order.shipCost || 0));
+    const total = _spEditProposalTotal(order, { ...proposal, items });
     if (total !== Number(order.total || 0)) lines.push(spEditText('الإجمالي', 'Total') + `: ${_spEditPair(_spEditMoneyText(order.total || 0), _spEditMoneyText(total))}`);
   }
   for (const correction of invoice?.depositVaultCorrections || []) {

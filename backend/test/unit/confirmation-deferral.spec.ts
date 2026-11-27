@@ -41,11 +41,17 @@ describe('Shopify confirmation deferral («تأجيل التواصل»)', () => 
     expect(doc.confirmationDeferral.note).toBe('يسافر غدًا');
   });
 
-  it('refuses a confirmed order (deposit recorded, ship without deposit, confirmed tag)', async () => {
-    for (const extra of [{ depositReceipts: [{ status: 'معلق', amount: 200 }] }, { shipWithoutDeposit: true }, { tags: 'vip, confirmed' }]) {
+  it('refuses a confirmed order (deposit recorded, ship without deposit)', async () => {
+    for (const extra of [{ depositReceipts: [{ status: 'معلق', amount: 200 }] }, { shipWithoutDeposit: true }]) {
       const { service, doc } = fixture({ _id: '9'.repeat(24), status: 'pending', ...extra });
       await expect(service.deferConfirmation(doc._id, { dueAt: inHours(2), reasonCode: 'busy' }, actor)).rejects.toThrow('غير المؤكدة');
     }
+  });
+
+  it('allows a pending order tagged «confirmed» in Shopify with no deposit (#3214)', async () => {
+    const { service, doc } = fixture({ _id: '8'.repeat(24), status: 'pending', tags: 'confirmed, ✅', depositReceipts: [] });
+    await service.deferConfirmation(doc._id, { dueAt: inHours(2), reasonCode: 'call_later' }, actor);
+    expect(confirmationDeferralActive(doc)).toBe(true);
   });
 
   it('refuses an order that is no longer pending', async () => {

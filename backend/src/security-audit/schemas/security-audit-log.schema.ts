@@ -14,7 +14,14 @@ export type ViolationType =
   | 'export_excel'
   | 'bulk_browsing'
   | 'account_suspended'
-  | 'abuse_alert';
+  | 'abuse_alert'
+  | 'login_challenge_failed'
+  | 'login_approval_denied'
+  | 'password_reset'
+  | 'two_factor_changed'
+  | 'system_pin_changed'
+  | 'login_source_locked'
+  | 'login_attack';
 
 @Schema({ timestamps: true })
 export class SecurityAuditLog {

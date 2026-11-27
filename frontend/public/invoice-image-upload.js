@@ -51,6 +51,7 @@
       return;
     }
     if (file.size > MAX_BYTES) { say(tx('حجم الصورة أكبر من 12 ميجابايت', 'The image is larger than 12 MB'), true); return; }
+    const isExp = opts.purpose === 'expense';
     const row = addRow('');
     if (!row) return;
     const { input, preview } = rowParts(row);
@@ -76,8 +77,8 @@
       row.classList.remove('inv-up-busy');
       if (input) setUrl(input, url);
       if (preview) {
-        preview.innerHTML = `<div class="inv-up-card is-done"><a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${tx('فاتورة المورد', 'Supplier invoice')}"></a>`
-          + `<div class="inv-up-meta"><b>${opts.purpose === 'expense' ? tx('صورة المرفق', 'Attachment photo') : tx('صورة الفاتورة', 'Invoice photo')}</b><span>${Math.max(1, Math.round((res.bytes || 0) / 1024))} KB${res.storage === 'r2' ? ' · Cloudflare R2' : ''}</span></div>`
+        preview.innerHTML = `<div class="inv-up-card is-done"><a href="${url}" target="_blank" rel="noopener"><img src="${url}" alt="${isExp ? tx('مرفق المصروف', 'Expense attachment') : tx('فاتورة المورد', 'Supplier invoice')}"></a>`
+          + `<div class="inv-up-meta"><b>${isExp ? tx('صورة المرفق', 'Attachment photo') : tx('صورة الفاتورة', 'Invoice photo')}</b><span>${Math.max(1, Math.round((res.bytes || 0) / 1024))} KB${res.storage === 'r2' ? ' · Cloudflare R2' : ''}</span></div>`
           + (opts.single ? `<button type="button" class="inv-up-clear" title="${tx('إزالة الصورة', 'Remove photo')}" aria-label="${tx('إزالة الصورة', 'Remove photo')}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` : '')
           + `</div>`;
         const clear = preview.querySelector('.inv-up-clear');
@@ -89,7 +90,7 @@
         if (input) { input.value = prevValue; if (prevValue) input.setAttribute('value', prevValue); else input.removeAttribute('value'); }
         if (preview) preview.innerHTML = prevPreview;
       } else row.remove();
-      say(tx('تعذّر رفع صورة الفاتورة: ', 'Could not upload the invoice photo: ') + (e && e.message ? e.message : ''), true);
+      say((isExp ? tx('تعذّر رفع صورة المرفق: ', 'Could not upload the attachment photo: ') : tx('تعذّر رفع صورة الفاتورة: ', 'Could not upload the invoice photo: ')) + (e && e.message ? e.message : ''), true);
     } finally {
       setTimeout(() => URL.revokeObjectURL(local), 4000);
     }

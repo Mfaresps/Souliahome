@@ -7,6 +7,8 @@ export interface OrderEditInput {
   discount?: {
     manualDiscount?: number; manualDiscountType?: string; codesDiscount?: number;
     discountCodeId?: string; discountCode?: string; highValueDiscountOtpId?: string;
+    /** «شحن مجاني» — the customer pays no shipping (ShopifyOrder.freeShipping). */
+    freeShipping?: boolean;
   };
   itemConflict?: { source: string; revision: string };
 }
@@ -22,6 +24,8 @@ export function orderEditSnapshot(order: any) {
     shipCost: order.shipCost || 0, total: order.total || 0,
     itemSyncConflict: order.itemSyncConflict || null,
     localItemsBaseline: order.localItemsBaseline ?? null,
+    // Present only when on: requests stored before free shipping existed still compare equal.
+    ...(order.freeShipping ? { freeShipping: true } : {}),
   }));
 }
 

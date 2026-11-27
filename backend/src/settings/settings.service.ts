@@ -714,6 +714,11 @@ export class SettingsService {
       const day = new Date(value + 'T00:00:00Z');
       return !Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== value;
     })) throw new BadRequestException('تاريخ غير صحيح في إجازات استلام بوسطا');
+    // ⚠ The system PIN changes only through POST /auth/security/system-pin, after a confirmation
+    // code (Nov 27, 2026). Before, any admin session could set it here with nothing else.
+    if (dto.vaultPass !== undefined) {
+      throw new BadRequestException({ message: 'يتم تغيير الرقم السري للنظام من «الإعدادات ← الأمان» بعد تأكيد هويتك برمز التحقق.', code: 'SYSTEM_PIN_STEP_UP' });
+    }
     const existing = await this.getSettings();
     const $set: Record<string, unknown> = { ...(dto as Record<string, unknown>) };
     // The first switch-on fixes the date from which deliveries settle by themselves. Older

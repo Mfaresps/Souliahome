@@ -27,6 +27,12 @@ export const ACTIONS: Record<string, [string, string]> = {
   account_unlocked: ['إلغاء قفل حساب', 'Account unlocked'], export_excel: ['تصدير بيانات', 'Data export'],
   bulk_browsing: ['تصفح جماعي مشتبه به', 'Suspected bulk browsing'],
   account_suspended: ['إيقاف حساب موظف مؤقتًا', 'Employee suspended'], abuse_alert: ['نشاط مشبوه', 'Suspicious activity'],
+  'login-approval': ['طلب دخول من جهاز جديد', 'Sign-in request from a new device'],
+  login_challenge_failed: ['رموز تحقق خاطئة متكررة', 'Repeated wrong verification codes'], login_approval_denied: ['رفض طلب دخول', 'Sign-in request denied'],
+  password_reset: ['استعادة كلمة المرور', 'Password reset'], two_factor_changed: ['تغيير إعدادات التحقق', 'Verification settings changed'],
+  system_pin_changed: ['تغيير الرقم السري للنظام', 'System PIN changed'],
+  login_source_locked: ['إيقاف محاولات دخول مشبوهة', 'Suspicious sign-ins stopped'], login_attack: ['محاولات تخمين على حساب', 'Account under guessing attack'],
+  'login-alert': ['محاولات دخول فاشلة على حسابك', 'Failed sign-in attempts on your account'],
 };
 export function actionLabel(key: string | undefined, language: 'ar' | 'en') {
   return (ACTIONS[key || ''] || ['إجراء بالنظام', 'System action'])[language === 'en' ? 1 : 0];

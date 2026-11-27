@@ -30,10 +30,27 @@ describe('user credentials', () => {
     expect(raw.plainPassword).toBeUndefined();
     expect(await bcrypt.compare('secret-123', raw.password)).toBe(true);
 
+    // A profile edit never changes the password (Nov 27, 2026): only setPassword does.
     await service.updateUser(String(raw._id), { password: 'changed-456' } as any);
+    const kept: any = await model.collection.findOne({ username: 'sara' });
+    expect(await bcrypt.compare('secret-123', kept.password)).toBe(true);
+
+    await service.setPassword(String(raw._id), 'changed-456');
     const after: any = await model.collection.findOne({ username: 'sara' });
     expect(after.plainPassword).toBeUndefined();
     expect(await bcrypt.compare('changed-456', after.password)).toBe(true);
+    expect(after.passwordHistory).toHaveLength(1);
+  });
+
+  it('refuses any of the last 5 passwords and keeps 4 old hashes at most', async () => {
+    await service.createUser({ username: 'omar', password: 'pw-one-111', name: 'Omar', role: 'staff' });
+    const id = String((await model.collection.findOne({ username: 'omar' }) as any)._id);
+    for (const p of ['pw-two-222', 'pw-three-333', 'pw-four-444', 'pw-five-555', 'pw-six-666']) await service.setPassword(id, p);
+    const raw: any = await model.collection.findOne({ _id: (await model.collection.findOne({ username: 'omar' }) as any)._id });
+    expect(raw.passwordHistory).toHaveLength(4);
+    expect(await service.passwordReused(id, 'pw-six-666')).toBe(true);   // current
+    expect(await service.passwordReused(id, 'pw-two-222')).toBe(true);   // 5th most recent
+    expect(await service.passwordReused(id, 'pw-one-111')).toBe(false);  // 6th: allowed again
   });
 
   it('clears plain-text copies left by older versions at start-up, once', async () => {

@@ -22,6 +22,7 @@ import { Roles } from '../core/decorators/roles.decorator';
 import { Transaction, TransactionDocument } from '../transactions/schemas/transaction.schema';
 import { PresenceGateway } from '../auth/presence.gateway';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
+import { passwordProblem } from '../auth/auth-security.util';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -102,6 +103,9 @@ export class UsersController {
     // account is written.
     const roleId = String(dto.roleId || '').trim();
     if (!roleId) throw new BadRequestException('اختر دوراً للمستخدم');
+    // The admin sets the first password (or the page generates one); same strength rule as every change.
+    const pwProblem = passwordProblem((dto as any).password);
+    if (pwProblem) throw new BadRequestException(pwProblem);
     if (roleId === 'super-admin') throw new ForbiddenException('Super Admin cannot be assigned');
     if (roleId !== 'admin') await this.accessRoles.findRolePublic(roleId);
     const { role: _role, perms: _perms, roleId: _roleId, ...profile } = dto as CreateUserDto & Record<string, unknown>;

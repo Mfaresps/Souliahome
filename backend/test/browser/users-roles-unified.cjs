@@ -64,7 +64,7 @@ const unassigned = [{ id: '3', username: 'hassan', name: 'Hassan', tier: 'staff'
       const roleCells = await page.evaluate(() => [...document.querySelectorAll('#users-tbody td[data-col="u-role"], #users-grid .users-mcard-meta .user-role-badge')].map(el => el.textContent.trim()));
       if (process.env.SHOT_DIR) await page.screenshot({ path: require('path').join(process.env.SHOT_DIR, `users-${variant.lang}-${variant.width}.png`) });
       check(`${tag} table names roles`, roleCells.some(t => /Sales|مبيعات/.test(t)));
-      check(`${tag} legacy account reads «no role»`, roleCells.some(t => /No role|بدون دور/.test(t)));
+      check(`${tag} legacy account reads «no role»`, roleCells.some(t => /No role|لا يوجد دور/.test(t)));
       check(`${tag} role filter lists roles`, await page.$$eval('#users-role-filter option', o => o.map(x => x.value).includes('accountant')));
       await page.evaluate(() => { const s = document.querySelector('#users-role-filter'); s.value = 'sales'; renderUsers(); });
       check(`${tag} filter by role`, await page.evaluate(() => document.querySelectorAll('#users-tbody tr').length === 1 && /Sara/.test(document.querySelector('#users-tbody').textContent)));

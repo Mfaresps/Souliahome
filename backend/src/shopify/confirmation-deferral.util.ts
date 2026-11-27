@@ -16,15 +16,15 @@ export const CONFIRMATION_DEFERRAL_LABELS: Record<string, string> = {
 /**
  * Not confirmed yet (owner, Nov 25, 2026: the feature is for unconfirmed orders only):
  * pending, not cancelled, no deposit recorded (approved or in review), not «ship without
- * deposit», not marked confirmed. ⚠ Mirrored by `awaitsConfirmation` in shopify-confirm-deferral.js.
+ * deposit». A Shopify «confirmed» TAG does not count (owner, Nov 27, 2026: #3214 was tagged
+ * confirmed, still pending with no deposit, and the customer asked to be called later).
+ * ⚠ Mirrored by `awaitsConfirmation` in shopify-confirm-deferral.js.
  */
 export function orderAwaitsConfirmation(order: any): boolean {
   if (!order || order.status !== 'pending' || order.cancelled || order.shopifyCancelled) return false;
   if (order.shipWithoutDeposit === true || order.confirmationApproved) return false;
   const receipts = Array.isArray(order.depositReceipts) ? order.depositReceipts : [];
-  if (receipts.some((r: any) => ['معتمد', 'معلق'].includes(r?.status) && Number(r?.amount) > 0)) return false;
-  const tags = String(order.tags || '').toLowerCase().split(',').map((x: string) => x.trim());
-  return !tags.includes('confirmed');
+  return !receipts.some((r: any) => ['معتمد', 'معلق'].includes(r?.status) && Number(r?.amount) > 0);
 }
 
 /** Active = still awaiting confirmation, deferral scheduled or due. Ends by itself once confirmed/cancelled. */

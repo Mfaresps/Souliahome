@@ -42,10 +42,15 @@ describe('Shopify — الخصم الإضافي يصل إلى الحركة كا�
     approve = slice(svc, 'async approveOrder', 'async rejectOrder');
   });
 
+  /* Nov 27, 2026: the expression lives in `confirmedDiscount` (also handed to smartBundlesFor); tx.discount is
+     written from it. With «شحن مجاني» it is the items' part from shopify-order-total.util.ts (shopify-order-total.spec). */
+  const discountExpr = () => slice(approve, 'const confirmedDiscount', 'const confirmedSmartBundles');
+
   it('يجمع خصم شوبيفاي + الأكواد + الخصم اليدوي في tx.discount', () => {
     expect(approve).toContain('Number(order.manualDiscount)');
+    expect(approve).toContain('discount: confirmedDiscount,');
     // المصادر الثلاثة كلها داخل تعبير discount الواحد
-    const line = slice(approve, 'discount: Math.min(', 'manualDiscount:');
+    const line = discountExpr();
     expect(line).toContain('order.discount');
     expect(line).toContain('order.codesDiscount');
     expect(line).toContain('order.manualDiscount');
@@ -53,7 +58,7 @@ describe('Shopify — الخصم الإضافي يصل إلى الحركة كا�
 
   /** ⚠ القصّ كمجموعة واحدة تماماً كـ`computeShopifyOrderTotal` الذي حسب order.total. */
   it('يقصّ المجموع عند itemsTotal كما يفعل حساب الإجمالي', () => {
-    const line = slice(approve, 'discount: Math.min(', 'manualDiscount:');
+    const line = discountExpr();
     expect(line).toContain('Math.min');
     expect(line).toContain('order.itemsTotal');
   });
@@ -96,7 +101,7 @@ describe('الخصم — الحساب متطابق بين شوبيفاي وسج�
   it('نفس القاعدة مطبَّقة على مسار شوبيفاي', () => {
     const s = fs.readFileSync(SERVICE, 'utf8');
     const line = slice(slice(s, 'async approveOrder', 'async rejectOrder'),
-      'discount: Math.min(', 'manualDiscount:');
+      'const confirmedDiscount', 'const confirmedSmartBundles');
     // مجموع ثلاثي مقصوص — نفس شكل _syncDiscountFromCodes (خصم شوبيفاي هو الطرف الثالث)
     expect((line.match(/Number\(order\./g) || []).length).toBeGreaterThanOrEqual(3);
     expect(line).toContain('Math.min');

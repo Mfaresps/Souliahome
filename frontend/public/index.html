@@ -366,28 +366,16 @@ tr.vault-row-flash td{animation:vaultRowFlash 1.9s ease}
    Row tints are tokens, not the hex pair this table used to inline — the
    panel renders in dark mode too, and #fef2f2 there is a white slab. */
 .sec-row{border-bottom:1px solid var(--border)}
-.sec-row-danger{background:color-mix(in srgb,var(--red,#dc2626) 8%,transparent)}
-.sec-row-ok{background:color-mix(in srgb,#10b981 9%,transparent)}
 .sec-origin{display:flex;flex-direction:column;gap:2px;line-height:1.35}
 .sec-origin-head{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;color:var(--text);white-space:nowrap}
 .sec-origin-head svg{flex-shrink:0;opacity:.65}
 .sec-origin-sub{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
-.sec-origin-bit{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
-.sec-origin-bit svg{flex-shrink:0;opacity:.55}
 /* عنوان الشبكة نص لاتيني داخل جدول عربي — العزل يمنع إعادة ترتيب النقاط. */
-.sec-origin-bit bdi{unicode-bidi:isolate;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem}
-.sec-origin-isp{font-size:.68rem;color:var(--muted);opacity:.75;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-origin-ip{unicode-bidi:isolate;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem}
 /* الغياب معلومة في ذاته — لا تُخفِه، فالخلية الفارغة تُقرأ كعطل في العرض. */
 .sec-origin-none{font-size:.76rem;color:var(--muted);opacity:.6;font-style:italic}
-/* بطاقة الحساب المُعطَّل — كانت hex ثابتة تنهار في الوضع الليلي. */
-.sec-locked-card{background:color-mix(in srgb,var(--red,#dc2626) 7%,var(--surface));border:1px solid color-mix(in srgb,var(--red,#dc2626) 28%,transparent);border-radius:10px;padding:12px 16px;margin-bottom:8px}
-.sec-locked-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.sec-locked-name{font-weight:600;color:var(--text)}
-.sec-locked-handle{font-size:.78rem;color:var(--muted)}
-.sec-locked-meta{font-size:.8rem;color:var(--muted);margin-top:2px}
-.sec-unlock-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:.83rem;cursor:pointer;font-weight:600;white-space:nowrap}
-/* المحاولات مطوية افتراضياً: البطاقة تجيب «مَن ومتى» أولاً، والتفصيل عند الطلب. */
-.sec-att-wrap{margin-top:10px;border-top:1px dashed color-mix(in srgb,var(--red,#dc2626) 25%,transparent);padding-top:8px}
+/* المحاولات مطوية افتراضياً: الصف يجيب «مَن ولماذا» أولاً، والتفصيل عند الطلب. */
+.sec-att-wrap{margin-top:6px}
 .sec-att-summary{cursor:pointer;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:8px;list-style:none}
 .sec-att-summary::-webkit-details-marker{display:none}
 .sec-att-summary::before{content:'▸';display:inline-block;transition:transform .15s ease;opacity:.6}
@@ -6675,6 +6663,19 @@ body.dark-mode .sp-disc-guard.is-ok{color:#6ee7b7}
 .sp-disc-sum{background:var(--bg-alt);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:0}
 .sp-sum-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:.84rem;color:var(--text)}
 .sp-sum-row.is-minus .sp-sum-v{color:#dc2626}
+/* Part of our discount the item cap drops — stated, never shown as applied. */
+.sp-sum-row.is-warn{color:#b45309;font-size:.78rem}
+.sp-sum-row.is-warn .sp-sum-v{text-decoration:line-through;color:#b45309}
+body.dark-mode .sp-sum-row.is-warn,body.dark-mode .sp-sum-row.is-warn .sp-sum-v{color:#fbbf24}
+/* «شحن مجاني» — one switch row. ⚠ The checkbox sets its own width: the global input{width:100%} would crush the label. */
+.sp-freeship-row{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;background:var(--bg-alt);cursor:pointer;transition:border-color .15s,background .15s}
+.sp-freeship-row input{width:18px;height:18px;min-height:0;margin:2px 0 0;padding:0;flex:0 0 auto;accent-color:var(--primary);cursor:pointer}
+.sp-freeship-row input:disabled{cursor:not-allowed}
+.sp-freeship-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sp-freeship-txt b{font-size:.86rem;color:var(--text)}
+.sp-freeship-txt small{font-size:.74rem;color:var(--muted);line-height:1.5}
+.sp-freeship.is-on .sp-freeship-row{border-color:var(--primary);background:var(--primary-pale)}
 .sp-sum-row.is-total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:700;font-size:.95rem}
 .sp-sum-row.is-total .sp-sum-v{color:var(--accent)}
 /* ⚠ العزل إلزامي: fmtJ يُخرج مقطعاً لاتينياً داخل نص عربي، فبدونه تلتصق الإشارة
@@ -7526,22 +7527,21 @@ body.dark-mode .sup-card2-avatar{background:rgba(45,122,79,.18)}
 .users-toolbar select{padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);font-size:.83rem;color:var(--text)}
 .users-count-label{font-size:.78rem;color:var(--muted);margin-inline-start:auto}
 #users-table{table-layout:fixed}
-#users-table th[data-col="u-user"],#users-table td[data-col="u-user"]{width:32%;min-width:190px}
-#users-table th[data-col="u-job"],#users-table td[data-col="u-job"]{width:28%}
-#users-table th[data-col="u-role"],#users-table td[data-col="u-role"]{width:12%}
-#users-table th[data-col="u-status"],#users-table td[data-col="u-status"]{width:10%}
-#users-table th[data-col="u-joined"],#users-table td[data-col="u-joined"]{width:12%}
+#users-table th[data-col="u-user"],#users-table td[data-col="u-user"]{width:34%;min-width:190px}
+#users-table th[data-col="u-job"],#users-table td[data-col="u-job"]{width:26%}
+#users-table th[data-col="u-role"],#users-table td[data-col="u-role"]{width:18%}
+#users-table th[data-col="u-seen"],#users-table td[data-col="u-seen"]{width:16%}
 #users-table th[data-col="u-actions"],#users-table td[data-col="u-actions"]{width:52px}
 #users-table :is(th,td):is([data-col="u-user"],[data-col="u-job"]){text-align:start}
-#users-table :is(th,td):is([data-col="u-role"],[data-col="u-status"],[data-col="u-joined"],[data-col="u-actions"]){text-align:center}
+#users-table :is(th,td):is([data-col="u-role"],[data-col="u-actions"]){text-align:center}
 #users-table .users-identity{display:flex;align-items:center;gap:9px;min-width:0}
 #users-table .users-name-cell,#users-table .users-job-cell{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
 #users-table .users-name-cell{flex:1}
 #users-table .users-name-line{max-width:100%}
 #users-table .users-job-title{max-width:100%;overflow-wrap:anywhere}
 #users-table :is(.users-username-line,.users-phone-sub){max-width:100%;text-align:start;overflow-wrap:anywhere}
-#users-table thead th{padding:10px;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:var(--surface);white-space:nowrap;border-bottom:1px solid var(--border)}
-#users-table tbody tr td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:.82rem;box-sizing:border-box}
+#users-table thead th{padding:10px 12px;font-size:.76rem;font-weight:500;color:var(--muted);background:var(--bg-alt);white-space:nowrap;border-bottom:1px solid var(--border)}
+#users-table tbody tr td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:.82rem;box-sizing:border-box}
 #users-table tbody tr:last-child td{border-bottom:none}
 #users-table tbody tr:hover{background:var(--surface)}
 #users-table tbody tr.users-row-inactive{opacity:.55}
@@ -7745,14 +7745,62 @@ body.dark-mode .user-status-pill.is-inactive{background:#450a0a;color:#f87171}
 .vault-locked .vault-lock-icon svg{width:28px;height:28px;color:var(--accent)}
 .vault-locked h3{font-size:1.1rem;font-weight:700;margin-bottom:6px}
 .vault-locked input{max-width:300px;margin:0 auto 12px;display:block;text-align:center}
-.stg-pin-set{display:flex;flex-wrap:wrap;gap:12px 28px;margin:4px 0 6px}
-.stg-pin-field label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:6px}
-.stg-pin-field .pinbx{margin-bottom:6px}
-.stg-pin-field .pinbx-ok{margin:0 0 4px}
-.stg-pin-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.stg-pin-hint{font-size:.78rem;color:var(--muted)}
-.stg-pin-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:9px 12px;font-size:.82rem;margin:0 0 12px}
-body.dark-mode .stg-pin-warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
+/* System PIN: state row on the card + the change dialog (openSystemPinDialog, Nov 27, 2026). */
+.stg-pin-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:4px 0 14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-alt)}
+.stg-pin-status{display:flex;align-items:center;gap:10px;min-width:0}
+.stg-pin-status>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stg-pin-status b{font-size:.86rem;font-weight:600;color:var(--text)}
+.stg-pin-status span:not(.stg-pin-status-ic){font-size:.77rem;color:var(--muted);line-height:1.5}
+.stg-pin-status-ic{flex:0 0 auto;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#ecfdf3;color:#15803d}
+.stg-pin-status-ic svg{width:15px;height:15px}
+.stg-pin-status.is-warn .stg-pin-status-ic{background:#fffaeb;color:#b54708}
+.stg-pin-status.is-warn .stg-pin-status-ic svg{display:none}
+.stg-pin-status.is-warn .stg-pin-status-ic::before{content:'!';font-weight:700;font-size:.9rem}
+body.dark-mode .stg-pin-status-ic{background:rgba(34,197,94,.14);color:#86efac}
+body.dark-mode .stg-pin-status.is-warn .stg-pin-status-ic{background:rgba(245,158,11,.14);color:#fcd34d}
+.spin-dlg{display:flex;flex-direction:column}
+.spin-head{display:flex;align-items:flex-start;gap:12px;padding:18px 20px 12px}
+.spin-head h3{margin:0;font-size:1.02rem;font-weight:650;color:var(--text)}
+.spin-head p{margin:3px 0 0;font-size:.8rem;color:var(--muted);line-height:1.6}
+.spin-head>div{flex:1;min-width:0}
+.spin-ic{flex:0 0 auto;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--primary-pale);color:var(--accent)}
+.spin-ic svg{width:19px;height:19px}
+.spin-steps{display:flex;gap:6px;list-style:none;margin:0;padding:0 20px 14px;border-bottom:1px solid var(--border)}
+.spin-steps li{flex:1;display:flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);padding-top:8px;border-top:2px solid var(--border)}
+.spin-steps li span{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:600;background:var(--bg-alt);border:1px solid var(--border)}
+.spin-steps li.is-on{color:var(--text);font-weight:600;border-top-color:var(--accent)}
+.spin-steps li.is-on span{background:var(--accent);border-color:var(--accent);color:#fff}
+.spin-steps li.is-done{color:var(--text);border-top-color:var(--accent)}
+.spin-steps li.is-done span{background:var(--primary-pale);border-color:transparent;color:var(--accent)}
+.spin-body{padding:18px 20px}
+.spin-fields{display:flex;flex-wrap:wrap;gap:14px 28px}
+.spin-field label{display:block;font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:7px}
+.spin-field .pinbx{margin-bottom:6px}
+.spin-field .pinbx-ok{margin:0 0 4px}
+.spin-notes{margin:12px 0 0;padding:10px 14px;list-style:none;border-radius:8px;background:var(--bg-alt);font-size:.77rem;color:var(--muted);line-height:1.9}
+.spin-notes li::before{content:'•';margin-inline-end:7px;color:var(--accent)}
+.spin-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:var(--bg-alt)}
+.spin-foot .btn{min-width:96px;justify-content:center}
+.spin-done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:10px 0 4px}
+.spin-done b{font-size:.98rem;color:var(--text)}
+.spin-done p{margin:0;font-size:.8rem;color:var(--muted);line-height:1.7;max-width:360px}
+.spin-done-ic{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#ecfdf3;color:#15803d;margin-bottom:4px}
+.spin-done-ic svg{width:24px;height:24px}
+body.dark-mode .spin-done-ic{background:rgba(34,197,94,.14);color:#86efac}
+.spin-hint{margin:10px 0 0;font-size:.78rem;color:var(--muted)}
+.spin-err{margin:0 20px 14px;padding:9px 12px;border-radius:8px;background:#fef3f2;color:#b42318;font-size:.8rem;line-height:1.6}
+.spin-err[hidden]{display:none}
+body.dark-mode .spin-err{background:rgba(240,68,56,.14);color:#fda29b}
+.spin-methods{display:inline-flex;gap:2px;padding:3px;margin-bottom:14px;border:1px solid var(--border);border-radius:9px;background:var(--bg-alt)}
+.spin-methods button{width:auto;min-height:0;height:30px;padding:0 14px;border:0;border-radius:7px;background:none;font:inherit;font-size:.8rem;color:var(--muted);cursor:pointer}
+.spin-methods button.is-on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spin-lead{margin:0 0 12px;font-size:.84rem;color:var(--text);line-height:1.7}
+.spin-code{display:block;width:220px!important;max-width:100%;height:52px;padding:0 12px!important;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.5rem!important;letter-spacing:.45em;text-align:center}
+.spin-code:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.spin-code.is-error{border-color:#dc2626;animation:spinShake .35s}
+@keyframes spinShake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.spin-link{display:inline-block;margin-top:10px;width:auto;min-height:0;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-size:.8rem;cursor:pointer}
+.spin-send{width:auto}
 /* PIN boxes (Nov 15, 2026) — one real <input> (same id, so every caller reads .value) laid
    transparently over drawn cells; cells grow while typing (the vault code has no fixed length). */
 .pinbx{position:relative;display:flex;justify-content:center;gap:8px;max-width:300px;margin:0 auto 14px;direction:ltr}
@@ -17728,6 +17776,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/notification-settings.css?v=20261103-neutral-surfaces">
 <link rel="stylesheet" href="/roles-permissions.css?v=20261113-roles1">
 <link rel="stylesheet" href="/announcements.css?v=4">
+<link rel="stylesheet" href="/user-sessions.css?v=5">
+<link rel="stylesheet" href="/password-policy.css?v=2">
+<link rel="stylesheet" href="/users-page.css?v=7">
+<link rel="stylesheet" href="/auth-security.css?v=10">
 <link rel="stylesheet" href="/api-access.css?v=6">
 <link rel="stylesheet" href="/assistant.css?v=25">
 <link rel="stylesheet" href="/onboarding.css?v=1">
@@ -17766,7 +17818,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/order-audit-marketing.css?v=20261021-5">
 <link rel="stylesheet" href="/order-audit-insights.css?v=20261021-5">
 <link rel="stylesheet" href="/order-audit-layout.css?v=20261021-2">
-<link rel="stylesheet" href="/startup-experience.css?v=20261102-8">
+<link rel="stylesheet" href="/startup-experience.css?v=20261127-6">
 <link rel="stylesheet" href="/data-loading.css?v=20261110-shopify-subtabs">
 <link rel="stylesheet" href="/scan-station-redesign.css?v=20261102-larger-compact-photos">
 <link rel="stylesheet" href="/prep-workspace-compact.css?v=20261126-photo-frame2">
@@ -17821,23 +17873,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <span id="offline-fab-badge">0</span>
 </button>
 <div id="login-page" style="display:none">
-<div id="login-quote-panel">
-  <div class="startup-login-brand"><img src="/soulia-startup-flat.svg" alt="" class="lfp-logo" width="86" height="44" decoding="async"><span lang="en">SOULIA</span></div>
-  <div class="startup-login-story">
-    <span class="startup-login-kicker" lang="en"><bdi>BUSINESS OPERATIONS</bdi></span><span class="startup-login-kicker startup-en" lang="en">BUSINESS OPERATIONS</span>
-    <h2 lang="en"><bdi>Run your business.<br>All in one place.</bdi></h2><h2 class="startup-en" lang="en">Run your business.<br>All in one place.</h2>
-    <p lang="en"><bdi>Orders, inventory, finance and your team — in one workspace.</bdi></p><p class="startup-en" lang="en">Orders, inventory, finance and your team — in one workspace.</p>
-  </div>
-  <div class="startup-login-footer" lang="en">SOULIA / BUSINESS OPERATIONS</div>
-</div>
-
-<!-- Right: Login Form -->
+<!-- One centred card; the only other text is the mark under it. -->
 <div id="login-form-panel">
 <form id="login-form" onsubmit="event.preventDefault();doLogin()" novalidate>
   <div class="lfp-header">
     <span class="lfp-logo-wrap"><img src="/soulia-startup-flat.svg" alt="Soulia" class="lfp-logo" draggable="false"></span>
     <h1 class="lfp-title">Welcome back</h1>
-    <p class="lfp-sub">Sign in to continue to your account</p>
+    <p class="lfp-sub">Authorized access only</p>
   </div>
 
   <div id="login-error" role="alert" aria-live="polite"></div>
@@ -17874,18 +17916,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <span id="login-saved-badge" style="display:none;align-items:center;gap:5px"><span>Saved</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
   </div>
 
-  <button type="submit" class="lfp-btn-login" aria-busy="false"><span id="login-submit-label">Sign In</span></button>
+  <button type="submit" class="lfp-btn-login" aria-busy="false"><svg class="lfp-btn-lock" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.6v2.4"/></svg><span id="login-submit-label">Secure Sign In</span></button>
 
   <button type="button" class="lfp-forgot" onclick="openForgotPassword()"><span>Forgot password?</span></button>
 </form>
-
-  <!-- Mobile-only: inline quote bar at bottom -->
-  <div id="mobile-quote-bar" style="display:none">
-    <p id="mobile-quote-text"></p>
-    <span id="mobile-quote-author"></span>
-  </div>
 </div>
 
+<div class="login-mark" lang="en" dir="ltr">SOULIA / BUSINESS OPERATIONS</div>
 </div>
 
 <div id="app" style="display:none">
@@ -18622,118 +18659,6 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   </div>
 </div>
 
-<!-- Forgot Password Modal -->
-<div id="forgot-password-overlay" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)">
-  <div style="background:var(--bg,#fff);border-radius:16px;padding:36px 32px;width:100%;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
-    <div style="width:48px;height:48px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:12px">
-      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#10b981" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-    </div>
-    <h2 style="font-size:1.1rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">Reset Password</h2>
-    <p id="fp-subtitle" style="color:#6b8c78;font-size:0.84rem;margin:0 0 22px;line-height:1.6">Enter your admin account username</p>
-
-    <!-- Step 1: username -->
-    <div id="fp-step-1">
-      <div style="margin-bottom:14px;text-align:left">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Username</label>
-        <input type="text" id="fp-username" placeholder="Enter your username" autocomplete="off"
-          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
-          onkeydown="if(event.key==='Enter')fpStep1()">
-      </div>
-      <div id="fp-error-1" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
-      <button onclick="fpStep1()" id="fp-btn-1"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        Continue
-      </button>
-      <button onclick="closeForgotPassword()"
-        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
-        Cancel
-      </button>
-    </div>
-
-    <!-- Step 2: TOTP -->
-    <div id="fp-step-2" style="display:none">
-      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 18px">Open <strong>Google Authenticator</strong> and enter the 6-digit code</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
-        <input id="fp-digit-0" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,0)" onkeydown="fpDigitKeydown(event,0)">
-        <input id="fp-digit-1" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,1)" onkeydown="fpDigitKeydown(event,1)">
-        <input id="fp-digit-2" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,2)" onkeydown="fpDigitKeydown(event,2)">
-        <input id="fp-digit-3" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,3)" onkeydown="fpDigitKeydown(event,3)">
-        <input id="fp-digit-4" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,4)" onkeydown="fpDigitKeydown(event,4)">
-        <input id="fp-digit-5" type="text" inputmode="numeric" maxlength="1"
-          style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid #dde6e0;border-radius:10px;background:#f8faf9;color:#1a2e22;outline:none"
-          oninput="fpDigitInput(this,5)" onkeydown="fpDigitKeydown(event,5)">
-      </div>
-      <div id="fp-error-2" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
-      <button onclick="fpStep2()" id="fp-btn-2"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        Verify
-      </button>
-      <button onclick="fpShowPasswordFallback()"
-        style="width:100%;padding:8px;background:transparent;border:none;font-size:.8rem;color:#6b8c78;cursor:pointer;text-decoration:underline;margin-bottom:4px">
-        لا يمكنني الوصول لـ Google Authenticator
-      </button>
-      <button onclick="closeForgotPassword()"
-        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
-        Cancel
-      </button>
-    </div>
-
-    <!-- Step 2b: password fallback (when TOTP unavailable) -->
-    <div id="fp-step-2b" style="display:none">
-      <p style="font-size:.83rem;color:#6b8c78;margin:0 0 18px">أدخل كلمة مرورك الحالية للتحقق من هويتك</p>
-      <div style="margin-bottom:14px;text-align:left">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Current Password</label>
-        <input type="password" id="fp-curpass" placeholder="أدخل كلمة المرور الحالية" autocomplete="current-password"
-          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
-          onkeydown="if(event.key==='Enter')fpStep2b()">
-      </div>
-      <div id="fp-error-2b" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
-      <button onclick="fpStep2b()" id="fp-btn-2b"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        Verify
-      </button>
-      <button onclick="fpBackToTotp()"
-        style="width:100%;padding:8px;background:transparent;border:none;font-size:.8rem;color:#6b8c78;cursor:pointer;text-decoration:underline;margin-bottom:4px">
-        الرجوع لرمز المصادقة
-      </button>
-      <button onclick="closeForgotPassword()"
-        style="width:100%;padding:10px;background:transparent;border:1.5px solid #dde6e0;border-radius:10px;font-size:.88rem;color:#6b8c78;cursor:pointer">
-        Cancel
-      </button>
-    </div>
-
-    <!-- Step 3: new password -->
-    <div id="fp-step-3" style="display:none">
-      <div style="margin-bottom:14px;text-align:left">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">New Password</label>
-        <input type="password" id="fp-newpass" placeholder="At least 6 characters" autocomplete="new-password"
-          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
-          onkeydown="if(event.key==='Enter')fpStep3()">
-      </div>
-      <div style="margin-bottom:14px;text-align:left">
-        <label style="display:block;font-size:.8rem;font-weight:600;color:#2d4a38;margin-bottom:6px">Confirm Password</label>
-        <input type="password" id="fp-newpass-confirm" placeholder="Re-enter to confirm" autocomplete="new-password"
-          style="width:100%;padding:11px 14px;border:1.5px solid #dde6e0;border-radius:10px;font-size:.93rem;color:#1a2e22;background:#f8faf9;box-sizing:border-box;outline:none"
-          onkeydown="if(event.key==='Enter')fpStep3()">
-      </div>
-      <div id="fp-error-3" style="color:#dc2626;font-size:.83rem;margin-bottom:10px;display:none"></div>
-      <button onclick="fpStep3()" id="fp-btn-3"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:10px">
-        Save Password
-      </button>
-    </div>
-  </div>
-</div>
 
 <!-- High-value discount OTP modal -->
 <div class="modal-overlay" id="hv-otp-modal">
@@ -22697,11 +22622,10 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
       <thead>
         <tr>
           <th data-col="u-user">المستخدم</th>
-          <th data-col="u-job">الوظيفة</th>
+          <th data-col="u-job">المسمّى الوظيفي</th>
           <th data-col="u-role">الدور</th>
-          <th data-col="u-status">الحالة</th>
-          <th data-col="u-joined">تاريخ الانضمام</th>
-          <th data-col="u-actions"></th>
+          <th data-col="u-seen">آخر ظهور</th>
+          <th data-col="u-actions"><span class="ux-sr">الإجراءات</span></th>
         </tr>
       </thead>
       <tbody id="users-tbody"></tbody>
@@ -22710,58 +22634,83 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 </div>
 <div id="users-grid" class="users-cards-mobile"></div>
 
-<!-- Active Sessions (Admin Only) -->
-<div id="active-sessions-wrap" style="margin-top:24px">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
-    <h3 style="margin:0;font-size:1rem;color:var(--text)">الجلسات النشطة الآن</h3>
-    <span style="font-size:.78rem;color:var(--muted)">— موقع كل مستخدم متصل</span>
-  </div>
+<!-- Disabled / suspended / paused accounts — a section of its own (Nov 27, 2026). Drawn by _renderDisabledUsers. -->
+<section id="users-disabled-wrap" class="ux-card" hidden aria-labelledby="users-disabled-title">
+  <header class="ux-head">
+    <span class="ux-head-ic is-muted"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
+    <div class="ux-head-txt">
+      <h3 id="users-disabled-title">الحسابات المعطّلة والموقوفة <span class="ux-count" id="users-disabled-count"></span></h3>
+      <p>حسابات لا تستطيع تسجيل الدخول حاليًا. راجع السبب قبل إعادة التفعيل.</p>
+    </div>
+  </header>
+  <div id="locked-users-list" class="ux-dis-list"></div>
+</section>
+
+<!-- Sessions & devices (Admin Only) — drawn by user-sessions.js (window.SouliaSessions) -->
+<div id="active-sessions-wrap">
   <div id="active-sessions"></div>
 </div>
 
-<!-- Security Incidents Panel (Admin Only) -->
-<div id="security-panel-wrap" style="margin-top:32px;display:none">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    <h3 style="margin:0;font-size:1rem;color:var(--text)">الحوادث الأمنية والحسابات المُعطَّلة</h3>
-    <button onclick="loadSecurityPanel()" style="margin-right:auto;background:none;border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:.8rem;cursor:pointer;color:var(--text)">تحديث</button>
-  </div>
-
-  <!-- Locked Users -->
-  <div style="margin-bottom:20px">
-    <h4 style="font-size:.88rem;color:#dc2626;margin:0 0 10px;display:flex;align-items:center;gap:6px">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      الحسابات المُعطَّلة
-    </h4>
-    <div id="locked-users-list"></div>
-  </div>
-
-  <!-- Audit Log -->
-  <div>
-    <h4 style="font-size:.88rem;color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:6px">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      سجل الأحداث الأمنية
-    </h4>
-    <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
-        <thead>
-          <tr style="background:var(--bg-alt);text-align:right">
-            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">المستخدم</th>
-            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">نوع الحادثة</th>
-            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">التفاصيل</th>
-            <th style="padding:8px 12px;border-bottom:1px solid var(--border)" title="المتصفح ونظام التشغيل والجهاز وعنوان الشبكة الذي جاءت منه المحاولة">مصدر المحاولة</th>
-            <th style="padding:8px 12px;border-bottom:1px solid var(--border)">الوقت</th>
-          </tr>
-        </thead>
-        <tbody id="security-audit-tbody"></tbody>
-      </table>
+<!-- Security log (Admin Only) -->
+<section id="security-panel-wrap" class="ux-card" style="display:none" aria-labelledby="sec-log-title">
+  <header class="ux-head">
+    <span class="ux-head-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+    <div class="ux-head-txt">
+      <h3 id="sec-log-title">سجل الأمان</h3>
+      <p id="sec-log-summary">محاولات الدخول ورموز التحقق والإجراءات المتخذة على الحسابات.</p>
     </div>
-    <div id="security-audit-pagination" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-size:.82rem"></div>
+    <div class="ux-head-tools">
+      <select id="sec-log-filter" aria-label="نوع الحدث" onchange="_securityLogPage=0;_renderSecurityLogPage()">
+        <option value="">كل الأحداث</option>
+        <option value="login">الدخول والتحقق</option>
+        <option value="accounts">إيقاف الحسابات وتفعيلها</option>
+        <option value="access">الصلاحيات والبيانات</option>
+      </select>
+      <button type="button" class="ux-btn" onclick="loadSecurityPanel()">تحديث</button>
+    </div>
+  </header>
+  <div class="ux-table-wrap">
+    <table class="ux-table" id="security-audit-table">
+      <thead>
+        <tr><th>الوقت</th><th>الحدث</th><th>المستخدم</th><th>التفاصيل</th><th>الجهاز والشبكة</th></tr>
+      </thead>
+      <tbody id="security-audit-tbody"></tbody>
+    </table>
   </div>
-</div>
-</div>
+  <div id="security-audit-pagination" class="ux-pager"></div>
+</section>
 
+<!-- Sign-in attempts (Admin Only) — every attempt, success included (loginattempts, 180 days). _renderLoginAttempts -->
+<section id="login-attempts-wrap" class="ux-card" hidden aria-labelledby="la-title">
+  <header class="ux-head">
+    <span class="ux-head-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span>
+    <div class="ux-head-txt">
+      <h3 id="la-title">سجل محاولات الدخول <span class="ux-count" id="la-count"></span></h3>
+      <p id="la-summary">كل محاولة لتسجيل الدخول، الناجحة والمرفوضة، مع الجهاز وعنوان الشبكة.</p>
+    </div>
+    <div class="ux-head-tools la-tools">
+      <input type="search" id="la-search" placeholder="بحث باسم المستخدم أو عنوان IP" aria-label="بحث باسم المستخدم أو عنوان IP" oninput="_laSearchInput()" autocomplete="off">
+      <select id="la-filter" aria-label="نتيجة المحاولة" onchange="_laPage=1;_loadLoginAttempts()">
+        <option value="">كل النتائج</option>
+        <option value="ok">ناجحة</option>
+        <option value="failed">بيانات غير صحيحة</option>
+        <option value="stopped">موقوفة أو محظورة</option>
+        <option value="robot">التحقق الآلي</option>
+      </select>
+      <button type="button" class="ux-btn" onclick="_loadLoginAttempts()">تحديث</button>
+    </div>
+  </header>
+  <div class="ux-table-wrap">
+    <table class="ux-table" id="login-attempts-table">
+      <thead>
+        <tr><th>الوقت</th><th>النتيجة</th><th>اسم المستخدم</th><th>الجهاز والشبكة</th></tr>
+      </thead>
+      <tbody id="login-attempts-tbody"></tbody>
+    </table>
+  </div>
+  <div id="login-attempts-pager" class="ux-pager"></div>
+</section>
+</div>
 <!-- Roles & permissions -->
 <div id="users-roles-view" role="tabpanel" aria-labelledby="users-tab-roles" hidden>
   <div class="rbac-page" id="rbac-root" aria-live="polite">
@@ -23303,20 +23252,13 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
             <span data-i18n="stgVaultPassDesc">رقم من 4 أرقام يُطلب لفتح الخزنة والتقارير وأسعار الشراء، ولتأكيد الحذف النهائي</span>
           </div>
         </div>
-        <div class="stg-pin-warn" id="stg-pin-warn" role="alert" hidden><span data-i18n="stgPinLegacyWarn">الرقم السري الحالي ليس 4 أرقام، فلن يتمكن أحد من الفتح به. عيّن رقماً جديداً الآن.</span></div>
-        <div class="stg-pin-set">
-          <div class="stg-pin-field">
-            <label for="set-vault-pass" data-i18n="stgVaultPassPh">الرقم السري الجديد</label>
-            <div class="pinbx is-start"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div><input type="password" id="set-vault-pass" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" data-pin-done="_stgPinNext" data-i18n-aria-label="stgVaultPassPh" aria-label="الرقم السري الجديد" oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div><div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="stgPinOk1">تم</span></div>
+        <!-- The PIN is changed in a dialog (openSystemPinDialog): new PIN twice → verification code → done. -->
+        <div class="stg-pin-row">
+          <div class="stg-pin-status" id="stg-pin-status">
+            <span class="stg-pin-status-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <div><b id="stg-pin-status-title" data-i18n="stgPinStatusSet">الرقم السري معيّن</b><span id="stg-pin-status-sub" data-i18n="stgPinStatusSetSub">يسري على جميع المستخدمين، ويُطلب رمز تحقق عند تغييره.</span></div>
           </div>
-          <div class="stg-pin-field">
-            <label for="set-vault-pass2" data-i18n="stgVaultPassConfirm">تأكيد الرقم السري</label>
-            <div class="pinbx is-start"><div class="pinbx-cells" aria-hidden="true" style="display:contents"></div><input type="password" id="set-vault-pass2" class="pinbx-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" data-pin-done="_stgPinCheck" data-i18n-aria-label="stgVaultPassConfirm" aria-label="تأكيد الرقم السري" oninput="_pinInput(this)" onfocus="_pinSync(this)" onblur="_pinSync(this)" onclick="_pinCaretEnd(this)" onkeydown="_pinKey(event,this)"></div><div class="pinbx-ok" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="stgPinMatch">الرقمان متطابقان</span></div>
-          </div>
-        </div>
-        <div class="stg-pin-actions">
-          <button class="btn btn-primary btn-sm" id="stg-pin-save" onclick="saveVaultPass()" disabled data-i18n="stgPinSave">حفظ الرقم السري</button>
-          <span class="stg-pin-hint" data-i18n="stgPinHint">أرقام فقط — يسري فوراً على جميع المستخدمين.</span>
+          <button type="button" class="btn btn-outline btn-sm" id="stg-pin-open" onclick="openSystemPinDialog()" data-i18n="stgPinChangeBtn">تغيير الرقم السري</button>
         </div>
         <div style="padding-top:12px;border-top:1px solid var(--border)">
           <label class="lock-toggle-row">
@@ -23385,23 +23327,17 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 
           <!-- ─── التحقق بخطوتين (2FA) ─── -->
           <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-            <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px" data-i18n="stg2faHeading">🔐 التحقق بخطوتين (Google Authenticator)</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:12px" data-i18n="stg2faSub">حماية إضافية عند تسجيل الدخول — عند التعطيل لا يُطلب رمز المصادقة من أي مستخدم</div>
+            <div class="svs-head-title" data-i18n="stg2faHeading">التحقق بخطوتين</div>
+            <div class="svs-head-sub" data-i18n="stg2faSub">طبقة حماية إضافية تُطلب عند تسجيل الدخول من جهاز غير موثوق. وهي إلزامية لحسابات المديرين.</div>
             <label class="lock-toggle-row">
               <span class="lock-toggle-info">
-                <span class="lock-toggle-title" data-i18n="stg2faToggleTitle">تفعيل نظام المصادقة الثنائية (2FA)</span>
-                <span class="lock-toggle-sub" data-i18n="stg2faToggleSub">عند التفعيل: المدير والموظفون يحتاجون Google Authenticator عند الدخول من جهاز جديد</span>
+                <span class="lock-toggle-title" data-i18n="stg2faToggleTitle">فرض التحقق بخطوتين على الموظفين</span>
+                <span class="lock-toggle-sub" data-i18n="stg2faToggleSub">يُطلب رمز التحقق من الموظفين الذين أعدّوا تطبيق المصادقة عند تسجيل الدخول من جهاز جديد.</span>
               </span>
               <span class="lock-switch"><input type="checkbox" id="set-global-2fa-enabled" onchange="saveGlobal2fa(this.checked)"><span class="lock-switch-slider"></span></span>
             </label>
-            <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-sm btn-outline" onclick="openTotpSetupModal()" style="font-size:12px">
-                <span data-i18n="stg2faSetupBtn">📱 إعداد Google Authenticator لحسابي</span>
-              </button>
-              <button class="btn btn-sm btn-outline" id="btn-revoke-my-devices" onclick="revokeMyTrustedDevices()" style="font-size:12px;color:var(--red)">
-                <span data-i18n="stg2faRevokeBtn">🗑 إلغاء ثقة الأجهزة المحفوظة</span>
-              </button>
-            </div>
+            <!-- Google Authenticator · backup codes · security email · trusted devices (auth-security.js) -->
+            <div id="auth-security-root" style="margin-top:14px"></div>
           </div>
         </div>
       </div>
@@ -24747,7 +24683,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/deposit-decision.css?v=20261110-small-reason">
 <script src="/deposit-decision.js?v=20261110-small-reason"></script>
 <script src="/shopify-kpis.js?v=20261126-report-author"></script>
-<script src="/shopify-confirm-deferral.js?v=20261125-unconfirmed"></script>
+<script src="/shopify-confirm-deferral.js?v=20261127-tag-ok"></script>
 <link rel="stylesheet" href="/invoice-unit-identities.css?v=20261114-return-when-shipped">
 <script src="/invoice-unit-identities.js?v=20261114-return-when-shipped"></script>
 <link rel="stylesheet" href="/cancellations-analytics.css?v=20261030-1">
@@ -27020,12 +26956,10 @@ const TRANSLATIONS = {
   stgOtpPurchaseSub:{ar:'عند التفعيل: الموظفون لا يستطيعون إتمام المشتريات إلا بكود تحقق يُرسل للمدير مع تفاصيل العملية',en:'When enabled: staff can only complete purchases with a verification code sent to the manager along with the transaction details'},
   stgDailyBriefTitle:{ar:'ملخص الإدارة اليومي عند الدخول',en:'Daily admin briefing on login'},
   stgDailyBriefSub:{ar:'مغلق افتراضيًا؛ فعّله لإظهار ملخص الإدارة عند الدخول',en:'Off by default; enable it to show the admin briefing on login'},
-  stg2faHeading:{ar:'🔐 التحقق بخطوتين (Google Authenticator)',en:'🔐 Two-factor authentication (Google Authenticator)'},
-  stg2faSub:{ar:'حماية إضافية عند تسجيل الدخول — عند التعطيل لا يُطلب رمز المصادقة من أي مستخدم',en:'Extra protection at sign-in — when disabled, no user is asked for an authentication code'},
-  stg2faToggleTitle:{ar:'تفعيل نظام المصادقة الثنائية (2FA)',en:'Enable two-factor authentication (2FA)'},
-  stg2faToggleSub:{ar:'عند التفعيل: المدير والموظفون يحتاجون Google Authenticator عند الدخول من جهاز جديد',en:'When enabled: admins and staff need Google Authenticator when signing in from a new device'},
-  stg2faSetupBtn:{ar:'📱 إعداد Google Authenticator لحسابي',en:'📱 Set up Google Authenticator for my account'},
-  stg2faRevokeBtn:{ar:'🗑 إلغاء ثقة الأجهزة المحفوظة',en:'🗑 Revoke trusted devices'},
+  stg2faHeading:{ar:'التحقق بخطوتين',en:'2-Step Verification'},
+  stg2faSub:{ar:'طبقة حماية إضافية تُطلب عند تسجيل الدخول من جهاز غير موثوق. وهي إلزامية لحسابات المديرين.',en:'An extra layer of protection when signing in on a device that isn’t trusted. Required for administrator accounts.'},
+  stg2faToggleTitle:{ar:'فرض التحقق بخطوتين على الموظفين',en:'Require 2-Step Verification for staff'},
+  stg2faToggleSub:{ar:'يُطلب رمز التحقق من الموظفين الذين أعدّوا تطبيق المصادقة عند تسجيل الدخول من جهاز جديد.',en:'Staff who set up an authenticator app must enter a code when signing in on a new device.'},
   /* Printing tab */
   /* Company identity — the issuer block on the printed invoice. */
   stgCompanySection:{ar:'بيانات الشركة على الفاتورة',en:'Company details on the invoice'},
@@ -27282,8 +27216,20 @@ const TRANSLATIONS = {
   stgPinMismatch:{ar:'الرقمان غير متطابقين',en:'The PINs do not match'},
   stgPinSave:{ar:'حفظ الرقم السري',en:'Save PIN'},
   stgPinSaved:{ar:'تم حفظ الرقم السري',en:'PIN saved'},
-  stgPinHint:{ar:'أرقام فقط — يسري فوراً على جميع المستخدمين.',en:'Digits only — applies to every user at once.'},
-  stgPinLegacyWarn:{ar:'الرقم السري الحالي ليس 4 أرقام، فلن يتمكن أحد من الفتح به. عيّن رقماً جديداً الآن.',en:'The current PIN is not 4 digits, so nobody can unlock with it. Set a new one now.'},
+  stgPinStatusSet:{ar:'الرقم السري معيّن',en:'PIN is set'},
+  stgPinStatusSetSub:{ar:'يسري على جميع المستخدمين، ويُطلب رمز تحقق عند تغييره.',en:'It applies to every user, and changing it requires a verification code.'},
+  stgPinStatusLegacy:{ar:'يجب تعيين رقم سري جديد',en:'A new PIN must be set'},
+  stgPinChangeBtn:{ar:'تغيير الرقم السري',en:'Change PIN'},
+  stgPinSetBtn:{ar:'تعيين الرقم السري',en:'Set PIN'},
+  stgPinStepNew:{ar:'الرقم الجديد',en:'New PIN'},
+  stgPinStepVerify:{ar:'التحقق',en:'Verify'},
+  stgPinStepDone:{ar:'تم',en:'Done'},
+  stgPinNoteDigits:{ar:'أربعة أرقام فقط.',en:'Four digits only.'},
+  stgPinNoteAll:{ar:'يسري التغيير فورًا على جميع المستخدمين.',en:'The change applies to every user immediately.'},
+  stgPinContinue:{ar:'متابعة',en:'Continue'},
+  stgPinDoneSub:{ar:'استخدم الرقم الجديد من الآن لفتح الخزنة والتقارير وتأكيد الحذف النهائي.',en:'Use the new PIN from now on to open the vault and reports and to confirm permanent deletions.'},
+  stgPinHint:{ar:'أرقام فقط. يُطلب رمز تحقق قبل الحفظ، ويسري التغيير فورًا على جميع المستخدمين.',en:'Digits only. A verification code is required before saving; the change applies to every user at once.'},
+  stgPinLegacyWarn:{ar:'الرقم السري الحالي لا يتكوّن من 4 أرقام ولا يمكن استخدامه. يُرجى تعيين رقم جديد.',en:'The current PIN is not 4 digits and cannot be used. Please set a new one.'},
   lockWrongPass:{ar:'الرقم السري غير صحيح، حاول مرة أخرى',en:'Incorrect PIN — please try again'},
   /* لوحة «يحتاج انتباهك» بجوار جدول الشحن. المفاتيح دي بتتحل ديناميكيًّا
      (`t(it.key)`) فمش هتلاقيها مكتوبة حرفيًّا في نداء t(). */
@@ -27818,7 +27764,7 @@ const TRANSLATIONS = {
   itemsSectionTitle:{ar:'الأصناف',en:'Line items'},
   // Login
   loginWelcome:{ar:'مرحبًا بعودتك',en:'Welcome back'},
-  loginSubtitle:{ar:'سجّل الدخول للمتابعة إلى حسابك',en:'Sign in to continue to your account'},
+  loginSubtitle:{ar:'الدخول مقصور على المصرّح لهم فقط',en:'Authorized access only'},
   loginUsername:{ar:'اسم المستخدم',en:'Username'},
   loginPassword:{ar:'كلمة المرور',en:'Password'},
   loginUsernamePh:{ar:'أدخل اسم المستخدم',en:'Enter your username'},
@@ -32286,9 +32232,9 @@ const TRANSLATIONS = {
   expDetailNotes:{ar:'ملاحظات',en:'Notes'},
   expDetailItems:{ar:'بنود المصروف',en:'Expense items'},
   expDetailNoItems:{ar:'لا توجد بنود مفصّلة',en:'No itemised breakdown'},
-  expDetailInvoiceImg:{ar:'صورة الفاتورة',en:'Invoice image'},
+  expDetailInvoiceImg:{ar:'المرفق (صورة التحويل أو الإيصال)',en:'Attachment (transfer or receipt photo)'},
   expDetailViewAttachment:{ar:'عرض المرفق',en:'View attachment'},
-  expDetailViewInvoice:{ar:'عرض الفاتورة / المرفق',en:'View invoice / attachment'},
+  expDetailViewInvoice:{ar:'عرض المرفق',en:'View attachment'},
   expDetailApprovalLog:{ar:'سجل الموافقات',en:'Approval log'},
   expModalEditTitle:{ar:'تعديل المصروف',en:'Edit expense'},
   expModalNewTitle:{ar:'إضافة مصروف جديد',en:'Add a new expense'},
@@ -32306,11 +32252,11 @@ const TRANSLATIONS = {
   expFormAmountReq:{ar:'المبلغ *',en:'Amount *'},
   expFormPayMethod:{ar:'طريقة الدفع',en:'Payment method'},
   expFormNotesPh:{ar:'أي ملاحظات إضافية...',en:'Any additional notes...'},
-  expFormAttachSection:{ar:'صورة الفاتورة (اختياري)',en:'Invoice image (optional)'},
-  expFormAttachLabel:{ar:'صورة الفاتورة أو رابطها',en:'Receipt photo or link'},
-  expFormAttachPh:{ar:'https://... رابط مباشر للصورة أو الفاتورة',en:'https://... direct link to the image or invoice'},
-  expFormAttachHint:{ar:'ارفع صورة الفاتورة (تُضغط وتُحفظ على السحابة) أو أدخل رابطًا مباشرًا — تظهر في تفاصيل المصروف',en:'Upload the receipt photo (compressed and stored in the cloud) or enter a direct link — it shows in the expense details'},
-  expFormAttachAlt:{ar:'مرفق الفاتورة',en:'Invoice attachment'},
+  expFormAttachSection:{ar:'المرفق (اختياري)',en:'Attachment (optional)'},
+  expFormAttachLabel:{ar:'صورة التحويل أو الإيصال، أو رابطها',en:'Transfer or receipt photo, or its link'},
+  expFormAttachPh:{ar:'https://... رابط مباشر للصورة',en:'https://... direct link to the image'},
+  expFormAttachHint:{ar:'ارفع صورة التحويل أو الإيصال (تُضغط وتُحفظ على السحابة) أو أدخل رابطًا مباشرًا — تظهر في تفاصيل المصروف',en:'Upload the transfer or receipt photo (compressed and stored in the cloud) or enter a direct link — it shows in the expense details'},
+  expFormAttachAlt:{ar:'مرفق المصروف',en:'Expense attachment'},
   expUploadPhoto:{ar:'رفع صورة',en:'Upload photo'},
   expRemovePhoto:{ar:'إزالة الصورة',en:'Remove photo'},
   expFormView:{ar:'عرض',en:'View'},
@@ -32724,7 +32670,9 @@ function applyLangAttributes(root = document) {
   });
 }
 function applyLang() {
-  qs('#login-form')?.setAttribute('dir', 'ltr'); // the login form is English in every language
+  // The login page has its own language («العربية | English», auth-security.js); its direction is set there.
+  if (window.SouliaAuth) { qs('#login-form')?.removeAttribute('dir'); window.SouliaAuth.applyLoginLang(); }
+  else qs('#login-form')?.setAttribute('dir', 'ltr');
   applyLangAttributes();
   document.documentElement.lang = currentLang === 'en' ? 'en' : 'ar';
   document.documentElement.dir = currentLang === 'en' ? 'ltr' : 'rtl';
@@ -35589,9 +35537,16 @@ async function _apiRequest(path, options = {}) {
       if (res.status === 423 && err.code === 'ACCOUNT_SUSPENDED') { try { window.SouliaAbuse?.suspended(err); } catch (_) {} }
       if (res.status === 401 && !path.startsWith('/auth/login')) {
         // Password-verification endpoints use 401 for wrong password — don't logout
-        const isPasswordCheck = path.includes('preview-selective-restore') || path.includes('selective-restore') || path.includes('restore-backup') || path.includes('clear-data') || path.includes('backups');
+        const isPasswordCheck = path.includes('preview-selective-restore') || path.includes('selective-restore') || path.includes('restore-backup') || path.includes('clear-data') || path.includes('backups')
+          // Sign-in verification (auth-security.js): a wrong code / password / PIN answers 401 with its own code.
+          || (/^\/auth\/(challenge|forgot-password|security|totp|login-approvals|trusted-devices)/.test(path) && !!err.code && err.code !== 'SESSION_ENDED');
         if (!isPasswordCheck) {
-          if (msg && msg.includes('🔒')) {
+          if (err.code === 'SESSION_ENDED') {
+            // Not «account disabled»: only this device's session ended.
+            const wasSignedIn = !!currentUser;
+            doLogout();
+            if (wasSignedIn) setTimeout(() => window.SouliaSessions?.showEnded(msg), 300);
+          } else if (msg && msg.includes('🔒')) {
             doLogout();
             setTimeout(() => _showLockedAccountBanner(msg), 400);
           } else {
@@ -35761,6 +35716,8 @@ function _apiUploadWithProgress(url, options, headers) {
 function syncLoginForm() {
   const form = qs('#login-form');
   if (!form) return;
+  // The login page follows its own language switch, not the app's (auth-security.js applyLoginLang).
+  if (window.SouliaAuth) { form.removeAttribute('dir'); window.SouliaAuth.applyLoginLang(); return; }
   form.setAttribute('dir', currentLang === 'en' ? 'ltr' : 'rtl');
   applyLangIn(form);
   const toggle = qs('#login-pass-toggle');
@@ -35800,7 +35757,7 @@ function toggleLoginPassword() {
   }
   const visible = passInput.type === 'text';
   toggle.setAttribute('aria-pressed', String(visible));
-  toggle.setAttribute('aria-label', t(visible ? 'loginHidePassword' : 'loginShowPassword'));
+  toggle.setAttribute('aria-label', window.SouliaAuth ? window.SouliaAuth.loginText(visible ? 'hide' : 'show') : t(visible ? 'loginHidePassword' : 'loginShowPassword'));
   toggle.title = toggle.getAttribute('aria-label');
 }
 
@@ -35814,7 +35771,8 @@ async function doLogin() {
   if (!username || !password) {
     const missing = qs(username ? '#login-pass' : '#login-user');
     missing.setAttribute('aria-invalid', 'true');
-    errEl.textContent = t(username ? 'loginPasswordRequired' : 'loginUsernameRequired');
+    // The login page has its own language («العربية | English», auth-security.js).
+    errEl.textContent = window.SouliaAuth ? window.SouliaAuth.loginText(username ? 'passRequired' : 'userRequired') : t(username ? 'loginPasswordRequired' : 'loginUsernameRequired');
     errEl.style.display = 'block';
     missing.focus();
     return;
@@ -35824,444 +35782,92 @@ async function doLogin() {
   const btn = qs('.lfp-btn-login');
   const submitLabel = qs('#login-submit-label');
   if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
-  if (submitLabel) submitLabel.textContent = 'Signing in…';
+  if (submitLabel) submitLabel.textContent = window.SouliaAuth ? window.SouliaAuth.loginText('signingIn') : 'Signing in…';
   errEl.style.display = 'none';
 
   const rememberMe = qs('#login-remember')?.checked;
-  const deviceToken = localStorage.getItem(`device_token_${username}`) || localStorage.getItem('device_token') || '';
+  // This device's trusted-device token for this account (auth-security.js).
+  const deviceToken = window.SouliaAuth ? window.SouliaAuth.deviceTokenFor(username) : '';
   try {
-    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, deviceToken }) });
-
-    if (data.requireTotp) {
-      if (data.requireTotpSetup) {
-        // Admin hasn't set up TOTP yet — force setup before proceeding
-        _totpLoginUserId = data.userId;
-        _totpLoginRemember = rememberMe;
-        localStorage.setItem('token', ''); // no token yet
-        // Store credentials temporarily so we can finish login after setup
-        _pendingTotpSetupCredentials = { username, password, rememberMe };
-        openTotpSetupModal();
-      } else {
-        _showTotpVerifyScreen(data.userId, username, password, rememberMe);
+    // After repeated failures the server asks for a proof of work («لست برنامجًا آليًا», 428): it is
+    // solved here and the request sent again once.
+    // With Cloudflare Turnstile keys on the server the check is a CAPTCHA_REQUIRED widget instead.
+    let data, pow = null, captcha = null;
+    for (let round = 0; ; round++) {
+      try {
+        data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, deviceToken, ...(pow ? { pow } : {}), ...(captcha ? { captcha } : {}) }) });
+        break;
+      } catch (err) {
+        if (err.code === 'CAPTCHA_REQUIRED' && err.details?.captcha?.siteKey && window.SouliaAuth?.captchaToken && round < 2) {
+          if (submitLabel) submitLabel.textContent = window.SouliaAuth.loginText('checking');
+          try { captcha = await window.SouliaAuth.captchaToken(err.details.captcha); }
+          catch (_) { throw new Error(window.SouliaAuth.loginText('captchaFailed')); }
+          if (submitLabel) submitLabel.textContent = window.SouliaAuth.loginText('signingIn');
+          continue;
+        }
+        if (err.code === 'POW_REQUIRED' && err.details?.pow && window.SouliaAuth && round < 2) {
+          if (submitLabel) submitLabel.textContent = window.SouliaAuth.loginText('checking');
+          pow = await window.SouliaAuth.solvePow(err.details.pow);
+          if (submitLabel) submitLabel.textContent = window.SouliaAuth.loginText('signingIn');
+          continue;
+        }
+        throw err;
       }
+    }
+    // A device trusted before Nov 27 gets a new token on its first sign-in.
+    if (data.deviceToken && window.SouliaAuth) window.SouliaAuth.saveDeviceToken(username, data.deviceToken);
+
+    if (data.requireVerification || data.requireTotp) {
+      // A right password on an account that needs a second step returns a challenge, never a token.
+      if (!window.SouliaAuth) throw new Error('تعذّر تحميل شاشة التحقق — حدّث الصفحة');
+      window.SouliaAuth.verify(data, { purpose: 'login', username, onDone: res => souliaFinishLogin(res, username, rememberMe) });
       return;
     }
-
-    if (rememberMe) {
-      localStorage.setItem('rem_user', username);
-      localStorage.setItem('rem_pass', password);
-    } else {
-      localStorage.removeItem('rem_user');
-      localStorage.removeItem('rem_pass');
-    }
-    localStorage.setItem('token', data.accessToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    currentUser = data.user;
-    await showApp();
+    await souliaFinishLogin(data, username, rememberMe);
   } catch (e) {
-    const msg = e.message || 'Invalid credentials';
+    const msg = window.SouliaAuth ? window.SouliaAuth.loginError(e.message || '') : (e.message || 'Invalid credentials');
     if (msg.includes('🔒')) {
       _showLockedAccountBanner(msg);
       errEl.style.display = 'none';
     } else {
       errEl.textContent = msg;
+      // A locked / blocked source: the owner can unlock it with a verification code (login-guard).
+      if ((e.code === 'LOGIN_LOCKED' || e.code === 'LOGIN_BLOCKED') && e.details?.canUnlock && window.SouliaAuth) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'lfp-unlock';
+        b.textContent = window.SouliaAuth.loginText('unlock');
+        b.addEventListener('click', () => window.SouliaAuth.unlockStart(username));
+        errEl.appendChild(b);
+      }
       errEl.style.display = 'block';
       qs('#login-pass').focus({ preventScroll: true });
     }
   } finally {
     _loginSubmitting = false;
     if (btn) { btn.disabled = false; btn.setAttribute('aria-busy', 'false'); }
-    if (submitLabel) submitLabel.textContent = 'Sign In';
+    if (submitLabel) submitLabel.textContent = window.SouliaAuth ? window.SouliaAuth.loginText('signIn') : 'Secure Sign In';
   }
 }
 
-// ─── TOTP Verify Screen (step 2 of login) ────────────────────────────────────
-let _totpLoginUserId = null;
-let _totpLoginRemember = false;
-let _pendingTotpSetupCredentials = null;
-
-function _showTotpVerifyScreen(userId, username, password, rememberMe) {
-  _totpLoginUserId = userId;
-  _totpLoginRemember = rememberMe;
-
-  let overlay = qs('#totp-verify-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'totp-verify-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)';
-    overlay.innerHTML = `
-      <div style="background:var(--bg,#fff);border-radius:16px;padding:36px 32px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
-        <div style="width:48px;height:48px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:12px">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#10b981" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1" fill="#10b981" stroke="none"/></svg>
-        </div>
-        <h2 style="font-size:1.1rem;font-weight:700;color:var(--text,#1a2e22);margin:0 0 6px">Two-Factor Authentication</h2>
-        <p style="color:var(--muted,#6b8c78);font-size:0.84rem;margin:0 0 22px;line-height:1.6">
-          Open <strong>Google Authenticator</strong> and enter the 6-digit code
-        </p>
-        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;direction:ltr">
-          ${[0,1,2,3,4,5].map(i => `<input id="totp-digit-${i}" type="text" inputmode="numeric" maxlength="1"
-            style="width:44px;height:52px;text-align:center;font-size:1.4rem;font-weight:700;border:1.5px solid var(--border,#dde6e0);border-radius:10px;background:var(--bg-alt,#f8faf9);color:var(--text,#1a2e22);outline:none;transition:border-color .15s"
-            oninput="totpDigitInput(this,${i})" onkeydown="totpDigitKeydown(event,${i})">`).join('')}
-        </div>
-        <div id="totp-verify-error" style="color:#dc2626;font-size:0.83rem;margin-bottom:12px;display:none;min-height:18px"></div>
-        <label style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:0.83rem;color:var(--muted,#6b8c78);margin-bottom:18px;cursor:pointer">
-          <input type="checkbox" id="totp-trust-device" style="width:15px;height:15px;accent-color:var(--accent)">
-          Remember this device
-        </label>
-        <button onclick="submitTotpVerify()" id="totp-verify-btn"
-          style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.01em">
-          Verify
-        </button>
-        <button onclick="qs('#totp-verify-overlay').remove();_totpLoginUserId=null"
-          style="width:100%;margin-top:10px;padding:10px;background:transparent;border:1.5px solid var(--border,#dde6e0);border-radius:10px;font-size:0.88rem;color:var(--muted,#6b8c78);cursor:pointer">
-          Back
-        </button>
-      </div>`;
-    document.body.appendChild(overlay);
-  }
-  // Reset state every time the modal is shown
-  [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-digit-${i}`); if (d) d.value = ''; });
-  const cb = qs('#totp-trust-device'); if (cb) cb.checked = false;
-  const err = qs('#totp-verify-error'); if (err) { err.style.display = 'none'; err.textContent = ''; }
-  overlay.style.display = 'flex';
-  setTimeout(() => { const f = qs('#totp-digit-0'); if (f) f.focus(); }, 100);
+// ─── Sign-in second step, forgot password, trusted devices → auth-security.js (Nov 27, 2026) ──
+// The old screens posted {userId, code} to /auth/totp/verify, which signed in WITHOUT the
+// password; the server now only accepts the challenge a correct password created.
+async function souliaFinishLogin(data, username, rememberMe) {
+  // «تذكرني» keeps the username only — the password is never stored in the browser.
+  if (rememberMe) localStorage.setItem('rem_user', username);
+  else localStorage.removeItem('rem_user');
+  localStorage.removeItem('rem_pass');
+  localStorage.setItem('token', data.accessToken);
+  localStorage.setItem('user', JSON.stringify(data.user));
+  currentUser = data.user;
+  await showApp();
 }
-
-function totpDigitInput(el, idx) {
-  el.value = el.value.replace(/\D/g, '').slice(-1);
-  if (el.value && idx < 5) qs(`#totp-digit-${idx+1}`)?.focus();
-  if (idx === 5 && el.value) submitTotpVerify();
-}
-
-function totpDigitKeydown(e, idx) {
-  if (e.key === 'Backspace' && !qs(`#totp-digit-${idx}`).value && idx > 0) {
-    qs(`#totp-digit-${idx-1}`)?.focus();
-  }
-  if (e.key === 'ArrowLeft' && idx > 0) qs(`#totp-digit-${idx-1}`)?.focus();
-  if (e.key === 'ArrowRight' && idx < 5) qs(`#totp-digit-${idx+1}`)?.focus();
-}
-
-async function submitTotpVerify() {
-  const token = [0,1,2,3,4,5].map(i => qs(`#totp-digit-${i}`)?.value || '').join('');
-  if (token.length < 6) return;
-  const errEl = qs('#totp-verify-error');
-  const btn = qs('#totp-verify-btn');
-  const trustDevice = qs('#totp-trust-device')?.checked;
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-  if (errEl) errEl.style.display = 'none';
-  try {
-    const data = await api('/auth/totp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ userId: _totpLoginUserId, token, trustDevice })
-    });
-    if (data.deviceToken) {
-      const uname = qs('#login-user')?.value?.trim() || '';
-      localStorage.setItem(`device_token_${uname}`, data.deviceToken);
-      localStorage.setItem('device_token', data.deviceToken); // fallback
-    }
-    qs('#totp-verify-overlay')?.remove();
-    if (_totpLoginRemember) {
-      localStorage.setItem('rem_user', qs('#login-user')?.value || '');
-      localStorage.setItem('rem_pass', qs('#login-pass')?.value || '');
-    }
-    localStorage.setItem('token', data.accessToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    currentUser = data.user;
-    showApp();
-  } catch(e) {
-    if (errEl) { errEl.textContent = e.message || 'رمز التحقق غير صحيح'; errEl.style.display = 'block'; }
-    [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-digit-${i}`); if (d) d.value = ''; });
-    qs('#totp-digit-0')?.focus();
-  } finally {
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-  }
-}
-
-// ─── TOTP Setup Modal (scan QR) ───────────────────────────────────────────────
-async function openTotpSetupModal() {
-  const isForcedSetup = !!_pendingTotpSetupCredentials;
-  const token = localStorage.getItem('token');
-  if (!token && !isForcedSetup) return;
-
-  // Check if already enabled
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const alreadyEnabled = user.totpEnabled;
-
-  let modal = qs('#totp-setup-modal');
-  if (modal) modal.remove();
-  modal = document.createElement('div');
-  modal.id = 'totp-setup-modal';
-  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)';
-  modal.innerHTML = `
-    <div style="background:var(--bg,#fff);border-radius:20px;padding:32px 28px;width:100%;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto">
-      <div style="font-size:44px;margin-bottom:8px">📱</div>
-      <h2 style="font-size:1.15rem;font-weight:700;color:var(--text);margin:0 0 6px">إعداد Google Authenticator</h2>
-      <div id="totp-setup-body">
-        <p style="color:var(--muted);font-size:0.85rem;margin:0 0 16px;line-height:1.6">جارٍ تحميل رمز QR...</p>
-      </div>
-      ${!isForcedSetup ? `<button onclick="qs('#totp-setup-modal').remove()"
-        style="width:100%;margin-top:14px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:12px;font-size:0.9rem;color:var(--muted);cursor:pointer">
-        إغلاق
-      </button>` : `<p style="margin-top:12px;font-size:0.8rem;color:var(--muted)">يجب إكمال الإعداد لتسجيل الدخول</p>`}
-    </div>`;
-  document.body.appendChild(modal);
-
-  try {
-    const setupEndpoint = isForcedSetup
-      ? '/auth/totp/setup-init'
-      : '/auth/totp/setup';
-    const setupBody = isForcedSetup
-      ? JSON.stringify({ userId: _totpLoginUserId })
-      : undefined;
-    const data = await api(setupEndpoint, { method: 'POST', body: setupBody });
-    const body = qs('#totp-setup-body');
-    body.innerHTML = `
-      <p style="color:var(--muted);font-size:0.85rem;margin:0 0 12px;line-height:1.6">
-        امسح هذا الرمز بتطبيق <strong>Google Authenticator</strong> أو أي تطبيق TOTP
-      </p>
-      <img src="${data.qrCode}" style="width:200px;height:200px;border-radius:12px;border:3px solid var(--border);margin-bottom:14px">
-      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">أو أدخل الرمز يدوياً: <code style="background:var(--bg-alt);padding:3px 8px;border-radius:6px;font-size:0.85rem;letter-spacing:2px">${data.secret}</code></p>
-      <p style="font-size:0.88rem;color:var(--text);font-weight:600;margin-bottom:10px">أدخل الرمز من التطبيق للتأكيد:</p>
-      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;direction:ltr">
-        ${[0,1,2,3,4,5].map(i => `<input id="totp-setup-digit-${i}" type="text" inputmode="numeric" maxlength="1"
-          style="width:42px;height:52px;text-align:center;font-size:1.3rem;font-weight:700;border:2px solid var(--border);border-radius:10px;background:var(--bg-alt);color:var(--text);outline:none"
-          oninput="totpSetupDigitInput(this,${i})" onkeydown="totpSetupDigitKeydown(event,${i})">`).join('')}
-      </div>
-      <div id="totp-setup-error" style="color:#dc2626;font-size:0.85rem;margin-bottom:10px;display:none"></div>
-      <button onclick="confirmTotpSetup()" id="totp-setup-confirm-btn"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">
-        تأكيد وتفعيل
-      </button>
-      ${alreadyEnabled ? `<button onclick="disableTotp()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid #dc2626;border-radius:12px;font-size:0.88rem;color:#dc2626;cursor:pointer">تعطيل التحقق بخطوتين</button>` : ''}`;
-    setTimeout(() => qs('#totp-setup-digit-0')?.focus(), 100);
-  } catch(e) {
-    const alreadyActive = e.message?.includes('مفعّل بالفعل');
-    qs('#totp-setup-body').innerHTML = `
-      <p style="color:#dc2626;margin-bottom:${alreadyActive ? '14px' : '0'}">${e.message || 'حدث خطأ'}</p>
-      ${alreadyActive ? `<button onclick="disableTotp()" style="width:100%;padding:10px;background:transparent;border:1px solid #dc2626;border-radius:12px;font-size:0.88rem;color:#dc2626;cursor:pointer">تعطيل التحقق بخطوتين وإعادة الإعداد</button>` : ''}`;
-  }
-}
-
-function totpSetupDigitInput(el, idx) {
-  el.value = el.value.replace(/\D/g, '').slice(-1);
-  if (el.value && idx < 5) qs(`#totp-setup-digit-${idx+1}`)?.focus();
-  if (idx === 5 && el.value) confirmTotpSetup();
-}
-
-function totpSetupDigitKeydown(e, idx) {
-  if (e.key === 'Backspace' && !qs(`#totp-setup-digit-${idx}`)?.value && idx > 0) qs(`#totp-setup-digit-${idx-1}`)?.focus();
-}
-
-async function confirmTotpSetup() {
-  const token = [0,1,2,3,4,5].map(i => qs(`#totp-setup-digit-${i}`)?.value || '').join('');
-  if (token.length < 6) return;
-  const errEl = qs('#totp-setup-error');
-  const btn = qs('#totp-setup-confirm-btn');
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-  if (errEl) errEl.style.display = 'none';
-  try {
-    const confirmEndpoint = _pendingTotpSetupCredentials ? '/auth/totp/setup-confirm' : '/auth/totp/confirm';
-    const confirmBody = _pendingTotpSetupCredentials
-      ? JSON.stringify({ userId: _totpLoginUserId, token })
-      : JSON.stringify({ token });
-    await api(confirmEndpoint, { method: 'POST', body: confirmBody });
-    qs('#totp-setup-modal')?.remove();
-    toast('تم تفعيل التحقق بخطوتين بنجاح');
-
-    // If setup was triggered during login flow, re-login to get the TOTP verify step
-    if (_pendingTotpSetupCredentials) {
-      const { username, password, rememberMe } = _pendingTotpSetupCredentials;
-      _pendingTotpSetupCredentials = null;
-      const loginData = await api('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
-      if (loginData.requireTotp) {
-        _showTotpVerifyScreen(loginData.userId, username, password, rememberMe);
-      }
-      return;
-    }
-
-    // Normal setup from settings — update cached user
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    u.totpEnabled = true;
-    localStorage.setItem('user', JSON.stringify(u));
-    currentUser = u;
-  } catch(e) {
-    if (errEl) { errEl.textContent = e.message || 'رمز غير صحيح'; errEl.style.display = 'block'; }
-    [0,1,2,3,4,5].forEach(i => { const d = qs(`#totp-setup-digit-${i}`); if (d) d.value = ''; });
-    qs('#totp-setup-digit-0')?.focus();
-    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-  }
-}
-
-async function disableTotp() {
-  if (!confirm('هل تريد تعطيل التحقق بخطوتين؟')) return;
-  try {
-    await api('/auth/totp/disable', { method: 'POST' });
-    qs('#totp-setup-modal')?.remove();
-    toast('تم تعطيل التحقق بخطوتين');
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    u.totpEnabled = false;
-    localStorage.setItem('user', JSON.stringify(u));
-    currentUser = u;
-  } catch(e) { toast(e.message || 'حدث خطأ', true); }
-}
-
-// ─── Forgot Password Flow ─────────────────────────────────────────────────────
-let _fpUserId = null;
-let _fpResetToken = null;
-
 function openForgotPassword() {
-  _fpUserId = null;
-  _fpResetToken = null;
-  const overlay = qs('#forgot-password-overlay');
-  // Move to body if still inside #app (which has display:none during login)
-  if (overlay.closest('#app')) document.body.appendChild(overlay);
-  overlay.style.display = 'flex';
-  qs('#fp-step-1').style.display = 'block';
-  qs('#fp-step-2').style.display = 'none';
-  qs('#fp-step-2b').style.display = 'none';
-  qs('#fp-step-3').style.display = 'none';
-  qs('#fp-username').value = '';
-  qs('#fp-error-1').style.display = 'none';
-  qs('#fp-subtitle').textContent = 'Enter your admin account username';
-  setTimeout(() => qs('#fp-username')?.focus(), 100);
+  if (window.SouliaAuth) window.SouliaAuth.forgotPassword();
 }
-
-function closeForgotPassword() {
-  qs('#forgot-password-overlay').style.display = 'none';
-}
-
-async function fpStep1() {
-  const username = qs('#fp-username').value.trim();
-  const errEl = qs('#fp-error-1');
-  const btn = qs('#fp-btn-1');
-  if (!username) { errEl.textContent = 'أدخل اسم المستخدم'; errEl.style.display = 'block'; return; }
-  btn.disabled = true; btn.style.opacity = '0.6';
-  errEl.style.display = 'none';
-  try {
-    const data = await api('/auth/forgot-password/verify-username', { method: 'POST', body: JSON.stringify({ username }) });
-    _fpUserId = data.userId;
-    qs('#fp-step-1').style.display = 'none';
-    qs('#fp-step-2').style.display = 'block';
-    qs('#fp-subtitle').textContent = 'Enter your Google Authenticator code to verify your identity';
-    [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
-    setTimeout(() => qs('#fp-digit-0')?.focus(), 100);
-  } catch(e) {
-    errEl.textContent = e.message || 'حدث خطأ';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.style.opacity = '';
-  }
-}
-
-function fpDigitInput(el, idx) {
-  el.value = el.value.replace(/\D/g, '').slice(-1);
-  if (el.value && idx < 5) qs(`#fp-digit-${idx+1}`)?.focus();
-  if (idx === 5 && el.value) fpStep2();
-}
-
-function fpDigitKeydown(e, idx) {
-  if (e.key === 'Backspace' && !qs(`#fp-digit-${idx}`)?.value && idx > 0) qs(`#fp-digit-${idx-1}`)?.focus();
-  if (e.key === 'ArrowLeft' && idx > 0) qs(`#fp-digit-${idx-1}`)?.focus();
-  if (e.key === 'ArrowRight' && idx < 5) qs(`#fp-digit-${idx+1}`)?.focus();
-}
-
-async function fpStep2() {
-  const token = [0,1,2,3,4,5].map(i => qs(`#fp-digit-${i}`)?.value || '').join('');
-  if (token.length < 6) return;
-  const errEl = qs('#fp-error-2');
-  const btn = qs('#fp-btn-2');
-  btn.disabled = true; btn.style.opacity = '0.6';
-  errEl.style.display = 'none';
-  try {
-    const data = await api('/auth/forgot-password/verify-totp', { method: 'POST', body: JSON.stringify({ userId: _fpUserId, token }) });
-    _fpResetToken = data.resetToken;
-    qs('#fp-step-2').style.display = 'none';
-    qs('#fp-step-3').style.display = 'block';
-    qs('#fp-subtitle').textContent = 'Enter your new password';
-    qs('#fp-newpass').value = '';
-    qs('#fp-newpass-confirm').value = '';
-    setTimeout(() => qs('#fp-newpass')?.focus(), 100);
-  } catch(e) {
-    errEl.textContent = e.message || 'رمز التحقق غير صحيح';
-    errEl.style.display = 'block';
-    [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
-    qs('#fp-digit-0')?.focus();
-  } finally {
-    btn.disabled = false; btn.style.opacity = '';
-  }
-}
-
-function fpShowPasswordFallback() {
-  qs('#fp-step-2').style.display = 'none';
-  qs('#fp-step-2b').style.display = 'block';
-  qs('#fp-subtitle').textContent = 'Verify your identity with your current password';
-  qs('#fp-curpass').value = '';
-  qs('#fp-error-2b').style.display = 'none';
-  setTimeout(() => qs('#fp-curpass')?.focus(), 100);
-}
-
-function fpBackToTotp() {
-  qs('#fp-step-2b').style.display = 'none';
-  qs('#fp-step-2').style.display = 'block';
-  qs('#fp-subtitle').textContent = 'Enter your Google Authenticator code to verify your identity';
-  [0,1,2,3,4,5].forEach(i => { const d = qs(`#fp-digit-${i}`); if (d) d.value = ''; });
-  qs('#fp-error-2').style.display = 'none';
-  setTimeout(() => qs('#fp-digit-0')?.focus(), 100);
-}
-
-async function fpStep2b() {
-  const currentPassword = qs('#fp-curpass').value;
-  const errEl = qs('#fp-error-2b');
-  const btn = qs('#fp-btn-2b');
-  if (!currentPassword) { errEl.textContent = 'أدخل كلمة المرور الحالية'; errEl.style.display = 'block'; return; }
-  btn.disabled = true; btn.style.opacity = '0.6';
-  errEl.style.display = 'none';
-  try {
-    const data = await api('/auth/forgot-password/verify-password', { method: 'POST', body: JSON.stringify({ userId: _fpUserId, currentPassword }) });
-    _fpResetToken = data.resetToken;
-    qs('#fp-step-2b').style.display = 'none';
-    qs('#fp-step-3').style.display = 'block';
-    qs('#fp-subtitle').textContent = 'Enter your new password';
-    qs('#fp-newpass').value = '';
-    qs('#fp-newpass-confirm').value = '';
-    setTimeout(() => qs('#fp-newpass')?.focus(), 100);
-  } catch(e) {
-    errEl.textContent = e.message || 'كلمة المرور غير صحيحة';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.style.opacity = '';
-  }
-}
-
-async function fpStep3() {
-  const newpass = qs('#fp-newpass').value;
-  const confirm = qs('#fp-newpass-confirm').value;
-  const errEl = qs('#fp-error-3');
-  const btn = qs('#fp-btn-3');
-  errEl.style.display = 'none';
-  if (newpass.length < 6) { errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; errEl.style.display = 'block'; return; }
-  if (newpass !== confirm) { errEl.textContent = 'كلمتا المرور غير متطابقتين'; errEl.style.display = 'block'; return; }
-  btn.disabled = true; btn.style.opacity = '0.6';
-  try {
-    await api('/auth/forgot-password/reset', { method: 'POST', body: JSON.stringify({ resetToken: _fpResetToken, newPassword: newpass }) });
-    closeForgotPassword();
-    toast('تم تغيير كلمة المرور بنجاح — سجّل دخولك الآن');
-  } catch(e) {
-    errEl.textContent = e.message || 'حدث خطأ';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.style.opacity = '';
-  }
-}
-
-async function revokeMyTrustedDevices() {
-  if (!confirm('سيتم إلغاء ثقة جميع الأجهزة المحفوظة — ستحتاج إدخال رمز التحقق في كل جهاز مجدداً')) return;
-  try {
-    await api('/auth/totp/revoke-devices', { method: 'POST' });
-    // Remove all device tokens from localStorage
-    Object.keys(localStorage).filter(k => k.startsWith('device_token')).forEach(k => localStorage.removeItem(k));
-    toast('تم إلغاء ثقة الأجهزة بنجاح');
-  } catch(e) { toast(e.message || 'حدث خطأ', true); }
+function openTotpSetupModal() {
+  // Kept for older links: Google Authenticator is managed in Settings ← الأمان.
+  if (typeof navigateTo === 'function') navigateTo('settings');
 }
 
 async function saveGlobal2fa(enabled) {
@@ -36304,14 +35910,14 @@ function _showLockedAccountBanner(msg) {
 
 function loadRememberedLogin() {
   const remUser = localStorage.getItem('rem_user');
-  const remPass = localStorage.getItem('rem_pass');
+  // Passwords were kept in plain text here before Nov 27, 2026 — removed on sight.
+  localStorage.removeItem('rem_pass');
   if (!remUser) return;
   const userEl = qs('#login-user');
   const passEl = qs('#login-pass');
   const cb = qs('#login-remember');
   const badge = qs('#login-saved-badge');
   if (userEl) userEl.value = remUser;
-  if (passEl) passEl.value = remPass || '';
   if (cb) { cb.checked = true; updateRememberBox(true); }
   if (badge) badge.style.display = 'inline-flex';
 }
@@ -36334,6 +35940,8 @@ function updateRememberBox(checked) {
 
 async function doLogout() {
   _searchTextCache.clear();
+  // Ends this device's sign-in session on the server (plain fetch inside — never api()).
+  window.SouliaSessions?.notifyLogout(localStorage.getItem('token'));
   if (window.souliaPushLogout) await window.souliaPushLogout();
   disconnectSocket();
   if (window._mentionPollTimer) { clearInterval(window._mentionPollTimer); window._mentionPollTimer = null; }
@@ -36645,6 +36253,16 @@ function connectSocket() {
     renderUsers();
   });
 
+  // This device's sign-in session was ended (by an admin, or «خروج من كل الأجهزة»).
+  socket.on('session:ended', (data) => {
+    if (!currentUser) return;
+    // Another tab may already have signed in again (new session in storage): sign out only
+    // when the ended session is the one this browser is using now.
+    if (data?.sid && window.SouliaSessions?.currentSid() && window.SouliaSessions.currentSid() !== data.sid) return;
+    doLogout();
+    setTimeout(() => window.SouliaSessions?.showEnded(data?.message), 300);
+  });
+
   socket.on('user:force-logout', (data) => {
     const reason = data?.reason || 'تم تعطيل حسابك';
     doLogout();
@@ -36748,7 +36366,8 @@ function connectSocket() {
   });
   socket.on('vault:changed', async (payload) => {
     try { window.vaultNotifier?.handle(payload); } catch(_) {}
-    if (!payload?.balances) {
+    // Employees get a bare {reason, txId} (no balances) — refetching settings for each would be a request storm.
+    if (!payload?.balances && isAdmin()) {
       try { settings = await api('/settings').catch(() => settings); } catch(_) {}
     }
     if (currentPage === 'vault') { try { await loadVaultLog(); } catch(_) {} renderVaultSegs?.(); }
@@ -37722,6 +37341,9 @@ window.txNotifier = (function () {
             vaultAmount, vaultSeg, vaultBalances, isPartial, newRemaining, txId: navTxId } = opts;
 
     if (_cards.has(cardId)) return; // dedupe
+    // ⚠ Vault cards (expenses, supplier payments, collections, deposits) are for admins only —
+    //   the server also sends employees a vault:changed with no amounts. Stock cards stay for all.
+    if (kind === 'vault' && !(typeof isAdmin === 'function' && isAdmin())) return;
 
     const type  = _cardType(txType, isCancellation, isCollect);
     const isAdd = type === 'purchase' || type === 'return';
@@ -38029,63 +37651,8 @@ window.testTxNotifier = function(type) {
   }
 };
 
-/* ===== Active sessions (admin) ===== */
-function renderActiveSessions() {
-  const container = qs('#active-sessions');
-  if (!container) return;
-  if (!isAdmin()) { container.innerHTML = ''; return; }
-  const sessions = Array.isArray(activeSessions) ? activeSessions : [];
-  if (sessions.length === 0) {
-    container.innerHTML = '<div class="sess-empty">لا توجد جلسات نشطة حالياً</div>';
-    return;
-  }
-  // Group by user (a user may have multiple tabs/devices)
-  const byUser = new Map();
-  sessions.forEach(s => {
-    const arr = byUser.get(s.userId) || [];
-    arr.push(s);
-    byUser.set(s.userId, arr);
-  });
-  const cards = [];
-  byUser.forEach((arr) => {
-    arr.forEach(s => {
-      const initials = (s.name || s.username || '?').slice(0, 2);
-      const loc = s.location;
-      const locText = loc
-        ? [loc.city, loc.region, loc.country].filter(Boolean).join('، ') || '—'
-        : 'جارٍ التحديد...';
-      const ago = _agoText(s.lastActivity || s.connectedAt);
-      const roleLabel = s.role === 'admin' ? `${ICON('crown')} ${t('roleAdmin')}` : (s.role === 'staff' ? `${ICON('staff')} ${t('roleStaff')}` : `${ICON('eye')} ${t('roleViewer')}`);
-      cards.push(`
-        <div class="sess-card">
-          <div class="sess-card-head">
-            <div class="sess-avatar">${esc(initials)}</div>
-            <div style="flex:1;min-width:0">
-              <div class="sess-name">${esc(s.name || s.username)}</div>
-              <div class="sess-role">${roleLabel}</div>
-            </div>
-          </div>
-          <div class="sess-row">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span><strong>${esc(locText)}</strong></span>
-          </div>
-          <div class="sess-row">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            <span>${esc(s.device || '—')} · ${esc(s.browser || '')} ${esc(s.os ? '· ' + s.os : '')}</span>
-          </div>
-          <div class="sess-row">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z"/></svg>
-            <span class="sess-ip">${esc(s.ip || '—')}</span>
-          </div>
-          <div class="sess-row">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-            <span>نشاط: ${esc(ago)}</span>
-          </div>
-        </div>`);
-    });
-  });
-  container.innerHTML = `<div class="sess-panel">${cards.join('')}</div>`;
-}
+/* ===== Sessions & devices (admin) — user-sessions.js owns the panel ===== */
+function renderActiveSessions() { window.SouliaSessions?.onPresence(); }
 function _agoText(iso) {
   if (!iso) return '—';
   const t = new Date(iso).getTime();
@@ -40652,6 +40219,24 @@ async function onMentionNotifClick(mentionId, txId, commentId) {
   // «نظام حماية النظام»: suspension / suspicious-activity alerts → the security panel (Users page).
   if (m?.fromName === 'نظام حماية النظام') {
     if (isAdmin()) { navigateTo('users'); setTimeout(() => { try { loadSecurityPanel(); } catch (_) {} qs('#locked-users-list')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 450); }
+    return;
+  }
+  // Security notices («نظام الأمان»: new-device sign-in, failed attempts, PIN changed) → the security log.
+  if (String(m?.txId || '') === 'security') {
+    if (isAdmin()) { navigateTo('users'); setTimeout(() => { try { loadSecurityPanel(); } catch (_) {} qs('#security-panel-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 450); }
+    return;
+  }
+  // A staff member asked for a password reset from the sign-in page → the users page + the reset window.
+  if (String(m?.txId || '').startsWith('pw-request:')) {
+    const uid = String(m.txId).slice('pw-request:'.length);
+    if (isAdmin()) {
+      navigateTo('users');
+      setTimeout(async () => {
+        if (!users.find(x => x._id === uid)) users = await api('/users').catch(() => users);
+        const target = users.find(x => x._id === uid);
+        if (target) window.SouliaPassword?.openResetStaff(target);
+      }, 450);
+    }
     return;
   }
   // «طلب صلاحية التصفح»: an admin goes to the approvals page; the employee's grant is re-read.
@@ -56196,6 +55781,24 @@ function _saleShipDisc(tx) {
 }
 function _saleShipCharged(tx) {
   return Math.max(0, (Number(tx?.shipCost) || 0) - _saleShipDisc(tx));
+}
+/* Money of a PENDING Shopify order — ⚠ mirror of backend shopify/shopify-order-total.util.ts (keep in step).
+   `ours` = codes + extra discount, `freeShip` = «شحن مجاني» (the customer pays no shipping).
+   Off: items − min(Shopify discount + ours, items) + shipping. On: Shopify's shipping part leaves the item cap,
+   shipping charged 0. `room` = what Shopify left of the items for our discount; `concession` = shipping waived
+   beyond Shopify's own (counted in the manager-approval limit). */
+function _spOrderMoney(order, itemsTotal, ours, freeShip) {
+  const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+  const items = Math.max(0, Number(itemsTotal) || 0);
+  const ship = Math.max(0, Number(order?.shipCost) || 0);
+  const shop = Math.max(0, Number(order?.discount) || 0);
+  const shopShip = Math.min(Math.max(0, Number(order?.shippingDiscount) || 0), ship, shop);
+  const shopOnItems = freeShip ? shop - shopShip : shop;
+  const itemDisc = r2(Math.min(shopOnItems + Math.max(0, Number(ours) || 0), items));
+  const shipCharged = freeShip ? 0 : ship;
+  return { freeShip: !!freeShip, items, ship, shop, shopShip, itemDisc, shipCharged,
+    room: r2(Math.max(0, items - shopOnItems)), concession: freeShip ? r2(ship - shopShip) : 0,
+    total: r2(Math.max(0, items - itemDisc + shipCharged)) };
 }
 function _saleProductDiscount(tx) {
   const items = _saleItemsTotal(tx);
@@ -88775,6 +88378,7 @@ function _initLockTogglesUI() {
   const potp = qs('#set-purchase-otp-enabled'); if (potp) potp.checked = !!(settings?.purchaseOtpEnabled);
   const nio = qs('#set-deposit-noimage-skip-otp'); if (nio) nio.checked = settings?.depositNoImageSkipOtp === true;
   const g2fa = qs('#set-global-2fa-enabled'); if (g2fa) g2fa.checked = !!(settings?.global2faEnabled);
+  if (currentUser && qs('#auth-security-root') && window.SouliaAuth) window.SouliaAuth.renderSecurityCard();
   const adb = qs('#set-adb-autoshow-enabled'); if (adb) adb.checked = isAdminBriefingEnabled();
   // Show/hide OTP controls based on staff discount enabled
   _updateOtpControlsVisibility();
@@ -90987,7 +90591,7 @@ function _userRoleBadgeHtml(u) {
   const rbac = window.SouliaRBAC;
   const role = slug && rbac?.find(slug);
   const tier = _USER_ROLE_MAP[u?.role] || _USER_ROLE_MAP.staff;
-  if (!slug) return `<span class="user-role-badge user-role-none" title="${esc(currentLang === 'en' ? 'Still on permissions set one by one — move it onto a role in Roles & Permissions' : 'لسه على صلاحيات متحددة لوحده — انقله لدور من صفحة الأدوار')}">${currentLang === 'en' ? 'No role' : 'بدون دور'}</span>`;
+  if (!slug) return `<span class="user-role-badge user-role-none" title="${esc(currentLang === 'en' ? 'Permissions are set on this account directly — assign it a role in Roles & Permissions' : 'الصلاحيات محدّدة لهذا الحساب مباشرة — أسنِد إليه دورًا من صفحة «الأدوار والصلاحيات»')}">${currentLang === 'en' ? 'No role' : 'لا يوجد دور'}</span>`;
   const label = role ? rbac.roleName(role) : (slug === 'admin' || slug === 'super-admin' ? tier.label : slug);
   return `<span class="user-role-badge ${tier.cls}" title="${esc(rbac ? rbac.tierName(u?.role) : tier.label)}">${esc(label)}</span>`;
 }
@@ -91028,6 +90632,9 @@ function _userActionsMenuHtml(u, isSuperAdmin, isInactive) {
     <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
     <div class="dd-menu">
       <div class="dd-item" onclick="openUserModal('${esc(u._id)}')"><span class="dd-icon">${_EDIT_SVG}</span><span class="dd-label">تعديل</span></div>
+      ${String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaAuth?.adminReset2fa('${esc(u._id)}', ${escHtml(JSON.stringify(u.name || u.username || ''))})"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3z"/><path d="M9.5 12.5h5"/></svg></span><span class="dd-label">إعادة ضبط التحقق بخطوتين</span></div>` : ''}
+      ${u.role !== 'admin' && String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaPassword?.openResetStaff(users.find(x => x._id === '${esc(u._id)}'))"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></span><span class="dd-label">إعادة تعيين كلمة المرور</span></div>` : ''}
+      <div class="dd-item" onclick="window.SouliaSessions?.focusUser('${esc(u._id)}')"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg></span><span class="dd-label">الجلسات والأجهزة</span></div>
       ${!isSuperAdmin ? `<div class="dd-item" onclick="toggleUserActive('${esc(u._id)}',${isInactive})"><span class="dd-icon">${isInactive ? _USERS_ACTIVATE_SVG : _USERS_DEACTIVATE_SVG}</span><span class="dd-label">${isInactive ? 'تفعيل' : 'تعطيل'}</span></div>` : ''}
       ${!isSuperAdmin ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteUser('${esc(u._id)}')"><span class="dd-icon">${ICON('trash')}</span><span class="dd-label">حذف</span></div>` : ''}
     </div>
@@ -91045,15 +90652,16 @@ function renderUsers() {
   const secPanel = qs('#security-panel-wrap');
   if (secPanel) {
     secPanel.style.display = isAdmin() ? '' : 'none';
-    if (isAdmin()) loadSecurityPanel();
+    // ⚠ renderUsers runs on every keystroke and presence event: read the log at most every 20 s.
+    if (isAdmin()) loadSecurityPanel({ ifStale: true });
   }
-  if (isAdmin()) {
-    if (activeSessions.length === 0) {
-      api('/auth/active-sessions').then(r => { if (r?.sessions) { activeSessions = r.sessions; renderActiveSessions(); } }).catch(() => {});
-    } else {
-      renderActiveSessions();
-    }
+  const laWrap = qs('#login-attempts-wrap');
+  if (laWrap) {
+    laWrap.hidden = !isAdmin();
+    if (isAdmin()) _loadLoginAttempts({ ifStale: true });
   }
+  // «الجلسات والأجهزة»: reads at most once every 20 s; a keystroke in the user search only redraws.
+  if (isAdmin()) window.SouliaSessions?.load();
 
   const tbody = qs('#users-tbody');
   const cardsWrap = qs('#users-grid');
@@ -91068,102 +90676,239 @@ function renderUsers() {
   const q = (qs('#users-search')?.value || '').trim().toLowerCase();
   _userSyncRoleFilter();
   const roleFilter = qs('#users-role-filter')?.value || '';
-  const list = users.filter(u => {
-    if (roleFilter && _userRoleSlug(u) !== roleFilter) return false;
+  const matches = u => {
     if (!q) return true;
     // Match BOTH the stored English jobTitle and its Arabic label — the row now
     // displays the Arabic one, so searching for what you can see must work.
     return (u.name || '').toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)
       || (u.jobTitle || '').toLowerCase().includes(q) || (jobTitleLabel(u.jobTitle) || '').toLowerCase().includes(q)
       || (u.phone || '').toLowerCase().includes(q);
-  });
-  if (countLabel) countLabel.textContent = `${fmtN(list.length)} مستخدم`;
+  };
+  // Disabled accounts have their own section (_renderDisabledUsers) — the table lists active ones only.
+  const list = users.filter(u => u.isActive !== false && (!roleFilter || _userRoleSlug(u) === roleFilter) && matches(u));
+  const disabledCount = users.filter(u => u.isActive === false).length;
+  if (countLabel) countLabel.textContent = `${fmtN(list.length)} حساب نشط` + (disabledCount ? ` · ${fmtN(disabledCount)} معطّل` : '');
+  _renderDisabledUsers(matches);
 
   if (!list.length) {
-    const emptyHtml = '<div class="empty-state" style="padding:40px;text-align:center">لا توجد نتائج مطابقة</div>';
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
+    const emptyHtml = `<div class="empty-state" style="padding:40px;text-align:center">${q || roleFilter ? 'لا توجد حسابات مطابقة للبحث' : 'لا توجد حسابات نشطة'}</div>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5">${emptyHtml}</td></tr>`;
     if (cardsWrap) cardsWrap.innerHTML = emptyHtml;
     return;
   }
 
-  const rowsHtml = list.map(u => {
+  const avatarOf = (u, cls = '') => {
     const avatarUrl = sanitizeUrl(u.avatar);
     const isOnline = onlineUsers[u._id]?.status === 'online';
-    const isInactive = u.isActive === false;
-    const isSuperAdmin = u.username === 'admin';
     const initials = esc((u.name || u.username || '?').slice(0, 2));
-    const role = _USER_ROLE_MAP[u.role] || _USER_ROLE_MAP.staff;
-    const joined = _userJoinedAgo(u.createdAt);
-
-    const avatarHtml = `<span class="users-avatar-sm" title="${isOnline ? 'متصل الآن' : 'غير متصل'}">
+    return `<span class="users-avatar-sm ${cls}" title="${isOnline ? 'متصل الآن' : 'غير متصل'}">
       ${avatarUrl ? `<img src="${esc(avatarUrl)}" onerror="_avatarImgFallback(this,'${initials}')">` : initials}
-      <span class="users-status-dot" style="background:${isOnline ? '#10b981' : '#9ca3af'}"></span>
+      ${isOnline ? '<span class="users-status-dot" style="background:#10b981"></span>' : ''}
     </span>`;
-    const nameHtml = `<span class="users-name-cell">
-      <span class="users-name-line">${esc(u.name || u.username)}${isSuperAdmin ? ` <span class="users-crown">${ICON('crown')}</span>` : ''}</span>
-      <span class="users-username-line">@${esc(u.username)}</span>
-    </span>`;
+  };
+  const nameOf = u => `<span class="users-name-line">${esc(u.name || u.username)}${u.username === 'admin' ? ` <span class="users-crown" title="المالك">${ICON('crown')}</span>` : ''}${_userHoldTagHtml(u)}</span>
+      <span class="users-username-line"><bdi>@${esc(u.username)}</bdi></span>`;
 
-    return `<tr class="${isInactive ? 'users-row-inactive' : ''}">
-      <td data-col="u-user"><span class="users-identity">${avatarHtml}${nameHtml}</span></td>
-      <td data-col="u-job"><div class="users-job-cell"><span class="users-job-title">${u.jobTitle ? esc(jobTitleLabel(u.jobTitle)) : '<span style="color:var(--muted)">—</span>'}</span>${u.phone ? `<bdi class="users-phone-sub">${esc(u.phone)}</bdi>` : ''}</div></td>
-      <td data-col="u-role" style="text-align:center">${_userRoleBadgeHtml(u)}</td>
-      <td data-col="u-status" style="text-align:center"><span class="user-status-pill ${isInactive ? 'is-inactive' : 'is-active'}">${isInactive ? 'معطّل' : 'مفعّل'}</span></td>
-      <td data-col="u-joined" style="text-align:center"><span title="${joined.exact}">${joined.rel}</span></td>
-      <td data-col="u-actions" style="text-align:center">${_userActionsMenuHtml(u, isSuperAdmin, isInactive)}</td>
+  const rowsHtml = list.map(u => {
+    const isSuperAdmin = u.username === 'admin';
+    const joined = _userJoinedAgo(u.createdAt);
+    return `<tr>
+      <td data-col="u-user"><span class="users-identity" title="${esc(joined.exact ? 'انضم في ' + joined.exact : '')}">${avatarOf(u)}<span class="users-name-cell">${nameOf(u)}</span></span></td>
+      <td data-col="u-job"><span class="users-job-title">${u.jobTitle ? esc(jobTitleLabel(u.jobTitle)) : '<span style="color:var(--muted)">—</span>'}</span></td>
+      <td data-col="u-role">${_userRoleBadgeHtml(u)}</td>
+      <td data-col="u-seen">${_userSeenHtml(u)}</td>
+      <td data-col="u-actions">${_userActionsMenuHtml(u, isSuperAdmin, false)}</td>
     </tr>`;
   }).join('');
   if (tbody) tbody.innerHTML = rowsHtml;
 
   // Mobile fallback: card-per-row (table hidden via CSS under the mobile breakpoint)
   if (cardsWrap) {
-    cardsWrap.innerHTML = list.map(u => {
-      const avatarUrl = sanitizeUrl(u.avatar);
-      const isOnline = onlineUsers[u._id]?.status === 'online';
-      const isInactive = u.isActive === false;
-      const isSuperAdmin = u.username === 'admin';
-      const initials = esc((u.name || u.username || '?').slice(0, 2));
-      const role = _USER_ROLE_MAP[u.role] || _USER_ROLE_MAP.staff;
-      const joined = _userJoinedAgo(u.createdAt);
-      return `<div class="users-mcard ${isInactive ? 'inactive' : ''}">
+    cardsWrap.innerHTML = list.map(u => `<div class="users-mcard">
         <div class="users-mcard-top">
-          <span class="users-avatar-sm users-avatar-md" title="${isOnline ? 'متصل الآن' : 'غير متصل'}">
-            ${avatarUrl ? `<img src="${esc(avatarUrl)}" onerror="_avatarImgFallback(this,'${initials}')">` : initials}
-            <span class="users-status-dot" style="background:${isOnline ? '#10b981' : '#9ca3af'}"></span>
-          </span>
-          <span class="users-mcard-id">
-            <span class="users-name-line">${esc(u.name || u.username)}${isSuperAdmin ? ` <span class="users-crown">${ICON('crown')}</span>` : ''}</span>
-            <span class="users-username-line">@${esc(u.username)}</span>
-          </span>
-          ${_userActionsMenuHtml(u, isSuperAdmin, isInactive)}
+          ${avatarOf(u, 'users-avatar-md')}
+          <span class="users-mcard-id">${nameOf(u)}</span>
+          ${_userActionsMenuHtml(u, u.username === 'admin', false)}
         </div>
         <div class="users-mcard-meta">
           ${_userRoleBadgeHtml(u)}
-          <span class="user-status-pill ${isInactive ? 'is-inactive' : 'is-active'}">${isInactive ? 'معطّل' : 'مفعّل'}</span>
-          <span title="${joined.exact}" style="color:var(--muted);font-size:.72rem">${joined.rel}</span>
+          ${u.jobTitle ? `<span class="users-mcard-job">${esc(jobTitleLabel(u.jobTitle))}</span>` : ''}
+          <span class="users-mcard-seen">${_userSeenHtml(u)}</span>
         </div>
-      </div>`;
-    }).join('');
+      </div>`).join('');
   }
+}
+
+/* ── Users page: «آخر ظهور», temporary-hold tag, disabled section (Nov 27, 2026) ── */
+function _userRelTime(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!(ms >= 0)) return '';
+  const m = Math.floor(ms / 60000);
+  if (m < 2) return 'قبل لحظات';
+  if (m < 60) return `قبل ${m} دقيقة`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `قبل ${h} ساعة`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'أمس';
+  if (d < 30) return `قبل ${d} يوم`;
+  return new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function _userSeenHtml(u) {
+  if (onlineUsers[u._id]?.status === 'online') return '<span class="users-seen is-on"><i></i>متصل الآن</span>';
+  const seen = onlineUsers[u._id]?.lastSeen || u.lastSeen || u.lastLogin;
+  if (!seen) return '<span class="users-seen is-never">لم يسجّل الدخول بعد</span>';
+  const exact = new Date(seen).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return `<span class="users-seen" title="${esc(exact)}">${esc(_userRelTime(seen))}</span>`;
+}
+/** Active account that cannot sign in for a while (sign-in pause or suspension). */
+function _userHoldState(u) {
+  const now = Date.now();
+  if (u.suspendedUntil && new Date(u.suspendedUntil).getTime() > now) return 'suspended';
+  if (u.loginLockedUntil && new Date(u.loginLockedUntil).getTime() > now) return 'paused';
+  // A blocked sign-in SOURCE (login-guard) — the account itself still signs in from its devices.
+  if (u.loginBlock && (u.loginBlock.hard || (u.loginBlock.until && new Date(u.loginBlock.until).getTime() > now))) return 'blocked';
+  return '';
+}
+function _userHoldTagHtml(u) {
+  const h = _userHoldState(u);
+  // A staff member asked for a password reset from the sign-in page (cleared when a new password is set).
+  const req = u.passwordResetRequestedAt && u.isActive !== false
+    ? ` <span class="users-hold-tag" title="${esc(currentLang === 'en' ? 'Asked for a password reset from the sign-in page' : 'طلب إعادة تعيين كلمة المرور من صفحة تسجيل الدخول')}">${currentLang === 'en' ? 'Reset requested' : 'طلب إعادة تعيين'}</span>` : '';
+  if (!h) return req;
+  if (h === 'blocked') return ` <span class="users-hold-tag" title="محاولات دخول خاطئة متكررة من مصدر محدد. الحساب نفسه يعمل.">محاولات محظورة</span>` + req;
+  return ` <span class="users-hold-tag" title="${h === 'suspended' ? 'الحساب موقوف مؤقتًا — راجع قسم الحسابات المعطّلة والموقوفة' : 'تسجيل الدخول موقوف مؤقتًا بعد محاولات فاشلة'}">${h === 'suspended' ? 'موقوف مؤقتًا' : 'الدخول موقوف'}</span>` + req;
+}
+
+let _securityLocked = [];
+let _securityLoadedAt = 0;
+let _securityLoading = null;
+
+/**
+ * «الحسابات المعطّلة والموقوفة»: disabled accounts (from the users list) merged with the
+ * security service's list (which adds the reason, sign-in pauses and suspensions).
+ */
+function _renderDisabledUsers(matches = () => true) {
+  const wrap = qs('#users-disabled-wrap');
+  const listEl = qs('#locked-users-list');
+  if (!wrap || !listEl) return;
+  const byId = new Map();
+  (_securityLocked || []).forEach(u => byId.set(String(u._id), { ...u, _fromAudit: true }));
+  (users || []).filter(u => u.isActive === false).forEach(u => {
+    const id = String(u._id);
+    byId.set(id, { ...u, ...(byId.get(id) || {}) });
+  });
+  const all = [...byId.values()];
+  const rows = all.filter(matches);
+  wrap.hidden = all.length === 0;
+  const countEl = qs('#users-disabled-count');
+  if (countEl) countEl.textContent = all.length ? fmtN(all.length) : '';
+  if (!all.length) { listEl.innerHTML = ''; return; }
+  if (!rows.length) { listEl.innerHTML = '<p class="ux-empty">لا توجد حسابات معطّلة مطابقة للبحث</p>'; return; }
+  const fmt = d => new Date(d).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  listEl.innerHTML = rows.map(u => {
+    const hold = u.isActive === false ? 'disabled' : _userHoldState(u);
+    let chip, reason, when, action;
+    if (hold === 'suspended') {
+      chip = '<span class="ux-chip is-warn">موقوف مؤقتًا</span>';
+      reason = [u.suspensionReason, u.suspensionDetail].filter(Boolean).join(' — ') || 'سلوك غير معتاد رصده نظام الحماية';
+      when = (u.suspendedAt ? 'منذ ' + fmt(u.suspendedAt) + ' · ' : '') + (new Date(u.suspendedUntil).getFullYear() >= 2100 ? 'حتى يرفعه المدير' : 'ينتهي ' + fmt(u.suspendedUntil));
+      action = 'رفع الإيقاف';
+    } else if (hold === 'blocked') {
+      chip = '<span class="ux-chip is-warn">محاولات دخول محظورة</span>';
+      reason = `كلمات مرور خاطئة متكررة من ${u.loginBlock.ip ? 'IP ' + u.loginBlock.ip : 'مصدر محدد'}${u.loginBlock.device ? ' · ' + u.loginBlock.device : ''}. الحساب نفسه يعمل من الأجهزة الأخرى.`;
+      when = u.loginBlock.hard ? 'حتى يُلغى الحظر' : 'ينتهي ' + fmt(u.loginBlock.until);
+      action = 'إلغاء الحظر';
+    } else if (hold === 'paused') {
+      chip = '<span class="ux-chip is-warn">الدخول موقوف مؤقتًا</span>';
+      reason = 'محاولات دخول فاشلة متكررة. الجلسات المفتوحة لم تتأثر.';
+      when = 'ينتهي ' + fmt(u.loginLockedUntil);
+      action = 'إلغاء الإيقاف';
+    } else {
+      chip = '<span class="ux-chip is-bad">معطّل</span>';
+      reason = String(u.lockReason || '').replace(/^🔒\s*/, '').replace('يدوياً', 'يدويًا') || 'لم يُسجَّل سبب';
+      when = u.lockedAt ? 'منذ ' + fmt(u.lockedAt) : '';
+      action = 'إعادة التفعيل';
+    }
+    const id = esc(String(u._id));
+    const name = escHtml(JSON.stringify(u.name || u.username || ''));
+    const onClick = u._fromAudit ? `adminUnlockUser('${id}', ${name})` : `toggleUserActive('${id}', true)`;
+    const initials = esc((u.name || u.username || '?').slice(0, 2));
+    const avatarUrl = sanitizeUrl(u.avatar);
+    return `<div class="ux-dis-row">
+      <span class="users-avatar-sm ux-dis-av">${avatarUrl ? `<img src="${esc(avatarUrl)}" onerror="_avatarImgFallback(this,'${initials}')">` : initials}</span>
+      <div class="ux-dis-who">
+        <div class="ux-dis-name"><b>${esc(u.name || u.username)}</b><bdi class="ux-dis-handle">@${esc(u.username)}</bdi>${chip}</div>
+        <div class="ux-dis-reason" title="${escHtml(reason + (when ? ' · ' + when : ''))}">${esc(reason)}${when ? ` <span class="ux-dis-when">· ${esc(when)}</span>` : ''}</div>
+        ${_secLockedAttemptsHtml(u.attempts)}
+      </div>
+      <div class="ux-dis-act">
+        <button type="button" class="ux-btn" onclick="${onClick}">${esc(action)}</button>
+        ${_userActionsMenuHtml(u, u.username === 'admin', u.isActive === false)}
+      </div>
+    </div>`;
+  }).join('');
 }
 let _securityLogs = [];
 let _securityLogPage = 0;
 const _SEC_PAGE_SIZE = 10;
 
-const _VIOLATION_ICON = {
-  failed_login:       `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
-  account_locked:     `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`,
-  otp_violation:      `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
-  vault_violation:    `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><circle cx="12" cy="14" r="2"/></svg>`,
-  unauthorized_access:`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
-  settings_tampering: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`,
-  account_unlocked:   `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>`,
-};
+/** One-line time for the Users-page logs: «27/11 · 10:21 م» (year only when it is not this year);
+ *  the full date and time in the tooltip. */
+function _uxWhenHtml(iso, seconds) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || isNaN(d.getTime())) return '<span class="ux-when">—</span>';
+  const L = 'ar-EG-u-nu-latn';
+  const date = d.toLocaleDateString(L, { day: '2-digit', month: '2-digit', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
+  const time = d.toLocaleTimeString(L, { hour: '2-digit', minute: '2-digit' });
+  const full = d.toLocaleString(L, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) });
+  return `<span class="ux-when" title="${escHtml(full)}"><bdi>${esc(date)}</bdi> · <bdi>${esc(time)}</bdi></span>`;
+}
+
+/* «سجل الأمان» (Nov 27, 2026): one formal label, a tone and a filter group per event type.
+   ⚠ Keys = SecurityAuditLog.violationType (backend schema). An unknown type shows its raw key. */
 const _VIOLATION_LABEL = {
-  failed_login: 'دخول فاشل', account_locked: 'تعطيل حساب', otp_violation: 'انتهاك OTP',
-  vault_violation: 'انتهاك خزنة', unauthorized_access: 'وصول غير مصرح',
-  settings_tampering: 'تعديل إعدادات', account_unlocked: 'إلغاء تعطيل',
+  failed_login: 'محاولة دخول فاشلة',
+  account_locked: 'إيقاف الحساب',
+  account_unlocked: 'إعادة تفعيل الحساب',
+  account_suspended: 'إيقاف مؤقت للحساب',
+  otp_violation: 'رمز تحقق غير صحيح',
+  login_challenge_failed: 'رموز تحقق خاطئة متكررة',
+  login_approval_denied: 'رفض طلب دخول',
+  password_reset: 'إعادة تعيين كلمة المرور',
+  two_factor_changed: 'تغيير إعدادات التحقق بخطوتين',
+  system_pin_changed: 'تغيير الرقم السري للنظام',
+  vault_violation: 'محاولة وصول إلى الخزنة',
+  unauthorized_access: 'محاولة وصول غير مصرّح بها',
+  settings_tampering: 'تعديل غير مصرّح به للإعدادات',
+  export_excel: 'تصدير بيانات',
+  bulk_browsing: 'تصفّح مكثّف للبيانات',
+  abuse_alert: 'نشاط غير معتاد',
 };
+const _VIOLATION_TONE = {
+  account_locked: 'bad', account_suspended: 'bad', unauthorized_access: 'bad', vault_violation: 'bad', settings_tampering: 'bad',
+  system_pin_changed: 'warn', failed_login: 'warn', otp_violation: 'warn', login_challenge_failed: 'warn', login_approval_denied: 'warn', abuse_alert: 'warn', bulk_browsing: 'warn',
+  account_unlocked: 'ok',
+};
+const _VIOLATION_GROUP = {
+  failed_login: 'login', otp_violation: 'login', login_challenge_failed: 'login', login_approval_denied: 'login', password_reset: 'login', two_factor_changed: 'login',
+  account_locked: 'accounts', account_unlocked: 'accounts', account_suspended: 'accounts',
+};
+/** The event's detail line in formal Arabic: English server texts rewritten, repeats of the label dropped. */
+function _secDetailText(log) {
+  let s = String(log.action || '').replace(/^[\s🔒🚨⚠️]+/u, '').trim();
+  const EN = {
+    'Failed login: unknown account': 'اسم مستخدم غير مسجّل في النظام',
+    'Two-factor authentication verification failed': 'رمز التحقق بخطوتين غير صحيح',
+  };
+  if (EN[s]) s = EN[s];
+  const attempt = /المحاولة\s+(\d+)\s+من\s+(\d+)/.exec(s);
+  // The stored detail is added only where it says something new (the reason of a failed attempt);
+  // on account events it repeats the action in other words.
+  if (attempt) s = `المحاولة ${attempt[1]} من ${attempt[2]}` + (log.detail ? ` — ${log.detail}` : '');
+  else if (!s && log.detail && !/^IP:/.test(log.detail)) s = log.detail;
+  s = s.replace('يدوياً', 'يدويًا');
+  return s === (_VIOLATION_LABEL[log.violationType] || '') ? '' : s;
+}
 
 /* ── Request origin — «من أين جاءت المحاولة» ──────────────────────────────
  *
@@ -91187,8 +90932,6 @@ const _SEC_DEVICE_ICON = {
   'تابلت': `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
   'كمبيوتر': `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
 };
-const _SEC_PIN_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
-const _SEC_NET_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`;
 
 /** «Chrome على Windows» — whichever halves are known. */
 function _secOriginTitle(log) {
@@ -91219,14 +90962,11 @@ function _secOriginCellHtml(log) {
   const devIcon = _SEC_DEVICE_ICON[device] || _SEC_DEVICE_ICON['كمبيوتر'];
   const head = [browser, os].filter(Boolean).join(' · ') || 'جهاز غير معروف';
 
-  const bits = [];
-  if (ip) bits.push(`<span class="sec-origin-bit">${_SEC_NET_ICON}<bdi>${esc(ip)}</bdi></span>`);
-  if (loc) bits.push(`<span class="sec-origin-bit">${_SEC_PIN_ICON}${esc(loc)}</span>`);
-
+  // Two quiet lines: device, then address · place. The ISP and full browser string stay in the tooltip.
+  const sub = [ip ? `<bdi class="sec-origin-ip">${esc(ip)}</bdi>` : '', loc ? esc(loc) : ''].filter(Boolean).join(' · ');
   return `<div class="sec-origin" title="${esc(_secOriginTitle(log))}">
     <span class="sec-origin-head">${devIcon}<span>${esc(head)}</span></span>
-    ${bits.length ? `<span class="sec-origin-sub">${bits.join('')}</span>` : ''}
-    ${isp ? `<span class="sec-origin-isp"><bdi>${esc(isp)}</bdi></span>` : ''}
+    ${sub ? `<span class="sec-origin-sub">${sub}</span>` : ''}
   </div>`;
 }
 
@@ -91264,7 +91004,7 @@ function _secLockedAttemptsHtml(attempts) {
 
   return `<details class="sec-att-wrap">
     <summary class="sec-att-summary">
-      محاولات الدخول المسجَّلة (${fmtN(rows.length)})
+      عرض محاولات الدخول (${fmtN(rows.length)})
       ${multi ? '<span class="sec-att-warn">من أكثر من جهاز</span>' : ''}
     </summary>
     <ul class="sec-att-list">${items}</ul>
@@ -91275,112 +91015,219 @@ function _renderSecurityLogPage() {
   const tbody = qs('#security-audit-tbody');
   const pagEl = qs('#security-audit-pagination');
   if (!tbody) return;
-  if (!_securityLogs.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="padding:16px;text-align:center;color:var(--muted)">لا توجد أحداث أمنية</td></tr>';
+  const group = qs('#sec-log-filter')?.value || '';
+  const logs = group ? _securityLogs.filter(l => (_VIOLATION_GROUP[l.violationType] || 'access') === group) : _securityLogs;
+  // One line of context in the header: what happened in the last 24 hours.
+  const sumEl = qs('#sec-log-summary');
+  if (sumEl) {
+    const since = Date.now() - 86400000;
+    const recent = _securityLogs.filter(l => new Date(l.createdAt).getTime() > since);
+    const fails = recent.filter(l => _VIOLATION_GROUP[l.violationType] === 'login' && _VIOLATION_TONE[l.violationType] === 'warn').length;
+    const serious = recent.filter(l => _VIOLATION_TONE[l.violationType] === 'bad').length;
+    sumEl.textContent = !recent.length ? 'لا توجد أحداث أمنية خلال آخر 24 ساعة.'
+      : `خلال آخر 24 ساعة: ${fmtN(recent.length)} حدث` + (fails ? ` · ${fmtN(fails)} محاولة دخول أو تحقق فاشلة` : '') + (serious ? ` · ${fmtN(serious)} يستدعي المراجعة` : '') + '.';
+    sumEl.title = sumEl.textContent;
+  }
+  if (!logs.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="ux-empty">${group ? 'لا توجد أحداث من هذا النوع' : 'لا توجد أحداث أمنية مسجّلة'}</td></tr>`;
     if (pagEl) pagEl.innerHTML = '';
     return;
   }
-  const totalPages = Math.ceil(_securityLogs.length / _SEC_PAGE_SIZE);
+  const totalPages = Math.ceil(logs.length / _SEC_PAGE_SIZE);
   _securityLogPage = Math.max(0, Math.min(_securityLogPage, totalPages - 1));
-  const slice = _securityLogs.slice(_securityLogPage * _SEC_PAGE_SIZE, (_securityLogPage + 1) * _SEC_PAGE_SIZE);
+  const slice = logs.slice(_securityLogPage * _SEC_PAGE_SIZE, (_securityLogPage + 1) * _SEC_PAGE_SIZE);
+  const byId = new Map((users || []).map(u => [String(u._id), u]));
   tbody.innerHTML = slice.map(log => {
-    const ts = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG-u-nu-latn') : '—';
-    const icon = _VIOLATION_ICON[log.violationType] || '';
+    const tone = _VIOLATION_TONE[log.violationType] || 'info';
     const label = _VIOLATION_LABEL[log.violationType] || log.violationType;
-    // Row tint is a class, never inline hex — the panel has a dark theme.
-    const rowCls = log.violationType === 'account_locked' ? ' sec-row-danger'
-                 : log.violationType === 'account_unlocked' ? ' sec-row-ok' : '';
-    return `<tr class="sec-row${rowCls}" data-push-audit-id="${esc(String(log._id))}">
-      <td style="padding:8px 12px;font-weight:500">${esc(log.username)}</td>
-      <td style="padding:8px 12px"><span style="display:inline-flex;align-items:center;gap:4px">${icon}${esc(label)}</span></td>
-      <td style="padding:8px 12px;color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(log.action)}">${esc(log.action)}</td>
-      <td style="padding:8px 12px">${_secOriginCellHtml(log)}</td>
-      <td style="padding:8px 12px;color:var(--muted);white-space:nowrap;font-size:.78rem"><bdi>${esc(ts)}</bdi></td>
+    const u = byId.get(String(log.userId));
+    const who = u ? `<b>${esc(u.name || u.username)}</b><bdi class="ux-sub">@${esc(u.username)}</bdi>`
+      : log.userId === 'unknown' ? `<bdi class="ux-mono">${esc(log.username || '—')}</bdi><span class="ux-sub">غير مسجّل</span>`
+      : `<b>${esc(log.username || '—')}</b>`;
+    const detail = _secDetailText(log);
+    return `<tr class="sec-row" data-push-audit-id="${esc(String(log._id))}">
+      <td>${_uxWhenHtml(log.createdAt)}</td>
+      <td><span class="ux-chip is-${tone}">${esc(label)}</span></td>
+      <td><span class="ux-who">${who}</span></td>
+      <td class="ux-detail">${detail ? `<span class="ux-ell" title="${escHtml(log.action || detail)}">${esc(detail)}</span>` : '<span class="ux-muted">—</span>'}</td>
+      <td>${_secOriginCellHtml(log)}</td>
     </tr>`;
   }).join('');
   if (pagEl) {
-    const btnStyle = (disabled) => `background:${disabled?'var(--bg-alt)':'var(--surface)'};border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:${disabled?'default':'pointer'};color:${disabled?'var(--muted)':'var(--text)'};`;
-    pagEl.innerHTML = totalPages <= 1 ? '' :
-      `<button style="${btnStyle(_securityLogPage===0)}" onclick="_securityLogPage=Math.max(0,_securityLogPage-1);_renderSecurityLogPage()" ${_securityLogPage===0?'disabled':''}>السابق</button>
-       <span style="color:var(--muted)">${_securityLogPage+1} / ${totalPages}</span>
-       <button style="${btnStyle(_securityLogPage>=totalPages-1)}" onclick="_securityLogPage=Math.min(${totalPages-1},_securityLogPage+1);_renderSecurityLogPage()" ${_securityLogPage>=totalPages-1?'disabled':''}>التالي</button>`;
+    pagEl.innerHTML = totalPages <= 1 ? `<span>${fmtN(logs.length)} حدث</span>` :
+      `<button type="button" class="ux-btn" onclick="_securityLogPage=Math.max(0,_securityLogPage-1);_renderSecurityLogPage()" ${_securityLogPage === 0 ? 'disabled' : ''}>السابق</button>
+       <span>صفحة ${_securityLogPage + 1} من ${totalPages} · ${fmtN(logs.length)} حدث</span>
+       <button type="button" class="ux-btn" onclick="_securityLogPage=Math.min(${totalPages - 1},_securityLogPage+1);_renderSecurityLogPage()" ${_securityLogPage >= totalPages - 1 ? 'disabled' : ''}>التالي</button>`;
   }
 }
 
-async function loadSecurityPanel() {
-  const [lockedRes, logsRes] = await Promise.all([
-    api('/security-audit/locked-users').catch(() => []),
-    api('/security-audit/logs').catch(() => []),
-  ]);
-
-  // Render locked users
-  const lockedEl = qs('#locked-users-list');
-  if (lockedEl) {
-    if (!lockedRes || lockedRes.length === 0) {
-      lockedEl.innerHTML = '<p style="color:var(--muted);font-size:.85rem;margin:0;padding:10px">لا توجد حسابات مُعطَّلة أو موقوفة مؤقتًا</p>';
-    } else {
-      lockedEl.innerHTML = lockedRes.map(u => {
-        // A temporary sign-in pause (wrong passwords) is not a disabled account: open sessions
-        // keep working and it ends by itself. Stated as such, with when it ends.
-        const suspended = u.suspendedUntil && new Date(u.suspendedUntil) > new Date();
-        const paused = !suspended && u.isActive !== false && u.loginLockedUntil && new Date(u.loginLockedUntil) > new Date();
-        const fmt = d => new Date(d).toLocaleString('ar-EG-u-nu-latn');
-        const lockedAt = paused ? fmt(u.loginLockStartedAt || u.loginLockedUntil) : (u.lockedAt ? fmt(u.lockedAt) : '—');
-        return `<div class="sec-locked-card">
-          <div class="sec-locked-top">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            <div style="flex:1;min-width:180px">
-              <div class="sec-locked-name">${esc(u.name || u.username)} <span class="sec-locked-handle">@${esc(u.username)}</span></div>
-              ${suspended ? `<div class="sec-locked-meta">إيقاف مؤقت بسبب: <b>${esc(u.suspensionReason || '—')}</b>${u.suspensionDetail ? ' — ' + esc(u.suspensionDetail) : ''}</div>
-              <div class="sec-locked-meta">بدأ: <bdi>${esc(u.suspendedAt ? fmt(u.suspendedAt) : '—')}</bdi> · ${new Date(u.suspendedUntil).getFullYear() >= 2100 ? 'حتى يرفعه المدير' : 'ينتهي: <bdi>' + esc(fmt(u.suspendedUntil)) + '</bdi>'}</div>` : paused ? `<div class="sec-locked-meta">إيقاف مؤقت لتسجيل الدخول بعد محاولات فاشلة متكررة — الجلسات المفتوحة لم تتأثر</div>
-              <div class="sec-locked-meta">بدأ: <bdi>${esc(lockedAt)}</bdi> · ينتهي: <bdi>${esc(fmt(u.loginLockedUntil))}</bdi></div>` : `<div class="sec-locked-meta">سبب التعطيل: ${esc(u.lockReason || '—')}</div>
-              <div class="sec-locked-meta">وقت التعطيل: <bdi>${esc(lockedAt)}</bdi></div>`}
-            </div>
-            <button onclick="adminUnlockUser('${esc(u._id)}','${esc(u.name || u.username)}')" class="sec-unlock-btn">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>
-              ${suspended ? 'رفع الإيقاف' : paused ? 'فك الإيقاف' : 'إلغاء التعطيل'}
-            </button>
-          </div>
-          ${_secLockedAttemptsHtml(u.attempts)}
-        </div>`;
-      }).join('');
-    }
+/** Reads the disabled-accounts list and the security log. `ifStale`: skip when read in the last 20 s. */
+async function loadSecurityPanel(opts = {}) {
+  if (!isAdmin()) return;
+  if (opts.ifStale && (_securityLoading || Date.now() - _securityLoadedAt < 20000)) {
+    _renderDisabledUsers(); return;
   }
+  if (_securityLoading) return _securityLoading;
+  _securityLoading = (async () => {
+    const [lockedRes, logsRes] = await Promise.all([
+      api('/security-audit/locked-users').catch(() => null),
+      api('/security-audit/logs').catch(() => null),
+    ]);
+    if (Array.isArray(lockedRes)) _securityLocked = lockedRes;
+    _securityLogs = Array.isArray(logsRes) ? logsRes : _securityLogs;
+    const pushRecord = window.souliaPushSecurityRecord;
+    if (pushRecord?._id) _securityLogs = [pushRecord, ..._securityLogs.filter(log => String(log._id) !== String(pushRecord._id))];
+    _securityLoadedAt = Date.now();
+    _securityLogPage = 0;
+    if (currentPage === 'users') renderUsers(); else _renderDisabledUsers();
+    _renderSecurityLogPage();
+  })().finally(() => { _securityLoading = null; });
+  return _securityLoading;
+}
 
-  // Render audit log with pagination
-  _securityLogs = logsRes || [];
-  const pushRecord = window.souliaPushSecurityRecord;
-  if (pushRecord?._id && isAdmin()) _securityLogs = [pushRecord, ..._securityLogs.filter(log => String(log._id) !== String(pushRecord._id))];
-  _securityLogPage = 0;
-  _renderSecurityLogPage();
+/* ── «سجل محاولات الدخول» (Nov 27, 2026) ─────────────────────────────────────
+   Admin only. Reads GET /auth/login-attempts (server pages of 25, newest first; `q` = username or
+   IP prefix; `result` = a group — ⚠ _LA_GROUP mirrors ATTEMPT_RESULT_GROUPS in login-guard.service.ts).
+   A row's username or IP fills the search, so one source's whole history is one click away. */
+const _LA_RESULT = {
+  'password-ok':      ['كلمة مرور صحيحة', 'ok'],
+  'bad-credentials':  ['بيانات دخول غير صحيحة', 'bad'],
+  'disabled':         ['حساب معطّل', 'warn'],
+  'locked':           ['مرفوضة — إيقاف مؤقت', 'warn'],
+  'blocked':          ['مرفوضة — مصدر محظور', 'bad'],
+  'rate-limited':     ['تجاوز حد الطلبات', 'warn'],
+  'pow-required':     ['طُلب التحقق الآلي', 'info'],
+  'captcha-required': ['طُلب التحقق الآلي', 'info'],
+  'pow-failed':       ['فشل التحقق الآلي', 'bad'],
+  'captcha-failed':   ['فشل التحقق الآلي', 'bad'],
+};
+let _laPage = 1, _laData = null, _laLoading = null, _laLoadedAt = 0, _laSearchTimer = 0, _laSeq = 0;
+
+function _laSearchInput() {
+  clearTimeout(_laSearchTimer);
+  _laSearchTimer = setTimeout(() => { _laPage = 1; _loadLoginAttempts(); }, 300);
+}
+function _laFilterBy(term) {
+  const box = qs('#la-search');
+  if (box) box.value = term;
+  _laPage = 1;
+  _loadLoginAttempts();
+  qs('#login-attempts-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/** `ifStale`: renderUsers runs on every keystroke — read at most every 20 s from there. */
+async function _loadLoginAttempts(opts = {}) {
+  if (!isAdmin()) return;
+  if (opts.ifStale && (_laLoading || Date.now() - _laLoadedAt < 20000)) return;
+  const seq = ++_laSeq;
+  const tbody = qs('#login-attempts-tbody');
+  if (tbody && !_laData) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">جارٍ التحميل…</td></tr>`;
+  const params = new URLSearchParams({ page: String(_laPage), limit: '10' });
+  const q = (qs('#la-search')?.value || '').trim();
+  const result = qs('#la-filter')?.value || '';
+  if (q) params.set('q', q);
+  if (result) params.set('result', result);
+  _laLoading = api('/auth/login-attempts?' + params.toString())
+    .then(res => {
+      if (seq !== _laSeq) return; // a newer search is on its way
+      _laData = res; _laLoadedAt = Date.now();
+      _renderLoginAttempts();
+    })
+    .catch(e => {
+      if (seq !== _laSeq) return;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">تعذّر تحميل سجل المحاولات. <button type="button" class="ux-btn" onclick="_loadLoginAttempts()">إعادة المحاولة</button></td></tr>`;
+      console.warn('[login-attempts]', e?.message);
+    })
+    .finally(() => { if (seq === _laSeq) _laLoading = null; });
+  return _laLoading;
+}
+
+function _laOriginHtml(r) {
+  const head = [r.browser, r.os].filter(Boolean).join(' · ') || 'جهاز غير معروف';
+  const devIcon = _SEC_DEVICE_ICON[r.device] || _SEC_DEVICE_ICON['كمبيوتر'];
+  const ip = r.ip ? `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.ip))})" title="عرض كل المحاولات من هذا العنوان"><bdi class="sec-origin-ip">${esc(r.ip)}</bdi></button>` : '';
+  return `<div class="sec-origin" title="${escHtml([r.browser, r.os, r.device, r.ip ? 'IP: ' + r.ip : ''].filter(Boolean).join(' — '))}">
+    <span class="sec-origin-head">${devIcon}<span>${esc(head)}</span></span>
+    ${ip ? `<span class="sec-origin-sub">${ip}</span>` : ''}
+  </div>`;
+}
+
+function _renderLoginAttempts() {
+  const wrap = qs('#login-attempts-wrap');
+  const tbody = qs('#login-attempts-tbody');
+  const pager = qs('#login-attempts-pager');
+  if (!wrap || !tbody || !_laData) return;
+  const d = _laData;
+  const s = d.last24h || {};
+  const sum = qs('#la-summary');
+  if (sum) {
+    const parts = [`آخر 24 ساعة: ${fmtN(s.total || 0)} محاولة`, `${fmtN(s.ok || 0)} ناجحة`, `${fmtN(s.failed || 0)} ببيانات غير صحيحة`];
+    if (s.stopped) parts.push(`${fmtN(s.stopped)} مرفوضة بسبب إيقاف أو حظر`);
+    if (s.failedIps) parts.push(`من ${fmtN(s.failedIps)} عنوان IP`);
+    sum.textContent = parts.join(' · ') + ' — التحقق الآلي: ' + (d.captcha === 'turnstile' ? 'Cloudflare Turnstile' : 'التحقق الحسابي المدمج') + '.';
+    sum.title = sum.textContent;
+  }
+  const cnt = qs('#la-count');
+  if (cnt) cnt.textContent = d.total ? fmtN(d.total) : '';
+  const rows = Array.isArray(d.rows) ? d.rows : [];
+  const filtered = !!((qs('#la-search')?.value || '').trim() || qs('#la-filter')?.value);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">${filtered ? 'لا توجد محاولات تطابق البحث' : 'لا توجد محاولات دخول مسجّلة'}</td></tr>`;
+    if (pager) pager.innerHTML = '';
+    return;
+  }
+  const byId = new Map((users || []).map(u => [String(u._id), u]));
+  tbody.innerHTML = rows.map(r => {
+    const [label, tone] = _LA_RESULT[r.result] || [r.result || '—', 'info'];
+    const u = r.userId ? byId.get(String(r.userId)) : null;
+    const typed = `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.userKey || r.username || ''))})" title="عرض كل المحاولات بهذا الاسم"><bdi class="ux-mono">${esc(r.username || '—')}</bdi></button>`;
+    const who = u ? `<b>${esc(u.name || u.username)}</b>${typed}`
+      : `${typed}<span class="ux-sub">${r.userId ? 'حساب محذوف' : 'لا يوجد حساب بهذا الاسم'}</span>`;
+    const trusted = r.trusted ? `<span class="ux-sub la-trusted">جهاز موثوق</span>` : '';
+    return `<tr>
+      <td>${_uxWhenHtml(r.at, true)}</td>
+      <td><span class="ux-chip is-${tone}">${esc(label)}</span>${trusted}</td>
+      <td><span class="ux-who">${who}</span></td>
+      <td>${_laOriginHtml(r)}</td>
+    </tr>`;
+  }).join('');
+  const pages = Math.max(1, Math.ceil((d.total || 0) / (d.limit || 10)));
+  if (pager) {
+    pager.innerHTML = pages <= 1 ? `<span>${fmtN(d.total || 0)} محاولة</span>` :
+      `<button type="button" class="ux-btn" onclick="_laPage=Math.max(1,_laPage-1);_loadLoginAttempts()" ${d.page <= 1 ? 'disabled' : ''}>السابق</button>
+       <span>صفحة ${fmtN(d.page)} من ${fmtN(pages)} · ${fmtN(d.total)} محاولة</span>
+       <button type="button" class="ux-btn" onclick="_laPage=Math.min(${pages},_laPage+1);_loadLoginAttempts()" ${d.page >= pages ? 'disabled' : ''}>التالي</button>`;
+  }
 }
 
 async function adminUnlockUser(userId, displayName) {
   const confirmed = await showConfirm(
-    `هل تريد إلغاء تعطيل حساب "${displayName}"؟ تأكد من مراجعة سبب التعطيل أولاً.`,
-    { title: '🔓 إلغاء تعطيل الحساب', icon: 'warn', danger: false }
+    `سيتمكّن «${displayName}» من تسجيل الدخول مرة أخرى. يُرجى مراجعة سبب الإيقاف قبل المتابعة.`,
+    { title: 'إعادة تفعيل الحساب', icon: 'warn', danger: false, confirmLabel: 'إعادة التفعيل' }
   );
   if (!confirmed) return;
   try {
-    await api('/security-audit/unlock/' + userId, { method: 'POST', body: JSON.stringify({ reason: 'أُلغي التعطيل بواسطة المدير' }) });
-    toast(`تم إلغاء تعطيل حساب "${displayName}" بنجاح`);
+    await api('/security-audit/unlock/' + userId, { method: 'POST', body: JSON.stringify({ reason: 'أعاد المدير تفعيل الحساب' }) });
+    toast(`تمت إعادة تفعيل حساب «${displayName}»`);
     users = await api('/users').catch(() => users);
-    renderUsers();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+    await loadSecurityPanel();
+  } catch (e) { toast('تعذّرت إعادة التفعيل: ' + e.message, true); }
 }
 
 async function toggleUserActive(id, currentlyInactive) {
   const action = currentlyInactive ? 'activate' : 'deactivate';
-  const msg = currentlyInactive ? 'تفعيل هذا المستخدم؟' : 'تعطيل هذا المستخدم؟ لن يستطيع تسجيل الدخول';
-  if (!await showConfirm(msg, { title: currentlyInactive ? 'تفعيل المستخدم' : 'تعطيل المستخدم', icon: 'warn', danger: !currentlyInactive })) return;
+  const msg = currentlyInactive
+    ? 'سيتمكّن هذا المستخدم من تسجيل الدخول مرة أخرى.'
+    : 'لن يتمكّن هذا المستخدم من تسجيل الدخول، وسيُنقل حسابه إلى قسم «الحسابات المعطّلة والموقوفة».';
+  if (!await showConfirm(msg, { title: currentlyInactive ? 'تفعيل الحساب' : 'تعطيل الحساب', icon: 'warn', danger: !currentlyInactive, confirmLabel: currentlyInactive ? 'تفعيل' : 'تعطيل' })) return;
   try {
     await api('/users/' + id + '/' + action, { method: 'POST' });
-    toast(currentlyInactive ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم');
+    toast(currentlyInactive ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب');
     users = await api('/users').catch(() => users);
     renderUsers();
+    if (isAdmin()) loadSecurityPanel();
   } catch (e) { toast('خطأ: ' + e.message, true); }
-}
-/* ── Job titles ────────────────────────────────────────────────────────────
+}/* ── Job titles ────────────────────────────────────────────────────────────
    `value` is the ENGLISH string and is what MongoDB stores — it is already on
    every existing account, is shown in the users table, and is matched against
    by `isCustomJobTitle`. Translating it would orphan every saved jobTitle.
@@ -91504,17 +91351,18 @@ function openUserModal(id) {
         <div class="um2-grid">
           <div class="form-group"><label>اسم المستخدم <span class="um2-req">*</span></label><input type="text" id="um-username" value="${esc(u?.username || '')}" ${u ? 'readonly style="background:var(--surface2);color:var(--muted)"' : 'placeholder="مثال: ahmed_sales"'}></div>
           <div class="form-group"><label>الاسم الكامل <span class="um2-req">*</span></label><input type="text" id="um-name" value="${esc(u?.name || '')}" placeholder="الاسم كما يظهر في النظام" oninput="_umSyncAvatar()"></div>
-          <div class="form-group">
-            <label for="um-password">${currentLang === 'en' ? 'Password' : 'كلمة المرور'} ${u ? '' : '<span class="um2-req">*</span>'}</label>
-            <div class="um2-pw"><input type="password" id="um-password" autocomplete="new-password" placeholder="${u ? (currentLang === 'en' ? 'Leave empty to keep it' : 'اتركه فارغًا إن لم تُرد تغييره') : (currentLang === 'en' ? 'Enter a strong password' : 'أدخل كلمة مرور قوية')}" oninput="checkPassStrength(this.value);_umCheckPassMatch()"><button type="button" class="um2-pw-eye" onclick="togglePassField(event)" aria-pressed="false" title="${currentLang === 'en' ? 'Show / hide password' : 'إظهار / إخفاء كلمة المرور'}" aria-label="${currentLang === 'en' ? 'Show password' : 'إظهار كلمة المرور'}">${UM_ICON_EYE}</button></div>
+          ${u ? _umPasswordRowHtml(u) : `<div class="form-group">
+            <label for="um-password">${currentLang === 'en' ? 'Password' : 'كلمة المرور'} <span class="um2-req">*</span></label>
+            <div class="um2-pw"><input type="password" id="um-password" autocomplete="new-password" placeholder="${currentLang === 'en' ? '8+ characters' : '8 أحرف على الأقل'}" oninput="_umPwGenerated=false;checkPassStrength(this.value);_umCheckPassMatch()"><button type="button" class="um2-pw-eye" onclick="togglePassField(event)" aria-pressed="false" title="${currentLang === 'en' ? 'Show / hide password' : 'إظهار / إخفاء كلمة المرور'}" aria-label="${currentLang === 'en' ? 'Show password' : 'إظهار كلمة المرور'}">${UM_ICON_EYE}</button></div>
             <div class="um2-pw-meter" id="pass-strength-bar" hidden><i></i><i></i><i></i><i></i></div>
             <div class="um2-pw-text" id="pass-strength-text"></div>
+            <button type="button" class="btn btn-outline btn-sm um2-pwgen" onclick="_umGeneratePassword()">${currentLang === 'en' ? 'Generate a strong password' : 'توليد كلمة مرور قوية'}</button>
           </div>
           <div class="form-group">
-            <label for="um-password2">${currentLang === 'en' ? 'Confirm password' : 'تأكيد كلمة المرور'} ${u ? '' : '<span class="um2-req">*</span>'}</label>
+            <label for="um-password2">${currentLang === 'en' ? 'Confirm password' : 'تأكيد كلمة المرور'} <span class="um2-req">*</span></label>
             <div class="um2-pw"><input type="password" id="um-password2" autocomplete="new-password" placeholder="${currentLang === 'en' ? 'Type the password again' : 'أعد كتابة كلمة المرور'}" oninput="_umCheckPassMatch()"><button type="button" class="um2-pw-eye" onclick="togglePassField(event)" aria-pressed="false" title="${currentLang === 'en' ? 'Show / hide password' : 'إظهار / إخفاء كلمة المرور'}" aria-label="${currentLang === 'en' ? 'Show password' : 'إظهار كلمة المرور'}">${UM_ICON_EYE}</button></div>
             <div class="um2-pw-text" id="um-pass-match" aria-live="polite"></div>
-          </div>
+          </div>`}
           <div class="form-group"><label>الهاتف</label><input type="tel" id="um-phone" value="${esc(u?.phone || '')}" placeholder="01xxxxxxxxx"></div>
           <div class="form-group"><label>${currentLang === 'en' ? 'Email' : 'البريد الإلكتروني'}</label><input type="email" id="um-email" value="${esc(u?.email || '')}" placeholder="name@example.com"></div>
           <div class="form-group um2-full"><label>المسمى الوظيفي</label>
@@ -91801,16 +91649,55 @@ function _umCheckPassMatch() {
   in2?.classList.toggle('is-ok', ok); in2?.classList.toggle('is-bad', !ok);
   return ok;
 }
-async function saveUser(id) {
+/* Password in the user window (Nov 27, 2026). Edit mode never edits the password directly: own account →
+   «تغيير كلمة المرور» (current + code), a staff account → «إعادة تعيين كلمة المرور» (allowed admins, code),
+   another admin → changed by its owner or through «نسيت كلمة المرور». */
+let _umPwGenerated = false;
+function _umGeneratePassword() {
+  const pw = window.SouliaPassword ? window.SouliaPassword.generate(14) : '';
+  if (!pw) return;
+  ['#um-password', '#um-password2'].forEach(sel => { const i = qs(sel); if (i) { i.value = pw; i.type = 'text'; } });
+  _umPwGenerated = true;
+  checkPassStrength(pw); _umCheckPassMatch();
+}
+function _umPasswordRowHtml(u) {
+  const en = currentLang === 'en';
+  const self = String(u._id) === String(currentUser?.id || currentUser?._id || '');
+  const changed = u.passwordChangedAt ? new Date(u.passwordChangedAt).toLocaleDateString(en ? 'en-GB' : 'ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const last = changed ? (en ? `Last changed ${changed}` : `آخر تغيير: ${changed}`) : (en ? 'Not changed since the account was created' : 'لم تتغير منذ إنشاء الحساب');
+  const req = u.passwordResetRequestedAt ? `<span class="um2-pwreq">${en ? 'Requested a reset' : 'طلب إعادة تعيين كلمة المرور'}</span>` : '';
+  let action = '', note = last;
+  if (self) {
+    action = `<button type="button" class="btn btn-outline btn-sm" onclick="closeModal();window.SouliaPassword?.openChangeOwn()">${en ? 'Change password' : 'تغيير كلمة المرور'}</button>`;
+  } else if (u.role === 'admin') {
+    note = en ? 'Changed by the account owner, or through «Forgot password».' : 'يغيّرها صاحب الحساب بنفسه، أو عبر «نسيت كلمة المرور».';
+  } else {
+    action = `<button type="button" class="btn btn-outline btn-sm" onclick="closeModal();window.SouliaPassword?.openResetStaff(users.find(x => x._id === '${esc(String(u._id))}'))">${en ? 'Reset password' : 'إعادة تعيين كلمة المرور'}</button>`;
+  }
+  const ownerRight = !self && u.role === 'admin' && u.username !== 'admin' && currentUser?.username === 'admin'
+    ? `<label class="um2-pwright"><input type="checkbox" ${u.canResetStaffPasswords ? 'checked' : ''} onchange="_umSetResetRight('${esc(String(u._id))}', this)">${en ? 'Allow this admin to reset staff passwords' : 'السماح لهذا المدير بإعادة تعيين كلمات مرور الموظفين'}</label>` : '';
+  return `<div class="form-group um2-full"><label>${en ? 'Password' : 'كلمة المرور'}</label>
+    <div class="um2-pwrow"><div><b>••••••••</b><span>${esc(note)}</span>${req}</div>${action}</div>${ownerRight}</div>`;
+}
+async function _umSetResetRight(id, box) {
+  box.disabled = true;
+  try {
+    await window.SouliaPassword.setRight(id, box.checked);
+    const u = users.find(x => x._id === id); if (u) u.canResetStaffPasswords = box.checked;
+    toast(box.checked ? (currentLang === 'en' ? 'Allowed' : 'تم منح الصلاحية') : (currentLang === 'en' ? 'Stopped' : 'تم إيقاف الصلاحية'));
+  } catch (e) { box.checked = !box.checked; toast('خطأ: ' + e.message, true); }
+  finally { box.disabled = false; }
+}async function saveUser(id) {
   if (_umAvatarBusy) { toast(currentLang === 'en' ? 'Wait for the photo to finish uploading' : 'انتظر حتى يكتمل رفع الصورة', true); return; }
   const u = id ? users.find(x => x._id === id) : null;
   const jtSel = qs('#um-jobtitle-select').value;
   const jobTitle = jtSel === '__custom__' ? qs('#um-jobtitle-custom').value.trim() : jtSel;
   // Access is NOT part of this body: it comes from the role (assigned below / at creation).
   const body = { username: qs('#um-username').value.trim(), name: qs('#um-name').value.trim(), phone: qs('#um-phone').value.trim(), email: qs('#um-email').value.trim(), avatar: qs('#um-avatar').value.trim(), jobTitle };
-  const pass = qs('#um-password').value;
+  // ⚠ A password is sent only when CREATING an account. Changes go through SouliaPassword (code required).
+  const pass = id ? '' : (qs('#um-password')?.value || '');
   if (pass) body.password = pass;
-  const pass2 = qs('#um-password2') ? qs('#um-password2').value : pass;
+  const pass2 = id ? '' : (qs('#um-password2') ? qs('#um-password2').value : pass);
   if ((pass || pass2) && pass !== pass2) {
     _umTab('account'); _umCheckPassMatch();
     const f = qs('#um-password2'); if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
@@ -91830,18 +91717,21 @@ async function saveUser(id) {
   if (!body.username) { fail('اسم المستخدم مطلوب', 'account', '#um-username'); return; }
   if (!body.name) { fail('الاسم الكامل مطلوب', 'account', '#um-name'); return; }
   if (!id && !pass) { fail('كلمة المرور مطلوبة للمستخدم الجديد', 'account', '#um-password'); return; }
-  if (pass && pass.length < 6) { fail('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'account', '#um-password'); return; }
+  if (pass && pass.length < 8) { fail(currentLang === 'en' ? 'The password must be at least 8 characters' : 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل', 'account', '#um-password'); return; }
   if (!id && !chosenRole) { fail(currentLang === 'en' ? 'Choose a role for the new account' : 'اختر دوراً للمستخدم الجديد', 'role'); return; }
   const btn = qs('.um2-foot .btn-primary');
   if (btn) btn.disabled = true;
   try {
     if (id) await api('/users/' + id, { method: 'PUT', body: JSON.stringify(body) });
     else await api('/users', { method: 'POST', body: JSON.stringify({ ...body, roleId: chosenRole }) });
+    const shownOnce = !id && _umPwGenerated ? pass : '';
+    _umPwGenerated = false;
     if (id && chosenRole && chosenRole !== currentRole) {
       await api('/roles/' + encodeURIComponent(chosenRole) + '/assign', { method: 'POST', body: JSON.stringify({ userId: id }) });
     }
     toast(id ? 'تم تحديث المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح');
     closeModal();
+    if (shownOnce && window.SouliaPassword) window.SouliaPassword.showOnce({ name: body.name, username: body.username }, shownOnce);
     users = await api('/users').catch(() => users);
     window.SouliaRBAC?.reload().catch(() => {});
     renderUsers();
@@ -94925,45 +94815,226 @@ function _txCarrierCode(tx) {
   if (stored) return stored;
   return carrierCodeFromName(tx?.shipCo || '');
 }
-/* Settings ← الأمان: the system PIN, typed twice. Save stays disabled until both match. */
+/* Settings ← الأمان: the system PIN (Nov 27, 2026). The card shows its state and one button; the change
+   happens in a dialog: ① new PIN twice → ② verification code (SouliaAuth.stepUp, drawn above the dialog)
+   → ③ done. ⚠ POST /auth/security/system-pin spends the code once; PUT /settings refuses vaultPass. */
+function _stgPinSyncWarn() {
+  const legacy = settings?.vaultPassIsPin === false;
+  const st = qs('#stg-pin-status'); if (st) st.classList.toggle('is-warn', legacy);
+  const set = (sel, key) => { const el = qs(sel); if (el) { el.dataset.i18n = key; el.textContent = t(key); } };
+  set('#stg-pin-status-title', legacy ? 'stgPinStatusLegacy' : 'stgPinStatusSet');
+  set('#stg-pin-status-sub', legacy ? 'stgPinLegacyWarn' : 'stgPinStatusSetSub');
+  set('#stg-pin-open', legacy ? 'stgPinSetBtn' : 'stgPinChangeBtn');
+  const btn = qs('#stg-pin-open');
+  if (btn) { btn.classList.toggle('btn-primary', legacy); btn.classList.toggle('btn-outline', !legacy); }
+}
+/* One dialog, every step inside it (owner, Nov 27, 2026 — never a window over the window):
+   ① current PIN (skipped when the stored PIN is an old non-4-digit one) → ② new PIN twice →
+   ③ verification code (Google Authenticator or the security email, sent from here — the same
+   /auth/security/step-up + /auth/challenge/* routes the sign-in window uses) → ④ done.
+   ⚠ The server re-checks the current PIN on save (POST /auth/security/system-pin {currentPin}). */
+let _SP = null;
+let _stgPinSaving = false;
+const _spinT = (ar, en) => (currentLang === 'en' ? en : ar);
+function _spinSteps() {
+  const keys = _SP.legacy ? ['new', 'verify', 'done'] : ['current', 'new', 'verify', 'done'];
+  const label = { current: _spinT('الرقم الحالي', 'Current PIN'), new: t('stgPinStepNew'), verify: t('stgPinStepVerify'), done: t('stgPinStepDone') };
+  const at = keys.indexOf(_SP.step);
+  return `<ol class="spin-steps">${keys.map((k, i) => `<li class="${i < at ? 'is-done' : i === at ? 'is-on' : ''}"><span>${i < at ? '✓' : i + 1}</span>${esc(label[k])}</li>`).join('')}</ol>`;
+}
+function openSystemPinDialog() {
+  const legacy = settings?.vaultPassIsPin === false;
+  _SP = { step: legacy ? 'new' : 'current', legacy, current: '', pin: '', challenge: null, methods: null, method: '', emailSent: '', err: '', busy: false };
+  openModal(`<div class="spin-dlg" role="dialog" aria-labelledby="spin-title">
+    <div class="spin-head">
+      <span class="spin-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
+      <div><h3 id="spin-title">${esc(legacy ? t('stgPinSetBtn') : t('stgPinChangeBtn'))}</h3><p>${esc(legacy ? _spinT('يتطلب تعيين الرقم السري رمز تحقق.', 'Setting the PIN requires a verification code.') : _spinT('يتطلب التغيير الرقم السري الحالي ورمز تحقق.', 'The change requires the current PIN and a verification code.'))}</p></div>
+      <button type="button" class="modal-x" onclick="_stgPinClose()" aria-label="${esc(t('cancel'))}">×</button>
+    </div>
+    <div id="spin-steps"></div>
+    <div class="spin-body" id="spin-body"></div>
+    <div class="spin-err" id="spin-err" role="alert" hidden></div>
+    <div class="spin-foot" id="spin-foot"></div>
+  </div>`, 'max-width:540px;padding:0', { lockDismiss: true });
+  _spinRender();
+}
+function _stgPinClose() { if (!_stgPinSaving) { _SP = null; closeModal(); } }
+function _spinErr(msg) {
+  if (_SP) _SP.err = msg || '';
+  const el = qs('#spin-err'); if (!el) return;
+  el.textContent = msg || ''; el.hidden = !msg;
+}
+function _spinFoot(back, primary, primaryLabel, enabled) {
+  return `<button type="button" class="btn btn-outline" onclick="${back}">${esc(back === '_stgPinClose()' ? t('cancel') : _spinT('رجوع', 'Back'))}</button>
+    <button type="button" class="btn btn-primary" id="stg-pin-save" onclick="${primary}" ${enabled ? '' : 'disabled'}>${esc(primaryLabel)}</button>`;
+}
+function _spinRender() {
+  if (!_SP) return;
+  const body = qs('#spin-body'), foot = qs('#spin-foot'), steps = qs('#spin-steps');
+  if (!body || !foot) return;
+  if (steps) steps.innerHTML = _spinSteps();
+  const s = _SP.step;
+  if (s === 'current') {
+    body.innerHTML = `<div class="spin-field"><label for="spin-cur">${esc(_spinT('الرقم السري الحالي', 'Current PIN'))}</label>${pinBoxesHtml('spin-cur', { done: '_spinCurrentNext', enter: '_spinCurrentNext', start: true, label: _spinT('الرقم السري الحالي', 'Current PIN'), ok: _spinT('صحيح', 'Correct') })}</div>
+      <p class="spin-hint">${esc(_spinT('أدخل الرقم السري المستخدم حاليًا لفتح الخزنة والتقارير.', 'Enter the PIN currently used to open the vault and reports.'))}</p>`;
+    foot.innerHTML = _spinFoot('_stgPinClose()', '_spinCurrentNext()', t('stgPinContinue'), false);
+    const inp = qs('#spin-cur');
+    inp?.addEventListener('input', () => { const b = qs('#stg-pin-save'); if (b && !_SP.busy) b.disabled = !_pinIsComplete(inp.value); });
+    _pinSync(inp); setTimeout(() => inp?.focus(), 60);
+  } else if (s === 'new') {
+    body.innerHTML = `<div class="spin-fields">
+        <div class="spin-field"><label for="set-vault-pass">${esc(t('stgVaultPassPh'))}</label>${pinBoxesHtml('set-vault-pass', { done: '_stgPinNext', start: true, label: t('stgVaultPassPh'), ok: t('stgPinOk1'), autocomplete: 'new-password' })}</div>
+        <div class="spin-field"><label for="set-vault-pass2">${esc(t('stgVaultPassConfirm'))}</label>${pinBoxesHtml('set-vault-pass2', { done: '_stgPinCheck', enter: '_spinNewNext', start: true, label: t('stgVaultPassConfirm'), ok: t('stgPinMatch'), autocomplete: 'new-password' })}</div>
+      </div>
+      <ul class="spin-notes"><li>${esc(t('stgPinNoteDigits'))}</li><li>${esc(t('stgPinNoteAll'))}</li>${_SP.legacy ? '' : `<li>${esc(_spinT('يجب أن يختلف عن الرقم الحالي.', 'It must differ from the current PIN.'))}</li>`}</ul>`;
+    foot.innerHTML = _spinFoot(_SP.legacy ? '_stgPinClose()' : '_spinGo(\'current\')', '_spinNewNext()', t('stgPinContinue'), false);
+    ['set-vault-pass', 'set-vault-pass2'].forEach(id => { const i = qs('#' + id); if (i) { if (id === 'set-vault-pass' && _SP.pin) i.value = _SP.pin; if (id === 'set-vault-pass2' && _SP.pin) i.value = _SP.pin; _pinSync(i); i.addEventListener('input', _stgPinRefresh); } });
+    _stgPinRefresh();
+    setTimeout(() => qs('#set-vault-pass')?.focus(), 60);
+  } else if (s === 'verify') {
+    const m = _SP.methods || {};
+    const both = m.totp && m.email;
+    const choice = both ? `<div class="spin-methods" role="tablist">
+        <button type="button" role="tab" class="${_SP.method === 'totp' ? 'is-on' : ''}" onclick="_spinMethod('totp')">${esc(_spinT('تطبيق المصادقة', 'Authenticator app'))}</button>
+        <button type="button" role="tab" class="${_SP.method === 'email' ? 'is-on' : ''}" onclick="_spinMethod('email')">${esc(_spinT('البريد الإلكتروني', 'Email'))}</button></div>` : '';
+    const lead = _SP.method === 'email'
+      ? (_SP.emailSent ? _spinT(`أدخل الرمز المكوّن من 6 أرقام المُرسَل إلى ${_SP.emailSent}.`, `Enter the 6-digit code sent to ${_SP.emailSent}.`) : _spinT(`سنرسل رمز تحقق إلى ${m.email || 'بريد الأمان'}.`, `We will send a verification code to ${m.email || 'your security email'}.`))
+      : _spinT('أدخل الرمز المكوّن من 6 أرقام من تطبيق Google Authenticator.', 'Enter the 6-digit code from Google Authenticator.');
+    const needSend = _SP.method === 'email' && !_SP.emailSent;
+    body.innerHTML = `${choice}<p class="spin-lead">${esc(lead)}</p>
+      ${needSend ? `<button type="button" class="btn btn-outline spin-send" onclick="_spinSendEmail()">${esc(_spinT('إرسال الرمز', 'Send code'))}</button>`
+        : `<input type="text" id="spin-code" class="spin-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" aria-label="${esc(_spinT('رمز التحقق', 'Verification code'))}" placeholder="••••••">
+           ${_SP.method === 'email' ? `<button type="button" class="spin-link" onclick="_spinSendEmail()">${esc(_spinT('إعادة إرسال الرمز', 'Resend code'))}</button>` : ''}`}`;
+    foot.innerHTML = _spinFoot('_spinGo(\'new\')', 'saveVaultPass()', _spinT('تأكيد وحفظ', 'Confirm and save'), false);
+    const code = qs('#spin-code');
+    if (code) {
+      code.addEventListener('input', () => {
+        code.value = String(code.value).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660)).replace(/\D/g, '').slice(0, 6);
+        const b = qs('#stg-pin-save'); if (b && !_SP.busy) b.disabled = code.value.length !== 6;
+        if (code.value.length === 6) saveVaultPass();
+      });
+      code.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveVaultPass(); } });
+      setTimeout(() => code.focus(), 60);
+    }
+  } else if (s === 'done') {
+    body.innerHTML = `<div class="spin-done"><span class="spin-done-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><b>${esc(t('stgPinSaved'))}</b><p>${esc(t('stgPinDoneSub'))}</p></div>`;
+    foot.innerHTML = `<button type="button" class="btn btn-primary" onclick="_stgPinClose()">${esc(t('stgPinOk1'))}</button>`;
+    foot.querySelector('button')?.focus();
+  }
+  _spinErr(_SP.err);
+}
+function _spinGo(step) { if (!_SP || _SP.busy) return; if (step === 'new') _SP.pin = ''; _SP.err = ''; _SP.step = step; _spinRender(); }
+function _spinBusy(on, label) {
+  if (!_SP) return;
+  _SP.busy = on; _stgPinSaving = on;
+  const b = qs('#stg-pin-save');
+  if (b) { b.disabled = on || b.disabled; if (on && label) { b.dataset.label = b.textContent; b.textContent = label; } else if (!on && b.dataset.label) { b.textContent = b.dataset.label; delete b.dataset.label; } }
+}
+async function _spinCurrentNext() {
+  if (!_SP || _SP.busy) return;
+  const v = qs('#spin-cur')?.value || '';
+  if (!_pinIsComplete(v)) { _spinErr(t('pinNeed4')); return; }
+  _spinErr(''); _spinBusy(true, _spinT('جارٍ التحقق…', 'Checking…'));
+  try {
+    await api('/auth/security/system-pin/check', { method: 'POST', body: JSON.stringify({ currentPin: v }) });
+    _spinBusy(false);
+    await _pinState('spin-cur', 'ok', _spinT('صحيح', 'Correct'));
+    _SP.current = v; _SP.step = 'new'; _spinRender();
+  } catch (e) {
+    _spinBusy(false);
+    _pinState('spin-cur', 'err');
+    _spinErr(e.message);
+    const b = qs('#stg-pin-save'); if (b) b.disabled = true;
+  }
+}
 function _stgPinNext() { const n = qs('#set-vault-pass2'); if (n) { n.focus(); _pinSync(n); } _stgPinRefresh(); }
 function _stgPinRefresh() {
   const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
-  const btn = qs('#stg-pin-save'); if (btn) btn.disabled = !(_pinIsComplete(a) && a === b);
+  const btn = qs('#stg-pin-save'); if (btn && !_stgPinSaving && _SP?.step === 'new') btn.disabled = !(_pinIsComplete(a) && a === b);
 }
 function _stgPinCheck() {
   const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
   if (!_pinIsComplete(a)) { qs('#set-vault-pass')?.focus(); _stgPinRefresh(); return; }
-  if (a !== b) { toast(t('stgPinMismatch'), true); _pinState('set-vault-pass2', 'err'); _stgPinRefresh(); return; }
+  if (a !== b) { _spinErr(t('stgPinMismatch')); _pinState('set-vault-pass2', 'err'); _stgPinRefresh(); return; }
+  _spinErr('');
   _pinState('set-vault-pass2', 'ok', t('stgPinMatch'));
   _stgPinRefresh();
   qs('#stg-pin-save')?.focus();
 }
-function _stgPinSyncWarn() {
-  const w = qs('#stg-pin-warn'); if (w) w.hidden = settings?.vaultPassIsPin !== false;
-  ['set-vault-pass', 'set-vault-pass2'].forEach(id => { const i = qs('#' + id); if (i) _pinSync(i); });
-  _stgPinRefresh();
-}
-let _stgPinSaving = false;
-async function saveVaultPass() {
-  if (_stgPinSaving) return;
+async function _spinNewNext() {
+  if (!_SP || _SP.busy) return;
   const a = qs('#set-vault-pass')?.value || '', b = qs('#set-vault-pass2')?.value || '';
-  if (!_pinIsComplete(a)) { toast(t('pinNeed4'), true); qs('#set-vault-pass')?.focus(); return; }
-  if (a !== b) { toast(t('stgPinMismatch'), true); _pinState('set-vault-pass2', 'err'); return; }
-  _stgPinSaving = true;
-  const btn = qs('#stg-pin-save'); if (btn) btn.disabled = true;
-  try {
-    await api('/settings', { method: 'PUT', body: JSON.stringify({ vaultPass: a }) });
-    if (settings) settings.vaultPassIsPin = true;
-    _pinState('set-vault-pass', 'ok', t('stgPinSaved'));
-    await _pinState('set-vault-pass2', 'ok', t('stgPinSaved'));
-    toast(t('stgPinSaved'));
-    ['set-vault-pass', 'set-vault-pass2'].forEach(id => { const i = qs('#' + id); if (i) i.value = ''; _pinState(id, ''); });
-    _stgPinSyncWarn();
-  } catch (e) { toast(t('errorPrefix', { v: e.message }), true); _stgPinRefresh(); }
-  finally { _stgPinSaving = false; }
+  if (!_pinIsComplete(a)) { _spinErr(t('pinNeed4')); qs('#set-vault-pass')?.focus(); return; }
+  if (a !== b) { _spinErr(t('stgPinMismatch')); _pinState('set-vault-pass2', 'err'); return; }
+  if (!_SP.legacy && a === _SP.current) { _spinErr(_spinT('الرقم الجديد مطابق للرقم الحالي. اختر رقمًا مختلفًا.', 'The new PIN is the same as the current one. Choose a different PIN.')); _pinState('set-vault-pass', 'err'); qs('#set-vault-pass2').value = ''; _pinSync(qs('#set-vault-pass2')); return; }
+  _SP.pin = a;
+  await _spinStartVerify();
 }
-// ── Bosta API Key management ─────────────────────────────────────────────
+async function _spinStartVerify() {
+  _spinErr(''); _spinBusy(true, _spinT('جارٍ التحضير…', 'Preparing…'));
+  try {
+    const d = await api('/auth/security/step-up', { method: 'POST', body: JSON.stringify({ action: 'system-pin' }) });
+    _SP.challenge = d.challenge; _SP.methods = d.methods || {}; _SP.emailSent = '';
+    _SP.method = _SP.methods.totp ? 'totp' : 'email';
+    _spinBusy(false);
+    _SP.step = 'verify'; _spinRender();
+    if (_SP.method === 'email') _spinSendEmail();
+  } catch (e) {
+    _spinBusy(false);
+    _spinErr(e.code === 'STEP_UP_UNAVAILABLE'
+      ? _spinT('لا توجد وسيلة تحقق مفعّلة لحسابك. أعدّ تطبيق المصادقة من قسم «التحقق بخطوتين» أدناه، ثم أعد المحاولة.', 'No verification method is set up for your account. Set up an authenticator app under 2-Step Verification below, then try again.')
+      : e.message);
+    _stgPinRefresh();
+  }
+}
+function _spinMethod(m) { if (!_SP || _SP.busy || _SP.method === m) return; _SP.method = m; _SP.err = ''; _spinRender(); if (m === 'email' && !_SP.emailSent) _spinSendEmail(); }
+async function _spinSendEmail() {
+  if (!_SP || _SP.busy) return;
+  _spinErr(''); _SP.busy = true;
+  try {
+    const r = await api('/auth/challenge/email', { method: 'POST', body: JSON.stringify({ challenge: _SP.challenge }) });
+    _SP.emailSent = r.sentTo || (_SP.methods && _SP.methods.email) || '';
+    _SP.busy = false; _spinRender();
+  } catch (e) {
+    _SP.busy = false;
+    if (/^CHALLENGE_/.test(e.code || '')) { _SP.challenge = null; }
+    _spinErr(e.code === 'EMAIL_RATE_LIMITED' ? _spinT('طُلب رمز قبل قليل. يمكنك طلب رمز جديد بعد دقيقة.', 'A code was just requested. You can request another in a minute.') : e.message);
+  }
+}
+async function saveVaultPass() {
+  if (!_SP || _SP.busy || _SP.step !== 'verify') return;
+  const code = (qs('#spin-code')?.value || '').trim();
+  if (code.length !== 6) { _spinErr(_spinT('أدخل الرمز المكوّن من 6 أرقام.', 'Enter the 6-digit code.')); return; }
+  _spinErr(''); _spinBusy(true, _spinT('جارٍ الحفظ…', 'Saving…'));
+  try {
+    if (!_SP.challenge) await _spinStartVerifyQuiet();
+    const res = await api('/auth/challenge/verify', { method: 'POST', body: JSON.stringify({ challenge: _SP.challenge, method: _SP.method, code }) });
+    if (res && res.done === false) {   // a second factor is required: ask for it here
+      _spinBusy(false);
+      _SP.method = _SP.method === 'totp' ? 'email' : 'totp';
+      _SP.err = _spinT('تم قبول الرمز. أكمل التحقق بالوسيلة الثانية.', 'Code accepted. Complete the second method.');
+      _spinRender(); if (_SP.method === 'email') _spinSendEmail();
+      return;
+    }
+    await api('/auth/security/system-pin', { method: 'POST', body: JSON.stringify({ pin: _SP.pin, stepUp: _SP.challenge, currentPin: _SP.current }) });
+    _spinBusy(false);
+    if (settings) settings.vaultPassIsPin = true;
+    _stgPinSyncWarn();
+    toast(t('stgPinSaved'));
+    _SP.step = 'done'; _SP.err = ''; _spinRender();
+  } catch (e) {
+    _spinBusy(false);
+    if (/^CHALLENGE_/.test(e.code || '')) { _SP.challenge = null; _SP.emailSent = ''; }
+    if (e.code === 'CURRENT_PIN_WRONG' || e.code === 'CURRENT_PIN_PAUSED') { _SP.step = 'current'; _SP.err = e.message; _spinRender(); return; }
+    _spinErr(/^CHALLENGE_/.test(e.code || '') ? _spinT('انتهت صلاحية التحقق. أدخل رمزًا جديدًا.', 'The verification expired. Enter a new code.') : e.message);
+    const c = qs('#spin-code'); if (c) { c.value = ''; c.classList.add('is-error'); c.focus(); setTimeout(() => c.classList.remove('is-error'), 600); }
+    if (!_SP.challenge) _spinStartVerifyQuiet().then(() => _spinRender()).catch(() => {});
+  }
+}
+async function _spinStartVerifyQuiet() {
+  const d = await api('/auth/security/step-up', { method: 'POST', body: JSON.stringify({ action: 'system-pin' }) });
+  _SP.challenge = d.challenge; _SP.methods = d.methods || _SP.methods;
+}// ── Bosta API Key management ─────────────────────────────────────────────
 async function saveBostaKey() {
   const inp = qs('#stg-bosta-api-key');
   const key = (inp?.value || '').trim();
@@ -115086,7 +115157,8 @@ function _spPeekHtml(o) {
   const metaChips = [
     ship > 0 ? `<span class="sp-pk-meta-chip">${isEn ? 'Shipping' : 'الشحن'} ${fmtJ(ship)}</span>` : '',
     disc > 0 ? `<span class="sp-pk-meta-chip is-disc">${isEn ? 'Discount' : 'الخصم'} ${fmtJSigned(disc, '−')}</span>` : '',
-    _saleShipDisc(o) > 0 ? `<span class="sp-pk-meta-chip is-disc">${esc(t('sdFreeShipping'))} ${fmtJSigned(_saleShipDisc(o), '−')}</span>` : '',
+    // «شحن مجاني» set in the edit window waives the whole shipping (Shopify's own part included).
+    (o.freeShipping ? ship : _saleShipDisc(o)) > 0 ? `<span class="sp-pk-meta-chip is-disc">${esc(t('sdFreeShipping'))} ${fmtJSigned(o.freeShipping ? ship : _saleShipDisc(o), '−')}</span>` : '',
     ...((_offerSummaryOf(o.items, (o.status || 'pending') === 'pending' ? _spOfferCtx(o).day : null, _spOfferCtx(o).since, o)?.groups) || []).map(g => `<span class="sp-pk-meta-chip is-offer">${_sumGroupTagHtml(g)} ${fmtJSigned(g.saved, '−')}</span>`),
   ].filter(Boolean).join('');
   /* Payment + deposit receipts are ONE card (owner, Nov 9, 2026): the header carries the
@@ -116208,6 +116280,8 @@ function _spDateRangeLabel() {
 function _spShipCell(o) {
   const billed = Number(o.shipCost) || 0;
   if (billed <= 0) return '<span style="color:var(--muted)">—</span>';
+  // «شحن مجاني»: the customer pays none of it — say so, with Shopify's figure struck.
+  if (o.freeShipping) return `<div class="mov-ship-cell" title="${escHtml(currentLang === 'en' ? 'Free shipping — not charged to the customer' : 'شحن مجاني — لا يُحصَّل من العميل')}"><span class="mov-ship-billed">${esc(currentLang === 'en' ? 'Free' : 'مجاني')}</span><s class="mov-ship-sub" style="color:var(--muted);font-size:.72rem">${fmtJ(billed)}</s></div>`;
   return `<div class="mov-ship-cell"><span class="mov-ship-billed">${fmtJ(billed)}</span></div>`;
 }
 
@@ -120073,8 +120147,9 @@ async function approveShopifyOrder(id) {
             <div class="spd-sec">${esc(t('spSecFulfilment'))}</div>
             ${window.SouliaAddrCheck?.checkHtml(order) || ''}
             ${_carrierPickerHtml('sp', defaultCarrierCode(), cityToShipZoneFront(order), {
-              fixedPrice: Number(order.shipCost) || 0,
-              priceNote: t('carrierPriceFromShopify'),
+              // «شحن مجاني» → the customer is charged 0 (what confirming records).
+              fixedPrice: order.freeShipping ? 0 : (Number(order.shipCost) || 0),
+              priceNote: order.freeShipping ? (currentLang === 'en' ? 'Free shipping — the customer does not pay it' : 'شحن مجاني — لا يُحصَّل من العميل') : t('carrierPriceFromShopify'),
             })}
             ${_sppToggleHtml('sp')}
           </div>
@@ -120642,6 +120717,7 @@ async function editShopifyOrder(id) {
   _shopifyEditItems = order.items.map(i => ({ ...i }));
   _spEditConfirmBreak = false;      // a bundle break confirmed in THIS editing session (Phase 3)
   _spBundleOverride = null;         // exception: discount over bundle parts {reason}
+  _spFreeShip = !!order.freeShipping;   // «شحن مجاني» as saved on the order
 
   // حالة التبويبات — تُعاد تهيئتها عند كل فتح، فأوردر سابق لا يترك خصمه أو تبويبه للتالي.
   _spEditOrder = order;
@@ -120769,6 +120845,7 @@ function _spEditSnapshot() {
     codes: (_spDiscCodes || []).map(c => c.id).slice().sort(),
     type: _spDiscType,
     manual: v ? String(v.value || '') : '',
+    freeShip: !!_spFreeShip,
   });
 }
 
@@ -120984,9 +121061,7 @@ function _updateShopifyEditSummary() {
   const el = document.getElementById('shopify-edit-summary');
   if (!el) return;
   const subtotal = _shopifyEditItems.reduce((s,i) => s + (i.qty||1)*(i.price||0), 0);
-  const discount = Math.min(subtotal, (Number(_spEditOrder?.discount) || 0)
-    + _spCodesTotal(subtotal) + _spManualAmount(subtotal));
-  const total = Math.max(0, subtotal - discount + (Number(_spEditOrder?.shipCost) || 0));
+  const total = _spOrderMoney(_spEditOrder, subtotal, _spCodesTotal(subtotal) + _spManualAmount(subtotal), _spFreeShip).total;
   const paid = _spDepositOf(_spEditOrder).deposit;
   const balance = Math.round((total - paid) * 100) / 100;
   const unmatched = _shopifyEditItems.filter(i => !i.productId).length;
@@ -121176,6 +121251,7 @@ function _spDiscountDirty() {
   /* ⚠ قيمة الأكواد تُحسب على إجمالي الأصناف، فكود بنسبة مئوية يتغيّر مبلغه بمجرّد
        تعديل صنف حتى لو لم يلمس الموظف الخصم — وهذا تغيير حقيقي يجب أن يُحفظ. */
   if (Math.abs((Number(order.codesDiscount) || 0) - _spCodesTotal(itemsTotal)) > 0.5) return true;
+  if (!!_spFreeShip !== !!order.freeShipping) return true;   // «شحن مجاني» travels with the discount
   return false;
 }
 
@@ -121204,6 +121280,7 @@ async function _saveShopifyEdit() {
       manualDiscount: discount.manualDisc, manualDiscountType: _spDiscType,
       codesDiscount: discount.codesDisc, discountCodeId: _spDiscCodes.map(c => c.id).join(','),
       discountCode: _spDiscCodes.map(c => c.code).join('+'), highValueDiscountOtpId: _spDiscOtpId || '',
+      freeShipping: !!_spFreeShip,
       ...(_spBundleOverride ? { bundleOverrideReason: _spBundleOverride.reason } : {}),
     } } : {}) };
     if (_spBundleDiscountExcess(_shopifyEditItems.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0)) > 0) {
@@ -121246,6 +121323,7 @@ let _spDiscType = 'fixed';        // نوع الخصم اليدوي في الم�
 let _spDiscCodes = [];            // [{id, code, type, value}] الأكواد المطبَّقة
 let _spDiscOtpId = '';            // معرّف OTP بعد التحقق
 let _spDiscOtpAmount = 0;         // القيمة التي تحقق عليها الـ OTP
+let _spFreeShip = false;          // «شحن مجاني» in the editor (saved with the discount, ShopifyOrder.freeShipping)
 
 /** Confirm an order. When an edit left its total different from Shopify's, the server asks for an explicit
  *  acknowledgement (SHOPIFY_DIVERGENCE_ACK_REQUIRED): show the figures, then resend with it. */
@@ -121833,9 +121911,9 @@ function _spRenderDiscountTab() {
   const codesDisc = _spCodesTotal(itemsTotal);
   const manualDisc = _spManualAmount(itemsTotal);
   const ourDisc = codesDisc + manualDisc;
-  const totalDisc = Math.min(shopDisc + ourDisc, itemsTotal);
-  const shipCost = Number(order.shipCost) || 0;
-  const grand = Math.max(0, itemsTotal - totalDisc + shipCost);
+  // One rule for the total (mirror of the server): includes «شحن مجاني».
+  const money = _spOrderMoney(order, itemsTotal, ourDisc, _spFreeShip);
+  const shipCost = money.ship;
   const over = ourDisc > itemsTotal;
 
   const codes = _spActiveCodes();
@@ -121885,16 +121963,51 @@ function _spRenderDiscountTab() {
         </div>`; })()}
         ${editable ? `<button type="button" class="sp-btn-primary sp-disc-apply" id="sp-disc-save" onclick="_spSaveDiscount()">${esc(t('spDiscApply'))}</button>` : ''}
       </div>
-      <div id="sp-disc-err" class="sp-disc-err">${over ? esc(t('spDiscExceeds').replace('{d}', fmtN(ourDisc)).replace('{t}', fmtN(itemsTotal))) : ''}</div>
-      ${_spDiscGuardHtml(ourDisc)}
+      <div id="sp-disc-err" class="sp-disc-err">${over ? esc(t('spDiscExceeds').replace('{d}', fmtN(ourDisc)).replace('{t}', fmtN(itemsTotal)))
+        : ourDisc > money.room + 0.005 ? esc(_spRoomMsg(ourDisc, money)) : ''}</div>
+      ${_spDiscGuardHtml(Math.round((ourDisc + money.concession) * 100) / 100)}
     </div>
+
+    ${shipCost > 0 ? _spFreeShipHtml(order, money, editable) : ''}
 
     ${(_shopifyEditItems || []).some(i => i.bundleGroupId) ? `<div class="sp-bundle-disc-note">${_spBundleOverride
       ? esc(t('bdlDiscOverrideOn', { reason: _spBundleOverride.reason }))
       : `${esc(t('bdlDiscNote', { base: fmtN(_spDiscBase(itemsTotal)) }))}${(isAdmin() || hasPerm('shopify-bundle-discount-override')) ? ` <button type="button" class="sp-bundle-disc-link" onclick="_spAskBundleOverride()">${esc(t('bdlDiscOverrideLink'))}</button>` : ''}`}</div>` : ''}
-    <div class="sp-disc-sum" id="sp-disc-sum">${_spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand)}</div>
+    <div class="sp-disc-sum" id="sp-disc-sum">${_spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, money)}</div>
   `;
   _updateShopifyEditSummary();
+}
+
+/* «شحن مجاني» (owner, Nov 27, 2026): the customer pays no shipping. Saved with the discount (same request, same
+   approval) into ShopifyOrder.freeShipping; confirming records shipping charged 0 and the carrier's real fee still
+   reaches the vault at the Bosta settlement. Never as an «extra discount» — that is capped at the items and would
+   file shipping as a product discount. */
+function _spFreeShipHtml(order, money, editable) {
+  const en = currentLang === 'en';
+  const ship = `<bdi>${fmtJ(money.ship)}</bdi>`;
+  const by = order.freeShipping && _spFreeShip ? (order.freeShipping.by || '') : '';
+  return `<div class="sp-disc-block sp-freeship${_spFreeShip ? ' is-on' : ''}">
+      <div class="sp-disc-h">${esc(en ? 'Shipping' : 'الشحن')}</div>
+      <label class="sp-freeship-row">
+        <input type="checkbox" id="sp-free-ship" ${_spFreeShip ? 'checked' : ''} ${editable ? '' : 'disabled'} onchange="_spToggleFreeShip(this.checked)">
+        <span class="sp-freeship-txt">
+          <b>${esc(en ? 'Free shipping' : 'شحن مجاني')}</b>
+          <small>${en ? `The customer does not pay the shipping (${ship}). The carrier's real fee is recorded at settlement.`
+            : `لا يُحصَّل الشحن (${ship}) من العميل. تُسجَّل تكلفة شركة الشحن الفعلية عند التسوية.`}${by ? ` · ${esc(en ? 'Set by' : 'بواسطة')} ${esc(by)}` : ''}</small>
+        </span>
+      </label>
+    </div>`;
+}
+function _spToggleFreeShip(on) {
+  _spFreeShip = !!on;
+  // Whole tab: the total, the approval note (the waived shipping counts toward its limit) and the error all move.
+  _spRenderDiscountTab();
+}
+/** Our discount beyond what Shopify left of the items — the server refuses it too (DISCOUNT_OVER_ROOM). */
+function _spRoomMsg(ours, money) {
+  return currentLang === 'en'
+    ? `The extra discount (${fmtN(ours)}) is more than what is left of the items after the Shopify discount (${fmtN(money.room)}). To stop charging the shipping, use «Free shipping».`
+    : `الخصم الإضافي (${fmtN(ours)}) يتجاوز ما تبقّى من قيمة الأصناف بعد خصم Shopify (${fmtN(money.room)}). لإلغاء الشحن استخدم «شحن مجاني».`;
 }
 
 /* ⚠ فوق مستهلكهما: `const` لا يُرفع، ووضعهما أسفل الدالة يرمي TDZ عند أول رسم. */
@@ -121926,7 +122039,9 @@ function _spDiscGuardHtml(ourDisc) {
     t('spDiscLimitNote').replace('{v}', fmtN(limit)))}</span></div>`;
 }
 
-function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand) {
+function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, money) {
+  const grand = money.total;
+  const shipCost = money.ship;
   const paid = _spDepositOf(_spEditOrder);
   const balance = Math.round((grand - paid.deposit) * 100) / 100;
   const row = (label, val, cls) =>
@@ -121936,6 +122051,11 @@ function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCos
   // Free shipping inside Shopify's discount is stated as its own line (the total is unchanged).
   const _sd = Math.min(_saleShipDisc(_spEditOrder), Math.max(0, shopDisc));
   shopDisc = Math.max(0, shopDisc - _sd);
+  // With «شحن مجاني» the whole shipping is waived — one line, Shopify's part included.
+  const freeLine = money.freeShip ? shipCost : _sd;
+  // What the item cap drops is said, never shown as if it were applied (#3266: −120 shown, total unchanged).
+  const ours = codesDisc + manualDisc;
+  const notApplied = Math.round(Math.max(0, ours - money.room) * 100) / 100;
   return [
     _os ? row(_sumBeforeLabel(_os), fmtJ(_os.before)) : '',
     ...(_os ? _os.groups.map(g => `<div class="sp-sum-row is-minus is-offer"><span>${_sumGroupLabelHtml(g)}</span><span class="sp-sum-v">${fmtJSigned(g.saved, '−')}</span></div>`) : []),
@@ -121943,8 +122063,9 @@ function _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCos
     shopDisc > 0 ? row(t('spDiscShopify'), fmtJSigned(shopDisc, '−'), 'is-minus') : '',
     codesDisc > 0 ? row(t('spDiscCodes'), fmtJSigned(codesDisc, '−'), 'is-minus') : '',
     manualDisc > 0 ? row(t('spDiscManual'), fmtJSigned(manualDisc, '−'), 'is-minus') : '',
+    notApplied > 0 ? row(currentLang === 'en' ? 'Not applied — nothing left of the items' : 'غير مُطبَّق — لا قيمة متبقية في الأصناف', fmtJSigned(notApplied, '+'), 'is-warn') : '',
     shipCost > 0 ? row(t('spDiscShipping'), fmtJSigned(shipCost, '+')) : '',
-    _sd > 0 ? row(t('sdFreeShipping'), fmtJSigned(_sd, '−'), 'is-minus') : '',
+    freeLine > 0 ? row(t('sdFreeShipping'), fmtJSigned(freeLine, '−'), 'is-minus') : '',
     row(t('spDiscGrandTotal'), fmtJ(grand), 'is-total'),
     paid.deposit > 0 ? row(t('spDepApprovedTotal'), fmtJSigned(paid.deposit, '−')) : '',
     paid.deposit > 0 ? row(t('spRemaining'), fmtJ(Math.max(0, balance)), 'is-total') : '',
@@ -121966,12 +122087,10 @@ function _spRenderDiscountPreview() {
   const codesDisc = _spCodesTotal(itemsTotal);
   const manualDisc = _spManualAmount(itemsTotal);
   const ourDisc = codesDisc + manualDisc;
-  const totalDisc = Math.min(shopDisc + ourDisc, itemsTotal);
-  const shipCost = Number(order.shipCost) || 0;
-  const grand = Math.max(0, itemsTotal - totalDisc + shipCost);
+  const money = _spOrderMoney(order, itemsTotal, ourDisc, _spFreeShip);
 
   const sum = qs('#sp-disc-sum');
-  if (sum) sum.innerHTML = _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, shipCost, grand);
+  if (sum) sum.innerHTML = _spDiscSummaryHtml(itemsTotal, shopDisc, codesDisc, manualDisc, money);
   _updateShopifyEditSummary();
 
   const err = qs('#sp-disc-err');
@@ -121979,6 +122098,7 @@ function _spRenderDiscountPreview() {
     const raw = Number(qs('#sp-disc-value')?.value) || 0;
     if (_spDiscType === 'percent' && raw > 100) err.textContent = t('spDiscPercentMax');
     else if (ourDisc > itemsTotal) err.textContent = t('spDiscExceeds').replace('{d}', fmtN(ourDisc)).replace('{t}', fmtN(itemsTotal));
+    else if (ourDisc > money.room + 0.005) err.textContent = _spRoomMsg(ourDisc, money);
     else err.textContent = '';
   }
 }
@@ -121998,7 +122118,10 @@ function _spDiscAmounts() {
   const itemsTotal = _shopifyEditItems.reduce((s, i) => s + (Number(i.qty) || 1) * (Number(i.price) || 0), 0);
   const codesDisc = _spCodesTotal(itemsTotal);
   const manualDisc = _spManualAmount(itemsTotal);
-  return { itemsTotal, codesDisc, manualDisc, ourDisc: codesDisc + manualDisc };
+  const ourDisc = codesDisc + manualDisc;
+  const money = _spOrderMoney(_spEditOrder, itemsTotal, ourDisc, _spFreeShip);
+  // approvalAmount: the waived shipping is a concession like any discount (same sum the server checks).
+  return { itemsTotal, codesDisc, manualDisc, ourDisc, money, approvalAmount: Math.round((ourDisc + money.concession) * 100) / 100 };
 }
 
 /**
@@ -122020,13 +122143,16 @@ async function _spDiscountPreflight(onOtpOk) {
   const raw = Number(qs('#sp-disc-value')?.value) || 0;
   if (_spDiscType === 'percent' && raw > 100) { toast(t('spDiscPercentMax'), true); return false; }
 
-  const { itemsTotal, ourDisc } = _spDiscAmounts();
-  if (ourDisc > itemsTotal) {
-    toast(t('spDiscExceeds').replace('{d}', fmtN(ourDisc)).replace('{t}', fmtN(itemsTotal)), true);
+  const { itemsTotal, ourDisc: _ourItemsDisc, money, approvalAmount: ourDisc } = _spDiscAmounts();
+  if (_ourItemsDisc > itemsTotal) {
+    toast(t('spDiscExceeds').replace('{d}', fmtN(_ourItemsDisc)).replace('{t}', fmtN(itemsTotal)), true);
     return false;
   }
+  // Beyond what Shopify left of the items the cap would drop it silently — the server refuses it too (DISCOUNT_OVER_ROOM).
+  if (_ourItemsDisc > money.room + 0.005) { toast(_spRoomMsg(_ourItemsDisc, money), true); return false; }
 
   // بوابة OTP — تُفتح فقط إن لم يكن هناك تحقق سارٍ لنفس القيمة (هامش 0.5 كما يقبله الخادم).
+  // ⚠ `ourDisc` here includes the waived shipping («شحن مجاني») — the same sum the server checks.
   if (ourDisc > 0 && _isOtpRequired() && ourDisc > getHighValueDiscountLimit()) {
     if (!_spDiscOtpId || Math.abs(_spDiscOtpAmount - ourDisc) > 0.5) {
       /* ⚠ يُسجَّل الطلب قبل فتح البوابة، تماماً كنموذج المعاملة: محاولةُ خصمٍ عالٍ
@@ -122066,6 +122192,7 @@ async function _spPersistDiscount(opts = {}) {
       manualDiscount: manualDisc, manualDiscountType: _spDiscType, codesDiscount: codesDisc,
       discountCodeId: _spDiscCodes.map(c => c.id).join(','), discountCode: _spDiscCodes.map(c => c.code).join('+'),
       highValueDiscountOtpId: _spDiscOtpId || '',
+      freeShipping: !!_spFreeShip,
     };
     if (!(await _spConfirmEditSubmission(order, { discount: proposal }))) return;
     const res = await api(`/shopify/orders/${order._id}/discount`, {
@@ -122085,6 +122212,7 @@ async function _spPersistDiscount(opts = {}) {
     order.codesDiscount = codesDisc;
     order.discountCodeId = _spDiscCodes.map(c => c.id).join(',');
     order.discountCode = _spDiscCodes.map(c => c.code).join('+');
+    order.freeShipping = _spFreeShip ? (order.freeShipping || { amount: Number(order.shipCost) || 0 }) : null;
     if (res && typeof res.total === 'number') order.total = res.total;
     /* نفس تصنيفَي نموذج المعاملة: ما مرّ ببوابة مدير يُسجَّل 'approved'، وما دونه
        'applied' — وإلا بدت كل الخصومات في سجل المراجعة متساوية في مصدر الإذن. */
@@ -122932,6 +123060,9 @@ function _spRenderHistoryTab() {
 <script src="/notification-settings.js?v=20261122-shopify-postpone"></script>
 <script src="/roles-permissions.js?v=20261126-shopify-reports"></script>
 <script src="/announcements.js?v=4"></script>
+<script src="/password-policy.js?v=1"></script>
+<script src="/user-sessions.js?v=7"></script>
+<script src="/auth-security.js?v=17"></script>
 <script src="/api-access.js?v=7"></script>
 <script src="/assistant.js?v=28"></script>
 <script src="/onboarding.js?v=1"></script>
@@ -122991,7 +123122,7 @@ function _spRenderHistoryTab() {
 <link rel="stylesheet" href="/purchase-scan-receive.css?v=20261115-3">
 <script src="/purchase-scan-receive.js?v=20261115-2"></script>
 <link rel="stylesheet" href="/purchase-form.css?v=20261116-2">
-<script src="/invoice-image-upload.js?v=20261116-3"></script>
+<script src="/invoice-image-upload.js?v=20261127"></script>
 <link rel="stylesheet" href="/expense-payees.css?v=20261126-1">
 <script src="/expense-payees.js?v=20261126-1"></script>
 <link rel="stylesheet" href="/shopify-compact-header.css?v=20261110-inline-tabs">

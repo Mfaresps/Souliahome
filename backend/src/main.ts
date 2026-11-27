@@ -32,6 +32,7 @@ async function bootstrap(): Promise<void> {
       'Authorization',
       'X-Soulia-Vault-Refund',
       'X-Soulia-Vault-Collect',
+      'X-Device-Token',
     ],
   });
   app.useGlobalPipes(

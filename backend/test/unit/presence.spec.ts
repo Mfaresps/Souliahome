@@ -93,7 +93,7 @@ it('reads socket state after awaiting users in both broadcast and HTTP snapshots
   expect((gateway.server.emit as jest.Mock).mock.calls.at(-1)[1].users[0].isOnline).toBe(false);
 
   await gateway.handleConnection(tab);
-  const controller = new AuthController({} as any, gateway, users as any, {} as any);
+  const controller = new AuthController({} as any, gateway, users as any, {} as any, {} as any);
   users.findAll.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   const response = controller.getUsersStatus();
   await gateway.handleDisconnect(tab);
@@ -103,7 +103,7 @@ it('reads socket state after awaiting users in both broadcast and HTTP snapshots
 
 it('updates last seen using the authenticated JWT strategy userId', async () => {
   const { gateway, users } = fixture();
-  const controller = new AuthController({} as any, gateway, users as any, {} as any);
+  const controller = new AuthController({} as any, gateway, users as any, {} as any, {} as any);
   expect(await controller.updateLastSeen({ user: { userId: 'alice' } } as any)).toEqual({ success: true });
   expect(users.updateLastSeen).toHaveBeenCalledWith('alice');
 });

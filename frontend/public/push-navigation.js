@@ -38,7 +38,7 @@
     if (opening || !window.souliaPushAppReady || typeof currentUser === 'undefined' || !currentUser) return false;
     const params = pending?.searchParams;
     const record = params?.get('pushRecord');
-    if (!record || !(/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales):[a-f0-9]{24}$/.test(record) || /^prep-group:[\p{L}\p{N} _-]{1,40}$/u.test(record))) return false;
+    if (!record || !(/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales|login-approval|login-alert):[a-f0-9]{24}$/.test(record) || /^prep-group:[\p{L}\p{N} _-]{1,40}$/u.test(record))) return false;
     const [kind, id] = record.split(':');
     if (!['admin', 'staff', 'viewer'].includes(currentUser.role)) return false;
     const destination = { tx: 'invoice-view', shopify: 'shopify-orders', followup: 'followups',
@@ -54,7 +54,14 @@
     const event = /^[A-Za-z0-9_-]{1,80}$/.test(rawEvent) ? rawEvent : '';
     opening = true;
     try {
-      if (kind === 'prep-group') {
+      if (kind === 'login-alert') {
+        // «محاولات دخول فاشلة على حسابك — هل هذا أنت؟» (auth-security.js)
+        await window.SouliaAuth?.openLoginAlert(id);
+      } else if (kind === 'login-approval') {
+        // A sign-in request for this account (auth-security.js); only a trusted device can answer it.
+        if (!window.SouliaAuth?.currentDeviceToken()) throw new Error(currentLang === 'en' ? 'Approve sign-ins from a trusted device of this account.' : 'الموافقة على الدخول متاحة من جهاز موثوق لهذا الحساب فقط.');
+        await window.SouliaAuth.openApproval(id);
+      } else if (kind === 'prep-group') {
         clearBoardFilters();
         const search = document.querySelector('#pu-prep-search');
         if (search) search.value = id;

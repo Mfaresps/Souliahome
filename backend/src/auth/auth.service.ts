@@ -1,92 +1,50 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable, UnauthorizedException, Inject, forwardRef, HttpException, HttpStatus } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { MentionsService } from '../mentions/mentions.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { LoginDto } from './dto/login.dto';
-import { TotpService } from './totp.service';
 import { ClientContext } from '../shared/client-context.util';
+import { SignInVerificationService } from './sign-in-verification.service';
+import { AuthUserPayload, buildAuthUserPayload } from './auth-user-payload';
 
-import { MAX_LOGIN_ATTEMPTS, lockMinutesFor, minutesLeft, nextLockLevel } from './login-lockout.util';
+import { LoginGuardService } from './login-guard.service';
+import { TrustedDevicesService } from './trusted-devices.service';
+import { BLOCKED_MESSAGE, GENERIC_LOGIN_ERROR, lockedMessage, userKeyOf } from './login-guard.util';
+import { deviceLabel } from './auth-security.util';
 
-// In-memory store for password reset tokens (token → { userId, expiresAt })
-const resetTokens = new Map<string, { userId: string; expiresAt: number }>();
+let DUMMY_HASH = '';
+/** A real bcrypt hash compared against when the username does not exist. */
+function dummyHash(): string {
+  if (!DUMMY_HASH) DUMMY_HASH = bcrypt.hashSync('soulia-no-such-account-' + Math.random(), 10);
+  return DUMMY_HASH;
+}
+
+export { buildAuthUserPayload };
+export type { AuthUserPayload };
 
 // In-memory user status tracker
 const usersStatus: Record<string, { status: 'online' | 'offline'; lastSeen: Date }> = {};
-
-export interface AuthUserPayload {
-  id: string;
-  username: string;
-  name: string;
-  role: string;
-  roleId: string | null;
-  phone: string;
-  avatar: string;
-  jobTitle: string;
-  perms: string[];
-  lastLogin: string | null;
-  lastSeen: string | null;
-  createdAt: string | null;
-  isActive: boolean;
-  totpEnabled: boolean;
-  onboardingPending: boolean;
-}
-
-/**
- * Single source of truth for the user object returned to the client (login,
- * TOTP verify, /auth/me). Every field the profile page reads must be here —
- * lastLogin/createdAt used to be omitted, so the UI showed "غير متاح".
- *
- * `lastLoginOverride` lets the login flow report the *previous* login instead
- * of the one being performed right now.
- */
-export function buildAuthUserPayload(
-  user: Record<string, any>,
-  lastLoginOverride?: Date | null,
-): AuthUserPayload {
-  const iso = (v: unknown): string | null => {
-    if (!v) return null;
-    const d = v instanceof Date ? v : new Date(v as string);
-    return isNaN(d.getTime()) ? null : d.toISOString();
-  };
-  return {
-    id: user._id ? String(user._id) : String(user.id ?? ''),
-    username: user.username || '',
-    name: user.name || '',
-    role: user.role || '',
-    roleId: user.roleId || null,
-    phone: user.phone || '',
-    avatar: user.avatar || '',
-    jobTitle: user.jobTitle || '',
-    perms: user.perms || [],
-    lastLogin: iso(lastLoginOverride !== undefined ? lastLoginOverride : user.lastLogin),
-    lastSeen: iso(user.lastSeen),
-    createdAt: iso(user.createdAt),
-    isActive: user.isActive !== false,
-    totpEnabled: !!user.totpEnabled,
-    onboardingPending: !!user.onboardingPending,
-  };
-}
 
 export interface LoginResponse {
   accessToken?: string;
   user?: AuthUserPayload;
   requireTotp?: boolean;
   requireTotpSetup?: boolean;
-  userId?: string;
+  requireVerification?: boolean;
+  challenge?: string;
+  [key: string]: unknown;
 }
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-    private readonly mentionsService: MentionsService,
+    @Inject(forwardRef(() => MentionsService)) private readonly mentionsService: MentionsService,
     private readonly auditService: SecurityAuditService,
-    private readonly totpService: TotpService,
+    private readonly verification: SignInVerificationService,
+    private readonly guard: LoginGuardService,
+    private readonly devices: TrustedDevicesService,
   ) {}
 
   /**
@@ -95,227 +53,91 @@ export class AuthService {
    * with no origin cannot distinguish an employee mistyping their own password
    * from someone else attacking the account — which is the only question an
    * admin looking at a lockout actually has.
+   *
+   * ⚠ A right password finishes the sign-in only when no second step is needed. Otherwise it
+   * returns a CHALLENGE (SignInVerificationService); the second step needs that challenge, so a
+   * Google/email code can never replace the password (Nov 27, 2026 — the old /auth/totp/verify
+   * signed in with userId + code only).
    */
   async login(
     loginDto: LoginDto,
     ipAddress?: string,
     client?: ClientContext,
+    guardIp?: string,
   ): Promise<LoginResponse> {
+    // ⚠ Locks and limits key on the real peer IP (nginx X-Real-IP), never on X-Forwarded-For, which
+    // the caller can write — `guardIp` comes from the controller. Password-guessing protection:
+    // login-guard.util.ts (a lock falls on the SOURCE guessing, never on the account).
+    const ip = guardIp || ipAddress || '';
+    const userKey = userKeyOf(loginDto.username);
+    const label = deviceLabel(client);
+    const logBase = { username: loginDto.username, ip, device: client?.device || '', browser: client?.browser || '', os: client?.os || '' };
+
+    if (this.guard.overIpRate(ip)) {
+      await this.guard.log({ ...logBase, result: 'rate-limited' });
+      throw new HttpException({ message: 'عدد كبير من المحاولات من هذا الجهاز. حاول مرة أخرى بعد دقيقة.', code: 'RATE_LIMITED' }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     const user = await this.usersService.findByUsername(loginDto.username);
+    const device = user && loginDto.deviceToken ? await this.devices.findValid(String(user._id), loginDto.deviceToken) : null;
+    const trusted = !!device;
+    const sourceId = device ? `dev:${device._id}` : `ip:${ip}`;
+    const userId = user ? String(user._id) : '';
+    const st = await this.guard.state(userKey, sourceId, ip, trusted);
 
-    if (!user) {
-      try { await this.auditService.log({ userId: 'unknown', username: loginDto.username, violationType: 'failed_login', action: 'Failed login: unknown account', ipAddress, client }); } catch { /* Keep the existing authentication response. */ }
-      // Unknown username — still audit so we catch brute-force on valid names
-      throw new UnauthorizedException('اسم المستخدم أو كلمة المرور غير صحيحة');
+    if (st.hard) {
+      await this.guard.log({ ...logBase, userId, result: 'blocked', trusted, sourceId });
+      throw new HttpException({ message: BLOCKED_MESSAGE, code: 'LOGIN_BLOCKED', canUnlock: true }, 423);
+    }
+    const waitMin = Math.max(st.lockedMinutes, st.ipBlockedMinutes);
+    if (waitMin > 0) {
+      await this.guard.log({ ...logBase, userId, result: 'locked', trusted, sourceId });
+      throw new HttpException({ message: lockedMessage(waitMin), code: 'LOGIN_LOCKED', minutes: waitMin, canUnlock: true }, 423);
+    }
+    if (st.powRequired) {
+      const bind = `${userKey}|${ip}`;
+      // Cloudflare Turnstile when its keys are set; the proof of work otherwise, or when Cloudflare
+      // cannot be reached.
+      const siteKey = this.guard.captchaSiteKey();
+      const captcha = siteKey ? await this.guard.verifyCaptcha(loginDto.captcha, ip) : 'unavailable';
+      if (captcha === 'bad') {
+        await this.guard.log({ ...logBase, userId, result: loginDto.captcha ? 'captcha-failed' : 'captcha-required', trusted, sourceId });
+        throw new HttpException({ message: 'يلزم التحقق من أنك لست برنامجًا آليًا.', code: 'CAPTCHA_REQUIRED', captcha: { provider: 'turnstile', siteKey } }, HttpStatus.PRECONDITION_REQUIRED);
+      }
+      if (captcha === 'unavailable' && !this.guard.usePow(bind, loginDto.pow)) {
+        await this.guard.log({ ...logBase, userId, result: loginDto.pow ? 'pow-failed' : 'pow-required', trusted, sourceId });
+        throw new HttpException({ message: 'يلزم التحقق من أنك لست برنامجًا آليًا.', code: 'POW_REQUIRED', pow: this.guard.issuePow(bind) }, HttpStatus.PRECONDITION_REQUIRED);
+      }
     }
 
-    // Already locked
+    // An unknown username costs the same time as a wrong password (no account discovery by timing).
+    const passwordOk = await bcrypt.compare(String(loginDto.password || ''), user?.password || dummyHash());
+    if (!user || !passwordOk) {
+      const out = await this.guard.fail({ userKey, sourceId, ip, device: label, trusted });
+      await this.guard.log({ ...logBase, userId, result: 'bad-credentials', trusted, sourceId });
+      if (user && (out.newlyLocked || out.newlyHard)) {
+        await this.verification.loginAttackAlert(user, { ip, client, sourceId, userKey, hard: out.newlyHard, minutes: out.lockedMinutes }).catch(() => undefined);
+      }
+      if (user && out.attackStarted) {
+        this.auditService.log({ userId, username: user.username, violationType: 'login_attack' as any, action: 'محاولات تخمين متكررة على الحساب من عدة مصادر — طُلب التحقق من الجميع لمدة ساعة', ipAddress: ip, client }).catch(() => undefined);
+      }
+      if (out.newlyHard) throw new HttpException({ message: BLOCKED_MESSAGE, code: 'LOGIN_BLOCKED', canUnlock: true }, 423);
+      if (out.newlyLocked) throw new HttpException({ message: lockedMessage(out.lockedMinutes), code: 'LOGIN_LOCKED', minutes: out.lockedMinutes, canUnlock: true }, 423);
+      // ⚠ One message for every failure: no remaining-attempts count, no hint which part was wrong.
+      throw new UnauthorizedException({ message: GENERIC_LOGIN_ERROR, code: 'BAD_CREDENTIALS' });
+    }
+
+    // A disabled account is named only to someone who knows its password.
     if (user.isActive === false) {
-      await this.auditService.log({
-        userId: user._id.toString(),
-        username: user.username,
-        violationType: 'failed_login',
-        action: 'محاولة تسجيل دخول على حساب مُعطَّل',
-        detail: `السبب: ${user.lockReason || 'محظور'}`,
-        ipAddress,
-        client,
-      });
-      throw new UnauthorizedException(
-        `🔒 تم تعطيل هذا الحساب — ${user.lockReason || 'تواصل مع المدير لإعادة التفعيل'}`,
-      );
+      await this.guard.log({ ...logBase, userId, result: 'disabled', trusted, sourceId });
+      throw new UnauthorizedException(`🔒 تم تعطيل هذا الحساب — ${user.lockReason || 'تواصل مع المدير لإعادة التفعيل'}`);
     }
 
-    // A sign-in pause is checked BEFORE the password: while it runs, even the right password is
-    // refused, or the pause would not slow down someone guessing.
-    const now = new Date();
-    const pausedFor = minutesLeft(user.loginLockedUntil, now);
-    if (pausedFor > 0) {
-      try {
-        await this.auditService.log({
-          userId: user._id.toString(),
-          username: user.username,
-          violationType: 'failed_login',
-          action: 'محاولة تسجيل دخول أثناء الإيقاف المؤقت',
-          ipAddress,
-          client,
-        });
-      } catch { /* the refusal does not depend on the audit row */ }
-      throw new UnauthorizedException(
-        `تم إيقاف تسجيل الدخول إلى هذا الحساب مؤقتًا بسبب محاولات فاشلة متكررة — حاول بعد ${pausedFor} دقيقة`,
-      );
-    }
-
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-
-    if (!isPasswordValid) {
-      const attempts = await this.usersService.incrementLoginAttempts(user._id.toString());
-
-      await this.auditService.log({
-        userId: user._id.toString(),
-        username: user.username,
-        violationType: 'failed_login',
-        action: `فشل تسجيل الدخول — المحاولة ${attempts} من ${MAX_LOGIN_ATTEMPTS}`,
-        detail: 'كلمة مرور خاطئة',
-        ipAddress,
-        client,
-      });
-
-      if (attempts >= MAX_LOGIN_ATTEMPTS) {
-        // Pause new sign-ins; never disable the account (auth/login-lockout.util.ts).
-        const level = nextLockLevel(user.loginLockLevel, user.loginLockStartedAt, now);
-        const minutes = lockMinutesFor(level);
-        const until = await this.usersService.startLoginPause(user._id.toString(), MAX_LOGIN_ATTEMPTS, level, minutes, now);
-
-        if (until) {
-          const lockReason = `إيقاف مؤقت لتسجيل الدخول ${minutes} دقيقة بعد ${MAX_LOGIN_ATTEMPTS} محاولات فاشلة`;
-          await this.auditService.log({
-            userId: user._id.toString(),
-            username: user.username,
-            violationType: 'account_locked',
-            action: lockReason,
-            detail: `IP: ${ipAddress || 'غير معروف'}`,
-            ipAddress,
-            client,
-          });
-
-          // The notification names the origin too — an admin reading it on their
-          // phone should not have to open the panel to learn whether this came
-          // from the office or from an unknown device.
-          const origin = [client?.browser, client?.os, client?.device]
-            .filter(Boolean)
-            .join(' · ');
-          await this._notifyAdmins(
-            user.username,
-            user.name,
-            `🚨 تم إيقاف تسجيل الدخول إلى حساب "${user.name || user.username}" مؤقتًا لمدة ${minutes} دقيقة بعد ${MAX_LOGIN_ATTEMPTS} محاولات فاشلة. الجلسات المفتوحة لم تتأثر، ويمكن فك الإيقاف من صفحة الأمان. IP: ${ipAddress || 'غير معروف'}${origin ? ` — ${origin}` : ''}`,
-          );
-        }
-
-        throw new UnauthorizedException(
-          `تم إيقاف تسجيل الدخول إلى هذا الحساب مؤقتًا بسبب محاولات فاشلة متكررة — حاول بعد ${minutes} دقيقة`,
-        );
-      }
-
-      const remaining = MAX_LOGIN_ATTEMPTS - attempts;
-      throw new UnauthorizedException(
-        `كلمة المرور غير صحيحة — تبقى ${remaining} محاولة قبل إيقاف تسجيل الدخول مؤقتًا`,
-      );
-    }
-
-    // Capture the *previous* login before it is overwritten below, so the
-    // profile page shows "last time you signed in", not "just now".
-    const previousLogin: Date | null = user.lastLogin ?? null;
-
-    // Successful login — reset counter
-    await this.usersService.resetLoginAttempts(user._id.toString());
-    await this.usersService.updateLastLogin(user._id.toString());
-
-    // Check if TOTP is required
-    const global2fa = await this.totpService.getGlobal2faStatus();
-    const userId = user._id.toString();
-    const isAdmin = user.role === 'admin';
-
-    // If 2FA is globally disabled, skip TOTP entirely for everyone
-    if (!global2fa) {
-      const payload = { sub: userId, username: user.username };
-      const accessToken = this.jwtService.sign(payload);
-      return {
-        accessToken,
-        user: buildAuthUserPayload(user, previousLogin),
-      };
-    }
-
-    // Admins must always use TOTP — if not set up yet, force setup flow
-    if (isAdmin && !user.totpEnabled) {
-      return { requireTotp: true, userId, requireTotpSetup: true };
-    }
-
-    const needsTotp = isAdmin ? true : global2fa && user.totpEnabled;
-
-    if (needsTotp) {
-      const deviceToken = (loginDto as any).deviceToken as string | undefined;
-      console.log('[TRUST] userId:', userId, '| deviceToken length:', deviceToken?.length ?? 0, '| token preview:', deviceToken?.slice(0,8) ?? 'EMPTY');
-      const trusted = await this.totpService.isTrustedDevice(userId, deviceToken ?? '');
-      console.log('[TRUST] isTrusted result:', trusted);
-      if (!trusted) {
-        return { requireTotp: true, userId };
-      }
-    }
-
-    const payload = { sub: userId, username: user.username };
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: buildAuthUserPayload(user, previousLogin),
-    };
-  }
-
-  async verifyTotpStep(
-    userId: string,
-    token: string,
-    deviceToken?: string,
-    trustDevice?: boolean,
-  ): Promise<LoginResponse> {
-    const user = await this.usersService.findById(userId);
-    if (!user || !user.totpSecret) throw new UnauthorizedException('بيانات غير صحيحة');
-
-    const valid = this.totpService.verifyToken(user.totpSecret, token);
-    if (!valid) {
-      try { await this.auditService.log({ userId: String(user._id), username: user.username, violationType: 'otp_violation', action: 'Two-factor authentication verification failed' }); } catch { /* Preserve authentication denial. */ }
-      throw new UnauthorizedException('رمز التحقق غير صحيح');
-    }
-
-    if (trustDevice) {
-      const newToken = this.totpService.generateDeviceToken();
-      await this.totpService.addTrustedDevice(userId, newToken);
-      deviceToken = newToken;
-    }
-
-    const payload = { sub: userId, username: user.username };
-    return {
-      accessToken: this.jwtService.sign(payload),
-      user: buildAuthUserPayload(user),
-      ...(trustDevice && { deviceToken }),
-    };
-  }
-
-  async forgotVerifyUsername(username: string): Promise<{ userId: string }> {
-    const user = await this.usersService.findByUsername(username);
-    if (!user || user.role !== 'admin') throw new BadRequestException('اسم المستخدم غير موجود أو لا يملك صلاحية المدير');
-    if (!user.totpEnabled || !user.totpSecret) throw new BadRequestException('لم يتم تفعيل التحقق بخطوتين لهذا الحساب');
-    return { userId: user._id.toString() };
-  }
-
-  async forgotVerifyTotp(userId: string, token: string): Promise<{ resetToken: string }> {
-    const user = await this.usersService.findById(userId);
-    if (!user || !user.totpSecret) throw new UnauthorizedException('بيانات غير صحيحة');
-    const valid = this.totpService.verifyToken(user.totpSecret, token);
-    if (!valid) {
-      try { await this.auditService.log({ userId: String(user._id), username: user.username, violationType: 'otp_violation', action: 'Two-factor authentication verification failed' }); } catch { /* Preserve authentication denial. */ }
-      throw new UnauthorizedException('رمز التحقق غير صحيح');
-    }
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    resetTokens.set(resetToken, { userId, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 minutes
-    return { resetToken };
-  }
-
-  async forgotReset(resetToken: string, newPassword: string): Promise<{ success: boolean }> {
-    const entry = resetTokens.get(resetToken);
-    if (!entry || Date.now() > entry.expiresAt) throw new BadRequestException('انتهت صلاحية رمز الاسترداد — حاول مجدداً');
-    if (newPassword.length < 6) throw new BadRequestException('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-    await this.usersService.updateUser(entry.userId, { password: newPassword } as any);
-    resetTokens.delete(resetToken);
-    return { success: true };
-  }
-
-  // Emergency: verify old password instead of TOTP (when TOTP is unavailable after system reset)
-  async forgotVerifyPassword(userId: string, currentPassword: string): Promise<{ resetToken: string }> {
-    const user = await this.usersService.findById(userId);
-    if (!user) throw new UnauthorizedException('بيانات غير صحيحة');
-    const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    resetTokens.set(resetToken, { userId, expiresAt: Date.now() + 10 * 60 * 1000 });
-    return { resetToken };
+    await this.guard.success(userKey, sourceId);
+    await this.usersService.resetLoginAttempts(userId);
+    await this.guard.log({ ...logBase, userId, result: 'password-ok', trusted, sourceId });
+    // Under attack, even a trusted device passes the second step (owner's rule).
+    return this.verification.afterPassword(user, client, loginDto.deviceToken, { forceVerify: st.underAttack }) as Promise<LoginResponse>;
   }
 
   private async _notifyAdmins(_username: string, _name: string, message: string): Promise<void> {

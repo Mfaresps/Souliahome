@@ -80,6 +80,7 @@ it('submits a combined edit once and resumes the same save after the OTP gate', 
     const currentLang='en', _shopifyEditId='o1', _shopifyEditItems=[{productId:'p1',qty:2,price:1000}];
     const _spDiscType='fixed', _spDiscCodes=[{id:'c1',code:'SAVE'}], _spDiscOtpId='otp1';
     const _spDiscBase=(n)=>n, _spBundleDiscountExcess=()=>0; let _spEditConfirmBreak=false, _spBundleOverride=null; // bundle rules: bundle-guard.spec / shopify-bundle-edit.cjs
+    let _spFreeShip=false; // «شحن مجاني»: shopify-free-shipping-edit.spec / shopify-free-shipping.cjs
     const document={getElementById:()=>null,removeEventListener:()=>{}};
     const toast=message=>messages.push(message),t=String,tf=String,confirm=()=>true;
     const _shopifyEditOutsideClick=()=>{},_spDiscountDirty=()=>true;
@@ -97,7 +98,7 @@ it('submits a combined edit once and resumes the same save after the OTP gate', 
   expect(env.state().calls).toEqual([{ url: '/shopify/orders/o1/edit', body: {
     items: [{ productId: 'p1', qty: 2, price: 1000 }], discount: {
       manualDiscount: 300, manualDiscountType: 'fixed', codesDiscount: 100,
-      discountCodeId: 'c1', discountCode: 'SAVE', highValueDiscountOtpId: 'otp1',
+      discountCodeId: 'c1', discountCode: 'SAVE', highValueDiscountOtpId: 'otp1', freeShipping: false,
     },
   } }]);
   expect(env.state().closed).toBe(true); expect(env.state().sameCallback).toBe(true);
@@ -113,8 +114,9 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const _spOfferCtx=()=>({}), _offerSummaryOf=()=>null, _offerTagHtml=String, _shopifyEditItems=[]; // offers are covered by their own browser checks
       const _saleShipDisc=(o)=>Math.min(Math.max(0,Number(o&&o.shippingDiscount)||0),Math.max(0,Number(o&&o.shipCost)||0),Math.max(0,Number(o&&o.discount)||0)); // shipping-discount-mirror.spec checks the real one
       ${extractFn(src, '_spDepositOf')}
+      ${extractFn(src, '_spOrderMoney')}
       ${extractFn(src, '_spDiscSummaryHtml')}
-      return _spDiscSummaryHtml(grand,0,0,0,0,grand);
+      return _spDiscSummaryHtml(grand,0,0,0,_spOrderMoney({},grand,0,false));
     `);
     const order = {depositReceipts:[
       {status:'معتمد',amount:1500,method:'cash'},
@@ -138,10 +140,11 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
     const src = fs.readFileSync(INDEX_HTML, 'utf8').replace(/\r\n/g, '\n');
     const functions = ['_spCodeAmount', '_spCodesTotal', '_spManualAmount', '_spDiscInputValue',
       '_spRenderDiscountTab', '_spRenderDiscountPreview', '_updateShopifyEditSummary',
-      '_spDiscAmounts', '_spDiscountPreflight', '_spPersistDiscount', '_spSaveDiscount', '_spIsEditable', '_spDepositOf']
+      '_spDiscAmounts', '_spDiscountPreflight', '_spPersistDiscount', '_spSaveDiscount', '_spIsEditable', '_spDepositOf',
+      '_spOrderMoney', '_spRoomMsg', '_spFreeShipHtml']
       .map(name => extractFn(src, name)).join('\n');
     return new Function(`
-      let _spEditOrder, _shopifyEditItems=[], _spDiscCodes=[], _spDiscType='fixed';
+      let _spEditOrder, _shopifyEditItems=[], _spDiscCodes=[], _spDiscType='fixed', _spFreeShip=false;
       let input=null, summary=[], payload=null, _spDiscOtpId='', _spDiscOtpAmount=0, _spEditBaseline='';
       let pending=false, closed=false, reloads=0,accepted=true;
       const _spConfirmEditSubmission=async()=>accepted;
@@ -155,7 +158,8 @@ describe('Shopify discount survives apply, redraw and reopening', () => {
       const esc=String, escHtml=String, t=String, tf=(k,v)=>k+JSON.stringify(v), fmtJ=String, fmtN=String;
       const _spActiveCodes=()=>[], _spSuggestionsHtml=()=>'', _spDiscGuardHtml=()=>'';
       const _payMethodLabel=String;
-      const _spDiscSummaryHtml=(...args)=>{summary=args;return JSON.stringify(args);};
+      // [items, Shopify, codes, extra, shipping, total] — the summary now receives the money object (_spOrderMoney).
+      const _spDiscSummaryHtml=(...a)=>{summary=[a[0],a[1],a[2],a[3],a[4].ship,a[4].total];return JSON.stringify(summary);};
       const _isOtpRequired=()=>false, _logBundleDiscAction=()=>{}, toast=()=>{};
       const _spEditSnapshot=()=>'', _spDiscFlashSaved=()=>{}, _spRefreshOrderRow=()=>{};
       const api=async (url, options)=>{
@@ -1254,7 +1258,11 @@ describe('Shopify — الخصم الإضافي يظهر ويُحسب في كل 
     const i = be.indexOf('tx = await this.txModel.create(');
     expect(i).toBeGreaterThanOrEqual(0);
     const block = be.slice(i, i + 2600);
-    const line = block.slice(block.indexOf('discount: Math.min('), block.indexOf('manualDiscount:'));
+    // Nov 27, 2026: tx.discount is written from `confirmedDiscount` (declared above the create; with «شحن مجاني»
+    // it is the items' part from shopify-order-total.util.ts).
+    expect(block).toContain('discount: confirmedDiscount,');
+    const at = be.lastIndexOf('const confirmedDiscount', i);
+    const line = be.slice(at, be.indexOf('const confirmedSmartBundles', at));
     expect(line).toContain('order.discount');
     expect(line).toContain('order.codesDiscount');
     expect(line).toContain('order.manualDiscount');

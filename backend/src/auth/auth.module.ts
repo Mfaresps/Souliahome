@@ -9,6 +9,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { requireJwtSecret } from './jwt-secret.util';
 import { PresenceGateway } from './presence.gateway';
 import { TotpService } from './totp.service';
+import { UserSessionsService } from './user-sessions.service';
+import { AuthChallengeService } from './auth-challenge.service';
+import { TrustedDevicesService } from './trusted-devices.service';
+import { SecurityMailerService } from './security-mailer.service';
+import { TokenIssuerService } from './token-issuer.service';
+import { SignInVerificationService } from './sign-in-verification.service';
+import { PasswordPolicyService } from './password-policy.service';
+import { LoginGuardService } from './login-guard.service';
 import { UsersModule } from '../users/users.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { SecurityAuditModule } from '../security-audit/security-audit.module';
@@ -36,7 +44,7 @@ import { Settings, SettingsSchema } from '../settings/schemas/settings.schema';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PresenceGateway, TotpService],
-  exports: [AuthService, PresenceGateway, TotpService],
+  providers: [AuthService, JwtStrategy, PresenceGateway, TotpService, UserSessionsService, AuthChallengeService, TrustedDevicesService, SecurityMailerService, TokenIssuerService, SignInVerificationService, LoginGuardService, PasswordPolicyService],
+  exports: [AuthService, PresenceGateway, TotpService, UserSessionsService, TrustedDevicesService, SecurityMailerService],
 })
 export class AuthModule {}

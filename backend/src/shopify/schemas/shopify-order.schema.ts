@@ -508,6 +508,15 @@ export class ShopifyOrder {
   @Prop({ default: 0 })
   codesDiscount: number;
 
+  /**
+   * «شحن مجاني» chosen by an employee in the edit window: the customer pays no shipping
+   * (`{amount, by, byId, at}`, null = off). Ours — the webhook never writes it, like `manualDiscount`.
+   * The total follows shared rule shopify-order-total.util.ts; confirming records shipping charged 0.
+   * ⚠ `type: Object` is mandatory on a nullable prop (CannotDetermineTypeError at load otherwise).
+   */
+  @Prop({ type: Object, default: null })
+  freeShipping: { amount: number; by: string; byId: string; at: string } | null;
+
   /** معرّف OTP الموافقة على الخصم العالي، للتدقيق. */
   @Prop({ default: '' })
   highValueDiscountOtpId: string;

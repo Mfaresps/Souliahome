@@ -71,6 +71,7 @@ import { resolveShopifyPhone } from './shopify-phone.util';
 import { resolveShopifyClientName } from './shopify-client-name.util';
 import { shopifyLineQuantity } from './shopify-line-quantity.util';
 import { clampShippingDiscount, shopifyShippingDiscount, shopifyShippingDiscountCodes } from './shopify-discounts.util';
+import { confirmedFreeShipping, shopifyOrderMoney, ShopifyOrderMoneyInput } from './shopify-order-total.util';
 import { buildBundleSnapshot, bundleParentConflicts, compositionKey, groupInfoFromGraphql, hasBundles, lineDiscountOf, stampBundleItems } from './shopify-bundles.util';
 import { ShopifySyncApiService } from './sync/sync-api.service';
 import { carryShopifyLineFields } from '../shared/shopify-line.util';
@@ -1720,7 +1721,8 @@ export class ShopifyService {
     // carrier costs us — hence source 'shopify'. Recording that distinction is what will let the
     // two be compared once actualShipCost is captured.
     const shipTariff = resolvedCarrier
-      ? { zone: shipZone, price: Number(order.shipCost) || 0, source: 'shopify' as const, at: confirmedAt }
+      // «شحن مجاني» → the customer is charged 0 (shopify-order-total.util.ts).
+      ? { zone: shipZone, price: (order as any).freeShipping ? 0 : (Number(order.shipCost) || 0), source: 'shopify' as const, at: confirmedAt }
       : null;
 
     // Pre-creation stock snapshot for the Inventory Movement Log — taken BEFORE the
@@ -1772,17 +1774,24 @@ export class ShopifyService {
     let createdTxId = '';
     try {
       // ⚠ مقصوص بخصم Shopify نفسه: الخصم اليدوي والأكواد عمرهم ما بيتحسبوا خصم شحن.
-    const confirmedSd = clampShippingDiscount(order.shippingDiscount, order.shipCost,
+    // «شحن مجاني» (an employee waived shipping before confirming): the customer is charged 0 shipping, so the
+    // invoice's shipCost is 0 and its discount is the items' part only (shopify-order-total.util.ts). The shipping
+    // Shopify listed is kept in `freeShipping` for the record.
+    const confirmedFree = confirmedFreeShipping(order as any);
+    const confirmedShipCost = confirmedFree ? confirmedFree.shipCost : order.shipCost;
+    const confirmedSd = confirmedFree ? 0 : clampShippingDiscount(order.shippingDiscount, order.shipCost,
       Math.min(Number(order.discount) || 0, Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER));
     const confirmedSdCodes = confirmedSd > 0 ? shopifyShippingDiscountCodes(order.rawData) : [];
     const confirmedLines = (settledConfirmed as any[]).map((it: any) => (it.shopifyLineId && !it.lineId ? { ...it, lineId: 'sh:' + it.shopifyLineId } : it));
     const confirmedBundleField = confirmedBundleSnapshot ? { bundleSnapshot: confirmedBundleSnapshot } : {};
-    const confirmedDiscount = Math.min((Number(order.discount) || 0) + (Number(order.codesDiscount) || 0) + (Number(order.manualDiscount) || 0),
-      Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER);
+    const confirmedDiscount = confirmedFree ? confirmedFree.discount
+      : Math.min((Number(order.discount) || 0) + (Number(order.codesDiscount) || 0) + (Number(order.manualDiscount) || 0),
+        Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER);
     const confirmedSmartBundles = await this.transactionsService.smartBundlesFor({
       items: confirmedLines, discountCodeId: order.discountCodeId || '', discount: confirmedDiscount,
-      shippingDiscount: confirmedSd, shipCost: order.shipCost, itemsTotal: order.itemsTotal, total: order.total,
+      shippingDiscount: confirmedSd, shipCost: confirmedShipCost, itemsTotal: order.itemsTotal, total: order.total,
     });
+    const confirmedFreeShippingField = confirmedFree ? { freeShipping: confirmedFree.freeShipping } : {};
     const confirmedDivergenceField = acknowledgedDivergence ? { shopifyDivergence: acknowledgedDivergence } : {};
     const confirmedShippingDiscount = confirmedSd > 0
       ? { shippingDiscount: confirmedSd, shippingDiscountSource: 'order', ...(confirmedSdCodes.length ? { shippingDiscountCodes: confirmedSdCodes } : {}) }
@@ -1813,7 +1822,8 @@ export class ShopifyService {
       ...confirmedDivergenceField,
       total: order.total,
       itemsTotal: order.itemsTotal,
-      shipCost: order.shipCost,
+      shipCost: confirmedShipCost,
+      ...confirmedFreeShippingField,
       shipZone,
       carrierCode: resolvedCarrier,
       shipCo: resolvedCarrier ? carrierLabel(resolvedCarrier, 'en') : '',
@@ -1829,12 +1839,7 @@ export class ShopifyService {
       //   (صحيحاً) بجانب خصمٍ أقلّ منه، والـKPI يُبلغ عن خصومات أقلّ مما مُنح فعلاً.
       // ⚠ يُقصّ عند `itemsTotal` كمجموعة واحدة تماماً كـ`computeShopifyOrderTotal`
       //   الذي حسب `order.total` — وإلا اختلف الرقمان على الفاتورة نفسها.
-      discount: Math.min(
-        (Number(order.discount) || 0)
-          + (Number(order.codesDiscount) || 0)
-          + (Number(order.manualDiscount) || 0),
-        Number(order.itemsTotal) || Number.MAX_SAFE_INTEGER,
-      ),
+      discount: confirmedDiscount,
       // الجزء من `discount` اللي Shopify عمله على الشحن — تصنيف للتقارير بس (shared/sale-discount.util.ts).
       ...confirmedShippingDiscount,
       // يبقى مخزَّناً كتفصيل: «كم منه قرّره موظف؟» سؤال مراجعة لا يجيب عنه المجموع.
@@ -2144,21 +2149,11 @@ export class ShopifyService {
    *
    * `discount` هنا هو خصم شوبيفاي، و`manualDiscount`/`codesDiscount` خصومنا الإضافية.
    */
-  private computeShopifyOrderTotal(order: {
-    itemsTotal: number;
-    shipCost?: number;
-    discount?: number;
-    manualDiscount?: number;
-    codesDiscount?: number;
-  }): { totalDiscount: number; total: number } {
-    const itemsTotal = Number(order.itemsTotal) || 0;
-    const raw =
-      (Number(order.discount) || 0) +
-      (Number(order.manualDiscount) || 0) +
-      (Number(order.codesDiscount) || 0);
-    const totalDiscount = Math.min(Math.max(0, raw), itemsTotal);
-    const total = Math.max(0, itemsTotal - totalDiscount + (Number(order.shipCost) || 0));
-    return { totalDiscount, total };
+  private computeShopifyOrderTotal(order: ShopifyOrderMoneyInput): { totalDiscount: number; total: number } {
+    // One rule, also used by the edit checks and the confirmation (shopify-order-total.util.ts):
+    // with «شحن مجاني» the customer pays no shipping.
+    const money = shopifyOrderMoney(order);
+    return { totalDiscount: money.totalDiscount, total: money.total };
   }
 
   /**
@@ -2300,11 +2295,33 @@ export class ShopifyService {
       patch.discountCode = String(discount.discountCode || '');
       const amount = patch.manualDiscount + patch.codesDiscount;
       if (amount > (patch.itemsTotal ?? before.itemsTotal)) throw new BadRequestException('الخصم يتجاوز إجمالي الأصناف');
+      // «شحن مجاني»: our own field (the webhook never writes it), so it survives Shopify updates like manualDiscount.
+      if (discount.freeShipping !== undefined) {
+        const want = discount.freeShipping === true;
+        if (want !== !!order.freeShipping) {
+          const ship = Number(order.shipCost) || 0;
+          if (want && ship <= 0) throw new BadRequestException('لا يوجد شحن على هذا الأوردر لإلغائه');
+          patch.freeShipping = want ? { amount: ship, by: actor.name, byId: actor.id, at: new Date().toISOString() } : null;
+          changes.push(want ? `شحن مجاني: لا يُحصَّل الشحن (${ship}) من العميل` : `إلغاء الشحن المجاني: يُحصَّل الشحن (${ship}) من العميل`);
+        }
+      }
+      const freeOn = patch.freeShipping !== undefined ? !!patch.freeShipping : !!order.freeShipping;
+      const money = shopifyOrderMoney({ ...before, shippingDiscount: order.shippingDiscount, ...patch, freeShipping: freeOn });
+      // Our discount beyond what Shopify left of the items would be cut silently by the cap — refuse it instead
+      // (only when the discount is being changed, so an unrelated edit is never blocked by an old figure).
+      const discountChanged = patch.manualDiscount !== (before.manualDiscount || 0)
+        || patch.codesDiscount !== (before.codesDiscount || 0) || patch.freeShipping !== undefined;
+      if (discountChanged && amount > money.room + 0.005) {
+        throw new BadRequestException({ code: 'DISCOUNT_OVER_ROOM', room: money.room, amount,
+          message: `الخصم الإضافي (${amount}) يتجاوز ما تبقّى من قيمة الأصناف بعد خصم Shopify (${money.room}) — لإلغاء الشحن استخدم «شحن مجاني»` });
+      }
+      // The waived shipping is a concession like any discount: it counts toward the manager-approval limit.
+      const approvalAmount = Math.round((amount + money.concession) * 100) / 100;
       // A direct-edit permission never bypasses the manual-entry discount ceiling.
-      if (amount > 0 && actor.role !== 'admin') {
+      if (approvalAmount > 0 && actor.role !== 'admin') {
         const settings = await this.settingsService.getSettings();
-        if (settings.otpEnabled !== false && amount > Number(settings.highValueDiscountLimit ?? 200)) {
-          const otp = await this.discountOtpService.assertOtpForTransaction(discount.highValueDiscountOtpId || '', amount);
+        if (settings.otpEnabled !== false && approvalAmount > Number(settings.highValueDiscountLimit ?? 200)) {
+          const otp = await this.discountOtpService.assertOtpForTransaction(discount.highValueDiscountOtpId || '', approvalAmount);
           if (otp.requestedById !== actor.id || String(otp.txRef).replace(/^#+/, '') !== String(order.ref).replace(/^#+/, '') || (otp.kind && otp.kind !== 'discount') || Date.parse(otp.expiresAt) <= Date.now()) {
             throw new BadRequestException('كود الخصم لا يخص هذا الموظف والأوردر أو انتهت صلاحيته');
           }
@@ -2333,7 +2350,9 @@ export class ShopifyService {
         changes.push(`استثناء خصم على الباقة (${ours} > ${base}) — ${reason}`);
       }
     }
-    patch.total = this.computeShopifyOrderTotal({ ...before, ...patch }).total;
+    // ⚠ The snapshot carries neither Shopify's shipping discount nor (when off) free shipping — read them from the order.
+    patch.total = this.computeShopifyOrderTotal({ ...before, shippingDiscount: order.shippingDiscount,
+      freeShipping: patch.freeShipping !== undefined ? patch.freeShipping : order.freeShipping, ...patch }).total;
     if (patch.total !== before.total) changes.push(`الإجمالي: ${before.total} ← ${patch.total}`);
     // Any edit that moves the total away from what Shopify charged is recorded; confirming then needs an
     // explicit acknowledgement (approveOrder). Nothing is pushed to Shopify.
@@ -2836,10 +2855,9 @@ export class ShopifyService {
     const orders = await this.shopifyOrderModel.find({ status: 'pending' });
     let fixed = 0;
     for (const order of orders) {
-      const itemsTotal = (order.items || []).reduce((s: number, i: any) => s + (i.price * i.qty), 0);
-      const total = Math.max(0, itemsTotal + (order.shipCost || 0) - (order.discount || 0));
-      order.itemsTotal = itemsTotal;
-      order.total = total;
+      order.itemsTotal = (order.items || []).reduce((s: number, i: any) => s + (i.price * i.qty), 0);
+      // Same rule as every other path: keeps our discounts and «شحن مجاني» (they were dropped here before).
+      order.total = this.computeShopifyOrderTotal(order).total;
       await order.save();
       fixed++;
     }

@@ -30,8 +30,8 @@
   function awaitsConfirmation(o) {
     if (!o || o.status !== 'pending' || o.cancelled || o.shopifyCancelled) return false;
     if (o.shipWithoutDeposit === true || o.confirmationApproved) return false;
-    if ((o.depositReceipts || []).some(r => ['معتمد', 'معلق'].includes(r?.status) && Number(r?.amount) > 0)) return false;
-    return !String(o.tags || '').toLowerCase().split(',').map(x => x.trim()).includes('confirmed');
+    /* A Shopify «confirmed» tag does not count (owner, Nov 27, 2026). */
+    return !(o.depositReceipts || []).some(r => ['معتمد', 'معلق'].includes(r?.status) && Number(r?.amount) > 0);
   }
   function active(o) {
     return awaitsConfirmation(o) && ['scheduled', 'due'].includes(o.confirmationDeferral?.status);

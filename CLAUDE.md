@@ -20,6 +20,278 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Password Policy — Admins Change Their Own With a Code; Staff Only Through an Admin (Nov 27, 2026)
+
+`backend/src/auth/password-policy.service.ts` + `frontend/public/password-policy.js/.css` (`window.SouliaPassword`).
+- ⚠ **A profile edit never changes a password** (`UsersService.updateUser` drops it). The only writer is
+  `UsersService.setPassword` (bcrypt, keeps the previous hash in `passwordHistory` — 4 old + current = last 5 —
+  sets `passwordChangedAt`, clears `passwordResetRequestedAt`); `passwordReused` checks the last 5.
+- **Admin, own password** (user window ⋯ own account / Settings ← الأمان «كلمة مرور الحساب»): one dialog —
+  current password (`POST /auth/security/password/check`, 5 wrong → 15-min pause, coded 401) → new twice (8+, not
+  current, not the last 5: `/password/validate`) → code in the dialog (step-up `password-change`) →
+  `POST /auth/security/password` → every session + trusted device ends, alert email, audit → the page signs out.
+- **Staff passwords**: staff never change their own. Allowed admins = the owner («admin») + admins the owner allowed
+  (`user.canResetStaffPasswords`, owner-only toggle in the user window, `POST /auth/security/staff-password-right/:id`).
+  Reset (user window or ⋮ «إعادة تعيين كلمة المرور»): generate (14 chars, `generateStrongPassword`) or type twice →
+  code (step-up `staff-password`) → `POST /auth/security/staff-password/:id` → a generated password is returned ONCE
+  and shown once; the employee's sessions end; audit «بواسطة X · device · IP» (never the password). Admin accounts
+  cannot be reset by another admin. A new account's password: 8+ (server), «توليد كلمة مرور قوية» shows it once after saving.
+- **Forgot password (sign-in page)**: staff and unknown names get the SAME answer `{requestSent:true}` (no account
+  revealed); a real staff account records `passwordResetRequestedAt` (≤ 1 per 30 min) and notifies the allowed admins
+  (mention `txId: 'pw-request:<id>'` → opens the reset window; users table tag «طلب إعادة تعيين»). Admins: the
+  recovery challenge — ⚠ now **email code first, always** (`resetRequirement`: no verified security email → no
+  recovery from the sign-in page), then Google Authenticator/backup if on. Email codes live **5 minutes** (was 10).
+- Changing the security email: when one exists, the step-up uses a code to the OLD address only.
+- ⚠ Mentions need `txId` (schema `required`) — security notices without it were silently dropped; they now use
+  `txId: 'security'` (→ the security log) / `'pw-request:<id>'`.
+- Tests: `users-credentials.service.spec.ts` (+1, history); compiled API on a scratch DB: 26 checks (real
+  Authenticator codes); browser: 13 (user window cases, reset + shown once, create + shown once, own change, staff
+  forgot request).
+
+## System PIN — Changed in One Dialog: Current PIN → New PIN → Code → Done (Nov 27, 2026)
+
+The card shows the PIN's state and one button («تغيير الرقم السري», or «تعيين الرقم السري» in amber when the stored
+PIN is an old non-4-digit one). `openSystemPinDialog` (index.html, state `_SP`) runs every step INSIDE the same dialog
+— ⚠ owner's rule: never a window over the window, so it does NOT use `SouliaAuth.stepUp` (that draws its own
+overlay); it calls `/auth/security/step-up`, `/auth/challenge/email`, `/auth/challenge/verify` itself (method switch
+تطبيق المصادقة / البريد when both exist; `done:false` → asks the second factor here).
+- ① current PIN → `POST /auth/security/system-pin/check` (`SignInVerificationService.checkCurrentPin`: 401
+  `CURRENT_PIN_WRONG` with attempts left, 5 wrong → 15-minute pause `CURRENT_PIN_PAUSED`, audit `vault_violation`).
+  ⚠ A coded 401 under /auth/security keeps the session (a bare 401 signs the page out). Skipped when the stored PIN
+  is not 4 digits (it cannot be typed). ② new PIN twice (must differ from the current) ③ 6-digit code ④ done.
+- ⚠ `POST /auth/security/system-pin` takes `currentPin` and re-checks it — step ① cannot be skipped via the API.
+- Browser check: 19 (real Google Authenticator code saves the PIN; wrong PIN/code inline; no second window; back;
+  old PIN starts at ②; ar/en, dark, 390).
+
+## Settings ← الأمان: «التحقق بخطوتين» Card Redesigned (Nov 27, 2026)
+
+`auth-security.js` `renderSecurityCard` + rules at the end of `auth-security.css`: a status summary (on / no method
+yet), «طرق التحقق» rows (تطبيق المصادقة · رموز الاسترداد · بريد الأمان — name, one line, state, compact action at the
+row's end), then «الأجهزة الموثوقة» (name built from browser/os in the page language; validity date in the tooltip).
+⚠ Owner's rule (changed Nov 27, latest): the sign-in checkbox reads «الوثوق بهذا الجهاز لمدة 30 يومًا»
+(«Trust this device for 30 days») — it replaced «عدم طلب التحقق مرة أخرى على هذا الجهاز»; the new-device alert says
+«وأُضيف إلى الأجهزة الموثوقة».
+Heading/toggle keys `stg2fa*` reworded (no emoji). Browser check: 13 (ar/en, dark, 390, empty and enabled states).
+
+## Users Page — Active Table, «الحسابات المعطّلة والموقوفة», «سجل الأمان» (Nov 27, 2026)
+
+Order: active accounts table → disabled section → «الجلسات والأجهزة» → «سجل الأمان». `users-page.css` (`.ux-*`).
+- **Table = active accounts only**, 5 columns: المستخدم · المسمّى الوظيفي · الدور · آخر ظهور (`_userSeenHtml`) · ⋮.
+  Status/joined/phone columns removed (joined date → identity `title`; phone still searchable). An active account that
+  cannot sign in for now gets a tag (`_userHoldTagHtml`: sign-in pause / suspension). Count line «N حساب نشط · M معطّل».
+- **«الحسابات المعطّلة والموقوفة»** (`#users-disabled-wrap`, `_renderDisabledUsers`): `users` with `isActive:false` merged
+  with `/security-audit/locked-users` (reason, pauses, suspensions). One row each: chip, reason, since/until, one button
+  (`adminUnlockUser` when the row came from the security list, else `toggleUserActive`) + the ⋮ menu (edit/delete).
+  Hidden when empty; the search box narrows it too. ⚠ `#locked-users-list` is kept (a notification link scrolls to it).
+- **«سجل الأمان»**: `_VIOLATION_LABEL` (formal MSA, every `ViolationType`), `_VIOLATION_TONE` (chip colour),
+  `_VIOLATION_GROUP` (filter `#sec-log-filter`), `_secDetailText` (English server texts rewritten, «المحاولة N من M —
+  السبب», no repeats/emoji), 24-hour summary line, 15 per page, user name resolved by `userId`. Phones: one card per event.
+- ⚠ `loadSecurityPanel({ifStale:true})` from `renderUsers` reads at most every 20 s (it ran 2 requests per keystroke).
+- **Compact layout (owner, Nov 27 — «سطر واحد، بدون تمرير طويل»)**: the four sections under the table
+  (disabled accounts, «الجلسات والأجهزة», «سجل الأمان», «سجل محاولات الدخول») are one line per row (~36–40px), the
+  details in tooltips; slim headers whose description / 24-hour summary is one ellipsised line (`title` = full
+  text); 10 rows per page (`_SEC_PAGE_SIZE`, attempts `limit=10`, session history `limit=10`); time as «27/11 ·
+  10:21 م» (`_uxWhenHtml`, full date in the tooltip). Sessions: the four stat tiles became one line in the header,
+  tabs + search + a filter select share one bar, the first 8 accounts then «عرض كل المستخدمين (N)» (`S.showAll`,
+  a search/filter/open account always shows), each open session is one row (`.uss-srow`), sign-out-all is an icon
+  button. Phones: two short lines per log row (who + time, then result + what). ⚠ index.html gives every table
+  cell on phones `padding:8px 10px !important` — the phone rules override it with `padding:0!important`.
+  Browser check: 15 (row heights, 8 + show all, 10 per page, no overflow, dark, 390).
+- Test: browser check over the compiled API on a scratch DB (25 checks, ar, dark, 390). `users-roles-unified.cjs`
+  now expects «لا يوجد دور».
+
+## Login Page — One Centred Card (Nov 27, 2026)
+
+The green story panel («أدِر أعمالك من مكان واحد») was removed (owner: simple, formal). `#login-page` = a dark
+green field, the white `#login-form` card centred (400px; phones 14px side margin), and only
+`.login-mark` «SOULIA / BUSINESS OPERATIONS» under it; the language switch sits in the page's top corner.
+Styles: the login block of `startup-experience.css` (two-id selectors, so they beat the old split-layout rules
+in index.html / login-space.css / auth-security.css). `#mobile-quote-bar` was removed too; the quote rotator and
+`applyLoginLang`'s story code find nothing and return.
+- The sign-in BUTTON reads «تسجيل دخول آمن» / «Secure Sign In» (`LOGIN_TEXT.signIn`) with an inline SVG lock
+  (`.lfp-btn-lock`, `currentColor` = the button text) on its LEFT — in RTL it gets `order:2` to stay left; hidden
+  while `aria-busy` (the spinner takes its place). ⚠ Every writer sets `#login-submit-label` only, never the
+  button — setting the button's text would wipe the icon. The heading stays «مرحبًا بعودتك / Welcome back».
+- Subtitle «Authorized access only» / «الدخول مقصور على المصرّح لهم فقط» (`LOGIN_TEXT.sub`).
+- Card styling (formal): 3px brand line on top (inset shadow), hairline under the header, 44px logo, every
+  control 46px tall with an 8px radius, inputs 16px text (iOS zoom), browser autofill kept white
+  (`-webkit-autofill` inset shadow), «Saved» a quiet text + tick (no pill). All in startup-experience.css.
+  ⚠ The password VALUE uses the Latin face (Inter) in both languages — the Arabic font draws the mask dots
+  large and heavy; Arabic placeholders keep the Arabic font via `::placeholder`.
+
+## Sign-in Sessions — «الجلسات والأجهزة» (Nov 27, 2026)
+
+Every successful sign-in is a row in raw collection `usersessions` (`auth/user-sessions.service.ts`, rules in
+`user-sessions.util.ts`) and its id goes in the token as `sid`. The row is both the live session and the login
+history (TTL `purgeAt` = 120 days). Fields: user, `method` (password · totp · trusted-device · …), device/browser/os,
+IP + place (`fetchGeo`), `createdAt`, `lastSeenAt` (≤ once a minute), `expiresAt` (= the token's exp), `newDevice`
+(first sign-in of this account from this device+browser+os), `endedAt/endReason (logout|revoked|revoked-all)/endedBy`.
+- ⚠ **JwtStrategy and the socket handshake refuse an ended session** — 401 `{code:'SESSION_ENDED'}` with who ended it.
+  State is cached 30 s per sid, but every end overwrites the cache, so a revoke is immediate (one process).
+  A sid whose row is missing is refused. If the row cannot be written at sign-in, the token is signed WITHOUT a sid.
+- **Old tokens (no sid)** keep working until «خروج من كل الأجهزة» sets `user.legacyTokensValidAfter` (tokens with
+  `iat` before it are refused). Nobody was signed out by the deploy.
+- Routes: `POST /auth/logout` · `GET /auth/sessions/overview` (admin: every account, open sessions, device count, last
+  sign-in, + `legacySockets`) · `GET /auth/sessions?userId&status&page` (admin any; others own) ·
+  `POST /auth/sessions/:sid/revoke` (admin any; others own other devices; own current → 400) ·
+  `POST /auth/sessions/user/:userId/revoke-all` (admin any; self keeps the current device).
+  Ending a session also drops its sockets with `session:ended {message, sid}`.
+- ⚠ `users:status` used to send every socket's IP/device/place to ALL signed-in employees; session details now go to
+  admin sockets only.
+- Page: `user-sessions.js/.css` (`window.SouliaSessions`) in `#active-sessions` on the Users page (admin): stats strip,
+  «حسب المستخدم» (account rows → session cards with «إنهاء الجلسة», «خروج من كل الأجهزة») and «سجل الدخول» (table, filters
+  by user/state, paging; cards on phones). Users-table ⋮ «الجلسات والأجهزة» → `focusUser`. `doLogout` calls
+  `notifyLogout` (plain fetch — ⚠ never api(): api() signs out on 401 and would loop). api() routes 401
+  `SESSION_ENDED` to `showEnded` (not the «account disabled» banner); the socket handler signs out only if the ended
+  sid is the one in storage (`currentSid()`).
+- Tests: `test/integration/user-sessions.service.spec.ts` (9; revert-checked: dropping the strategy check fails 4).
+  Compiled API on a scratch DB: 30 end-to-end checks; browser 21 (live sign-out of an open page, ar/en, dark, 390).
+  ⚠ Built alongside the sign-in verification work (email codes, trusted devices — `token-issuer.service.ts` now signs
+  the token); `presence.spec.ts` needs the new `AuthController` argument.
+
+## Password-Guessing Protection — the Source Is Locked, Never the Account (Nov 27, 2026)
+
+`auth/login-guard.util.ts` (rules) + `login-guard.service.ts` (raw `loginguard`, `loginattempts` TTL 180 d,
+`loginalerts`). ⚠ Owner's rule: a lock falls on the SOURCE guessing — `src:<username>|ip:<X-Real-IP>` or
+`|dev:<trustedDeviceId>` — never on the account, so nobody can shut the admin out by typing wrong passwords.
+The old account-wide pause (`loginLockedUntil`, `login-lockout.util`) is no longer applied at sign-in.
+- Per source: 3 failures → proof of work («لست برنامجًا آليًا», 428 `POW_REQUIRED`, signed challenge bound to
+  username + IP, one use, 15 zero bits, solved by the page in plain-JS SHA-256 — crypto.subtle is missing on http
+  LAN); 5 → locked 15 min (423 `LOGIN_LOCKED`, even the right password), repeats 30 → 60 within 24 h;
+  10 in 24 h → blocked until lifted (423 `LOGIN_BLOCKED`). Per IP: 20 failures / 15 min → IP blocked 15 min;
+  > 30 requests / min → 429. Per account: 20 failures / hour from any sources → «under attack» 1 h: robot check
+  for everyone and even trusted devices pass the second step (`afterPassword(..., {forceVerify})`).
+- A trusted device is never stopped by its IP being locked (its failures count on its own key).
+- ⚠ One message for wrong password AND unknown username: «بيانات الدخول غير صحيحة.» — no attempts count; an
+  unknown username costs a bcrypt compare too; a disabled account is named only after the right password.
+- Lifting: the owner — «فتح القفل برمز التحقق» on the login error → `POST /auth/login-unlock/start` → challenge
+  purpose `unlock` (Google / security-email code / backup code) → clears that source + its IP (password still
+  needed). An admin — «إلغاء الحظر» in «الحسابات المعطّلة والموقوفة» (`unlockAccount` deletes the account's
+  sources; panel state `loginBlock` on the user, hold `blocked`).
+- Alerts on a lock/block of a real account: owner gets «محاولات دخول فاشلة على حسابك — هل كانت منك؟» (socket
+  `auth:login-alert`, push record `login-alert:<id>`, mention) with «لا، لست أنا — احظر» (source blocked, account
+  under attack 24 h) / «نعم، كانت مني» (source lifted); the owner and every admin with a verified email are emailed;
+  audit `login_source_locked` / `login_attack`. ⚠ Per-attempt audit rows (which pushed every admin on every wrong
+  password) were replaced by `loginattempts` (every attempt, success included; admin `GET /auth/login-attempts`).
+- Login page also fixed: `syncLoginForm` / `applyLang` used to set the FORM's dir from the app language, so an
+  English page read right to left; the login page now follows only its own switch.
+- Tests: `test/integration/login-guard.service.spec.ts` (10; revert-checked: keying the lock on the account fails 7);
+  replaces `login-lockout.service.spec.ts`. Browser end-to-end: 18 checks. **Not deployed.**
+- **Cloudflare Turnstile (optional)**: with `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` set, the robot check
+  is Turnstile instead of the proof of work — 428 `CAPTCHA_REQUIRED {captcha:{siteKey}}`, the page renders the
+  widget under the password (`SouliaAuth.captchaToken`, `appearance:'interaction-only'`, action `login`) and resends
+  with `captcha`; the server checks it at `siteverify` (`LoginGuardService.verifyCaptcha`, 5 s). A proof of work is
+  NOT accepted in its place. ⚠ When the SERVER cannot reach Cloudflare it falls back to the proof of work (never
+  locks everyone out); when the PAGE cannot load the widget it says so — no client-side bypass. Keys come from the
+  Jenkins credential `soulia-turnstile` («Username with password»: username = Site Key, password = Secret Key);
+  missing → the proof of work stays (local copy, LAN). The Cloudflare widget's hostnames must include the live
+  domain. Attempt results `captcha-required` / `captcha-failed`. Cloudflare's public test keys
+  (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`) always pass — tests only.
+- **«سجل محاولات الدخول»** (Users page, admin, `#login-attempts-wrap`, after «سجل الأمان»): `_loadLoginAttempts` /
+  `_renderLoginAttempts` read `GET /auth/login-attempts?q&result&page` (server pages of 25; `q` = username or IP
+  PREFIX, regex characters taken literally; `result` = a group — `ATTEMPT_RESULT_GROUPS` ⚠ mirrored by the filter
+  options and `_LA_RESULT`) + `last24h` counts and which robot check is active. Clicking a username or IP filters by
+  it (values go through `escHtml(JSON.stringify(…))` — the username is attacker-typed; `esc` does not encode quotes).
+  `renderUsers` reads it at most every 20 s.
+- Tests: 2 more cases in `login-guard.service.spec.ts` (12; revert-checked: accepting a refused Turnstile token
+  fails 1). Browser over a scratch stack with the test keys: 20 checks (real widget, sign-in through it, the screen,
+  filters, search, hostile username as text, dark, 390, staff hidden). ⚠ This machine's link to Cloudflare is flaky:
+  one run hit the server fallback and the page's «تعذّر إكمال التحقق» message — both as designed.
+
+## Sign-in Verification — New Device, Trusted Devices, Email Codes, Reset (Nov 27, 2026)
+
+Audit first (all fixed here): **`POST /auth/totp/verify` signed in with `{userId, code}` alone — no password**; it had
+no rate limit and accepted ±6 steps (13 codes at once) and replays; `GET /auth/users-status` listed every account id
+to anyone; `totp/setup-init|setup-confirm` (no session) let anyone attach their own authenticator to an admin who had
+none, then reset the password through «نسيت كلمة المرور»; that flow also accepted the CURRENT password instead of a code;
+`deviceToken` was missing from `LoginDto`, so the whitelist pipe dropped it and «تذكّر هذا الجهاز» never worked;
+«تذكرني» kept the password in plain text (`rem_pass`).
+- **Rule**: a right password on an account that needs a second step returns a CHALLENGE (`authchallenges`, raw, stored
+  as SHA-256, 10 min, 5 wrong answers → locked), never a token. Every second-step route takes the challenge.
+  Who needs it (`needsSecondStep`): **admins always** (whatever the global switch); staff only when the global switch
+  is on AND they set up Google Authenticator. The switch («تطبيق التحقق على الموظفين أيضًا») no longer exempts admins.
+- **Methods** (any one for sign-in): Google Authenticator (±1 step, each step used once — `totpLastStep`, atomic) ·
+  email code (admin's verified `securityEmail`, 6 digits HMAC-hashed, 10 min, 60 s between sends, 3 per challenge,
+  5 per hour per account) · approval from a trusted device (socket `auth:login-approval` + push `security`/
+  `login-approval`, record `login-approval:<publicId>`; the new device shows a 2-digit number, the trusted device
+  picks it among three — a wrong pick denies; only a request carrying a valid `X-Device-Token` of the SAME account
+  can decide) · backup code (10, hashed, one use; shown once at setup). An admin with no method at all sets up Google
+  Authenticator inside the challenge (`challenge/setup-init|setup-confirm`).
+- **Trusted devices** (`trusteddevices`, raw, token hash only, `TRUST_DAYS` = 30 fixed from approval). Browser key
+  `localStorage soulia_dt:<username>`; pre-Nov-27 raw tokens on `user.trustedDevices` are converted once
+  (`migrateLegacy`). Revoked by password reset, 2FA reset, «إلغاء الثقة», turning Google off (keeps the current one).
+- **Forgot password (admin accounts only)**: `forgot-password/start` → `resetRequirement`: email + Google both when the
+  account has both (a backup code may stand for Google), else the one it has; staff are reset by an admin.
+  `forgot-password/reset` (≥ 8 chars) ends every session (`endAllForUser`), drops sockets, revokes trusted devices,
+  closes open challenges, emails the owner.
+- **Security email**: admin only, set by the account itself (Settings ← الأمان): current password → code to the NEW
+  address → confirm (5 tries). Old address notified on change/removal. Mail: `security-mailer.service.ts` over the same
+  `SMTP_*` env as the external assistant — the Jenkins credential `soulia-smtp` already set for it (owner, Nov 27) —
+  sender `SECURITY_MAIL_FROM`, else `ASSISTANT_MAIL_FROM`, else `SMTP_USER`; no retry queue (a code is useless after
+  10 min) — a failed send says so. Without SMTP the email method is hidden and admins use Google / trusted devices.
+- Another admin can «إعادة ضبط التحقق بخطوتين» (users ⋮, system PIN) — Google off, backup codes and devices gone.
+- **Look and language (owner, Nov 27)**: one formal 420 px card (login page's logo, title, ONE method at a time — the others behind a small
+  «طريقة تحقق أخرى / Try another way» link that opens a compact list (owner: no row of tabs), six code boxes with paste/autofill/arrow keys, error under the boxes, deep-green primary button with a
+  loading state, «العودة إلى تسجيل الدخول» as a text link, «اتصال آمن» under the card). Before sign-in it is a full
+  light page (`.sv-ov.is-page`); signed in (step-up, approval) a dimmed dialog. «الوثوق بهذا الجهاز لمدة 30 يومًا»
+  (30 يومًا)» is **unticked by default**. The login page has «العربية | English» (`.lfp-lang`, localStorage
+  `soulia_login_lang`, default = app pref, else browser): page, card, forgot flow and backup codes follow it before
+  sign-in; signed-in dialogs follow `currentLang`. Server texts are Arabic — English maps them by `code`
+  (`errText`) and the login errors by pattern (`loginError`). ⚠ `login-space.css` pins the password eye to the right;
+  the RTL rule in auth-security.css moves it left. Browser check: 26.
+- **«تأكيد الهوية» (step-up) before sensitive changes** (owner, Nov 27): `POST /auth/security/step-up {action}` →
+  a challenge (purpose `stepup`, `action` = `system-pin` | `security-email`) finished with the usual challenge routes
+  by Google Authenticator or a code to the CURRENT security email (no backup code, no trust box) →
+  `{stepUpReady}`. The change spends it once (`consumeStepUp`: same account, same action, finished, single use).
+  - **System PIN**: only `POST /auth/security/system-pin {pin, stepUp}`; ⚠ `PUT /settings` now refuses `vaultPass`
+    (400 `SYSTEM_PIN_STEP_UP`) — before, any admin session could set it with nothing else. Every admin is told
+    (in-app + email where verified); audit type `system_pin_changed`. No step-up factor → 400 `STEP_UP_UNAVAILABLE`.
+  - **Security email add / change / remove**: password, then step-up whenever the account already has Google or a
+    verified email, then (add/change) a code to the NEW address. The old address is told.
+  - **Turning Google Authenticator off** (owner, Nov 27): current password always; with a verified security email,
+    also step-up `totp-disable`, whose ONLY method is a code to that email (a Google code cannot turn Google off).
+    No email (staff) → password only, as before.
+  - Frontend `SouliaAuth.stepUp(action)` → token or null (cancel); used by `saveVaultPass`, the email card and
+    «تعطيل». Settings dialogs (password prompt, code prompt, setup) use the same card head (logo + title), six-box
+    code and full-width primary button; «اتصال آمن» shows only before sign-in.
+  - Tests: 2 more cases in the spec (14; revert-checked: dropping the action binding fails 1); browser 15 checks.
+- Files: backend `auth/auth-security.util.ts` (rules), `auth-challenge.service.ts`, `trusted-devices.service.ts`,
+  `security-mailer.service.ts`, `token-issuer.service.ts` (the only token signer), `sign-in-verification.service.ts`,
+  `auth-user-payload.ts`; frontend `auth-security.js/.css` (`window.SouliaAuth`: verify screen, forgot flow, approval
+  dialog, Settings card `#auth-security-root`). ⚠ api() keeps the session on a 401 from
+  `/auth/(challenge|forgot-password|security|totp|login-approvals|trusted-devices)` that carries a code other than
+  `SESSION_ENDED` (wrong code / password / PIN). ⚠ The Settings card skips a refresh while its email form is open
+  (a refresh that started before the click used to wipe it).
+- Audit types `login_challenge_failed`, `login_approval_denied`, `password_reset`, `two_factor_changed`.
+- Tests: `test/integration/sign-in-verification.service.spec.ts` (12; revert-checked: replay guard, number match);
+  `user-sessions`/`login-lockout` specs updated. Browser end-to-end on a scratch DB with a local SMTP sink: 37 checks
+  (forced setup + backup codes, trusted device skips, approval by number from another device, email add + sign-in by
+  email, 5 wrong codes lock, two-step reset ends other sessions, staff password-only, no `rem_pass`, 390 px).
+  **Not deployed.** ⚠ On deploy every admin's next sign-in on a device needs verification (devices trusted before
+  were never actually honoured); an admin with nothing set up is walked through Google Authenticator setup.
+
+## Shopify Edit Window — «شحن مجاني» + No Silent Extra Discount (Nov 27, 2026)
+
+#3266: items 2050, Shopify discount 2050, shipping 120 → total 120. Typing 120 as «خصم إضافي» showed «−120» and
+changed nothing: every discount (Shopify + codes + extra) is capped at the items, so none can reach shipping.
+- **One rule**: `shopify/shopify-order-total.util.ts` `shopifyOrderMoney` (⚠ mirrored by `_spOrderMoney` in index.html).
+  Off = the old formula exactly. On (`ShopifyOrder.freeShipping {amount, by, byId, at}`, ours — the webhook never
+  writes it) = shipping charged 0, Shopify's shipping part leaves the item cap. `computeShopifyOrderTotal` delegates
+  to it (webhook recompute, edits, `recalcPendingOrders` — which used to drop our discounts).
+- Sent as `discount.freeShipping` through the usual edit request (same approval path). The waived shipping counts
+  toward the high-value discount approval (`approvalAmount` = ours + `concession`) on both layers.
+- **Room**: our discount beyond what Shopify left of the items → 400 `DISCOUNT_OVER_ROOM` (only when the discount
+  changes), and the window says so (`_spRoomMsg`, «غير مُطبَّق» row in the summary) instead of showing it as applied.
+- Confirming (`confirmedFreeShipping`): `tx.shipCost = 0`, `tx.discount` = items part only, no `shippingDiscount`,
+  `tx.freeShipping {amount, by, at}`, tariff price 0. The total differs from Shopify → the usual acknowledgement.
+  The carrier's real fee reaches the vault at the Bosta settlement (remaining − fee).
+- `orderEditSnapshot` gains `freeShipping:true` only when on, so requests stored before still compare equal.
+- Shown: Shopify table shipping cell «مجاني» + struck figure, quick-view chip, confirm dialog price 0.
+  ⚠ Not shown yet on the invoice page/print (they show shipping 0; `tx.freeShipping` holds the original 120).
+- Tests: `test/unit/shopify-order-total.spec.ts` (7), `shopify-free-shipping-edit.spec.ts` (7, real prepareOrderEdit),
+  `test/browser/shopify-free-shipping.cjs` (16, ar/en dark). Specs updated: shopify-order-edit, shopify-discount-sync,
+  shopify-edit-round4, shopify-edit-preview. Not tried on live.
+
 ## Expenses — Saved Parties, Covered Period, Salary Breakdown + Slip & Cheque (Nov 26, 2026)
 
 `frontend/public/expense-payees.js/.css` (`window.SouliaExpensePayees`), backend `expenses/` (`expense-payee.util.ts`,
@@ -113,8 +385,8 @@ The period KPI strip and «تقرير» (image / copy / share) on the Shopify pa
   button is split from the confirm button. `shopifyShipDue` also reaches the employee who postponed
   (`details.postponedById`). ⚠ `notifications.spec` «queues shopifyShipDue to all opted-in staff» fails before this too.
 - **Unconfirmed orders only** (owner): `orderAwaitsConfirmation` (util) ⇄ `awaitsConfirmation` (js) — pending, no
-  deposit recorded (approved or in review), not «ship without deposit», not `confirmationApproved`, no `confirmed`
-  tag. The server refuses others; the menu item, quick-view row and the active state follow the same rule.
+  deposit recorded (approved or in review), not «ship without deposit», not `confirmationApproved`. A Shopify
+  `confirmed` TAG no longer blocks it (owner, Nov 27, 2026 — #3214). The server refuses others; the menu item, quick-view row and the active state follow the same rule.
 - Dialog uses the app's calendar (`.sp-calendar-*`, as «تأجيل الشحن») + a time row of two value buttons (hour ·
   minute in 5s) that open a 6-column number grid, and ص/م — never `datetime-local` or native selects (the app's
   global select style broke them). Quick view: ONE compact block `.scd-pp` with a slim row per postpone (contact · shipping),
@@ -6256,6 +6528,8 @@ idea as «تجهيز بدون مسح» in the prep workspace.
 
 | Date | Change | Impact |
 |------|--------|--------|
+| Nov 27, 2026 | Shopify edit window: «شحن مجاني» switch (customer pays no shipping; confirmed as shipping 0 with the original kept on the invoice record), and an extra discount larger than what Shopify left of the items is refused with a clear message instead of showing «−120» that changed nothing | See "Shopify Edit Window — «شحن مجاني»" above |
+| Nov 27, 2026 | Sign-in verification rebuilt: a Google code alone can no longer sign in (password → challenge), admins always verify a new device by Google, email code, approval from a trusted device (number match) or backup code; trusted devices for 30 days actually work now; admin security email; two-step password reset; open user list and open 2FA setup routes closed | See "Sign-in Verification — New Device, Trusted Devices, Email Codes, Reset" above |
 | Nov 26, 2026 | «مساعد SOULIA» gets an external assistant (Instinct): a system/external toggle, external questions emailed as `[ERP-CHAT] <chatId>` JSON with retries, replies via `POST /api/v1/assistant/replies` (scope `assistant-write`) drawn with their own badge; body-parser errors now 413/400 instead of 500 | See "«مساعد SOULIA» ⇄ External Assistant" above |
 | Nov 23, 2026 | Printed supplier return («مرتجع مشتريات», `buildInvoiceHtml` `isSupRet`): the transaction's `total` is only the cash refund (0 for a debt offset), so the sheet reads the return order (`supplierReturns`, by `linkedTransactionId`): value = return total, «رقم المرتجع SR-…», «اسم المورد», «سبب المرتجع» instead of the machine note, and «تسوية المرتجع» (`_invSupplierReturnSettlementHtml`: value + source invoice, debt offset per invoice from `invoiceOffsets` in red, cash refund + vault, credit, fully/partly settled, green «مديونية المورد بعد هذا المرتجع» = `debtBalanceAfter`) in place of the total/paid/remaining strip. Also every printed code no longer reads «Code Code 32». Tests in `purchase-print-statement.cjs` (54) | index.html |
 | Nov 23, 2026 | Supplier «سجل المدفوعات» table rebuilt (`renderSpPaymentsPanel`, `.spx-*`): summary strip (total paid · last payment · most used method), one row per payment — columns date (day month year; weekday + «بواسطة» beneath; «اليوم/أمس» keep the full date beneath) · invoice chips that open the invoice (a split payment shows each invoice's share in its chip, no sub-rows) · amount · method logo + name (right after the amount) · note (never the employee); undo moved to the row's ⋮ menu (whole payment + each part; disabled without the perm). Grouping rules unchanged. `test/browser/supplier-payments-table.cjs` (19) | index.html |

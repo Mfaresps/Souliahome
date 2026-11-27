@@ -71,6 +71,8 @@ pipeline {
         // «المساعد الخارجي»: بريد الإرسال يُحفظ في Jenkins ← Credentials كـ «Username with password»
         // بالمعرّف soulia-smtp (اسم المستخدم = إيميل الإرسال، كلمة المرور = Gmail App Password)،
         // ويُمرَّر كـ SMTP_USER/SMTP_PASS. غيابه لا يُفشل النشر — تبقى الأسئلة «في انتظار الرد».
+        // ⚠ نفس الحساب يرسل رموز الأمان (رمز الدخول من جهاز جديد، استعادة كلمة المرور، تأكيد بريد
+        // التحقق — backend/src/auth/security-mailer.service.ts). بدونه تختفي طريقة «البريد» من شاشة التحقق.
         script {
           def deployCmd = 'BUILD_NUMBER=${BUILD_NUMBER} GIT_COMMIT=${GIT_COMMIT} docker compose -p soulia up -d --build --no-deps backend frontend'
           def binds = []
@@ -85,6 +87,14 @@ pipeline {
             binds << usernamePassword(credentialsId: 'soulia-smtp', usernameVariable: 'SMTP_USER', passwordVariable: 'SMTP_PASS')
           } catch (e) {
             echo 'SMTP account (soulia-smtp) not set in Jenkins — external assistant emails stay queued.'
+          }
+          // «لست برنامجًا آليًا» بـ Cloudflare Turnstile: الاعتماد soulia-turnstile («Username with password»:
+          // اسم المستخدم = Site Key، كلمة المرور = Secret Key). غيابه يُبقي التحقق الحسابي الحالي.
+          try {
+            withCredentials([usernamePassword(credentialsId: 'soulia-turnstile', usernameVariable: 'TS_SITE_PROBE', passwordVariable: 'TS_SECRET_PROBE')]) { }
+            binds << usernamePassword(credentialsId: 'soulia-turnstile', usernameVariable: 'TURNSTILE_SITE_KEY', passwordVariable: 'TURNSTILE_SECRET_KEY')
+          } catch (e) {
+            echo 'Turnstile keys (soulia-turnstile) not set in Jenkins — the built-in robot check stays.'
           }
           withCredentials(binds) {
             sh deployCmd

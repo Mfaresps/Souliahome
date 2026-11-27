@@ -210,7 +210,8 @@ describe('Shopify — حماية الخصم مطابقة لنظام المعام
     expect(guard).toContain('spDiscLimitOver');
     /* ⚠ يُفتَّش داخل `_spRenderDiscountTab` لا في الملف كله: الدالة قد تبقى معرَّفة
          بينما يُحذف استدعاؤها من القالب، فيمرّ الاختبار على ميزةٍ لا تُرسم. */
-    expect(grabFn(src, '_spRenderDiscountTab')).toContain('_spDiscGuardHtml(ourDisc)');
+    // Nov 27, 2026: the guard measures our discount + the waived shipping («شحن مجاني») — the server's approval sum.
+    expect(grabFn(src, '_spRenderDiscountTab')).toContain('_spDiscGuardHtml(Math.round((ourDisc + money.concession) * 100) / 100)');
   });
 
   it('الأدمن لا يُعرض له حد', () => {

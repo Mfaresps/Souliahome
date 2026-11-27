@@ -52,12 +52,19 @@ services:
       # إلى ASSISTANT_MAIL_TO. SMTP_USER/SMTP_PASS يمرّرهما Jenkins من الاعتماد soulia-smtp
       # (Username with password)، لا تُكتب هنا. لـ Gmail: SMTP_PASS = App Password.
       # بدون SMTP_USER/SMTP_PASS تبقى الأسئلة «في انتظار الرد» وتُعاد محاولة إرسالها تلقائيًا.
+      # نفس الحساب يرسل رموز الأمان (الدخول من جهاز جديد، استعادة كلمة المرور) من ASSISTANT_MAIL_FROM
+      # (أو SMTP_USER) — auth/security-mailer.service.ts.
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       ASSISTANT_MAIL_FROM: ${ASSISTANT_MAIL_FROM:-}
       ASSISTANT_MAIL_TO: ${ASSISTANT_MAIL_TO:-souliaalerts@gmail.com}
+      # «لست برنامجًا آليًا» عبر Cloudflare Turnstile بعد 3 محاولات دخول فاشلة. المفتاحان يمرّرهما
+      # Jenkins من الاعتماد soulia-turnstile (Username = Site Key، Password = Secret Key). بدونهما
+      # يبقى التحقق الحسابي الحالي (proof of work) — auth/login-guard.service.ts.
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       TZ: ${TZ:-Africa/Cairo}
       BUSINESS_TZ: ${BUSINESS_TZ:-Africa/Cairo}
     ports:

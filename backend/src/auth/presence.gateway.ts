@@ -15,9 +15,14 @@ import {
   GeoLocation,
 } from '../shared/client-context.util';
 import { fetchGeo } from '../shared/geo-lookup.util';
+import { Optional } from '@nestjs/common';
+import { UserSessionsService } from './user-sessions.service';
+import { endedMessage, legacyTokenAllowed } from './user-sessions.util';
 
 interface ConnectedUser {
   userId: string;
+  /** Sign-in session (usersessions row); '' for a token signed before sessions existed. */
+  sid: string;
   username: string;
   name: string;
   role: string;
@@ -53,6 +58,7 @@ export class PresenceGateway
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
     @InjectConnection() private readonly connection: Connection,
+    @Optional() private readonly sessions?: UserSessionsService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -73,6 +79,21 @@ export class PresenceGateway
         client.disconnect();
         return;
       }
+      const sid = typeof payload.sid === 'string' ? payload.sid : '';
+      // An ended session must not reconnect its live channel either.
+      if (sid && this.sessions) {
+        const state = await this.sessions.check(sid, String(user._id));
+        if (!state.ok) {
+          client.emit('session:ended', { message: state.message });
+          client.disconnect();
+          return;
+        }
+      } else if (!sid && !legacyTokenAllowed(payload.iat, (user as any).legacyTokensValidAfter)) {
+        client.emit('session:ended', { message: endedMessage({ endReason: 'revoked-all', endedBy: null }) });
+        client.disconnect();
+        return;
+      }
+      if (!client.connected) return;
 
       const ctx = buildClientContext(client.handshake);
       const ip = ctx.ipAddress || extractIpFrom({ address: client.handshake.address });
@@ -82,6 +103,7 @@ export class PresenceGateway
 
       const entry: ConnectedUser = {
         userId: user._id.toString(),
+        sid,
         username: user.username,
         name: user.name,
         role: user.role,
@@ -110,6 +132,7 @@ export class PresenceGateway
       client.on('activity', () => {
         const cur = this.connectedUsers.get(client.id);
         if (cur) cur.lastActivity = new Date().toISOString();
+        if (cur?.sid) this.sessions?.touch(cur.sid);
       });
 
       // Banner publish: admin emits banner:publish → server stores + rebroadcasts to all clients
@@ -166,10 +189,36 @@ export class PresenceGateway
     return [...ids];
   }
 
+  /** Session ids with at least one live socket (the device has the app open now). */
+  getOnlineSids(): Set<string> {
+    const out = new Set<string>();
+    for (const u of this.connectedUsers.values()) if (u.sid) out.add(u.sid);
+    return out;
+  }
+
+  /**
+   * Signs out the devices of ended sessions right away: tells each socket why, then drops it.
+   * `match` picks the sockets (one session, or every socket of a user except one session).
+   */
+  disconnectSessions(match: (u: ConnectedUser) => boolean, message: string): number {
+    let n = 0;
+    for (const [socketId, u] of [...this.connectedUsers.entries()]) {
+      if (!match(u)) continue;
+      const socket = this.server?.sockets?.sockets?.get(socketId);
+      if (socket) {
+        socket.emit('session:ended', { message, sid: u.sid });
+        setTimeout(() => socket.disconnect(true), 200);
+      }
+      n++;
+    }
+    return n;
+  }
+
   /** Detailed sessions list — admin-only consumer should filter on client side */
   getActiveSessions() {
     return [...this.connectedUsers.values()].map((u) => ({
       userId: u.userId,
+      sid: u.sid,
       username: u.username,
       name: u.name,
       role: u.role,
@@ -187,7 +236,8 @@ export class PresenceGateway
   /** Generic broadcaster used by services to push real-time events */
   emitEvent(event: string, payload: unknown) {
     if (this.server) {
-      this.server.emit(event, payload);
+      if (event === 'vault:changed') this.emitVaultChanged(payload);
+      else this.server.emit(event, payload);
     }
     // Track which socket holds which tx edit lock for disconnect cleanup
     if (event === 'tx:editing' && payload && typeof payload === 'object' && 'txId' in payload) {
@@ -205,6 +255,28 @@ export class PresenceGateway
       for (const [socketId, lockedId] of this.editingLocks) {
         if (lockedId === txId) this.editingLocks.delete(socketId);
       }
+    }
+  }
+
+  /**
+   * ⚠ A vault movement (amount, vault, balances, party) is for admins only. Employees used to
+   * receive every one — expenses, supplier payments, collections — and saw a card for each.
+   * They now get only `{reason, txId}`, enough to refresh a screen they may have open.
+   */
+  private emitVaultChanged(payload: unknown) {
+    const p = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
+    const bare: Record<string, unknown> = { reason: p.reason ?? 'changed' };
+    if (p.txId) bare.txId = p.txId;
+    const adminSockets = [...this.connectedUsers.values()].filter((u) => u.role === 'admin').map((u) => u.socketId);
+    if (typeof this.server.to !== 'function' || typeof this.server.except !== 'function') {
+      this.server.emit('vault:changed', bare);
+      return;
+    }
+    if (adminSockets.length) {
+      this.server.to(adminSockets).emit('vault:changed', payload);
+      this.server.except(adminSockets).emit('vault:changed', bare);
+    } else {
+      this.server.emit('vault:changed', bare);
     }
   }
 
@@ -232,10 +304,15 @@ export class PresenceGateway
       isOnline: onlineIds.includes(u._id.toString()),
       lastSeen: u.lastSeen ? new Date(u.lastSeen).toISOString() : null,
     }));
-    this.server.emit('users:status', {
-      users: usersWithStatus,
-      onlineUserIds: onlineIds,
-      sessions: this.getActiveSessions(),
-    });
+    // ⚠ Session details (IP, device, place) go to admin sockets only — they used to be broadcast
+    // to every signed-in employee, who only had them hidden by the page.
+    const adminSockets = [...this.connectedUsers.values()].filter((u) => u.role === 'admin').map((u) => u.socketId);
+    const status = { users: usersWithStatus, onlineUserIds: onlineIds };
+    if (adminSockets.length && typeof this.server.to === 'function' && typeof this.server.except === 'function') {
+      this.server.to(adminSockets).emit('users:status', { ...status, sessions: this.getActiveSessions() });
+      this.server.except(adminSockets).emit('users:status', status);
+    } else {
+      this.server.emit('users:status', status);
+    }
   }
 }

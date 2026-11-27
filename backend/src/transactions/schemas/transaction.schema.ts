@@ -202,6 +202,14 @@ export class Transaction {
   @Prop({ type: String, default: '' })
   shippingDiscountSource: string;
 
+  /**
+   * «شحن مجاني» chosen on the Shopify order before it was confirmed: `amount` = the shipping Shopify listed,
+   * which the customer does not pay (shipCost is then 0 — what the customer is charged). Display/audit only;
+   * the carrier's real fee still reaches the vault through the Bosta settlement. In no DTO.
+   */
+  @Prop({ type: Object, default: null })
+  freeShipping: { amount: number; by: string; at: string } | null;
+
   /** Discount codes that granted the shipping discount (empty for automatic Free Shipping). Reports file
    *  the shipping part under «خصومات الشحن» for these codes, never as a product discount. */
   @Prop({ type: [String], default: undefined })

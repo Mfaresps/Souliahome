@@ -68,6 +68,12 @@ export class User {
   @Prop({ type: Date, default: null })
   loginLockStartedAt: Date | null;
 
+  // «خروج من كل الأجهزة» (auth/user-sessions.service.ts): a token WITHOUT a session id (signed
+  // before sessions existed) issued before this time is refused. Tokens with a session id are
+  // governed by their own `usersessions` row.
+  @Prop({ type: Date, default: null })
+  legacyTokensValidAfter: Date | null;
+
   @Prop({ type: Number, default: 0 })
   loginLockLevel: number;
 
@@ -103,8 +109,54 @@ export class User {
   @Prop({ default: false })
   totpEnabled: boolean;
 
+  // ⚠ Pre-Nov-27 raw device tokens. Never checked again except once by
+  // TrustedDevicesService.migrateLegacy; trusted devices live in `trusteddevices` now.
   @Prop({ type: [String], default: [] })
-  trustedDevices: string[]; // array of device tokens
+  trustedDevices: string[];
+
+  // Sign-in verification (Nov 27, 2026) — auth/auth-security.util.ts.
+  // The last Google Authenticator time step used: a code is accepted once.
+  @Prop({ type: Number, default: null })
+  totpLastStep: number | null;
+
+  @Prop({ type: Date, default: null })
+  totpEnabledAt: Date | null;
+
+  // Ten one-time backup codes, hashed. Shown once when 2FA is set up or regenerated.
+  @Prop({ type: [Object], default: [] })
+  totpBackupCodes: { hash: string; usedAt: Date | null }[];
+
+  // Admin accounts only: the verified address sign-in and reset codes are sent to.
+  @Prop({ type: String, default: '' })
+  securityEmail: string;
+
+  @Prop({ type: Date, default: null })
+  securityEmailVerifiedAt: Date | null;
+
+  // An address waiting for its confirmation code (never used for sign-in until confirmed).
+  @Prop({ type: Object, default: null })
+  securityEmailPending: { email: string; codeHash: string; expiresAt: Date; attempts: number; sentAt: Date } | null;
+
+  @Prop({ type: Date, default: null })
+  passwordChangedAt: Date | null;
+
+  // Password policy (Nov 27, 2026 — auth/password-policy.service.ts).
+  // Bcrypt hashes of the previous passwords (newest last, at most 4: with the current one = last 5).
+  @Prop({ type: [String], default: [] })
+  passwordHistory: string[];
+
+  // An admin other than the owner («admin») may reset staff passwords only when the owner allows it.
+  @Prop({ type: Boolean, default: false })
+  canResetStaffPasswords: boolean;
+
+  // A staff member asked for a password reset from the sign-in page (shown to admins until reset).
+  @Prop({ type: Date, default: null })
+  passwordResetRequestedAt: Date | null;
+
+  // Display summary of blocked sign-in SOURCES (login-guard, Nov 27, 2026) — the account itself is never
+  // locked. Read by the «الحسابات المعطّلة والموقوفة» panel; cleared by «فك الإيقاف».
+  @Prop({ type: Object, default: null })
+  loginBlock: { hard: boolean; until: Date | null; ip: string; device: string; at: Date } | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

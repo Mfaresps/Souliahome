@@ -437,7 +437,7 @@ export class NotificationsService implements OnModuleInit {
         for (const subscription of account?.subscriptions || []) {
           await this.jobs.updateOne({ eventId, userId, endpoint: subscription.endpoint }, { $setOnInsert: {
             eventId, userId, endpoint: subscription.endpoint, type, payload, ...(receiptRecipientId ? { receiptRecipientId } : {}), ...(type === 'otp' ? { otpId: recordId.slice(4) } : {}), attempts: 0, done: false,
-            nextAt: new Date(eventTimestamp), expiresAt: type === 'otp' ? new Date(details.expiresAt!) : new Date(eventTimestamp + 30 * 86400000),
+            nextAt: new Date(eventTimestamp), expiresAt: type === 'otp' || (type === 'security' && details.actionKey === 'login-approval' && details.expiresAt) ? new Date(details.expiresAt!) : new Date(eventTimestamp + 30 * 86400000),
           } }, { upsert: true });
         }
       }));

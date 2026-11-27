@@ -25,6 +25,10 @@ function preview(admin = false, delegated = false) {
   const env: any = { document, currentLang: 'en', isAdmin: () => admin, hasPerm: () => delegated,
     fmtJ: value => 'EGP ' + value, toast: jest.fn(),
     esc: value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') };
+  // The proposed total uses the page's one rule (_spOrderMoney in index.html, «شحن مجاني» included).
+  const html = readFileSync(resolve(__dirname, '../../../frontend/public/index.html'), 'utf8').replace(/\r\n/g, '\n');
+  const start = html.indexOf('function _spOrderMoney(');
+  runInNewContext(html.slice(start, html.indexOf('\n}\n', start) + 2), env);
   runInNewContext(source, env);
   return { env, document, overlay: () => overlay, escape: () => listeners.keydown({ key: 'Escape', preventDefault() {}, stopImmediatePropagation() {} }) };
 }
