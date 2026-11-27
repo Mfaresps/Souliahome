@@ -110,7 +110,10 @@
         <li>${E(T('يجب أن تختلف عن آخر 5 كلمات مرور.', 'It must differ from the last 5 passwords.'))}</li></ul>`;
     ft.innerHTML = foot(backLabel, T('متابعة', 'Continue'), false);
     bindEyes(body);
-    const a = document.getElementById('pwp-new'), b = document.getElementById('pwp-new2'), next = document.getElementById('pwp-next'), m = document.getElementById('pwp-match');
+    // ⚠ The button is looked up in `ft`, not the document: the staff reset builds this footer in a
+    // detached element first, and getElementById found the OLD «متابعة» still on screen (from the
+    // «توليد» mode) — the visible button then stayed disabled forever.
+    const a = body.querySelector('#pwp-new'), b = body.querySelector('#pwp-new2'), next = ft.querySelector('#pwp-next'), m = body.querySelector('#pwp-match');
     const sync = () => {
       const s = score(a.value);
       body.querySelectorAll('.pwp-meter i').forEach((x, i) => x.classList.toggle('is-on', i < s));

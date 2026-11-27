@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { smtpHostFor, smtpPassFor } from '../shared/smtp-config.util';
 
 /**
  * Security emails (sign-in codes, password reset, alerts) — Nov 27, 2026.
  *
- * Uses the same SMTP account as the external assistant (souliaalerts): SMTP_HOST / SMTP_PORT /
+ * Uses the same SMTP account as the external assistant (no-reply@soulia.store since Nov 28, 2026;
+ * host picked by shared/smtp-config.util.ts): SMTP_HOST / SMTP_PORT /
  * SMTP_USER / SMTP_PASS from the server environment, never from the browser or Mongo. Sender =
  * SECURITY_MAIL_FROM, else ASSISTANT_MAIL_FROM, else SMTP_USER. One message, one recipient, sent
  * at once: a sign-in code is useless after its 10 minutes, so there is no retry queue — a failure
@@ -49,10 +51,10 @@ export class SecurityMailerService {
   private cfg() {
     const env = process.env;
     const user = String(env.SMTP_USER || '').trim();
-    const pass = String(env.SMTP_PASS || '').replace(/\s+/g, '');
+    const pass = smtpPassFor(user, env.SMTP_PASS);
     const port = Number(env.SMTP_PORT) || 465;
     return {
-      host: String(env.SMTP_HOST || 'smtp.gmail.com').trim(),
+      host: smtpHostFor(user, env.SMTP_HOST),
       port, secure: port === 465, user, pass,
       from: String(env.SECURITY_MAIL_FROM || env.ASSISTANT_MAIL_FROM || user).trim(),
     };

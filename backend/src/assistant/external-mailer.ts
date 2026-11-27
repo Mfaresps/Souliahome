@@ -1,12 +1,14 @@
 import * as nodemailer from 'nodemailer';
 import { DEFAULT_EXTERNAL_MAIL_TO } from './external-assistant.util';
+import { smtpHostFor, smtpPassFor } from '../shared/smtp-config.util';
 
 /**
  * Sends the external assistant's question email over SMTP.
  *
  * Configured from the server environment (never from the browser, never stored in Mongo):
- *   SMTP_HOST (default smtp.gmail.com) · SMTP_PORT (default 465; 465 = TLS, 587 = STARTTLS)
- *   SMTP_USER · SMTP_PASS (for Gmail: a 16-character App Password, not the account password)
+ *   SMTP_HOST (default: picked from SMTP_USER — smtp.gmail.com for Gmail, else smtp.hostinger.com)
+ *   SMTP_PORT (default 465; 465 = TLS, 587 = STARTTLS)
+ *   SMTP_USER · SMTP_PASS (Gmail: an App Password; no-reply@soulia.store: the mailbox password)
  *   ASSISTANT_MAIL_FROM — the fixed sender address (default: SMTP_USER)
  *   ASSISTANT_MAIL_TO   — the external assistant's inbox (default souliaalerts@gmail.com)
  * Missing SMTP_USER/SMTP_PASS → every send fails with SMTP_NOT_CONFIGURED and the message keeps
@@ -22,10 +24,10 @@ export class SmtpMailSender implements MailSender {
   private cfg() {
     const env = process.env;
     const user = String(env.SMTP_USER || '').trim();
-    const pass = String(env.SMTP_PASS || '').replace(/\s+/g, '');
+    const pass = smtpPassFor(user, env.SMTP_PASS);
     const port = Number(env.SMTP_PORT) || 465;
     return {
-      host: String(env.SMTP_HOST || 'smtp.gmail.com').trim(),
+      host: smtpHostFor(user, env.SMTP_HOST),
       port,
       secure: port === 465,
       user,

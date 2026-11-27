@@ -40,6 +40,10 @@ app, and a formal copy WITH the code now goes to each admin's verified security 
 - `securityMailBody`: title, code, 2–4 short lines (empty ones dropped), one footer `MAIL_FOOTER`;
   white page, no links/images/colours; the plain-text part says the same. Sender name «SOULIA» +
   header `Auto-Submitted: auto-generated`. No greeting line.
+- **Sender = no-reply@soulia.store (Nov 28, 2026)**, a Hostinger mailbox (was souliaalerts@gmail.com). Jenkins
+  credential `soulia-smtp` = that address + its mailbox password. `shared/smtp-config.util.ts` picks the server
+  from the address (Gmail → smtp.gmail.com, else smtp.hostinger.com; `SMTP_HOST` overrides; compose default is
+  now empty). ⚠ `ASSISTANT_MAIL_TO` stays souliaalerts@gmail.com — it is the external assistant's INBOX.
 
 ## Employee Account Email — Confirmed by a Code, Mandatory at Sign-in (Nov 27, 2026)
 

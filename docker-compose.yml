@@ -50,11 +50,13 @@ services:
       LIVE_SYNC_EXPORT_TOKEN: ${LIVE_SYNC_EXPORT_TOKEN:-}
       # «المساعد الخارجي» في مساعد SOULIA: كل سؤال موجّه إليه يُرسل بالبريد من ASSISTANT_MAIL_FROM
       # إلى ASSISTANT_MAIL_TO. SMTP_USER/SMTP_PASS يمرّرهما Jenkins من الاعتماد soulia-smtp
-      # (Username with password)، لا تُكتب هنا. لـ Gmail: SMTP_PASS = App Password.
+      # (Username with password)، لا تُكتب هنا. حساب الإرسال: no-reply@soulia.store (بريد Hostinger،
+      # SMTP_PASS = كلمة مرور صندوق البريد). SMTP_HOST فارغ = يُختار من العنوان (Gmail ← smtp.gmail.com،
+      # غيره ← smtp.hostinger.com) — backend/src/shared/smtp-config.util.ts.
       # بدون SMTP_USER/SMTP_PASS تبقى الأسئلة «في انتظار الرد» وتُعاد محاولة إرسالها تلقائيًا.
       # نفس الحساب يرسل رموز الأمان (الدخول من جهاز جديد، استعادة كلمة المرور) من ASSISTANT_MAIL_FROM
       # (أو SMTP_USER) — auth/security-mailer.service.ts.
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
