@@ -17,6 +17,8 @@ import { TokenIssuerService } from './token-issuer.service';
 import { SignInVerificationService } from './sign-in-verification.service';
 import { PasswordPolicyService } from './password-policy.service';
 import { LoginGuardService } from './login-guard.service';
+import { AccountEmailService } from './account-email.service';
+import { AccountEmailController } from './account-email.controller';
 import { UsersModule } from '../users/users.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { SecurityAuditModule } from '../security-audit/security-audit.module';
@@ -43,8 +45,8 @@ import { Settings, SettingsSchema } from '../settings/schemas/settings.schema';
       { name: Settings.name, schema: SettingsSchema },
     ]),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PresenceGateway, TotpService, UserSessionsService, AuthChallengeService, TrustedDevicesService, SecurityMailerService, TokenIssuerService, SignInVerificationService, LoginGuardService, PasswordPolicyService],
-  exports: [AuthService, PresenceGateway, TotpService, UserSessionsService, TrustedDevicesService, SecurityMailerService],
+  controllers: [AuthController, AccountEmailController],
+  providers: [AuthService, JwtStrategy, PresenceGateway, TotpService, UserSessionsService, AuthChallengeService, TrustedDevicesService, SecurityMailerService, TokenIssuerService, SignInVerificationService, LoginGuardService, PasswordPolicyService, AccountEmailService],
+  exports: [AuthService, PresenceGateway, TotpService, UserSessionsService, TrustedDevicesService, SecurityMailerService, AccountEmailService],
 })
 export class AuthModule {}

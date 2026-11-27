@@ -40,12 +40,34 @@ describe('Shopify edit window — «شحن مجاني»', () => {
     expect(patch.total).toBe(0);
     expect(patch.freeShipping).toMatchObject({ amount: 120, by: 'Admin', byId: 'a1' });
     expect(patch.shopifyDivergence).toMatchObject({ shopifyTotal: 120, erpTotal: 0, diff: -120 });
-    expect(changes.join(' ')).toMatch(/شحن مجاني/);
+    expect(changes.join(' ')).toMatch(/تفعيل الشحن المجاني/);
+  });
+
+  it('staff without «طلب شحن مجاني» cannot ask for it', async () => {
+    const e: any = await errOf(service().prepareOrderEdit(order(), disc({ freeShipping: true }), staff));
+    expect(e.message).toMatch(/طلب شحن مجاني/);
+  });
+
+  it('staff with direct edit still send free shipping to a manager; other edits stay direct', async () => {
+    const s = service(1000);
+    const updates: any[] = [];
+    s.shopifyOrderModel = { findById: async () => order(), findOneAndUpdate: async (_f: any, u: any) => { updates.push(u); return { total: 0 }; } };
+    s.notifications = { enqueue: async () => {} };
+    s.emit = () => {};
+    const directStaff = { ...staff, perms: ['shopify-orders', 'shopify-edit-direct', 'shopify-free-shipping'] };
+    const sent = await s.submitOrderEdit('o1', disc({ freeShipping: true }), directStaff);
+    expect(sent.pendingApproval).toBe(true);
+    expect(updates[0].$set.editRequest.status).toBe('معلق');
+    expect(updates[0].$set.freeShipping).toBeUndefined();
+    // Not a free-shipping change → applied directly, as before.
+    s.shopifyOrderModel.findById = async () => order({ discount: 1000, total: 1170 });
+    const direct = await s.submitOrderEdit('o1', disc({ manualDiscount: 50 }), directStaff);
+    expect(direct.pendingApproval).toBe(false);
   });
 
   it('the waived shipping counts toward the manager-approval limit for staff', async () => {
     const s = service(100);
-    const e: any = await errOf(s.prepareOrderEdit(order(), disc({ freeShipping: true }), staff));
+    const e: any = await errOf(s.prepareOrderEdit(order(), disc({ freeShipping: true }), { ...staff, perms: ['shopify-free-shipping'] }));
     expect(e.message).toBe('OTP_REQUIRED');
     expect(s.otpAmount).toBe(120);
   });

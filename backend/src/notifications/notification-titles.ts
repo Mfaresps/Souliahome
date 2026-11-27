@@ -56,6 +56,7 @@ export function notificationTitle(type: NotificationType, details: NotificationD
   else if (type === 'security' && details.actionKey === 'failed_login') title = ['❌', 'محاولة تسجيل دخول فاشلة', 'Failed Login Attempt'];
   else if (type === 'security' && details.actionKey === 'login-approval') title = ['🔐', 'طلب دخول إلى حسابك', 'Sign-in request for your account'];
   else if (type === 'security' && details.actionKey === 'login-alert') title = ['⚠️', 'محاولات دخول على حسابك', 'Sign-in attempts on your account'];
+  else if (type === 'security' && details.actionKey === 'login-lock') title = ['🔒', 'حساب موقوف عن تسجيل الدخول', 'Account locked out of sign-in'];
   else if (type === 'approval') {
     if (details.actionKey === 'prep-group') title = ['📦', 'طلبات مجموعة التحضير', 'Prep group orders'];
     else if (details.status === 'approved' && details.actionKey === 'order') title = ['📦', 'جارٍ تحضير الطلب للشحن', 'Order is being prepared for shipment'];

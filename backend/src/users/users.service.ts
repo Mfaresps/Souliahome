@@ -6,7 +6,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 /** Fields that must never leave the server in a user list. */
-const SECRET_USER_FIELDS = '-password -passwordHistory -plainPassword -totpSecret -trustedDevices -totpBackupCodes -totpLastStep -securityEmailPending';
+const SECRET_USER_FIELDS = '-password -passwordHistory -plainPassword -totpSecret -trustedDevices -totpBackupCodes -totpLastStep -securityEmailPending -emailPending.codeHash -emailCodeSends';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -105,6 +105,9 @@ export class UsersService implements OnModuleInit {
     // ⚠ A profile edit never changes the password (Nov 27, 2026): every change goes through
     // setPassword (own change with current password + code, staff reset with a code, recovery).
     delete update.password;
+    // ⚠ Nor the email (Nov 27, 2026): an address counts only after its owner enters the code sent to
+    // it (auth/account-email.service.ts → confirmAccountEmail).
+    delete update.email;
     const user = await this.userModel
       .findByIdAndUpdate(id, update, { new: true })
       .select(SECRET_USER_FIELDS)
@@ -202,6 +205,48 @@ export class UsersService implements OnModuleInit {
 
   async clearSecurityEmail(id: string): Promise<void> {
     await this.userModel.updateOne({ _id: id }, { $set: { securityEmail: '', securityEmailVerifiedAt: null, securityEmailPending: null } }).exec();
+  }
+
+  // ─── Account email (non-admin accounts, Nov 27, 2026 — auth/account-email.service.ts) ───
+  async setAccountEmailPending(id: string, pending: Record<string, unknown> | null, sends?: Date[]): Promise<void> {
+    const set: Record<string, unknown> = { emailPending: pending };
+    if (sends) set.emailCodeSends = sends;
+    await this.userModel.updateOne({ _id: id }, { $set: set }).exec();
+  }
+
+  async bumpAccountEmailAttempts(id: string): Promise<number> {
+    const doc: any = await this.userModel.findOneAndUpdate(
+      { _id: id, emailPending: { $ne: null } },
+      { $inc: { 'emailPending.attempts': 1 } },
+      { new: true },
+    ).select('emailPending').lean().exec();
+    return Number(doc?.emailPending?.attempts || 99);
+  }
+
+  /** The code stops working (5 wrong tries); the address stays so a new code can be asked for. */
+  async expireAccountEmailCode(id: string): Promise<void> {
+    await this.userModel.updateOne({ _id: id, emailPending: { $ne: null } }, { $set: { 'emailPending.codeHash': '', 'emailPending.expiresAt': new Date() } }).exec();
+  }
+
+  /** Conditional on the pending code read, so a replaced request cannot be confirmed. */
+  async confirmAccountEmail(id: string, email: string, codeHash: string): Promise<boolean> {
+    const res = await this.userModel.updateOne(
+      { _id: id, 'emailPending.email': email, 'emailPending.codeHash': codeHash },
+      { $set: { email, emailVerifiedAt: new Date(), emailPending: null } },
+    ).exec();
+    return res.modifiedCount > 0;
+  }
+
+  /** Another account that already holds this address, verified (as its account email or admin security email). */
+  async emailTakenBy(email: string, exceptId: string): Promise<{ _id: string; username: string } | null> {
+    const doc: any = await this.userModel.findOne({
+      _id: { $ne: exceptId },
+      $or: [
+        { email, emailVerifiedAt: { $ne: null } },
+        { securityEmail: email, securityEmailVerifiedAt: { $ne: null } },
+      ],
+    }).select('_id username').lean().exec();
+    return doc ? { _id: String(doc._id), username: doc.username } : null;
   }
 
   async resetLoginAttempts(id: string): Promise<void> {

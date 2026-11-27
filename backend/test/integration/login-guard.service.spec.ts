@@ -33,6 +33,7 @@ describe('login guard — the guessing source is locked, never the account', () 
   const mails: { to: string; subject: string; text: string }[] = [];
   const emitted: any[] = [];
   const audits: any[] = [];
+  const mentionRows: any[] = [];
   const pc = { userAgent: 'x', device: 'كمبيوتر', browser: 'Chrome', os: 'Windows' };
 
   const login = (username: string, password: string, ip = '41.1.1.1', extra: Record<string, unknown> = {}) =>
@@ -69,7 +70,7 @@ describe('login guard — the guessing source is locked, never the account', () 
     const sessions = new UserSessionsService(connection);
     const jwt = new JwtService({ secret: process.env.JWT_SECRET, signOptions: { expiresIn: '24h' } });
     const audit = { log: async (row: any) => { audits.push(row); } } as any;
-    const mentions = { createMany: async () => undefined } as any;
+    const mentions = { createMany: async (rows: any[]) => { mentionRows.push(...(rows || [])); } } as any;
     const presence = { emitToUser: (...a: any[]) => { emitted.push(a); return true; }, disconnectSessions: () => 0 } as any;
     verify = new SignInVerificationService(users, totp, challenges, devices, mailer, new TokenIssuerService(jwt, sessions), audit, mentions, presence, settingsModel, guard, undefined, sessions);
     auth = new AuthService(users, mentions, audit, verify, guard, devices);
@@ -79,7 +80,8 @@ describe('login guard — the guessing source is locked, never the account', () 
     await model.deleteMany({});
     for (const c of ['loginguard', 'loginattempts', 'loginalerts', 'authchallenges', 'trusteddevices', 'usersessions']) await connection.collection(c).deleteMany({});
     (guard as any).ipRequests.clear();
-    mails.length = 0; emitted.length = 0; audits.length = 0;
+    mails.length = 0; emitted.length = 0; audits.length = 0; mentionRows.length = 0;
+    (verify as any).unlockAsked?.clear();
     await users.createUser({ username: 'boss', password: 'right-pass', name: 'Boss', role: 'admin' });
     await users.createUser({ username: 'sara', password: 'right-pass', name: 'Sara', role: 'staff' });
   });
@@ -148,6 +150,29 @@ describe('login guard — the guessing source is locked, never the account', () 
     const r: any = await err(login('sara', 'right-pass'));
     expect(r).toMatchObject({ code: 'POW_REQUIRED' });
     expect((await login('sara', 'right-pass', '41.1.1.1', { pow: { challenge: r.pow.challenge, nonce: solve(r.pow.challenge, r.pow.difficulty) } })).accessToken).toBeTruthy();
+  });
+
+  it('a staff lock reaches the admins in the app (login-lock), and «فتح القفل» asks them again', async () => {
+    await wrong('sara', 5, '41.1.1.1');
+    const toBoss = mentionRows.filter((m) => m.targetUsername === 'boss');
+    expect(toBoss).toHaveLength(1);
+    expect(toBoss[0]).toMatchObject({ txId: 'login-lock:' + (await id('sara')), fromName: 'نظام الأمان' });
+    expect(mentionRows.some((m) => m.targetUsername === 'sara')).toBe(true); // her own «هل هذا أنت؟»
+    mentionRows.length = 0;
+    // sara has no second factor: the sign-in page cannot unlock, but the admins get a request
+    const r = await err(verify.unlockStart('sara', { ...pc, ipAddress: '41.1.1.1' } as any, '41.1.1.1'));
+    expect(r).toMatchObject({ status: 400, code: 'UNLOCK_UNAVAILABLE' });
+    expect(mentionRows.filter((m) => m.targetUsername === 'boss' && m.txId.startsWith('login-lock:'))).toHaveLength(1);
+    // asked again at once → no second request; an unknown name gets the same answer and no request
+    mentionRows.length = 0;
+    await err(verify.unlockStart('sara', pc as any, '41.1.1.1'));
+    expect(await err(verify.unlockStart('nobody-here', pc as any, '41.1.1.1'))).toMatchObject({ code: 'UNLOCK_UNAVAILABLE', message: (r as any).message });
+    expect(mentionRows).toHaveLength(0);
+    // the existing «إلغاء الحظر» lifts it, and no request goes out without a running lock
+    await users.unlockAccount(await id('sara'), 'admin');
+    (verify as any).unlockAsked.clear();
+    await err(verify.unlockStart('sara', pc as any, '41.1.1.1'));
+    expect(mentionRows).toHaveLength(0);
   });
 
   it('lock steps: second lock in a day is 30 minutes', async () => {

@@ -39,6 +39,21 @@ function _spEditProposalTotal(order, proposal) {
 function _spEditArrow() { return typeof currentLang !== 'undefined' && currentLang === 'en' ? '→' : '←'; }
 /* كل قيمة معزولة (FSI…PDI) حتى لا يسحب اسم لاتيني قبلها السهمَ إلى اتجاه إنجليزي. */
 function _spEditPair(a, b) { return `⁨${a}⁩ ${_spEditArrow()} ⁨${b}⁩`; }
+/* «شحن مجاني» in an edit: a feature switched on/off, never a discount. `patch.freeShipping` is an object/null when
+   stored by the server, a boolean in the pre-send review; `before.freeShipping` is true only when it was on. */
+const _SP_EDIT_TRUCK = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>';
+function _spEditFreeShipChange(before = {}, patch = {}) {
+  if (!patch || !('freeShipping' in patch) || !!patch.freeShipping === !!before.freeShipping) return null;
+  const stored = patch.freeShipping && typeof patch.freeShipping === 'object' ? Number(patch.freeShipping.amount) : NaN;
+  return { on: !!patch.freeShipping, amount: Number.isFinite(stored) && stored > 0 ? stored : Number(before.shipCost || 0) };
+}
+function _spEditFreeShipRowHtml(change) {
+  const ship = _spEditMoneyText(change.amount);
+  const title = change.on ? spEditText('تم تفعيل الشحن المجاني', 'Free shipping turned on') : spEditText('تم إلغاء الشحن المجاني', 'Free shipping turned off');
+  const sub = change.on ? spEditText(`لا يُحصَّل الشحن (${ship}) من العميل — ميزة على الشحن، وليست خصمًا على الأصناف`, `The customer does not pay the shipping (${ship}) — a shipping benefit, not an item discount`)
+    : spEditText(`يُحصَّل الشحن (${ship}) من العميل مرة أخرى`, `The customer pays the shipping (${ship}) again`);
+  return `<div class="edit-feature-change is-${change.on ? 'on' : 'off'}"><span class="edit-feature-ico">${_SP_EDIT_TRUCK}</span><span class="edit-feature-txt"><b>${esc(title)}</b><small>${esc(sub)}</small></span></div>`;
+}
 function _spEditComparisonHtml(before = {}, patch = {}, fallback = []) {
   const e = value => esc(String(value ?? ''));
   const beforeLabel = spEditText('قبل التعديل', 'Before');
@@ -87,9 +102,13 @@ function _spEditComparisonHtml(before = {}, patch = {}, fallback = []) {
     if (key === 'total') continue;
     const isDiscount = ['discount', 'manualDiscount', 'codesDiscount'].includes(key);
     const delta = Number(newValue) - Number(oldValue);
-    const discountNote = isDiscount ? `<p class="edit-discount-note"><span class="edit-discount-icon" aria-hidden="true">%</span>${e(spEditText(delta > 0 ? (Number(oldValue) === 0 ? 'خصم مضاف' : 'زيادة الخصم بمقدار') : 'تقليل الخصم بمقدار', delta > 0 ? (Number(oldValue) === 0 ? 'Discount added' : 'Discount increased by') : 'Discount decreased by'))} <bdi>${e(_spEditMoneyText(Math.abs(delta)))}</bdi></p>` : '';
+    const noteText = delta > 0 ? (Number(oldValue) === 0 ? ['خصم مضاف', 'Discount added'] : ['زيادة الخصم بمقدار', 'Discount increased by'])
+      : Number(newValue) === 0 ? ['إلغاء الخصم', 'Discount removed'] : ['تقليل الخصم بمقدار', 'Discount decreased by'];
+    const discountNote = isDiscount ? `<p class="edit-discount-note"><span class="edit-discount-icon" aria-hidden="true">%</span>${e(spEditText(...noteText))} <bdi>${e(_spEditMoneyText(Math.abs(delta)))}</bdi></p>` : '';
     fields.push(isDiscount ? `<div class="edit-discount-change">${row(spEditText(...label), value(oldValue), value(newValue))}${discountNote}</div>` : row(spEditText(...label), value(oldValue), value(newValue)));
   }
+  const freeShip = _spEditFreeShipChange(before, patch);
+  if (freeShip) fields.unshift(_spEditFreeShipRowHtml(freeShip));
   const totalChanged = 'total' in patch && Number(before.total || 0) !== Number(patch.total || 0);
   const difference = Number(patch.total || 0) - Number(before.total || 0);
   const totalSummary = totalChanged ? `<section class="edit-total-summary">${row(spEditText('إجمالي الطلب', 'Order total'), _spEditMoneyText(before.total), _spEditMoneyText(patch.total))}<p>${e(spEditText(difference < 0 ? 'انخفض الإجمالي بمقدار' : 'زاد الإجمالي بمقدار', difference < 0 ? 'Total decreased by' : 'Total increased by'))} <bdi>${e(_spEditMoneyText(Math.abs(difference)))}</bdi></p></section>` : '';
@@ -158,7 +177,7 @@ function _spEditProposalChanges(order, proposal) {
   if (!invoice && proposal.discount && proposal.discount.freeShipping !== undefined && !!proposal.discount.freeShipping !== !!order.freeShipping) {
     const ship = _spEditMoneyText(Number(order.shipCost || 0));
     lines.push(proposal.discount.freeShipping
-      ? spEditText(`شحن مجاني: لا يُحصَّل الشحن (${ship}) من العميل`, `Free shipping: the customer does not pay the shipping (${ship})`)
+      ? spEditText(`تفعيل الشحن المجاني: لا يُحصَّل الشحن (${ship}) من العميل`, `Free shipping turned on: the customer does not pay the shipping (${ship})`)
       : spEditText(`إلغاء الشحن المجاني: يُحصَّل الشحن (${ship}) من العميل`, `Free shipping removed: the customer pays the shipping (${ship})`));
   }
   if (!invoice && (items || proposal.discount)) {
@@ -176,7 +195,9 @@ function _spEditProposalChanges(order, proposal) {
 
 let _spProposalReviewActive = false;
 async function _spConfirmEditSubmission(order, proposal) {
-  if (isAdmin() || hasPerm('shopify-edit-direct')) return true;
+  // A free-shipping change by staff always goes to a manager, even with the direct-edit permission.
+  const freeShipChange = proposal.discount && proposal.discount.freeShipping !== undefined && !!proposal.discount.freeShipping !== !!order.freeShipping;
+  if (isAdmin() || (hasPerm('shopify-edit-direct') && !freeShipChange)) return true;
   if (_spProposalReviewActive) return false;
   const changes = _spEditProposalChanges(order, proposal);
   if (!changes.length) { toast(spEditText('لا توجد تعديلات لإرسالها', 'No changes to send.')); return false; }
@@ -306,6 +327,8 @@ function _spEhEntryHtml(entry, index, open) {
     + (touched.length > 3 ? `<span class="sp-eh-more">+${touched.length - 3}</span>` : '');
   const totalMoved = 'total' in entry.after && Number(entry.before.total || 0) !== Number(entry.after.total || 0);
   const total = totalMoved ? `<span class="sp-eh-total"><bdi>${esc(_spEditMoneyText(entry.before.total))}</bdi><span aria-hidden="true">${_spEditArrow()}</span><b><bdi>${esc(_spEditMoneyText(entry.after.total))}</bdi></b></span>` : '';
+  const fs = _spEditFreeShipChange(entry.before || {}, entry.after || {});
+  const feat = fs ? `<span class="sp-eh-feat${fs.on ? '' : ' is-off'}">${_SP_EDIT_TRUCK}${esc(fs.on ? spEditText('شحن مجاني', 'Free shipping') : spEditText('إلغاء الشحن المجاني', 'Free shipping off'))}</span>` : '';
   const r = entry.request;
   const audit = [
     r?.reviewedBy && !entry.direct ? `${esc(spEditText(entry.state === 'approved' ? 'اعتمدها' : 'رفضها', entry.state === 'approved' ? 'Approved by' : 'Rejected by'))} <b>${esc(r.reviewedBy)}</b> · ${esc(fmtDateTime(r.reviewedAt))}` : '',
@@ -315,7 +338,7 @@ function _spEhEntryHtml(entry, index, open) {
   return `<details class="sp-eh-entry is-${entry.state}"${open ? ' open' : ''}>
     <summary><span class="sp-eh-dot" aria-hidden="true"></span>
       <span class="sp-eh-head"><span class="sp-eh-titleline"><b>${esc(_spEhTitle(entry))}</b><span class="sp-eh-no">#${index}</span></span>
-        <small><bdi>${esc(entry.by || '—')}</bdi> · ${esc(fmtDateTime(entry.at))}</small>${total}</span>
+        <small><bdi>${esc(entry.by || '—')}</bdi> · ${esc(fmtDateTime(entry.at))}</small>${total}${feat}</span>
       ${thumbs ? `<span class="sp-eh-thumbs">${thumbs}</span>` : ''}
       <svg class="sp-eh-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
     <div class="sp-eh-body">${_spEditComparisonHtml(entry.before, entry.after, entry.changes)}${reason}${audit ? `<p class="edit-review-audit">${audit}</p>` : ''}</div>

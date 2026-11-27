@@ -77,7 +77,7 @@ import { ShopifySyncApiService } from './sync/sync-api.service';
 import { carryShopifyLineFields } from '../shared/shopify-line.util';
 import { BundleGuardError, bundleGuard, hasBundleLines, nonBundleSubtotal } from '../shared/bundle-guard.util';
 import { applyShopifyConflictItems, differingItemKeys, itemKey, mergeShopifyItems } from './shopify-item-merge.util';
-import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount } from './order-edit.util';
+import { OrderEditActor, OrderEditInput, orderEditSnapshot, transactionEditSnapshot, normalizeInvoiceEdit, validEditItems, validDiscountAmount, FREE_SHIPPING_PERM } from './order-edit.util';
 import { UpdateTransactionDto } from '../transactions/dto/transaction.dto';
 import { DEPOSIT_REASONS, DEPOSIT_EXCEPTIONS, validateDepositDecision, depositDecisionReport } from './deposit-decision.util';
 import { depositFromShopifyNote } from './shopify-note-deposit.util';
@@ -2299,10 +2299,15 @@ export class ShopifyService {
       if (discount.freeShipping !== undefined) {
         const want = discount.freeShipping === true;
         if (want !== !!order.freeShipping) {
+          // Owner's rule (Nov 27, 2026): staff need `shopify-free-shipping` to ask for it, and it always
+          // reaches the manager for approval (submitOrderEdit never applies it directly for staff).
+          if (actor.role !== 'admin' && !(actor.perms || []).includes(FREE_SHIPPING_PERM)) {
+            throw new ForbiddenException('تفعيل الشحن المجاني يحتاج صلاحية «طلب شحن مجاني»');
+          }
           const ship = Number(order.shipCost) || 0;
           if (want && ship <= 0) throw new BadRequestException('لا يوجد شحن على هذا الأوردر لإلغائه');
           patch.freeShipping = want ? { amount: ship, by: actor.name, byId: actor.id, at: new Date().toISOString() } : null;
-          changes.push(want ? `شحن مجاني: لا يُحصَّل الشحن (${ship}) من العميل` : `إلغاء الشحن المجاني: يُحصَّل الشحن (${ship}) من العميل`);
+          changes.push(want ? `تفعيل الشحن المجاني: لا يُحصَّل الشحن (${ship}) من العميل` : `إلغاء الشحن المجاني: يُحصَّل الشحن (${ship}) من العميل`);
         }
       }
       const freeOn = patch.freeShipping !== undefined ? !!patch.freeShipping : !!order.freeShipping;
@@ -2385,7 +2390,8 @@ export class ShopifyService {
     const offerRemovals = (patch as any).__offerRemovals || [];
     delete (patch as any).__offerRemovals;
     if (!changes.length) return { success: true, pendingApproval: false, total: order.total };
-    const direct = actor.role === 'admin' || actor.perms.includes('shopify-edit-direct');
+    // A free-shipping change by staff always waits for a manager, even with the direct-edit permission.
+    const direct = actor.role === 'admin' || (actor.perms.includes('shopify-edit-direct') && patch.freeShipping === undefined);
     const now = new Date().toISOString();
     const request = { id: crypto.randomUUID(), status: direct ? 'معتمد' : 'معلق', requestedBy: actor.name,
       requestedById: actor.id, requestedByUsername: actor.username, requestedAt: now,

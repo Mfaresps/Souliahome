@@ -6,7 +6,7 @@ export const ACCESS_ROLE_PERMISSIONS = new Set([
   'complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts',
   'reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import',
   'vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign',
-  'shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override',
+  'shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','shopify-free-shipping',
   'csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics',
   'csp-export','csp-import','delivery-manual-confirm','delivery-view-audit',
   'purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create',
@@ -71,6 +71,8 @@ export function normalizeRolePermissions(value: unknown): string[] {
   // Every Pick-Up action is done on the Pick-Up page, so it implies viewing it.
   if (perms.some(key => PICKUP_ACTION_PERMISSIONS.includes(key)) && !perms.includes('pickup-orders')) perms.push('pickup-orders');
   if (perms.includes('shopify-prepare-ship') && !perms.includes('shopify-orders')) perms.push('shopify-orders');
+  // Free shipping is asked for in the Shopify edit window.
+  if (perms.includes('shopify-free-shipping') && !perms.includes('shopify-orders')) perms.push('shopify-orders');
   // The no-image entry opens from the deposit-upload dialog, so it implies that perm.
   if (perms.some(key => key === 'shopify-deposit-no-image' || key === 'shopify-deposit-no-image-otp')) {
     if (!perms.includes('shopify-deposit-upload')) perms.push('shopify-deposit-upload');

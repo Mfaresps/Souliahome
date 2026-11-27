@@ -38,7 +38,7 @@
     if (opening || !window.souliaPushAppReady || typeof currentUser === 'undefined' || !currentUser) return false;
     const params = pending?.searchParams;
     const record = params?.get('pushRecord');
-    if (!record || !(/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales|login-approval|login-alert):[a-f0-9]{24}$/.test(record) || /^prep-group:[\p{L}\p{N} _-]{1,40}$/u.test(record))) return false;
+    if (!record || !(/^(tx|shopify|followup|mention|otp|audit|return|vault|product|expense|supplierReturn|performance|announcement|after-sales|login-approval|login-alert|login-lock):[a-f0-9]{24}$/.test(record) || /^prep-group:[\p{L}\p{N} _-]{1,40}$/u.test(record))) return false;
     const [kind, id] = record.split(':');
     if (!['admin', 'staff', 'viewer'].includes(currentUser.role)) return false;
     const destination = { tx: 'invoice-view', shopify: 'shopify-orders', followup: 'followups',
@@ -54,7 +54,11 @@
     const event = /^[A-Za-z0-9_-]{1,80}$/.test(rawEvent) ? rawEvent : '';
     opening = true;
     try {
-      if (kind === 'login-alert') {
+      if (kind === 'login-lock') {
+        // An account locked out of sign-in → its row with «إلغاء الحظر» (Users page, admin only).
+        if (currentUser.role !== 'admin') throw new Error(currentLang === 'en' ? 'For administrators only.' : 'للمدير فقط.');
+        await openLoginLockRow(id);
+      } else if (kind === 'login-alert') {
         // «محاولات دخول فاشلة على حسابك — هل هذا أنت؟» (auth-security.js)
         await window.SouliaAuth?.openLoginAlert(id);
       } else if (kind === 'login-approval') {

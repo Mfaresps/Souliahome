@@ -14,6 +14,9 @@ export interface AuthUserPayload {
   isActive: boolean;
   totpEnabled: boolean;
   onboardingPending: boolean;
+  /** The VERIFIED account email ('' until confirmed — account-email.util.ts). */
+  email: string;
+  emailVerified: boolean;
 }
 
 /**
@@ -49,5 +52,7 @@ export function buildAuthUserPayload(
     isActive: user.isActive !== false,
     totpEnabled: !!user.totpEnabled,
     onboardingPending: !!user.onboardingPending,
+    email: user.email && user.emailVerifiedAt ? String(user.email) : '',
+    emailVerified: !!(user.email && user.emailVerifiedAt),
   };
 }

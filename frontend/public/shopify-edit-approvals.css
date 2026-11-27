@@ -29,7 +29,22 @@
 .edit-discount-change+.edit-discount-change,.edit-discount-change+.edit-change-row,.edit-change-row+.edit-discount-change{border-top:1px solid var(--border)}
 .edit-discount-note{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:0;padding:0 14px 12px;font-size:.76rem;color:#287448}
 .edit-discount-note bdi{font-weight:700}
-.edit-discount-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;border-radius:5px;background:#edf8f1;font-size:.75rem;font-weight:700}
+.edit-discount-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;border-radius:4px;background:#edf8f1;font-size:.64rem;font-weight:700}
+/* «شحن مجاني» — a feature row (truck + tint), deliberately unlike the discount rows. */
+.edit-feature-change{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid #bfe3cd;border-radius:10px;background:linear-gradient(90deg,#f0faf4,#f7fcf9)}
+.edit-feature-change.is-off{border-color:var(--border);background:var(--bg-alt)}
+.edit-feature-ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;border-radius:6px;background:#1f7a4a;color:#fff}
+.edit-feature-change.is-off .edit-feature-ico{background:var(--border);color:var(--muted)}
+.edit-feature-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.edit-feature-txt b{font-size:.84rem;color:#1f6b42}
+.edit-feature-change.is-off .edit-feature-txt b{color:var(--text)}
+.edit-feature-txt small{font-size:.74rem;color:var(--muted);line-height:1.5}
+.sp-eh-feat{display:inline-flex;align-items:center;gap:4px;margin-inline-start:8px;padding:1px 7px;border-radius:999px;background:#e3f5ea;color:#1f6b42;font-size:.68rem;font-weight:700;vertical-align:middle}
+.sp-eh-feat.is-off{background:var(--bg-alt);color:var(--muted)}
+body.dark-mode .edit-feature-change{border-color:rgba(74,222,128,.28);background:rgba(74,222,128,.08)}
+body.dark-mode .edit-feature-ico{background:#22a35a}
+body.dark-mode .edit-feature-txt b,body.dark-mode .sp-eh-feat{color:#bbf7d0}
+body.dark-mode .sp-eh-feat{background:rgba(74,222,128,.16)}
 .edit-diff-product.is-added>header>span{color:#287448}
 .edit-diff-product.is-removed>header>span{color:#a33c3c}
 .edit-change-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;font-size:.83rem;min-width:0}

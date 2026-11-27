@@ -182,6 +182,8 @@
           ? n.recordId === 'followup:' + mention.txId && String(n.event) === String(mention.fuCommentId)
           : !!mention.commentId && String(n.event) === String(mention.commentId) && String(n.recordId || '').split(':').pop() === String(mention.txId))));
       related.forEach(n => consumed.add(n.id));
+      // «نظام الأمان» notices: a short title + one line in the UI language, with the shield icon.
+      const sec = typeof _secSysNotice === 'function' ? _secSysNotice(mention) : null;
       const item = { id: 'mention-' + id, mention, historyIds: related.map(n => n.id),
         title: typeof _isNoImageDepositMention === 'function' && _isNoImageDepositMention(mention) ? t('sysDepositNoImage') :
           (typeof _sysSenderLabel === 'function' ? _sysSenderLabel(mention.fromName) : mention.fromName) || t('notifTabUpdates'),
@@ -189,6 +191,7 @@
         actorUserId: mention.fromUserId, actorName: mention.fromName, actorAvatar: related.find(n => n.actorAvatar)?.actorAvatar,
         eventType: 'mention', type: 'info', icon: ICON('info'), ts: mention.ts,
         page: 'movements', refType: 'mention', refId: id };
+      if (sec) Object.assign(item, { title: sec.title, desc: sec.detailText, eventType: 'security' });
       merged.push(item);
     }
     merged.push(...input.filter(n => !consumed.has(n.id)));

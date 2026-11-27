@@ -21,7 +21,8 @@ export type ViolationType =
   | 'two_factor_changed'
   | 'system_pin_changed'
   | 'login_source_locked'
-  | 'login_attack';
+  | 'login_attack'
+  | 'account_email_changed';
 
 @Schema({ timestamps: true })
 export class SecurityAuditLog {

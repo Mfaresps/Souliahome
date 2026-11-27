@@ -159,9 +159,14 @@
         </div>
         <div class="uss-body" id="uss-body" aria-live="polite"></div>
       </section>`;
-      el.addEventListener('click', onClick);
-      el.addEventListener('input', onInput);
-      el.addEventListener('change', onChange);
+      // ⚠ Bound once: relabel() (a language switch) rebuilds this markup, and binding again would
+      // run every action twice — e.g. «إنهاء الجلسة» would send two revokes.
+      if (!el._ussBound) {
+        el.addEventListener('click', onClick);
+        el.addEventListener('input', onInput);
+        el.addEventListener('change', onChange);
+        el._ussBound = true;
+      }
       drawTools();
     }
     el.querySelectorAll('.uss-tabs [data-tab]').forEach((b) => {
@@ -218,7 +223,8 @@
       return;
     }
     const q = (S.q || '').trim().toLowerCase();
-    let list = S.data.accounts.slice();
+    // A reply without an account list must not take the whole Users page down (renderUsers calls load()).
+    let list = (Array.isArray(S.data.accounts) ? S.data.accounts : []).slice();
     if (q) list = list.filter((a) => [a.name, a.username, a.jobTitle].some((v) => String(v || '').toLowerCase().includes(q)));
     if (S.filter === 'open') list = list.filter((a) => a.activeCount > 0 || legacyOf(a.userId).length);
     if (S.filter === 'online') list = list.filter((a) => a.online);

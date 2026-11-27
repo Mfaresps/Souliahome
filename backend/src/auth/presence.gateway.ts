@@ -280,6 +280,13 @@ export class PresenceGateway
     }
   }
 
+  /** Emit an event only to admin sockets. */
+  emitToAdmins(event: string, payload: unknown): void {
+    if (!this.server || typeof this.server.to !== 'function') return;
+    const ids = [...this.connectedUsers.values()].filter((u) => u.role === 'admin').map((u) => u.socketId);
+    if (ids.length) this.server.to(ids).emit(event, payload);
+  }
+
   /** Emit an event only to sockets belonging to the given userId */
   emitToUser(userId: string, event: string, payload: unknown): boolean {
     if (!this.server || !userId) return false;

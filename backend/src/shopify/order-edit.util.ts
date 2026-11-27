@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { cleanOfferRemoval } from '../shared/price-offer.util';
 
+/** «طلب شحن مجاني» — staff may ask for free shipping on a Shopify order; a manager always approves it. */
+export const FREE_SHIPPING_PERM = 'shopify-free-shipping';
+
 export interface OrderEditActor { id: string; name: string; username: string; role: string; perms: string[]; }
 export interface OrderEditInput {
   items?: any[];

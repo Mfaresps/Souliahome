@@ -20,8 +20,22 @@ export class User {
   @Prop()
   phone: string;
 
+  // Account email (non-admin accounts, Nov 27, 2026 — auth/account-email.util.ts). It counts only with
+  // `emailVerifiedAt`: an address typed before verification existed has none and is offered for confirmation.
+  // ⚠ Written only by UsersService.confirmAccountEmail — a profile edit never sets it.
   @Prop({ default: '' })
   email: string;
+
+  @Prop({ type: Date, default: null })
+  emailVerifiedAt: Date | null;
+
+  // An address waiting for its code (the employee's own request or an admin's).
+  @Prop({ type: Object, default: null })
+  emailPending: { email: string; codeHash: string; expiresAt: Date; attempts: number; sentAt: Date; requestedBy: { id: string; name: string } | null; requestedAt: Date } | null;
+
+  // Codes sent in the last hour (sending limit across every address).
+  @Prop({ type: [Date], default: [] })
+  emailCodeSends: Date[];
 
   @Prop()
   avatar: string;

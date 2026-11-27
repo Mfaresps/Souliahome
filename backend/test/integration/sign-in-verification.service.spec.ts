@@ -176,9 +176,9 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
   it('email code: sent to the verified address, hashed, one minute between sends, wrong then right', async () => {
     await verifiedEmail('boss', 'boss@example.com');
     const res = await login('boss');
-    expect(res.methods.email).toBe('bo•••@example.com');
+    expect(res.methods.email).toBe('bo*****s@example.com');
     const sent: any = await verify.sendEmailCode(res.challenge);
-    expect(sent.sentTo).toBe('bo•••@example.com');
+    expect(sent.sentTo).toBe('bo*****s@example.com');
     expect(mails[0].to).toBe('boss@example.com');
     const c = lastMailCode();
     expect(c).toMatch(/^\d{6}$/);
@@ -260,7 +260,7 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
     expect((await login('boss', 'new-pass-123', t.deviceToken)).challenge).toBeTruthy(); // device revoked
     const open = await connection.collection('usersessions').countDocuments({ endedAt: null });
     expect(open).toBe(0);
-    expect(mails.some((m) => /تم تغيير كلمة المرور/.test(m.subject))).toBe(true);
+    expect(mails.some((m) => m.subject === 'تغيير كلمة المرور')).toBe(true);
     // the spent challenge cannot reset twice
     expect(await err(verify.resetPassword(fp.challenge, 'another-pass-1'))).toMatchObject({ code: 'CHALLENGE_USED' });
   });
@@ -311,7 +311,7 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
     expect(await err(verify.emailRequest(actor, 'new@example.com', 'right-pass'))).toMatchObject({ code: 'STEP_UP_REQUIRED' });
     expect(await err(verify.emailRemove(actor, 'right-pass'))).toMatchObject({ code: 'STEP_UP_REQUIRED' });
     const su: any = await verify.stepUpStart(actor, 'security-email');
-    expect(su.methods.email).toBe('ol•••@example.com');
+    expect(su.methods.email).toBe('o*****@example.com');
     await verify.sendEmailCode(su.challenge);
     expect(mails[mails.length - 1].to).toBe('old@example.com'); // the code goes to the CURRENT address
     await verify.verifyCode(su.challenge, 'email', lastMailCode(), false);
@@ -319,7 +319,7 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
     expect(mails[mails.length - 1].to).toBe('new@example.com');
     await verify.emailConfirm(actor, lastMailCode());
     expect((await users.findById(actor.id) as any).securityEmail).toBe('new@example.com');
-    expect(mails.some((m) => m.to === 'old@example.com' && /تغيّر/.test(m.subject))).toBe(true);
+    expect(mails.some((m) => m.to === 'old@example.com' && m.subject === 'تغيير البريد الإلكتروني')).toBe(true);
   });
 
   it('turning Google Authenticator off: password always, plus an email code when an email is linked', async () => {
@@ -334,7 +334,8 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
     expect(await err(verify.verifyCode(su.challenge, 'totp', code(secret), false))).toMatchObject({ code: 'METHOD_NOT_ALLOWED' });
     await verify.sendEmailCode(su.challenge);
     expect(mails[mails.length - 1]).toMatchObject({ to: 'boss@example.com' });
-    expect(mails[mails.length - 1].subject).toMatch(/تعطيل Google Authenticator/);
+    expect(mails[mails.length - 1].subject).toBe('رمز تأكيد الهوية');
+    expect(mails[mails.length - 1].text).toMatch(/الغرض: .*Google Authenticator/);
     await verify.verifyCode(su.challenge, 'email', lastMailCode(), false);
     expect(await verify.totpDisable(actor, 'right-pass', '', su.challenge)).toEqual({ success: true });
     expect((await users.findById(actor.id))!.totpEnabled).toBe(false);

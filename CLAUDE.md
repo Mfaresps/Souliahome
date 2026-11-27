@@ -20,6 +20,51 @@ digit; never set `done` on a destructive action). `_pinState(id,'ok'|'err')` = g
 Settings ← الأمان: new + confirm boxes, save enabled only when they match. `GET /settings` returns
 `vaultPassIsPin` (never the PIN); false shows a warning to set a new one — an old non-4-digit PIN cannot be typed.
 
+## Manager Approval Codes Also Emailed (Nov 27, 2026)
+
+Every «كود المدير» an employee asks for (discount, purchase, record edit, supplier pay, deposit
+without image, vault access, export, add/delete product or supplier, import) is still shown in the
+app, and a formal copy WITH the code now goes to each admin's verified security email.
+- One place: `DiscountOtpService.createOtpDocument` → `emailOtpCopy` (background, never awaited by
+  the request, failures ignored). Content from `discount-otp/otp-mail.util.ts` `otpMailContent`
+  (formal MSA, Cairo time, no emoji) through `securityMailBody` + `SecurityMailerService`.
+- Not sent: to the requester themselves, to unverified/disabled accounts, twice to one address, and
+  for `edit-tx` (approved by a button in the app; there is no code to pass on).
+- Same SMTP as the security emails; without SMTP nothing is sent. Test: `test/unit/otp-mail.spec.ts` (8).
+
+### Every security email: fixed subject, short body, no links (owner, Nov 27, 2026 — Gmail spam)
+- ⚠ Subjects come ONLY from `MAIL_SUBJECT` (security-mailer.service.ts): one plain phrase per kind
+  («رمز التحقق لتسجيل الدخول», «رمز استعادة كلمة المرور», «رمز تأكيد الهوية», «رمز الموافقة على
+  طلب»…) — never a code, username, number or «SOULIA —». The code lives in the body only
+  (tests read it as `الرمز: NNNNNN` from `text`).
+- `securityMailBody`: title, code, 2–4 short lines (empty ones dropped), one footer `MAIL_FOOTER`;
+  white page, no links/images/colours; the plain-text part says the same. Sender name «SOULIA» +
+  header `Auto-Submitted: auto-generated`. No greeting line.
+
+## Employee Account Email — Confirmed by a Code, Mandatory at Sign-in (Nov 27, 2026)
+
+`auth/account-email.util.ts` (rules) + `account-email.service.ts` + `account-email.controller.ts`
+(`/auth/security/account-email`, so a coded 401 keeps the session); frontend `account-email.js/.css`
+(`window.SouliaAccountEmail`). Admin accounts keep their «بريد الأمان» (securityEmail) instead.
+- ⚠ `user.email` counts only with `emailVerifiedAt`, and is written only by `UsersService.confirmAccountEmail`
+  (after the right code). `updateUser` drops `email`; an address typed before this has no `emailVerifiedAt`
+  and is offered for confirmation. Pending = `emailPending` (code hash never leaves the server).
+- Codes: 6 digits, HMAC-hashed, 5 wrong → the code stops (address kept), 60 s apart and 5 an hour per
+  account (`emailCodeSends`). Employee's own request: 5 minutes. An admin's request (new account, or the
+  user window «إرسال رمز التأكيد»): 48 hours — the EMPLOYEE confirms it at sign-in; the admin never can.
+  Changing a confirmed address needs the current password; the old address is told, the new one gets a
+  confirmation. One address per account (also checked against admins' security emails) → 409 `EMAIL_TAKEN`.
+- `POST /users` with `email` → `inviteNewAccount` (never fails the creation; reply `emailInvite`).
+- After sign-in (`dismissSplash`) `gate()` opens the mandatory «أضف بريدك الإلكتروني» for an active
+  non-admin without a confirmed email (only when SMTP is configured): no Escape, only «تسجيل الخروج»;
+  code step with the Spam note; the tour starts after it. ⚠ Client-side gate (the API is not blocked).
+- «حسابي» card `#uh-email-card`; Users table mark under @username (confirmed / waiting / none), live via
+  socket `users:email-changed` (admins) — `PresenceGateway.emitToAdmins`. Audit type `account_email_changed`.
+- Tests: `test/unit/account-email.spec.ts` (12), `test/browser/account-email.cjs` (37, ar/en, dark, 390).
+  ⚠ Opening `#users` directly in that harness froze the mocked page (also with the module blocked), so the
+  Users-page marks are checked from the dashboard; `users-roles-unified.cjs` 46/46 with these changes.
+  Not tried against a real SMTP account.
+
 ## Password Policy — Admins Change Their Own With a Code; Staff Only Through an Admin (Nov 27, 2026)
 
 `backend/src/auth/password-policy.service.ts` + `frontend/public/password-policy.js/.css` (`window.SouliaPassword`).
@@ -99,6 +144,32 @@ Order: active accounts table → disabled section → «الجلسات والأ�
   Browser check: 15 (row heights, 8 + show all, 10 per page, no overflow, dark, 390).
 - Test: browser check over the compiled API on a scratch DB (25 checks, ar, dark, 390). `users-roles-unified.cjs`
   now expects «لا يوجد دور».
+- **English (Nov 27, 2026)**: the whole page follows the UI language. Fixed markup = `data-i18n*` keys
+  (`usersAddBtn`, `usersSearchPh`, `uxCol*`, `uxDis*`, `uxSec*`, `uxLa*`, `uxRefresh`); everything drawn in JS goes
+  through `_ux(ar, en)` and dates through `_uxLocale()` (both beside `_USER_ROLE_MAP`); event names
+  `_VIOLATION_LABEL_EN` + `_violationLabel()`, attempt results = 3rd entry of `_LA_RESULT`, device kinds
+  `_secDeviceName`. `applyLang()` redraws the table, both logs and the sessions panel (`SouliaSessions.relabel`).
+  ⚠ Texts the SERVER stored (lock/suspension reasons, event details beyond the known patterns) stay as written.
+  ⚠ user-sessions.js binds its listeners once (`el._ussBound`) — relabel rebuilt the markup and every action
+  would have run twice; a reply without `accounts` no longer breaks the page. The global small-search rule now
+  also matches English placeholders (`input[placeholder^="Search" i]`).
+
+## Mention Popup / Notification Cards — System Notices Read Clearly (Nov 27, 2026)
+
+`_buildMentionCardHtml` (index.html; popup «منذ آخر جلسة» + notification centre ← الإشارات).
+- «متابعة تلقائية» / «تذكير المتابعة» (followups.service.ts) used to fall into the generic «mentioned you» card:
+  initials avatar («تا»/«مت»), «#84f65f» (tail of the follow-up id) and the whole carrier block incl. its English
+  text. Now `_fuSysNotice(m)` parses the stored Arabic (⚠ wire format — never rewritten on the server) into a title
+  (متابعة متأخرة · العميل أجّل الاستلام · مشكلة في التسليم · مشكلة جديدة — أُعيد فتح المتابعة), the order number, and
+  ONE line: Bosta's Arabic reason · status · retry date (English carrier text, codes, timestamps left out).
+  Clock icon (reminder, amber) / truck (shipping, blue) instead of an avatar.
+- A person mention shows `#txRef` (the order), never the end of `txId`.
+- Calmer: one unread marker (the start bar, in the card's colour — the extra coloured dot is gone), one neutral
+  unread background (`var(--bg-alt)`) for every card, «أشار إليك» in muted text.
+- «طلب جديد مُسند إليك» is one line: `#ref · customer · total` (was a 3-row box).
+- Popup title: «requests awaiting you» only for real code/approval senders (`_OTP_SENDERS`; «نظام التوزيع» used to
+  count); system updates → «{n} تنبيهات جديدة تنتظرك» (`maTitleManyUpdates`); button «عرض كل التنبيهات».
+- Test: `test/browser/mention-alert-popup.cjs` (22, ar + en dark, reading order checked).
 
 ## Login Page — One Centred Card (Nov 27, 2026)
 
@@ -168,6 +239,22 @@ The old account-wide pause (`loginLockedUntil`, `login-lockout.util`) is no long
   purpose `unlock` (Google / security-email code / backup code) → clears that source + its IP (password still
   needed). An admin — «إلغاء الحظر» in «الحسابات المعطّلة والموقوفة» (`unlockAccount` deletes the account's
   sources; panel state `loginBlock` on the user, hold `blocked`).
+- **Admins are told in the app (Nov 28, 2026)**: every lock/block also sends every OTHER active admin a mention
+  («نظام الأمان», `txId: 'login-lock:<userId>'`) + a push (`security`, actionKey `login-lock`, record
+  `login-lock:<userId>`). Clicking it → `openLoginLockRow` = Users page scrolled to that account's row in
+  «الحسابات المعطّلة والموقوفة» with the EXISTING «إلغاء الحظر» button highlighted (no new route; the row carries
+  `data-user-id`; ends with a toast if the lock already ended). «فتح القفل» on the sign-in page for an account with
+  no second factor now asks the admins again (`askAdminsToUnlock`, ≤ once / 10 min, only while a lock runs) and
+  answers «أُرسل طلب إلى مدير النظام لإلغاء القفل…» — the same text for unknown names (no account revealed).
+  `adminUnlockUser(id, name, hold)` words a sign-in block as «إلغاء حظر تسجيل الدخول». Test: 1 case in
+  `login-guard.service.spec.ts` (13).
+- **«نظام الأمان» notices read short, in the UI language**: `_secSysNotice(m)` (index.html, beside `_fuSysNotice`)
+  parses the stored Arabic (⚠ wire format — old rows keep it) into a title + one line (failed attempts on your
+  account · account locked out · unlock requested · password reset requested · new device · PIN changed); the
+  device keeps only browser · OS (the Arabic device word + IP made the English line run backwards), Latin runs in
+  FSI…PDI. Used by the mention card and the notification feed (`notification-feed.js` sets title/desc and the
+  shield icon). Staff are told «أبلغ مدير النظام», never «غيّر كلمة المرور» (they cannot) — the stored text and
+  the owner email follow the same rule.
 - Alerts on a lock/block of a real account: owner gets «محاولات دخول فاشلة على حسابك — هل كانت منك؟» (socket
   `auth:login-alert`, push record `login-alert:<id>`, mention) with «لا، لست أنا — احظر» (source blocked, account
   under attack 24 h) / «نعم، كانت مني» (source lifted); the owner and every admin with a verified email are emailed;
@@ -254,6 +341,10 @@ none, then reset the password through «نسيت كلمة المرور»; that f
   - Frontend `SouliaAuth.stepUp(action)` → token or null (cancel); used by `saveVaultPass`, the email card and
     «تعطيل». Settings dialogs (password prompt, code prompt, setup) use the same card head (logo + title), six-box
     code and full-width primary button; «اتصال آمن» shows only before sign-in.
+  - **Email shown masked everywhere (owner, Nov 27)**: «mf*****s@gmail.com» — first 2 letters (1 when the name has
+    ≤3), five stars, last letter, domain. Server `maskEmail` (every verification dialog) ⚠ ≡ `maskMail` in
+    auth-security.js (the Settings card). Only «أرسلنا رمزًا إلى …» right after typing a NEW address shows it whole.
+  - Settings card row actions are small underlined text links (red = remove / disable), not bordered buttons.
   - Tests: 2 more cases in the spec (14; revert-checked: dropping the action binding fails 1); browser 15 checks.
 - Files: backend `auth/auth-security.util.ts` (rules), `auth-challenge.service.ts`, `trusted-devices.service.ts`,
   `security-mailer.service.ts`, `token-issuer.service.ts` (the only token signer), `sign-in-verification.service.ts`,
@@ -286,6 +377,19 @@ changed nothing: every discount (Shopify + codes + extra) is capped at the items
   `tx.freeShipping {amount, by, at}`, tariff price 0. The total differs from Shopify → the usual acknowledgement.
   The carrier's real fee reaches the vault at the Bosta settlement (remaining − fee).
 - `orderEditSnapshot` gains `freeShipping:true` only when on, so requests stored before still compare equal.
+- **Permission «طلب شحن مجاني» (`shopify-free-shipping`, owner, Nov 27)**: staff need it to turn free shipping on/off
+  (`prepareOrderEdit` → 403; the switch is disabled with the reason, `_spCanFreeShip`), and a staff change of it
+  **always goes to a manager**, even with `shopify-edit-direct` (`submitOrderEdit` `direct`, mirrored by
+  `_spConfirmEditSubmission`). Implies `shopify-orders`. Not granted by migration.
+- **Edit history shows it as a feature, not a discount**: `_spEditFreeShipChange` / `_spEditFreeShipRowHtml`
+  (shopify-edit-approvals.js) draw a green row with a truck icon «تم تفعيل / إلغاء الشحن المجاني» first among the
+  changes, and a «شحن مجاني» chip on the entry's summary line. A discount set to 0 reads «إلغاء الخصم»; the % icon is
+  16px. Test: `test/browser/shopify-edit-freeship.cjs` (24, ar + en dark).
+- **Shipping column «Free» mark** (`_freeShipOf` / `_freeShipCellHtml`, used by `_spShipCell` AND `_movShipCell`): a
+  green pill with a truck + the waived amount struck, whether set in the system (`freeShipping`) or sent by Shopify
+  (its shipping discount covers the whole shipping, `_saleShipDisc`); the source (+ who / code) is in the tooltip. A
+  partial Shopify shipping discount is not marked. ⚠ In `_movShipCell` the check runs before the «—» exit — a
+  confirmed free-shipping sale stores shipCost 0.
 - Shown: Shopify table shipping cell «مجاني» + struck figure, quick-view chip, confirm dialog price 0.
   ⚠ Not shown yet on the invoice page/print (they show shipping 0; `tx.freeShipping` holds the original 120).
 - Tests: `test/unit/shopify-order-total.spec.ts` (7), `shopify-free-shipping-edit.spec.ts` (7, real prepareOrderEdit),

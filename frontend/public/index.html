@@ -47,7 +47,7 @@
 <script>
 // Load same-origin libraries on demand; startup never downloads Excel or charts.
 (function () {
-  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261125-deferral', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261125-msa', invoiceImage:'/invoice-image.js?v=20261113-ship-discount'};
+  var sources = {xlsx:'/vendor/xlsx-0.18.5.min.js', chart:'/vendor/chart-4.4.0.min.js', socket:'/vendor/socket.io-4.7.5.min.js', settingsIntegrations:'/shopify-settings.js?v=20261020-connection-status', shopifyOrdersChunk:'/shopify-orders-route.js?v=20261110-address-direction', invoiceViews:'/invoice-views-route.js?v=20261109-phase7', followupsView:'/followups-view-route.js?v=20261110-trail-actions', shopifyKpis:'/shopify-kpis.js?v=20261125-deferral', depositHistory:'/deposit-history.js?v=20261110-shimmer', shopifyEditApprovals:'/shopify-edit-approvals.js?v=20261127-freeship', invoiceImage:'/invoice-image.js?v=20261113-ship-discount'};
   var tasks = {};
   window.souliaLibraryReady = function (name) {
     if (tasks[name]) return tasks[name];
@@ -3487,8 +3487,9 @@ body.dark-mode #header .search-icon-btn{color:rgba(255,255,255,.4)}
 #header .header-search:focus-within .search-icon-btn{color:#2d7a4f}
 body.dark-mode #header .header-search:focus-within .search-icon-btn{color:#4ade80}
 /* Global rule: search-box text/placeholders stay simple and small everywhere */
-input[placeholder*="بحث"]{font-size:.74rem!important}
-input[placeholder*="بحث"]::placeholder{font-size:.7rem!important;font-weight:400!important}
+/* ⚠ English placeholders start with «Search» — without it a box grows the moment the UI is in English. */
+input[placeholder*="بحث"],input[placeholder^="Search" i]{font-size:.74rem!important}
+input[placeholder*="بحث"]::placeholder,input[placeholder^="Search" i]::placeholder{font-size:.7rem!important;font-weight:400!important}
 #header .header-search input{background:#fff;border:1px solid #d0dbd5;color:#1a2e22;border-radius:20px;padding:7px 30px 7px 32px;font-size:.8rem;width:100%;transition:background .28s cubic-bezier(.22,1,.36,1),border-color .28s cubic-bezier(.22,1,.36,1),box-shadow .32s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1);-webkit-appearance:none;appearance:none;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 #header .header-search input::placeholder{color:#8aab96;font-size:.8rem;transition:opacity .2s}
 #header .header-search input:focus{background:#fff;border-color:#2d7a4f;outline:none;box-shadow:0 0 0 4px rgba(45,122,79,.14),0 4px 16px rgba(45,122,79,.1);transform:scale(1.015)}
@@ -6676,6 +6677,16 @@ body.dark-mode .sp-sum-row.is-warn,body.dark-mode .sp-sum-row.is-warn .sp-sum-v{
 .sp-freeship-txt b{font-size:.86rem;color:var(--text)}
 .sp-freeship-txt small{font-size:.74rem;color:var(--muted);line-height:1.5}
 .sp-freeship.is-on .sp-freeship-row{border-color:var(--primary);background:var(--primary-pale)}
+.sp-freeship-ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;border-radius:6px;
+  background:#e8f6ee;color:#1f7a4a;margin-top:-1px}
+.sp-freeship.is-on .sp-freeship-ico{background:var(--primary);color:#fff}
+.sp-freeship-txt b{display:inline-flex;align-items:center;gap:6px}
+.sp-freeship-on{font-size:.66rem;font-weight:700;padding:1px 7px;border-radius:999px;background:#d7f0e1;color:#1f6b42}
+.sp-freeship-txt small.sp-freeship-hint{color:#8a6a1f}
+.sp-freeship.is-locked .sp-freeship-row{cursor:not-allowed;opacity:.75}
+body.dark-mode .sp-freeship-ico{background:rgba(74,222,128,.14);color:#86efac}
+body.dark-mode .sp-freeship-on{background:rgba(74,222,128,.18);color:#bbf7d0}
+body.dark-mode .sp-freeship-txt small.sp-freeship-hint{color:#fbbf24}
 .sp-sum-row.is-total{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-weight:700;font-size:.95rem}
 .sp-sum-row.is-total .sp-sum-v{color:var(--accent)}
 /* ⚠ العزل إلزامي: fmtJ يُخرج مقطعاً لاتينياً داخل نص عربي، فبدونه تلتصق الإشارة
@@ -12046,6 +12057,12 @@ body.dark-mode .mov-items-popover .mip-warn.is-warn{color:#fbbf24}
 body.dark-mode .mov-items-popover .mip-price{color:#4ade80}
 /* Shipping cell — billed price + loss diff stacked */
 .mov-ship-cell{display:inline-flex;flex-direction:column;align-items:center;gap:2px;line-height:1.2}
+/* «شحن مجاني» — a small feature pill (truck), same green in both sources; the source is in the tooltip. */
+.ship-free-tag{display:inline-flex;align-items:center;gap:3px;padding:1px 7px 1px 6px;border-radius:999px;background:#e3f5ea;color:#1f6b42;
+  border:1px solid #bfe3cd;font-size:.72rem;font-weight:700;line-height:1.5;white-space:nowrap;cursor:help}
+.ship-free-was{color:var(--muted);font-size:.7rem}
+.ship-free-was .amt-cur{display:none}
+body.dark-mode .ship-free-tag{background:rgba(74,222,128,.14);color:#bbf7d0;border-color:rgba(74,222,128,.3)}
 /* ── AWB printed mark (shipping column, prep cards) ──
    Printing is a neutral activity marker, separate from delivery and payment status. */
 .mov-ship-line{display:inline-flex;align-items:center;gap:5px}
@@ -17766,7 +17783,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/admin-team-home.css?v=20261109-compact2">
 <link rel="stylesheet" href="/sales-overview.css?v=20261111-multi-month-values">
 <link rel="stylesheet" href="/deposit-history.css?v=20261026-mobile">
-<link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261113-edit-history">
+<link rel="stylesheet" href="/shopify-edit-approvals.css?v=20261127-freeship">
 <link rel="stylesheet" href="/pickup-daily-shipping.css?v=20261024">
 <link rel="stylesheet" href="/deposit-transfer.css">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -17779,7 +17796,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <link rel="stylesheet" href="/user-sessions.css?v=5">
 <link rel="stylesheet" href="/password-policy.css?v=2">
 <link rel="stylesheet" href="/users-page.css?v=7">
-<link rel="stylesheet" href="/auth-security.css?v=10">
+<link rel="stylesheet" href="/auth-security.css?v=11">
+<link rel="stylesheet" href="/account-email.css?v=1">
 <link rel="stylesheet" href="/api-access.css?v=6">
 <link rel="stylesheet" href="/assistant.css?v=25">
 <link rel="stylesheet" href="/onboarding.css?v=1">
@@ -22601,16 +22619,16 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
 <div><h2 class="page-title" data-i18n="users">المستخدمون</h2><p class="page-subtitle" data-i18n="usersSubtitle">إدارة حسابات الموظفين وصلاحياتهم</p></div>
 <div class="page-header-actions">
 <button class="btn btn-outline btn-sm" id="users-archive-export-btn" onclick="openArchiveExport('users')" data-i18n-title="xpBtnTitle" title="تصدير نسخة أوفلاين كاملة (Excel متعدد الأوراق)" style="display:none;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg><span data-i18n="xpBtn">نسخة كاملة</span></button>
-<button class="btn btn-primary btn-sm" onclick="openUserModal()">+ إضافة مستخدم</button>
+<button class="btn btn-primary btn-sm" onclick="openUserModal()" data-i18n="usersAddBtn">+ إضافة مستخدم</button>
 </div>
 </div>
 
 <div class="users-toolbar">
   <div class="users-search-wrap">
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="search" id="users-search" placeholder="بحث عن مستخدم..." oninput="renderUsers()">
+    <input type="search" id="users-search" placeholder="بحث عن مستخدم..." data-i18n-placeholder="usersSearchPh" oninput="renderUsers()">
   </div>
-  <select id="users-role-filter" onchange="renderUsers()" aria-label="تصفية حسب الدور">
+  <select id="users-role-filter" onchange="renderUsers()" aria-label="تصفية حسب الدور" data-i18n-aria-label="usersRoleFilterAria">
     <option value="">كل الأدوار</option>
   </select>
   <span class="users-count-label" id="users-count-label"></span>
@@ -22621,11 +22639,11 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <table id="users-table" class="ent-table">
       <thead>
         <tr>
-          <th data-col="u-user">المستخدم</th>
-          <th data-col="u-job">المسمّى الوظيفي</th>
-          <th data-col="u-role">الدور</th>
-          <th data-col="u-seen">آخر ظهور</th>
-          <th data-col="u-actions"><span class="ux-sr">الإجراءات</span></th>
+          <th data-col="u-user" data-i18n="uxColUser">المستخدم</th>
+          <th data-col="u-job" data-i18n="uxColJob">المسمّى الوظيفي</th>
+          <th data-col="u-role" data-i18n="uxColRole">الدور</th>
+          <th data-col="u-seen" data-i18n="uxColSeen">آخر ظهور</th>
+          <th data-col="u-actions"><span class="ux-sr" data-i18n="uxColActions">الإجراءات</span></th>
         </tr>
       </thead>
       <tbody id="users-tbody"></tbody>
@@ -22639,8 +22657,8 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <header class="ux-head">
     <span class="ux-head-ic is-muted"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></span>
     <div class="ux-head-txt">
-      <h3 id="users-disabled-title">الحسابات المعطّلة والموقوفة <span class="ux-count" id="users-disabled-count"></span></h3>
-      <p>حسابات لا تستطيع تسجيل الدخول حاليًا. راجع السبب قبل إعادة التفعيل.</p>
+      <h3 id="users-disabled-title"><span data-i18n="uxDisTitle">الحسابات المعطّلة والموقوفة</span> <span class="ux-count" id="users-disabled-count"></span></h3>
+      <p data-i18n="uxDisSub">حسابات لا تستطيع تسجيل الدخول حاليًا. راجع السبب قبل إعادة التفعيل.</p>
     </div>
   </header>
   <div id="locked-users-list" class="ux-dis-list"></div>
@@ -22656,23 +22674,23 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <header class="ux-head">
     <span class="ux-head-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
     <div class="ux-head-txt">
-      <h3 id="sec-log-title">سجل الأمان</h3>
-      <p id="sec-log-summary">محاولات الدخول ورموز التحقق والإجراءات المتخذة على الحسابات.</p>
+      <h3 id="sec-log-title" data-i18n="uxSecTitle">سجل الأمان</h3>
+      <p id="sec-log-summary" data-i18n="uxSecSub">محاولات الدخول ورموز التحقق والإجراءات المتخذة على الحسابات.</p>
     </div>
     <div class="ux-head-tools">
-      <select id="sec-log-filter" aria-label="نوع الحدث" onchange="_securityLogPage=0;_renderSecurityLogPage()">
-        <option value="">كل الأحداث</option>
-        <option value="login">الدخول والتحقق</option>
-        <option value="accounts">إيقاف الحسابات وتفعيلها</option>
-        <option value="access">الصلاحيات والبيانات</option>
+      <select id="sec-log-filter" aria-label="نوع الحدث" data-i18n-aria-label="uxSecFilterAria" onchange="_securityLogPage=0;_renderSecurityLogPage()">
+        <option value="" data-i18n="uxSecAll">كل الأحداث</option>
+        <option value="login" data-i18n="uxSecLogin">الدخول والتحقق</option>
+        <option value="accounts" data-i18n="uxSecAccounts">إيقاف الحسابات وتفعيلها</option>
+        <option value="access" data-i18n="uxSecAccess">الصلاحيات والبيانات</option>
       </select>
-      <button type="button" class="ux-btn" onclick="loadSecurityPanel()">تحديث</button>
+      <button type="button" class="ux-btn" onclick="loadSecurityPanel()" data-i18n="uxRefresh">تحديث</button>
     </div>
   </header>
   <div class="ux-table-wrap">
     <table class="ux-table" id="security-audit-table">
       <thead>
-        <tr><th>الوقت</th><th>الحدث</th><th>المستخدم</th><th>التفاصيل</th><th>الجهاز والشبكة</th></tr>
+        <tr><th data-i18n="uxColTime">الوقت</th><th data-i18n="uxColEvent">الحدث</th><th data-i18n="uxColUser">المستخدم</th><th data-i18n="uxColDetails">التفاصيل</th><th data-i18n="uxColOrigin">الجهاز والشبكة</th></tr>
       </thead>
       <tbody id="security-audit-tbody"></tbody>
     </table>
@@ -22685,25 +22703,25 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
   <header class="ux-head">
     <span class="ux-head-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span>
     <div class="ux-head-txt">
-      <h3 id="la-title">سجل محاولات الدخول <span class="ux-count" id="la-count"></span></h3>
-      <p id="la-summary">كل محاولة لتسجيل الدخول، الناجحة والمرفوضة، مع الجهاز وعنوان الشبكة.</p>
+      <h3 id="la-title"><span data-i18n="uxLaTitle">سجل محاولات الدخول</span> <span class="ux-count" id="la-count"></span></h3>
+      <p id="la-summary" data-i18n="uxLaSub">كل محاولة لتسجيل الدخول، الناجحة والمرفوضة، مع الجهاز وعنوان الشبكة.</p>
     </div>
     <div class="ux-head-tools la-tools">
-      <input type="search" id="la-search" placeholder="بحث باسم المستخدم أو عنوان IP" aria-label="بحث باسم المستخدم أو عنوان IP" oninput="_laSearchInput()" autocomplete="off">
-      <select id="la-filter" aria-label="نتيجة المحاولة" onchange="_laPage=1;_loadLoginAttempts()">
-        <option value="">كل النتائج</option>
-        <option value="ok">ناجحة</option>
-        <option value="failed">بيانات غير صحيحة</option>
-        <option value="stopped">موقوفة أو محظورة</option>
-        <option value="robot">التحقق الآلي</option>
+      <input type="search" id="la-search" placeholder="بحث باسم المستخدم أو عنوان IP" aria-label="بحث باسم المستخدم أو عنوان IP" data-i18n-placeholder="uxLaSearchPh" data-i18n-aria-label="uxLaSearchPh" oninput="_laSearchInput()" autocomplete="off">
+      <select id="la-filter" aria-label="نتيجة المحاولة" data-i18n-aria-label="uxLaFilterAria" onchange="_laPage=1;_loadLoginAttempts()">
+        <option value="" data-i18n="uxLaAll">كل النتائج</option>
+        <option value="ok" data-i18n="uxLaOk">ناجحة</option>
+        <option value="failed" data-i18n="uxLaFailed">بيانات غير صحيحة</option>
+        <option value="stopped" data-i18n="uxLaStopped">موقوفة أو محظورة</option>
+        <option value="robot" data-i18n="uxLaRobot">التحقق الآلي</option>
       </select>
-      <button type="button" class="ux-btn" onclick="_loadLoginAttempts()">تحديث</button>
+      <button type="button" class="ux-btn" onclick="_loadLoginAttempts()" data-i18n="uxRefresh">تحديث</button>
     </div>
   </header>
   <div class="ux-table-wrap">
     <table class="ux-table" id="login-attempts-table">
       <thead>
-        <tr><th>الوقت</th><th>النتيجة</th><th>اسم المستخدم</th><th>الجهاز والشبكة</th></tr>
+        <tr><th data-i18n="uxColTime">الوقت</th><th data-i18n="uxColResult">النتيجة</th><th data-i18n="uxColUsername">اسم المستخدم</th><th data-i18n="uxColOrigin">الجهاز والشبكة</th></tr>
       </thead>
       <tbody id="login-attempts-tbody"></tbody>
     </table>
@@ -24002,6 +24020,9 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     </div>
   </div>
 
+  <!-- البريد الإلكتروني للحساب (account-email.js) — إضافة / تغيير برمز تأكيد يُرسل إلى العنوان. -->
+  <div class="uh-card" id="uh-email-card"></div>
+
   <!-- مواعيد العمل — نفس الجدول اللي على الرئيسية بالظبط، بيترسم بنفس الدوال.
        الموظف بيدوّر على مواعيده في صفحته الشخصية زي ما بيدوّر عليها في الرئيسية،
        ونسخة تانية من الجدول كانت هتتفرّع بعد أول تعديل. -->
@@ -24509,7 +24530,7 @@ body.dark-mode .oa-payment-review{color:#fbbf24}
     <div class="mention-alert-list" id="mention-alert-list"></div>
     <div class="mention-alert-footer">
       <span class="mention-alert-count-badge" id="mention-alert-count-badge"></span>
-      <button class="btn btn-primary btn-sm" onclick="closeMentionAlert();openNotifCenter();setTimeout(()=>_setNcTab('mentions'),100)" style="font-size:.78rem" data-i18n="maViewAllMentions">عرض كل الإشارات ←</button>
+      <button class="btn btn-primary btn-sm" onclick="closeMentionAlert();openNotifCenter();setTimeout(()=>_setNcTab('mentions'),100)" style="font-size:.78rem" data-i18n="maViewAllMentions">عرض كل التنبيهات ←</button>
     </div>
   </div>
 </div>
@@ -26067,7 +26088,7 @@ let vaultUnlocked = false;
 let reportCharts = {};
 let currentLang = 'ar';
 
-const PERMS = ['dashboard','assistant','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
+const PERMS = ['dashboard','assistant','transaction','inventory','movements','clients','products','suppliers','expenses','complaints','approvals','reports','reports-kpis','reports-charts','reports-discounts','reports-orderaudit','reports-cancellations','reports-shipping','reports-export','carrier-import','vault','users','settings','shopify-orders','shopify-prepare-ship','shopify-reassign','shopify-cancel','shopify-cancel-request','shopify-deposit-upload','shopify-deposit-no-image','shopify-deposit-no-image-otp','shopify-edit-direct','shopify-bundle-discount-override','shopify-free-shipping','csp-view','csp-create','csp-edit','csp-delete','csp-manage-folders','csp-analytics','csp-export','csp-import','delivery-manual-confirm','delivery-view-audit','purchase-create','purchase-view','purchase-edit-price','categories-view','categories-create','categories-edit','categories-delete','categories-assign-products','categories-link-suppliers',
   // Supplier account — six read tabs + six money actions. See supPerm() for the legacy alias rule.
   'products-supplier-view','products-analytics','products-specs-view','products-specs-manage','approvals-history','approvals-otp-log','data-export','clients-browse','movements-filters','sales-collect','movements-browse','movements-collections','inventory-log-browse','customers-phone-view','delivery-issues-follow','delivery-issues-close','products-cost-view','products-edit-otp','products-price-sell','categories-edit-otp','pickup-orders','pickup-orders-prepare','pickup-orders-move','pickup-orders-cancel','pickup-orders-bosta','pickup-orders-bosta-cancel',
   'suppliers-tab-invoices','suppliers-tab-pos','suppliers-tab-sreturns','suppliers-tab-payments','suppliers-tab-ledger','suppliers-tab-activity',
@@ -26111,7 +26132,7 @@ const PERMS_AR = {dashboard:'الرئيسية',assistant:'مساعد SOULIA',tra
   'shopify-prepare-ship':'شوبيفاي - تحضير وشحن الطلبات (Prep & Ship)',
   'shopify-reassign':'شوبيفاي - إدارة إسناد الطلبات للموظفين (Assignee)',
   'reports-kpis':'التقارير - مؤشرات الأداء','reports-charts':'التقارير - المبيعات والمشتريات','reports-discounts':'التقارير - أكواد الخصم','reports-orderaudit':'التقارير - تحليل الطلبات','reports-cancellations':'التقارير - الإلغاءات','reports-shipping':'التقارير - تحليل الشحن','reports-export':'التقارير - تصدير Excel/PDF','carrier-import':'تحصيل من ملف شركة الشحن',
-  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-bundle-discount-override':'شوبيفاي - تطبيق خصم على أجزاء الباقة (استثناء بسبب مكتوب)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','shopify-deposit-no-image':'شوبيفاي - إضافة عربون بدون صورة تحويل (مباشرة)','shopify-deposit-no-image-otp':'شوبيفاي - إضافة عربون بدون صورة تحويل (بكود OTP من المدير)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
+  vault:'الخزنة',users:'المستخدمون',settings:'الإعدادات','shopify-orders':'أوردرات Shopify','shopify-cancel':'شوبيفاي - إلغاء أوردر مباشرة','shopify-cancel-request':'شوبيفاي - طلب إلغاء أوردر (بموافقة مدير)','shopify-edit-direct':'شوبيفاي - تعديل مباشر بدون موافقة المدير (مع تطبيق حد الخصم)','shopify-bundle-discount-override':'شوبيفاي - تطبيق خصم على أجزاء الباقة (استثناء بسبب مكتوب)','shopify-deposit-upload':'شوبيفاي - رفع إيصال تحويل العربون (الاعتماد للمدير فقط)','shopify-deposit-no-image':'شوبيفاي - إضافة عربون بدون صورة تحويل (مباشرة)','shopify-deposit-no-image-otp':'شوبيفاي - إضافة عربون بدون صورة تحويل (بكود OTP من المدير)','shopify-free-shipping':'شوبيفاي - طلب شحن مجاني (بموافقة المدير)','csp-view':'دليل خدمة العملاء - عرض','csp-create':'دليل خدمة العملاء - إضافة بطاقات','csp-edit':'دليل خدمة العملاء - تعديل بطاقات','csp-delete':'دليل خدمة العملاء - حذف بطاقات','csp-manage-folders':'دليل خدمة العملاء - إدارة الفولدرات','csp-analytics':'دليل خدمة العملاء - الإحصائيات','csp-export':'دليل خدمة العملاء - تصدير','csp-import':'دليل خدمة العملاء - استيراد','delivery-manual-confirm':'تأكيد التسليم يدوياً','delivery-view-audit':'عرض سجل تدقيق التسليم','purchase-create':'المشتريات - إنشاء عملية شراء','purchase-view':'المشتريات - عرض فواتير الشراء','purchase-edit-price':'المشتريات - تعديل سعر الشراء',
   'categories-view':'التصنيفات - عرض','categories-create':'التصنيفات - إضافة تصنيف/مجموعة','categories-edit':'التصنيفات - تعديل تصنيف/مجموعة','categories-delete':'التصنيفات - حذف تصنيف/مجموعة','categories-assign-products':'التصنيفات - ربط الأصناف بالمجموعات','categories-link-suppliers':'التصنيفات - ربط الموردين بالمجموعات',
   'suppliers-tab-invoices':'حساب المورد - عرض الفواتير','suppliers-tab-pos':'حساب المورد - عرض أوامر الشراء','suppliers-tab-sreturns':'حساب المورد - عرض مرتجعات الموردين','suppliers-tab-payments':'حساب المورد - عرض سجل المدفوعات','suppliers-tab-ledger':'حساب المورد - عرض سجل المديونية','suppliers-tab-activity':'حساب المورد - عرض سجل النشاط',
   'suppliers-pay':'حساب المورد - سداد دفعة للمورد','suppliers-deposit':'حساب المورد - دفع عربون / خصم على الحساب','suppliers-ledger-adjust':'حساب المورد - تسوية سجل المديونية','suppliers-write-off':'حساب المورد - إقفال متبقي الفاتورة','suppliers-reverse':'حساب المورد - التراجع عن دفعة','suppliers-returns':'حساب المورد - إنشاء وإدارة مرتجعات الموردين',
@@ -27765,6 +27786,40 @@ const TRANSLATIONS = {
   // Login
   loginWelcome:{ar:'مرحبًا بعودتك',en:'Welcome back'},
   loginSubtitle:{ar:'الدخول مقصور على المصرّح لهم فقط',en:'Authorized access only'},
+  // Users page (static markup; the rows are drawn in JS with _ux) — Nov 27, 2026
+  usersAddBtn:{ar:'+ إضافة مستخدم',en:'+ Add user'},
+  usersSearchPh:{ar:'بحث عن مستخدم...',en:'Search users...'},
+  usersRoleFilterAria:{ar:'تصفية حسب الدور',en:'Filter by role'},
+  uxColUser:{ar:'المستخدم',en:'User'},
+  uxColJob:{ar:'المسمّى الوظيفي',en:'Job title'},
+  uxColRole:{ar:'الدور',en:'Role'},
+  uxColSeen:{ar:'آخر ظهور',en:'Last seen'},
+  uxColActions:{ar:'الإجراءات',en:'Actions'},
+  uxColTime:{ar:'الوقت',en:'Time'},
+  uxColEvent:{ar:'الحدث',en:'Event'},
+  uxColDetails:{ar:'التفاصيل',en:'Details'},
+  uxColOrigin:{ar:'الجهاز والشبكة',en:'Device & network'},
+  uxColResult:{ar:'النتيجة',en:'Result'},
+  uxColUsername:{ar:'اسم المستخدم',en:'Username'},
+  uxRefresh:{ar:'تحديث',en:'Refresh'},
+  uxDisTitle:{ar:'الحسابات المعطّلة والموقوفة',en:'Disabled & suspended accounts'},
+  uxDisSub:{ar:'حسابات لا تستطيع تسجيل الدخول حاليًا. راجع السبب قبل إعادة التفعيل.',en:'Accounts that cannot sign in right now. Check the reason before reactivating.'},
+  uxSecTitle:{ar:'سجل الأمان',en:'Security log'},
+  uxSecSub:{ar:'محاولات الدخول ورموز التحقق والإجراءات المتخذة على الحسابات.',en:'Sign-in attempts, verification codes and actions taken on accounts.'},
+  uxSecFilterAria:{ar:'نوع الحدث',en:'Event type'},
+  uxSecAll:{ar:'كل الأحداث',en:'All events'},
+  uxSecLogin:{ar:'الدخول والتحقق',en:'Sign-in & verification'},
+  uxSecAccounts:{ar:'إيقاف الحسابات وتفعيلها',en:'Account suspension & reactivation'},
+  uxSecAccess:{ar:'الصلاحيات والبيانات',en:'Permissions & data'},
+  uxLaTitle:{ar:'سجل محاولات الدخول',en:'Sign-in attempts'},
+  uxLaSub:{ar:'كل محاولة لتسجيل الدخول، الناجحة والمرفوضة، مع الجهاز وعنوان الشبكة.',en:'Every sign-in attempt, successful or refused, with its device and network address.'},
+  uxLaSearchPh:{ar:'بحث باسم المستخدم أو عنوان IP',en:'Search by username or IP address'},
+  uxLaFilterAria:{ar:'نتيجة المحاولة',en:'Attempt result'},
+  uxLaAll:{ar:'كل النتائج',en:'All results'},
+  uxLaOk:{ar:'ناجحة',en:'Successful'},
+  uxLaFailed:{ar:'بيانات غير صحيحة',en:'Incorrect details'},
+  uxLaStopped:{ar:'موقوفة أو محظورة',en:'Paused or blocked'},
+  uxLaRobot:{ar:'التحقق الآلي',en:'Robot check'},
   loginUsername:{ar:'اسم المستخدم',en:'Username'},
   loginPassword:{ar:'كلمة المرور',en:'Password'},
   loginUsernamePh:{ar:'أدخل اسم المستخدم',en:'Enter your username'},
@@ -27905,8 +27960,10 @@ const TRANSLATIONS = {
   maTitleOtps:{ar:'إشارات وطلبات تنتظرك',en:'Mentions and requests awaiting you'},
   maTitleOne:{ar:'زميل أشار إليك',en:'A colleague mentioned you'},
   maTitleMany:{ar:'{n} إشارات جديدة تنتظرك',en:'{n} new mentions awaiting you'},
+  maTitleOneUpdate:{ar:'تنبيه جديد ينتظرك',en:'A new update for you'},
+  maTitleManyUpdates:{ar:'{n} تنبيهات جديدة تنتظرك',en:'{n} new updates for you'},
   maSinceLastSession:{ar:'منذ آخر جلسة',en:'Since your last session'},
-  maViewAllMentions:{ar:'عرض كل الإشارات ←',en:'View all mentions →'},
+  maViewAllMentions:{ar:'عرض كل التنبيهات ←',en:'View all updates →'},
   maBadgeNew:{ar:'جديدة',en:'New'},
   maBadgeNewN:{ar:'{n} جديدة',en:'{n} new'},
   maTypeDiscount:{ar:'كود خصم',en:'Discount code'},
@@ -32691,6 +32748,15 @@ function applyLang() {
     syncUsersWorkspaceTab(currentPage);
     if (currentPage === 'roles') window.rbacOpen?.();
   }
+  // The Users page draws its rows, the security log, the sign-in attempts and the sessions panel
+  // in JS (each string through _ux), so a language switch redraws them — the data-i18n sweep
+  // above only reaches the fixed markup.
+  if (currentPage === 'users') {
+    try { renderUsers(); } catch (_) {}
+    try { _renderSecurityLogPage(); } catch (_) {}
+    try { _renderLoginAttempts(); } catch (_) {}
+    try { window.SouliaSessions?.relabel?.(); } catch (_) {}
+  }
   updateHeader();
   refreshComplaintsSectionTitle();
   try {
@@ -36550,6 +36616,7 @@ function connectSocket() {
   // A user changed their avatar/name — keep every avatar shown across the
   // app (follow-up cards, comment timelines, etc.) in sync live rather than
   // waiting for a manual refresh.
+  try { window.SouliaAccountEmail?.bindSocket(socket); } catch (_) {}
   socket.on('user:profile-changed', (payload) => {
     if (!payload?.userId) return;
     const u = (Array.isArray(users) ? users : []).find(x => String(x._id) === String(payload.userId));
@@ -38815,22 +38882,115 @@ function _localizeSysText(text) {
   }).join('\n');
 }
 
+/* «متابعة تلقائية» / «تذكير المتابعة» (followups.service.ts notifyAssignee / scheduledEscalationScan) → a clear title,
+   the order number and ONE short reason line. ⚠ The Arabic text is the wire format — parsed here, never rewritten
+   on the server. The carrier's English text («نص شركة الشحن»), codes and timestamps are left out of the card. */
+const _FU_SYS_SENDERS = new Set(['متابعة تلقائية', 'تذكير المتابعة']);
+function _fuSysNotice(m) {
+  if (!m || !_FU_SYS_SENDERS.has(m.fromName)) return null;
+  const en = currentLang === 'en';
+  const text = String(m.commentText || '').trim();
+  const clock = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#b45309" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>';
+  const truck = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#2563eb" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>';
+  let r;
+  if ((r = /^تذكير متابعة:\s*طلب\s*#(\S+)\s*بدون تحديث منذ\s*(.+?)(?:\s*—\s*([\s\S]+))?$/.exec(text))) {
+    let since = r[2].trim();
+    if (en) since = since.replace(/^(\d+)\s*ساعة$/, (_, n) => `${n} hours`).replace(/^(\d+)\s*يوم$/, (_, n) => `${n} days`);
+    const parts = [en ? `No update for ${since}` : `لا تحديث منذ ${since}`, r[3] ? `<bdi>${esc(r[3].trim())}</bdi>` : ''];
+    return { ref: r[1].replace(/^#/, ''), color: '#b45309', icon: clock, title: en ? 'Overdue follow-up' : 'متابعة متأخرة',
+      detail: parts.filter(Boolean).map(x => x.startsWith('<') ? x : esc(x)).join(' · ') };
+  }
+  const kinds = [
+    [/^متابعة تأجيل استلام الطلب\s*#(\S+)\s*\(([\s\S]*?)\)?\s*$/, ['العميل أجّل الاستلام', 'Customer postponed delivery']],
+    [/^مشكلة جديدة على طلب\s*#(\S+)\s*\(([\s\S]*?)\)?\s*(?:—\s*أُعيد فتح المتابعة)?\s*$/, ['مشكلة جديدة في التسليم — أُعيد فتح المتابعة', 'New delivery issue — follow-up reopened']],
+    [/^مشكلة في الاستلام\s*—\s*طلب\s*#(\S+)\s*\(([\s\S]*?)\)?\s*$/, ['مشكلة في التسليم', 'Delivery issue']],
+  ];
+  for (const [re, [ar, enTitle]] of kinds) {
+    if (!(r = re.exec(text))) continue;
+    const lines = String(r[2] || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const val = (prefix) => { const l = lines.find(x => x.startsWith(prefix)); return l ? l.slice(l.indexOf(':') + 1).trim() : ''; };
+    const status = val('تحديث بوسطة');
+    const reason = val('آخر سبب مسجل لدى بوسطة') || val('السبب المبلّغ');
+    const retryRaw = val('موعد إعادة المحاولة حسب بوسطة');
+    const retry = retryRaw && !isNaN(new Date(retryRaw)) ? new Date(retryRaw).toLocaleDateString(en ? 'en-GB' : 'ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }) : '';
+    const plain = !status && !reason && lines.length === 1 ? lines[0] : '';   // a short trigger label (not a carrier update)
+    const parts = [
+      reason ? `<bdi>${esc(reason)}</bdi>` : plain ? `<bdi>${esc(plain)}</bdi>` : '',
+      status ? `${esc(en ? 'Bosta' : 'بوسطة')}: <bdi>${esc(status)}</bdi>` : '',
+      retry ? esc(en ? `Retry ${retry}` : `إعادة المحاولة ${retry}`) : '',
+    ].filter(Boolean);
+    return { ref: r[1].replace(/^#/, ''), color: '#2563eb', icon: truck, title: en ? enTitle : ar, detail: parts.join(' · ') };
+  }
+  return null;
+}
+
+/* «نظام الأمان» notices (sign-in-verification.service.ts, password-policy.service.ts) → a short title and ONE line
+   in the UI language. ⚠ The Arabic text is the wire format (older rows keep it) — parsed here, never rewritten.
+   The device keeps only browser · OS (the Arabic device word and the IP made an English line read backwards);
+   Latin runs are wrapped in FSI…PDI so they stay in order inside Arabic. Returns null for anything else. */
+function _secSysNotice(m) {
+  if (!m || m.fromName !== 'نظام الأمان') return null;
+  const en = currentLang === 'en';
+  const L = (ar, e) => en ? e : ar;
+  const iso = s => '⁨' + s + '⁩';
+  const text = String(m.commentText || '').trim();
+  const dev = (where) => {
+    const words = { 'كمبيوتر': ['كمبيوتر', 'Computer'], 'موبايل': ['موبايل', 'Mobile'], 'تابلت': ['تابلت', 'Tablet'], 'متصفح': ['متصفح', 'Browser'], 'جهاز غير معروف': ['جهاز غير معروف', 'Unknown device'] };
+    const parts = String(where || '').split('·').map(s => s.trim()).filter(s => s && !/^IP\b/i.test(s));
+    const latin = parts.filter(p => !words[p]);
+    const out = latin.length ? latin.join(' · ') : (words[parts[0]] ? words[parts[0]][en ? 1 : 0] : parts[0] || '');
+    return out ? iso(out) : '';
+  };
+  const hold = (what) => {
+    const mm = /(\d+)\s*دقيقة/.exec(what || '');
+    if (mm) return L(`أُوقف الدخول ${mm[1]} دقيقة`, `Paused for ${mm[1]} min`);
+    return /حُظرت/.test(what || '') ? L('محظور حتى يُلغى الحظر', 'Blocked until lifted') : '';
+  };
+  const shield = c => `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="${c}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6Z"/><path d="M12 8v5m0 3h.01"/></svg>`;
+  const out = (title, detail, color = '#b45309') => ({ title, detailText: detail, detail: esc(detail), color, icon: shield(color), ref: '' });
+  const who = (name, user) => iso(`${name} (@${user})`);
+  // Staff never change their own password (an admin resets it), so they are told to tell an admin.
+  const tip = () => currentUser?.role !== 'admin' ? L('إن لم تكن أنت، أبلغ مدير النظام.', 'Not you? Tell your administrator.')
+    : L('إن لم تكن أنت، غيّر كلمة المرور.', 'Not you? Change your password.');
+  let r;
+  // The account owner: «محاولات دخول فاشلة متكررة على حسابك من <where>. <what>. …»
+  if ((r = /^محاولات دخول فاشلة(?: متكررة)? على حسابك من (.+?)\.\s+(.+?)\./.exec(text))) {   // ⚠ \s+: an IP (41.1.1.1) has dots too
+    const d = dev(r[1]) || L('هذا الجهاز', 'this device');
+    const mins = /(\d+)\s*دقيقة/.exec(r[2])?.[1];
+    const line = mins ? L(`أُوقف الدخول من ${d} لمدة ${mins} دقيقة.`, `Sign-in from ${d} paused for ${mins} min.`)
+      : L(`حُظر الدخول من ${d} حتى يُلغى الحظر.`, `Sign-in from ${d} blocked until lifted.`);
+    return out(L('محاولات دخول فاشلة على حسابك', 'Failed sign-in attempts'), line + ' ' + tip());
+  }
+  // Admins: an account locked out of sign-in.
+  if ((r = /^توقفت محاولات الدخول إلى حساب (.+?) \(@(\S+?)\) من (.+?) بعد [^.]*\.\s*(.+?)\./.exec(text)))
+    return out(L('حساب موقوف عن تسجيل الدخول', 'Account locked out of sign-in'), [who(r[1], r[2]), hold(r[4]), dev(r[3])].filter(Boolean).join(' · '), '#dc2626');
+  if ((r = /^طلب (.+?) \(@(\S+?)\) إلغاء قفل تسجيل الدخول/.exec(text)))
+    return out(L('طلب إلغاء قفل تسجيل الدخول', 'Sign-in unlock requested'), who(r[1], r[2]) + L(' — يمكنك إلغاء الحظر الآن', ' — you can lift the block now'), '#dc2626');
+  if ((r = /^طلب (.+?) \(@(\S+?)\) إعادة تعيين كلمة المرور/.exec(text)))
+    return out(L('طلب إعادة تعيين كلمة المرور', 'Password reset requested'), who(r[1], r[2]), '#2563eb');
+  if ((r = /^تم تسجيل الدخول إلى حسابك من جهاز جديد \((.+?)\)/.exec(text)))
+    return out(L('تسجيل دخول من جهاز جديد', 'New device sign-in'), dev(r[1]) + '. ' + tip(), '#2563eb');
+  if ((r = /^تم تغيير الرقم السري للنظام بواسطة (.+?) \(/.exec(text)))
+    return out(L('تغيير الرقم السري للنظام', 'System PIN changed'), L('بواسطة ', 'By ') + iso(r[1]), '#2563eb');
+  return null;
+}
+
 function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
   const ago       = window.souliaNotificationTimeHtml?.(m.ts) || _timeAgo(m.ts);
   const isUnread  = !m.read;
   const clickAttr = `onclick="onMentionNotifClick('${esc(m.id)}','${esc(m.txId)}',${m.commentId})"`;
   const pad       = isUnread ? '16px' : '12px';
-  const unreadBar = isUnread
-    ? `<div style="position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;border-radius:2px;background:#7c3aed"></div>`
+  const unreadBarOf = (color) => isUnread
+    ? `<div style="position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;border-radius:2px;background:${color}"></div>`
     : '';
+  const unreadBar = unreadBarOf('#7c3aed');
 
   const gv = (lines, prefix) => {
     const l = lines.find(x => x.trimStart().startsWith(prefix));
     return l ? l.slice(l.indexOf(':') + 1).trim() : '';
   };
-  const unreadDot = (color) => isUnread
-    ? `<span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block;vertical-align:middle;margin-inline-end:3px"></span>`
-    : '';
+  // The start bar already marks unread; a second coloured dot beside the title only added noise.
+  const unreadDot = () => '';
   const oRow = (label, val) => val
     ? `<div style="display:flex;align-items:baseline;gap:6px;font-size:.72rem;padding:2px 0"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${label}:</span><span style="color:var(--text);word-break:break-word">${val}</span></div>`
     : '';
@@ -38846,7 +39006,7 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
   const hdr = (color, title) =>
     `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px"><span style="font-size:.72rem;font-weight:700;color:${color};min-width:0;line-height:1.3">${unreadDot(color)}${title}</span><span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span></div>`;
   const card = (color, iconSvg, title, code, rows, extra = '', attrs = '') =>
-    `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? `background:${color}0a` : ''}" ${clickAttr} ${attrs}>${unreadBar}<div style="display:flex;gap:10px;align-items:flex-start">${iconBox(color, iconSvg)}<div style="flex:1;min-width:0">${hdr(color, title)}${otpBlock(code, color)}${infoGrid(rows)}${extra}</div></div></div>`;
+    `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:var(--bg-alt)' : ''}" ${clickAttr} ${attrs}>${unreadBarOf(color)}<div style="display:flex;gap:10px;align-items:flex-start">${iconBox(color, iconSvg)}<div style="flex:1;min-width:0">${hdr(color, title)}${otpBlock(code, color)}${infoGrid(rows)}${extra}</div></div></div>`;
   // دالة مشتركة لصف "صالح حتى" مع كاونتداون ديناميكي
   const cdRow = (validStr) => {
     if (!validStr) return '';
@@ -39051,11 +39211,15 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
       ? t('mcTitleOrderAssigned')
       : (assignee ? t('mcOrderAssignedTo', { name: assignee })
                   : refLine.slice(0, hashIdx !== -1 ? hashIdx : refLine.length).replace(/:\s*$/, '').trim());
-    return card(color, icon, title, '', [
-      orderRef ? oRow(t('mcOrderNo'), `<span style="color:var(--accent)">#${esc(orderRef)}</span>`) : '',
-      oRow(t('mcClient'), esc(gv(lines, 'العميل'))),
-      oRow(t('mcTotal'), esc(gv(lines, 'الإجمالي'))),
-    ].join(''));
+    const total = gv(lines, 'الإجمالي').replace(/\s*ج\.?م?\.?\s*/g, ' ').trim();
+    const parts = [orderRef ? `<b style="color:var(--text);unicode-bidi:isolate" dir="ltr">#${esc(orderRef)}</b>` : '',
+      gv(lines, 'العميل') ? `<bdi>${esc(gv(lines, 'العميل'))}</bdi>` : '',
+      total ? `<bdi dir="ltr">${esc(total)}</bdi>` : ''].filter(Boolean);
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:var(--bg-alt)' : ''}" ${clickAttr}>${unreadBarOf(color)}
+      <div style="display:flex;gap:10px;align-items:flex-start">${iconBox(color, icon)}<div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.3;min-width:0">${esc(title)}</span><span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span></div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${parts.join(' · ')}</div>
+      </div></div></div>`;
   }
 
   // ── Edit Tx OTP (نظام التعديل) ──
@@ -39169,6 +39333,19 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
     </div>`;
   }
 
+  // ── Automatic follow-up notices (متابعة تلقائية / تذكير المتابعة) — system senders, not people ──
+  const fuSys = _fuSysNotice(m) || _secSysNotice(m);
+  if (fuSys) {
+    const c = fuSys.color;
+    return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:var(--bg-alt)' : ''}" ${clickAttr}>${unreadBarOf(c)}
+      <div style="display:flex;gap:10px;align-items:flex-start">${iconBox(c, fuSys.icon)}<div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <span style="display:flex;align-items:baseline;gap:6px;min-width:0;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.3">${esc(fuSys.title)}</span>${fuSys.ref ? `<span style="font-size:.7rem;font-weight:600;color:var(--muted);unicode-bidi:isolate" dir="ltr">#${esc(fuSys.ref)}</span>` : ''}</span>
+          <span style="font-size:.62rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ago}</span></div>
+        ${fuSys.detail ? `<div style="font-size:.73rem;color:var(--muted);line-height:1.45;margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${fuSys.detail}</div>` : ''}
+      </div></div></div>`;
+  }
+
   // ── Regular mention (إشارة عادية) ──
   const rawTxt = _stripHtml((m.commentText || '').replace(/\s*EGP\s*/gi, ' ')).replace(/\s{2,}/g, ' ').trim();
   const txt = rawTxt
@@ -39176,7 +39353,8 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
     .replace(/كود التحقق\s*[:\-]?\s*\d+/g, '')
     .replace(/#[a-f0-9]{10,}/gi, id => `#${id.slice(1, 9)}…`)
     .replace(/\s{2,}/g, ' ').trim();
-  const shortRef = m.txId ? `#${String(m.txId).slice(-6)}` : '';
+  // The order number when the sender stored it — never the tail of an internal id («#84f65f» meant nothing).
+  const shortRef = m.txRef ? `#${String(m.txRef).replace(/^#/, '')}` : '';
   const color    = '#7c3aed';
   /* ⚠ عمود الصورة يعرض صورة المُرسِل لا أيقونة @ ثابتة. البطاقة الشقيقة
      («تعليق جديد على متابعة») تستدعي userAvatarHtml بالفعل، بينما كانت هذه تعرض
@@ -39187,7 +39365,7 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
   // Same shell as the sibling cards above (follow-up / comment / order-assigned): icon column,
   // then ONE flex-column holding header + body. The body used to be a sibling of the header row,
   // so it escaped the icon's indent and the title had no room and wrapped mid-phrase.
-  return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:rgba(124,58,237,.035)' : ''}" ${clickAttr}>${unreadBar}
+  return `<div class="${cls}" style="position:relative;padding:10px 12px;padding-inline-start:${pad};cursor:pointer;${isUnread ? 'background:var(--bg-alt)' : ''}" ${clickAttr}>${unreadBar}
     <div style="display:flex;align-items:flex-start;gap:8px">
       ${(() => {
         const list = (typeof users !== 'undefined' && Array.isArray(users)) ? users : [];
@@ -39202,7 +39380,7 @@ function _buildMentionCardHtml(m, cls = 'nc-mention-card') {
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
         <div style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap">
           ${unreadDot(color)}<span style="font-size:.78rem;font-weight:700;color:var(--text);line-height:1.2;unicode-bidi:isolate" dir="auto">${esc(_sysSenderLabel(m.fromName || ''))}</span>
-          <span style="font-size:.72rem;color:${color};font-weight:600;white-space:nowrap">${t('mcMentionedYou')}</span>
+          <span style="font-size:.72rem;color:var(--muted);white-space:nowrap">${t('mcMentionedYou')}</span>
           ${shortRef ? `<span style="font-size:.67rem;font-weight:500;color:var(--muted);white-space:nowrap" dir="ltr">${esc(shortRef)}</span>` : ''}
           <span style="font-size:.62rem;color:var(--muted);margin-inline-start:auto;white-space:nowrap">${ago}</span>
         </div>
@@ -40226,6 +40404,12 @@ async function onMentionNotifClick(mentionId, txId, commentId) {
     if (isAdmin()) { navigateTo('users'); setTimeout(() => { try { loadSecurityPanel(); } catch (_) {} qs('#security-panel-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 450); }
     return;
   }
+  // An account was locked out of sign-in (wrong passwords) → its row in «الحسابات المعطّلة والموقوفة»
+  // with the existing «إلغاء الحظر» button.
+  if (String(m?.txId || '').startsWith('login-lock:')) {
+    if (isAdmin()) await openLoginLockRow(String(m.txId).slice('login-lock:'.length));
+    return;
+  }
   // A staff member asked for a password reset from the sign-in page → the users page + the reset window.
   if (String(m?.txId || '').startsWith('pw-request:')) {
     const uid = String(m.txId).slice('pw-request:'.length);
@@ -40591,13 +40775,16 @@ function showMentionAlert(mentions) {
   if (!overlay || !list) return;
 
   const count = mentions.length;
-  const hasOtp = mentions.some(m => m.fromName && m.fromName.startsWith('نظام'));
+  // Approval/code requests only — «نظام التوزيع» (order assignment) is not a request awaiting a decision.
+  const _OTP_SENDERS = ['نظام التحقق', 'نظام التصدير', 'نظام سداد الموردين', 'نظام المشتريات', 'نظام التعديل', 'نظام الخزنة', 'نظام الحماية', 'نظام الاستيراد', 'نظام إضافة الأصناف', 'نظام عربون بدون صورة'];
+  const hasOtp = mentions.some(m => _OTP_SENDERS.includes(m.fromName));
+  const allPeople = mentions.every(m => m.fromUserId && m.fromUserId !== 'system' && !_SYS_SENDER_KEYS[m.fromName] && !_FU_SYS_SENDERS.has(m.fromName));
 
   if (titleEl) {
     if (hasOtp && count === 1) titleEl.textContent = t('maTitleOneOtp');
     else if (hasOtp) titleEl.textContent = t('maTitleOtps');
-    else if (count === 1) titleEl.textContent = t('maTitleOne');
-    else titleEl.textContent = t('maTitleMany', { n: count });
+    else if (count === 1) titleEl.textContent = allPeople ? t('maTitleOne') : t('maTitleOneUpdate');
+    else titleEl.textContent = allPeople ? t('maTitleMany', { n: count }) : t('maTitleManyUpdates', { n: count });
   }
   if (sub) {
     // fromName is an Arabic identifier in the DB — compare raw, display translated.
@@ -53111,12 +53298,39 @@ function _movShipCell(tx) {
   if (tx.type !== 'مبيعات') return '<span style="color:var(--muted)">—</span>';
   const billed = Number(tx.shipCost) || 0;
   const actual = Number(tx.actualShipCost) || 0;
+  // ⚠ Before the «—» exit: a confirmed free-shipping sale stores shipCost 0 (the waived amount is in freeShipping).
+  const free = _freeShipOf(tx);
+  if (free) return _freeShipCellHtml(free);
   if (billed <= 0 && actual <= 0) return '<span style="color:var(--muted)">—</span>';
   const loss = Math.max(0, actual - billed);
   const lossHtml = loss > 0
     ? `<div class="mov-ship-loss" title="فرق الشحن (خسارة)">−${fmtJ(loss)}</div>`
     : '';
   return `<div class="mov-ship-cell"><span class="mov-ship-billed">${fmtJ(billed)}</span>${lossHtml}</div>`;
+}
+/* «شحن مجاني» in a shipping cell (Shopify table + Movements), whatever its source:
+   system = `freeShipping` (edit window; a confirmed sale keeps the waived amount there with shipCost 0),
+   shopify = Shopify's own shipping discount covering the whole shipping (`shippingDiscount`, see _saleShipDisc). */
+function _freeShipOf(o) {
+  const ship = Number(o?.shipCost) || 0;
+  if (o?.freeShipping) {
+    const amount = Number(o.freeShipping?.amount) || ship;
+    return amount > 0 ? { source: 'system', amount, by: String(o.freeShipping?.by || '') } : null;
+  }
+  const sd = _saleShipDisc(o);
+  if (ship > 0 && sd >= ship - 0.005) {
+    const codes = Array.isArray(o.shippingDiscountCodes) ? o.shippingDiscountCodes.filter(Boolean).join(' + ') : '';
+    return { source: 'shopify', amount: ship, codes };
+  }
+  return null;
+}
+function _freeShipCellHtml(free, extra = '') {
+  const en = currentLang === 'en';
+  const title = free.source === 'system'
+    ? (en ? 'Free shipping set in the system' : 'شحن مجاني من النظام') + (free.by ? (en ? ` — by ${free.by}` : ` — بواسطة ${free.by}`) : '')
+    : (en ? 'Free shipping from Shopify' : 'شحن مجاني من Shopify') + (free.codes ? ` — ${free.codes}` : '');
+  const full = title + (en ? ' · not charged to the customer' : ' · لا يُحصَّل من العميل');
+  return `<div class="mov-ship-cell" title="${escHtml(full)}"><span class="ship-free-tag is-${free.source}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>${esc(en ? 'Free' : 'مجاني')}</span><s class="mov-ship-sub ship-free-was">${fmtJ(free.amount)}</s>${extra}</div>`;
 }
 let _movUnshippedIdx = new Map(); // set once per renderMovements() call, read by every row
 // Egyptian number → international digits for wa.me. A bare «01…» opens a chat with a number that does not exist.
@@ -90579,7 +90793,12 @@ async function loadDashboardTreasury() {
 }
 
 /* Users */
-const _USER_ROLE_MAP = { admin: { label: 'مدير النظام', cls: 'user-role-admin' }, viewer: { label: 'مشاهد', cls: 'user-role-viewer' }, staff: { label: 'موظف', cls: 'user-role-staff' } };
+/* Every string the Users page draws in JS goes through _ux(ar, en) and every date through
+   _uxLocale(), so the page follows the UI language (Nov 27, 2026). applyLang() redraws it.
+   Texts stored by the server (lock reasons, event details) are data and stay as written. */
+const _ux = (ar, en) => (currentLang === 'en' ? en : ar);
+const _uxLocale = () => (currentLang === 'en' ? 'en-GB' : 'ar-EG-u-nu-latn');
+const _USER_ROLE_MAP = { admin: { label: 'مدير النظام', en: 'Administrator', cls: 'user-role-admin' }, viewer: { label: 'مشاهد', en: 'Viewer', cls: 'user-role-viewer' }, staff: { label: 'موظف', en: 'Staff', cls: 'user-role-staff' } };
 
 /* ── The role an account holds — the ONLY source of its access (Nov 13, 2026) ── */
 function _userRoleSlug(u) {
@@ -90592,8 +90811,9 @@ function _userRoleBadgeHtml(u) {
   const role = slug && rbac?.find(slug);
   const tier = _USER_ROLE_MAP[u?.role] || _USER_ROLE_MAP.staff;
   if (!slug) return `<span class="user-role-badge user-role-none" title="${esc(currentLang === 'en' ? 'Permissions are set on this account directly — assign it a role in Roles & Permissions' : 'الصلاحيات محدّدة لهذا الحساب مباشرة — أسنِد إليه دورًا من صفحة «الأدوار والصلاحيات»')}">${currentLang === 'en' ? 'No role' : 'لا يوجد دور'}</span>`;
-  const label = role ? rbac.roleName(role) : (slug === 'admin' || slug === 'super-admin' ? tier.label : slug);
-  return `<span class="user-role-badge ${tier.cls}" title="${esc(rbac ? rbac.tierName(u?.role) : tier.label)}">${esc(label)}</span>`;
+  const tierLabel = _ux(tier.label, tier.en);
+  const label = role ? rbac.roleName(role) : (slug === 'admin' || slug === 'super-admin' ? tierLabel : slug);
+  return `<span class="user-role-badge ${tier.cls}" title="${esc(rbac ? rbac.tierName(u?.role) : tierLabel)}">${esc(label)}</span>`;
 }
 /** Fills the role filter from the roles list once it is loaded; keeps the current choice. */
 function _userSyncRoleFilter() {
@@ -90613,14 +90833,14 @@ function _userSyncRoleFilter() {
 function _userJoinedAgo(createdAt) {
   if (!createdAt) return { rel: '—', exact: '' };
   const d = new Date(createdAt);
-  const exact = d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+  const exact = d.toLocaleDateString(_uxLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
   const days = Math.floor((Date.now() - d.getTime()) / 86400000);
   let rel;
-  if (days <= 0) rel = 'اليوم';
-  else if (days === 1) rel = 'أمس';
-  else if (days < 30) rel = `منذ ${days} يوم`;
-  else if (days < 365) { const m = Math.floor(days / 30); rel = `منذ ${m} شهر${m > 1 ? '' : ''}`; }
-  else { const y = Math.floor(days / 365); rel = `منذ ${y} سنة`; }
+  if (days <= 0) rel = _ux('اليوم', 'Today');
+  else if (days === 1) rel = _ux('أمس', 'Yesterday');
+  else if (days < 30) rel = _ux(`منذ ${days} يوم`, `${days} days ago`);
+  else if (days < 365) { const m = Math.floor(days / 30); rel = _ux(`منذ ${m} شهر`, `${m} month${m > 1 ? 's' : ''} ago`); }
+  else { const y = Math.floor(days / 365); rel = _ux(`منذ ${y} سنة`, `${y} year${y > 1 ? 's' : ''} ago`); }
   return { rel, exact };
 }
 
@@ -90631,12 +90851,12 @@ function _userActionsMenuHtml(u, isSuperAdmin, isInactive) {
   return `<div class="actions-dd">
     <button class="dd-toggle" onclick="toggleActionMenu(event)">⋮</button>
     <div class="dd-menu">
-      <div class="dd-item" onclick="openUserModal('${esc(u._id)}')"><span class="dd-icon">${_EDIT_SVG}</span><span class="dd-label">تعديل</span></div>
-      ${String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaAuth?.adminReset2fa('${esc(u._id)}', ${escHtml(JSON.stringify(u.name || u.username || ''))})"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3z"/><path d="M9.5 12.5h5"/></svg></span><span class="dd-label">إعادة ضبط التحقق بخطوتين</span></div>` : ''}
-      ${u.role !== 'admin' && String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaPassword?.openResetStaff(users.find(x => x._id === '${esc(u._id)}'))"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></span><span class="dd-label">إعادة تعيين كلمة المرور</span></div>` : ''}
-      <div class="dd-item" onclick="window.SouliaSessions?.focusUser('${esc(u._id)}')"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg></span><span class="dd-label">الجلسات والأجهزة</span></div>
-      ${!isSuperAdmin ? `<div class="dd-item" onclick="toggleUserActive('${esc(u._id)}',${isInactive})"><span class="dd-icon">${isInactive ? _USERS_ACTIVATE_SVG : _USERS_DEACTIVATE_SVG}</span><span class="dd-label">${isInactive ? 'تفعيل' : 'تعطيل'}</span></div>` : ''}
-      ${!isSuperAdmin ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteUser('${esc(u._id)}')"><span class="dd-icon">${ICON('trash')}</span><span class="dd-label">حذف</span></div>` : ''}
+      <div class="dd-item" onclick="openUserModal('${esc(u._id)}')"><span class="dd-icon">${_EDIT_SVG}</span><span class="dd-label">${_ux('تعديل', 'Edit')}</span></div>
+      ${String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaAuth?.adminReset2fa('${esc(u._id)}', ${escHtml(JSON.stringify(u.name || u.username || ''))})"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3z"/><path d="M9.5 12.5h5"/></svg></span><span class="dd-label">${_ux('إعادة ضبط التحقق بخطوتين', 'Reset two-step verification')}</span></div>` : ''}
+      ${u.role !== 'admin' && String(u._id) !== String(currentUser?.id || currentUser?._id || '') ? `<div class="dd-item" onclick="window.SouliaPassword?.openResetStaff(users.find(x => x._id === '${esc(u._id)}'))"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></span><span class="dd-label">${_ux('إعادة تعيين كلمة المرور', 'Reset password')}</span></div>` : ''}
+      <div class="dd-item" onclick="window.SouliaSessions?.focusUser('${esc(u._id)}')"><span class="dd-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg></span><span class="dd-label">${_ux('الجلسات والأجهزة', 'Sessions & devices')}</span></div>
+      ${!isSuperAdmin ? `<div class="dd-item" onclick="toggleUserActive('${esc(u._id)}',${isInactive})"><span class="dd-icon">${isInactive ? _USERS_ACTIVATE_SVG : _USERS_DEACTIVATE_SVG}</span><span class="dd-label">${isInactive ? _ux('تفعيل', 'Activate') : _ux('تعطيل', 'Deactivate')}</span></div>` : ''}
+      ${!isSuperAdmin ? `<div class="dd-divider"></div><div class="dd-item danger" onclick="deleteUser('${esc(u._id)}')"><span class="dd-icon">${ICON('trash')}</span><span class="dd-label">${_ux('حذف', 'Delete')}</span></div>` : ''}
     </div>
   </div>`;
 }
@@ -90667,7 +90887,7 @@ function renderUsers() {
   const cardsWrap = qs('#users-grid');
   const countLabel = qs('#users-count-label');
   if (!users || users.length === 0) {
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="padding:40px;text-align:center">لا يوجد مستخدمون في النظام</td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="padding:40px;text-align:center">${_ux('لا يوجد مستخدمون في النظام', 'No users in the system')}</td></tr>`;
     if (cardsWrap) cardsWrap.innerHTML = '';
     if (countLabel) countLabel.textContent = '';
     return;
@@ -90682,16 +90902,18 @@ function renderUsers() {
     // displays the Arabic one, so searching for what you can see must work.
     return (u.name || '').toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)
       || (u.jobTitle || '').toLowerCase().includes(q) || (jobTitleLabel(u.jobTitle) || '').toLowerCase().includes(q)
-      || (u.phone || '').toLowerCase().includes(q);
+      || (u.phone || '').toLowerCase().includes(q)
+      || (u.email || '').toLowerCase().includes(q) || (u.securityEmail || '').toLowerCase().includes(q);
   };
   // Disabled accounts have their own section (_renderDisabledUsers) — the table lists active ones only.
   const list = users.filter(u => u.isActive !== false && (!roleFilter || _userRoleSlug(u) === roleFilter) && matches(u));
   const disabledCount = users.filter(u => u.isActive === false).length;
-  if (countLabel) countLabel.textContent = `${fmtN(list.length)} حساب نشط` + (disabledCount ? ` · ${fmtN(disabledCount)} معطّل` : '');
+  if (countLabel) countLabel.textContent = _ux(`${fmtN(list.length)} حساب نشط`, `${fmtN(list.length)} active`)
+    + (disabledCount ? ' · ' + _ux(`${fmtN(disabledCount)} معطّل`, `${fmtN(disabledCount)} disabled`) : '');
   _renderDisabledUsers(matches);
 
   if (!list.length) {
-    const emptyHtml = `<div class="empty-state" style="padding:40px;text-align:center">${q || roleFilter ? 'لا توجد حسابات مطابقة للبحث' : 'لا توجد حسابات نشطة'}</div>`;
+    const emptyHtml = `<div class="empty-state" style="padding:40px;text-align:center">${q || roleFilter ? _ux('لا توجد حسابات مطابقة للبحث', 'No accounts match your search') : _ux('لا توجد حسابات نشطة', 'No active accounts')}</div>`;
     if (tbody) tbody.innerHTML = `<tr><td colspan="5">${emptyHtml}</td></tr>`;
     if (cardsWrap) cardsWrap.innerHTML = emptyHtml;
     return;
@@ -90701,19 +90923,20 @@ function renderUsers() {
     const avatarUrl = sanitizeUrl(u.avatar);
     const isOnline = onlineUsers[u._id]?.status === 'online';
     const initials = esc((u.name || u.username || '?').slice(0, 2));
-    return `<span class="users-avatar-sm ${cls}" title="${isOnline ? 'متصل الآن' : 'غير متصل'}">
+    return `<span class="users-avatar-sm ${cls}" title="${isOnline ? _ux('متصل الآن', 'Online now') : _ux('غير متصل', 'Offline')}">
       ${avatarUrl ? `<img src="${esc(avatarUrl)}" onerror="_avatarImgFallback(this,'${initials}')">` : initials}
       ${isOnline ? '<span class="users-status-dot" style="background:#10b981"></span>' : ''}
     </span>`;
   };
-  const nameOf = u => `<span class="users-name-line">${esc(u.name || u.username)}${u.username === 'admin' ? ` <span class="users-crown" title="المالك">${ICON('crown')}</span>` : ''}${_userHoldTagHtml(u)}</span>
-      <span class="users-username-line"><bdi>@${esc(u.username)}</bdi></span>`;
+  const nameOf = u => `<span class="users-name-line">${esc(u.name || u.username)}${u.username === 'admin' ? ` <span class="users-crown" title="${_ux('المالك', 'Owner')}">${ICON('crown')}</span>` : ''}${_userHoldTagHtml(u)}</span>
+      <span class="users-username-line"><bdi>@${esc(u.username)}</bdi></span>
+      ${window.SouliaAccountEmail ? `<span class="users-email-line">${SouliaAccountEmail.statusHtml(u)}</span>` : ''}`;
 
   const rowsHtml = list.map(u => {
     const isSuperAdmin = u.username === 'admin';
     const joined = _userJoinedAgo(u.createdAt);
     return `<tr>
-      <td data-col="u-user"><span class="users-identity" title="${esc(joined.exact ? 'انضم في ' + joined.exact : '')}">${avatarOf(u)}<span class="users-name-cell">${nameOf(u)}</span></span></td>
+      <td data-col="u-user"><span class="users-identity" title="${esc(joined.exact ? _ux('انضم في ', 'Joined ') + joined.exact : '')}">${avatarOf(u)}<span class="users-name-cell">${nameOf(u)}</span></span></td>
       <td data-col="u-job"><span class="users-job-title">${u.jobTitle ? esc(jobTitleLabel(u.jobTitle)) : '<span style="color:var(--muted)">—</span>'}</span></td>
       <td data-col="u-role">${_userRoleBadgeHtml(u)}</td>
       <td data-col="u-seen">${_userSeenHtml(u)}</td>
@@ -90744,20 +90967,20 @@ function _userRelTime(iso) {
   const ms = Date.now() - new Date(iso).getTime();
   if (!(ms >= 0)) return '';
   const m = Math.floor(ms / 60000);
-  if (m < 2) return 'قبل لحظات';
-  if (m < 60) return `قبل ${m} دقيقة`;
+  if (m < 2) return _ux('قبل لحظات', 'Just now');
+  if (m < 60) return _ux(`قبل ${m} دقيقة`, `${m} min ago`);
   const h = Math.floor(m / 60);
-  if (h < 24) return `قبل ${h} ساعة`;
+  if (h < 24) return _ux(`قبل ${h} ساعة`, `${h} h ago`);
   const d = Math.floor(h / 24);
-  if (d === 1) return 'أمس';
-  if (d < 30) return `قبل ${d} يوم`;
-  return new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (d === 1) return _ux('أمس', 'Yesterday');
+  if (d < 30) return _ux(`قبل ${d} يوم`, `${d} days ago`);
+  return new Date(iso).toLocaleDateString(_uxLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function _userSeenHtml(u) {
-  if (onlineUsers[u._id]?.status === 'online') return '<span class="users-seen is-on"><i></i>متصل الآن</span>';
+  if (onlineUsers[u._id]?.status === 'online') return `<span class="users-seen is-on"><i></i>${_ux('متصل الآن', 'Online now')}</span>`;
   const seen = onlineUsers[u._id]?.lastSeen || u.lastSeen || u.lastLogin;
-  if (!seen) return '<span class="users-seen is-never">لم يسجّل الدخول بعد</span>';
-  const exact = new Date(seen).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  if (!seen) return `<span class="users-seen is-never">${_ux('لم يسجّل الدخول بعد', 'Never signed in')}</span>`;
+  const exact = new Date(seen).toLocaleString(_uxLocale(), { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   return `<span class="users-seen" title="${esc(exact)}">${esc(_userRelTime(seen))}</span>`;
 }
 /** Active account that cannot sign in for a while (sign-in pause or suspension). */
@@ -90775,8 +90998,11 @@ function _userHoldTagHtml(u) {
   const req = u.passwordResetRequestedAt && u.isActive !== false
     ? ` <span class="users-hold-tag" title="${esc(currentLang === 'en' ? 'Asked for a password reset from the sign-in page' : 'طلب إعادة تعيين كلمة المرور من صفحة تسجيل الدخول')}">${currentLang === 'en' ? 'Reset requested' : 'طلب إعادة تعيين'}</span>` : '';
   if (!h) return req;
-  if (h === 'blocked') return ` <span class="users-hold-tag" title="محاولات دخول خاطئة متكررة من مصدر محدد. الحساب نفسه يعمل.">محاولات محظورة</span>` + req;
-  return ` <span class="users-hold-tag" title="${h === 'suspended' ? 'الحساب موقوف مؤقتًا — راجع قسم الحسابات المعطّلة والموقوفة' : 'تسجيل الدخول موقوف مؤقتًا بعد محاولات فاشلة'}">${h === 'suspended' ? 'موقوف مؤقتًا' : 'الدخول موقوف'}</span>` + req;
+  if (h === 'blocked') return ` <span class="users-hold-tag" title="${esc(_ux('محاولات دخول خاطئة متكررة من مصدر محدد. الحساب نفسه يعمل.', 'Repeated wrong passwords from one source. The account itself still works.'))}">${_ux('محاولات محظورة', 'Attempts blocked')}</span>` + req;
+  const holdTitle = h === 'suspended'
+    ? _ux('الحساب موقوف مؤقتًا — راجع قسم الحسابات المعطّلة والموقوفة', 'Account temporarily suspended — see Disabled & suspended accounts')
+    : _ux('تسجيل الدخول موقوف مؤقتًا بعد محاولات فاشلة', 'Sign-in is paused after failed attempts');
+  return ` <span class="users-hold-tag" title="${esc(holdTitle)}">${h === 'suspended' ? _ux('موقوف مؤقتًا', 'Suspended') : _ux('الدخول موقوف', 'Sign-in paused')}</span>` + req;
 }
 
 let _securityLocked = [];
@@ -90803,38 +91029,45 @@ function _renderDisabledUsers(matches = () => true) {
   const countEl = qs('#users-disabled-count');
   if (countEl) countEl.textContent = all.length ? fmtN(all.length) : '';
   if (!all.length) { listEl.innerHTML = ''; return; }
-  if (!rows.length) { listEl.innerHTML = '<p class="ux-empty">لا توجد حسابات معطّلة مطابقة للبحث</p>'; return; }
-  const fmt = d => new Date(d).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  if (!rows.length) { listEl.innerHTML = `<p class="ux-empty">${_ux('لا توجد حسابات معطّلة مطابقة للبحث', 'No disabled accounts match your search')}</p>`; return; }
+  const fmt = d => new Date(d).toLocaleString(_uxLocale(), { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const since = d => _ux('منذ ', 'Since ') + fmt(d);
+  const ends = d => _ux('ينتهي ', 'Ends ') + fmt(d);
   listEl.innerHTML = rows.map(u => {
     const hold = u.isActive === false ? 'disabled' : _userHoldState(u);
     let chip, reason, when, action;
+    // ⚠ The reasons the server stored (suspensionReason, lockReason…) are data and stay as written;
+    // only the fallbacks and the wording around them follow the UI language.
     if (hold === 'suspended') {
-      chip = '<span class="ux-chip is-warn">موقوف مؤقتًا</span>';
-      reason = [u.suspensionReason, u.suspensionDetail].filter(Boolean).join(' — ') || 'سلوك غير معتاد رصده نظام الحماية';
-      when = (u.suspendedAt ? 'منذ ' + fmt(u.suspendedAt) + ' · ' : '') + (new Date(u.suspendedUntil).getFullYear() >= 2100 ? 'حتى يرفعه المدير' : 'ينتهي ' + fmt(u.suspendedUntil));
-      action = 'رفع الإيقاف';
+      chip = `<span class="ux-chip is-warn">${_ux('موقوف مؤقتًا', 'Suspended')}</span>`;
+      reason = [u.suspensionReason, u.suspensionDetail].filter(Boolean).join(' — ') || _ux('سلوك غير معتاد رصده نظام الحماية', 'Unusual activity detected by the protection system');
+      when = (u.suspendedAt ? since(u.suspendedAt) + ' · ' : '') + (new Date(u.suspendedUntil).getFullYear() >= 2100 ? _ux('حتى يرفعه المدير', 'Until an admin lifts it') : ends(u.suspendedUntil));
+      action = _ux('رفع الإيقاف', 'Lift suspension');
     } else if (hold === 'blocked') {
-      chip = '<span class="ux-chip is-warn">محاولات دخول محظورة</span>';
-      reason = `كلمات مرور خاطئة متكررة من ${u.loginBlock.ip ? 'IP ' + u.loginBlock.ip : 'مصدر محدد'}${u.loginBlock.device ? ' · ' + u.loginBlock.device : ''}. الحساب نفسه يعمل من الأجهزة الأخرى.`;
-      when = u.loginBlock.hard ? 'حتى يُلغى الحظر' : 'ينتهي ' + fmt(u.loginBlock.until);
-      action = 'إلغاء الحظر';
+      chip = `<span class="ux-chip is-warn">${_ux('محاولات دخول محظورة', 'Sign-in attempts blocked')}</span>`;
+      const dev = u.loginBlock.device ? ' · ' + u.loginBlock.device : '';
+      reason = _ux(
+        `كلمات مرور خاطئة متكررة من ${u.loginBlock.ip ? 'IP ' + u.loginBlock.ip : 'مصدر محدد'}${dev}. الحساب نفسه يعمل من الأجهزة الأخرى.`,
+        `Repeated wrong passwords from ${u.loginBlock.ip ? 'IP ' + u.loginBlock.ip : 'one source'}${dev}. The account itself still works from other devices.`);
+      when = u.loginBlock.hard ? _ux('حتى يُلغى الحظر', 'Until the block is lifted') : ends(u.loginBlock.until);
+      action = _ux('إلغاء الحظر', 'Lift block');
     } else if (hold === 'paused') {
-      chip = '<span class="ux-chip is-warn">الدخول موقوف مؤقتًا</span>';
-      reason = 'محاولات دخول فاشلة متكررة. الجلسات المفتوحة لم تتأثر.';
-      when = 'ينتهي ' + fmt(u.loginLockedUntil);
-      action = 'إلغاء الإيقاف';
+      chip = `<span class="ux-chip is-warn">${_ux('الدخول موقوف مؤقتًا', 'Sign-in paused')}</span>`;
+      reason = _ux('محاولات دخول فاشلة متكررة. الجلسات المفتوحة لم تتأثر.', 'Repeated failed sign-in attempts. Open sessions are not affected.');
+      when = ends(u.loginLockedUntil);
+      action = _ux('إلغاء الإيقاف', 'Lift pause');
     } else {
-      chip = '<span class="ux-chip is-bad">معطّل</span>';
-      reason = String(u.lockReason || '').replace(/^🔒\s*/, '').replace('يدوياً', 'يدويًا') || 'لم يُسجَّل سبب';
-      when = u.lockedAt ? 'منذ ' + fmt(u.lockedAt) : '';
-      action = 'إعادة التفعيل';
+      chip = `<span class="ux-chip is-bad">${_ux('معطّل', 'Disabled')}</span>`;
+      reason = String(u.lockReason || '').replace(/^🔒\s*/, '').replace('يدوياً', 'يدويًا') || _ux('لم يُسجَّل سبب', 'No reason recorded');
+      when = u.lockedAt ? since(u.lockedAt) : '';
+      action = _ux('إعادة التفعيل', 'Reactivate');
     }
     const id = esc(String(u._id));
     const name = escHtml(JSON.stringify(u.name || u.username || ''));
-    const onClick = u._fromAudit ? `adminUnlockUser('${id}', ${name})` : `toggleUserActive('${id}', true)`;
+    const onClick = u._fromAudit ? `adminUnlockUser('${id}', ${name}, '${hold}')` : `toggleUserActive('${id}', true)`;
     const initials = esc((u.name || u.username || '?').slice(0, 2));
     const avatarUrl = sanitizeUrl(u.avatar);
-    return `<div class="ux-dis-row">
+    return `<div class="ux-dis-row" data-user-id="${id}">
       <span class="users-avatar-sm ux-dis-av">${avatarUrl ? `<img src="${esc(avatarUrl)}" onerror="_avatarImgFallback(this,'${initials}')">` : initials}</span>
       <div class="ux-dis-who">
         <div class="ux-dis-name"><b>${esc(u.name || u.username)}</b><bdi class="ux-dis-handle">@${esc(u.username)}</bdi>${chip}</div>
@@ -90857,7 +91090,7 @@ const _SEC_PAGE_SIZE = 10;
 function _uxWhenHtml(iso, seconds) {
   const d = iso ? new Date(iso) : null;
   if (!d || isNaN(d.getTime())) return '<span class="ux-when">—</span>';
-  const L = 'ar-EG-u-nu-latn';
+  const L = _uxLocale();
   const date = d.toLocaleDateString(L, { day: '2-digit', month: '2-digit', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
   const time = d.toLocaleTimeString(L, { hour: '2-digit', minute: '2-digit' });
   const full = d.toLocaleString(L, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) });
@@ -90883,7 +91116,31 @@ const _VIOLATION_LABEL = {
   export_excel: 'تصدير بيانات',
   bulk_browsing: 'تصفّح مكثّف للبيانات',
   abuse_alert: 'نشاط غير معتاد',
+  account_email_changed: 'تغيير البريد الإلكتروني للحساب',
 };
+const _VIOLATION_LABEL_EN = {
+  failed_login: 'Failed sign-in attempt',
+  account_locked: 'Account disabled',
+  account_unlocked: 'Account reactivated',
+  account_suspended: 'Account suspended',
+  otp_violation: 'Wrong verification code',
+  login_challenge_failed: 'Repeated wrong verification codes',
+  login_approval_denied: 'Sign-in request denied',
+  password_reset: 'Password reset',
+  two_factor_changed: 'Two-step verification changed',
+  system_pin_changed: 'System PIN changed',
+  vault_violation: 'Vault access attempt',
+  unauthorized_access: 'Unauthorised access attempt',
+  settings_tampering: 'Unauthorised settings change',
+  export_excel: 'Data export',
+  bulk_browsing: 'Heavy data browsing',
+  abuse_alert: 'Unusual activity',
+  account_email_changed: 'Account email changed',
+};
+/** The event's name in the UI language; an unknown type shows its raw key. */
+function _violationLabel(type) {
+  return (currentLang === 'en' ? _VIOLATION_LABEL_EN[type] : _VIOLATION_LABEL[type]) || _VIOLATION_LABEL[type] || type;
+}
 const _VIOLATION_TONE = {
   account_locked: 'bad', account_suspended: 'bad', unauthorized_access: 'bad', vault_violation: 'bad', settings_tampering: 'bad',
   system_pin_changed: 'warn', failed_login: 'warn', otp_violation: 'warn', login_challenge_failed: 'warn', login_approval_denied: 'warn', abuse_alert: 'warn', bulk_browsing: 'warn',
@@ -90891,23 +91148,25 @@ const _VIOLATION_TONE = {
 };
 const _VIOLATION_GROUP = {
   failed_login: 'login', otp_violation: 'login', login_challenge_failed: 'login', login_approval_denied: 'login', password_reset: 'login', two_factor_changed: 'login',
-  account_locked: 'accounts', account_unlocked: 'accounts', account_suspended: 'accounts',
+  account_locked: 'accounts', account_unlocked: 'accounts', account_suspended: 'accounts', account_email_changed: 'accounts',
 };
 /** The event's detail line in formal Arabic: English server texts rewritten, repeats of the label dropped. */
 function _secDetailText(log) {
   let s = String(log.action || '').replace(/^[\s🔒🚨⚠️]+/u, '').trim();
-  const EN = {
-    'Failed login: unknown account': 'اسم مستخدم غير مسجّل في النظام',
-    'Two-factor authentication verification failed': 'رمز التحقق بخطوتين غير صحيح',
+  // The server writes a few texts in English and the rest in Arabic; both are mapped to the UI language.
+  const KNOWN = {
+    'Failed login: unknown account': ['اسم مستخدم غير مسجّل في النظام', 'Username not registered in the system'],
+    'Two-factor authentication verification failed': ['رمز التحقق بخطوتين غير صحيح', 'Wrong two-step verification code'],
   };
-  if (EN[s]) s = EN[s];
+  if (KNOWN[s]) s = _ux(KNOWN[s][0], KNOWN[s][1]);
   const attempt = /المحاولة\s+(\d+)\s+من\s+(\d+)/.exec(s);
   // The stored detail is added only where it says something new (the reason of a failed attempt);
   // on account events it repeats the action in other words.
-  if (attempt) s = `المحاولة ${attempt[1]} من ${attempt[2]}` + (log.detail ? ` — ${log.detail}` : '');
+  if (attempt) s = _ux(`المحاولة ${attempt[1]} من ${attempt[2]}`, `Attempt ${attempt[1]} of ${attempt[2]}`) + (log.detail ? ` — ${log.detail}` : '');
   else if (!s && log.detail && !/^IP:/.test(log.detail)) s = log.detail;
   s = s.replace('يدوياً', 'يدويًا');
-  return s === (_VIOLATION_LABEL[log.violationType] || '') ? '' : s;
+  // A detail that only repeats the event's name (in either language) is dropped.
+  return s === (_VIOLATION_LABEL[log.violationType] || '') || s === (_VIOLATION_LABEL_EN[log.violationType] || '') ? '' : s;
 }
 
 /* ── Request origin — «من أين جاءت المحاولة» ──────────────────────────────
@@ -90933,12 +91192,17 @@ const _SEC_DEVICE_ICON = {
   'كمبيوتر': `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
 };
 
+/** The server stores the device kind in Arabic; this is its name in the UI language. */
+function _secDeviceName(d) {
+  const EN = { 'موبايل': 'Mobile', 'تابلت': 'Tablet', 'كمبيوتر': 'Computer' };
+  return currentLang === 'en' ? (EN[d] || d) : d;
+}
 /** «Chrome على Windows» — whichever halves are known. */
 function _secOriginTitle(log) {
   const parts = [];
   if (log.browser) parts.push(log.browser);
   if (log.os) parts.push(log.os);
-  if (log.device) parts.push(log.device);
+  if (log.device) parts.push(_secDeviceName(log.device));
   if (log.ipAddress) parts.push('IP: ' + log.ipAddress);
   if (log.location) parts.push(log.location);
   if (log.isp) parts.push(log.isp);
@@ -90956,11 +91220,11 @@ function _secOriginCellHtml(log) {
 
   // Nothing was captured at all — say so plainly instead of an empty cell.
   if (!browser && !os && !device && !ip && !loc) {
-    return `<span class="sec-origin-none" title="لم تُسجَّل بيانات الجهاز لهذه المحاولة">غير معروف</span>`;
+    return `<span class="sec-origin-none" title="${esc(_ux('لم تُسجَّل بيانات الجهاز لهذه المحاولة', 'No device details were recorded for this attempt'))}">${_ux('غير معروف', 'Unknown')}</span>`;
   }
 
   const devIcon = _SEC_DEVICE_ICON[device] || _SEC_DEVICE_ICON['كمبيوتر'];
-  const head = [browser, os].filter(Boolean).join(' · ') || 'جهاز غير معروف';
+  const head = [browser, os].filter(Boolean).join(' · ') || _ux('جهاز غير معروف', 'Unknown device');
 
   // Two quiet lines: device, then address · place. The ISP and full browser string stay in the tooltip.
   const sub = [ip ? `<bdi class="sec-origin-ip">${esc(ip)}</bdi>` : '', loc ? esc(loc) : ''].filter(Boolean).join(' · ');
@@ -90994,7 +91258,7 @@ function _secLockedAttemptsHtml(attempts) {
   const multi = fingerprints.size > 1;
 
   const items = rows.map(a => {
-    const when = a.createdAt ? new Date(a.createdAt).toLocaleString('ar-EG-u-nu-latn') : '—';
+    const when = a.createdAt ? new Date(a.createdAt).toLocaleString(_uxLocale()) : '—';
     const isLock = a.violationType === 'account_locked';
     return `<li class="sec-att${isLock ? ' is-lock' : ''}">
       <span class="sec-att-when"><bdi>${esc(when)}</bdi></span>
@@ -91004,8 +91268,8 @@ function _secLockedAttemptsHtml(attempts) {
 
   return `<details class="sec-att-wrap">
     <summary class="sec-att-summary">
-      عرض محاولات الدخول (${fmtN(rows.length)})
-      ${multi ? '<span class="sec-att-warn">من أكثر من جهاز</span>' : ''}
+      ${_ux('عرض محاولات الدخول', 'Show sign-in attempts')} (${fmtN(rows.length)})
+      ${multi ? `<span class="sec-att-warn">${_ux('من أكثر من جهاز', 'from more than one device')}</span>` : ''}
     </summary>
     <ul class="sec-att-list">${items}</ul>
   </details>`;
@@ -91024,12 +91288,14 @@ function _renderSecurityLogPage() {
     const recent = _securityLogs.filter(l => new Date(l.createdAt).getTime() > since);
     const fails = recent.filter(l => _VIOLATION_GROUP[l.violationType] === 'login' && _VIOLATION_TONE[l.violationType] === 'warn').length;
     const serious = recent.filter(l => _VIOLATION_TONE[l.violationType] === 'bad').length;
-    sumEl.textContent = !recent.length ? 'لا توجد أحداث أمنية خلال آخر 24 ساعة.'
-      : `خلال آخر 24 ساعة: ${fmtN(recent.length)} حدث` + (fails ? ` · ${fmtN(fails)} محاولة دخول أو تحقق فاشلة` : '') + (serious ? ` · ${fmtN(serious)} يستدعي المراجعة` : '') + '.';
+    sumEl.textContent = !recent.length ? _ux('لا توجد أحداث أمنية خلال آخر 24 ساعة.', 'No security events in the last 24 hours.')
+      : _ux(`خلال آخر 24 ساعة: ${fmtN(recent.length)} حدث`, `Last 24 hours: ${fmtN(recent.length)} event${recent.length === 1 ? '' : 's'}`)
+        + (fails ? ' · ' + _ux(`${fmtN(fails)} محاولة دخول أو تحقق فاشلة`, `${fmtN(fails)} failed sign-in or verification attempt${fails === 1 ? '' : 's'}`) : '')
+        + (serious ? ' · ' + _ux(`${fmtN(serious)} يستدعي المراجعة`, `${fmtN(serious)} need${serious === 1 ? 's' : ''} review`) : '') + '.';
     sumEl.title = sumEl.textContent;
   }
   if (!logs.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="ux-empty">${group ? 'لا توجد أحداث من هذا النوع' : 'لا توجد أحداث أمنية مسجّلة'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="ux-empty">${group ? _ux('لا توجد أحداث من هذا النوع', 'No events of this type') : _ux('لا توجد أحداث أمنية مسجّلة', 'No security events recorded')}</td></tr>`;
     if (pagEl) pagEl.innerHTML = '';
     return;
   }
@@ -91039,25 +91305,26 @@ function _renderSecurityLogPage() {
   const byId = new Map((users || []).map(u => [String(u._id), u]));
   tbody.innerHTML = slice.map(log => {
     const tone = _VIOLATION_TONE[log.violationType] || 'info';
-    const label = _VIOLATION_LABEL[log.violationType] || log.violationType;
+    const label = _violationLabel(log.violationType);
     const u = byId.get(String(log.userId));
     const who = u ? `<b>${esc(u.name || u.username)}</b><bdi class="ux-sub">@${esc(u.username)}</bdi>`
-      : log.userId === 'unknown' ? `<bdi class="ux-mono">${esc(log.username || '—')}</bdi><span class="ux-sub">غير مسجّل</span>`
+      : log.userId === 'unknown' ? `<bdi class="ux-mono">${esc(log.username || '—')}</bdi><span class="ux-sub">${_ux('غير مسجّل', 'Not registered')}</span>`
       : `<b>${esc(log.username || '—')}</b>`;
     const detail = _secDetailText(log);
     return `<tr class="sec-row" data-push-audit-id="${esc(String(log._id))}">
       <td>${_uxWhenHtml(log.createdAt)}</td>
       <td><span class="ux-chip is-${tone}">${esc(label)}</span></td>
       <td><span class="ux-who">${who}</span></td>
-      <td class="ux-detail">${detail ? `<span class="ux-ell" title="${escHtml(log.action || detail)}">${esc(detail)}</span>` : '<span class="ux-muted">—</span>'}</td>
+      <td class="ux-detail">${detail ? `<span class="ux-ell" title="${escHtml(currentLang === 'en' ? detail : (log.action || detail))}">${esc(detail)}</span>` : '<span class="ux-muted">—</span>'}</td>
       <td>${_secOriginCellHtml(log)}</td>
     </tr>`;
   }).join('');
   if (pagEl) {
-    pagEl.innerHTML = totalPages <= 1 ? `<span>${fmtN(logs.length)} حدث</span>` :
-      `<button type="button" class="ux-btn" onclick="_securityLogPage=Math.max(0,_securityLogPage-1);_renderSecurityLogPage()" ${_securityLogPage === 0 ? 'disabled' : ''}>السابق</button>
-       <span>صفحة ${_securityLogPage + 1} من ${totalPages} · ${fmtN(logs.length)} حدث</span>
-       <button type="button" class="ux-btn" onclick="_securityLogPage=Math.min(${totalPages - 1},_securityLogPage+1);_renderSecurityLogPage()" ${_securityLogPage >= totalPages - 1 ? 'disabled' : ''}>التالي</button>`;
+    const evN = _ux(`${fmtN(logs.length)} حدث`, `${fmtN(logs.length)} event${logs.length === 1 ? '' : 's'}`);
+    pagEl.innerHTML = totalPages <= 1 ? `<span>${evN}</span>` :
+      `<button type="button" class="ux-btn" onclick="_securityLogPage=Math.max(0,_securityLogPage-1);_renderSecurityLogPage()" ${_securityLogPage === 0 ? 'disabled' : ''}>${_ux('السابق', 'Previous')}</button>
+       <span>${_ux(`صفحة ${_securityLogPage + 1} من ${totalPages}`, `Page ${_securityLogPage + 1} of ${totalPages}`)} · ${evN}</span>
+       <button type="button" class="ux-btn" onclick="_securityLogPage=Math.min(${totalPages - 1},_securityLogPage+1);_renderSecurityLogPage()" ${_securityLogPage >= totalPages - 1 ? 'disabled' : ''}>${_ux('التالي', 'Next')}</button>`;
   }
 }
 
@@ -91090,16 +91357,16 @@ async function loadSecurityPanel(opts = {}) {
    IP prefix; `result` = a group — ⚠ _LA_GROUP mirrors ATTEMPT_RESULT_GROUPS in login-guard.service.ts).
    A row's username or IP fills the search, so one source's whole history is one click away. */
 const _LA_RESULT = {
-  'password-ok':      ['كلمة مرور صحيحة', 'ok'],
-  'bad-credentials':  ['بيانات دخول غير صحيحة', 'bad'],
-  'disabled':         ['حساب معطّل', 'warn'],
-  'locked':           ['مرفوضة — إيقاف مؤقت', 'warn'],
-  'blocked':          ['مرفوضة — مصدر محظور', 'bad'],
-  'rate-limited':     ['تجاوز حد الطلبات', 'warn'],
-  'pow-required':     ['طُلب التحقق الآلي', 'info'],
-  'captcha-required': ['طُلب التحقق الآلي', 'info'],
-  'pow-failed':       ['فشل التحقق الآلي', 'bad'],
-  'captcha-failed':   ['فشل التحقق الآلي', 'bad'],
+  'password-ok':      ['كلمة مرور صحيحة', 'ok', 'Correct password'],
+  'bad-credentials':  ['بيانات دخول غير صحيحة', 'bad', 'Incorrect sign-in details'],
+  'disabled':         ['حساب معطّل', 'warn', 'Account disabled'],
+  'locked':           ['مرفوضة — إيقاف مؤقت', 'warn', 'Refused — temporarily paused'],
+  'blocked':          ['مرفوضة — مصدر محظور', 'bad', 'Refused — source blocked'],
+  'rate-limited':     ['تجاوز حد الطلبات', 'warn', 'Too many requests'],
+  'pow-required':     ['طُلب التحقق الآلي', 'info', 'Robot check requested'],
+  'captcha-required': ['طُلب التحقق الآلي', 'info', 'Robot check requested'],
+  'pow-failed':       ['فشل التحقق الآلي', 'bad', 'Robot check failed'],
+  'captcha-failed':   ['فشل التحقق الآلي', 'bad', 'Robot check failed'],
 };
 let _laPage = 1, _laData = null, _laLoading = null, _laLoadedAt = 0, _laSearchTimer = 0, _laSeq = 0;
 
@@ -91121,7 +91388,7 @@ async function _loadLoginAttempts(opts = {}) {
   if (opts.ifStale && (_laLoading || Date.now() - _laLoadedAt < 20000)) return;
   const seq = ++_laSeq;
   const tbody = qs('#login-attempts-tbody');
-  if (tbody && !_laData) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">جارٍ التحميل…</td></tr>`;
+  if (tbody && !_laData) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">${_ux('جارٍ التحميل…', 'Loading…')}</td></tr>`;
   const params = new URLSearchParams({ page: String(_laPage), limit: '10' });
   const q = (qs('#la-search')?.value || '').trim();
   const result = qs('#la-filter')?.value || '';
@@ -91135,7 +91402,7 @@ async function _loadLoginAttempts(opts = {}) {
     })
     .catch(e => {
       if (seq !== _laSeq) return;
-      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">تعذّر تحميل سجل المحاولات. <button type="button" class="ux-btn" onclick="_loadLoginAttempts()">إعادة المحاولة</button></td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">${_ux('تعذّر تحميل سجل المحاولات.', 'Could not load the sign-in attempts.')} <button type="button" class="ux-btn" onclick="_loadLoginAttempts()">${_ux('إعادة المحاولة', 'Retry')}</button></td></tr>`;
       console.warn('[login-attempts]', e?.message);
     })
     .finally(() => { if (seq === _laSeq) _laLoading = null; });
@@ -91143,10 +91410,10 @@ async function _loadLoginAttempts(opts = {}) {
 }
 
 function _laOriginHtml(r) {
-  const head = [r.browser, r.os].filter(Boolean).join(' · ') || 'جهاز غير معروف';
+  const head = [r.browser, r.os].filter(Boolean).join(' · ') || _ux('جهاز غير معروف', 'Unknown device');
   const devIcon = _SEC_DEVICE_ICON[r.device] || _SEC_DEVICE_ICON['كمبيوتر'];
-  const ip = r.ip ? `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.ip))})" title="عرض كل المحاولات من هذا العنوان"><bdi class="sec-origin-ip">${esc(r.ip)}</bdi></button>` : '';
-  return `<div class="sec-origin" title="${escHtml([r.browser, r.os, r.device, r.ip ? 'IP: ' + r.ip : ''].filter(Boolean).join(' — '))}">
+  const ip = r.ip ? `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.ip))})" title="${esc(_ux('عرض كل المحاولات من هذا العنوان', 'Show every attempt from this address'))}"><bdi class="sec-origin-ip">${esc(r.ip)}</bdi></button>` : '';
+  return `<div class="sec-origin" title="${escHtml([r.browser, r.os, r.device ? _secDeviceName(r.device) : '', r.ip ? 'IP: ' + r.ip : ''].filter(Boolean).join(' — '))}">
     <span class="sec-origin-head">${devIcon}<span>${esc(head)}</span></span>
     ${ip ? `<span class="sec-origin-sub">${ip}</span>` : ''}
   </div>`;
@@ -91161,10 +91428,14 @@ function _renderLoginAttempts() {
   const s = d.last24h || {};
   const sum = qs('#la-summary');
   if (sum) {
-    const parts = [`آخر 24 ساعة: ${fmtN(s.total || 0)} محاولة`, `${fmtN(s.ok || 0)} ناجحة`, `${fmtN(s.failed || 0)} ببيانات غير صحيحة`];
-    if (s.stopped) parts.push(`${fmtN(s.stopped)} مرفوضة بسبب إيقاف أو حظر`);
-    if (s.failedIps) parts.push(`من ${fmtN(s.failedIps)} عنوان IP`);
-    sum.textContent = parts.join(' · ') + ' — التحقق الآلي: ' + (d.captcha === 'turnstile' ? 'Cloudflare Turnstile' : 'التحقق الحسابي المدمج') + '.';
+    const pl = (n, one, many) => `${fmtN(n)} ${n === 1 ? one : many}`;
+    const parts = currentLang === 'en'
+      ? [`Last 24 hours: ${pl(s.total || 0, 'attempt', 'attempts')}`, `${fmtN(s.ok || 0)} successful`, `${fmtN(s.failed || 0)} with incorrect details`]
+      : [`آخر 24 ساعة: ${fmtN(s.total || 0)} محاولة`, `${fmtN(s.ok || 0)} ناجحة`, `${fmtN(s.failed || 0)} ببيانات غير صحيحة`];
+    if (s.stopped) parts.push(_ux(`${fmtN(s.stopped)} مرفوضة بسبب إيقاف أو حظر`, `${fmtN(s.stopped)} refused (paused or blocked)`));
+    if (s.failedIps) parts.push(_ux(`من ${fmtN(s.failedIps)} عنوان IP`, `from ${pl(s.failedIps, 'IP address', 'IP addresses')}`));
+    sum.textContent = parts.join(' · ') + _ux(' — التحقق الآلي: ', ' — Robot check: ')
+      + (d.captcha === 'turnstile' ? 'Cloudflare Turnstile' : _ux('التحقق الحسابي المدمج', 'built-in proof of work')) + '.';
     sum.title = sum.textContent;
   }
   const cnt = qs('#la-count');
@@ -91172,18 +91443,19 @@ function _renderLoginAttempts() {
   const rows = Array.isArray(d.rows) ? d.rows : [];
   const filtered = !!((qs('#la-search')?.value || '').trim() || qs('#la-filter')?.value);
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">${filtered ? 'لا توجد محاولات تطابق البحث' : 'لا توجد محاولات دخول مسجّلة'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="ux-empty">${filtered ? _ux('لا توجد محاولات تطابق البحث', 'No attempts match your search') : _ux('لا توجد محاولات دخول مسجّلة', 'No sign-in attempts recorded')}</td></tr>`;
     if (pager) pager.innerHTML = '';
     return;
   }
   const byId = new Map((users || []).map(u => [String(u._id), u]));
   tbody.innerHTML = rows.map(r => {
-    const [label, tone] = _LA_RESULT[r.result] || [r.result || '—', 'info'];
+    const res = _LA_RESULT[r.result];
+    const [label, tone] = res ? [_ux(res[0], res[2]), res[1]] : [r.result || '—', 'info'];
     const u = r.userId ? byId.get(String(r.userId)) : null;
-    const typed = `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.userKey || r.username || ''))})" title="عرض كل المحاولات بهذا الاسم"><bdi class="ux-mono">${esc(r.username || '—')}</bdi></button>`;
+    const typed = `<button type="button" class="la-link" onclick="_laFilterBy(${escHtml(JSON.stringify(r.userKey || r.username || ''))})" title="${esc(_ux('عرض كل المحاولات بهذا الاسم', 'Show every attempt with this name'))}"><bdi class="ux-mono">${esc(r.username || '—')}</bdi></button>`;
     const who = u ? `<b>${esc(u.name || u.username)}</b>${typed}`
-      : `${typed}<span class="ux-sub">${r.userId ? 'حساب محذوف' : 'لا يوجد حساب بهذا الاسم'}</span>`;
-    const trusted = r.trusted ? `<span class="ux-sub la-trusted">جهاز موثوق</span>` : '';
+      : `${typed}<span class="ux-sub">${r.userId ? _ux('حساب محذوف', 'Deleted account') : _ux('لا يوجد حساب بهذا الاسم', 'No account with this name')}</span>`;
+    const trusted = r.trusted ? `<span class="ux-sub la-trusted">${_ux('جهاز موثوق', 'Trusted device')}</span>` : '';
     return `<tr>
       <td>${_uxWhenHtml(r.at, true)}</td>
       <td><span class="ux-chip is-${tone}">${esc(label)}</span>${trusted}</td>
@@ -91193,40 +91465,75 @@ function _renderLoginAttempts() {
   }).join('');
   const pages = Math.max(1, Math.ceil((d.total || 0) / (d.limit || 10)));
   if (pager) {
-    pager.innerHTML = pages <= 1 ? `<span>${fmtN(d.total || 0)} محاولة</span>` :
-      `<button type="button" class="ux-btn" onclick="_laPage=Math.max(1,_laPage-1);_loadLoginAttempts()" ${d.page <= 1 ? 'disabled' : ''}>السابق</button>
-       <span>صفحة ${fmtN(d.page)} من ${fmtN(pages)} · ${fmtN(d.total)} محاولة</span>
-       <button type="button" class="ux-btn" onclick="_laPage=Math.min(${pages},_laPage+1);_loadLoginAttempts()" ${d.page >= pages ? 'disabled' : ''}>التالي</button>`;
+    const atN = _ux(`${fmtN(d.total || 0)} محاولة`, `${fmtN(d.total || 0)} attempt${d.total === 1 ? '' : 's'}`);
+    pager.innerHTML = pages <= 1 ? `<span>${atN}</span>` :
+      `<button type="button" class="ux-btn" onclick="_laPage=Math.max(1,_laPage-1);_loadLoginAttempts()" ${d.page <= 1 ? 'disabled' : ''}>${_ux('السابق', 'Previous')}</button>
+       <span>${_ux(`صفحة ${fmtN(d.page)} من ${fmtN(pages)}`, `Page ${fmtN(d.page)} of ${fmtN(pages)}`)} · ${atN}</span>
+       <button type="button" class="ux-btn" onclick="_laPage=Math.min(${pages},_laPage+1);_loadLoginAttempts()" ${d.page >= pages ? 'disabled' : ''}>${_ux('التالي', 'Next')}</button>`;
   }
 }
 
-async function adminUnlockUser(userId, displayName) {
+/** From a «حساب موقوف عن تسجيل الدخول» notice: the Users page, scrolled to that account's row
+ *  with its «إلغاء الحظر» button highlighted. A lock that already ended says so. */
+async function openLoginLockRow(userId) {
+  navigateTo('users');
+  try { await loadSecurityPanel(); } catch (_) {}
+  const sel = `#locked-users-list .ux-dis-row[data-user-id="${CSS.escape(String(userId))}"]`;
+  let row = null;
+  for (let i = 0; i < 20 && !row; i++) { row = qs(sel); if (!row) await new Promise(r => setTimeout(r, 100)); }
+  if (!row) {
+    qs('#users-disabled-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    toast(_ux('انتهى قفل تسجيل الدخول لهذا الحساب بالفعل أو أُلغي.', 'This account’s sign-in lock has already ended or been lifted.'));
+    return;
+  }
+  row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' });
+  row.classList.add('comment-mention-highlight');
+  setTimeout(() => row.classList.remove('comment-mention-highlight'), 4000);
+  row.querySelector('.ux-dis-act .ux-btn')?.focus({ preventScroll: true });
+}
+
+async function adminUnlockUser(userId, displayName, hold) {
+  // A sign-in block/pause (wrong passwords) is lifted before its time ends; other holds reactivate.
+  const isSignIn = hold === 'blocked' || hold === 'paused';
   const confirmed = await showConfirm(
-    `سيتمكّن «${displayName}» من تسجيل الدخول مرة أخرى. يُرجى مراجعة سبب الإيقاف قبل المتابعة.`,
-    { title: 'إعادة تفعيل الحساب', icon: 'warn', danger: false, confirmLabel: 'إعادة التفعيل' }
+    isSignIn
+      ? _ux(`سيتمكّن «${displayName}» من تسجيل الدخول الآن دون انتظار انتهاء المدة. تأكّد أن المحاولات الخاطئة كانت منه قبل المتابعة.`,
+            `“${displayName}” will be able to sign in now, without waiting for the lock to end. Make sure the wrong attempts were theirs before continuing.`)
+      : _ux(`سيتمكّن «${displayName}» من تسجيل الدخول مرة أخرى. يُرجى مراجعة سبب الإيقاف قبل المتابعة.`,
+            `“${displayName}” will be able to sign in again. Please check the reason for the hold before continuing.`),
+    isSignIn
+      ? { title: _ux('إلغاء حظر تسجيل الدخول', 'Lift sign-in block'), icon: 'warn', danger: false, confirmLabel: _ux('إلغاء الحظر', 'Lift block') }
+      : { title: _ux('إعادة تفعيل الحساب', 'Reactivate account'), icon: 'warn', danger: false, confirmLabel: _ux('إعادة التفعيل', 'Reactivate') }
   );
   if (!confirmed) return;
   try {
+    // ⚠ The reason is stored in the audit log — kept in Arabic like every other server-side record.
     await api('/security-audit/unlock/' + userId, { method: 'POST', body: JSON.stringify({ reason: 'أعاد المدير تفعيل الحساب' }) });
-    toast(`تمت إعادة تفعيل حساب «${displayName}»`);
+    toast(isSignIn ? _ux(`أُلغي حظر تسجيل الدخول لحساب «${displayName}»`, `Sign-in block lifted for “${displayName}”`)
+                   : _ux(`تمت إعادة تفعيل حساب «${displayName}»`, `“${displayName}” was reactivated`));
     users = await api('/users').catch(() => users);
     await loadSecurityPanel();
-  } catch (e) { toast('تعذّرت إعادة التفعيل: ' + e.message, true); }
+  } catch (e) { toast(_ux('تعذّرت إعادة التفعيل: ', 'Could not reactivate: ') + e.message, true); }
 }
 
 async function toggleUserActive(id, currentlyInactive) {
   const action = currentlyInactive ? 'activate' : 'deactivate';
   const msg = currentlyInactive
-    ? 'سيتمكّن هذا المستخدم من تسجيل الدخول مرة أخرى.'
-    : 'لن يتمكّن هذا المستخدم من تسجيل الدخول، وسيُنقل حسابه إلى قسم «الحسابات المعطّلة والموقوفة».';
-  if (!await showConfirm(msg, { title: currentlyInactive ? 'تفعيل الحساب' : 'تعطيل الحساب', icon: 'warn', danger: !currentlyInactive, confirmLabel: currentlyInactive ? 'تفعيل' : 'تعطيل' })) return;
+    ? _ux('سيتمكّن هذا المستخدم من تسجيل الدخول مرة أخرى.', 'This user will be able to sign in again.')
+    : _ux('لن يتمكّن هذا المستخدم من تسجيل الدخول، وسيُنقل حسابه إلى قسم «الحسابات المعطّلة والموقوفة».',
+          'This user will no longer be able to sign in, and the account will move to “Disabled & suspended accounts”.');
+  if (!await showConfirm(msg, {
+    title: currentlyInactive ? _ux('تفعيل الحساب', 'Activate account') : _ux('تعطيل الحساب', 'Deactivate account'),
+    icon: 'warn', danger: !currentlyInactive,
+    confirmLabel: currentlyInactive ? _ux('تفعيل', 'Activate') : _ux('تعطيل', 'Deactivate'),
+  })) return;
   try {
     await api('/users/' + id + '/' + action, { method: 'POST' });
-    toast(currentlyInactive ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب');
+    toast(currentlyInactive ? _ux('تم تفعيل الحساب', 'Account activated') : _ux('تم تعطيل الحساب', 'Account deactivated'));
     users = await api('/users').catch(() => users);
     renderUsers();
     if (isAdmin()) loadSecurityPanel();
-  } catch (e) { toast('خطأ: ' + e.message, true); }
+  } catch (e) { toast(_ux('خطأ: ', 'Error: ') + e.message, true); }
 }/* ── Job titles ────────────────────────────────────────────────────────────
    `value` is the ENGLISH string and is what MongoDB stores — it is already on
    every existing account, is shown in the users table, and is matched against
@@ -91364,7 +91671,7 @@ function openUserModal(id) {
             <div class="um2-pw-text" id="um-pass-match" aria-live="polite"></div>
           </div>`}
           <div class="form-group"><label>الهاتف</label><input type="tel" id="um-phone" value="${esc(u?.phone || '')}" placeholder="01xxxxxxxxx"></div>
-          <div class="form-group"><label>${currentLang === 'en' ? 'Email' : 'البريد الإلكتروني'}</label><input type="email" id="um-email" value="${esc(u?.email || '')}" placeholder="name@example.com"></div>
+          ${window.SouliaAccountEmail ? SouliaAccountEmail.adminBlockHtml(u) : ''}
           <div class="form-group um2-full"><label>المسمى الوظيفي</label>
             <select id="um-jobtitle-select" onchange="_umOnJobTitleChange(this)">
               <option value="">— بدون —</option>
@@ -91693,7 +92000,14 @@ async function _umSetResetRight(id, box) {
   const jtSel = qs('#um-jobtitle-select').value;
   const jobTitle = jtSel === '__custom__' ? qs('#um-jobtitle-custom').value.trim() : jtSel;
   // Access is NOT part of this body: it comes from the role (assigned below / at creation).
-  const body = { username: qs('#um-username').value.trim(), name: qs('#um-name').value.trim(), phone: qs('#um-phone').value.trim(), email: qs('#um-email').value.trim(), avatar: qs('#um-avatar').value.trim(), jobTitle };
+  const body = { username: qs('#um-username').value.trim(), name: qs('#um-name').value.trim(), phone: qs('#um-phone').value.trim(), avatar: qs('#um-avatar').value.trim(), jobTitle };
+  // ⚠ The email is sent only when CREATING an account: the server sends it a confirmation code and the
+  // employee confirms it at sign-in. A later change goes through «إرسال رمز التأكيد» (account-email.js).
+  const inviteEmail = id ? '' : String(qs('#um-email')?.value || '').trim();
+  if (inviteEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(inviteEmail)) { _umTab('account'); const f = qs('#um-email'); if (f) f.focus(); toast(currentLang === 'en' ? 'The email address is not valid' : 'عنوان البريد الإلكتروني غير صحيح', true); return; }
+    body.email = inviteEmail;
+  }
   // ⚠ A password is sent only when CREATING an account. Changes go through SouliaPassword (code required).
   const pass = id ? '' : (qs('#um-password')?.value || '');
   if (pass) body.password = pass;
@@ -91723,13 +92037,15 @@ async function _umSetResetRight(id, box) {
   if (btn) btn.disabled = true;
   try {
     if (id) await api('/users/' + id, { method: 'PUT', body: JSON.stringify(body) });
-    else await api('/users', { method: 'POST', body: JSON.stringify({ ...body, roleId: chosenRole }) });
+    let created = null;
+    if (!id) created = await api('/users', { method: 'POST', body: JSON.stringify({ ...body, roleId: chosenRole }) });
     const shownOnce = !id && _umPwGenerated ? pass : '';
     _umPwGenerated = false;
     if (id && chosenRole && chosenRole !== currentRole) {
       await api('/roles/' + encodeURIComponent(chosenRole) + '/assign', { method: 'POST', body: JSON.stringify({ userId: id }) });
     }
     toast(id ? 'تم تحديث المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح');
+    if (created && chosenRole !== 'admin') window.SouliaAccountEmail?.inviteToast(created, inviteEmail);
     closeModal();
     if (shownOnce && window.SouliaPassword) window.SouliaPassword.showOnce({ name: body.name, username: body.username }, shownOnce);
     users = await api('/users').catch(() => users);
@@ -97436,6 +97752,7 @@ function uhPreviewAvatar(url) {
 
 function renderProfile() {
   const u = currentUser || {};
+  try { window.SouliaAccountEmail?.renderCard(qs('#uh-email-card')); } catch (_) {}
   const name = u.name || u.username || '';
   const role = _roleLabel(u.role);
   const jobTitle = jobTitleLabel((u.jobTitle || '').trim()) || role;
@@ -103995,7 +104312,13 @@ function closeProductCard() {
 function dismissSplash() {
   requestAnimationFrame(() => { try { window._bootDone?.(); } catch (_) {} });
   // A new account's first sign-in: welcome + tour (onboarding.js). Waits for any open window.
-  setTimeout(() => { try { window.SouliaOnboarding?.maybeStart(); } catch (_) {} }, 700);
+  // An employee with no confirmed email gets the mandatory «أضف بريدك الإلكتروني» first (account-email.js);
+  // the tour then starts when that window closes.
+  setTimeout(async () => {
+    let gated = false;
+    try { gated = !!(await window.SouliaAccountEmail?.gate()); } catch (_) {}
+    if (!gated) { try { window.SouliaOnboarding?.maybeStart(); } catch (_) {} }
+  }, 700);
   setTimeout(() => { try { window.SouliaBrowseAccess?.load(); } catch (_) {} }, 900);
 }
 
@@ -116280,8 +116603,9 @@ function _spDateRangeLabel() {
 function _spShipCell(o) {
   const billed = Number(o.shipCost) || 0;
   if (billed <= 0) return '<span style="color:var(--muted)">—</span>';
-  // «شحن مجاني»: the customer pays none of it — say so, with Shopify's figure struck.
-  if (o.freeShipping) return `<div class="mov-ship-cell" title="${escHtml(currentLang === 'en' ? 'Free shipping — not charged to the customer' : 'شحن مجاني — لا يُحصَّل من العميل')}"><span class="mov-ship-billed">${esc(currentLang === 'en' ? 'Free' : 'مجاني')}</span><s class="mov-ship-sub" style="color:var(--muted);font-size:.72rem">${fmtJ(billed)}</s></div>`;
+  // «شحن مجاني» — set in the system, or Shopify's own discount covering the whole shipping.
+  const free = _freeShipOf(o);
+  if (free) return _freeShipCellHtml(free);
   return `<div class="mov-ship-cell"><span class="mov-ship-billed">${fmtJ(billed)}</span></div>`;
 }
 
@@ -121982,18 +122306,27 @@ function _spRenderDiscountTab() {
    approval) into ShopifyOrder.freeShipping; confirming records shipping charged 0 and the carrier's real fee still
    reaches the vault at the Bosta settlement. Never as an «extra discount» — that is capped at the items and would
    file shipping as a product discount. */
+/* Small truck mark: «شحن مجاني» reads as a feature, never as a discount (%). Shared with the edit history. */
+const SP_FREESHIP_ICO = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3z"/><path d="M14 9h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>';
+/* Owner's rule (Nov 27, 2026): staff need «طلب شحن مجاني» (shopify-free-shipping); a manager always approves it. */
+function _spCanFreeShip() { return isAdmin() || hasPerm('shopify-free-shipping'); }
 function _spFreeShipHtml(order, money, editable) {
   const en = currentLang === 'en';
   const ship = `<bdi>${fmtJ(money.ship)}</bdi>`;
   const by = order.freeShipping && _spFreeShip ? (order.freeShipping.by || '') : '';
-  return `<div class="sp-disc-block sp-freeship${_spFreeShip ? ' is-on' : ''}">
+  const allowed = _spCanFreeShip();
+  const hint = !allowed ? (en ? 'Needs the «Request free shipping» permission.' : 'يحتاج صلاحية «طلب شحن مجاني».')
+    : !isAdmin() ? (en ? 'Sent to a manager for approval.' : 'يُرسل إلى المدير للموافقة.') : '';
+  return `<div class="sp-disc-block sp-freeship${_spFreeShip ? ' is-on' : ''}${allowed ? '' : ' is-locked'}">
       <div class="sp-disc-h">${esc(en ? 'Shipping' : 'الشحن')}</div>
-      <label class="sp-freeship-row">
-        <input type="checkbox" id="sp-free-ship" ${_spFreeShip ? 'checked' : ''} ${editable ? '' : 'disabled'} onchange="_spToggleFreeShip(this.checked)">
+      <label class="sp-freeship-row"${!allowed ? ` title="${escHtml(hint)}"` : ''}>
+        <input type="checkbox" id="sp-free-ship" ${_spFreeShip ? 'checked' : ''} ${editable && allowed ? '' : 'disabled'} onchange="_spToggleFreeShip(this.checked)">
+        <span class="sp-freeship-ico">${SP_FREESHIP_ICO}</span>
         <span class="sp-freeship-txt">
-          <b>${esc(en ? 'Free shipping' : 'شحن مجاني')}</b>
+          <b>${esc(en ? 'Free shipping' : 'شحن مجاني')}${_spFreeShip ? `<span class="sp-freeship-on">${esc(en ? 'On' : 'مُفعَّل')}</span>` : ''}</b>
           <small>${en ? `The customer does not pay the shipping (${ship}). The carrier's real fee is recorded at settlement.`
             : `لا يُحصَّل الشحن (${ship}) من العميل. تُسجَّل تكلفة شركة الشحن الفعلية عند التسوية.`}${by ? ` · ${esc(en ? 'Set by' : 'بواسطة')} ${esc(by)}` : ''}</small>
+          ${hint ? `<small class="sp-freeship-hint">${esc(hint)}</small>` : ''}
         </span>
       </label>
     </div>`;
@@ -123050,7 +123383,7 @@ function _spRenderHistoryTab() {
 <script src="/admin-team-home.js?v=20261109-cascade"></script>
 <script src="/daily-orders-analysis.js?v=20261111-multi-month-values"></script>
 <script src="/sales-overview.js?v=20261111-multi-month-values"></script>
-<script src="/shopify-edit-approvals.js?v=20261125-msa"></script>
+<script src="/shopify-edit-approvals.js?v=20261127-freeship"></script>
 <link rel="stylesheet" href="/bosta-pickup.css?v=20261024-add-orders">
 <link rel="stylesheet" href="/customer-service-layout.css">
 <script src="/bosta-pickup.js?v=20261114-join-pickup"></script>
@@ -123061,8 +123394,9 @@ function _spRenderHistoryTab() {
 <script src="/roles-permissions.js?v=20261126-shopify-reports"></script>
 <script src="/announcements.js?v=4"></script>
 <script src="/password-policy.js?v=1"></script>
-<script src="/user-sessions.js?v=7"></script>
-<script src="/auth-security.js?v=17"></script>
+<script src="/user-sessions.js?v=9"></script>
+<script src="/auth-security.js?v=18"></script>
+<script src="/account-email.js?v=1"></script>
 <script src="/api-access.js?v=7"></script>
 <script src="/assistant.js?v=28"></script>
 <script src="/onboarding.js?v=1"></script>
@@ -123073,7 +123407,7 @@ function _spRenderHistoryTab() {
 <script src="/bundle-analytics.js?v=2"></script>
 <script src="/promotions.js?v=6"></script>
 <script src="/push-navigation.js"></script>
-<script src="/notification-feed.js?v=20261122-shopify-postpone"></script>
+<script src="/notification-feed.js?v=20261128-security-notice"></script>
 <link rel="stylesheet" href="/followup-reminders.css?v=20261027-1">
 <script src="/followup-reminders.js?v=20261109-phase8"></script>
 <script src="/order-audit-financials.js?v=20261020-2"></script>

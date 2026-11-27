@@ -86,14 +86,18 @@ export function normalizeEmail(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
-/** «a•••@gmail.com» — enough to recognise the address, not enough to learn it. */
+/**
+ * «mf*****s@gmail.com» — enough to recognise the address, not enough to learn it (owner, Nov 27: part of
+ * it, the rest stars). ⚠ Same format as `maskMail` in auth-security.js (the Settings card).
+ */
 export function maskEmail(value: unknown): string {
   const v = normalizeEmail(value);
   const at = v.indexOf('@');
   if (at < 1) return '';
   const name = v.slice(0, at);
-  const shown = name.length <= 2 ? name[0] : name.slice(0, 2);
-  return `${shown}•••@${v.slice(at + 1)}`;
+  const shown = name.length <= 3 ? name[0] : name.slice(0, 2);
+  const tail = name.length > 3 ? name.slice(-1) : '';
+  return `${shown}*****${tail}@${v.slice(at + 1)}`;
 }
 
 /** Who must pass a second step: admins always; others only when 2FA is on and they set it up. */

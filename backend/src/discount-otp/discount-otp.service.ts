@@ -10,6 +10,8 @@ import { MentionsService } from '../mentions/mentions.service';
 import { UsersService } from '../users/users.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { PresenceGateway } from '../auth/presence.gateway';
+import { SecurityMailerService, securityMailBody } from '../auth/security-mailer.service';
+import { otpMailContent } from './otp-mail.util';
 
 const MAX_OTP_ATTEMPTS = 4;
 
@@ -98,6 +100,7 @@ interface ExportExcelOtpArgs {
 @Injectable()
 export class DiscountOtpService {
   @Optional() @Inject(NotificationsService) private readonly notifications?: NotificationsService;
+  @Optional() @Inject(SecurityMailerService) private readonly mailer?: SecurityMailerService;
   private async createOtpDocument(values: any): Promise<DiscountOtpDocument> {
     const doc = await this.otpModel.create(values);
     try {
@@ -106,7 +109,33 @@ export class DiscountOtpService {
       await this.notifications?.enqueue('otp', 'otp:' + doc._id, doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, details);
       await this.notifications?.enqueue('approval', 'approval:otp:' + doc._id + ':pending', doc.txRef || String(doc._id), 'otp:' + doc._id, undefined, undefined, { ...details, status: 'pending' });
     } catch { /* The request has already been committed. */ }
+    void this.emailOtpCopy(doc);
     return doc;
+  }
+
+  /**
+   * A copy of the code to every admin's verified security email (Nov 27, 2026). Background only:
+   * the request never waits for SMTP, and a failed send changes nothing — the code is already in
+   * the app. The requester is never sent their own code.
+   */
+  private async emailOtpCopy(doc: DiscountOtpDocument): Promise<void> {
+    try {
+      if (!this.mailer?.configured()) return;
+      const content = otpMailContent(doc.toObject ? doc.toObject() : doc);
+      if (!content) return;
+      const users = await this.usersService.findAll();
+      const to = new Set<string>();
+      for (const u of users as any[]) {
+        if (u.role !== 'admin' || u.isActive === false) continue;
+        if (doc.requestedById && String(u._id) === String(doc.requestedById)) continue;
+        if (!u.securityEmail || !u.securityEmailVerifiedAt) continue;
+        to.add(String(u.securityEmail).trim().toLowerCase());
+      }
+      const body = securityMailBody({ title: content.title, code: content.code, lines: content.lines, footer: 'SOULIA — رسالة آلية من نظام الموافقات، يُرجى عدم الرد عليها.' });
+      for (const addr of to) {
+        await this.mailer.sendQuietly({ to: addr, subject: content.subject, text: body.text, html: body.html });
+      }
+    } catch { /* an email copy must never affect the code */ }
   }
   constructor(
     @InjectModel(DiscountOtp.name)

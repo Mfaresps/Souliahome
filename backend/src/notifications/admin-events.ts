@@ -33,6 +33,7 @@ export const ACTIONS: Record<string, [string, string]> = {
   system_pin_changed: ['تغيير الرقم السري للنظام', 'System PIN changed'],
   login_source_locked: ['إيقاف محاولات دخول مشبوهة', 'Suspicious sign-ins stopped'], login_attack: ['محاولات تخمين على حساب', 'Account under guessing attack'],
   'login-alert': ['محاولات دخول فاشلة على حسابك', 'Failed sign-in attempts on your account'],
+  'login-lock': ['إلغاء الحظر متاح من صفحة المستخدمين', 'Can be unblocked from the Users page'],
 };
 export function actionLabel(key: string | undefined, language: 'ar' | 'en') {
   return (ACTIONS[key || ''] || ['إجراء بالنظام', 'System action'])[language === 'en' ? 1 : 0];

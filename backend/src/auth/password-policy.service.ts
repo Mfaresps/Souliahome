@@ -9,7 +9,7 @@ import { SecurityAuditService } from '../security-audit/security-audit.service';
 import type { ClientContext } from '../shared/client-context.util';
 import { AuthChallengeService } from './auth-challenge.service';
 import { TrustedDevicesService } from './trusted-devices.service';
-import { SecurityMailerService, securityMailBody } from './security-mailer.service';
+import { MAIL_SUBJECT, SecurityMailerService, securityMailBody } from './security-mailer.service';
 import { PresenceGateway } from './presence.gateway';
 import { UserSessionsService } from './user-sessions.service';
 import { SignInVerificationService } from './sign-in-verification.service';
@@ -206,9 +206,9 @@ export class PasswordPolicyService {
       ipAddress: client?.ipAddress, client,
     }).catch(() => undefined);
     const to = this.emailOf(target);
-    if (to) this.mailer.sendQuietly({ to, subject: 'SOULIA — تم تغيير كلمة المرور', ...securityMailBody({
-      title: 'تم تغيير كلمة مرور حسابك',
-      lines: [`الحساب: ${target.username}`, `بواسطة: ${actor.name}`, `الجهاز: ${where}`, `الوقت: ${cairo(new Date())}`, 'أُنهيت كل الجلسات المفتوحة وأُلغيت الأجهزة الموثوقة.', 'إذا لم تكن أنت، تواصل مع مدير النظام فورًا.'],
+    if (to) this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.passwordChanged, ...securityMailBody({
+      title: 'تم تغيير كلمة المرور',
+      lines: [`الحساب: ${target.username}`, `بواسطة: ${actor.name} · ${cairo(new Date())}`, 'أُنهيت جميع الجلسات وأُلغيت الأجهزة الموثوقة.', 'إذا لم تكن أنت، فتواصل مع مدير النظام فورًا.'],
     }) });
   }
 }

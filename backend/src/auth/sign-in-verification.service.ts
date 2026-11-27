@@ -14,7 +14,7 @@ import type { ClientContext } from '../shared/client-context.util';
 import { TotpService } from './totp.service';
 import { AuthChallengeService, ChallengeRow, ChallengeState } from './auth-challenge.service';
 import { TrustedDevicesService } from './trusted-devices.service';
-import { SecurityMailerService, securityMailBody } from './security-mailer.service';
+import { MAIL_SUBJECT, SecurityMailerService, securityMailBody } from './security-mailer.service';
 import { TokenIssuerService } from './token-issuer.service';
 import { PresenceGateway } from './presence.gateway';
 import { UserSessionsService } from './user-sessions.service';
@@ -183,14 +183,14 @@ export class SignInVerificationService {
     const to = this.emailOf(user);
     if (to) {
       const body = securityMailBody({
-        title: 'تنبيه أمان: محاولات تحقق خاطئة على حسابك',
+        title: MAIL_SUBJECT.wrongCodes,
         lines: [
-          `أُدخلت ${CHALLENGE_MAX_ATTEMPTS} رموز تحقق خاطئة على حساب ${row.username} بعد كتابة كلمة المرور الصحيحة.`,
-          `الجهاز: ${deviceLabel(row.client)} · IP ${row.client.ipAddress || 'غير معروف'} · ${cairo(new Date())}`,
-          'إذا لم تكن أنت، فكلمة المرور معروفة لشخص آخر: غيّرها فورًا.',
+          `أُدخلت ${CHALLENGE_MAX_ATTEMPTS} رموز تحقق غير صحيحة على حساب ${row.username} بعد إدخال كلمة المرور الصحيحة.`,
+          `الجهاز: ${deviceLabel(row.client)} · ${row.client.ipAddress || 'عنوان غير معروف'}`,
+          'إذا لم تكن أنت، فغيّر كلمة المرور فورًا.',
         ],
       });
-      this.mailer.sendQuietly({ to, subject: 'SOULIA — تنبيه أمان على حسابك', ...body });
+      this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.wrongCodes, ...body });
     }
   }
 
@@ -262,9 +262,9 @@ export class SignInVerificationService {
     } catch { /* best effort */ }
     const to = this.emailOf(user);
     if (to) {
-      this.mailer.sendQuietly({ to, subject: 'SOULIA — تسجيل دخول من جهاز جديد', ...securityMailBody({
-        title: 'تسجيل دخول جديد إلى حسابك',
-        lines: [`الحساب: ${user.username}`, `الجهاز: ${where}`, `الوقت: ${cairo(new Date())}`, `طريقة التحقق: ${how}`, 'إذا لم تكن أنت، غيّر كلمة المرور فورًا من «نسيت كلمة المرور».'],
+      this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.newDevice, ...securityMailBody({
+        title: MAIL_SUBJECT.newDevice,
+        lines: [`الحساب: ${user.username}`, `الجهاز: ${where}`, `الوقت: ${cairo(new Date())}`, 'إذا لم تكن أنت، فغيّر كلمة المرور فورًا.'],
       }) });
     }
   }
@@ -291,16 +291,15 @@ export class SignInVerificationService {
     const stepUp = row.purpose === 'stepup';
     const what = stepUp ? (STEP_UP_LABEL[row.action as StepUpAction] || 'تغيير إعدادات الأمان') : '';
     try {
-      await this.mailer.send({ to, subject: stepUp ? `SOULIA — رمز تأكيد ${what}: ${code}` : reset ? `SOULIA — رمز استعادة كلمة المرور: ${code}` : `SOULIA — رمز تسجيل الدخول: ${code}`, ...securityMailBody({
-        title: stepUp ? `رمز تأكيد ${what}` : reset ? 'رمز استعادة كلمة المرور' : 'رمز تسجيل الدخول من جهاز جديد',
+      const subject = stepUp ? MAIL_SUBJECT.stepUpCode : reset ? MAIL_SUBJECT.resetCode : MAIL_SUBJECT.signInCode;
+      await this.mailer.send({ to, subject, ...securityMailBody({
+        title: subject,
         code,
         lines: [
           `الحساب: ${row.username}`,
-          `الجهاز: ${deviceLabel(row.client)} · IP ${row.client.ipAddress || 'غير معروف'}`,
-          `الوقت: ${cairo(now)}`,
-          `الرمز صالح ${Math.round(EMAIL_CODE_TTL_MS / 60000)} دقائق ويُستخدم مرة واحدة. لا تشاركه مع أي شخص.`,
-          stepUp ? `طُلب هذا الرمز لـ${what} من حسابك. إذا لم تطلبه، فغيّر كلمة المرور فورًا.`
-            : reset ? 'إذا لم تطلب استعادة كلمة المرور، تجاهل هذه الرسالة.' : 'إذا لم تحاول تسجيل الدخول، فكلمة مرورك معروفة لشخص آخر: غيّرها فورًا.',
+          stepUp ? `الغرض: ${what}` : `الجهاز: ${deviceLabel(row.client)}`,
+          `الرمز صالح لمدة ${Math.round(EMAIL_CODE_TTL_MS / 60000)} دقائق ويُستخدم مرة واحدة، فلا تشاركه مع أي شخص.`,
+          reset ? 'إذا لم تطلب استعادة كلمة المرور، فتجاهل هذه الرسالة.' : 'إذا لم تطلب هذا الرمز، فغيّر كلمة المرور فورًا.',
         ],
       }) });
     } catch {
@@ -388,7 +387,9 @@ export class SignInVerificationService {
    * The password is still needed afterwards.
    */
   async unlockStart(username: string, client: ClientContext | undefined, ip: string) {
-    const refuse = 'لا تتوفر وسيلة لفك القفل من هنا. انتظر انتهاء المدة أو تواصل مع مدير النظام.';
+    // ⚠ The same answer for an unknown name, a disabled account and an account with no second
+    // factor, so this page reveals no accounts. A real locked account asks the admins to lift it.
+    const refuse = 'أُرسل طلب إلى مدير النظام لإلغاء القفل. يمكنك المحاولة مرة أخرى بعد موافقته أو بعد انتهاء المدة.';
     const user: any = username ? await this.users.findByUsername(String(username).trim()) : null;
     if (!user || user.isActive === false) throw new BadRequestException({ message: refuse, code: 'UNLOCK_UNAVAILABLE' });
     const totp = !!user.totpEnabled && !!user.totpSecret;
@@ -398,7 +399,10 @@ export class SignInVerificationService {
     if (totp) any.push('totp');
     if (email) any.push('email');
     if (backup) any.push('backup');
-    if (!any.length) throw new BadRequestException({ message: refuse, code: 'UNLOCK_UNAVAILABLE' });
+    if (!any.length) {
+      await this.askAdminsToUnlock(user, client, ip).catch(() => undefined);
+      throw new BadRequestException({ message: refuse, code: 'UNLOCK_UNAVAILABLE' });
+    }
     const { token } = await this.challenges.create({ user, purpose: 'unlock', requirement: [any], client: { ...(client || {} as ClientContext), ipAddress: ip } });
     return {
       challenge: token,
@@ -440,29 +444,38 @@ export class SignInVerificationService {
     }).catch(() => undefined);
     const alert = await this.guard.createAlert({ userId, userKey: info.userKey, sourceId: info.sourceId, ip: info.ip, device: deviceLabel(info.client), kind: info.hard ? 'blocked' : 'locked' });
     if (!alert.created) return;
+    // Every other admin is told in the app (with «إلغاء القفل الآن») — a locked employee cannot
+    // read their own alert, and email alone reaches only admins with a verified address.
+    await this.notifyAdminsOfLock(user, {
+      eventId: `login-lock:${alert.id}`,
+      text: `توقفت محاولات الدخول إلى حساب ${user.name || user.username} (@${user.username}) من ${where} بعد كلمات مرور خاطئة متكررة. ${what}. إذا كانت المحاولات من صاحب الحساب نفسه، يمكنك إلغاء الحظر الآن دون انتظار انتهاء المدة.`,
+    });
     this.presence.emitToUser(userId, 'auth:login-alert', { id: alert.id });
     try {
       await this.notifications?.enqueue('security', `login-alert:${alert.id}`, '', `login-alert:${alert.id}`, userId, undefined, {
         actionKey: 'login-alert', actorName: deviceLabel(info.client), status: 'pending',
       });
     } catch { /* best effort */ }
-    const text = `محاولات دخول فاشلة متكررة على حسابك من ${where}. ${what}. حسابك لم يُقفل، ويمكنك الدخول من أجهزتك الموثوقة. إذا لم تكن أنت، غيّر كلمة المرور.`;
+    // ⚠ Wire format parsed by `_secSysNotice` (index.html) — keep «… على حسابك من <where>. <what>.» intact.
+    // Staff never change their own password: they are told to tell an admin.
+    const staffOwner = user.role !== 'admin';
+    const ownerTip = staffOwner ? 'إذا لم تكن أنت، أبلغ مدير النظام.' : 'إذا لم تكن أنت، غيّر كلمة المرور.';
+    const text = `محاولات دخول فاشلة متكررة على حسابك من ${where}. ${what}. ${ownerTip}`;
     try {
       await this.mentions.createMany([{ targetUserId: userId, targetUsername: user.username, targetName: user.name, fromUserId: 'system', fromName: 'نظام الأمان', txId: 'security', commentId: 0, commentText: text, read: false } as any]);
     } catch { /* best effort */ }
     const when = cairo(new Date());
     const body = (forOwner: boolean) => securityMailBody({
-      title: forOwner ? 'محاولات دخول فاشلة على حسابك' : `محاولات دخول فاشلة على حساب ${user.username}`,
+      title: MAIL_SUBJECT.failedLogins,
       lines: [
         `الحساب: ${user.username}`,
-        `المصدر: ${where}`,
-        `الوقت: ${when}`,
+        `المصدر: ${where} · ${when}`,
         `الإجراء: ${what}.`,
-        forOwner ? 'حسابك لم يُقفل، ويمكنك الدخول من أجهزتك الموثوقة. إذا لم تكن أنت، غيّر كلمة المرور من «نسيت كلمة المرور».' : 'الحساب نفسه لم يُقفل. يمكن إلغاء الحظر من صفحة المستخدمين ← الحسابات المعطّلة والموقوفة.',
+        forOwner ? `الحساب لم يُقفل. ${ownerTip}` : 'الحساب لم يُقفل، ويمكن إلغاء الحظر من صفحة المستخدمين.',
       ],
     });
     const owner = this.emailOf(user);
-    if (owner) this.mailer.sendQuietly({ to: owner, subject: 'SOULIA — محاولات دخول فاشلة على حسابك', ...body(true) });
+    if (owner) this.mailer.sendQuietly({ to: owner, subject: MAIL_SUBJECT.failedLogins, ...body(true) });
     try {
       const admins: any[] = await this.users.findAdmins();
       const sent = new Set(owner ? [owner] : []);
@@ -470,9 +483,51 @@ export class SignInVerificationService {
         const to = this.emailOf(a);
         if (!to || sent.has(to)) continue;
         sent.add(to);
-        this.mailer.sendQuietly({ to, subject: `SOULIA — محاولات دخول فاشلة على حساب ${user.username}`, ...body(false) });
+        this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.failedLogins, ...body(false) });
       }
     } catch { /* best effort */ }
+  }
+
+  /**
+   * In-app notice + push to every active admin except the locked account itself. The mention's
+   * `txId: 'login-lock:<userId>'` opens the lift dialog (index.html onMentionNotifClick).
+   */
+  private async notifyAdminsOfLock(user: any, info: { eventId: string; text: string }) {
+    const userId = String(user._id);
+    let admins: any[] = [];
+    try { admins = (await this.users.findAdmins()).filter((a: any) => String(a._id) !== userId && a.isActive !== false); } catch { return; }
+    if (!admins.length) return;
+    try {
+      await this.mentions.createMany(admins.map((a) => ({
+        targetUserId: String(a._id), targetUsername: String(a.username || '').toLowerCase(), targetName: a.name,
+        fromUserId: 'system', fromName: 'نظام الأمان', txId: 'login-lock:' + userId, txRef: '', commentId: 0,
+        commentText: info.text, read: false,
+      } as any)));
+    } catch { /* best effort */ }
+    try {
+      await this.notifications?.enqueue('security', info.eventId, '', `login-lock:${userId}`, admins.map((a) => String(a._id)), undefined, {
+        actionKey: 'login-lock', actorName: user.name || user.username,
+      });
+    } catch { /* best effort */ }
+  }
+
+  /**
+   * «فتح القفل» on the sign-in page for an account with no second factor (staff): the admins are
+   * asked to lift it. At most once per 10 minutes per account, and only while a lock is running.
+   */
+  private readonly unlockAsked = new Map<string, number>();
+  private async askAdminsToUnlock(user: any, client: ClientContext | undefined, ip: string) {
+    const id = String(user._id);
+    const now = Date.now();
+    if (now - (this.unlockAsked.get(id) || 0) < 10 * 60_000) return;
+    const active = await this.guard.activeForUser(userKeyOf(user.username));
+    if (!active.length) return;
+    this.unlockAsked.set(id, now);
+    const where = `${deviceLabel(client)} · IP ${ip || 'غير معروف'}`;
+    await this.notifyAdminsOfLock(user, {
+      eventId: `login-lock-request:${id}:${now}`,
+      text: `طلب ${user.name || user.username} (@${user.username}) إلغاء قفل تسجيل الدخول من صفحة تسجيل الدخول (${where} · ${cairo(new Date())}). يمكنك إلغاء الحظر الآن إذا تأكدت أنه صاحب الحساب.`,
+    });
   }
 
   async pendingLoginAlerts(actor: Actor) {
@@ -571,9 +626,9 @@ export class SignInVerificationService {
     this.audit.log({ userId: row.userId, username: row.username, violationType: 'password_reset' as any, action: 'تمت استعادة كلمة المرور وإنهاء كل الجلسات والأجهزة الموثوقة', detail: deviceLabel(row.client), ipAddress: client?.ipAddress || row.client.ipAddress, client: client || row.client }).catch(() => undefined);
     const user = await this.users.findById(row.userId);
     const to = this.emailOf(user);
-    if (to) this.mailer.sendQuietly({ to, subject: 'SOULIA — تم تغيير كلمة المرور', ...securityMailBody({
-      title: 'تم تغيير كلمة مرور حسابك',
-      lines: [`الحساب: ${row.username}`, `الجهاز: ${deviceLabel(client || row.client)} · IP ${(client || row.client).ipAddress || 'غير معروف'}`, `الوقت: ${cairo(new Date())}`, 'أُنهيت كل الجلسات المفتوحة وأُلغيت الأجهزة الموثوقة.', 'إذا لم تكن أنت، تواصل مع مدير النظام فورًا.'],
+    if (to) this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.passwordChanged, ...securityMailBody({
+      title: 'تم تغيير كلمة المرور',
+      lines: [`الحساب: ${row.username}`, `الجهاز: ${deviceLabel(client || row.client)} · ${cairo(new Date())}`, 'أُنهيت جميع الجلسات وأُلغيت الأجهزة الموثوقة.', 'إذا لم تكن أنت، فتواصل مع مدير النظام فورًا.'],
     }) });
     return { success: true };
   }
@@ -684,9 +739,9 @@ export class SignInVerificationService {
       await this.mentions.createMany(admins.map((a) => ({ targetUserId: String(a._id), targetUsername: a.username, targetName: a.name, fromUserId: 'system', fromName: 'نظام الأمان', txId: 'security', commentId: 0, commentText: text, read: false } as any)));
       for (const a of admins) {
         const to = this.emailOf(a);
-        if (to) this.mailer.sendQuietly({ to, subject: 'SOULIA — تم تغيير الرقم السري للنظام', ...securityMailBody({
+        if (to) this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.systemPinChanged, ...securityMailBody({
           title: 'تم تغيير الرقم السري للنظام',
-          lines: [`بواسطة: ${actor.name}`, `الجهاز: ${deviceLabel(client)} · IP ${client?.ipAddress || 'غير معروف'}`, `الوقت: ${when}`, 'إذا لم يكن هذا التغيير متوقعًا، فراجع سجل الأمان فورًا.'],
+          lines: [`بواسطة: ${actor.name}`, `الوقت: ${when}`, 'إذا لم يكن هذا التغيير متوقعًا، فراجع سجل الأمان.'],
         }) });
       }
     } catch { /* the change is saved; notices are best effort */ }
@@ -729,10 +784,10 @@ export class SignInVerificationService {
       expiresAt: new Date(now.getTime() + EMAIL_CODE_TTL_MS), attempts: 0, sentAt: now,
     });
     try {
-      await this.mailer.send({ to: next, subject: `SOULIA — رمز تأكيد بريد التحقق: ${code}`, ...securityMailBody({
-        title: 'تأكيد بريد التحقق لحسابك',
+      await this.mailer.send({ to: next, subject: MAIL_SUBJECT.emailCode, ...securityMailBody({
+        title: MAIL_SUBJECT.emailCode,
         code,
-        lines: [`الحساب: ${user.username}`, 'أدخل هذا الرمز في الإعدادات ← الأمان لتأكيد أن هذا البريد لك.', 'بعد التأكيد تصلك عليه رموز تسجيل الدخول من الأجهزة الجديدة ورموز استعادة كلمة المرور.', 'إذا لم تطلب ذلك، تجاهل هذه الرسالة.'],
+        lines: [`الحساب: ${user.username}`, `أدخل الرمز في الإعدادات ← الأمان. صالح لمدة ${Math.round(EMAIL_CODE_TTL_MS / 60000)} دقائق.`, 'إذا لم تطلب ذلك، فتجاهل هذه الرسالة.'],
       }) });
     } catch {
       await this.users.setSecurityEmailPending(actor.id, null);
@@ -765,9 +820,9 @@ export class SignInVerificationService {
     if (!ok) throw new BadRequestException('تغيّر الطلب أثناء التأكيد — أعد المحاولة');
     this.audit.log({ userId: actor.id, username: user.username, violationType: 'two_factor_changed' as any, action: previous ? 'تغيير بريد التحقق' : 'إضافة بريد التحقق', detail: maskEmail(pending.email) }).catch(() => undefined);
     if (previous && previous !== pending.email) {
-      this.mailer.sendQuietly({ to: previous, subject: 'SOULIA — تغيّر بريد التحقق لحسابك', ...securityMailBody({
-        title: 'تغيّر بريد التحقق لحسابك',
-        lines: [`الحساب: ${user.username}`, `البريد الجديد: ${maskEmail(pending.email)}`, `الوقت: ${cairo(new Date())}`, 'لن تصل رموز التحقق إلى هذا العنوان بعد الآن. إذا لم تكن أنت، تواصل مع مدير النظام فورًا.'],
+      this.mailer.sendQuietly({ to: previous, subject: MAIL_SUBJECT.emailChanged, ...securityMailBody({
+        title: 'تم تغيير بريد التحقق',
+        lines: [`الحساب: ${user.username}`, `البريد الجديد: ${maskEmail(pending.email)}`, 'إذا لم تكن أنت، فتواصل مع مدير النظام فورًا.'],
       }) });
     }
     return { success: true, securityEmail: pending.email };
@@ -780,8 +835,8 @@ export class SignInVerificationService {
     if (await this.hasStepUpFactor(user)) await this.consumeStepUp(stepUp, actor, 'security-email');
     await this.users.clearSecurityEmail(actor.id);
     this.audit.log({ userId: actor.id, username: user.username, violationType: 'two_factor_changed' as any, action: 'حذف بريد التحقق' }).catch(() => undefined);
-    if (previous) this.mailer.sendQuietly({ to: previous, subject: 'SOULIA — حُذف بريد التحقق من حسابك', ...securityMailBody({
-      title: 'حُذف بريد التحقق من حسابك', lines: [`الحساب: ${user.username}`, `الوقت: ${cairo(new Date())}`, 'إذا لم تكن أنت، تواصل مع مدير النظام فورًا.'],
+    if (previous) this.mailer.sendQuietly({ to: previous, subject: MAIL_SUBJECT.emailRemoved, ...securityMailBody({
+      title: 'تم حذف بريد التحقق', lines: [`الحساب: ${user.username}`, 'إذا لم تكن أنت، فتواصل مع مدير النظام فورًا.'],
     }) });
     return { success: true };
   }
@@ -807,7 +862,7 @@ export class SignInVerificationService {
     await this.devices.revokeAll(actor.id, { id: actor.id, name: actor.name }, 'totp-disabled', current?._id);
     this.audit.log({ userId: actor.id, username: user.username, violationType: 'two_factor_changed' as any, action: 'تعطيل Google Authenticator' }).catch(() => undefined);
     const to = this.emailOf(user);
-    if (to) this.mailer.sendQuietly({ to, subject: 'SOULIA — عُطّل Google Authenticator على حسابك', ...securityMailBody({ title: 'عُطّل Google Authenticator على حسابك', lines: [`الحساب: ${user.username}`, `الوقت: ${cairo(new Date())}`, 'إذا لم تكن أنت، غيّر كلمة المرور فورًا.'] }) });
+    if (to) this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.totpDisabled, ...securityMailBody({ title: 'تم إيقاف تطبيق المصادقة', lines: [`الحساب: ${user.username}`, 'إذا لم تكن أنت، فغيّر كلمة المرور فورًا.'] }) });
     return { success: true };
   }
 

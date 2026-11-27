@@ -231,8 +231,20 @@ body.dark-mode .sv-qr img{background:#fff}
 .svs-state.is-on{color:#15803d}
 .svs-state.is-off{color:var(--muted,#6b8c78)}
 .svs-state.is-warn{color:#b54708}
-.svs-card .sv-btn.is-small{min-height:32px;padding:0 14px;border-width:1px;border-radius:8px;font-size:.78rem;font-weight:500}
-.svs-card .sv-btn.is-small.is-primary{color:#fff}
+/* Row actions are quiet text links (owner, Nov 27): small text, underlined; red for removing / turning off,
+   green for the one «إعداد» call to action. The email form's own Confirm / Cancel stay buttons. */
+.svs-card .sv-btn.is-small{min-height:0;height:auto;padding:2px 0;border:0;border-radius:0;background:none!important;box-shadow:none;
+  font-size:.78rem;font-weight:500;color:var(--text,#1f2933);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;
+  text-decoration-color:color-mix(in srgb,currentColor 40%,transparent)}
+.svs-card .sv-btn.is-small:hover:not(:disabled){text-decoration-color:currentColor}
+.svs-card .sv-btn.is-small:focus-visible{outline:2px solid color-mix(in srgb,var(--accent,#1f5135) 50%,transparent);outline-offset:2px;border-radius:3px}
+.svs-card .sv-btn.is-small:disabled{opacity:.5;cursor:not-allowed}
+.svs-card .sv-btn.is-small.is-danger-ghost{color:#b42318}
+.svs-card .sv-btn.is-small.is-primary{color:var(--accent,#1f5135);font-weight:600}
+body.dark-mode .svs-card .sv-btn.is-small{color:var(--text,#e5efe8)}
+body.dark-mode .svs-card .sv-btn.is-small.is-danger-ghost{color:#fda29b}
+body.dark-mode .svs-card .sv-btn.is-small.is-primary{color:#86efac}
+.svs-row-act{gap:14px}
 .svs-warn{margin-top:6px;font-size:.76rem;color:#b54708}
 .svs-inline{margin:10px 0 0}
 .svs-count{font-weight:600}
@@ -252,7 +264,7 @@ body.dark-mode .svs-state.is-warn,body.dark-mode .svs-warn{color:#fcd34d}
 @media (max-width:640px){
   .svs-row{flex-wrap:wrap;align-items:flex-start;padding:12px 14px}
   .svs-row-main{flex:1 1 calc(100% - 52px)}
-  .svs-row-end{width:100%;justify-content:space-between;padding-inline-start:50px}
+  .svs-row-end{width:100%;box-sizing:border-box;justify-content:space-between;padding-inline-start:50px}
   .svs-state{min-width:0;justify-content:flex-start}
   .svs-status,.svs-group,.svs-group-sub,.svs-empty{padding-inline:14px}
   .svs-devs{padding:0 14px}

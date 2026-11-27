@@ -111,6 +111,7 @@
     if (y) return `Sign-in attempts from this device are paused. Try again in ${y[1]} minutes.`;
     if (/عدد كبير من المحاولات/.test(m)) return 'Too many attempts from this device. Try again in a minute.';
     if (/يلزم التحقق من أنك لست برنامجًا آليًا/.test(m)) return 'Please confirm you’re not a robot.';
+    if (/أُرسل طلب إلى مدير النظام لإلغاء القفل/.test(m)) return 'A request to lift the lock was sent to your administrator. Try again once they approve it or after the lock ends.';
     if (/لا تتوفر وسيلة لفك القفل/.test(m)) return 'No unlock method is available here. Wait for the lock to end or contact your administrator.';
     if (/اسم المستخدم أو كلمة المرور غير صحيحة/.test(m)) return 'Incorrect username or password.';
     let x = /كلمة المرور غير صحيحة.*?(\d+)/.exec(m);
@@ -1016,6 +1017,17 @@
 
   // ── Settings ← الأمان: my account security ─────────────────────────────────
   let card = null;
+  /** «mf*****s@gmail.com» — the card shows only part of the security email (owner, Nov 27).
+   *  ⚠ Same format as maskEmail in backend auth-security.util.ts (the verification dialogs). */
+  function maskMail(v) {
+    const s = String(v || ''), at = s.lastIndexOf('@');
+    if (at < 1) return s;
+    const name = s.slice(0, at);
+    const keep = name.length <= 3 ? name.slice(0, 1) : name.slice(0, 2);
+    const tail = name.length > 3 ? name.slice(-1) : '';
+    return keep + '*****' + tail + s.slice(at);
+  }
+
   async function renderSecurityCard(hostId, opts = {}) {
     const host = document.getElementById(hostId || 'auth-security-root');
     if (!host) return;
@@ -1075,7 +1087,7 @@
         `<span class="svs-state ${c.backupCodesLeft > 2 ? 'is-on' : 'is-warn'}">${E(T(`المتبقي ${c.backupCodesLeft}`, `${c.backupCodesLeft} left`))}</span>`,
         `<button type="button" class="sv-btn is-small" data-a="backup">${E(T('إنشاء رموز جديدة', 'Generate new codes'))}</button>`) : ''}
       ${isAdminAcct ? row(ICON.mail, E(T('بريد الأمان', 'Security email')),
-        (c.securityEmail ? `<bdi dir="ltr" class="sv-mono">${E(c.securityEmail)}</bdi>` : E(T('تُرسَل إليه رموز التحقق ورموز استعادة كلمة المرور وتنبيهات الأمان.', 'Receives verification codes, password reset codes and security alerts.'))),
+        (c.securityEmail ? `<bdi dir="ltr" class="sv-mono">${E(maskMail(c.securityEmail))}</bdi>` : E(T('تُرسَل إليه رموز التحقق ورموز استعادة كلمة المرور وتنبيهات الأمان.', 'Receives verification codes, password reset codes and security alerts.'))),
         state(!!c.securityEmail, T('مؤكَّد', 'Verified'), T('غير مُضاف', 'Not added')),
         `<button type="button" class="sv-btn is-small" data-a="email">${E(c.securityEmail ? T('تغيير', 'Change') : T('إضافة', 'Add'))}</button>${c.securityEmail ? `<button type="button" class="sv-btn is-small is-danger-ghost" data-a="email-remove">${E(T('حذف', 'Remove'))}</button>` : ''}`,
         (c.mailConfigured ? '' : `<div class="svs-warn">${E(T('خدمة إرسال البريد غير مهيّأة على الخادم، ولن تُرسَل الرموز حتى تُهيّأ.', 'Email sending is not configured on the server; codes cannot be sent until it is.'))}</div>`)

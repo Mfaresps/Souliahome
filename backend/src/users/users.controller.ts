@@ -23,6 +23,7 @@ import { Transaction, TransactionDocument } from '../transactions/schemas/transa
 import { PresenceGateway } from '../auth/presence.gateway';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { passwordProblem } from '../auth/auth-security.util';
+import { AccountEmailService } from '../auth/account-email.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -33,6 +34,7 @@ export class UsersController {
     private readonly presenceGateway: PresenceGateway,
     private readonly auditService: SecurityAuditService,
     private readonly accessRoles: AccessRolesService,
+    private readonly accountEmail: AccountEmailService,
   ) {}
 
   @Get('me/stats')
@@ -97,7 +99,7 @@ export class UsersController {
 
   @Roles('admin')
   @Post()
-  async create(@Body() dto: CreateUserDto) {
+  async create(@Body() dto: CreateUserDto, @Req() req: { user: { userId?: string; sub?: string; name?: string; username?: string; role?: string } }) {
     // Access comes from a role only: the account is created with no grants of its own and the
     // chosen role is assigned in the same request. A role that does not exist fails BEFORE the
     // account is written.
@@ -108,7 +110,9 @@ export class UsersController {
     if (pwProblem) throw new BadRequestException(pwProblem);
     if (roleId === 'super-admin') throw new ForbiddenException('Super Admin cannot be assigned');
     if (roleId !== 'admin') await this.accessRoles.findRolePublic(roleId);
-    const { role: _role, perms: _perms, roleId: _roleId, ...profile } = dto as CreateUserDto & Record<string, unknown>;
+    // ⚠ The email is never written straight onto the account: it becomes a request whose code goes to
+    // that address, and the employee confirms it at sign-in (AccountEmailService).
+    const { role: _role, perms: _perms, roleId: _roleId, email: inviteEmail, ...profile } = dto as CreateUserDto & Record<string, unknown>;
     const user = await this.usersService.createUser({ ...(profile as unknown as CreateUserDto), role: 'viewer', perms: [], onboardingPending: true } as any);
     try {
       await this.accessRoles.assign(roleId, String(user._id));
@@ -116,9 +120,15 @@ export class UsersController {
       await this.usersService.removeUser(String(user._id)).catch(() => undefined);
       throw error;
     }
-    return this.usersService.findAllForAdmin().then((users) =>
+    let emailInvite: { sent: boolean; sentTo?: string; message?: string } = { sent: false };
+    if (roleId !== 'admin' && String(inviteEmail || '').trim()) {
+      const admin = { id: String(req.user?.userId || req.user?.sub || ''), name: String(req.user?.name || req.user?.username || ''), role: String(req.user?.role || '') };
+      emailInvite = await this.accountEmail.inviteNewAccount(admin, String(user._id), String(inviteEmail));
+    }
+    const created: any = await this.usersService.findAllForAdmin().then((users) =>
       users.find((u) => u._id.toString() === user._id.toString()),
     );
+    return { ...(created?.toObject ? created.toObject() : created), emailInvite };
   }
 
   @Roles('admin')
