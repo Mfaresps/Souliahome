@@ -9,5 +9,6 @@ import { InvoiceImagesService } from './invoice-images.service';
   imports: [forwardRef(() => AuthModule), SettingsModule],
   controllers: [InvoiceImagesController],
   providers: [InvoiceImagesService],
+  exports: [InvoiceImagesService],
 })
 export class InvoiceImagesModule {}

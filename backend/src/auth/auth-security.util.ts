@@ -100,9 +100,23 @@ export function maskEmail(value: unknown): string {
   return `${shown}*****${tail}@${v.slice(at + 1)}`;
 }
 
-/** Who must pass a second step: admins always; others only when 2FA is on and they set it up. */
-export function needsSecondStep(user: { role?: string; totpEnabled?: boolean }, global2fa: boolean): boolean {
+/**
+ * Who must pass a second step on a device that is not trusted:
+ *  - admins always;
+ *  - an employee with a CONFIRMED account email, whenever mail can be sent (owner, Nov 28, 2026 — a right
+ *    password on a new device is not enough: a code goes to that email, and «الوثوق بهذا الجهاز» skips it
+ *    for 30 days). Without mail configured the code cannot arrive, so it is not asked (no lock-out);
+ *  - an employee who set up Google Authenticator while the global switch is on.
+ * An employee with no confirmed email signs in with the password and is held by the mandatory
+ * «أضف بريدك الإلكتروني» step (account-email) until the address is confirmed.
+ */
+export function needsSecondStep(
+  user: { role?: string; totpEnabled?: boolean },
+  global2fa: boolean,
+  opts: { emailVerified?: boolean; mailConfigured?: boolean } = {},
+): boolean {
   if (user?.role === 'admin') return true;
+  if (opts.emailVerified && opts.mailConfigured) return true;
   return !!global2fa && !!user?.totpEnabled;
 }
 

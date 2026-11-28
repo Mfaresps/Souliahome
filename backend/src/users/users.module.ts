@@ -22,6 +22,6 @@ import { SecurityAuditModule } from '../security-audit/security-audit.module';
   ],
   controllers: [UsersController, AccessRolesController],
   providers: [UsersService, AccessRolesService],
-  exports: [UsersService],
+  exports: [UsersService, AccessRolesService],
 })
 export class UsersModule {}

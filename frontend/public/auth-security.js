@@ -73,7 +73,7 @@
     return /^ar/i.test(navigator.language || '') ? 'ar' : 'en';
   }
   const LOGIN_TEXT = {
-    title: ['مرحبًا بعودتك', 'Welcome back'],
+    title: ['مرحبًا بعودتك\nإلى SOULIA', 'Welcome back\nto SOULIA'], // two lines (white-space: pre-line)
     sub: ['الدخول مقصور على المصرّح لهم فقط', 'Authorized access only'],
     user: ['اسم المستخدم', 'Username'],
     userPh: ['أدخل اسم المستخدم', 'Enter your username'],
@@ -326,6 +326,10 @@
     V.method = allowedMethods()[0] || 'totp';
     renderVerify();
     if (V.setup) startSetup();
+    // An employee signing in on a new device has only the email code (owner, Nov 28, 2026): send it at
+    // once instead of waiting for «إرسال الرمز». Only when email is the sole sign-in method — an account
+    // with Google or a trusted device chooses for itself.
+    else if (V.purpose === 'login' && V.method === 'email' && allowedMethods().length === 1) sendEmail();
   }
 
   function stepInfo() {

@@ -36,7 +36,7 @@ describe('sign-in sessions — recorded, listed and ended from the server', () =
     const mentions = { createMany: async () => undefined } as any;
     const guard = new LoginGuardService(connection);
     (guard as any).overIpRate = () => false;
-    const verification = new SignInVerificationService(users, totp, {} as any, {} as any, {} as any, new TokenIssuerService(jwt, sess), audit, mentions, {} as any, {} as any, guard);
+    const verification = new SignInVerificationService(users, totp, {} as any, {} as any, { configured: () => false } as any, new TokenIssuerService(jwt, sess), audit, mentions, {} as any, {} as any, guard);
     return new AuthService(users, mentions, audit, verification, guard, new TrustedDevicesService(connection));
   };
   const refusal = async (p: Promise<unknown>) => {

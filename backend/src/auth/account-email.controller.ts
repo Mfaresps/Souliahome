@@ -46,6 +46,20 @@ export class AccountEmailController {
     return this.accountEmail.cancelOwn(this.actor(req));
   }
 
+  /** Admin, add-user window: a code to the typed address before the account exists. */
+  @UseGuards(ThrottlerGuard)
+  @Post('new-account/send')
+  newAccountSend(@Req() req: Request, @Body() body: { email?: string; previousToken?: string }) {
+    return this.accountEmail.startNewAccountCode(this.actor(req), String(body?.email || ''), String(body?.previousToken || ''));
+  }
+
+  /** Admin, add-user window: the code the employee received. */
+  @UseGuards(ThrottlerGuard)
+  @Post('new-account/confirm')
+  newAccountConfirm(@Req() req: Request, @Body() body: { token?: string; code?: string }) {
+    return this.accountEmail.confirmNewAccountCode(this.actor(req), String(body?.token || ''), String(body?.code || ''));
+  }
+
   /** Admin: send a confirmation code to an address for an employee (the employee confirms it). */
   @UseGuards(ThrottlerGuard)
   @Post('user/:userId')

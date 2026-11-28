@@ -191,6 +191,30 @@ describe('sign-in verification — challenge, trusted devices, email, approval, 
     expect(await err(verify.verifyCode(res.challenge, 'email', c, false))).toMatchObject({ code: 'CHALLENGE_USED' });
   });
 
+  it('employee with a confirmed email: a new device needs the emailed code; «trust» skips it next time', async () => {
+    // an address typed but never confirmed does not count
+    await model.updateOne({ username: 'sara' }, { $set: { email: 'sara@example.com' } });
+    expect((await login('sara')).accessToken).toBeTruthy();
+    await model.updateOne({ username: 'sara' }, { $set: { emailVerifiedAt: new Date() } });
+    const res = await login('sara');
+    expect(res.accessToken).toBeUndefined();
+    expect(res.setupRequired).toBe(false);
+    expect(res.methods).toMatchObject({ totp: false, email: 'sa*****a@example.com', approval: false, backup: false });
+    await verify.sendEmailCode(res.challenge);
+    expect(mails[mails.length - 1].to).toBe('sara@example.com');
+    const ok: any = await verify.verifyCode(res.challenge, 'email', lastMailCode(), true, chrome as any);
+    expect(ok.accessToken).toBeTruthy();
+    expect(ok.deviceToken).toMatch(/^[a-f0-9]{64}$/);
+    // the trusted device signs in on the password; another device is asked again
+    expect((await login('sara', 'right-pass', ok.deviceToken)).accessToken).toBeTruthy();
+    const other = await login('sara', 'right-pass', undefined, phone);
+    expect(other.challenge).toBeTruthy();
+    expect(other.methods.approval).toBe(true);
+    // the employee address is used for the sign-in code only — never for an admin-only purpose
+    await model.updateOne({ username: 'sara' }, { $set: { securityEmail: 'x@example.com' } });
+    expect((await login('sara', 'right-pass', undefined, phone)).methods.email).toBe('sa*****a@example.com');
+  });
+
   it('approval: only a trusted device of the same account decides; a wrong number denies; the right number signs in', async () => {
     const { secret } = await enableTotp('boss');
     const first: any = await verify.verifyCode((await login('boss')).challenge, 'totp', code(secret), true, chrome as any);

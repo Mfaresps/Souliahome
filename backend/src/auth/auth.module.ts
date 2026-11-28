@@ -19,6 +19,8 @@ import { PasswordPolicyService } from './password-policy.service';
 import { LoginGuardService } from './login-guard.service';
 import { AccountEmailService } from './account-email.service';
 import { AccountEmailController } from './account-email.controller';
+import { AccountEmailGateInterceptor } from './account-email-gate.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UsersModule } from '../users/users.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { SecurityAuditModule } from '../security-audit/security-audit.module';
@@ -46,7 +48,10 @@ import { Settings, SettingsSchema } from '../settings/schemas/settings.schema';
     ]),
   ],
   controllers: [AuthController, AccountEmailController],
-  providers: [AuthService, JwtStrategy, PresenceGateway, TotpService, UserSessionsService, AuthChallengeService, TrustedDevicesService, SecurityMailerService, TokenIssuerService, SignInVerificationService, LoginGuardService, PasswordPolicyService, AccountEmailService],
+  providers: [
+    AuthService, JwtStrategy, PresenceGateway, TotpService, UserSessionsService, AuthChallengeService, TrustedDevicesService, SecurityMailerService, TokenIssuerService, SignInVerificationService, LoginGuardService, PasswordPolicyService, AccountEmailService,
+    { provide: APP_INTERCEPTOR, useClass: AccountEmailGateInterceptor },
+  ],
   exports: [AuthService, PresenceGateway, TotpService, UserSessionsService, TrustedDevicesService, SecurityMailerService, AccountEmailService],
 })
 export class AuthModule {}

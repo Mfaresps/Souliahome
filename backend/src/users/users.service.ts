@@ -237,6 +237,15 @@ export class UsersService implements OnModuleInit {
     return res.modifiedCount > 0;
   }
 
+  /** A new account whose address the admin confirmed by code in the add-user window. */
+  async linkConfirmedAccountEmail(id: string, email: string): Promise<boolean> {
+    const res = await this.userModel.updateOne(
+      { _id: id, emailVerifiedAt: null },
+      { $set: { email, emailVerifiedAt: new Date(), emailPending: null } },
+    ).exec();
+    return res.modifiedCount > 0;
+  }
+
   /** Another account that already holds this address, verified (as its account email or admin security email). */
   async emailTakenBy(email: string, exceptId: string): Promise<{ _id: string; username: string } | null> {
     const doc: any = await this.userModel.findOne({

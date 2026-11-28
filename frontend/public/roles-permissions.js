@@ -385,6 +385,8 @@
     find: slug => ui.roles.find(item => item.slug === slug) || null,
     slugOf: account => account?.username === 'admin' ? 'super-admin' : account?.role === 'admin' ? 'admin' : (account?.roleId || ''),
     roleName, roleDescription, tierName, permName: key => name(key), permInfo: key => info(key),
+    /** Arabic name whatever the page language (the invitation email and join page are Arabic). */
+    roleNameAr: item => builtInAr[item?.slug]?.[0] || item?.name || '',
     groups: () => groups.map(([key,english,arabic,keys]) => ({ key, title: label(english,arabic), keys })),
     open: slug => {
       if (typeof navigateTo === 'function') navigateTo('roles');

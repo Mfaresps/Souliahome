@@ -82,6 +82,13 @@ const socketProxy = createProxyMiddleware({
 });
 app.use('/socket.io/', socketProxy);
 
+// Account invitation link (Nov 28, 2026): a standalone page, never the app shell.
+app.get('/join/:token', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.sendFile(path.join(__dirname, 'public', 'join.html'));
+});
+
 // Short customer-facing survey link — same domain, no query string, no page name exposed
 app.get('/s/:slug', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'survey.html'));

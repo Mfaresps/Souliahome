@@ -69,6 +69,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // Inactive users are rejected by the guard above, so this is always true here.
       isActive: true,
       totpEnabled: !!user.totpEnabled,
+      // Read by AccountEmailGateInterceptor: an employee with no confirmed email is held until they confirm one.
+      emailVerified: !!((user as any).email && (user as any).emailVerifiedAt),
     };
   }
 }

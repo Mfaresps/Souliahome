@@ -1,0 +1,80 @@
+/* «دعوة موظف» window + pending invitations on the Users page (Nov 28, 2026). user-invites.js */
+.users-invite-btn{display:inline-flex;align-items:center;gap:6px}
+.users-invite-btn[hidden]{display:none!important}
+
+.uinv-dlg{position:fixed;inset:0;margin:auto;height:fit-content;border:0;padding:0;background:transparent;width:min(480px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 32px);overflow:visible}
+.uinv-dlg::backdrop{background:rgba(10,18,14,.5)}
+.uinv-dlg[open]{animation:uinvIn .2s ease-out}
+@keyframes uinvIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.uinv-card{background:var(--surface,#fff);color:var(--text);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);
+  display:flex;flex-direction:column;max-height:calc(100vh - 32px);overflow:hidden}
+.uinv-head{display:flex;align-items:flex-start;gap:12px;padding:18px 20px 14px;border-bottom:1px solid var(--border)}
+.uinv-head h2{margin:0;font-size:1.02rem;font-weight:700}
+.uinv-head p{margin:3px 0 0;font-size:.8rem;color:var(--muted);line-height:1.6}
+.uinv-head>div{flex:1;min-width:0}
+.uinv-ic{width:36px;height:36px;border-radius:10px;background:var(--primary-pale);color:var(--accent);display:grid;place-items:center;flex-shrink:0}
+.uinv-x{width:34px!important;height:34px;min-height:0;border:0;background:none;color:var(--muted);border-radius:8px;cursor:pointer;display:grid;place-items:center;padding:0;flex-shrink:0}
+.uinv-x:hover{background:var(--bg-alt);color:var(--text)}
+.uinv-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.uinv-field{display:flex;flex-direction:column;gap:6px}
+.uinv-field>span{font-size:.8rem;font-weight:600;color:var(--text)}
+.uinv-field>span b{color:#c0392b;font-weight:600}
+.uinv-field>span i{font-style:normal;font-weight:400;color:var(--muted)}
+.uinv-field small{font-size:.74rem;color:var(--muted)}
+.uinv-field input,.uinv-field select{width:100%;height:42px;min-height:0;border:1px solid var(--border);border-radius:8px;padding:0 12px;
+  background:var(--surface);color:var(--text);font:inherit;font-size:.9rem;box-sizing:border-box}
+.uinv-field input:focus,.uinv-field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--primary-pale)}
+/* The app dropdown (.pm-sel) in this window: same height, radius and focus ring as the email field. */
+.uinv-field .pm-sel{width:100%}
+.uinv-field .pm-sel-btn{width:100%;height:42px;min-height:0;border:1px solid var(--border);border-radius:8px;padding:0 12px;
+  background:var(--surface);color:var(--text);font:inherit;font-size:.9rem}
+.uinv-field .pm-sel-btn:focus-visible,.uinv-field .pm-sel.is-open .pm-sel-btn{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--primary-pale)}
+.uinv-field input[dir="ltr"]{text-align:left}
+.uinv-err{margin:0;padding:9px 12px;border-radius:8px;background:rgba(192,57,43,.08);color:#b3261e;font-size:.8rem;line-height:1.6}
+.uinv-err[hidden]{display:none}
+.uinv-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:var(--bg-alt)}
+.uinv-foot .btn{display:inline-flex;align-items:center;gap:7px;width:auto;min-width:96px;justify-content:center}
+.uinv-foot .btn.is-busy{opacity:.7;pointer-events:none}
+.uinv-foot .btn.is-busy svg{animation:uinvFly .9s ease-in-out infinite}
+@keyframes uinvFly{50%{transform:translate(3px,-3px)}}
+.uinv-loading{display:grid;place-items:center;min-height:180px}
+.uinv-spin{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--border);border-top-color:var(--accent);animation:uinvSpin .8s linear infinite}
+@keyframes uinvSpin{to{transform:rotate(360deg)}}
+
+.uinv-result{text-align:center;padding:24px 22px 6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.uinv-result h2{margin:6px 0 0;font-size:1.08rem}
+.uinv-result p{margin:0;color:var(--muted);font-size:.86rem;line-height:1.7}
+.uinv-result p b{color:var(--text)}
+.uinv-big{width:52px;height:52px;border-radius:50%;display:grid;place-items:center}
+.uinv-big.is-ok{background:var(--ux-ok-bg,#e6f4ec);color:var(--ux-ok,#1f6b45)}
+.uinv-big.is-warn{background:var(--ux-warn-bg,#fdf1e2);color:var(--ux-warn,#b8651b)}
+.uinv-link{display:flex;gap:8px}
+.uinv-link input{flex:1;min-width:0;font-family:'Inter',monospace;font-size:.8rem!important;background:var(--bg-alt)!important;color:var(--text)}
+.uinv-link .btn{display:inline-flex;align-items:center;gap:6px;width:auto;white-space:nowrap}
+.uinv-note{margin:0;font-size:.76rem;color:var(--muted);line-height:1.7}
+
+/* Pending list: one line per invitation. */
+.uinv-row{display:flex;align-items:center;gap:10px;padding:7px 14px;min-height:44px}
+.uinv-row+.uinv-row{border-top:1px solid var(--border)}
+.uinv-row-ic{width:28px;height:28px;border-radius:50%;background:var(--bg-alt);color:var(--muted);display:grid;place-items:center;flex-shrink:0}
+.uinv-row-ic svg{width:14px;height:14px}
+.uinv-row-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.uinv-row-mail{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start;unicode-bidi:isolate}
+.uinv-row-meta{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uinv-row-act{display:flex;gap:6px;flex-shrink:0}
+.uinv-row-act .ux-btn svg{flex-shrink:0}
+.ux-btn.is-danger{color:#b3261e}
+.ux-row-flash td{animation:uxRowFlash 2.4s ease-out}
+@keyframes uxRowFlash{0%,40%{background:var(--primary-pale)}100%{background:transparent}}
+
+@media (max-width:760px){
+  .uinv-row{flex-wrap:wrap}
+  .uinv-row-who{flex-basis:calc(100% - 40px)}
+  .uinv-row-act{width:100%;justify-content:flex-end}
+  .uinv-hide-sm{display:none}
+  .uinv-foot{flex-direction:column-reverse}
+  .uinv-foot .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .uinv-dlg[open],.ux-row-flash td{animation:none}
+}

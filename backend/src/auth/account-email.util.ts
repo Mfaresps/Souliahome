@@ -52,6 +52,20 @@ export function accountEmailRequired(user: { role?: string; isActive?: boolean; 
 }
 
 /**
+ * What an employee with NO confirmed email may still reach (owner, Nov 28, 2026 — the email is mandatory
+ * until confirmed, enforced on the server, not only by the window): the sign-in / account-email /
+ * session routes under /auth, reading the settings the page boots with, and their own «/users/me» routes.
+ * Everything else answers 403 ACCOUNT_EMAIL_REQUIRED. `path` is the request path with or without /api.
+ */
+export function accountEmailGateAllows(method: string, path: string): boolean {
+  const p = String(path || '').split('?')[0].replace(/^\/api(?=\/)/, '').replace(/\/+$/, '') || '/';
+  if (p === '/auth' || p.startsWith('/auth/')) return true;
+  if (p === '/users/me' || p.startsWith('/users/me/')) return true;
+  if (String(method || '').toUpperCase() === 'GET' && p === '/settings') return true;
+  return false;
+}
+
+/**
  * Sending limits per account: 60 s between two codes, 5 an hour (across every address, so switching
  * addresses does not reset the count). Returns the sends of the last hour to store back.
  */

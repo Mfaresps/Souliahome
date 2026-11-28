@@ -29,6 +29,7 @@
     EMAIL_TAKEN: ['هذا البريد الإلكتروني مرتبط بحساب آخر في النظام.', 'This email is already linked to another account.'],
     PASSWORD_WRONG: ['كلمة المرور الحالية غير صحيحة.', 'The current password is incorrect.'],
     SMTP_NOT_CONFIGURED: ['إرسال البريد الإلكتروني غير متاح حاليًا. تواصل مع مدير النظام.', 'Email sending is not available right now. Contact your system administrator.'],
+    EMAIL_CONFIRM_EXPIRED: ['انتهت صلاحية تأكيد البريد الإلكتروني. أرسل رمزًا جديدًا وأكّده.', 'The email confirmation has expired. Send a new code and confirm it.'],
     EMAIL_SEND_FAILED: ['تعذّر إرسال رسالة التأكيد. تأكد من صحة العنوان أو حاول بعد قليل.', 'The confirmation email could not be sent. Check the address or try again shortly.'],
     CODE_EXPIRED: ['انتهت صلاحية الرمز. اطلب رمزًا جديدًا.', 'The code has expired. Request a new one.'],
     CODE_LOCKED: ['أُوقف هذا الرمز بعد 5 محاولات خاطئة. اطلب رمزًا جديدًا.', 'This code was stopped after 5 wrong attempts. Request a new one.'],
@@ -138,17 +139,23 @@
 
   const boxes = () => (ov ? [...ov.querySelectorAll('.sv-otp-box')] : []);
   const codeValue = () => boxes().map((b) => b.value).join('');
-  function shakeCode() {
-    const root = ov?.querySelector('#ae-otp');
-    boxes().forEach((b) => { b.value = ''; b.classList.remove('is-filled'); });
-    if (root) { root.classList.remove('is-error'); void root.offsetWidth; root.classList.add('is-error'); }
-    boxes()[0]?.focus();
+  function shakeIn(root) {
+    if (!root) return;
+    const bx = [...root.querySelectorAll('.sv-otp-box')];
+    bx.forEach((b) => { b.value = ''; b.classList.remove('is-filled'); });
+    root.classList.remove('is-error'); void root.offsetWidth; root.classList.add('is-error');
+    bx[0]?.focus();
   }
-  function bindOtp() {
-    const root = ov.querySelector('#ae-otp');
-    const bx = boxes();
+  function shakeCode() { shakeIn(ov?.querySelector('#ae-otp')); }
+  function bindOtp() { bindOtpIn(ov.querySelector('#ae-otp'), confirm, () => setErr('')); }
+  /** Six boxes: typing, paste, autofill, arrows; `onFull` when all six are filled (or Enter). */
+  function bindOtpIn(root, onFull, onType) {
+    const bx = [...root.querySelectorAll('.sv-otp-box')];
+    const value = () => bx.map((b) => b.value).join('');
     const mark = () => bx.forEach((b) => b.classList.toggle('is-filled', !!b.value));
-    const done = () => { if (codeValue().length === 6) confirm(); };
+    const done = () => { if (value().length === 6) onFull(); };
+    const setErr = () => { if (typeof onType === 'function') onType(); };
+    const confirm = () => onFull();
     const spread = (from, text) => {
       let i = from;
       for (const ch of text) { if (i > 5) break; bx[i].value = ch; i++; }
@@ -272,8 +279,9 @@
     ov.remove();
     ov = null;
     const after = S?.after;
+    const step = S?.step;
     S = null;
-    if (typeof after === 'function') { try { after(); } catch (_) {} }
+    if (typeof after === 'function') { try { after(step); } catch (_) {} }
   }
 
   function open(st, opts = {}) {
@@ -320,8 +328,18 @@
   const toastSafe = (m, bad) => { try { if (typeof toast === 'function') toast(m, bad); } catch (_) {} };
   async function loadState() { return call(''); }
 
-  /** After sign-in. Resolves true when the mandatory window was opened (the tour waits for it). */
-  async function gate() {
+  /**
+   * After sign-in. Resolves true when the mandatory window was opened (the tour waits for it).
+   * ⚠ Single-flight: the sign-in path and every held request (`held()`) may call it at once.
+   */
+  let gating = null;
+  let wasHeld = false; // the server refused data while no email was confirmed → reload once it is
+  function gate() {
+    if (ov && S?.mandatory) return Promise.resolve(true);
+    if (!gating) gating = gateOnce().finally(() => { gating = null; });
+    return gating;
+  }
+  async function gateOnce() {
     if (typeof currentUser === 'undefined' || !currentUser || signedInAdmin()) return false;
     let st;
     try { st = await loadState(); } catch (_) { return false; }
@@ -329,8 +347,35 @@
     // Another window (a confirm, the invoice overlay) must not sit over this one.
     const wait = () => new Promise((r) => setTimeout(r, 400));
     for (let i = 0; i < 20 && (document.querySelector('#modal-overlay.active, .sv-ov:not(.ae-ov)')); i++) await wait();
-    open(st, { mandatory: true, after: () => { try { window.SouliaOnboarding?.maybeStart(); } catch (_) {} } });
+    if (ov && S?.mandatory) return true;
+    open(st, {
+      mandatory: true,
+      after: (step) => {
+        if (step !== 'done') return; // signed out from the window
+        // The data the server held back (403 ACCOUNT_EMAIL_REQUIRED) is fetched again with a reload.
+        if (wasHeld) {
+          try { if (typeof allowUnload === 'function') allowUnload(); } catch (_) {}
+          location.reload();
+          return;
+        }
+        try { window.SouliaOnboarding?.maybeStart(); } catch (_) {}
+      },
+    });
     return true;
+  }
+  /** api() saw 403 ACCOUNT_EMAIL_REQUIRED. */
+  let heldTimer = null;
+  function held() {
+    wasHeld = true;
+    if (heldTimer || (ov && S?.mandatory)) return;
+    // During boot the sign-in path opens the window itself once the splash is gone (dismissSplash →
+    // gate); a request held later (any page action) opens it here.
+    const tryOpen = (n) => {
+      heldTimer = null;
+      if (document.getElementById('splash-screen') && n < 60) { heldTimer = setTimeout(() => tryOpen(n + 1), 500); return; }
+      gate().catch(() => undefined);
+    };
+    heldTimer = setTimeout(() => tryOpen(0), 0);
   }
 
   async function openOwn() {
@@ -397,9 +442,24 @@
   /** The «البريد الإلكتروني» field of the user window. */
   function adminBlockHtml(u) {
     if (!u) {
-      return `<div class="form-group um2-full"><label for="um-email">${E(T('البريد الإلكتروني', 'Email'))} <span class="um2-hint" style="display:inline">(${E(T('اختياري', 'optional'))})</span></label>
-        <input type="email" id="um-email" dir="ltr" placeholder="name@example.com" autocomplete="off" spellcheck="false">
-        <div class="um2-hint">${E(T('سيُرسل رمز تأكيد إلى هذا البريد، ويُدخله الموظف عند أول تسجيل دخول. لا يُربط البريد إلا بعد تأكيده. لا يُستخدم لحسابات المديرين.', 'A confirmation code is sent to this address and the employee enters it at first sign-in. It is linked only once confirmed. Not used for admin accounts.'))}</div></div>`;
+      clearInterval(NV?.timer);
+      NV = { token: '', email: '', verified: false, busy: false, resendUntil: 0, timer: null };
+      return `<div class="form-group um2-full ae-nv" id="um-email-nv"><label for="um-email">${E(T('البريد الإلكتروني', 'Email'))} <span class="um2-hint" style="display:inline">(${E(T('اختياري', 'optional'))})</span></label>
+        <div class="ae-um-form ae-nv-row">
+          <input type="email" id="um-email" dir="ltr" placeholder="name@example.com" autocomplete="off" spellcheck="false" oninput="SouliaAccountEmail.newEdited()" onkeydown="if(event.key==='Enter'){event.preventDefault();SouliaAccountEmail.newSend()}">
+          <button type="button" class="btn btn-outline btn-sm" id="um-email-code-btn" onclick="SouliaAccountEmail.newSend()">${E(T('إرسال رمز التأكيد', 'Send code'))}</button>
+        </div>
+        <div class="ae-nv-ok" id="um-email-ok" hidden>${ICON_OK}<span>${E(T('تم تأكيد البريد الإلكتروني', 'Email confirmed'))}</span><button type="button" class="ae-nv-link" onclick="SouliaAccountEmail.newReset()">${E(T('تغيير', 'Change'))}</button></div>
+        <div class="ae-nv-code" id="um-email-verify" hidden>
+          <div class="ae-nv-sub" id="um-email-sentto"></div>
+          <div class="ae-nv-line">
+            <div class="sv-otp" id="um-email-otp" dir="ltr" role="group" aria-label="${E(T('رمز التأكيد', 'Confirmation code'))}">${[0, 1, 2, 3, 4, 5].map((i) => `<input class="sv-otp-box" type="text" inputmode="numeric" maxlength="6" autocomplete="off" aria-label="${E(T(`الرقم ${i + 1} من 6`, `Digit ${i + 1} of 6`))}">`).join('')}</div>
+            <button type="button" class="btn btn-primary btn-sm" id="um-email-confirm" onclick="SouliaAccountEmail.newConfirm()">${E(T('تأكيد', 'Confirm'))}</button>
+          </div>
+          <div class="ae-nv-foot"><button type="button" class="ae-nv-link" id="um-email-resend" onclick="SouliaAccountEmail.newSend(true)"></button></div>
+        </div>
+        <p class="ae-um-err" id="um-email-err" role="alert" hidden></p>
+        <div class="um2-hint" id="um-email-hint">${E(T('أرسل رمز التأكيد وأدخل الرمز الذي وصل إلى بريد الموظف. إن لم يتوفر الرمز الآن، احفظ الحساب وسيُدخله الموظف عند أول تسجيل دخول. لا يُستخدم لحسابات المديرين.', 'Send the code and enter the one that reached the employee’s inbox. If it isn’t available now, save the account and the employee enters it at first sign-in. Not used for admin accounts.'))}</div></div>`;
     }
     if (u.role === 'admin') {
       return `<div class="form-group um2-full"><label>${E(T('البريد الإلكتروني', 'Email'))}</label><div class="ae-um">${statusHtml(u) || `<span class="ae-tag is-none">${E(T('لم يُضف بريد الأمان', 'No security email yet'))}</span>`}
@@ -415,6 +475,111 @@
       </div>
       <div class="um2-hint">${E(T('يُرسل الرمز إلى العنوان الجديد، ويؤكّده الموظف بنفسه عند تسجيل الدخول. يبقى البريد الحالي مرتبطًا حتى التأكيد.', 'The code goes to the new address and the employee confirms it at sign-in. The current email stays linked until then.'))}</div>
       <p class="ae-um-err" id="um-email-err" role="alert" hidden></p></div>`;
+  }
+
+  // ─── Add-user window: confirm the address by code before saving (Nov 28, 2026) ───
+  // The employee reads out the code that reached their inbox; the admin types it here. Saving with an
+  // unconfirmed address still works (the employee confirms it at first sign-in).
+  let NV = null; // { token, email, verified, busy, resendUntil, timer }
+  const nvEl = (id) => document.getElementById(id);
+  const cleanMail = (v) => String(v || '').trim().toLowerCase();
+  function nvErr(m) { const el = nvEl('um-email-err'); if (el) { el.textContent = m || ''; el.hidden = !m; } }
+  function nvTick() {
+    clearInterval(NV.timer);
+    const paint = () => {
+      const b = nvEl('um-email-resend');
+      if (!b || !NV) { clearInterval(NV?.timer); return; }
+      const left = Math.max(0, Math.ceil((NV.resendUntil - Date.now()) / 1000));
+      b.disabled = left > 0 || NV.busy;
+      b.textContent = left > 0 ? T(`إعادة الإرسال بعد ${left} ث`, `Resend in ${left}s`) : T('إعادة إرسال الرمز', 'Resend code');
+      if (!left) clearInterval(NV.timer);
+    };
+    paint();
+    NV.timer = setInterval(paint, 1000);
+  }
+  function nvPaint() {
+    if (!NV) return;
+    const input = nvEl('um-email');
+    const sendBtn = nvEl('um-email-code-btn');
+    const verify = nvEl('um-email-verify');
+    const ok = nvEl('um-email-ok');
+    const hint = nvEl('um-email-hint');
+    const waiting = !!NV.token && !NV.verified;
+    if (input) input.readOnly = NV.verified;
+    // While a code waits the button steps aside (resend is under the boxes; editing the address brings it back).
+    if (sendBtn) { sendBtn.hidden = NV.verified || waiting; sendBtn.disabled = NV.busy; }
+    if (verify) verify.hidden = !waiting;
+    if (ok) ok.hidden = !NV.verified;
+    if (hint) hint.hidden = NV.verified;
+    const sent = nvEl('um-email-sentto');
+    if (sent && waiting) sent.innerHTML = `${E(T('أدخل الرمز المكوّن من 6 أرقام الذي أُرسل إلى', 'Enter the 6-digit code sent to'))} <bdi dir="ltr">${E(NV.email)}</bdi> ${E(T('(صالح 10 دقائق). لم يصل؟ تحقّق من مجلد Spam.', '(valid 10 minutes). Not there? Check Spam.'))}`;
+  }
+
+  async function newSend(isResend) {
+    if (!NV || NV.busy) return;
+    const input = nvEl('um-email');
+    const email = cleanMail(input?.value);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { nvErr(ERR.EMAIL_INVALID[L() === 'en' ? 1 : 0]); input?.focus(); return; }
+    nvErr('');
+    NV.busy = true; nvPaint();
+    const btnEl = nvEl('um-email-code-btn');
+    if (btnEl) btnEl.classList.add('is-loading');
+    try {
+      const r = await post('/new-account/send', { email, previousToken: NV.token || '' });
+      NV.token = r.token; NV.email = r.sentTo || email; NV.verified = false;
+      NV.resendUntil = Date.now() + (Number(r.resendIn) || 60) * 1000;
+      NV.busy = false;
+      nvPaint(); nvTick();
+      const otp = nvEl('um-email-otp');
+      if (otp && !otp._aeBound) { otp._aeBound = true; bindOtpIn(otp, newConfirm, () => nvErr('')); }
+      if (otp) { otp.querySelectorAll('.sv-otp-box').forEach((b) => { b.value = ''; b.classList.remove('is-filled'); }); setTimeout(() => otp.querySelector('.sv-otp-box')?.focus(), 30); }
+      if (isResend) toastSafe(T('أُرسل رمز جديد.', 'A new code was sent.'));
+    } catch (e) {
+      NV.busy = false; nvPaint(); if (NV.token) nvTick();
+      nvErr(errText(e));
+    } finally { if (btnEl) btnEl.classList.remove('is-loading'); }
+  }
+
+  async function newConfirm() {
+    if (!NV || NV.busy || !NV.token) return;
+    const otp = nvEl('um-email-otp');
+    const code = otp ? [...otp.querySelectorAll('.sv-otp-box')].map((b) => b.value).join('') : '';
+    if (code.length !== 6) { nvErr(T('أدخل الرمز المكوّن من 6 أرقام.', 'Enter the 6-digit code.')); otp?.querySelectorAll('.sv-otp-box')[code.length]?.focus(); return; }
+    nvErr('');
+    NV.busy = true;
+    const b = nvEl('um-email-confirm');
+    if (b) { b.disabled = true; b.classList.add('is-loading'); }
+    try {
+      await post('/new-account/confirm', { token: NV.token, code });
+      NV.verified = true; NV.busy = false;
+      clearInterval(NV.timer);
+      nvPaint();
+    } catch (e) {
+      NV.busy = false;
+      nvErr(errText(e));
+      if (e?.code === 'CODE_EXPIRED' || e?.code === 'CODE_LOCKED') { NV.resendUntil = 0; nvTick(); }
+      shakeIn(otp);
+    } finally { if (b) { b.disabled = false; b.classList.remove('is-loading'); } }
+  }
+
+  /** The address was edited after a code was sent: that code no longer applies. */
+  function newEdited() {
+    if (!NV) return;
+    nvErr('');
+    if (NV.token && cleanMail(nvEl('um-email')?.value) !== NV.email) {
+      NV.token = ''; NV.verified = false; clearInterval(NV.timer); nvPaint();
+    }
+  }
+  function newReset() {
+    if (!NV) return;
+    NV.token = ''; NV.verified = false; NV.email = ''; clearInterval(NV.timer);
+    const input = nvEl('um-email');
+    nvPaint(); nvErr('');
+    if (input) { input.readOnly = false; input.focus(); input.select(); }
+  }
+  /** For saveUser: the token when THIS address was confirmed in the window, else ''. */
+  function newToken(email) {
+    return NV && NV.verified && NV.token && NV.email === cleanMail(email) ? NV.token : '';
   }
 
   async function reloadUsers() {
@@ -453,7 +618,8 @@
   function inviteToast(res, typed) {
     if (!typed) return;
     const inv = res?.emailInvite;
-    if (inv?.sent) toastSafe(T(`أُرسل رمز تأكيد البريد إلى ${inv.sentTo}. يُدخله الموظف عند أول تسجيل دخول.`, `A confirmation code was sent to ${inv.sentTo}. The employee enters it at first sign-in.`));
+    if (inv?.confirmed) toastSafe(T(`رُبط البريد ${inv.sentTo} بالحساب بعد تأكيده.`, `${inv.sentTo} is confirmed and linked to the account.`));
+    else if (inv?.sent) toastSafe(T(`أُرسل رمز تأكيد البريد إلى ${inv.sentTo}. يُدخله الموظف عند أول تسجيل دخول.`, `A confirmation code was sent to ${inv.sentTo}. The employee enters it at first sign-in.`));
     else if (inv?.message) toastSafe(T('أُنشئ الحساب، لكن لم يُرسل رمز تأكيد البريد: ', 'The account was created, but the email code was not sent: ') + inv.message, true);
   }
 
@@ -470,5 +636,8 @@
     sock.on('account-email:changed', () => refreshCard());
   }
 
-  window.SouliaAccountEmail = { gate, openOwn, renderCard, cancelOwn, statusHtml, adminBlockHtml, adminRequest, adminCancel, inviteToast, bindSocket };
+  window.SouliaAccountEmail = {
+    gate, held, openOwn, renderCard, cancelOwn, statusHtml, adminBlockHtml, adminRequest, adminCancel, inviteToast, bindSocket,
+    newSend, newConfirm, newEdited, newReset, newToken,
+  };
 })();

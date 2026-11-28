@@ -30,6 +30,11 @@ export class CreateUserDto {
   @IsOptional()
   readonly roleId?: string;
 
+  /** The address was confirmed by code in the add-user window (AccountEmailService.confirmNewAccountCode). */
+  @IsString()
+  @IsOptional()
+  readonly emailToken?: string;
+
   @IsString()
   @IsOptional()
   readonly phone?: string;

@@ -22,6 +22,7 @@ import type { SessionMethod } from './user-sessions.util';
 import { buildAuthUserPayload } from './auth-user-payload';
 import { LoginGuardService } from './login-guard.service';
 import { userKeyOf } from './login-guard.util';
+import { verifiedEmailOf } from './account-email.util';
 import {
   AvailableMethods, CHALLENGE_MAX_ATTEMPTS, EMAIL_CODE_TTL_MS, STEP_UP_ACTIONS, StepUpAction, TRUST_DAYS, VerifyMethod,
   codeHash, deviceLabel, isValidEmail, loginRequirement, maskEmail, methodAllowed, needsSecondStep,
@@ -80,18 +81,33 @@ export class SignInVerificationService {
     return normalizeEmail(user.securityEmail);
   }
 
+  /**
+   * The address a SIGN-IN code goes to (Nov 28, 2026): an admin's verified security email, or an
+   * employee's confirmed account email (`user.email` + `emailVerifiedAt`). Only sign-in uses the
+   * employee address — step-up, recovery and the security-email card stay admin-only (`emailOf`).
+   */
+  private signInEmailOf(user: any): string {
+    if (user?.role === 'admin') return this.emailOf(user);
+    return verifiedEmailOf(user);
+  }
+
+  /** needsSecondStep for this account, with the employee-email rule filled in. */
+  private needsVerification(user: any, global2fa: boolean): boolean {
+    return needsSecondStep(user, global2fa, { emailVerified: !!verifiedEmailOf(user), mailConfigured: this.mailer.configured() });
+  }
+
   async methodsFor(user: any): Promise<AvailableMethods> {
     const totp = !!user?.totpEnabled && !!user?.totpSecret;
     return {
       totp,
-      email: !!this.emailOf(user) && this.mailer.configured(),
+      email: !!this.signInEmailOf(user) && this.mailer.configured(),
       approval: await this.devices.hasActive(String(user._id)),
       backup: totp && this.totp.backupCodesLeft(user) > 0,
     };
   }
 
   private presentMethods(m: AvailableMethods, user: any) {
-    return { totp: m.totp, email: m.email ? maskEmail(this.emailOf(user)) : null, approval: m.approval, backup: m.backup };
+    return { totp: m.totp, email: m.email ? maskEmail(this.signInEmailOf(user)) : null, approval: m.approval, backup: m.backup };
   }
 
   // ─── Sign in ─────────────────────────────────────────────────────────────
@@ -101,7 +117,7 @@ export class SignInVerificationService {
     const userId = String(user._id);
     const previousLogin: Date | null = user.lastLogin ?? null;
     const global2fa = await this.totp.getGlobal2faStatus();
-    if (!needsSecondStep(user, global2fa)) return this.finish(user, 'password', client, previousLogin);
+    if (!this.needsVerification(user, global2fa)) return this.finish(user, 'password', client, previousLogin);
 
     if (deviceToken && !opts.forceVerify) {
       const device = await this.devices.findValid(userId, deviceToken);
@@ -180,7 +196,7 @@ export class SignInVerificationService {
       detail: deviceLabel(row.client), ipAddress: row.client.ipAddress, client: row.client,
     }).catch(() => undefined);
     const user = await this.users.findById(row.userId);
-    const to = this.emailOf(user);
+    const to = row.purpose === 'login' ? this.signInEmailOf(user) : this.emailOf(user);
     if (to) {
       const body = securityMailBody({
         title: MAIL_SUBJECT.wrongCodes,
@@ -260,7 +276,7 @@ export class SignInVerificationService {
     try {
       await this.mentions.createMany([{ targetUserId: String(user._id), targetUsername: user.username, targetName: user.name, fromUserId: 'system', fromName: 'نظام الأمان', txId: 'security', commentId: 0, commentText: text, read: false } as any]);
     } catch { /* best effort */ }
-    const to = this.emailOf(user);
+    const to = this.signInEmailOf(user);
     if (to) {
       this.mailer.sendQuietly({ to, subject: MAIL_SUBJECT.newDevice, ...securityMailBody({
         title: MAIL_SUBJECT.newDevice,
@@ -275,7 +291,8 @@ export class SignInVerificationService {
     const row = await this.live(token);
     if (!methodAllowed(row.requirement, row.done, 'email')) throw new BadRequestException({ message: 'التحقق عبر البريد الإلكتروني غير متاح.', code: 'METHOD_NOT_ALLOWED' });
     const user = await this.users.findById(row.userId);
-    const to = this.emailOf(user);
+    // ⚠ Only a sign-in code may go to an employee's account email; every other purpose stays admin-only.
+    const to = row.purpose === 'login' ? this.signInEmailOf(user) : this.emailOf(user);
     if (!to) throw new BadRequestException('لا يوجد بريد إلكتروني مؤكَّد لهذا الحساب.');
     if (!this.mailer.configured()) throw new ServiceUnavailableException({ message: 'إرسال البريد الإلكتروني غير متاح حاليًا. استخدم طريقة تحقق أخرى.', code: 'SMTP_NOT_CONFIGURED' });
     const code = randomCode6();
@@ -889,7 +906,7 @@ export class SignInVerificationService {
       emailPending: user.securityEmailPending?.email && new Date(user.securityEmailPending.expiresAt).getTime() > Date.now() ? user.securityEmailPending.email : '',
       mailConfigured: this.mailer.configured(),
       global2fa: await this.totp.getGlobal2faStatus(),
-      verificationRequired: needsSecondStep(user, await this.totp.getGlobal2faStatus()),
+      verificationRequired: this.needsVerification(user, await this.totp.getGlobal2faStatus()),
       trustDays: TRUST_DAYS,
       currentDeviceId: current?._id || null,
       devices: await this.devices.list(actor.id),

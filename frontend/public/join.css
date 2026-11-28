@@ -1,0 +1,117 @@
+/* «إنشاء حسابك» (/join/<token>) — same field and card as the sign-in page (startup-experience.css). */
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:'Inter','Cairo',system-ui,sans-serif;color:#14201a;-webkit-font-smoothing:antialiased}
+html[lang="ar"] body{font-family:'Cairo','Inter',system-ui,sans-serif}
+.jn{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:64px 16px 28px;
+  background:radial-gradient(70% 55% at 50% 42%,#14301f 0%,#0b1a12 62%,#07110c 100%)}
+.jn-lang{position:fixed;top:16px;inset-inline-end:18px;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.35);font-size:13px}
+.jn-lang button{background:none;border:0;color:rgba(255,255,255,.62);font:inherit;cursor:pointer;padding:4px 2px}
+.jn-lang button[aria-pressed="true"]{color:#fff;font-weight:600}
+.jn-lang button:focus-visible{outline:2px solid #6fcf97;outline-offset:2px;border-radius:4px}
+
+.jn-card{width:min(100%,440px);margin:auto 0;background:#fff;border-radius:12px;padding:30px 30px 20px;
+  box-shadow:inset 0 3px 0 #2d7a4f,0 30px 80px rgba(0,0,0,.45)}
+.jn-card.is-in{animation:jnIn .28s ease-out}
+@keyframes jnIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.jn-mark{margin:22px 0 0;text-align:center;color:rgba(255,255,255,.75);font:600 13px/1.4 'Inter',sans-serif;letter-spacing:3px}
+.jn-mark span{display:block;font-size:9.5px;letter-spacing:2.6px;color:rgba(255,255,255,.38);font-weight:500}
+
+.jn-head{text-align:center;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid #edf1ee}
+.jn-logo{display:block;margin:0 auto 12px}
+.jn-head h1{margin:0 0 6px;font-size:21px;font-weight:700}
+.jn-head p{margin:0;color:#5b6b63;font-size:14px;line-height:1.7}
+.jn-head b{color:#14201a;font-weight:600}
+
+.jn-steps{list-style:none;display:flex;justify-content:space-between;gap:6px;margin:0 0 20px;padding:0;counter-reset:s}
+.jn-steps li{flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;color:#8a978f;white-space:nowrap}
+.jn-steps li span{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:600;
+  background:#eef2ef;color:#6b7a72}
+.jn-steps li.is-on{color:#14201a;font-weight:600}
+.jn-steps li.is-on span{background:#1f6b45;color:#fff}
+.jn-steps li.is-done span{background:#dcefe3;color:#1f6b45}
+.jn-steps li+li::before{content:'';flex:1;height:1px;background:#e3e8e5;margin-inline-end:4px;max-width:28px}
+
+.jn-form{display:flex;flex-direction:column;gap:14px}
+.jn-field{display:flex;flex-direction:column;gap:6px}
+.jn-field>span{font-size:13px;font-weight:600;color:#33443b;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jn-field small{font-size:12px;color:#6b7a72;line-height:1.6}
+.jn-field small.is-ok,.jn-note.is-ok{color:#1f6b45;display:inline-flex;align-items:center;gap:4px}
+.jn-note{font-size:11.5px;font-weight:500;color:#6b7a72}
+.jn-field input{width:100%;height:46px;border:1px solid #c9d3cd;border-radius:8px;padding:0 12px;font:inherit;font-size:16px;color:#14201a;
+  background:#fff;transition:border-color .15s,box-shadow .15s}
+.jn-field input[dir="ltr"]{text-align:left;font-family:'Inter',sans-serif}
+html[dir="rtl"] .jn-field input[dir="ltr"]::placeholder{text-align:right}
+.jn-field input:hover{border-color:#9fb0a6}
+.jn-field input:focus{outline:none;border-color:#2d7a4f;box-shadow:0 0 0 3px rgba(45,122,79,.16)}
+.jn-field input[aria-invalid="true"]{border-color:#c0392b}
+.jn-locked{position:relative}
+.jn-locked input{background:#f4f6f5;color:#46564d;padding-right:36px}
+/* The address is LTR (starts on the left), so the lock always sits on the physical right. */
+.jn-locked i{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#8a978f;display:flex}
+.jn-pass{position:relative}
+.jn-pass input{padding-inline-end:44px}
+.jn-eye{position:absolute;inset-inline-end:4px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;background:none;color:#6b7a72;
+  border-radius:6px;cursor:pointer;display:grid;place-items:center}
+.jn-eye:hover{color:#14201a;background:#f1f4f2}
+.jn-meter{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:2px}
+.jn-meter i{height:4px;border-radius:2px;background:#e6ebe8}
+.jn-meter[data-s="0"] i:nth-child(-n+1){background:#d9534f}
+.jn-meter[data-s="1"] i:nth-child(-n+2){background:#e6a23c}
+.jn-meter[data-s="2"] i:nth-child(-n+3){background:#5cae7a}
+.jn-meter[data-s="3"] i{background:#1f6b45}
+.jn-err{margin:0;font-size:12.5px;color:#b3261e;line-height:1.6}
+.jn-err[hidden]{display:none}
+
+.jn-btn{height:46px;border:0;border-radius:8px;background:#1f6b45;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;width:100%;transition:background .15s}
+.jn-btn:hover:not(:disabled){background:#185638}
+.jn-btn:disabled{opacity:.5;cursor:not-allowed}
+.jn-btn:focus-visible{outline:3px solid rgba(45,122,79,.35);outline-offset:2px}
+.jn-btn.is-ghost{background:#fff;color:#1f2933;border:1px solid #c9d3cd}
+.jn-btn.is-ghost:hover:not(:disabled){background:#f4f6f5}
+.jn-btn.is-sm{height:38px;width:auto;font-size:14px}
+.jn-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:4px}
+
+.jn-photo{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:4px 0 6px}
+.jn-photo h2{margin:6px 0 0;font-size:17px}
+.jn-photo p{margin:0 0 6px;color:#5b6b63;font-size:13.5px;line-height:1.7;max-width:320px}
+.jn-avatar{position:relative;width:120px;height:120px;border-radius:50%;border:2px dashed #b7c6bd;background:#f6f8f7;color:#7b8a82;
+  display:grid;place-items:center;cursor:pointer;overflow:hidden;padding:0;transition:border-color .15s}
+.jn-avatar:hover{border-color:#2d7a4f;color:#2d7a4f}
+.jn-avatar.has-img{border:3px solid #fff;box-shadow:0 0 0 2px #2d7a4f}
+.jn-avatar img{width:100%;height:100%;object-fit:cover}
+.jn-avatar .jn-spin{position:absolute;inset:0;margin:auto}
+
+.jn-secure{margin:16px 0 0;display:flex;justify-content:center;align-items:center;gap:6px;color:#8a978f;font-size:12px}
+.jn-loading{display:grid;place-items:center;min-height:220px}
+.jn-spin{width:22px;height:22px;border-radius:50%;border:2.5px solid #dbe4de;border-top-color:#1f6b45;animation:jnSpin .8s linear infinite;display:inline-block}
+.jn-spin.is-light{width:16px;height:16px;border-color:rgba(255,255,255,.4);border-top-color:#fff}
+@keyframes jnSpin{to{transform:rotate(360deg)}}
+
+.jn-done{text-align:center;padding:14px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.jn-done h1{margin:8px 0 2px;font-size:21px}
+.jn-done p{margin:0;color:#46564d;font-size:14.5px;line-height:1.8}
+.jn-done .jn-muted{color:#7b8a82;font-size:13px;margin-bottom:12px}
+.jn-code{font-family:'Inter',sans-serif;font-weight:600;color:#14201a;background:#f1f4f2;padding:1px 7px;border-radius:5px}
+.jn-done-ic{position:relative;width:88px;height:88px}
+.jn-done-ic img{width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 0 0 2px #dcefe3}
+.jn-done-ic span{position:absolute;bottom:-2px;inset-inline-end:-2px;width:32px;height:32px;border-radius:50%;background:#1f6b45;color:#fff;
+  display:grid;place-items:center;border:3px solid #fff;animation:jnPop .4s ease-out .1s both}
+.jn-done-ic:not(:has(img)) span{position:static;width:64px;height:64px;margin:12px auto}
+.jn-done-ic span svg{width:16px;height:16px}
+.jn-done-ic:not(:has(img)) span svg{width:28px;height:28px}
+@keyframes jnPop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.jn-err-ic{width:56px;height:56px;border-radius:50%;background:#fdf1e7;color:#b8651b;display:grid;place-items:center}
+.jn-done.is-err .jn-btn{margin-top:12px}
+
+@media (max-width:480px){
+  .jn{padding:56px 12px 20px}
+  .jn-card{padding:24px 18px 16px}
+  .jn-steps li{font-size:11.5px;gap:5px}
+  .jn-steps li+li::before{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .jn-card.is-in,.jn-done-ic span{animation:none}
+  .jn-spin{animation-duration:2s}
+}

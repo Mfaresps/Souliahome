@@ -157,6 +157,42 @@ describe('account email — service', () => {
     expect(await svc.inviteNewAccount(admin, 'u1', 'reem@example.com')).toEqual({ sent: true, sentTo: 'reem@example.com' });
   });
 
+  it('add-user window: the admin confirms the address by code, then it is linked once', async () => {
+    const { svc, users, sent, lastCode } = setup([staff()]);
+    (users as any).linkConfirmedAccountEmail = async (id: string, email: string) => {
+      const u = users.rows.find((x) => x._id === id); if (u.emailVerifiedAt) return false;
+      u.email = email; u.emailVerifiedAt = new Date(); u.emailPending = null; return true;
+    };
+    await expect(svc.startNewAccountCode(actor, 'x@y.co')).rejects.toBeTruthy(); // staff cannot
+    const r = await svc.startNewAccountCode(admin, 'Reem@Example.com');
+    expect(sent[0].to).toBe('reem@example.com');
+    expect(r.token).toMatch(/^[0-9a-f]{36}$/);
+    // Not confirmed yet → not ready; another admin cannot use the token.
+    expect(svc.newAccountEmailReady(admin, r.token, 'reem@example.com')).toBe(false);
+    const wrong = lastCode() === '000000' ? '111111' : '000000';
+    await expect(svc.confirmNewAccountCode(admin, r.token, wrong)).rejects.toMatchObject({ response: expect.objectContaining({ code: 'CODE_WRONG', attemptsLeft: 4 }) });
+    await expect(svc.confirmNewAccountCode({ ...admin, id: 'a2' }, r.token, lastCode())).rejects.toMatchObject({ response: expect.objectContaining({ code: 'NO_PENDING' }) });
+    expect(await svc.confirmNewAccountCode(admin, r.token, lastCode())).toEqual({ verified: true, email: 'reem@example.com' });
+    expect(svc.newAccountEmailReady(admin, r.token, 'other@example.com')).toBe(false); // bound to the address
+    expect(svc.newAccountEmailReady(admin, r.token, ' REEM@example.com ')).toBe(true);
+    expect(await svc.linkConfirmedNewAccount(admin, 'u1', r.token, 'reem@example.com')).toBe(true);
+    expect(users.rows[0].email).toBe('reem@example.com');
+    expect(users.rows[0].emailVerifiedAt).toBeInstanceOf(Date);
+    // Spent: the same token cannot link a second account.
+    expect(svc.newAccountEmailReady(admin, r.token, 'reem@example.com')).toBe(false);
+  });
+
+  it('add-user window: 5 wrong codes stop it, and a taken address is refused', async () => {
+    const { svc, lastCode } = setup([staff({ _id: 'u2', email: 'mona@example.com', emailVerifiedAt: new Date() })]);
+    await expect(svc.startNewAccountCode(admin, 'mona@example.com')).rejects.toMatchObject({ response: expect.objectContaining({ code: 'EMAIL_TAKEN' }) });
+    const r = await svc.startNewAccountCode(admin, 'new@example.com');
+    const wrong = lastCode() === '000000' ? '111111' : '000000';
+    for (let i = 0; i < 4; i++) await expect(svc.confirmNewAccountCode(admin, r.token, wrong)).rejects.toBeTruthy();
+    await expect(svc.confirmNewAccountCode(admin, r.token, wrong)).rejects.toMatchObject({ response: expect.objectContaining({ code: 'CODE_LOCKED' }) });
+    await expect(svc.confirmNewAccountCode(admin, r.token, lastCode())).rejects.toMatchObject({ response: expect.objectContaining({ code: 'CODE_EXPIRED' }) });
+    await expect(svc.startNewAccountCode(admin, 'new@example.com', r.token)).rejects.toMatchObject({ response: expect.objectContaining({ code: 'EMAIL_RATE_LIMITED' }) });
+  });
+
   it('a second code within a minute is refused', async () => {
     const { svc } = setup([staff()]);
     await svc.requestOwn(actor, 'reem@example.com');

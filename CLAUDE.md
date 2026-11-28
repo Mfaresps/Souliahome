@@ -59,6 +59,16 @@ app, and a formal copy WITH the code now goes to each admin's verified security 
   Changing a confirmed address needs the current password; the old address is told, the new one gets a
   confirmation. One address per account (also checked against admins' security emails) → 409 `EMAIL_TAKEN`.
 - `POST /users` with `email` → `inviteNewAccount` (never fails the creation; reply `emailInvite`).
+- **Add-user window confirms by code (owner, Nov 28, 2026)**: beside the email field «إرسال رمز التأكيد» →
+  `POST …/account-email/new-account/send` (admin; code to the address, 10 min, 60 s apart, 10/hour per admin;
+  EMAIL_TAKEN checked) → six boxes appear → the admin types the code the employee read out →
+  `…/new-account/confirm` → «تم تأكيد البريد الإلكتروني» (input locked, «تغيير» resets). `saveUser` sends
+  `emailToken` (`SouliaAccountEmail.newToken(email)`); `POST /users` checks it BEFORE creating
+  (400 `EMAIL_CONFIRM_EXPIRED`), then `linkConfirmedNewAccount` → `UsersService.linkConfirmedAccountEmail`
+  (the second writer of `user.email`; token bound to admin + address, spent once, 60 min). Reply
+  `emailInvite.confirmed`. ⚠ The pending request lives in memory (no account yet) — a restart = send again.
+  Saving without confirming keeps the old path (the employee confirms at first sign-in).
+  Tests: 2 cases in `account-email.spec.ts` (14; revert-checked: dropping the admin binding fails 1).
 - After sign-in (`dismissSplash`) `gate()` opens the mandatory «أضف بريدك الإلكتروني» for an active
   non-admin without a confirmed email (only when SMTP is configured): no Escape, only «تسجيل الخروج»;
   code step with the Spam note; the tour starts after it. ⚠ Client-side gate (the API is not blocked).
@@ -68,6 +78,64 @@ app, and a formal copy WITH the code now goes to each admin's verified security 
   ⚠ Opening `#users` directly in that harness froze the mocked page (also with the module blocked), so the
   Users-page marks are checked from the dashboard; `users-roles-unified.cjs` 46/46 with these changes.
   Not tried against a real SMTP account.
+
+## Employees Verify a New Device by Email; No Confirmed Email = Held (Nov 28, 2026)
+
+Owner's rules: a right password on a device that is not trusted is not enough for an employee either.
+- `needsSecondStep(user, global2fa, {emailVerified, mailConfigured})`: admins always; an employee with a
+  CONFIRMED account email (`user.email` + `emailVerifiedAt`) whenever SMTP is configured; or Google + the
+  global switch as before. Without SMTP the code cannot arrive, so it is not asked (no lock-out).
+- `SignInVerificationService.signInEmailOf` = admin security email, else the employee's confirmed email.
+  ⚠ Used ONLY for sign-in: `sendEmailCode` sends to it only for purpose `login`; step-up / recovery / unlock /
+  the security-email card keep the admin-only `emailOf`. The new-device notice and the 5-wrong-codes mail
+  also go to it. The trust box («الوثوق بهذا الجهاز لمدة 30 يومًا») and approval from a trusted device work
+  unchanged. The verify screen sends the code at once when email is the only method (`verify()` in auth-security.js).
+- **No confirmed email → held by the SERVER**: `AccountEmailGateInterceptor` (APP_INTERCEPTOR in AuthModule)
+  answers 403 `ACCOUNT_EMAIL_REQUIRED` to an active non-admin with `emailVerified:false` (JwtStrategy now
+  returns it) while SMTP is configured, except `accountEmailGateAllows`: `/auth/*`, `/users/me*`, `GET /settings`.
+  ⚠ The request is marked `_accountEmailHeld` so abuse-guard does not count it as a refused write (would suspend).
+  api() → `SouliaAccountEmail.held()` → the mandatory window (waits for the splash; `gate()` is single-flight);
+  after «تم» the page reloads to fetch the held data.
+- Tests: `test/unit/account-email-gate.spec.ts` (3), 1 case in `sign-in-verification.service.spec.ts` (13;
+  revert-checked: dropping the employee rule fails 2). Compiled API loads. **Not clicked through in a browser /
+  not tried with real SMTP.**
+
+## Invite an Employee by Email — «دعوة موظف» (Nov 28, 2026)
+
+`backend/src/invitations/` (raw `userinvitations`) + frontend `user-invites.js/.css` (`window.SouliaInvites`,
+Users page) and the standalone page `join.html/.js/.css` at `/join/<token>` (never the app shell).
+- Admin (Users page «دعوة موظف»): email + role (**required**; admin/super-admin refused — create those from
+  «إضافة مستخدم») + optional job title → `POST /invitations` → email with one big button «إنشاء حسابي», and the
+  link is returned too (shown + «نسخ الرابط»). Pending list `#users-invites-wrap`: copy · «إعادة الإرسال» (same link,
+  72 h again; 60 s apart, 5/hour) · «إلغاء الدعوة». One open invitation per address; an address already on an
+  account → 409 `EMAIL_TAKEN`. 20 invitations/hour per admin.
+- Link: `<origin>/join/<24 url-safe chars>`, 72 hours, used once. Origin = `APP_PUBLIC_URL` env, else the admin's
+  page origin (validated). ⚠ Token never stored in clear: `tokenHash` (lookup) + `tokenSealed` (AES-GCM, key from
+  JWT_SECRET) so the link can be copied again. nginx `location ^~ /join/` + server.js serve `join.html`, `no-store`,
+  `Referrer-Policy: no-referrer`.
+- Join page (no session; `/api/join/:token…`, throttled): name → username suggested from the name
+  (`usernameBase`: common Egyptian names + letter transliteration, «محمد علي» → mohamed.ali, then 2, 3 …; editable,
+  checked live) → phone (Egyptian mobile, `cleanPhone`, +20/Arabic digits accepted) → email shown locked → password
+  twice (8+) → photo **required** (uploaded through `InvoiceImagesService` purpose avatar, ≤40 KB) → «إنشاء الحساب».
+  The account is created in ONE request at the end (`accept`, atomic claim pending→accepting, so two tabs make one
+  account): role assigned, email linked as confirmed (`linkConfirmedAccountEmail` — opening the link proves the
+  address, so no sign-in email gate), `onboardingPending:true`. ⚠ `avatar` is stored ABSOLUTE (`origin + path`) —
+  the app's `sanitizeUrl` shows only http(s) photos.
+- After: «تم إنشاء حسابك بنجاح» + «الدخول إلى حسابي» (sets `rem_user` so the sign-in page has the username); email
+  «تم إنشاء حسابك في SOULIA» (username, role, sign-in button); every admin gets a mention «نظام الدعوات»
+  (`txId: 'invite:<userId>'` → Users page, that row flashes); audit `account_invited`.
+- Emails (`invite-mail.util.ts`, formal MSA, no greeting line): the ONLY security-style mails with a link/button
+  (owner's decision); the link is in the button only in HTML and written out in the text part. The page sends the
+  Arabic role / job title names it shows (`roleLabel`, `jobTitleLabel`; `SouliaRBAC.roleNameAr`) for the email.
+- ⚠ **Welcome tour after a form sign-in** (fixed here): `dismissSplash` started it only at boot, so a new account
+  signing in from the login form saw it only after a reload. Now `_afterSignInWindows()` runs from both
+  `dismissSplash` and `souliaFinishLogin`.
+- ⚠ The app's `*{margin:0}` (app-core.css) cancels a native `<dialog>`'s centring — `.uinv-dlg` sets
+  `position:fixed;inset:0;margin:auto;height:fit-content`.
+- Tests: `test/unit/invitations.spec.ts` (10). Compiled API on a scratch DB with a local SMTP sink: 51 checks (perms,
+  refusals, email content, race → one account, account fields, sign-in, notices, re-send/expiry/cancel). Browser:
+  join page 25 (ar/en, 390), admin side 20 (window, link, list, en, phone), first sign-in shows the tour.
+  `onboarding-tour.cjs` 23, `account-email.cjs` 37, `users-roles-unified.cjs` 46/46. **Not tried on live / real SMTP.**
 
 ## Password Policy — Admins Change Their Own With a Code; Staff Only Through an Admin (Nov 27, 2026)
 
@@ -186,7 +254,8 @@ in index.html / login-space.css / auth-security.css). `#mobile-quote-bar` was re
 - The sign-in BUTTON reads «تسجيل دخول آمن» / «Secure Sign In» (`LOGIN_TEXT.signIn`) with an inline SVG lock
   (`.lfp-btn-lock`, `currentColor` = the button text) on its LEFT — in RTL it gets `order:2` to stay left; hidden
   while `aria-busy` (the spinner takes its place). ⚠ Every writer sets `#login-submit-label` only, never the
-  button — setting the button's text would wipe the icon. The heading stays «مرحبًا بعودتك / Welcome back».
+  button — setting the button's text would wipe the icon. The heading is two lines, «مرحبًا بعودتك / إلى SOULIA» — «Welcome back / to SOULIA»
+  (Nov 28, 2026; a `\n` in `LOGIN_TEXT.title`, `white-space: pre-line`).
 - Subtitle «Authorized access only» / «الدخول مقصور على المصرّح لهم فقط» (`LOGIN_TEXT.sub`).
 - Card styling (formal): 3px brand line on top (inset shadow), hairline under the header, 44px logo, every
   control 46px tall with an 8px radius, inputs 16px text (iOS zoom), browser autofill kept white

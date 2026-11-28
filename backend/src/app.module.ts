@@ -41,6 +41,7 @@ import { EmployeePerformanceModule } from './employee-performance/employee-perfo
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { SupplierReturnStatementsModule } from './supplier-return-statements/supplier-return-statements.module';
 import { InvoiceImagesModule } from './invoice-images/invoice-images.module';
+import { InvitationsModule } from './invitations/invitations.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { AssistantModule } from './assistant/assistant.module';
 import { ExternalAssistantModule } from './assistant/external-assistant.module';
@@ -98,6 +99,7 @@ import { WarehouseLayoutModule } from './warehouses/warehouse-layout.module';
     AnnouncementsModule,
     SupplierReturnStatementsModule,
     InvoiceImagesModule,
+    InvitationsModule,
     PromotionsModule,
     AssistantModule,
     ExternalAssistantModule,

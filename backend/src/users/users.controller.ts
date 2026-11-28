@@ -110,9 +110,16 @@ export class UsersController {
     if (pwProblem) throw new BadRequestException(pwProblem);
     if (roleId === 'super-admin') throw new ForbiddenException('Super Admin cannot be assigned');
     if (roleId !== 'admin') await this.accessRoles.findRolePublic(roleId);
-    // ⚠ The email is never written straight onto the account: it becomes a request whose code goes to
-    // that address, and the employee confirms it at sign-in (AccountEmailService).
-    const { role: _role, perms: _perms, roleId: _roleId, email: inviteEmail, ...profile } = dto as CreateUserDto & Record<string, unknown>;
+    // ⚠ The email is never written straight onto the account: either the admin confirmed it by code in
+    // this window (`emailToken`), or it becomes a request whose code the employee enters at sign-in.
+    const { role: _role, perms: _perms, roleId: _roleId, email: inviteEmail, emailToken, ...profile } = dto as CreateUserDto & Record<string, unknown>;
+    const admin = { id: String(req.user?.userId || req.user?.sub || ''), name: String(req.user?.name || req.user?.username || ''), role: String(req.user?.role || '') };
+    const confirmedEmail = roleId !== 'admin' && !!emailToken && String(inviteEmail || '').trim()
+      ? this.accountEmail.newAccountEmailReady(admin, String(emailToken), String(inviteEmail))
+      : false;
+    if (emailToken && roleId !== 'admin' && String(inviteEmail || '').trim() && !confirmedEmail) {
+      throw new BadRequestException({ message: 'انتهت صلاحية تأكيد البريد الإلكتروني. أرسل رمزًا جديدًا وأكّده.', code: 'EMAIL_CONFIRM_EXPIRED' });
+    }
     const user = await this.usersService.createUser({ ...(profile as unknown as CreateUserDto), role: 'viewer', perms: [], onboardingPending: true } as any);
     try {
       await this.accessRoles.assign(roleId, String(user._id));
@@ -120,10 +127,14 @@ export class UsersController {
       await this.usersService.removeUser(String(user._id)).catch(() => undefined);
       throw error;
     }
-    let emailInvite: { sent: boolean; sentTo?: string; message?: string } = { sent: false };
+    let emailInvite: { sent: boolean; sentTo?: string; message?: string; confirmed?: boolean } = { sent: false };
     if (roleId !== 'admin' && String(inviteEmail || '').trim()) {
-      const admin = { id: String(req.user?.userId || req.user?.sub || ''), name: String(req.user?.name || req.user?.username || ''), role: String(req.user?.role || '') };
-      emailInvite = await this.accountEmail.inviteNewAccount(admin, String(user._id), String(inviteEmail));
+      const linked = confirmedEmail
+        ? await this.accountEmail.linkConfirmedNewAccount(admin, String(user._id), String(emailToken), String(inviteEmail)).catch(() => false)
+        : false;
+      emailInvite = linked
+        ? { sent: false, confirmed: true, sentTo: String(inviteEmail).trim().toLowerCase() }
+        : await this.accountEmail.inviteNewAccount(admin, String(user._id), String(inviteEmail));
     }
     const created: any = await this.usersService.findAllForAdmin().then((users) =>
       users.find((u) => u._id.toString() === user._id.toString()),

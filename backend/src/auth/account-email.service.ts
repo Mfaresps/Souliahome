@@ -3,6 +3,7 @@ import {
   NotFoundException, ServiceUnavailableException, UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { SecurityAuditService } from '../security-audit/security-audit.service';
 import { MAIL_SUBJECT, SecurityMailerService, securityMailBody } from './security-mailer.service';
@@ -16,6 +17,11 @@ import {
 type Actor = { id: string; name: string; role: string };
 
 const CODE_SECRET = () => String(process.env.JWT_SECRET || 'soulia');
+const NEW_ACCOUNT_CODE_TTL_MS = 10 * 60_000;
+/** A confirmed new-account address must be saved within this time. */
+const NEW_ACCOUNT_TOKEN_LIFE_MS = 60 * 60_000;
+/** A valid ObjectId no account has — the "except" id when no account exists yet. */
+const NO_USER_ID = '000000000000000000000000';
 const FROM_NAME = 'SOULIA';
 const FOOTER = 'SOULIA — رسالة آلية من النظام، يُرجى عدم الرد عليها.';
 
@@ -32,9 +38,10 @@ const minutesText = (ms: number) => {
 /**
  * The account email of employees (Nov 27, 2026) — rules in account-email.util.ts.
  *
- * ⚠ The only writer of `user.email`: an address is linked by `confirmAccountEmail`, i.e. after its
- * owner entered the code sent to it. An admin can REQUEST an address for an employee (the code goes
- * to that address); only the employee can confirm it.
+ * ⚠ `user.email` is linked only after the right code: by `confirmAccountEmail` (the employee entered
+ * it), or by `linkConfirmedAccountEmail` when the admin entered the code in the add-user window
+ * (the employee read it out from their inbox) — `startNewAccountCode` / `confirmNewAccountCode`.
+ * An admin can also REQUEST an address for an existing employee; that one the employee confirms.
  */
 @Injectable()
 export class AccountEmailService {
@@ -266,6 +273,119 @@ export class AccountEmailService {
     await this.users.setAccountEmailPending(userId, null);
     this.changed(userId);
     return { success: true };
+  }
+
+  // ─── The new-account window: the admin confirms the address before saving (Nov 28, 2026) ───
+  // The account does not exist yet, so the request lives in memory under a random token, bound to the
+  // admin who sent it and to the address. One process (like the other short-lived counters here); a
+  // restart only means sending a new code.
+  private readonly newCodes = new Map<string, {
+    adminId: string; email: string; codeHash: string; expiresAt: number; attempts: number;
+    verifiedAt: number | null; usedAt: number | null; sentAt: number;
+  }>();
+  private readonly newSends = new Map<string, number[]>();
+
+  private sweepNewCodes(now: number) {
+    for (const [k, v] of this.newCodes) {
+      if (v.usedAt || now - v.sentAt > NEW_ACCOUNT_TOKEN_LIFE_MS) this.newCodes.delete(k);
+    }
+  }
+
+  /** «إرسال رمز التأكيد» in the add-user window: a code to the typed address (10 minutes). */
+  async startNewAccountCode(admin: Actor, rawEmail: string, previousToken = '') {
+    if (admin.role !== 'admin') throw new ForbiddenException('هذا الإجراء متاح لمدير النظام فقط.');
+    const { email, problem } = cleanAccountEmail(rawEmail);
+    if (problem) throw new BadRequestException({ message: problem, code: 'EMAIL_INVALID' });
+    this.mailReady();
+    await this.assertFree(email, NO_USER_ID);
+    const now = Date.now();
+    this.sweepNewCodes(now);
+    // Same limits as an account: 60 s apart, at most 10 an hour per admin.
+    const recent = (this.newSends.get(admin.id) || []).filter((t) => now - t < 3600_000);
+    const last = recent.length ? Math.max(...recent) : 0;
+    if (now - last < 60_000 || recent.length >= 10) {
+      const waitSec = now - last < 60_000 ? Math.ceil((60_000 - (now - last)) / 1000) : Math.ceil((Math.min(...recent) + 3600_000 - now) / 1000);
+      throw new HttpException({
+        message: waitSec > 90 ? `تجاوزت عدد الرموز المسموح به. حاول بعد ${Math.ceil(waitSec / 60)} دقيقة.` : `يمكنك طلب رمز جديد بعد ${waitSec} ثانية.`,
+        code: 'EMAIL_RATE_LIMITED', waitSec,
+      }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    const prev = previousToken ? this.newCodes.get(previousToken) : null;
+    if (prev && prev.adminId === admin.id) this.newCodes.delete(previousToken);
+    const token = randomBytes(18).toString('hex');
+    const code = randomCode6();
+    this.newCodes.set(token, {
+      adminId: admin.id, email, attempts: 0, verifiedAt: null, usedAt: null, sentAt: now,
+      codeHash: codeHash(CODE_SECRET(), 'new-account:' + token, code + ':' + email),
+      expiresAt: now + NEW_ACCOUNT_CODE_TTL_MS,
+    });
+    this.newSends.set(admin.id, [...recent, now]);
+    try {
+      await this.mailer.send({
+        to: email, fromName: FROM_NAME,
+        subject: MAIL_SUBJECT.emailCode,
+        ...securityMailBody({ title: MAIL_SUBJECT.emailCode, code, footer: FOOTER, lines: [
+          'يُضاف هذا البريد إلى حساب جديد لك في النظام.',
+          'أعطِ هذا الرمز لمدير النظام لإكمال إنشاء الحساب.',
+          `الرمز صالح لمدة ${minutesText(NEW_ACCOUNT_CODE_TTL_MS)} ويُستخدم مرة واحدة.`,
+          'إذا لم تكن تتوقع هذه الرسالة، فتجاهلها.',
+        ] }),
+      });
+    } catch {
+      this.newCodes.delete(token);
+      throw new ServiceUnavailableException({ message: 'تعذّر إرسال رسالة التأكيد. تأكد من صحة العنوان أو حاول بعد قليل.', code: 'EMAIL_SEND_FAILED' });
+    }
+    return { token, sentTo: email, expiresInMin: Math.round(NEW_ACCOUNT_CODE_TTL_MS / 60000), resendIn: 60 };
+  }
+
+  async confirmNewAccountCode(admin: Actor, token: string, code: string) {
+    if (admin.role !== 'admin') throw new ForbiddenException('هذا الإجراء متاح لمدير النظام فقط.');
+    const p = this.newCodes.get(String(token || ''));
+    if (!p || p.adminId !== admin.id || p.usedAt) throw new BadRequestException({ message: 'لا يوجد بريد بانتظار التأكيد.', code: 'NO_PENDING' });
+    if (p.verifiedAt) return { verified: true, email: p.email };
+    if (!p.codeHash || p.expiresAt <= Date.now()) {
+      throw new BadRequestException({ message: 'انتهت صلاحية الرمز. اطلب رمزًا جديدًا.', code: 'CODE_EXPIRED' });
+    }
+    const digits = normalizeDigits(code);
+    const expected = codeHash(CODE_SECRET(), 'new-account:' + token, digits + ':' + p.email);
+    if (digits.length !== 6 || !safeEqual(expected, p.codeHash)) {
+      p.attempts += 1;
+      if (p.attempts >= ACCOUNT_EMAIL_MAX_ATTEMPTS) {
+        p.codeHash = ''; p.expiresAt = Date.now();
+        throw new BadRequestException({ message: 'أُوقف هذا الرمز بعد 5 محاولات خاطئة. اطلب رمزًا جديدًا.', code: 'CODE_LOCKED' });
+      }
+      const left = ACCOUNT_EMAIL_MAX_ATTEMPTS - p.attempts;
+      throw new BadRequestException({ message: `الرمز غير صحيح. تبقّت ${left} ${left === 1 ? 'محاولة' : 'محاولات'}.`, code: 'CODE_WRONG', attemptsLeft: left });
+    }
+    p.verifiedAt = Date.now();
+    p.codeHash = '';
+    return { verified: true, email: p.email };
+  }
+
+  /** Read-only: may this confirmed address be saved on the account about to be created? */
+  newAccountEmailReady(admin: Actor, token: string, rawEmail: string): boolean {
+    const p = this.newCodes.get(String(token || ''));
+    const { email } = cleanAccountEmail(rawEmail);
+    return !!p && p.adminId === admin.id && p.email === email && !!p.verifiedAt && !p.usedAt
+      && Date.now() - p.verifiedAt < NEW_ACCOUNT_TOKEN_LIFE_MS;
+  }
+
+  /** After POST /users: links the address the admin confirmed in the window (spends the token once). */
+  async linkConfirmedNewAccount(admin: Actor, userId: string, token: string, rawEmail: string): Promise<boolean> {
+    if (!this.newAccountEmailReady(admin, token, rawEmail)) return false;
+    const p = this.newCodes.get(token)!;
+    p.usedAt = Date.now();
+    if (await this.users.emailTakenBy(p.email, userId)) return false;
+    const user = await this.load(userId);
+    if (user.role === 'admin') return false;
+    const ok = await this.users.linkConfirmedAccountEmail(userId, p.email);
+    if (!ok) return false;
+    this.audit.log({
+      userId, username: user.username, violationType: 'account_email_changed' as any,
+      action: `تأكيد البريد الإلكتروني عند إنشاء الحساب بواسطة المدير ${admin.name}`, detail: maskEmail(p.email),
+    }).catch(() => undefined);
+    this.changed(userId);
+    return true;
   }
 
   /** New account with an address: never fails the creation — the result says whether the code went out. */

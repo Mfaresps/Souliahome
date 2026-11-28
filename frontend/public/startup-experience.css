@@ -111,7 +111,7 @@
 }
 #login-page #login-form-panel .lfp-logo-wrap { margin: 0 auto 16px; width: 44px; height: 44px; }
 #login-page #login-form-panel .lfp-logo { width: 44px; height: 44px; }
-#login-page #login-form-panel .lfp-title { font-size: 1.4rem; font-weight: 650; color: #0f2418; letter-spacing: -.01em; margin: 0 0 6px; }
+#login-page #login-form-panel .lfp-title { font-size: 1.4rem; font-weight: 650; color: #0f2418; letter-spacing: -.01em; margin: 0 0 6px; white-space: pre-line; }
 #login-page[lang="ar"] #login-form-panel .lfp-title { letter-spacing: 0; }
 #login-page #login-form-panel .lfp-sub { font-size: .8rem; color: #6b7f72; letter-spacing: .02em; }
 #login-page[lang="ar"] #login-form-panel .lfp-sub { letter-spacing: 0; }
@@ -146,6 +146,10 @@
   -webkit-box-shadow: inset 0 0 0 1000px #fff, 0 0 0 3px #2d7a4f1f;
 }
 #login-page #login-form .login-pass-toggle { color: #6b7f72; }
+/* Lock at the start of the password field, opposite the eye (left in English, right in Arabic). */
+#login-page #login-form .lfp-pass-lock { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); color: #6b7f72; pointer-events: none; }
+#login-page #login-form .lfp-pass-wrap #login-pass { padding-left: 42px; }
+#login-page[dir="rtl"] #login-form .lfp-pass-wrap #login-pass { padding-left: 50px; padding-right: 42px; }
 /* The masked password: the Arabic font draws the dots large and heavy, so the value always uses the
    Latin face (same dots in both languages); the Arabic placeholder keeps the page font. */
 #login-page #login-form #login-pass { font-family: Inter, 'Segoe UI', system-ui, sans-serif; letter-spacing: .06em; }

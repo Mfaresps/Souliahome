@@ -204,6 +204,8 @@ export class AbuseGuardService implements OnModuleInit {
     const user: U = req?.user;
     const id = uid(user);
     if (!id || user?.role === 'admin') return;
+    // Held by «أضف بريدك الإلكتروني» (AccountEmailGateInterceptor): the page refuses itself, not the employee.
+    if (req?._accountEmailHeld) return;
     const path = String(req?.path || req?.url || '').split('?')[0];
     // Only WRITE attempts count: screens fetch some data an account may not read and then hide it,
     // so read refusals happen during honest work and must never suspend anyone.
